@@ -266,3 +266,9 @@ class PromptHistory(TypedDict):
 
 
 QueueHistoryResponse: TypeAlias = dict[str, PromptHistory]  # key is prompt_id
+
+
+class FreeMemoryRequest(TypedDict):
+    """Request format used when requesting cached models and memory to be cleared."""
+    unload_models: bool
+    free_memory: bool

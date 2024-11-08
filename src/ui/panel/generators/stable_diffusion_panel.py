@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QSizePolicy, QLabel, QPushButton, \
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QComboBox
 
 from src.config.cache import Cache
+from src.ui.input_fields.seed_value_spinbox import SeedValueSpinbox
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.layout.divider import Divider
 from src.ui.panel.generators.generator_panel import GeneratorPanel
@@ -34,6 +35,8 @@ TAB_NAME_EXTRA = _tr('Extras')
 
 class ExtrasTab(QWidget):
     """Interface for extras tab content that can be added to the panel."""
+
+    generate_signal = Signal()
 
     def orientation(self) -> Qt.Orientation:
         """Returns the tab's orientation."""
@@ -79,6 +82,7 @@ class StableDiffusionPanel(GeneratorPanel):
             label.setWordWrap(True)
             control = cache.get_control_widget(config_key, **kwargs)
             control.setParent(self)
+            label.setToolTip(control.toolTip())
             label.setBuddy(control)
             return label, control
 
@@ -100,6 +104,7 @@ class StableDiffusionPanel(GeneratorPanel):
         self._guidance_scale_label, self._guidance_scale_slider = _get_control_with_label(Cache.GUIDANCE_SCALE)
         self._denoising_strength_label, self._denoising_strength_slider = _get_control_with_label(
             Cache.DENOISING_STRENGTH)
+        self._clip_skip_label, self._clip_skip_slider = _get_control_with_label(Cache.CLIP_SKIP)
         IntSliderSpinbox.align_slider_spinboxes([self._step_count_slider, self._guidance_scale_slider,
                                                  self._denoising_strength_slider])
         self._edit_mode_label, self._edit_mode_combobox = _get_control_with_label(Cache.EDIT_MODE)
@@ -119,7 +124,12 @@ class StableDiffusionPanel(GeneratorPanel):
         self._full_res_checkbox.setText('')
         self._full_res_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
         self._padding_label, self._padding_slider = _get_control_with_label(Cache.INPAINT_FULL_RES_PADDING)
-        self._seed_label, self._seed_textbox = _get_control_with_label(Cache.SEED)
+
+        self._seed_textbox = SeedValueSpinbox(Cache.SEED, Cache.LAST_SEED)
+        self._seed_label = QLabel(Cache().get_label(Cache.SEED))
+        self._seed_label.setToolTip(self._seed_textbox.toolTip())
+        self._seed_label.setBuddy(self._seed_textbox)
+
         self._last_seed_label = QLabel(Cache().get_label(Cache.LAST_SEED))
         self._last_seed_textbox = Cache().get_control_widget(Cache.LAST_SEED)
         self._last_seed_textbox.setReadOnly(True)
@@ -254,6 +264,7 @@ class StableDiffusionPanel(GeneratorPanel):
             for label, input_widget in ((self._edit_mode_label, self._edit_mode_combobox),
                                         (self._model_label, self._model_combobox),
                                         (self._sampler_label, self._sampler_combobox),
+                                        (self._clip_skip_label, self._clip_skip_slider),
                                         (self._masked_content_label, self._masked_content_combobox),
                                         (self._full_res_label, self._full_res_checkbox),
                                         (self._padding_label, self._padding_slider),
@@ -279,8 +290,8 @@ class StableDiffusionPanel(GeneratorPanel):
 
             for i in (0, 1, 4, 5):
                 right_panel_layout.setStretch(i, 1)
-            right_panel_layout.insertSpacing(right_panel_layout.count() - 4, 20)
-            right_panel_layout.insertSpacing(right_panel_layout.count() - 2, 20)
+            spacer_index = 4 if self._interrogate_button is None else 5
+            right_panel_layout.insertSpacing(right_panel_layout.count() - spacer_index, 20)
 
             for alignment_group in (left_labels, center_labels, right_labels, right_inputs):
                 synchronize_widths(alignment_group)
@@ -296,6 +307,7 @@ class StableDiffusionPanel(GeneratorPanel):
                                         (self._model_label, self._model_combobox),
                                         (self._sampler_label, self._sampler_combobox),
                                         (self._masked_content_label, self._masked_content_combobox),
+                                        (self._clip_skip_label, self._clip_skip_slider),
                                         (self._prompt_label, self._prompt_textbox),
                                         (self._negative_label, self._negative_textbox),
                                         (self._gen_size_label, self._gen_size_input),
@@ -322,7 +334,7 @@ class StableDiffusionPanel(GeneratorPanel):
                 all_inner_layouts.append(row_layout)
                 self._main_layout.addLayout(row_layout, stretch=1)
             aligned_sliders += [self._batch_size_spinbox, self._batch_count_spinbox]
-            self._main_layout.addStretch(3)
+            self._main_layout.insertStretch(self._main_layout.count() - 2, 10)
             self._main_layout.addWidget(Divider(Qt.Orientation.Horizontal))
             if self._interrogate_button is not None:
                 last_row = QHBoxLayout()
@@ -364,4 +376,5 @@ class StableDiffusionPanel(GeneratorPanel):
             raise RuntimeError('Tried to add extras_tab twice')
         self._extras_tab = extras_tab
         self._tab_widget.addTab(self._extras_tab, TAB_NAME_EXTRA)
+        extras_tab.generate_signal.connect(self.generate_signal)
         self._extras_tab.set_orientation(self.orientation)

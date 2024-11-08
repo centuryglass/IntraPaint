@@ -85,8 +85,6 @@
         "step": 1,
         "value": 4
     },
-    "restore_faces": false,
-    "tiling": false,
     "glid_model_path": "models/inpaint.pt",
     "bert_model_path": "models/bert.pt",
     "glid_vae_model_path": "models/kl-f8.pt",

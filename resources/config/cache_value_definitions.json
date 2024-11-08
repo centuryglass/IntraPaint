@@ -369,6 +369,7 @@
         "description": "Selected image filter",
         "type": "string",
         "default": "",
+        "options": [],
         "saved": true
     },
     "filter_tool_cached_parameters": {
@@ -898,7 +899,7 @@
         "subcategory": "Image generation",
         "description": "Method to use when increasing image resolution. Available options will be loaded from the active image generator.",
         "type": "string",
-        "default": "None",
+        "default": "",
         "options": [],
         "saved": true
     },
@@ -1109,6 +1110,20 @@
         "options" : [],
         "saved": true
     },
+    "clip_skip": {
+        "label": "CLIP skip:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Number of final image generation steps to take without the prompt applied.  Usually best left at one, but some models produce better results at two.",
+        "type": "int",
+        "default": 1,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 12,
+            "step": 1
+        }
+    },
     "controlnet_upscaling_available": {
         "label": "ControlNet upscaling available",
         "category": "Cache",
@@ -1219,6 +1234,112 @@
         "type": "string",
         "default": "auto",
         "options" : ["auto"],
+        "saved": true
+    },
+    "comfyui_inpainting_model": {
+        "label": "Load checkpoint as inpainting model",
+        "category": "Cache",
+        "subcategory": "ComfyUI",
+        "description": "Load the selected Stable-Diffusion model as an inpainting model.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "comfyui_tiled_vae": {
+        "label": "Use tiled VAE image encoding",
+        "category": "Cache",
+        "subcategory": "ComfyUI",
+        "description": "Encode and decode latent images in tiled blocks, decreasing GPU memory use.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "comfyui_tiled_vae_tile_size": {
+        "label": "VAE tile size:",
+        "category": "Cache",
+        "subcategory": "ComfyUI",
+        "description": "Tile size when using tiled VAE encoding/decoding.  Smaller values decrease memory further, but may increase generation time..",
+        "type": "int",
+        "default": 512,
+        "range_options": {
+            "min": 320,
+            "max": 4096,
+            "step": 64
+        },
+        "saved": true
+    },
+
+    "webui_tiling": {
+        "label": "Tiling",
+        "category": "Cache",
+        "subcategory": "WebUI",
+        "description": "Generate tiling images that can be seamlessly repeated.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "webui_restore_faces": {
+        "label": "Restore faces",
+        "category": "Cache",
+        "subcategory": "WebUI",
+        "description": "Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "webui_subseed": {
+        "label": "Variation seed:",
+        "category": "Cache",
+        "subcategory": "WebUI",
+        "description": "Controls randomness across imagees generated in the same batch.",
+        "type": "int",
+        "default": -1,
+        "range_options": {
+            "min": -1,
+            "max": 18446744073709551615,
+            "step": 1
+        },
+        "saved": true
+    },
+    "webui_last_subseed": {
+        "label": "Last variation seed:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Last variation seed used for image generation",
+        "type": "string",
+        "default": "-1",
+        "saved": false
+    },
+    "webui_subseed_strength": {
+        "label": "Variation strength:",
+        "category": "Cache",
+        "subcategory": "WebUI",
+        "description": "Controls the amount of variation within images in the same batch. Lower values will have less variation. If set to zero, this setting is ignored.",
+        "type": "float",
+        "default": 0.0,
+        "range_options": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.01
+        },
+        "saved": true
+    },
+    "webui_seed_resize_enabled": {
+        "label": "Resize seed from alternate resolution",
+        "category": "Cache",
+        "subcategory": "WebUI",
+        "description": "If enabled, reusing the same seed value will produce a similar image even if the resolution changes.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "webui_seed_resize": {
+        "label": "Resize from resolution:",
+        "category": "Cache",
+        "subcategory": "WebUI",
+        "description": "Generated images using the same seed will match images created at this resolution, regardless of generation size.",
+        "type": "Size",
+        "default": "512x512",
         "saved": true
     }
 }

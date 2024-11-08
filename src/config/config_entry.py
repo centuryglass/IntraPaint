@@ -146,12 +146,11 @@ class ConfigEntry(Parameter):
             return self._value.copy()
         return self._value
 
-    def restore_default_options(self) -> None:
-        """Reset the option list to its default state, or raise RuntimeError if this isn't an entry that has a default
-           options list."""
+    def default_options(self) -> Optional[ParamTypeList]:
+        """Returns a copy of the list of default options provided when the entry was created, if any."""
         if self._default_options is None:
-            raise RuntimeError(f'Config option "{self._key}" has no default options.')
-        self.set_valid_options(self._default_options)
+            return None
+        return [*self._default_options]
 
     @property
     def category(self) -> str:

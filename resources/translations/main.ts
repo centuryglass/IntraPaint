@@ -2,21 +2,110 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="en_US">
   <context>
+    <name>api.controlnet.controlnet_unit</name>
+    <message>
+      <location filename="../../src/api/controlnet/controlnet_unit.py" line="29"/>
+      <source>Strength</source>
+      <translation>Strength</translation>
+    </message>
+    <message>
+      <location filename="../../src/api/controlnet/controlnet_unit.py" line="30"/>
+      <source>Controls how powerful the ControlNet unit's influence is on image generation</source>
+      <translation>Controls how powerful the ControlNet unit's influence is on image generation</translation>
+    </message>
+    <message>
+      <location filename="../../src/api/controlnet/controlnet_unit.py" line="32"/>
+      <source>Starting control step</source>
+      <translation>Starting control step</translation>
+    </message>
+    <message>
+      <location filename="../../src/api/controlnet/controlnet_unit.py" line="33"/>
+      <source>Step where the ControlNet unit is first activated, as a fraction of the total step count.</source>
+      <translation>Step where the ControlNet unit is first activated, as a fraction of the total step count.</translation>
+    </message>
+    <message>
+      <location filename="../../src/api/controlnet/controlnet_unit.py" line="35"/>
+      <source>Ending control step</source>
+      <translation>Ending control step</translation>
+    </message>
+    <message>
+      <location filename="../../src/api/controlnet/controlnet_unit.py" line="36"/>
+      <source>Step where the ControlNet unit is deactivated, as a fraction of the total step count.</source>
+      <translation>Step where the ControlNet unit is deactivated, as a fraction of the total step count.</translation>
+    </message>
+  </context>
+  <context>
+    <name>api.controlnet_constants</name>
+    <message>
+      <location filename="../../src/api/controlnet/controlnet_constants.py" line="24"/>
+      <source>ControlNet</source>
+      <translation>ControlNet</translation>
+    </message>
+    <message>
+      <location filename="../../src/api/controlnet/controlnet_constants.py" line="25"/>
+      <source>ControlNet Unit {unit_number}</source>
+      <translation>ControlNet Unit {unit_number}</translation>
+    </message>
+    <message>
+      <location filename="../../src/api/controlnet/controlnet_constants.py" line="26"/>
+      <source>A multiplier that controls how strongly the ControlNet unit will affect image generation.</source>
+      <translation>A multiplier that controls how strongly the ControlNet unit will affect image generation.</translation>
+    </message>
+    <message>
+      <location filename="../../src/api/controlnet/controlnet_constants.py" line="28"/>
+      <source>The step in the image generation process where the ControlNet unit will be enabled, as a fraction of the total step count.</source>
+      <translation>The step in the image generation process where the ControlNet unit will be enabled, as a fraction of the total step count.</translation>
+    </message>
+    <message>
+      <location filename="../../src/api/controlnet/controlnet_constants.py" line="30"/>
+      <source>The step in the image generation process where the ControlNet unit will be disabled, as a fraction of the total step count.</source>
+      <translation>The step in the image generation process where the ControlNet unit will be disabled, as a fraction of the total step count.</translation>
+    </message>
+    <message>
+      <location filename="../../src/api/controlnet/controlnet_constants.py" line="32"/>
+      <source>Controls how preprocessor images are adjusted to fit the preprocessor resolution.</source>
+      <translation>Controls how preprocessor images are adjusted to fit the preprocessor resolution.</translation>
+    </message>
+    <message>
+      <location filename="../../src/api/controlnet/controlnet_constants.py" line="33"/>
+      <source>Secondary control to set how ControlNet and prompt influence are weighted.</source>
+      <translation>Secondary control to set how ControlNet and prompt influence are weighted.</translation>
+    </message>
+  </context>
+  <context>
+    <name>api.webui.controlnet_webui</name>
+    <message>
+      <location filename="../../src/api/webui/controlnet_webui_constants.py" line="72"/>
+      <source>Control mode</source>
+      <translation>Control mode</translation>
+    </message>
+    <message>
+      <location filename="../../src/api/webui/controlnet_webui_constants.py" line="79"/>
+      <source>Resolution</source>
+      <translation>Resolution</translation>
+    </message>
+    <message>
+      <location filename="../../src/api/webui/controlnet_webui_constants.py" line="87"/>
+      <source>Resize mode</source>
+      <translation>Resize mode</translation>
+    </message>
+  </context>
+  <context>
     <name>application_config</name>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="218"/>
+      <location filename="../../src/controller/app_controller.py" line="220"/>
       <source>Stable-Diffusion</source>
       <translation>Stable-Diffusion</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="35"/>
+      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="34"/>
       <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="50"/>
-      <location filename="../../src/controller/app_controller.py" line="219"/>
+      <location filename="../../src/controller/app_controller.py" line="221"/>
       <source>GLID-3-XL</source>
       <translation>GLID-3-XL</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="220"/>
+      <location filename="../../src/controller/app_controller.py" line="222"/>
       <source>Developer</source>
       <translation>Developer</translation>
     </message>
@@ -24,12 +113,12 @@
   <context>
     <name>config.application_config</name>
     <message>
-      <location filename="../../src/ui/modal/settings_modal.py" line="41"/>
+      <location filename="../../src/ui/modal/settings_modal.py" line="42"/>
       <source>Files</source>
       <translation>Files</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="137"/>
+      <location filename="../../src/controller/image_generation/sd_generator.py" line="79"/>
       <source>Stable-Diffusion</source>
       <translation>Stable-Diffusion</translation>
     </message>
@@ -435,296 +524,266 @@
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="304"/>
-      <source>Restore faces</source>
-      <translation>Restore faces</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="307"/>
-      <source>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</source>
-      <translation>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="306"/>
-      <source>Extra Features</source>
-      <translation>Extra Features</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="313"/>
-      <source>Tiling</source>
-      <translation>Tiling</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="316"/>
-      <source>Generate tiling images that can be seamlessly repeated.</source>
-      <translation>Generate tiling images that can be seamlessly repeated.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="306"/>
-      <source>Extra Features</source>
-      <translation>Extra Features</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="322"/>
       <source>GLID-3-XL model path:</source>
       <translation>GLID-3-XL model path:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="325"/>
+      <location filename="../config/application_config_definitions.json" line="307"/>
       <source>Path to the main GLID-3-XL model file</source>
       <translation>Path to the main GLID-3-XL model file</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="322"/>
+      <location filename="../config/application_config_definitions.json" line="304"/>
       <source>GLID-3-XL</source>
       <translation>GLID-3-XL</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="324"/>
+      <location filename="../config/application_config_definitions.json" line="306"/>
+      <source>Models</source>
+      <translation>Models</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="313"/>
+      <source>BERT model path:</source>
+      <translation>BERT model path:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="316"/>
+      <source>Path to the BERT language model file</source>
+      <translation>Path to the BERT language model file</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="306"/>
+      <source>Models</source>
+      <translation>Models</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="322"/>
+      <source>GLID-3-XL VAE model path:</source>
+      <translation>GLID-3-XL VAE model path:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="325"/>
+      <source>Path to the VAE latent image encoding/decoding model file</source>
+      <translation>Path to the VAE latent image encoding/decoding model file</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="306"/>
       <source>Models</source>
       <translation>Models</translation>
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="331"/>
-      <source>BERT model path:</source>
-      <translation>BERT model path:</translation>
+      <source>CLIP model name:</source>
+      <translation>CLIP model name:</translation>
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="334"/>
-      <source>Path to the BERT language model file</source>
-      <translation>Path to the BERT language model file</translation>
+      <source>Name of the CLIP language model to use.</source>
+      <translation>Name of the CLIP language model to use.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="324"/>
+      <location filename="../config/application_config_definitions.json" line="306"/>
       <source>Models</source>
       <translation>Models</translation>
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="340"/>
-      <source>GLID-3-XL VAE model path:</source>
-      <translation>GLID-3-XL VAE model path:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="343"/>
-      <source>Path to the VAE latent image encoding/decoding model file</source>
-      <translation>Path to the VAE latent image encoding/decoding model file</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="324"/>
-      <source>Models</source>
-      <translation>Models</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="349"/>
-      <source>CLIP model name:</source>
-      <translation>CLIP model name:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="352"/>
-      <source>Name of the CLIP language model to use.</source>
-      <translation>Name of the CLIP language model to use.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="324"/>
-      <source>Models</source>
-      <translation>Models</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="358"/>
       <source>Enable global error handler:</source>
       <translation>Enable global error handler:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="360"/>
+      <location filename="../config/application_config_definitions.json" line="342"/>
       <source>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</source>
       <translation>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="366"/>
+      <location filename="../config/application_config_definitions.json" line="348"/>
       <source>Warn about keybinding issues:</source>
       <translation>Warn about keybinding issues:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="368"/>
+      <location filename="../config/application_config_definitions.json" line="350"/>
       <source>Show an alert when keybinding issues are found on startup.</source>
       <translation>Show an alert when keybinding issues are found on startup.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="367"/>
+      <location filename="../config/application_config_definitions.json" line="349"/>
       <source>Alerts</source>
       <translation>Alerts</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="374"/>
+      <location filename="../config/application_config_definitions.json" line="356"/>
       <source>Warn when saving without layers:</source>
       <translation>Warn when saving without layers:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="376"/>
+      <location filename="../config/application_config_definitions.json" line="358"/>
       <source>Show a warning popup when saving a multi-layer image in a format that discards layer data.</source>
       <translation>Show a warning popup when saving a multi-layer image in a format that discards layer data.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="382"/>
+      <location filename="../config/application_config_definitions.json" line="364"/>
       <source>Warn when saving without transparency:</source>
       <translation>Warn when saving without transparency:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="384"/>
+      <location filename="../config/application_config_definitions.json" line="366"/>
       <source>Show a warning popup when saving an image with transparency in a format that doesn't support it.</source>
       <translation>Show a warning popup when saving an image with transparency in a format that doesn't support it.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="390"/>
+      <location filename="../config/application_config_definitions.json" line="372"/>
       <source>Warn when saving without metadata:</source>
       <translation>Warn when saving without metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="392"/>
+      <location filename="../config/application_config_definitions.json" line="374"/>
       <source>Show a warning popup when saving an image in a format that discards metadata.</source>
       <translation>Show a warning popup when saving an image in a format that discards metadata.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="398"/>
+      <location filename="../config/application_config_definitions.json" line="380"/>
       <source>Warn when saving in a format that cannot be loaded:</source>
       <translation>Warn when saving in a format that cannot be loaded:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="400"/>
+      <location filename="../config/application_config_definitions.json" line="382"/>
       <source>Show a warning popup when saving an image in a format that can't be loaded.</source>
       <translation>Show a warning popup when saving an image in a format that can't be loaded.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="406"/>
+      <location filename="../config/application_config_definitions.json" line="388"/>
       <source>Warn when saving in a format that changes image size:</source>
       <translation>Warn when saving in a format that changes image size:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="408"/>
+      <location filename="../config/application_config_definitions.json" line="390"/>
       <source>Show a warning popup when saving an image in a format requires a specific resolution.</source>
       <translation>Show a warning popup when saving an image in a format requires a specific resolution.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="414"/>
+      <location filename="../config/application_config_definitions.json" line="396"/>
       <source>Warn when saving in a format that removes color:</source>
       <translation>Warn when saving in a format that removes color:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="416"/>
+      <location filename="../config/application_config_definitions.json" line="398"/>
       <source>Show a warning popup when saving an image in a format that does not support color.</source>
       <translation>Show a warning popup when saving an image in a format that does not support color.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="422"/>
+      <location filename="../config/application_config_definitions.json" line="404"/>
       <source>Warn when loading libmypaint fails:</source>
       <translation>Warn when loading libmypaint fails:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="424"/>
+      <location filename="../config/application_config_definitions.json" line="406"/>
       <source>Show a warning popup when the brush tool cannot be used because of missing libraries.</source>
       <translation>Show a warning popup when the brush tool cannot be used because of missing libraries.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="430"/>
+      <location filename="../config/application_config_definitions.json" line="412"/>
       <source>Always save metadata:</source>
       <translation>Always save metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="432"/>
+      <location filename="../config/application_config_definitions.json" line="414"/>
       <source>Always save metadata when no previous metadata exists(confirm), never do that(cancel), or ask every time(always_ask).</source>
       <translation>Always save metadata when no previous metadata exists(confirm), never do that(cancel), or ask every time(always_ask).</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="432"/>
+      <location filename="../config/application_config_definitions.json" line="414"/>
       <source>confirm</source>
       <translation>confirm</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="432"/>
+      <location filename="../config/application_config_definitions.json" line="414"/>
       <source>cancel</source>
       <translation>cancel</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="432"/>
+      <location filename="../config/application_config_definitions.json" line="414"/>
       <source>always_ask</source>
       <translation>always_ask</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="443"/>
+      <location filename="../config/application_config_definitions.json" line="425"/>
       <source>Always update metadata:</source>
       <translation>Always update metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="445"/>
+      <location filename="../config/application_config_definitions.json" line="427"/>
       <source>Always update metadata when images are saved(confirm), never do that(cancel), or ask every time(always_ask).</source>
       <translation>Always update metadata when images are saved(confirm), never do that(cancel), or ask every time(always_ask).</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="432"/>
+      <location filename="../config/application_config_definitions.json" line="414"/>
       <source>confirm</source>
       <translation>confirm</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="432"/>
+      <location filename="../config/application_config_definitions.json" line="414"/>
       <source>cancel</source>
       <translation>cancel</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="432"/>
+      <location filename="../config/application_config_definitions.json" line="414"/>
       <source>always_ask</source>
       <translation>always_ask</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="456"/>
+      <location filename="../config/application_config_definitions.json" line="438"/>
       <source>Warn when cropping deletes layers:</source>
       <translation>Warn when cropping deletes layers:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="458"/>
+      <location filename="../config/application_config_definitions.json" line="440"/>
       <source>Warn when cropping the image or a layer group deletes one or more layers.</source>
       <translation>Warn when cropping the image or a layer group deletes one or more layers.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="464"/>
+      <location filename="../config/application_config_definitions.json" line="446"/>
       <source>Warn when layer lock or visibility forces new layer creation</source>
       <translation>Warn when layer lock or visibility forces new layer creation</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="466"/>
+      <location filename="../config/application_config_definitions.json" line="448"/>
       <source>Warn when image generation creates a new layer because it cannot insert into the active layer.</source>
       <translation>Warn when image generation creates a new layer because it cannot insert into the active layer.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="472"/>
+      <location filename="../config/application_config_definitions.json" line="454"/>
       <source>Added font directory:</source>
       <translation>Added font directory:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="474"/>
+      <location filename="../config/application_config_definitions.json" line="456"/>
       <source>Directory to search for additional font files to load</source>
       <translation>Directory to search for additional font files to load</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="473"/>
+      <location filename="../config/application_config_definitions.json" line="455"/>
       <source>Files</source>
       <translation>Files</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="480"/>
+      <location filename="../config/application_config_definitions.json" line="462"/>
       <source>Added MyPaint brush directory:</source>
       <translation>Added MyPaint brush directory:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="482"/>
+      <location filename="../config/application_config_definitions.json" line="464"/>
       <source>Directory to search for additional MyPaint brush files to load</source>
       <translation>Directory to search for additional MyPaint brush files to load</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="488"/>
+      <location filename="../config/application_config_definitions.json" line="470"/>
       <source>libmypaint library directory:</source>
       <translation>libmypaint library directory:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="490"/>
+      <location filename="../config/application_config_definitions.json" line="472"/>
       <source>Directory to search for libmypaint library files if unable to load default libraries</source>
       <translation>Directory to search for libmypaint library files if unable to load default libraries</translation>
     </message>
@@ -732,7 +791,7 @@
   <context>
     <name>config.cache</name>
     <message>
-      <location filename="../../src/config/cache.py" line="26"/>
+      <location filename="../../src/config/cache.py" line="25"/>
       <source>None</source>
       <translation>None</translation>
     </message>
@@ -1122,12 +1181,12 @@
       <translation>Filter Tool</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="375"/>
+      <location filename="../config/cache_value_definitions.json" line="376"/>
       <source>Filter parameters:</source>
       <translation>Filter parameters:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="378"/>
+      <location filename="../config/cache_value_definitions.json" line="379"/>
       <source>Cached parameters for all filters</source>
       <translation>Cached parameters for all filters</translation>
     </message>
@@ -1142,7 +1201,7 @@
       <translation>Size:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="387"/>
+      <location filename="../config/cache_value_definitions.json" line="388"/>
       <source>Current/initial brush size (in pixels) for the filter tool.</source>
       <translation>Current/initial brush size (in pixels) for the filter tool.</translation>
     </message>
@@ -1157,7 +1216,7 @@
       <translation>Opacity:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="401"/>
+      <location filename="../config/cache_value_definitions.json" line="402"/>
       <source>Filter tool color opacity</source>
       <translation>Filter tool color opacity</translation>
     </message>
@@ -1172,7 +1231,7 @@
       <translation>Hardness:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="415"/>
+      <location filename="../config/cache_value_definitions.json" line="416"/>
       <source>Filter tool brush hardness</source>
       <translation>Filter tool brush hardness</translation>
     </message>
@@ -1187,7 +1246,7 @@
       <translation>Pen pressure=size:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="429"/>
+      <location filename="../config/cache_value_definitions.json" line="430"/>
       <source>Drawing tablet pen pressure affects filter tool brush size.</source>
       <translation>Drawing tablet pen pressure affects filter tool brush size.</translation>
     </message>
@@ -1202,7 +1261,7 @@
       <translation>Pen pressure=opacity:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="438"/>
+      <location filename="../config/cache_value_definitions.json" line="439"/>
       <source>Drawing tablet pen pressure affects filter tool brush opacity.</source>
       <translation>Drawing tablet pen pressure affects filter tool brush opacity.</translation>
     </message>
@@ -1217,7 +1276,7 @@
       <translation>Pen pressure=hardness:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="447"/>
+      <location filename="../config/cache_value_definitions.json" line="448"/>
       <source>Drawing tablet pen pressure affects filter tool brush hardness.</source>
       <translation>Drawing tablet pen pressure affects filter tool brush hardness.</translation>
     </message>
@@ -1247,12 +1306,12 @@
       <translation>Size:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="465"/>
+      <location filename="../config/cache_value_definitions.json" line="466"/>
       <source>Current/initial brush size (in pixels) for the smudge tool.</source>
       <translation>Current/initial brush size (in pixels) for the smudge tool.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="464"/>
+      <location filename="../config/cache_value_definitions.json" line="465"/>
       <source>Smudge Tool</source>
       <translation>Smudge Tool</translation>
     </message>
@@ -1262,12 +1321,12 @@
       <translation>Opacity:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="479"/>
+      <location filename="../config/cache_value_definitions.json" line="480"/>
       <source>Smudge tool color opacity</source>
       <translation>Smudge tool color opacity</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="464"/>
+      <location filename="../config/cache_value_definitions.json" line="465"/>
       <source>Smudge Tool</source>
       <translation>Smudge Tool</translation>
     </message>
@@ -1277,12 +1336,12 @@
       <translation>Hardness:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="493"/>
+      <location filename="../config/cache_value_definitions.json" line="494"/>
       <source>Smudge tool brush hardness</source>
       <translation>Smudge tool brush hardness</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="464"/>
+      <location filename="../config/cache_value_definitions.json" line="465"/>
       <source>Smudge Tool</source>
       <translation>Smudge Tool</translation>
     </message>
@@ -1292,12 +1351,12 @@
       <translation>Pen pressure=size:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="507"/>
+      <location filename="../config/cache_value_definitions.json" line="508"/>
       <source>Drawing tablet pen pressure affects smudge tool brush size.</source>
       <translation>Drawing tablet pen pressure affects smudge tool brush size.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="464"/>
+      <location filename="../config/cache_value_definitions.json" line="465"/>
       <source>Smudge Tool</source>
       <translation>Smudge Tool</translation>
     </message>
@@ -1307,12 +1366,12 @@
       <translation>Pen pressure=opacity:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="516"/>
+      <location filename="../config/cache_value_definitions.json" line="517"/>
       <source>Drawing tablet pen pressure affects smudge tool brush opacity.</source>
       <translation>Drawing tablet pen pressure affects smudge tool brush opacity.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="464"/>
+      <location filename="../config/cache_value_definitions.json" line="465"/>
       <source>Smudge Tool</source>
       <translation>Smudge Tool</translation>
     </message>
@@ -1322,12 +1381,12 @@
       <translation>Pen pressure=hardness:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="525"/>
+      <location filename="../config/cache_value_definitions.json" line="526"/>
       <source>Drawing tablet pen pressure affects smudge tool brush hardness.</source>
       <translation>Drawing tablet pen pressure affects smudge tool brush hardness.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="464"/>
+      <location filename="../config/cache_value_definitions.json" line="465"/>
       <source>Smudge Tool</source>
       <translation>Smudge Tool</translation>
     </message>
@@ -1342,7 +1401,7 @@
       <translation>Smooth out jagged edges.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="464"/>
+      <location filename="../config/cache_value_definitions.json" line="465"/>
       <source>Smudge Tool</source>
       <translation>Smudge Tool</translation>
     </message>
@@ -1352,12 +1411,12 @@
       <translation>Size:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="543"/>
+      <location filename="../config/cache_value_definitions.json" line="544"/>
       <source>Current/initial brush size (in pixels) for the clone stamp tool.</source>
       <translation>Current/initial brush size (in pixels) for the clone stamp tool.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="542"/>
+      <location filename="../config/cache_value_definitions.json" line="543"/>
       <source>Clone Stamp Tool</source>
       <translation>Clone Stamp Tool</translation>
     </message>
@@ -1367,12 +1426,12 @@
       <translation>Opacity:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="557"/>
+      <location filename="../config/cache_value_definitions.json" line="558"/>
       <source>Clone stamp tool color opacity</source>
       <translation>Clone stamp tool color opacity</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="542"/>
+      <location filename="../config/cache_value_definitions.json" line="543"/>
       <source>Clone Stamp Tool</source>
       <translation>Clone Stamp Tool</translation>
     </message>
@@ -1382,12 +1441,12 @@
       <translation>Hardness:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="571"/>
+      <location filename="../config/cache_value_definitions.json" line="572"/>
       <source>Clone stamp tool brush hardness</source>
       <translation>Clone stamp tool brush hardness</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="542"/>
+      <location filename="../config/cache_value_definitions.json" line="543"/>
       <source>Clone Stamp Tool</source>
       <translation>Clone Stamp Tool</translation>
     </message>
@@ -1397,12 +1456,12 @@
       <translation>Pen pressure=size:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="585"/>
+      <location filename="../config/cache_value_definitions.json" line="586"/>
       <source>Drawing tablet pen pressure affects clone stamp tool brush size.</source>
       <translation>Drawing tablet pen pressure affects clone stamp tool brush size.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="542"/>
+      <location filename="../config/cache_value_definitions.json" line="543"/>
       <source>Clone Stamp Tool</source>
       <translation>Clone Stamp Tool</translation>
     </message>
@@ -1412,12 +1471,12 @@
       <translation>Pen pressure=opacity:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="594"/>
+      <location filename="../config/cache_value_definitions.json" line="595"/>
       <source>Drawing tablet pen pressure affects clone stamp tool brush opacity.</source>
       <translation>Drawing tablet pen pressure affects clone stamp tool brush opacity.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="542"/>
+      <location filename="../config/cache_value_definitions.json" line="543"/>
       <source>Clone Stamp Tool</source>
       <translation>Clone Stamp Tool</translation>
     </message>
@@ -1427,12 +1486,12 @@
       <translation>Pen pressure=hardness:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="603"/>
+      <location filename="../config/cache_value_definitions.json" line="604"/>
       <source>Drawing tablet pen pressure affects clone stamp tool brush hardness.</source>
       <translation>Drawing tablet pen pressure affects clone stamp tool brush hardness.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="542"/>
+      <location filename="../config/cache_value_definitions.json" line="543"/>
       <source>Clone Stamp Tool</source>
       <translation>Clone Stamp Tool</translation>
     </message>
@@ -1447,127 +1506,127 @@
       <translation>Smooth out jagged edges.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="542"/>
+      <location filename="../config/cache_value_definitions.json" line="543"/>
       <source>Clone Stamp Tool</source>
       <translation>Clone Stamp Tool</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="618"/>
+      <location filename="../config/cache_value_definitions.json" line="619"/>
       <source>Shape Type:</source>
       <translation>Shape Type:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="621"/>
+      <location filename="../config/cache_value_definitions.json" line="622"/>
       <source>Type of shape to draw.</source>
       <translation>Type of shape to draw.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="620"/>
+      <location filename="../config/cache_value_definitions.json" line="621"/>
       <source>Shape Tool</source>
       <translation>Shape Tool</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="627"/>
+      <location filename="../config/cache_value_definitions.json" line="628"/>
       <source>Vertex count:</source>
       <translation>Vertex count:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="630"/>
+      <location filename="../config/cache_value_definitions.json" line="631"/>
       <source>Polygon vertex count.</source>
       <translation>Polygon vertex count.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="620"/>
+      <location filename="../config/cache_value_definitions.json" line="621"/>
       <source>Shape Tool</source>
       <translation>Shape Tool</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="641"/>
+      <location filename="../config/cache_value_definitions.json" line="642"/>
       <source>Inner radius fraction:</source>
       <translation>Inner radius fraction:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="644"/>
+      <location filename="../config/cache_value_definitions.json" line="645"/>
       <source>Distance from the center to inner star points, as a fraction of the distance to the outer points</source>
       <translation>Distance from the center to inner star points, as a fraction of the distance to the outer points</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="620"/>
+      <location filename="../config/cache_value_definitions.json" line="621"/>
       <source>Shape Tool</source>
       <translation>Shape Tool</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="655"/>
+      <location filename="../config/cache_value_definitions.json" line="656"/>
       <source>Line color</source>
       <translation>Line color</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="658"/>
+      <location filename="../config/cache_value_definitions.json" line="659"/>
       <source>Shape outline color.</source>
       <translation>Shape outline color.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="620"/>
+      <location filename="../config/cache_value_definitions.json" line="621"/>
       <source>Shape Tool</source>
       <translation>Shape Tool</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="664"/>
+      <location filename="../config/cache_value_definitions.json" line="665"/>
       <source>Line style:</source>
       <translation>Line style:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="667"/>
+      <location filename="../config/cache_value_definitions.json" line="668"/>
       <source>Shape outline drawing style.</source>
       <translation>Shape outline drawing style.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="620"/>
+      <location filename="../config/cache_value_definitions.json" line="621"/>
       <source>Shape Tool</source>
       <translation>Shape Tool</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="673"/>
+      <location filename="../config/cache_value_definitions.json" line="674"/>
       <source>Line join style:</source>
       <translation>Line join style:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="676"/>
+      <location filename="../config/cache_value_definitions.json" line="677"/>
       <source>Shape outline connection drawing style.</source>
       <translation>Shape outline connection drawing style.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="620"/>
+      <location filename="../config/cache_value_definitions.json" line="621"/>
       <source>Shape Tool</source>
       <translation>Shape Tool</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="682"/>
+      <location filename="../config/cache_value_definitions.json" line="683"/>
       <source>Dash pattern:</source>
       <translation>Dash pattern:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="685"/>
+      <location filename="../config/cache_value_definitions.json" line="686"/>
       <source>Dash length followed by space length, for any number of dash/space pairs.</source>
       <translation>Dash length followed by space length, for any number of dash/space pairs.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="620"/>
+      <location filename="../config/cache_value_definitions.json" line="621"/>
       <source>Shape Tool</source>
       <translation>Shape Tool</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="691"/>
+      <location filename="../config/cache_value_definitions.json" line="692"/>
       <source>Line width:</source>
       <translation>Line width:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="694"/>
+      <location filename="../config/cache_value_definitions.json" line="695"/>
       <source>Shape tool line width.</source>
       <translation>Shape tool line width.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="620"/>
+      <location filename="../config/cache_value_definitions.json" line="621"/>
       <source>Shape Tool</source>
       <translation>Shape Tool</translation>
     </message>
@@ -1577,27 +1636,27 @@
       <translation>Pattern:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="708"/>
+      <location filename="../config/cache_value_definitions.json" line="709"/>
       <source>Shape fill pattern</source>
       <translation>Shape fill pattern</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="620"/>
+      <location filename="../config/cache_value_definitions.json" line="621"/>
       <source>Shape Tool</source>
       <translation>Shape Tool</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="714"/>
+      <location filename="../config/cache_value_definitions.json" line="715"/>
       <source>Fill Color</source>
       <translation>Fill Color</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="717"/>
+      <location filename="../config/cache_value_definitions.json" line="718"/>
       <source>Shape fill color.</source>
       <translation>Shape fill color.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="620"/>
+      <location filename="../config/cache_value_definitions.json" line="621"/>
       <source>Shape Tool</source>
       <translation>Shape Tool</translation>
     </message>
@@ -1612,47 +1671,47 @@
       <translation>Smooth out jagged edges.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="620"/>
+      <location filename="../config/cache_value_definitions.json" line="621"/>
       <source>Shape Tool</source>
       <translation>Shape Tool</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="732"/>
+      <location filename="../config/cache_value_definitions.json" line="733"/>
       <source>Saved main window placement</source>
       <translation>Saved main window placement</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="735"/>
+      <location filename="../config/cache_value_definitions.json" line="736"/>
       <source>display, position, and size where the main window last was.</source>
       <translation>display, position, and size where the main window last was.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="734"/>
+      <location filename="../config/cache_value_definitions.json" line="735"/>
       <source>Window placement</source>
       <translation>Window placement</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="741"/>
+      <location filename="../config/cache_value_definitions.json" line="742"/>
       <source>Saved layer window placement</source>
       <translation>Saved layer window placement</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="744"/>
+      <location filename="../config/cache_value_definitions.json" line="745"/>
       <source>display, position, and size where the layer window last was.</source>
       <translation>display, position, and size where the layer window last was.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="734"/>
+      <location filename="../config/cache_value_definitions.json" line="735"/>
       <source>Window placement</source>
       <translation>Window placement</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="759"/>
+      <location filename="../config/cache_value_definitions.json" line="760"/>
       <source>Prompt:</source>
       <translation>Prompt:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="762"/>
+      <location filename="../config/cache_value_definitions.json" line="763"/>
       <source>Description that generated images should match.</source>
       <translation>Description that generated images should match.</translation>
     </message>
@@ -1662,12 +1721,12 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="768"/>
+      <location filename="../config/cache_value_definitions.json" line="769"/>
       <source>Negative prompt:</source>
       <translation>Negative prompt:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="771"/>
+      <location filename="../config/cache_value_definitions.json" line="772"/>
       <source>Description that generated images should not match.</source>
       <translation>Description that generated images should not match.</translation>
     </message>
@@ -1677,12 +1736,12 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="777"/>
+      <location filename="../config/cache_value_definitions.json" line="778"/>
       <source>Guidance scale:</source>
       <translation>Guidance scale:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="780"/>
+      <location filename="../config/cache_value_definitions.json" line="781"/>
       <source>Controls how strongly the prompt and negative prompt are applied.</source>
       <translation>Controls how strongly the prompt and negative prompt are applied.</translation>
     </message>
@@ -1692,12 +1751,12 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="791"/>
+      <location filename="../config/cache_value_definitions.json" line="792"/>
       <source>Batch size:</source>
       <translation>Batch size:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="794"/>
+      <location filename="../config/cache_value_definitions.json" line="795"/>
       <source>Number of image options to simultaneously create in a single image editing operation.</source>
       <translation>Number of image options to simultaneously create in a single image editing operation.</translation>
     </message>
@@ -1707,12 +1766,12 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="805"/>
+      <location filename="../config/cache_value_definitions.json" line="806"/>
       <source>Batch count:</source>
       <translation>Batch count:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="808"/>
+      <location filename="../config/cache_value_definitions.json" line="809"/>
       <source>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</source>
       <translation>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</translation>
     </message>
@@ -1722,27 +1781,27 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="819"/>
+      <location filename="../config/cache_value_definitions.json" line="820"/>
       <source>Edit mode:</source>
       <translation>Edit mode:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="822"/>
+      <location filename="../config/cache_value_definitions.json" line="823"/>
       <source>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</source>
       <translation>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="822"/>
+      <location filename="../config/cache_value_definitions.json" line="823"/>
       <source>Inpaint</source>
       <translation>Inpaint</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="822"/>
+      <location filename="../config/cache_value_definitions.json" line="823"/>
       <source>Image to Image</source>
       <translation>Image to Image</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="822"/>
+      <location filename="../config/cache_value_definitions.json" line="823"/>
       <source>Text to Image</source>
       <translation>Text to Image</translation>
     </message>
@@ -1752,12 +1811,12 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="833"/>
+      <location filename="../config/cache_value_definitions.json" line="834"/>
       <source>Masked content:</source>
       <translation>Masked content:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="836"/>
+      <location filename="../config/cache_value_definitions.json" line="837"/>
       <source>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</source>
       <translation>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</translation>
     </message>
@@ -1767,17 +1826,17 @@
       <translation>fill</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="836"/>
+      <location filename="../config/cache_value_definitions.json" line="837"/>
       <source>original</source>
       <translation>original</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="836"/>
+      <location filename="../config/cache_value_definitions.json" line="837"/>
       <source>latent noise</source>
       <translation>latent noise</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="836"/>
+      <location filename="../config/cache_value_definitions.json" line="837"/>
       <source>latent nothing</source>
       <translation>latent nothing</translation>
     </message>
@@ -1787,12 +1846,12 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="848"/>
+      <location filename="../config/cache_value_definitions.json" line="849"/>
       <source>Sampling steps:</source>
       <translation>Sampling steps:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
+      <location filename="../config/cache_value_definitions.json" line="852"/>
       <source>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</source>
       <translation>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</translation>
     </message>
@@ -1802,12 +1861,12 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="862"/>
+      <location filename="../config/cache_value_definitions.json" line="863"/>
       <source>Denoising strength:</source>
       <translation>Denoising strength:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="865"/>
+      <location filename="../config/cache_value_definitions.json" line="866"/>
       <source>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</source>
       <translation>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</translation>
     </message>
@@ -1817,12 +1876,12 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="876"/>
+      <location filename="../config/cache_value_definitions.json" line="877"/>
       <source>Sampling method:</source>
       <translation>Sampling method:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="879"/>
+      <location filename="../config/cache_value_definitions.json" line="880"/>
       <source>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</source>
       <translation>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</translation>
     </message>
@@ -1832,12 +1891,32 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="886"/>
+      <location filename="../config/cache_value_definitions.json" line="887"/>
+      <source>Scheduler:</source>
+      <translation>Scheduler:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="890"/>
+      <source>Algorithm used to divide  the image generation process into steps.</source>
+      <translation>Algorithm used to divide  the image generation process into steps.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="7"/>
+      <source>default</source>
+      <translation>default</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="897"/>
       <source>Upscale method:</source>
       <translation>Upscale method:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="889"/>
+      <location filename="../config/cache_value_definitions.json" line="900"/>
       <source>Method to use when increasing image resolution. Available options will be loaded from the active image generator.</source>
       <translation>Method to use when increasing image resolution. Available options will be loaded from the active image generator.</translation>
     </message>
@@ -1847,27 +1926,27 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="896"/>
+      <location filename="../config/cache_value_definitions.json" line="907"/>
       <source>Image scaling behavior:</source>
       <translation>Image scaling behavior:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="899"/>
+      <location filename="../config/cache_value_definitions.json" line="910"/>
       <source>Controls how multi-layer images are scaled.</source>
       <translation>Controls how multi-layer images are scaled.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="903"/>
+      <location filename="../config/cache_value_definitions.json" line="914"/>
       <source>Independent layer scaling</source>
       <translation>Independent layer scaling</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="901"/>
+      <location filename="../config/cache_value_definitions.json" line="912"/>
       <source>Scale merged, keep source layers</source>
       <translation>Scale merged, keep source layers</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="905"/>
+      <location filename="../config/cache_value_definitions.json" line="916"/>
       <source>Scale merged, discard source layers</source>
       <translation>Scale merged, discard source layers</translation>
     </message>
@@ -1877,57 +1956,57 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="910"/>
+      <location filename="../config/cache_value_definitions.json" line="921"/>
       <source>Layer expand mode:</source>
       <translation>Layer expand mode:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="913"/>
+      <location filename="../config/cache_value_definitions.json" line="924"/>
       <source>Sets which layers should be expanded to fill the image when resized</source>
       <translation>Sets which layers should be expanded to fill the image when resized</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="917"/>
+      <location filename="../config/cache_value_definitions.json" line="928"/>
       <source>Expand all unlocked layers</source>
       <translation>Expand all unlocked layers</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="915"/>
+      <location filename="../config/cache_value_definitions.json" line="926"/>
       <source>Only expand full-image layers</source>
       <translation>Only expand full-image layers</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="919"/>
+      <location filename="../config/cache_value_definitions.json" line="930"/>
       <source>Do not expand layers</source>
       <translation>Do not expand layers</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="912"/>
+      <location filename="../config/cache_value_definitions.json" line="923"/>
       <source>Resize image canvas</source>
       <translation>Resize image canvas</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="925"/>
+      <location filename="../config/cache_value_definitions.json" line="936"/>
       <source>Crop layers to new image bounds</source>
       <translation>Crop layers to new image bounds</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="928"/>
+      <location filename="../config/cache_value_definitions.json" line="939"/>
       <source>Sets whether layers should be cropped to image bounds when the image is resized.</source>
       <translation>Sets whether layers should be cropped to image bounds when the image is resized.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="912"/>
+      <location filename="../config/cache_value_definitions.json" line="923"/>
       <source>Resize image canvas</source>
       <translation>Resize image canvas</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="934"/>
+      <location filename="../config/cache_value_definitions.json" line="945"/>
       <source>Seed:</source>
       <translation>Seed:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="937"/>
+      <location filename="../config/cache_value_definitions.json" line="948"/>
       <source>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </source>
       <translation>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </translation>
     </message>
@@ -1937,12 +2016,12 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="948"/>
+      <location filename="../config/cache_value_definitions.json" line="959"/>
       <source>Last seed:</source>
       <translation>Last seed:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="951"/>
+      <location filename="../config/cache_value_definitions.json" line="962"/>
       <source>Last seed used for image generation</source>
       <translation>Last seed used for image generation</translation>
     </message>
@@ -1952,12 +2031,12 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="967"/>
+      <location filename="../config/cache_value_definitions.json" line="978"/>
       <source>Inpaint Full Resolution</source>
       <translation>Inpaint Full Resolution</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="970"/>
+      <location filename="../config/cache_value_definitions.json" line="981"/>
       <source>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</source>
       <translation>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</translation>
     </message>
@@ -1967,12 +2046,12 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="976"/>
+      <location filename="../config/cache_value_definitions.json" line="987"/>
       <source>Padding:</source>
       <translation>Padding:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="979"/>
+      <location filename="../config/cache_value_definitions.json" line="990"/>
       <source>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</source>
       <translation>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</translation>
     </message>
@@ -1982,12 +2061,12 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="1026"/>
+      <location filename="../config/cache_value_definitions.json" line="1046"/>
       <source>Detail reference count (cutn):</source>
       <translation>Detail reference count (cutn):</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="1029"/>
+      <location filename="../config/cache_value_definitions.json" line="1049"/>
       <source>Determines how many random cutouts from the input image are used to guide image generation (GLID-3-XL). Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</source>
       <translation>Determines how many random cutouts from the input image are used to guide image generation (GLID-3-XL). Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</translation>
     </message>
@@ -1997,12 +2076,12 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="1040"/>
+      <location filename="../config/cache_value_definitions.json" line="1060"/>
       <source>Skip steps:</source>
       <translation>Skip steps:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="1043"/>
+      <location filename="../config/cache_value_definitions.json" line="1063"/>
       <source>Number of diffusion steps to skip (GLID-3-XL). Higher values will result in faster image generation with decreased detail and accuracy.</source>
       <translation>Number of diffusion steps to skip (GLID-3-XL). Higher values will result in faster image generation with decreased detail and accuracy.</translation>
     </message>
@@ -2012,12 +2091,42 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="1074"/>
+      <location filename="../config/cache_value_definitions.json" line="1104"/>
+      <source>Stable-Diffusion model:</source>
+      <translation>Stable-Diffusion model:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1107"/>
+      <source>Stable-Diffusion model to use for image generation.</source>
+      <translation>Stable-Diffusion model to use for image generation.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1114"/>
+      <source>CLIP skip:</source>
+      <translation>CLIP skip:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1117"/>
+      <source>Number of final image generation steps to take without the prompt applied.  Usually best left at one, but some models produce better results at two.</source>
+      <translation>Number of final image generation steps to take without the prompt applied.  Usually best left at one, but some models produce better results at two.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1131"/>
       <source>ControlNet tiled upscaling</source>
       <translation>ControlNet tiled upscaling</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="1077"/>
+      <location filename="../config/cache_value_definitions.json" line="1140"/>
       <source>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</source>
       <translation>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</translation>
     </message>
@@ -2027,12 +2136,12 @@
       <translation>ControlNet</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="1083"/>
+      <location filename="../config/cache_value_definitions.json" line="1146"/>
       <source>Tile downsample rate:</source>
       <translation>Tile downsample rate:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="1086"/>
+      <location filename="../config/cache_value_definitions.json" line="1149"/>
       <source>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</source>
       <translation>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</translation>
     </message>
@@ -2041,46 +2150,221 @@
       <source>ControlNet</source>
       <translation>ControlNet</translation>
     </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1230"/>
+      <source>Model config:</source>
+      <translation>Model config:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1233"/>
+      <source>Configuration file used when loading image generation models.</source>
+      <translation>Configuration file used when loading image generation models.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1235"/>
+      <source>auto</source>
+      <translation>auto</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1084"/>
+      <source>ComfyUI</source>
+      <translation>ComfyUI</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1240"/>
+      <source>Load checkpoint as inpainting model</source>
+      <translation>Load checkpoint as inpainting model</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1243"/>
+      <source>Load the selected Stable-Diffusion model as an inpainting model.</source>
+      <translation>Load the selected Stable-Diffusion model as an inpainting model.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1084"/>
+      <source>ComfyUI</source>
+      <translation>ComfyUI</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1249"/>
+      <source>Use tiled VAE image encoding</source>
+      <translation>Use tiled VAE image encoding</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1252"/>
+      <source>Encode and decode latent images in tiled blocks, decreasing GPU memory use.</source>
+      <translation>Encode and decode latent images in tiled blocks, decreasing GPU memory use.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1084"/>
+      <source>ComfyUI</source>
+      <translation>ComfyUI</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1258"/>
+      <source>VAE tile size:</source>
+      <translation>VAE tile size:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1261"/>
+      <source>Tile size when using tiled VAE encoding/decoding.  Smaller values decrease memory further, but may increase generation time..</source>
+      <translation>Tile size when using tiled VAE encoding/decoding.  Smaller values decrease memory further, but may increase generation time..</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1084"/>
+      <source>ComfyUI</source>
+      <translation>ComfyUI</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1273"/>
+      <source>Tiling</source>
+      <translation>Tiling</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1276"/>
+      <source>Generate tiling images that can be seamlessly repeated.</source>
+      <translation>Generate tiling images that can be seamlessly repeated.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1074"/>
+      <source>WebUI</source>
+      <translation>WebUI</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1282"/>
+      <source>Restore faces</source>
+      <translation>Restore faces</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1285"/>
+      <source>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</source>
+      <translation>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1074"/>
+      <source>WebUI</source>
+      <translation>WebUI</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1291"/>
+      <source>Variation seed:</source>
+      <translation>Variation seed:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1294"/>
+      <source>Controls randomness across imagees generated in the same batch.</source>
+      <translation>Controls randomness across imagees generated in the same batch.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1074"/>
+      <source>WebUI</source>
+      <translation>WebUI</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1305"/>
+      <source>Last variation seed:</source>
+      <translation>Last variation seed:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1308"/>
+      <source>Last variation seed used for image generation</source>
+      <translation>Last variation seed used for image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1314"/>
+      <source>Variation strength:</source>
+      <translation>Variation strength:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1317"/>
+      <source>Controls the amount of variation within images in the same batch. Lower values will have less variation. If set to zero, this setting is ignored.</source>
+      <translation>Controls the amount of variation within images in the same batch. Lower values will have less variation. If set to zero, this setting is ignored.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1074"/>
+      <source>WebUI</source>
+      <translation>WebUI</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1328"/>
+      <source>Resize seed from alternate resolution</source>
+      <translation>Resize seed from alternate resolution</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1331"/>
+      <source>If enabled, reusing the same seed value will produce a similar image even if the resolution changes.</source>
+      <translation>If enabled, reusing the same seed value will produce a similar image even if the resolution changes.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1074"/>
+      <source>WebUI</source>
+      <translation>WebUI</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1337"/>
+      <source>Resize from resolution:</source>
+      <translation>Resize from resolution:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1340"/>
+      <source>Generated images using the same seed will match images created at this resolution, regardless of generation size.</source>
+      <translation>Generated images using the same seed will match images created at this resolution, regardless of generation size.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1074"/>
+      <source>WebUI</source>
+      <translation>WebUI</translation>
+    </message>
   </context>
   <context>
     <name>config.config</name>
     <message>
-      <location filename="../../src/config/config.py" line="36"/>
+      <location filename="../../src/config/config.py" line="40"/>
       <source>Config definition file not found at {definition_path}</source>
       <translation>Config definition file not found at {definition_path}</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="37"/>
+      <location filename="../../src/config/config.py" line="41"/>
       <source>Config value definition for {key} had invalid data type {value_type}</source>
       <translation>Config value definition for {key} had invalid data type {value_type}</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="38"/>
+      <location filename="../../src/config/config.py" line="42"/>
       <source>Loading {key} failed: {err}</source>
       <translation>Loading {key} failed: {err}</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="39"/>
+      <location filename="../../src/config/config.py" line="43"/>
       <source>Reading JSON config definitions failed: {err}</source>
       <translation>Reading JSON config definitions failed: {err}</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="40"/>
+      <location filename="../../src/config/config.py" line="44"/>
       <source>Reading JSON config values failed: {err}</source>
       <translation>Reading JSON config values failed: {err}</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="41"/>
+      <location filename="../../src/config/config.py" line="45"/>
       <source>Tried to access unknown config value "{key}"</source>
       <translation>Tried to access unknown config value "{key}"</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="42"/>
+      <location filename="../../src/config/config.py" line="46"/>
+      <source>Tried to track fixed options for key "{key}", which does not have a fixed list of options.</source>
+      <translation>Tried to track fixed options for key "{key}", which does not have a fixed list of options.</translation>
+    </message>
+    <message>
+      <location filename="../../src/config/config.py" line="48"/>
       <source>Tried to get key code "{key}", found "{code_string}"</source>
       <translation>Tried to get key code "{key}", found "{code_string}"</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="43"/>
+      <location filename="../../src/config/config.py" line="49"/>
       <source>Tried to add duplicate config entry for key "{key}"</source>
       <translation>Tried to add duplicate config entry for key "{key}"</translation>
     </message>
@@ -3664,13 +3948,13 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="891"/>
-      <source>View LORA models</source>
-      <translation>View LORA models</translation>
+      <source>View LoRA models</source>
+      <translation>View LoRA models</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="894"/>
-      <source>Access available LORA models.</source>
-      <translation>Access available LORA models.</translation>
+      <source>Access available LoRA models.</source>
+      <translation>Access available LoRA models.</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="884"/>
@@ -3684,8 +3968,8 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="903"/>
-      <source>Apply appropriate settings for the LCM LORA.</source>
-      <translation>Apply appropriate settings for the LCM LORA.</translation>
+      <source>Apply appropriate settings for the LCM LoRA.</source>
+      <translation>Apply appropriate settings for the LCM LoRA.</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="884"/>
@@ -3696,239 +3980,239 @@
   <context>
     <name>controller.app_controller</name>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="146"/>
-      <location filename="../../src/controller/app_controller.py" line="131"/>
+      <location filename="../../src/controller/app_controller.py" line="148"/>
+      <location filename="../../src/controller/app_controller.py" line="132"/>
       <source>Layers</source>
       <translation>Layers</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="132"/>
+      <location filename="../../src/controller/app_controller.py" line="133"/>
       <source>Color</source>
       <translation>Color</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="133"/>
+      <location filename="../../src/controller/app_controller.py" line="134"/>
       <source>Navigation</source>
       <translation>Navigation</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="142"/>
+      <location filename="../../src/controller/app_controller.py" line="144"/>
       <source>File</source>
       <translation>File</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="143"/>
+      <location filename="../../src/controller/app_controller.py" line="145"/>
       <source>Edit</source>
       <translation>Edit</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="144"/>
+      <location filename="../../src/controller/app_controller.py" line="146"/>
       <source>Image</source>
       <translation>Image</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="145"/>
+      <location filename="../../src/controller/app_controller.py" line="147"/>
       <source>Selection</source>
       <translation>Selection</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="147"/>
+      <location filename="../../src/controller/app_controller.py" line="149"/>
       <source>Filters</source>
       <translation>Filters</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="149"/>
+      <location filename="../../src/controller/app_controller.py" line="151"/>
       <source>Move</source>
       <translation>Move</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="150"/>
+      <location filename="../../src/controller/app_controller.py" line="152"/>
       <source>Select</source>
       <translation>Select</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="151"/>
+      <location filename="../../src/controller/app_controller.py" line="153"/>
       <source>Transform</source>
       <translation>Transform</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="153"/>
+      <location filename="../../src/controller/app_controller.py" line="155"/>
       <source>Image Generation</source>
       <translation>Image Generation</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="160"/>
+      <location filename="../../src/controller/app_controller.py" line="162"/>
       <source>Loading image generator failed</source>
       <translation>Loading image generator failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="161"/>
+      <location filename="../../src/controller/app_controller.py" line="163"/>
       <source>Unable to load the {generator_name} image generator</source>
       <translation>Unable to load the {generator_name} image generator</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="162"/>
+      <location filename="../../src/controller/app_controller.py" line="164"/>
       <source>Quit now?</source>
       <translation>Quit now?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="163"/>
+      <location filename="../../src/controller/app_controller.py" line="165"/>
       <source>All unsaved changes will be lost.</source>
       <translation>All unsaved changes will be lost.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="164"/>
+      <location filename="../../src/controller/app_controller.py" line="166"/>
       <source>Create new image?</source>
       <translation>Create new image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="180"/>
-      <location filename="../../src/controller/app_controller.py" line="165"/>
+      <location filename="../../src/controller/app_controller.py" line="182"/>
+      <location filename="../../src/controller/app_controller.py" line="167"/>
       <source>This will discard all unsaved changes.</source>
       <translation>This will discard all unsaved changes.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="166"/>
+      <location filename="../../src/controller/app_controller.py" line="168"/>
       <source>Save failed</source>
       <translation>Save failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="167"/>
+      <location filename="../../src/controller/app_controller.py" line="169"/>
       <source>Open failed</source>
       <translation>Open failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="168"/>
+      <location filename="../../src/controller/app_controller.py" line="170"/>
       <source>Saving as "{file_path}" failed due to an unknown error, please open a new issue on the IntraPaint GitHub page, and let me know what file format you tried and any other details that might be relevant. Meanwhile, try saving in a different format or to a different disk.</source>
       <translation>Saving as "{file_path}" failed due to an unknown error, please open a new issue on the IntraPaint GitHub page, and let me know what file format you tried and any other details that might be relevant. Meanwhile, try saving in a different format or to a different disk.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="172"/>
+      <location filename="../../src/controller/app_controller.py" line="174"/>
       <source>Saving files with the  "{extension}" extension is not supported, try again with a supported image file format.</source>
       <translation>Saving files with the  "{extension}" extension is not supported, try again with a supported image file format.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="174"/>
+      <location filename="../../src/controller/app_controller.py" line="176"/>
       <source>Tried to save with no file extension as "{file_path}", add a valid image file extension and try again.</source>
       <translation>Tried to save with no file extension as "{file_path}", add a valid image file extension and try again.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="176"/>
+      <location filename="../../src/controller/app_controller.py" line="178"/>
       <source>Reload failed</source>
       <translation>Reload failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="177"/>
+      <location filename="../../src/controller/app_controller.py" line="179"/>
       <source>Image path "{file_path}" is not a valid image file.</source>
       <translation>Image path "{file_path}" is not a valid image file.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="178"/>
+      <location filename="../../src/controller/app_controller.py" line="180"/>
       <source>Enter an image path or click "Open Image" first.</source>
       <translation>Enter an image path or click "Open Image" first.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="179"/>
+      <location filename="../../src/controller/app_controller.py" line="181"/>
       <source>Reload image?</source>
       <translation>Reload image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="181"/>
+      <location filename="../../src/controller/app_controller.py" line="183"/>
       <source>Metadata updated</source>
       <translation>Metadata updated</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="182"/>
+      <location filename="../../src/controller/app_controller.py" line="184"/>
       <source>On save, current image generation parameters will be stored within the image</source>
       <translation>On save, current image generation parameters will be stored within the image</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="183"/>
+      <location filename="../../src/controller/app_controller.py" line="185"/>
       <source>Opening layers failed</source>
       <translation>Opening layers failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="184"/>
+      <location filename="../../src/controller/app_controller.py" line="186"/>
       <source>Could not open the following images: </source>
       <translation>Could not open the following images: </translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="186"/>
+      <location filename="../../src/controller/app_controller.py" line="188"/>
       <source>Save image generation metadata?</source>
       <translation>Save image generation metadata?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="187"/>
+      <location filename="../../src/controller/app_controller.py" line="189"/>
       <source>No image metadata is cached, would you like to save image generation parameters to this image?</source>
       <translation>No image metadata is cached, would you like to save image generation parameters to this image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="189"/>
+      <location filename="../../src/controller/app_controller.py" line="191"/>
       <source>Update image generation metadata?</source>
       <translation>Update image generation metadata?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="190"/>
+      <location filename="../../src/controller/app_controller.py" line="192"/>
       <source>Image generation parameters have changed, would you like this image to be saved with the most recent values?</source>
       <translation>Image generation parameters have changed, would you like this image to be saved with the most recent values?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="194"/>
+      <location filename="../../src/controller/app_controller.py" line="196"/>
       <source>Image saved without layer data</source>
       <translation>Image saved without layer data</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="195"/>
+      <location filename="../../src/controller/app_controller.py" line="197"/>
       <source>To save layer data, images must be saved in .ora format.</source>
       <translation>To save layer data, images must be saved in .ora format.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="197"/>
+      <location filename="../../src/controller/app_controller.py" line="199"/>
       <source>Image saved without full transparency</source>
       <translation>Image saved without full transparency</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="198"/>
+      <location filename="../../src/controller/app_controller.py" line="200"/>
       <source>To preserve transparency, save using one of the following file formats: {alpha_formats}</source>
       <translation>To preserve transparency, save using one of the following file formats: {alpha_formats}</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="201"/>
+      <location filename="../../src/controller/app_controller.py" line="203"/>
       <source>Image saved without image generation metadata</source>
       <translation>Image saved without image generation metadata</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="202"/>
+      <location filename="../../src/controller/app_controller.py" line="204"/>
       <source>To preserve image generation metadata, save using one of the following file formats: {metadata_formats}</source>
       <translation>To preserve image generation metadata, save using one of the following file formats: {metadata_formats}</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="205"/>
+      <location filename="../../src/controller/app_controller.py" line="207"/>
       <source>Image saved in a write-only format</source>
       <translation>Image saved in a write-only format</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="206"/>
+      <location filename="../../src/controller/app_controller.py" line="208"/>
       <source>IntraPaint can write images in the {file_format} format, but cannot load them. Use another file format if you want to be able to load this image in IntraPaint again.</source>
       <translation>IntraPaint can write images in the {file_format} format, but cannot load them. Use another file format if you want to be able to load this image in IntraPaint again.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="209"/>
+      <location filename="../../src/controller/app_controller.py" line="211"/>
       <source>Image saved in a format that changes size</source>
       <translation>Image saved in a format that changes size</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="210"/>
+      <location filename="../../src/controller/app_controller.py" line="212"/>
       <source>The image is {width_px}x{height_px}, but the {file_format} format saves all images at {saved_width_px}x{saved_height_px} resolution. Use another file format if you want to preserve the original image size.</source>
       <translation>The image is {width_px}x{height_px}, but the {file_format} format saves all images at {saved_width_px}x{saved_height_px} resolution. Use another file format if you want to preserve the original image size.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="214"/>
+      <location filename="../../src/controller/app_controller.py" line="216"/>
       <source>Image saved without color</source>
       <translation>Image saved without color</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="215"/>
+      <location filename="../../src/controller/app_controller.py" line="217"/>
       <source>The {file_format} format saves the image without color. Use another format if you want to preserve image colors.</source>
       <translation>The {file_format} format saves the image without color. Use another format if you want to preserve image colors.</translation>
     </message>
@@ -3936,12 +4220,12 @@
   <context>
     <name>controller.image_generation.glid3_webservice_generator</name>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="36"/>
+      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="35"/>
       <source>GLID-3-XL image generation server</source>
       <translation>GLID-3-XL image generation server</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="120"/>
+      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="119"/>
       <source>
 &lt;h2&gt;Colab server setup&lt;/h2&gt;
 &lt;p&gt;
@@ -4050,12 +4334,12 @@
 &lt;/ol&gt;</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="173"/>
+      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="172"/>
       <source>No GLID-3-XL server address was provided.</source>
       <translation>No GLID-3-XL server address was provided.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="174"/>
+      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="173"/>
       <source>Could not find a valid GLID-3-XL server at "{server_address}"</source>
       <translation>Could not find a valid GLID-3-XL server at "{server_address}"</translation>
     </message>
@@ -4163,86 +4447,203 @@
     </message>
   </context>
   <context>
-    <name>controller.image_generation.sd_webui_generator</name>
+    <name>controller.image_generation.sd_comfyui_generator</name>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="51"/>
-      <source>Stable-Diffusion WebUI API</source>
-      <translation>Stable-Diffusion WebUI API</translation>
+      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="47"/>
+      <source>Stable-Diffusion ComfyUI API</source>
+      <translation>Stable-Diffusion ComfyUI API</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="52"/>
+      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="48"/>
       <source>
-&lt;h2&gt;Stable-Diffusion: via WebUI API&lt;/h2&gt;
+&lt;h2&gt;Stable-Diffusion: via ComfyUI API&lt;/h2&gt;
 &lt;p&gt;
-    Released in August 2022, Stable-Diffusion remains the most versatile and useful free image generation model.
+    &lt;b&gt;NOTE:&lt;/b&gt; The ComfyUI generator is still in its early implementation stages, the following features are not yet
+    supported:
 &lt;/p&gt;
-&lt;h2&gt;Generator capabilities and limits:&lt;/h2&gt;
 &lt;ul&gt;
-    &lt;li&gt;Requires only 4GB of VRAM, or 8GB if using an SDXL model.&lt;/li&gt;
-    &lt;li&gt;Tuned for an ideal resolution of 512x512 (1024x1024 for SDXL).&lt;/li&gt;
-    &lt;li&gt;A huge variety of fine-tuned variant models are available.&lt;/li&gt;
-    &lt;li&gt;
-        The magnitude of changes made to existing images can be precisely controlled by varying denoising strength.
-    &lt;/li&gt;
-    &lt;li&gt;
-        Supports LORAs, miniature extension models adding support for new styles and subjects.
-    &lt;/li&gt;
-    &lt;li&gt;
-        Supports positive and negative prompting, where (parentheses) draw additional attention to prompt sections,
-        and [square brackets] reduce attention.
-    &lt;/li&gt;
-    &lt;li&gt;
-        Supports ControlNet modules, allowing image generation to be guided by arbitrary constraints like depth maps,
-        existing image lines, and pose analysis.
-    &lt;/li&gt;
+    &lt;li&gt;ControlNet&lt;/li&gt;
+    &lt;li&gt;CLIP interrogation&lt;/li&gt;
+    &lt;li&gt;Upscaling&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h3&gt;Stable-Diffusion WebUI:&lt;/h3&gt;
+</source>
+      <translation>
+&lt;h2&gt;Stable-Diffusion: via ComfyUI API&lt;/h2&gt;
 &lt;p&gt;
-    The Stable-Diffusion WebUI is one of the first interfaces created for using Stable-Diffusion. This IntraPaint
-    generator offloads image generation to that system through a network connection.  The WebUI instance can be run on
+    &lt;b&gt;NOTE:&lt;/b&gt; The ComfyUI generator is still in its early implementation stages, the following features are not yet
+    supported:
+&lt;/p&gt;
+&lt;ul&gt;
+    &lt;li&gt;ControlNet&lt;/li&gt;
+    &lt;li&gt;CLIP interrogation&lt;/li&gt;
+    &lt;li&gt;Upscaling&lt;/li&gt;
+&lt;/ul&gt;
+</translation>
+    </message>
+    <message>
+      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="60"/>
+      <source>
+&lt;h3&gt;ComfyUI:&lt;/h3&gt;
+&lt;p&gt;
+    ComfyUI is a popular Stable-Diffusion UI with a complex and powerful node-based interface. This IntraPaint
+    generator offloads image generation to that system through a network connection.  The ComfyUI instance can be run on
     the same computer as IntraPaint, or remotely on a separate server.
 &lt;/p&gt;</source>
       <translation>
-&lt;h2&gt;Stable-Diffusion: via WebUI API&lt;/h2&gt;
+&lt;h3&gt;ComfyUI:&lt;/h3&gt;
 &lt;p&gt;
-    Released in August 2022, Stable-Diffusion remains the most versatile and useful free image generation model.
-&lt;/p&gt;
-&lt;h2&gt;Generator capabilities and limits:&lt;/h2&gt;
-&lt;ul&gt;
-    &lt;li&gt;Requires only 4GB of VRAM, or 8GB if using an SDXL model.&lt;/li&gt;
-    &lt;li&gt;Tuned for an ideal resolution of 512x512 (1024x1024 for SDXL).&lt;/li&gt;
-    &lt;li&gt;A huge variety of fine-tuned variant models are available.&lt;/li&gt;
-    &lt;li&gt;
-        The magnitude of changes made to existing images can be precisely controlled by varying denoising strength.
-    &lt;/li&gt;
-    &lt;li&gt;
-        Supports LORAs, miniature extension models adding support for new styles and subjects.
-    &lt;/li&gt;
-    &lt;li&gt;
-        Supports positive and negative prompting, where (parentheses) draw additional attention to prompt sections,
-        and [square brackets] reduce attention.
-    &lt;/li&gt;
-    &lt;li&gt;
-        Supports ControlNet modules, allowing image generation to be guided by arbitrary constraints like depth maps,
-        existing image lines, and pose analysis.
-    &lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3&gt;Stable-Diffusion WebUI:&lt;/h3&gt;
-&lt;p&gt;
-    The Stable-Diffusion WebUI is one of the first interfaces created for using Stable-Diffusion. This IntraPaint
-    generator offloads image generation to that system through a network connection.  The WebUI instance can be run on
+    ComfyUI is a popular Stable-Diffusion UI with a complex and powerful node-based interface. This IntraPaint
+    generator offloads image generation to that system through a network connection.  The ComfyUI instance can be run on
     the same computer as IntraPaint, or remotely on a separate server.
 &lt;/p&gt;</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="85"/>
+      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="71"/>
       <source>
 &lt;h2&gt;Installing Stable-Diffusion&lt;/h2&gt;
 &lt;p&gt;
-    To use Stable-Diffusion with IntraPaint, you will need to install the Stable-Diffusion WebUI. You can choose either
-    the &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Forge WebUI&lt;/a&gt; or the original
-    &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt; Stable-Diffusion WebUI&lt;/a&gt;, but the Forge
-    WebUI is the recommended version. The easiest way to install either of these options is through &lt;a href=
+    To use this Stable-Diffusion image generator with IntraPaint, you will first to install ComfyUI. TODO: what's the
+    most basic ComfyUI install process? Does Stability Matrix support it? Document that here.
+&lt;/p&gt;
+&lt;p&gt;
+    Once ComfyUI has started completely, you should be able to click "Activate" below, and IntraPaint will
+    connect to it automatically.  If you configure the WebUI to use any URL other than the default, IntraPaint
+     will ask for that information before connecting.
+&lt;/p&gt;
+</source>
+      <translation>
+&lt;h2&gt;Installing Stable-Diffusion&lt;/h2&gt;
+&lt;p&gt;
+    To use this Stable-Diffusion image generator with IntraPaint, you will first to install ComfyUI. TODO: what's the
+    most basic ComfyUI install process? Does Stability Matrix support it? Document that here.
+&lt;/p&gt;
+&lt;p&gt;
+    Once ComfyUI has started completely, you should be able to click "Activate" below, and IntraPaint will
+    connect to it automatically.  If you configure the WebUI to use any URL other than the default, IntraPaint
+     will ask for that information before connecting.
+&lt;/p&gt;
+</translation>
+    </message>
+    <message>
+      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="84"/>
+      <source>Waiting, position {queue_number} in queue.</source>
+      <translation>Waiting, position {queue_number} in queue.</translation>
+    </message>
+    <message>
+      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="85"/>
+      <source>Generating...</source>
+      <translation>Generating...</translation>
+    </message>
+    <message>
+      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="86"/>
+      <source>Batch {batch_num} of {num_batches}:</source>
+      <translation>Batch {batch_num} of {num_batches}:</translation>
+    </message>
+  </context>
+  <context>
+    <name>controller.image_generation.sd_generator</name>
+    <message>
+      <location filename="../../src/controller/image_generation/sd_generator.py" line="48"/>
+      <source>
+&lt;p&gt;
+    Released in August 2022, Stable-Diffusion remains the most versatile and useful free image generation model.
+&lt;/p&gt;
+&lt;h2&gt;Generator capabilities and limits:&lt;/h2&gt;
+&lt;ul&gt;
+    &lt;li&gt;Requires only 4GB of VRAM, or 8GB if using an SDXL model.&lt;/li&gt;
+    &lt;li&gt;Tuned for an ideal resolution of 512x512 (1024x1024 for SDXL).&lt;/li&gt;
+    &lt;li&gt;A huge variety of fine-tuned variant models are available.&lt;/li&gt;
+    &lt;li&gt;
+        The magnitude of changes made to existing images can be precisely controlled by varying denoising strength.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Supports LoRAs, miniature extension models adding support for new styles and subjects.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Supports positive and negative prompting, where (parentheses) draw additional attention to prompt sections,
+        and [square brackets] reduce attention.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Supports ControlNet modules, allowing image generation to be guided by arbitrary constraints like depth maps,
+        existing image lines, and pose analysis.
+    &lt;/li&gt;
+&lt;/ul&gt;
+</source>
+      <translation>
+&lt;p&gt;
+    Released in August 2022, Stable-Diffusion remains the most versatile and useful free image generation model.
+&lt;/p&gt;
+&lt;h2&gt;Generator capabilities and limits:&lt;/h2&gt;
+&lt;ul&gt;
+    &lt;li&gt;Requires only 4GB of VRAM, or 8GB if using an SDXL model.&lt;/li&gt;
+    &lt;li&gt;Tuned for an ideal resolution of 512x512 (1024x1024 for SDXL).&lt;/li&gt;
+    &lt;li&gt;A huge variety of fine-tuned variant models are available.&lt;/li&gt;
+    &lt;li&gt;
+        The magnitude of changes made to existing images can be precisely controlled by varying denoising strength.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Supports LoRAs, miniature extension models adding support for new styles and subjects.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Supports positive and negative prompting, where (parentheses) draw additional attention to prompt sections,
+        and [square brackets] reduce attention.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Supports ControlNet modules, allowing image generation to be guided by arbitrary constraints like depth maps,
+        existing image lines, and pose analysis.
+    &lt;/li&gt;
+&lt;/ul&gt;
+</translation>
+    </message>
+    <message>
+      <location filename="../../src/controller/image_generation/sd_generator.py" line="75"/>
+      <source>ControlNet preview failed</source>
+      <translation>ControlNet preview failed</translation>
+    </message>
+    <message>
+      <location filename="../../src/controller/image_generation/sd_generator.py" line="76"/>
+      <source>Loading ControlNet preprocessor preview failed: {err}</source>
+      <translation>Loading ControlNet preprocessor preview failed: {err}</translation>
+    </message>
+  </context>
+  <context>
+    <name>controller.image_generation.sd_webui_generator</name>
+    <message>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="50"/>
+      <source>Stable-Diffusion WebUI API</source>
+      <translation>Stable-Diffusion WebUI API</translation>
+    </message>
+    <message>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="51"/>
+      <source>&lt;h2&gt;Stable-Diffusion: via WebUI API&lt;/h2&gt;</source>
+      <translation>&lt;h2&gt;Stable-Diffusion: via WebUI API&lt;/h2&gt;</translation>
+    </message>
+    <message>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="52"/>
+      <source>
+&lt;p&gt;
+    The Stable-Diffusion WebUI is one of the first interfaces created for using Stable-Diffusion. This IntraPaint
+    generator offloads image generation to that system through a network connection.  The WebUI instance can be run on
+    the same computer as IntraPaint, or remotely on a separate server.
+&lt;/p&gt;
+</source>
+      <translation>
+&lt;p&gt;
+    The Stable-Diffusion WebUI is one of the first interfaces created for using Stable-Diffusion. This IntraPaint
+    generator offloads image generation to that system through a network connection.  The WebUI instance can be run on
+    the same computer as IntraPaint, or remotely on a separate server.
+&lt;/p&gt;
+</translation>
+    </message>
+    <message>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="64"/>
+      <source>
+&lt;h2&gt;Installing Stable-Diffusion&lt;/h2&gt;
+&lt;p&gt;
+    To use this Stable-Diffusion image generator with IntraPaint, you will need to install the Stable-Diffusion WebUI.
+    You can choose either the &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Forge WebUI&lt;/a&gt;
+    or the original &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt; Stable-Diffusion WebUI&lt;/a&gt;, but
+    the Forge WebUI is the recommended version. The easiest way to install either of these options is through &lt;a href=
     "https://github.com/LykosAI/StabilityMatrix"&gt;Stability Matrix&lt;/a&gt;.
 &lt;/p&gt;
 &lt;ol&gt;
@@ -4288,10 +4689,10 @@
       <translation>
 &lt;h2&gt;Installing Stable-Diffusion&lt;/h2&gt;
 &lt;p&gt;
-    To use Stable-Diffusion with IntraPaint, you will need to install the Stable-Diffusion WebUI. You can choose either
-    the &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Forge WebUI&lt;/a&gt; or the original
-    &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt; Stable-Diffusion WebUI&lt;/a&gt;, but the Forge
-    WebUI is the recommended version. The easiest way to install either of these options is through &lt;a href=
+    To use this Stable-Diffusion image generator with IntraPaint, you will need to install the Stable-Diffusion WebUI.
+    You can choose either the &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Forge WebUI&lt;/a&gt;
+    or the original &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt; Stable-Diffusion WebUI&lt;/a&gt;, but
+    the Forge WebUI is the recommended version. The easiest way to install either of these options is through &lt;a href=
     "https://github.com/LykosAI/StabilityMatrix"&gt;Stability Matrix&lt;/a&gt;.
 &lt;/p&gt;
 &lt;ol&gt;
@@ -4336,89 +4737,29 @@
 </translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="139"/>
-      <source>Not authenticated</source>
-      <translation>Not authenticated</translation>
-    </message>
-    <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="140"/>
-      <source>Open or create an image first.</source>
-      <translation>Open or create an image first.</translation>
-    </message>
-    <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="141"/>
-      <source>Stable-Diffusion is busy generating other images, try again later.</source>
-      <translation>Stable-Diffusion is busy generating other images, try again later.</translation>
-    </message>
-    <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="142"/>
-      <source>Request timed out</source>
-      <translation>Request timed out</translation>
-    </message>
-    <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="143"/>
-      <source>Interrogate failure</source>
-      <translation>Interrogate failure</translation>
-    </message>
-    <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="144"/>
-      <source>Running CLIP interrogate</source>
-      <translation>Running CLIP interrogate</translation>
-    </message>
-    <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="145"/>
-      <source>Inpainting UI</source>
-      <translation>Inpainting UI</translation>
-    </message>
-    <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="146"/>
-      <source>Enter server URL:</source>
-      <translation>Enter server URL:</translation>
-    </message>
-    <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="147"/>
-      <source>Server connection failed, enter a new URL or click "OK" to retry</source>
-      <translation>Server connection failed, enter a new URL or click "OK" to retry</translation>
-    </message>
-    <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="149"/>
-      <source>Upscale failure</source>
-      <translation>Upscale failure</translation>
-    </message>
-    <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="153"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="117"/>
       <source>Updating prompt styles failed</source>
       <translation>Updating prompt styles failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="154"/>
-      <source>Upscaled image content</source>
-      <translation>Upscaled image content</translation>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="119"/>
+      <source>Failed to load Stable-Diffusion settings</source>
+      <translation>Failed to load Stable-Diffusion settings</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="156"/>
-      <source>Image generation failed</source>
-      <translation>Image generation failed</translation>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="120"/>
+      <source>Failed to save Stable-Diffusion settings</source>
+      <translation>Failed to save Stable-Diffusion settings</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="157"/>
-      <source>Nothing was selected in the image generation area. Either use the selection tool to mark part of the image generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</source>
-      <translation>Nothing was selected in the image generation area. Either use the selection tool to mark part of the image generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</translation>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="121"/>
+      <source>The connection to the Stable-Diffusion-WebUI image generator was lost. Connected generator settings will not be available.</source>
+      <translation>The connection to the Stable-Diffusion-WebUI image generator was lost. Connected generator settings will not be available.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="161"/>
-      <source>ControlNet</source>
-      <translation>ControlNet</translation>
-    </message>
-    <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="162"/>
-      <source>ControlNet Unit {unit_number}</source>
-      <translation>ControlNet Unit {unit_number}</translation>
-    </message>
-    <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="163"/>
-      <source>Login cancelled.</source>
-      <translation>Login cancelled.</translation>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="123"/>
+      <source>The connection to the Stable-Diffusion-WebUI image generator was lost. Any changes to connected generator settings were not saved.</source>
+      <translation>The connection to the Stable-Diffusion-WebUI image generator was lost. Any changes to connected generator settings were not saved.</translation>
     </message>
   </context>
   <context>
@@ -4522,102 +4863,102 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>image.composite_mode</name>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="38"/>
+      <location filename="../../src/image/composite_mode.py" line="34"/>
       <source>Normal</source>
       <translation>Normal</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="39"/>
+      <location filename="../../src/image/composite_mode.py" line="35"/>
       <source>Multiply</source>
       <translation>Multiply</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="40"/>
+      <location filename="../../src/image/composite_mode.py" line="36"/>
       <source>Screen</source>
       <translation>Screen</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="41"/>
+      <location filename="../../src/image/composite_mode.py" line="37"/>
       <source>Overlay</source>
       <translation>Overlay</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="42"/>
+      <location filename="../../src/image/composite_mode.py" line="38"/>
       <source>Darken</source>
       <translation>Darken</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="43"/>
+      <location filename="../../src/image/composite_mode.py" line="39"/>
       <source>Lighten</source>
       <translation>Lighten</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="44"/>
+      <location filename="../../src/image/composite_mode.py" line="40"/>
       <source>Color Dodge</source>
       <translation>Color Dodge</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="45"/>
+      <location filename="../../src/image/composite_mode.py" line="41"/>
       <source>Color Burn</source>
       <translation>Color Burn</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="46"/>
+      <location filename="../../src/image/composite_mode.py" line="42"/>
       <source>Hard Light</source>
       <translation>Hard Light</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="47"/>
+      <location filename="../../src/image/composite_mode.py" line="43"/>
       <source>Soft Light</source>
       <translation>Soft Light</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="48"/>
+      <location filename="../../src/image/composite_mode.py" line="44"/>
       <source>Difference</source>
       <translation>Difference</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="49"/>
+      <location filename="../../src/image/composite_mode.py" line="45"/>
       <source>Color</source>
       <translation>Color</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="50"/>
+      <location filename="../../src/image/composite_mode.py" line="46"/>
       <source>Luminosity</source>
       <translation>Luminosity</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="51"/>
+      <location filename="../../src/image/composite_mode.py" line="47"/>
       <source>Hue</source>
       <translation>Hue</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="52"/>
+      <location filename="../../src/image/composite_mode.py" line="48"/>
       <source>Saturation</source>
       <translation>Saturation</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="53"/>
+      <location filename="../../src/image/composite_mode.py" line="49"/>
       <source>Plus</source>
       <translation>Plus</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="54"/>
+      <location filename="../../src/image/composite_mode.py" line="50"/>
       <source>Destination In</source>
       <translation>Destination In</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="55"/>
+      <location filename="../../src/image/composite_mode.py" line="51"/>
       <source>Destination Out</source>
       <translation>Destination Out</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="56"/>
+      <location filename="../../src/image/composite_mode.py" line="52"/>
       <source>Source Atop</source>
       <translation>Source Atop</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="57"/>
+      <location filename="../../src/image/composite_mode.py" line="53"/>
       <source>Destination Atop</source>
       <translation>Destination Atop</translation>
     </message>
@@ -4924,32 +5265,32 @@ Please remember to include the traceback from the Details expander.</translation
       <translation>The layer below is a layer group, flatten the group into a single image layer first.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="73"/>
+      <location filename="../../src/image/layers/image_stack.py" line="74"/>
       <source>Layer "{layer_name}" is in a locked group</source>
       <translation>Layer "{layer_name}" is in a locked group</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="74"/>
+      <location filename="../../src/image/layers/image_stack.py" line="75"/>
       <source>Unlock the layer group before trying to change layers within the group.</source>
       <translation>Unlock the layer group before trying to change layers within the group.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="76"/>
+      <location filename="../../src/image/layers/image_stack.py" line="77"/>
       <source>Blocked action on main layer group</source>
       <translation>Blocked action on main layer group</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="77"/>
+      <location filename="../../src/image/layers/image_stack.py" line="78"/>
       <source>To edit the main layer group, edit its layers individually or use the options under the Image menu.</source>
       <translation>To edit the main layer group, edit its layers individually or use the options under the Image menu.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="80"/>
+      <location filename="../../src/image/layers/image_stack.py" line="81"/>
       <source>Warning: cropping deleted layer(s)</source>
       <translation>Warning: cropping deleted layer(s)</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="81"/>
+      <location filename="../../src/image/layers/image_stack.py" line="82"/>
       <source>&lt;p&gt;Cropping the image deleted the following layers:&lt;/p&gt;&lt;ul&gt;{layer_names}&lt;/ul&gt;</source>
       <translation>&lt;p&gt;Cropping the image deleted the following layers:&lt;/p&gt;&lt;ul&gt;{layer_names}&lt;/ul&gt;</translation>
     </message>
@@ -5656,6 +5997,19 @@ Please remember to include the traceback from the Details expander.</translation
     </message>
   </context>
   <context>
+    <name>ui.input_fields.seed_value_spinbox</name>
+    <message>
+      <location filename="../../src/ui/input_fields/seed_value_spinbox.py" line="21"/>
+      <source>Reuse last seed value</source>
+      <translation>Reuse last seed value</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/input_fields/seed_value_spinbox.py" line="22"/>
+      <source>Use a random seed</source>
+      <translation>Use a random seed</translation>
+    </message>
+  </context>
+  <context>
     <name>ui.input_fields.size_field</name>
     <message>
       <location filename="../../src/ui/input_fields/size_field.py" line="20"/>
@@ -5976,12 +6330,12 @@ Please remember to include the traceback from the Details expander.</translation
       <translation>IntraPaint saves its settings to these files. This section is only for reference, their locations cannot be changed here.</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/settings_modal.py" line="39"/>
+      <location filename="../../src/ui/modal/settings_modal.py" line="40"/>
       <source>Cancel</source>
       <translation>Cancel</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/settings_modal.py" line="40"/>
+      <location filename="../../src/ui/modal/settings_modal.py" line="41"/>
       <source>Save</source>
       <translation>Save</translation>
     </message>
@@ -5989,87 +6343,115 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.panel.controlnet_panel</name>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="34"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="43"/>
       <source>ControlNet</source>
       <translation>ControlNet</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="35"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="44"/>
       <source>ControlNet Unit {unit_number}</source>
       <translation>ControlNet Unit {unit_number}</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="36"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="45"/>
       <source>Enable ControlNet Unit</source>
       <translation>Enable ControlNet Unit</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="37"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="46"/>
       <source>Low VRAM</source>
       <translation>Low VRAM</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="38"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="47"/>
       <source>Pixel Perfect</source>
       <translation>Pixel Perfect</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="39"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="48"/>
       <source>Control Image:</source>
       <translation>Control Image:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="40"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="49"/>
       <source>Set Control Image</source>
       <translation>Set Control Image</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="41"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="50"/>
+      <source>Preview Preprocessor</source>
+      <translation>Preview Preprocessor</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="51"/>
       <source>Generation Area as Control</source>
       <translation>Generation Area as Control</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="42"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="52"/>
       <source>Control Type:</source>
       <translation>Control Type:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="43"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="53"/>
       <source>Preprocessor:</source>
       <translation>Preprocessor:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="44"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="54"/>
       <source>Control Model:</source>
       <translation>Control Model:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="45"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="55"/>
       <source>Control Weight:</source>
       <translation>Control Weight:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="46"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="56"/>
       <source>Starting Control Step:</source>
       <translation>Starting Control Step:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="47"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="57"/>
       <source>Ending Control Step:</source>
       <translation>Ending Control Step:</translation>
     </message>
   </context>
   <context>
+    <name>ui.panel.generators.comfyui_extras_tab</name>
+    <message>
+      <location filename="../../src/ui/panel/generators/comfyui_extras_tab.py" line="23"/>
+      <source>Clear Memory</source>
+      <translation>Clear Memory</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/generators/comfyui_extras_tab.py" line="24"/>
+      <source>Removed cached models from GPU memory within ComfyUI.</source>
+      <translation>Removed cached models from GPU memory within ComfyUI.</translation>
+    </message>
+  </context>
+  <context>
     <name>ui.panel.generators.sd_webui_panel</name>
     <message>
-      <location filename="../../src/ui/panel/generators/sd_webui_panel.py" line="28"/>
+      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="29"/>
       <source>Interrogate</source>
       <translation>Interrogate</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/sd_webui_panel.py" line="29"/>
+      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="30"/>
       <source>Attempt to generate a prompt that describes the current image generation area</source>
       <translation>Attempt to generate a prompt that describes the current image generation area</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="32"/>
+      <source>Main</source>
+      <translation>Main</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="33"/>
+      <source>Extras</source>
+      <translation>Extras</translation>
     </message>
   </context>
   <context>
@@ -6386,17 +6768,17 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.panel.tool_control_panels.brush_selection_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py" line="27"/>
+      <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py" line="28"/>
       <source>Size:</source>
       <translation>Size:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py" line="28"/>
+      <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py" line="29"/>
       <source>Select</source>
       <translation>Select</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py" line="29"/>
+      <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py" line="30"/>
       <source>Deselect</source>
       <translation>Deselect</translation>
     </message>
@@ -6433,12 +6815,12 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.panel.tool_control_panels.fill_selection_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/fill_selection_panel.py" line="24"/>
+      <location filename="../../src/ui/panel/tool_control_panels/fill_selection_panel.py" line="25"/>
       <source>Fill selection holes</source>
       <translation>Fill selection holes</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/fill_selection_panel.py" line="25"/>
+      <location filename="../../src/ui/panel/tool_control_panels/fill_selection_panel.py" line="26"/>
       <source>Fill based on selection shape only.</source>
       <translation>Fill based on selection shape only.</translation>
     </message>
@@ -6507,22 +6889,22 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.panel.tool_control_panels.selection_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="21"/>
+      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="22"/>
       <source>Select All</source>
       <translation>Select All</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="22"/>
+      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="23"/>
       <source>Clear</source>
       <translation>Clear</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="23"/>
+      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="24"/>
       <source>Select All ({select_all_shortcut})</source>
       <translation>Select All ({select_all_shortcut})</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="24"/>
+      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="25"/>
       <source>Clear ({clear_shortcut})</source>
       <translation>Clear ({clear_shortcut})</translation>
     </message>
@@ -6757,42 +7139,42 @@ Press ESC to cancel</translation>
   <context>
     <name>ui.widget.color_picker.component_spinbox_picker</name>
     <message>
-      <location filename="../../src/ui/widget/color_picker/component_spinbox_picker.py" line="22"/>
+      <location filename="../../src/ui/widget/color_picker/component_spinbox_picker.py" line="21"/>
       <source>Hu&amp;e:</source>
       <translation>Hu&amp;e:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/component_spinbox_picker.py" line="23"/>
+      <location filename="../../src/ui/widget/color_picker/component_spinbox_picker.py" line="22"/>
       <source>&amp;Sat:</source>
       <translation>&amp;Sat:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/component_spinbox_picker.py" line="24"/>
+      <location filename="../../src/ui/widget/color_picker/component_spinbox_picker.py" line="23"/>
       <source>&amp;Val:</source>
       <translation>&amp;Val:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/component_spinbox_picker.py" line="26"/>
+      <location filename="../../src/ui/widget/color_picker/component_spinbox_picker.py" line="25"/>
       <source>&amp;Red:</source>
       <translation>&amp;Red:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/component_spinbox_picker.py" line="27"/>
+      <location filename="../../src/ui/widget/color_picker/component_spinbox_picker.py" line="26"/>
       <source>&amp;Green:</source>
       <translation>&amp;Green:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/component_spinbox_picker.py" line="28"/>
+      <location filename="../../src/ui/widget/color_picker/component_spinbox_picker.py" line="27"/>
       <source>Bl&amp;ue:</source>
       <translation>Bl&amp;ue:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/component_spinbox_picker.py" line="30"/>
+      <location filename="../../src/ui/widget/color_picker/component_spinbox_picker.py" line="29"/>
       <source>A&amp;lpha channel:</source>
       <translation>A&amp;lpha channel:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/component_spinbox_picker.py" line="31"/>
+      <location filename="../../src/ui/widget/color_picker/component_spinbox_picker.py" line="30"/>
       <source>&amp;HTML:</source>
       <translation>&amp;HTML:</translation>
     </message>
@@ -6832,8 +7214,8 @@ Press ESC to cancel</translation>
     <name>ui.window.extra_network_window</name>
     <message>
       <location filename="../../src/ui/window/extra_network_window.py" line="25"/>
-      <source>LORA Models</source>
-      <translation>LORA Models</translation>
+      <source>LoRA Models</source>
+      <translation>LoRA Models</translation>
     </message>
     <message>
       <location filename="../../src/ui/window/extra_network_window.py" line="27"/>
@@ -6852,8 +7234,8 @@ Press ESC to cancel</translation>
     </message>
     <message>
       <location filename="../../src/ui/window/extra_network_window.py" line="30"/>
-      <source>LORA</source>
-      <translation>LORA</translation>
+      <source>LoRA</source>
+      <translation>LoRA</translation>
     </message>
   </context>
   <context>
@@ -6897,32 +7279,32 @@ Press ESC to cancel</translation>
   <context>
     <name>ui.window.main_window</name>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="51"/>
+      <location filename="../../src/ui/window/main_window.py" line="47"/>
       <source>Move up</source>
       <translation>Move up</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="52"/>
+      <location filename="../../src/ui/window/main_window.py" line="48"/>
       <source>Move down</source>
       <translation>Move down</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="53"/>
+      <location filename="../../src/ui/window/main_window.py" line="49"/>
       <source>Move left</source>
       <translation>Move left</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="54"/>
+      <location filename="../../src/ui/window/main_window.py" line="50"/>
       <source>Move right</source>
       <translation>Move right</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="55"/>
+      <location filename="../../src/ui/window/main_window.py" line="51"/>
       <source>Move all tabs here</source>
       <translation>Move all tabs here</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="58"/>
+      <location filename="../../src/ui/window/main_window.py" line="54"/>
       <source>Loading...</source>
       <translation>Loading...</translation>
     </message>
@@ -7016,142 +7398,217 @@ Press ESC to cancel</translation>
       <translation>Image to Image</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="44"/>
+      <location filename="../../src/util/shared_constants.py" line="41"/>
       <source>Generate</source>
       <translation>Generate</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="45"/>
+      <location filename="../../src/util/shared_constants.py" line="42"/>
       <source>Start AI image generation or modification</source>
       <translation>Start AI image generation or modification</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="46"/>
+      <location filename="../../src/util/shared_constants.py" line="43"/>
       <source>W:</source>
       <translation>W:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="47"/>
+      <location filename="../../src/util/shared_constants.py" line="44"/>
       <source>H:</source>
       <translation>H:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="48"/>
+      <location filename="../../src/util/shared_constants.py" line="45"/>
       <source>X:</source>
       <translation>X:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="49"/>
+      <location filename="../../src/util/shared_constants.py" line="46"/>
       <source>Y:</source>
       <translation>Y:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="51"/>
+      <location filename="../../src/util/shared_constants.py" line="48"/>
       <source>Width:</source>
       <translation>Width:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="52"/>
+      <location filename="../../src/util/shared_constants.py" line="49"/>
       <source>Height:</source>
       <translation>Height:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="53"/>
+      <location filename="../../src/util/shared_constants.py" line="50"/>
       <source>Color:</source>
       <translation>Color:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="54"/>
+      <location filename="../../src/util/shared_constants.py" line="51"/>
       <source>Size:</source>
       <translation>Size:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="55"/>
+      <location filename="../../src/util/shared_constants.py" line="52"/>
       <source>Scale:</source>
       <translation>Scale:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="56"/>
+      <location filename="../../src/util/shared_constants.py" line="53"/>
       <source>Padding:</source>
       <translation>Padding:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="57"/>
+      <location filename="../../src/util/shared_constants.py" line="54"/>
       <source>Zoom In</source>
       <translation>Zoom In</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="58"/>
+      <location filename="../../src/util/shared_constants.py" line="55"/>
       <source>Reset Zoom</source>
       <translation>Reset Zoom</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="59"/>
+      <location filename="../../src/util/shared_constants.py" line="56"/>
       <source>Keep aspect ratio</source>
       <translation>Keep aspect ratio</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="62"/>
+      <location filename="../../src/util/shared_constants.py" line="59"/>
       <source>Editing failed</source>
       <translation>Editing failed</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="63"/>
+      <location filename="../../src/util/shared_constants.py" line="60"/>
       <source>The selected layer is locked, unlock it or select a different layer.</source>
       <translation>The selected layer is locked, unlock it or select a different layer.</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="64"/>
+      <location filename="../../src/util/shared_constants.py" line="61"/>
       <source>The selected layer is in a locked group, unlock it or select a different layer.</source>
       <translation>The selected layer is in a locked group, unlock it or select a different layer.</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="66"/>
+      <location filename="../../src/util/shared_constants.py" line="63"/>
       <source>The selected layer is hidden, un-hide it before trying to edit it.</source>
       <translation>The selected layer is hidden, un-hide it before trying to edit it.</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="67"/>
+      <location filename="../../src/util/shared_constants.py" line="64"/>
       <source>The selected layer is not an image layer, select an image layer first.</source>
       <translation>The selected layer is not an image layer, select an image layer first.</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="68"/>
+      <location filename="../../src/util/shared_constants.py" line="65"/>
       <source>Changes are restricted to selected content only, but nothing is selected in this layer. Select layer content or enable changes in unselected areas.</source>
       <translation>Changes are restricted to selected content only, but nothing is selected in this layer. Select layer content or enable changes in unselected areas.</translation>
     </message>
     <message>
+      <location filename="../../src/util/shared_constants.py" line="69"/>
+      <source>Not authenticated</source>
+      <translation>Not authenticated</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="70"/>
+      <source>Image generator connection</source>
+      <translation>Image generator connection</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="71"/>
+      <source>Enter server URL:</source>
+      <translation>Enter server URL:</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="72"/>
+      <source>Request timed out</source>
+      <translation>Request timed out</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="73"/>
+      <source>Server connection failed, enter a new URL or click "OK" to retry</source>
+      <translation>Server connection failed, enter a new URL or click "OK" to retry</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="74"/>
+      <source>The AI image generator is busy creating other images, try again later.</source>
+      <translation>The AI image generator is busy creating other images, try again later.</translation>
+    </message>
+    <message>
       <location filename="../../src/util/shared_constants.py" line="75"/>
+      <source>Login cancelled.</source>
+      <translation>Login cancelled.</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="78"/>
+      <source>Interrogate failure</source>
+      <translation>Interrogate failure</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="79"/>
+      <source>Open or create an image first.</source>
+      <translation>Open or create an image first.</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="80"/>
+      <source>Running CLIP interrogate</source>
+      <translation>Running CLIP interrogate</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="83"/>
+      <source>Image generation failed</source>
+      <translation>Image generation failed</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="84"/>
+      <source>Nothing was selected in the image generation area. Either use the selection tool to mark part of the image generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</source>
+      <translation>Nothing was selected in the image generation area. Either use the selection tool to mark part of the image generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="90"/>
+      <source>Upscale failure</source>
+      <translation>Upscale failure</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="91"/>
+      <source>Upscaled image content</source>
+      <translation>Upscaled image content</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="92"/>
+      <source>None</source>
+      <translation>None</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="98"/>
       <source>Bilinear</source>
       <translation>Bilinear</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="76"/>
+      <location filename="../../src/util/shared_constants.py" line="99"/>
       <source>Nearest</source>
       <translation>Nearest</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="77"/>
+      <location filename="../../src/util/shared_constants.py" line="100"/>
       <source>Hamming</source>
       <translation>Hamming</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="78"/>
+      <location filename="../../src/util/shared_constants.py" line="101"/>
       <source>Bicubic</source>
       <translation>Bicubic</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="79"/>
+      <location filename="../../src/util/shared_constants.py" line="102"/>
       <source>Lanczos</source>
       <translation>Lanczos</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="80"/>
+      <location filename="../../src/util/shared_constants.py" line="103"/>
       <source>Box</source>
       <translation>Box</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="82"/>
+      <location filename="../../src/util/shared_constants.py" line="105"/>
       <source>{modifier_or_modifiers}: pick color</source>
       <translation>{modifier_or_modifiers}: pick color</translation>
     </message>
@@ -7164,64 +7621,94 @@ Press ESC to cancel</translation>
       <translation>Stable-Diffusion Model:</translation>
     </message>
     <message>
-      <location filename="../config/a1111_setting_definitions.json" line="5"/>
+      <location filename="../config/a1111_setting_definitions.json" line="6"/>
       <source>Active image generation model</source>
       <translation>Active image generation model</translation>
     </message>
     <message>
-      <location filename="../config/a1111_setting_definitions.json" line="4"/>
-      <source>Connected generator</source>
-      <translation>Connected generator</translation>
+      <location filename="../config/a1111_setting_definitions.json" line="3"/>
+      <source>Stable-Diffusion</source>
+      <translation>Stable-Diffusion</translation>
     </message>
     <message>
-      <location filename="../config/a1111_setting_definitions.json" line="10"/>
+      <location filename="../config/a1111_setting_definitions.json" line="5"/>
+      <source>Stable-Diffusion WebUI image generator</source>
+      <translation>Stable-Diffusion WebUI image generator</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="11"/>
       <source>Only keep one model on GPU/TPU</source>
       <translation>Only keep one model on GPU/TPU</translation>
     </message>
     <message>
-      <location filename="../config/a1111_setting_definitions.json" line="12"/>
+      <location filename="../config/a1111_setting_definitions.json" line="14"/>
       <source>If selected, checkpoints after the first are cached in RAM instead</source>
       <translation>If selected, checkpoints after the first are cached in RAM instead</translation>
     </message>
     <message>
-      <location filename="../config/a1111_setting_definitions.json" line="16"/>
+      <location filename="../config/a1111_setting_definitions.json" line="5"/>
+      <source>Stable-Diffusion WebUI image generator</source>
+      <translation>Stable-Diffusion WebUI image generator</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="18"/>
       <source>Max checkpoints loaded:</source>
       <translation>Max checkpoints loaded:</translation>
     </message>
     <message>
-      <location filename="../config/a1111_setting_definitions.json" line="18"/>
+      <location filename="../config/a1111_setting_definitions.json" line="21"/>
       <source>Number of image generation models to keep in memory.</source>
       <translation>Number of image generation models to keep in memory.</translation>
     </message>
     <message>
-      <location filename="../config/a1111_setting_definitions.json" line="27"/>
+      <location filename="../config/a1111_setting_definitions.json" line="5"/>
+      <source>Stable-Diffusion WebUI image generator</source>
+      <translation>Stable-Diffusion WebUI image generator</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="30"/>
       <source>Stable-Diffusion VAE model:</source>
       <translation>Stable-Diffusion VAE model:</translation>
     </message>
     <message>
-      <location filename="../config/a1111_setting_definitions.json" line="29"/>
+      <location filename="../config/a1111_setting_definitions.json" line="33"/>
       <source>VAE model used for final image data creation.</source>
       <translation>VAE model used for final image data creation.</translation>
     </message>
     <message>
-      <location filename="../config/a1111_setting_definitions.json" line="34"/>
+      <location filename="../config/a1111_setting_definitions.json" line="5"/>
+      <source>Stable-Diffusion WebUI image generator</source>
+      <translation>Stable-Diffusion WebUI image generator</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="38"/>
       <source>Stable-Diffusion VAE models cached:</source>
       <translation>Stable-Diffusion VAE models cached:</translation>
     </message>
     <message>
-      <location filename="../config/a1111_setting_definitions.json" line="36"/>
+      <location filename="../config/a1111_setting_definitions.json" line="41"/>
       <source>Number of VAE models to keep in memory.</source>
       <translation>Number of VAE models to keep in memory.</translation>
     </message>
     <message>
-      <location filename="../config/a1111_setting_definitions.json" line="45"/>
+      <location filename="../config/a1111_setting_definitions.json" line="5"/>
+      <source>Stable-Diffusion WebUI image generator</source>
+      <translation>Stable-Diffusion WebUI image generator</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="50"/>
       <source>CLIP skip:</source>
       <translation>CLIP skip:</translation>
     </message>
     <message>
-      <location filename="../config/a1111_setting_definitions.json" line="47"/>
+      <location filename="../config/a1111_setting_definitions.json" line="53"/>
       <source>Number of final image generation steps taken without prompt guidance.</source>
       <translation>Number of final image generation steps taken without prompt guidance.</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="5"/>
+      <source>Stable-Diffusion WebUI image generator</source>
+      <translation>Stable-Diffusion WebUI image generator</translation>
     </message>
   </context>
 </TS>

@@ -122,7 +122,6 @@ class Txt2ImgRequestBody(TypedDict):
 
     # Probably deprecated, present for compatibility reasons:
     sampler_index: NotRequired[str]
-    sampler_index: NotRequired[str]
 
 
 class Img2ImgRequestBody(Txt2ImgRequestBody):

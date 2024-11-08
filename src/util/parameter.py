@@ -297,7 +297,7 @@ class Parameter:
             return False
         return True
 
-    def get_input_widget(self, multi_line=False) -> DynamicFieldWidget:
+    def get_input_widget(self, multi_line=False, allow_dual_toggle=True) -> DynamicFieldWidget:
         """Creates a widget that can be used to set this parameter."""
         if multi_line and self._type != TYPE_STR:
             raise ValueError(f'multi_line=True is only valid for text parameters, value {self.name}'
@@ -306,7 +306,7 @@ class Parameter:
             if multi_line:
                 raise ValueError('multi_line=True is not valid for parameters with fixed option lists')
             assert self.type_name == TYPE_STR, 'Widget support for non-string option lists is not implemented'
-            if len(self._options) == 2:
+            if len(self._options) == 2 and allow_dual_toggle:
                 toggle = DualToggle(parent=None, options=cast(list[str], self.options))
                 assert self._default_value is None or isinstance(self._default_value, str)
                 toggle.setValue(self._default_value)

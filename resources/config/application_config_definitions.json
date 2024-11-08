@@ -300,24 +300,6 @@
         },
         "saved": true
     },
-    "restore_faces": {
-        "label": "Restore faces",
-        "category": "Stable-Diffusion",
-        "subcategory": "Extra Features",
-        "description": "Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.",
-        "type": "bool",
-        "default": false,
-        "saved": true
-    },
-    "tiling": {
-        "label": "Tiling",
-        "category": "Stable-Diffusion",
-        "subcategory": "Extra Features",
-        "description": "Generate tiling images that can be seamlessly repeated.",
-        "type": "bool",
-        "default": false,
-        "saved": true
-    },
     "glid_model_path": {
         "label": "GLID-3-XL model path:",
         "category": "GLID-3-XL",

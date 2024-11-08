@@ -21,12 +21,12 @@ from src.controller.image_generation.sd_generator import SDGenerator, SD_BASE_DE
 from src.image.filter.blur import BlurFilter, MODE_GAUSSIAN
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
+from src.ui.panel.generators.comfyui_extras_tab import ComfyUIExtrasTab
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.window.extra_network_window import LORA_KEY_NAME, LORA_KEY_ALIAS, LORA_KEY_PATH
 from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING
-from src.util.menu_builder import menu_action
 from src.util.parameter import TYPE_LIST, TYPE_STR
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, AUTH_ERROR, \
     GENERATE_ERROR_MESSAGE_EMPTY_MASK, GENERATE_ERROR_TITLE, ERROR_MESSAGE_TIMEOUT
@@ -90,18 +90,7 @@ MAX_ERROR_COUNT = 10
 MIN_RETRY_US = 300000
 MAX_RETRY_US = 60000000
 
-LCM_SAMPLER = 'lcm'
-LCM_LORA_1_5 = 'lcm-lora-sdv1-5.safetensors'
-LCM_LORA_XL = 'lcm-lora-sdxl.safetensors'
-
 MENU_STABLE_DIFFUSION = 'Stable-Diffusion'
-
-
-def _check_lcm_mode_available(_) -> bool:
-    if LCM_SAMPLER not in Cache().get_options(Cache.SAMPLING_METHOD):
-        return False
-    loras = Cache().get(Cache.LORA_MODELS)
-    return LCM_LORA_1_5 in loras or LCM_LORA_XL in loras
 
 
 def _check_prompt_styles_available(_) -> bool:
@@ -121,6 +110,7 @@ class SDComfyUIGenerator(SDGenerator):
         super().__init__(window, image_stack, args, Cache.SD_COMFYUI_SERVER_URL)
         self._image_stack = image_stack
         self._webservice: Optional[ComfyUiWebservice] = ComfyUiWebservice(self.server_url)
+        self._gen_extras_tab = ComfyUIExtrasTab()
         self._active_task_id = ''
         self._active_task_number = 0
 
@@ -244,7 +234,6 @@ class SDComfyUIGenerator(SDGenerator):
         cache = Cache()
         assert self._webservice is not None
         for model_type, cache_key in ((ComfyModelType.CONFIG, Cache.COMFYUI_MODEL_CONFIG),
-                                      (ComfyModelType.LORA, Cache.LORA_MODELS),
                                       (ComfyModelType.HYPERNETWORKS, Cache.HYPERNETWORK_MODELS)):
             cache_data_type = cache.get_data_type(cache_key)
             try:
@@ -290,9 +279,9 @@ class SDComfyUIGenerator(SDGenerator):
         return None  # ComfyUI doesn't provide LoRA thumbnails.
 
     def load_preprocessor_preview(self, preprocessor: ControlNetPreprocessor,
-                                     image: QImage, mask: Optional[QImage],
-                                     status_signal: Signal,
-                                     image_signal: Signal) -> None:
+                                  image: QImage, mask: Optional[QImage],
+                                  status_signal: Signal,
+                                  image_signal: Signal) -> None:
         """Requests a ControlNet preprocessor preview image."""
         assert self._webservice is not None
         queue_info = self._webservice.controlnet_preprocessor_preview(image, mask, preprocessor)
@@ -422,7 +411,16 @@ class SDComfyUIGenerator(SDGenerator):
             self._control_panel = StableDiffusionPanel(False, False)
             self._control_panel.hide()
             self._control_panel.generate_signal.connect(self.start_and_manage_image_generation)
+
             # self._control_panel.interrogate_signal.connect(self.interrogate)
+
+            # Configure "extras" tab in control panel:
+            def _clear_comfyui_memory() -> None:
+                assert self._webservice is not None
+                self._webservice.free_memory()
+
+            self._gen_extras_tab.clear_comfyui_memory_signal.connect(_clear_comfyui_memory)
+            self._control_panel.add_extras_tab(self._gen_extras_tab)
         return self._control_panel
 
     def _repeated_progress_check(self, task_id: str, task_number: int, batch_num: int, num_batches: int,
@@ -459,8 +457,9 @@ class SDComfyUIGenerator(SDGenerator):
                     else:
                         status_text = TASK_STATUS_GENERATING
                     if num_batches > 1:
-                        status_text = (f'{TASK_STATUS_BATCH_NUMBER.format(batch_num=batch_num, num_batches=num_batches)}'
-                                       f' {status_text}')
+                        status_text = (
+                            f'{TASK_STATUS_BATCH_NUMBER.format(batch_num=batch_num, num_batches=num_batches)}'
+                            f' {status_text}')
                     status_text = f'{status_text}\n{last_percentage}%'
                     if external_status_signal is not None:
                         external_status_signal.emit({'progress': status_text})
@@ -546,6 +545,8 @@ class SDComfyUIGenerator(SDGenerator):
 
         if edit_mode == EDIT_MODE_INPAINT and cache.get(Cache.INPAINT_FULL_RES):
             inpaint_inner_bounds = self._inpaint_gen_area_crop_bounds()
+            if inpaint_inner_bounds.size() != gen_area.size():
+                original_source_image = source_image
 
         # Pre-process image and mask as necessary:
         source_image = self.get_gen_area_image(source_image)
@@ -631,22 +632,3 @@ class SDComfyUIGenerator(SDGenerator):
             # upscaling model with a fixed scale:
             upscaled_image = pil_image_scaling(upscaled_image, new_size)
         image_signal.emit(upscaled_image)
-
-    @menu_action(MENU_STABLE_DIFFUSION, 'lcm_mode_shortcut', 210,
-                 condition_check=_check_lcm_mode_available)
-    def set_lcm_mode(self) -> None:
-        """Apply all settings required for using an LCM LoRA module."""
-        cache = Cache()
-        loras = Cache().get(Cache.LORA_MODELS)
-        if LCM_LORA_1_5 in loras:
-            lora_name = LCM_LORA_1_5
-        else:
-            assert LCM_LORA_XL in loras
-            lora_name = LCM_LORA_XL
-        lora_key = f'<lora:{lora_name}:1>'
-        prompt = cache.get(Cache.PROMPT)
-        if lora_key not in prompt:
-            cache.set(Cache.PROMPT, f'{prompt} {lora_key}')
-        cache.set(Cache.GUIDANCE_SCALE, 1.5)
-        cache.set(Cache.SAMPLING_STEPS, 8)
-        cache.set(Cache.SAMPLING_METHOD, LCM_SAMPLER)

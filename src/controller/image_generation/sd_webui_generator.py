@@ -1,5 +1,4 @@
 """Generates images through the Stable-Diffusion WebUI (A1111 or Forge)"""
-import json
 import logging
 import os
 from argparse import Namespace
@@ -24,6 +23,7 @@ from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
+from src.ui.panel.generators.webui_extras_tab import WebUIExtrasTab
 from src.ui.window.main_window import MainWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
 from src.undo_stack import UndoStack
@@ -126,18 +126,7 @@ MAX_ERROR_COUNT = 10
 MIN_RETRY_US = 300000
 MAX_RETRY_US = 60000000
 
-LCM_SAMPLER = 'LCM'
-LCM_LORA_1_5 = 'lcm-lora-sdv1-5'
-LCM_LORA_XL = 'lcm-lora-sdxl'
-
 MENU_STABLE_DIFFUSION = 'Stable-Diffusion'
-
-
-def _check_lcm_mode_available(_) -> bool:
-    if LCM_SAMPLER not in Cache().get_options(Cache.SAMPLING_METHOD):
-        return False
-    loras = [lora['name'] for lora in Cache().get(Cache.LORA_MODELS)]
-    return LCM_LORA_1_5 in loras or LCM_LORA_XL in loras
 
 
 def _check_prompt_styles_available(_) -> bool:
@@ -156,6 +145,7 @@ class SDWebUIGenerator(SDGenerator):
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
         super().__init__(window, image_stack, args, Cache.SD_WEBUI_SERVER_URL, True)
         self._webservice: Optional[A1111Webservice] = A1111Webservice(self.server_url)
+        self._gen_extras_tab = WebUIExtrasTab()
         self._active_task_id = 0
 
     def get_display_name(self) -> str:
@@ -265,6 +255,13 @@ class SDWebUIGenerator(SDGenerator):
         assert self._webservice is not None
         cache = Cache()
         try:
+            # Synchronize local config options with remote WebUI settings:
+            for cross_config_key in (Cache.SD_MODEL, Cache.CLIP_SKIP):
+                try:
+                    cache.disconnect(self, cross_config_key)
+                except KeyError:
+                    pass  # No previous connection to remove, which isn't a problem here.
+
             webui_config = A1111Config()
             webui_config.load_all(self._webservice)
             current_model_title = webui_config.get(A1111Config.SD_MODEL_CHECKPOINT)
@@ -273,22 +270,46 @@ class SDWebUIGenerator(SDGenerator):
                 if model['title'] == current_model_title:
                     cache.set(Cache.SD_MODEL, model['model_name'])
                     break
-                try:
-                    cache.disconnect(self, Cache.SD_MODEL)
-                except KeyError:
-                    pass  # No previous connection to remove, which isn't a problem here.
 
-            def _update_model(model_name: str) -> None:
+            def _update_remote_model_selection(model_name: str) -> None:
                 if not self._connected:
                     return
                 for model_option in model_options:
                     if model_option['model_name'] == model_name:
-                        remote_setting_change = {A1111Config.SD_MODEL_CHECKPOINT: model_option['title']}
-                        self.update_settings(remote_setting_change)
+                        if model_option['title'] != webui_config.get(A1111Config.SD_MODEL_CHECKPOINT):
+                            remote_setting_change = {A1111Config.SD_MODEL_CHECKPOINT: model_option['title']}
+                            self.update_settings(remote_setting_change)
                         return
                 raise RuntimeError(f'Selected model "{model_name}" not found in available options.')
+            cache.connect(self, Cache.SD_MODEL, _update_remote_model_selection)
 
-            cache.connect(self, Cache.SD_MODEL, _update_model)
+            def _update_local_model_selection(selected_model_title: str) -> None:
+                if not self._connected:
+                    return
+                for model_option in model_options:
+                    if model_option['title'] == selected_model_title:
+                        cache.set(Cache.SD_MODEL, model_option['model_name'])
+                        return
+                raise RuntimeError(f'Selected model "{selected_model_title}" not found in available options.')
+            _update_local_model_selection(current_model_title)
+            webui_config.connect(self, A1111Config.SD_MODEL_CHECKPOINT, _update_local_model_selection)
+
+            clip_skip = webui_config.get(A1111Config.CLIP_STOP_AT_LAST_LAYERS)
+            cache.set(Cache.CLIP_SKIP, clip_skip)
+
+            def _update_remote_clip_skip(step: int) -> None:
+                if not self._connected or step == webui_config.get(A1111Config.CLIP_STOP_AT_LAST_LAYERS):
+                    return
+                remote_settings_change = {A1111Config.CLIP_STOP_AT_LAST_LAYERS: step}
+                self.update_settings(remote_settings_change)
+            cache.connect(self, Cache.CLIP_SKIP, _update_remote_clip_skip)
+
+            def _update_local_clip_skip(step: int) -> None:
+                if not self._connected:
+                    return
+                cache.set(Cache.CLIP_SKIP, step)
+            webui_config.connect(self, A1111Config.CLIP_STOP_AT_LAST_LAYERS, _update_local_clip_skip)
+
         except (RuntimeError, KeyError) as err:
             logger.error(f'Loading WebUI model connection failed: {err}')
         try:
@@ -492,6 +513,7 @@ class SDWebUIGenerator(SDGenerator):
             self._control_panel.hide()
             self._control_panel.generate_signal.connect(self.start_and_manage_image_generation)
             self._control_panel.interrogate_signal.connect(self.interrogate)
+            self._control_panel.add_extras_tab(self._gen_extras_tab)
         return self._control_panel
 
     def _async_progress_check(self, external_status_signal: Optional[Signal] = None):
@@ -610,9 +632,13 @@ class SDWebUIGenerator(SDGenerator):
             for i, response_image in enumerate(image_data):
                 self._cache_generated_image(response_image, i)
             if info is not None:
-                logger.info(f'Image generation result info: {json.dumps(info, indent=2)}')
-                if isinstance(info, dict) and 'seed' in info:
-                    status = {'seed': str(info['seed'])}
+                # logger.info(f'Image generation result info: {json.dumps(info, indent=2)}')
+                if isinstance(info, dict):
+                    status = {}
+                    if 'seed' in info:
+                        status['seed'] = str(info['seed'])
+                    if 'subseed' in info:
+                        status['subseed'] = str(info['subseed'])
                     status_signal.emit(status)
         except ReadTimeout:
             raise RuntimeError(ERROR_MESSAGE_TIMEOUT)
@@ -642,20 +668,3 @@ class SDWebUIGenerator(SDGenerator):
         # TODO: update after the prompt style endpoint gets POST support
         # style_window.should_save_changes.connect(self._update_styles)
         style_window.exec()
-
-    @menu_action(MENU_STABLE_DIFFUSION, 'lcm_mode_shortcut', 210, condition_check=_check_lcm_mode_available)
-    def set_lcm_mode(self) -> None:
-        """Apply all settings required for using an LCM LoRA module."""
-        cache = Cache()
-        loras = [lora['name'] for lora in Cache().get(Cache.LORA_MODELS)]
-        if LCM_LORA_1_5 in loras:
-            lora_name = LCM_LORA_1_5
-        else:
-            lora_name = LCM_LORA_XL
-        lora_key = f'<lora:{lora_name}:1>'
-        prompt = cache.get(Cache.PROMPT)
-        if lora_key not in prompt:
-            cache.set(Cache.PROMPT, f'{prompt} {lora_key}')
-        cache.set(Cache.GUIDANCE_SCALE, 1.5)
-        cache.set(Cache.SAMPLING_STEPS, 8)
-        cache.set(Cache.SAMPLING_METHOD, LCM_SAMPLER)

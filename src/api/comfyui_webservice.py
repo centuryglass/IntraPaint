@@ -20,7 +20,7 @@ from src.api.comfyui.basic_upscale_workflow_builder import build_basic_upscaling
 from src.api.comfyui.comfyui_types import QueueAdditionRequest, QueueAdditionResponse, QueueDeletionRequest, \
     ImageFileReference, PromptExecOutputs, NodeInfoResponse, SystemStatResponse, ImageUploadParams, \
     IMAGE_UPLOAD_FILE_NAME, ImageUploadResponse, MaskUploadParams, QueueInfoResponse, ACTIVE_QUEUE_KEY, \
-    PENDING_QUEUE_KEY, QueueHistoryResponse
+    PENDING_QUEUE_KEY, QueueHistoryResponse, FreeMemoryRequest
 from src.api.comfyui.controlnet_comfyui_utils import get_all_preprocessors
 from src.api.comfyui.diffusion_workflow_builder import DiffusionWorkflowBuilder
 from src.api.comfyui.latent_upscale_workflow_builder import LatentUpscaleWorkflowBuilder
@@ -137,7 +137,7 @@ class ComfyUiWebservice(WebService):
         self._ksampler_info: Optional[NodeInfoResponse] = None
         self._client_id = str(uuid.uuid4())
 
-    # General utility:
+    # Loading available options and settings:
 
     def get_sampler_names(self) -> list[str]:
         """Gets the list of sampling method names from KSampler node info."""
@@ -228,6 +228,8 @@ class ComfyUiWebservice(WebService):
                                                          None)
         return control_type_builder.get_control_types()
 
+    # File I/O:
+
     def upload_image(self, image: QImage, name: Optional[str] = None, subfolder: Optional[str] = None,
                      temp=False, overwrite=True) -> ImageFileReference:
         """Uploads an image for img2img, inpainting, ControlNet, etc."""
@@ -313,6 +315,8 @@ class ComfyUiWebservice(WebService):
                 logger.error(f'Skipping image {image_ref}: {err}')
         return images
 
+    # Running ComfyUI workflows:
+
     def _build_diffusion_body(self, seed: Optional[int] = None,
                               workflow_builder: Optional[DiffusionWorkflowBuilder] = None) -> DiffusionWorkflowBuilder:
         """Apply cached parameters to begin building a ComfyUI workflow."""
@@ -395,49 +399,6 @@ class ComfyUiWebservice(WebService):
                                                  float(control_unit.control_strength.value),
                                                  float(control_unit.control_start.value),
                                                  float(control_unit.control_end.value))
-
-    def get_queue_info(self) -> QueueInfoResponse:
-        """Get info on the set of queued jobs."""
-        res_body = self.get(ComfyEndpoints.QUEUE, timeout=DEFAULT_TIMEOUT).json()
-        for queue_key in [ACTIVE_QUEUE_KEY, PENDING_QUEUE_KEY]:
-            assert queue_key in res_body
-            queue_list = res_body[queue_key]
-            assert isinstance(queue_list, list)
-            res_body[queue_key] = [tuple(queue_entry) for queue_entry in queue_list]
-        return cast(QueueInfoResponse, res_body)
-
-    def check_queue_entry(self, entry_uuid: str, task_number: int) -> AsyncTaskProgress:
-        """Returns the status of a queued task, along with associated data when relevant."""
-        endpoint = f'{ComfyEndpoints.HISTORY}/{entry_uuid}'
-        history_response = cast(QueueHistoryResponse, self.get(endpoint, timeout=DEFAULT_TIMEOUT).json())
-        if entry_uuid in history_response:
-            entry_history = history_response[entry_uuid]
-            if entry_history['status']['status_str'] == 'error':
-                return {'status': AsyncTaskStatus.FAILED}
-            if entry_history['status']['completed']:
-                progress: AsyncTaskProgress = {
-                    'status': AsyncTaskStatus.FINISHED,
-                    'outputs': {'images': []}
-                }
-                for output_data in entry_history['outputs'].values():
-                    if 'images' in output_data:
-                        for reference in output_data['images']:
-                            progress['outputs']['images'].append(cast(ImageFileReference, reference))
-                return progress
-        queue_info = self.get_queue_info()
-        for running_task in queue_info['queue_running']:
-            if running_task[1] == entry_uuid:
-                return {'status': AsyncTaskStatus.ACTIVE}
-        queue_index = 0
-        task_found = False
-        for pending_task in queue_info['queue_pending']:
-            if pending_task[0] < task_number:
-                queue_index += 1
-            elif pending_task[0] == task_number:
-                task_found = True
-        if task_found:
-            return {'status': AsyncTaskStatus.PENDING, 'index': queue_index}
-        return {'status': AsyncTaskStatus.NOT_FOUND}
 
     def txt2img(self,
                 control_image: QImage | ImageFileReference,
@@ -661,6 +622,51 @@ class ComfyUiWebservice(WebService):
                                                     timeout=DEFAULT_TIMEOUT).json())
         return res
 
+    # Queued/in-progress workflow status and control:
+
+    def get_queue_info(self) -> QueueInfoResponse:
+        """Get info on the set of queued jobs."""
+        res_body = self.get(ComfyEndpoints.QUEUE, timeout=DEFAULT_TIMEOUT).json()
+        for queue_key in [ACTIVE_QUEUE_KEY, PENDING_QUEUE_KEY]:
+            assert queue_key in res_body
+            queue_list = res_body[queue_key]
+            assert isinstance(queue_list, list)
+            res_body[queue_key] = [tuple(queue_entry) for queue_entry in queue_list]
+        return cast(QueueInfoResponse, res_body)
+
+    def check_queue_entry(self, entry_uuid: str, task_number: int) -> AsyncTaskProgress:
+        """Returns the status of a queued task, along with associated data when relevant."""
+        endpoint = f'{ComfyEndpoints.HISTORY}/{entry_uuid}'
+        history_response = cast(QueueHistoryResponse, self.get(endpoint, timeout=DEFAULT_TIMEOUT).json())
+        if entry_uuid in history_response:
+            entry_history = history_response[entry_uuid]
+            if entry_history['status']['status_str'] == 'error':
+                return {'status': AsyncTaskStatus.FAILED}
+            if entry_history['status']['completed']:
+                progress: AsyncTaskProgress = {
+                    'status': AsyncTaskStatus.FINISHED,
+                    'outputs': {'images': []}
+                }
+                for output_data in entry_history['outputs'].values():
+                    if 'images' in output_data:
+                        for reference in output_data['images']:
+                            progress['outputs']['images'].append(cast(ImageFileReference, reference))
+                return progress
+        queue_info = self.get_queue_info()
+        for running_task in queue_info['queue_running']:
+            if running_task[1] == entry_uuid:
+                return {'status': AsyncTaskStatus.ACTIVE}
+        queue_index = 0
+        task_found = False
+        for pending_task in queue_info['queue_pending']:
+            if pending_task[0] < task_number:
+                queue_index += 1
+            elif pending_task[0] == task_number:
+                task_found = True
+        if task_found:
+            return {'status': AsyncTaskStatus.PENDING, 'index': queue_index}
+        return {'status': AsyncTaskStatus.NOT_FOUND}
+
     def interrupt(self, task_id: Optional[str] = None) -> None:
         """Stops the active workflow, and removes a task from the queue if task_id is not None."""
         if task_id is not None:
@@ -698,3 +704,13 @@ class ComfyUiWebservice(WebService):
                 if 'value' in data and 'max' in data:
                     return round(data['value'] / data['max'] * 100, ndigits=4)
         return None
+
+    # Misc. utility:
+    def free_memory(self) -> None:
+        """Clear cached data to free GPU memory."""
+        body: FreeMemoryRequest = {
+            'unload_models': True,
+            'free_memory': True
+        }
+        self.post(ComfyEndpoints.FREE, body, timeout=DEFAULT_TIMEOUT)
+

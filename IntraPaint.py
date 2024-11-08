@@ -4,10 +4,11 @@ Assuming you're running the A1111 stable-diffusion API on the same machine with 
 `python IntraPaint.py` should be all you need. For more information on options, run `python IntraPaint.py --help`
 """
 import atexit
-import logging
 import os
 import sys
 import traceback
+import logging
+from logging.handlers import RotatingFileHandler
 
 from PySide6.QtCore import QTranslator, QObject, QEvent
 from PySide6.QtGui import QPixmap
@@ -66,7 +67,7 @@ args = parser.parse_args()
 
 # Logging setup:
 LOG_FILE_PATH = os.path.join(LOG_DIR, 'IntraPaint.log')
-log_file_handler = logging.FileHandler(LOG_FILE_PATH)
+log_file_handler = RotatingFileHandler(LOG_FILE_PATH, maxBytes=20000000, backupCount=3)
 log_file_handler.setLevel(logging.INFO)
 log_formatter = logging.Formatter('%(asctime)s: %(levelname)s: %(name)s: %(message)s')
 log_file_handler.setFormatter(log_formatter)  # Also log to stdout if --verbose is set:
@@ -120,6 +121,7 @@ if args.dev:
                 sys.exit(1)
             return False
 
+
     event_filter = WindowEventFilter()
     app.installEventFilter(event_filter)
 
@@ -127,6 +129,7 @@ if args.dev:
 try:
     # noinspection PyUnresolvedReferences
     import pyi_splash
+
     pyi_splash.close()
 except ImportError:
     pass  # Not using the pyinstaller bundle

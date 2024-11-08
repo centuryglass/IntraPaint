@@ -1,8 +1,9 @@
 # Development tasks
 
 More bugs:
-- Cached model and sampler are used even if we don't find them in the API
 - Catch the error message that shows up when you try to scale an image more than 4x and display something more user-friendly.  Better yet, figure out how to repeat upscaling to get greater than 4x multipliers
+- time formatting issues when ETA is more than 1min
+- After ComfyUI->WebUI swap, LCM mode causes "assert LCM_LORA_XL in loras" error
 
 # v.1.1.0 Plans: ComfyUI support and API expansions
 ## Goals:

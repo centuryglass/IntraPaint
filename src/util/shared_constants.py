@@ -89,9 +89,7 @@ GENERATE_ERROR_MESSAGE_EMPTY_MASK = _tr('Nothing was selected in the image gener
 # Upscaling:
 UPSCALE_ERROR_TITLE = _tr('Upscale failure')
 UPSCALED_LAYER_NAME = _tr('Upscaled image content')
-
-# ControlNet:
-
+UPSCALE_OPTION_NONE = _tr('None')
 
 # Argument used to disable or alter certain UI elements for better use in timelapse footage:
 TIMELAPSE_MODE_FLAG = '--timelapse_mode'

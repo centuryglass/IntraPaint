@@ -268,5 +268,7 @@ class ImageGenerator(MenuBuilder):
         assert self._window is not None
         if 'seed' in status_dict:
             Cache().set(Cache.LAST_SEED, str(status_dict['seed']))
+        if 'subseed' in status_dict:
+            Cache().set(Cache.WEBUI_LAST_SUBSEED, str(status_dict['subseed']))
         if 'progress' in status_dict:
             self._window.set_loading_message(status_dict['progress'])

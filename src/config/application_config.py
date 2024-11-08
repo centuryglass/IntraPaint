@@ -92,7 +92,6 @@ class AppConfig(Config, metaclass=Singleton):
     OPENGL_ACCELERATION: str
     PIL_DOWNSCALE_MODE: str
     PIL_UPSCALE_MODE: str
-    RESTORE_FACES: str
     SAVED_COLORS: str
     SELECTION_COLOR: str
     SELECTION_SCREEN_ZOOMS_TO_CHANGED: str
@@ -104,7 +103,6 @@ class AppConfig(Config, metaclass=Singleton):
     TABLET_PRESSURE_CURVE: str
     TAB_FONT_POINT_SIZE: str
     THEME: str
-    TILING: str
     TOOLBAR_TOOL_BUTTON_COUNT: str
     UNDO_MERGE_INTERVAL: str
     USE_ERROR_HANDLER: str

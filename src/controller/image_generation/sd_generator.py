@@ -32,7 +32,7 @@ from src.util.menu_builder import menu_action
 from src.util.parameter import TYPE_LIST, TYPE_STR, TYPE_FLOAT, TYPE_DICT
 from src.util.shared_constants import PROJECT_DIR, \
     URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, \
-    URL_REQUEST_TITLE, PIL_SCALING_MODES, UPSCALED_LAYER_NAME, UPSCALE_ERROR_TITLE
+    URL_REQUEST_TITLE, PIL_SCALING_MODES, UPSCALED_LAYER_NAME, UPSCALE_ERROR_TITLE, UPSCALE_OPTION_NONE
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +79,19 @@ SD_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/stable-diffusion.
 STABLE_DIFFUSION_CONFIG_CATEGORY = QApplication.translate('config.application_config', 'Stable-Diffusion')
 ICON_PATH_CONTROLNET_TAB = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
 MENU_STABLE_DIFFUSION = 'Stable-Diffusion'
+
+
+LCM_SAMPLER = 'LCM'
+LCM_LORA_1_5 = 'lcm-lora-sdv1-5'
+LCM_LORA_XL = 'lcm-lora-sdxl'
+
+
+def _check_lcm_mode_available(_) -> bool:
+    sampling_methods = [str(method).lower() for method in Cache().get_options(Cache.SAMPLING_METHOD)]
+    if LCM_SAMPLER.lower() not in sampling_methods:
+        return False
+    loras = [lora['name'] for lora in Cache().get(Cache.LORA_MODELS)]
+    return LCM_LORA_1_5 in loras or LCM_LORA_XL in loras
 
 
 def _check_prompt_styles_available(_) -> bool:
@@ -257,16 +270,29 @@ class SDGenerator(ImageGenerator):
                         cache.set(cache_key, api_data)
                         continue
                     assert isinstance(api_data, list)
+
+                    # Sort API values.  Sampling method isn't sorted because the default order is somewhat helpful
+                    # in figuring out which ones are actually useful, and because otherwise that might make DDIM
+                    # the default option. We definitely don't want that, DDIM is outdated and unlikely to actually be
+                    # the best option in most situations.
+                    if cache_key != Cache.SAMPLING_METHOD and len(api_data) > 0 and isinstance(api_data[0], str):
+                        api_data.sort(key=lambda value: str(value).lower())
                     if cache_data_type == TYPE_LIST:
                         cache.set(cache_key, api_data)
                     else:
                         assert cache_data_type == TYPE_STR
                         # Combine default options with dynamic options. This is so we can support having default
                         # options like "any"/"none"/"auto" when appropriate.
+                        cache.restore_default_options(cache_key)
                         option_list = cast(list, cache.get_options(cache_key))
+                        if cache_key == Cache.UPSCALE_METHOD:
+                            for i, pil_scaling_mode in enumerate(PIL_SCALING_MODES):
+                                option_list.insert(i, pil_scaling_mode)
                         for option in api_data:
                             if option not in option_list:
                                 option_list.append(option)
+                        if cache_key == Cache.UPSCALE_METHOD and UPSCALE_OPTION_NONE not in option_list:
+                            option_list.append(UPSCALE_OPTION_NONE)
                         cache.update_options(cache_key, option_list)
 
                 except (RuntimeError, KeyError) as err:
@@ -499,7 +525,7 @@ class SDGenerator(ImageGenerator):
                 if self._lora_images is None:
                     self._lora_images = {}
                 for i, lora in enumerate(loras):
-                    assert isinstance(lora, dict)
+                    assert isinstance(lora, dict), f'expected dict, found {type(lora)}'
                     status_signal.emit(f'Loading thumbnail {i + 1}/{len(loras)}')
                     thumbnail = self.load_lora_thumbnail(lora)
                     if thumbnail is not None and not thumbnail.isNull():
@@ -523,3 +549,30 @@ class SDGenerator(ImageGenerator):
         else:
             lora_window = ExtraNetworkWindow(loras, self._lora_images)
             lora_window.exec()
+
+    @menu_action(MENU_STABLE_DIFFUSION, 'lcm_mode_shortcut', 210, condition_check=_check_lcm_mode_available)
+    def set_lcm_mode(self) -> None:
+        """Apply all settings required for using an LCM LoRA module."""
+        cache = Cache()
+        loras = [lora['name'] for lora in Cache().get(Cache.LORA_MODELS)]
+        sampling_methods = cast(list[str], Cache().get_options(Cache.SAMPLING_METHOD))
+        lcm_sampler: Optional[str] = None
+
+        # ComfyUI and WebUI use the same name but different case for the LCM sampler, so check options to find the
+        # right one:
+        for sampler in sampling_methods:
+            if sampler.lower() == LCM_SAMPLER.lower():
+                lcm_sampler = sampler
+                break
+        assert lcm_sampler is not None, 'LCM sampler not found'
+        if LCM_LORA_1_5 in loras:
+            lora_name = LCM_LORA_1_5
+        else:
+            lora_name = LCM_LORA_XL
+        lora_key = f'<lora:{lora_name}:1>'
+        prompt = cache.get(Cache.PROMPT)
+        if lora_key not in prompt:
+            cache.set(Cache.PROMPT, f'{prompt} {lora_key}')
+        cache.set(Cache.GUIDANCE_SCALE, 1.5)
+        cache.set(Cache.SAMPLING_STEPS, 8)
+        cache.set(Cache.SAMPLING_METHOD, lcm_sampler)

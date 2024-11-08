@@ -68,6 +68,9 @@ DEFAULT_CONTROL_TYPE = 'All'
 CACHE_SAVE_TIMER_INTERVAL = 100
 PREVIEW_IMAGE_SIZE = 300
 
+# If a preprocessor name ends with "Preprocessor", we can just remove that part of the name for conciseness.
+PREPROCESSOR_SUFFIX = 'Preprocessor'
+
 
 class TabbedControlNetPanel(QTabWidget):
     """Tabbed ControlNet panel with three ControlNet units."""
@@ -268,7 +271,7 @@ class ControlNetPanel(BorderedWidget):
 
         self._preprocessor_combobox = QComboBox(self)
         self._model_combobox = QComboBox(self)
-        self._preprocessor_combobox.currentTextChanged.connect(self._handle_preprocessor_change)
+        self._preprocessor_combobox.currentIndexChanged.connect(self._handle_preprocessor_change)
         self._model_combobox.currentIndexChanged.connect(self._handle_model_change)
 
         # Avoid letting excessively long type/preprocessor/model names distort the UI layout:
@@ -298,10 +301,13 @@ class ControlNetPanel(BorderedWidget):
                                        self._reuse_image_checkbox,
                                        self._control_type_combobox,
                                        self._preprocessor_combobox,
-                                       self._model_combobox
+                                       self._model_combobox,
+                                       self._preview_button,
+                                       self._preview_image_widget
                                    ] + self._dynamic_control_labels + self._dynamic_controls
             control_image_widgets = [
                 self._control_image_label,
+                self._load_image_button,
                 self._image_path_edit
             ]
             for widget in main_control_widgets:
@@ -462,28 +468,40 @@ class ControlNetPanel(BorderedWidget):
         with signals_blocked(self._preprocessor_combobox):
             while self._preprocessor_combobox.count() > 0:
                 self._preprocessor_combobox.removeItem(0)
-            preprocessors = [*control_type['module_list']]
+            category_preprocessor_names = [*control_type['module_list']]
+            all_preprocessors: list[ControlNetPreprocessor] = [*self._preprocessors]
             # Sort alphabetically, except that "None" preprocessor should be last:
-            preprocessors.sort(key=lambda module: module.lower() if module != PREPROCESSOR_NONE else '~')
-            for preprocessor in preprocessors:
-                self._preprocessor_combobox.addItem(preprocessor)
+            all_preprocessors.sort(key=lambda module: module.name.lower() if module.name != PREPROCESSOR_NONE else '~')
+            for preprocessor in all_preprocessors:
+                assert preprocessor is not None
+                display_name = preprocessor.name
+                if display_name not in category_preprocessor_names:
+                    continue
+                if display_name.endswith(PREPROCESSOR_SUFFIX):
+                    display_name = display_name[:-len(PREPROCESSOR_SUFFIX)]
+                self._preprocessor_combobox.addItem(display_name, userData=preprocessor)
             selected_preprocessor = self._control_unit.preprocessor.name
-            if selected_preprocessor not in preprocessors or selected_preprocessor.lower() == PREPROCESSOR_NONE.lower():
+            if selected_preprocessor not in category_preprocessor_names \
+                    or selected_preprocessor.lower() == PREPROCESSOR_NONE.lower():
                 selected_preprocessor = control_type['default_option']
-                if selected_preprocessor not in preprocessors:
+                if selected_preprocessor not in category_preprocessor_names:
                     selected_preprocessor = PREPROCESSOR_NONE
+            if selected_preprocessor.endswith(PREPROCESSOR_SUFFIX):
+                selected_preprocessor = selected_preprocessor[:-len(PREPROCESSOR_SUFFIX)]
             preprocessor_index = self._preprocessor_combobox.findText(selected_preprocessor)
             if preprocessor_index < 0:
                 raise RuntimeError(f'Failed to find preprocessor "{selected_preprocessor}" in control type'
-                                   f' {control_type_name}, options={[self._preprocessor_combobox.itemText(i) for
-                                                                     i in range(len(preprocessors))]}')
+                                   f' {control_type_name}, options={[self._preprocessor_combobox.itemData(i).name for
+                                                                     i in range(self._preprocessor_combobox.count())]}')
 
             self._preprocessor_combobox.setCurrentIndex(preprocessor_index)
             if selected_preprocessor != self._control_unit.preprocessor.name:
-                self._handle_preprocessor_change(selected_preprocessor)
+                self._handle_preprocessor_change(preprocessor_index)
 
-    def _handle_preprocessor_change(self, selected_preprocessor: str) -> None:
+    def _handle_preprocessor_change(self, preprocessor_index: int) -> None:
         """When the selected preprocessor module changes, update config and module option controls."""
+        preprocessor = self._preprocessor_combobox.itemData(preprocessor_index)
+        assert isinstance(preprocessor, ControlNetPreprocessor)
         self._resolution_label = None
         self._resolution_slider = None
         self.set_preprocessor_preview(None)
@@ -494,19 +512,9 @@ class ControlNetPanel(BorderedWidget):
             parameter_widget.setParent(None)
         self._dynamic_control_labels = []
         self._dynamic_controls = []
-        preprocessor: Optional[ControlNetPreprocessor] = None
-        if selected_preprocessor.lower() == PREPROCESSOR_NONE.lower():
-            preprocessor = ControlNetPreprocessor(PREPROCESSOR_NONE, PREPROCESSOR_NONE, [])
-        else:
-            for saved_preprocessor in self._preprocessors:
-                if saved_preprocessor.name == selected_preprocessor:
-                    preprocessor = saved_preprocessor
-            if preprocessor is None:
-                raise ValueError(f'Could not find "{selected_preprocessor}" preprocessor. This indicates a bug in either'
-                                 ' control type option setup or preprocessor parameterization.')
         self._control_unit.preprocessor = preprocessor
         self._schedule_cache_update()
-        if selected_preprocessor.lower() != PREPROCESSOR_NONE.lower():
+        if preprocessor.name.lower() != PREPROCESSOR_NONE.lower():
             for parameter in preprocessor.parameters:
                 parameter_widget, label = parameter.get_input_widget(True)
                 parameter_widget.valueChanged.connect(lambda _: self._schedule_cache_update())

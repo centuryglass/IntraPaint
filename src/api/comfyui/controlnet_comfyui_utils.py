@@ -6,6 +6,7 @@ from src.api.comfyui.comfyui_types import (NodeInfoResponse, CONTROLNET_PREPROCE
                                            BoolParamDef, FloatParamDef, StrParamDef, ParamDef)
 from src.api.comfyui.nodes.controlnet.dynamic_preprocessor_node import DynamicPreprocessorNode
 from src.api.controlnet.control_parameter import ControlParameter
+from src.api.controlnet.controlnet_constants import PREPROCESSOR_NONE
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.util.parameter import TYPE_INT, TYPE_BOOL, TYPE_FLOAT, TYPE_STR
 
@@ -31,6 +32,7 @@ INVALID_PREPROCESSOR_NODES = {
 
 def get_all_preprocessors(node_data: dict[str, NodeInfoResponse]) -> list[ControlNetPreprocessor]:
     """Parses available node data to find the complete list of usable ControlNet preprocessiors."""
+    none_preprocessor_found = False
     preprocessors: list[ControlNetPreprocessor] = []
     for node_info in node_data.values():
         category = node_info['category']
@@ -141,4 +143,8 @@ def get_all_preprocessors(node_data: dict[str, NodeInfoResponse]) -> list[Contro
         preprocessor.has_image_input = has_image_input
         preprocessor.has_mask_input = has_mask_input
         preprocessors.append(preprocessor)
+        if key == PREPROCESSOR_NONE:
+            none_preprocessor_found = True
+    if not none_preprocessor_found:
+        preprocessors.append(ControlNetPreprocessor(PREPROCESSOR_NONE, PREPROCESSOR_NONE, []))
     return preprocessors

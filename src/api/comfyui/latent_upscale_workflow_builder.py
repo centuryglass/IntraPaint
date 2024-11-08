@@ -121,7 +121,10 @@ class LatentUpscaleWorkflowBuilder(DiffusionWorkflowBuilder):
                 model_out_index = HypernetLoaderNode.IDX_MODEL
 
         # Load starting image:
-        image_node = LoadImageNode(self.source_image)
+        source_image_str = self.source_image
+        if source_image_str is None:
+            raise RuntimeError('No image provided for upscaling')
+        image_node: ComfyNode = LoadImageNode(source_image_str)
         image_out_index = LoadImageNode.IDX_IMAGE
 
         # Load prompt conditioning:

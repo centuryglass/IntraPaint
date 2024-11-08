@@ -1,5 +1,4 @@
 """Creates a ComfyUI workflow used to apply an upscaling model."""
-from typing import Optional
 
 from src.api.comfyui.comfyui_types import ImageFileReference
 from src.api.comfyui.nodes.apply_upscaler_node import ApplyUpscalerNode
@@ -10,8 +9,7 @@ from src.api.comfyui.nodes.save_image_node import SaveImageNode
 from src.api.comfyui.workflow_builder_utils import image_ref_to_str
 
 
-def build_basic_upscaling_workflow(source_image: Optional[ImageFileReference],
-                                   upscale_model_name: str) -> ComfyNodeGraph:
+def build_basic_upscaling_workflow(source_image: ImageFileReference, upscale_model_name: str) -> ComfyNodeGraph:
     """Creates a ComfyUI workflow used to apply an upscaling model."""
     workflow = ComfyNodeGraph()
     load_image_node = LoadImageNode(image_ref_to_str(source_image))

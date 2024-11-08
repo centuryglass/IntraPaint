@@ -75,7 +75,7 @@ class DiffusionRequestBody:
 
     # subseed: also known as "variation seed", sets variance across random generation
     subseed: Optional[int] = None
-    subseed_strength: Optional[int] = None
+    subseed_strength: Optional[float] = None
 
     # Seed resize options: for getting similar results at different resolutions:
     seed_resize_from_h: Optional[int] = None
@@ -155,8 +155,8 @@ class DiffusionRequestBody:
         self.negative_prompt = cache.get(Cache.NEGATIVE_PROMPT)
         self.seed = int(cache.get(Cache.SEED))
 
-        self.restore_faces = config.get(AppConfig.RESTORE_FACES)
-        self.tiling = config.get(AppConfig.TILING)
+        self.restore_faces = cache.get(Cache.WEBUI_RESTORE_FACES)
+        self.tiling = cache.get(Cache.WEBUI_TILING)
         if self.alwayson_scripts is None:
             self.alwayson_scripts = {}
 
@@ -199,6 +199,16 @@ class DiffusionRequestBody:
             if CONTROLNET_SCRIPT_KEY not in self.alwayson_scripts:
                 self.alwayson_scripts[CONTROLNET_SCRIPT_KEY] = {'args': []}
             self.alwayson_scripts[CONTROLNET_SCRIPT_KEY]['args'].append(control_unit_dict)
+
+        # Add "extras" tab parameters:
+        subseed = cache.get(Cache.WEBUI_SUBSEED)
+        if subseed != -1:
+            self.subseed = subseed
+            self.subseed_strength = cache.get(Cache.WEBUI_SUBSEED_STRENGTH)
+        if cache.get(Cache.WEBUI_SEED_RESIZE_ENABLED):
+            seed_resize = cast(QSize, cache.get(Cache.WEBUI_SEED_RESIZE))
+            self.seed_resize_from_w = seed_resize.width()
+            self.seed_resize_from_h = seed_resize.height()
 
     def add_init_image(self, image: QImage) -> None:
         """Adds a base64 init image."""

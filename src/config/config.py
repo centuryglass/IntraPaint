@@ -23,7 +23,7 @@ from PySide6.QtWidgets import QApplication
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.combo_box import ComboBox
-from src.util.parameter import ParamType, DynamicFieldWidget, ParamTypeList
+from src.util.parameter import ParamType, DynamicFieldWidget, ParamTypeList, get_parameter_type
 from src.util.signals_blocked import signals_blocked
 
 logger = logging.getLogger(__name__)
@@ -43,6 +43,8 @@ INVALID_KEY_ERROR = _tr('Loading {key} failed: {err}')
 INVALID_JSON_DEFINITION_ERROR = _tr('Reading JSON config definitions failed: {err}')
 INVALID_JSON_ERROR = _tr('Reading JSON config values failed: {err}')
 UNKNOWN_KEY_ERROR = _tr('Tried to access unknown config value "{key}"')
+INVALID_OPTION_KEY_ERROR = _tr('Tried to track fixed options for key "{key}", which does not have a fixed list of'
+                               ' options.')
 INVALID_KEYCODE_ERROR = _tr('Tried to get key code "{key}", found "{code_string}"')
 DUPLICATE_KEY_ERROR = _tr('Tried to add duplicate config entry for key "{key}"')
 
@@ -78,6 +80,7 @@ class Config:
         """
         self._entries: dict[str, ConfigEntry] = {}
         self._connected: dict[str, dict[Any, Callable[..., None]]] = {}
+        self._option_connected: dict[str, dict[Any, Callable[[ParamTypeList], None]]] = {}
         self._json_path = saved_value_path
         self._lock = Lock()
         self._save_timer = QTimer()
@@ -255,7 +258,7 @@ class Config:
         will immediately propagate to the underlying config file."""
         with self._lock:
             entry = self._entries[key]
-            control_widget = entry.get_input_widget(multi_line)
+            control_widget = entry.get_input_widget(multi_line, False)
             control_widget.setValue(entry.get_value())
             if isinstance(control_widget, CheckBox):
                 control_widget.setText(entry.name)
@@ -264,6 +267,9 @@ class Config:
 
                 def _update_config(new_value: Any) -> None:
                     self.set(config_key, new_value)
+
+                assert hasattr(control_widget, 'valueChanged')
+                control_widget.valueChanged.connect(_update_config)
 
                 def _update_control(new_value: Any) -> None:
                     if control_widget.value() != new_value:
@@ -278,9 +284,23 @@ class Config:
                                         control_widget.addItem(str(new_option), userData=new_option)
                         control_widget.setValue(new_value)
 
-                assert hasattr(control_widget, 'valueChanged')
-                control_widget.valueChanged.connect(_update_config)
                 self.connect(control_widget, key, _update_control)
+
+                if isinstance(control_widget, ComboBox):
+                    combobox = control_widget
+
+                    def _update_options(new_options: ParamTypeList) -> None:
+                        last_selected_text = combobox.currentText()
+                        with signals_blocked(combobox):
+                            while combobox.count() > 0:
+                                combobox.removeItem(0)
+                            for option in new_options:
+                                combobox.addItem(str(option), userData=option)
+                            new_index = combobox.findText(last_selected_text)
+                            if new_index >= 0:
+                                combobox.setCurrentIndex(new_index)
+
+                    self.connect_to_option_changes(combobox, key, _update_options)
             return control_widget
 
     def get_keycodes(self, key: str) -> QKeySequence:
@@ -391,7 +411,8 @@ class Config:
         Parameters
         ----------
         connected_object: object
-            An object to associate with this connection. Only one connection can be made for a connected_object.
+            An object to associate with this connection. Only one connection can be made between a given key and
+            connected_object.
         key: str
             A key tracked by this config file.
         on_change_fn: function(new_value), function(new_value, inner_key)
@@ -416,18 +437,44 @@ class Config:
 
             self._connected[key][connected_object] = wrapper_fn
 
+    def connect_to_option_changes(self,
+                                  connected_object: Any,
+                                  key: str,
+                                  on_change_fn: Callable[[ParamTypeList], None]) -> None:
+        """
+        Registers a callback function that should run when fixed options change for a particular key.
+
+        Parameters
+        ----------
+        connected_object: object
+            An object to associate with this connection. Only one options connection can be made between a given key and
+            connected_object.
+        key: str
+            A key tracked by this config file.
+        on_change_fn: function(new_options), function(new_value, inner_key)
+            The function to run when the option list changes.
+        """
+        if key not in self._option_connected:
+            raise KeyError(INVALID_OPTION_KEY_ERROR.format(key=key))
+        self._option_connected[key][connected_object] = on_change_fn
+
     def disconnect(self, connected_object: Any, key: str) -> None:
         """
-        Removes a callback function previously registered through config.connect() for a particular object and key.
+        Removes a callback function previously registered through config.connect() or config.connect_to_option_changes
+        for a particular object and key.
         """
         if key not in self._connected:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         self._connected[key].pop(connected_object, None)
+        if key in self._option_connected:
+            self._option_connected[key].pop(connected_object, None)
 
     def disconnect_all(self, connected_object: Any) -> None:
         """Removes all connections associated with a particular object."""
         for connection_list in self._connected.values():
             connection_list.pop(connected_object, None)
+        for option_connection_list in self._option_connected.values():
+            option_connection_list.pop(connected_object, None)
 
     def get_option_index(self, key: str) -> int:
         """Returns the index of the selected option for a given key.
@@ -469,7 +516,18 @@ class Config:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         last_value = self.get(key)
         self._entries[key].set_valid_options(options_list)
-        if last_value not in options_list:
+
+        callbacks = [*self._option_connected[key].items()]  # <- So callbacks can disconnect or replace themselves
+        for source, callback in callbacks:
+            try:
+                callback([*options_list])
+            except RuntimeError as err:
+                if 'already deleted' in str(err):
+                    logger.warning(f'Disconnecting from {key}, got error={err}')
+                    self.disconnect(source, key)
+                else:
+                    raise err
+        if last_value not in options_list and len(options_list) > 0:
             self.set(key, options_list[0])
 
     def restore_default_options(self, key: str) -> None:
@@ -483,11 +541,9 @@ class Config:
         """
         if key not in self._entries:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
-        last_value = self.get(key)
-        self._entries[key].restore_default_options()
-        default_option_list = self._entries[key].options
-        if default_option_list is not None and last_value not in default_option_list and len(default_option_list) > 0:
-            self.set(key, default_option_list[0])
+        default_options = self._entries[key].default_options()
+        if default_options is not None:
+            self.update_options(key, default_options)
 
     def add_option(self, key: str, option: ParamType) -> None:
         """
@@ -500,7 +556,15 @@ class Config:
         """
         if key not in self._entries:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
-        self._entries[key].add_option(option)
+        option_param_type = get_parameter_type(option)
+        if option_param_type != self._entries[key].type_name:
+            raise TypeError(f'Key "{key}": expected type "{self._entries[key].type_name}", but new option "{option}" '
+                            f'has type {option_param_type}')
+        all_options = self._entries[key].options
+        assert all_options is not None
+        if option not in all_options:
+            all_options.append(option)  # type: ignore
+            self.update_options(key, all_options)
 
     def get_categories(self) -> list[str]:
         """Returns all unique category strings."""
@@ -548,6 +612,8 @@ class Config:
                             save_json)
         self._entries[key] = entry
         self._connected[key] = {}
+        if options is not None:
+            self._option_connected[key] = {}
 
     def _write_to_json(self) -> None:
         if self._json_path is None:

@@ -9,11 +9,13 @@ from typing import Optional
 from PySide6.QtCore import QSize
 
 from src.api.comfyui.comfyui_types import ImageFileReference
+from src.api.comfyui.nodes.clip_skip_node import CLIPSkipNode
 from src.api.comfyui.nodes.comfy_node import ComfyNode
 from src.api.comfyui.nodes.comfy_node_graph import ComfyNodeGraph
 from src.api.comfyui.nodes.controlnet.apply_controlnet_node import ApplyControlNetNode
 from src.api.comfyui.nodes.controlnet.dynamic_preprocessor_node import DynamicPreprocessorNode
 from src.api.comfyui.nodes.controlnet.load_controlnet_node import LoadControlNetNode
+from src.api.comfyui.nodes.inpaint_model_conditioning_node import InpaintModelConditioningNode
 from src.api.comfyui.nodes.input.checkpoint_loader_node import CheckpointLoaderNode
 from src.api.comfyui.nodes.input.clip_text_encode_node import ClipTextEncodeNode
 from src.api.comfyui.nodes.input.empty_latent_image_node import EmptyLatentNode
@@ -27,11 +29,14 @@ from src.api.comfyui.nodes.model_extensions.lora_loader_node import LoraLoaderNo
 from src.api.comfyui.nodes.repeat_latent_node import RepeatLatentNode
 from src.api.comfyui.nodes.save_image_node import SaveImageNode
 from src.api.comfyui.nodes.vae.vae_decode_node import VAEDecodeNode
+from src.api.comfyui.nodes.vae.vae_decode_tiled_node import VAEDecodeTiledNode
 from src.api.comfyui.nodes.vae.vae_encode_node import VAEEncodeNode
+from src.api.comfyui.nodes.vae.vae_encode_tiled_node import VAEEncodeTiledNode
 from src.api.comfyui.workflow_builder_utils import random_seed, image_ref_to_str
 from src.api.controlnet.controlnet_constants import CONTROLNET_MODEL_NONE
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.config.cache import Cache
+from src.ui.window.extra_network_window import LORA_KEY_PATH
 from src.util.shared_constants import EDIT_MODE_TXT2IMG
 
 logger = logging.getLogger(__name__)
@@ -77,6 +82,10 @@ class DiffusionWorkflowBuilder:
         self._filename_prefix = ''
 
         # Optional params that can be set to alter diffusion behavior:
+        self._load_as_inpainting_model = False
+        self._clip_skip = 1
+        self._vae_tiling = False
+        self._vae_tile_size = DEFAULT_SIZE
         self._model_config: Optional[str] = None
         self._source_image: Optional[str] = None
         self._mask: Optional[str] = None
@@ -112,6 +121,16 @@ class DiffusionWorkflowBuilder:
         self._cfg_scale = cfg_scale
 
     @property
+    def clip_skip(self) -> int:
+        """Accesses the 'CLIP skip' value: the image generation step (counting from the last step backwards) where the
+           CLIP model is disabled."""
+        return self._clip_skip
+
+    @clip_skip.setter
+    def clip_skip(self, clip_skip: int) -> None:
+        self._clip_skip = clip_skip
+
+    @property
     def denoising_strength(self) -> float:
         """Accesses the denoising fraction (0.0 to 1.0). Should only be set below 1.0 when using a source image."""
         return self._denoising
@@ -130,6 +149,15 @@ class DiffusionWorkflowBuilder:
     @sd_model.setter
     def sd_model(self, model: str) -> None:
         self._sd_model = model
+
+    @property
+    def load_as_inpainting_model(self) -> bool:
+        """Accesses whether the workflow should be configured for a dedicated inpainting model."""
+        return self._load_as_inpainting_model
+
+    @load_as_inpainting_model.setter
+    def load_as_inpainting_model(self, is_inpainting_model: bool) -> None:
+        self._load_as_inpainting_model = is_inpainting_model
 
     @property
     def model_config_path(self) -> Optional[str]:
@@ -246,6 +274,24 @@ class DiffusionWorkflowBuilder:
     def filename_prefix(self, prefix: str) -> None:
         self._filename_prefix = prefix
 
+    @property
+    def vae_tiling_enabled(self) -> bool:
+        """Accesses whether tiled VAE encoding/decoding will be used."""
+        return self._vae_tiling
+
+    @vae_tiling_enabled.setter
+    def vae_tiling_enabled(self, use_tiling: bool) -> None:
+        self._vae_tiling = use_tiling
+
+    @property
+    def vae_tile_size(self) -> int:
+        """Accesses the VAE tile resolution used if VAE tiling is enabled."""
+        return self._vae_tile_size
+
+    @vae_tile_size.setter
+    def vae_tile_size(self, tile_size: int) -> None:
+        self._vae_tile_size = tile_size
+
     def add_extension_model(self, model_name: str, model_strength: float, clip_strength: float,
                             model_type: ExtensionModelType) -> None:
         """Adds a LoRA or Hypernetwork model to the workflow. Models are applied in the order that they're added."""
@@ -312,6 +358,13 @@ class DiffusionWorkflowBuilder:
         vae_model_node = model_loading_node
         clip_model_node = model_loading_node
 
+        if self.clip_skip > 1:
+            clip_skip_node = CLIPSkipNode(self.clip_skip)
+            workflow.connect_nodes(clip_skip_node, CLIPSkipNode.CLIP,
+                                   clip_model_node, clip_out_index)
+            clip_model_node = clip_skip_node
+            clip_out_index = CLIPSkipNode.IDX_CLIP
+
         for extension_node in self._extension_model_nodes:
             if isinstance(extension_node, LoraLoaderNode):
                 workflow.connect_nodes(extension_node, LoraLoaderNode.CLIP,
@@ -329,36 +382,6 @@ class DiffusionWorkflowBuilder:
                 sd_model_node = extension_node
                 model_out_index = HypernetLoaderNode.IDX_MODEL
 
-        # Load image source:
-        mask_load_node: Optional[LoadImageMaskNode] = None
-        if self.source_image is None:
-            image_loading_node: Optional[LoadImageNode] = None
-            latent_source_node: ComfyNode = EmptyLatentNode(self.batch_size, self.image_size)
-            latent_out_index = EmptyLatentNode.IDX_LATENT
-        else:
-            image_loading_node = LoadImageNode(self.source_image)
-            latent_image_node = VAEEncodeNode()
-            workflow.connect_nodes(latent_image_node, VAEEncodeNode.PIXELS,
-                                   image_loading_node, LoadImageNode.IDX_IMAGE)
-            workflow.connect_nodes(latent_image_node, VAEEncodeNode.VAE,
-                                   vae_model_node, vae_out_index)
-            latent_out_index = VAEEncodeNode.IDX_LATENT
-
-            latent_source_node = RepeatLatentNode(self.batch_size)
-            if self.mask is not None:
-                mask_load_node = LoadImageMaskNode(self.mask)
-                mask_apply_node = LatentMaskNode()
-                workflow.connect_nodes(mask_apply_node, LatentMaskNode.SAMPLES,
-                                       latent_image_node, latent_out_index)
-                workflow.connect_nodes(mask_apply_node, LatentMaskNode.MASK,
-                                       mask_load_node, LoadImageMaskNode.IDX_MASK)
-                workflow.connect_nodes(latent_source_node, RepeatLatentNode.SAMPLES,
-                                       mask_apply_node, LatentMaskNode.IDX_LATENT)
-            else:
-                workflow.connect_nodes(latent_source_node, RepeatLatentNode.SAMPLES,
-                                       latent_image_node, latent_out_index)
-            latent_out_index = RepeatLatentNode.IDX_LATENT
-
         # Load prompt conditioning:
         prompt_node = ClipTextEncodeNode(self.prompt)
         negative_prompt_node = ClipTextEncodeNode(self.negative_prompt)
@@ -369,6 +392,66 @@ class DiffusionWorkflowBuilder:
         positive_out_idx = ClipTextEncodeNode.IDX_CONDITIONING
         negative_node: ComfyNode = negative_prompt_node
         negative_out_idx = ClipTextEncodeNode.IDX_CONDITIONING
+
+        # Load image source:
+        mask_load_node: Optional[LoadImageMaskNode] = None
+        if self.mask is not None:
+            mask_load_node = LoadImageMaskNode(self.mask)
+
+        if self.source_image is None:
+            image_loading_node: Optional[LoadImageNode] = None
+            latent_source_node: ComfyNode = EmptyLatentNode(self.batch_size, self.image_size)
+            latent_out_idx = EmptyLatentNode.IDX_LATENT
+        else:
+            image_loading_node = LoadImageNode(self.source_image)
+
+            if mask_load_node is not None and self.load_as_inpainting_model:
+                inpaint_conditioning_node = InpaintModelConditioningNode()
+                workflow.connect_nodes(inpaint_conditioning_node, InpaintModelConditioningNode.POSITIVE,
+                                       positive_node, positive_out_idx)
+                workflow.connect_nodes(inpaint_conditioning_node, InpaintModelConditioningNode.NEGATIVE,
+                                       negative_node, negative_out_idx)
+                workflow.connect_nodes(inpaint_conditioning_node, InpaintModelConditioningNode.VAE,
+                                       vae_model_node, vae_out_index)
+                workflow.connect_nodes(inpaint_conditioning_node, InpaintModelConditioningNode.PIXELS,
+                                       image_loading_node, LoadImageNode.IDX_IMAGE)
+                workflow.connect_nodes(inpaint_conditioning_node, InpaintModelConditioningNode.MASK,
+                                       mask_load_node, LoadImageMaskNode.IDX_MASK)
+                positive_node = inpaint_conditioning_node
+                positive_out_idx = InpaintModelConditioningNode.IDX_POSITIVE
+                negative_node = inpaint_conditioning_node
+                negative_out_idx = InpaintModelConditioningNode.IDX_NEGATIVE
+                latent_source_node = inpaint_conditioning_node
+                latent_out_idx = InpaintModelConditioningNode.IDX_LATENT
+            else:
+                if self.vae_tiling_enabled:
+                    latent_image_node: ComfyNode = VAEEncodeTiledNode(self._vae_tile_size)
+                    workflow.connect_nodes(latent_image_node, VAEEncodeTiledNode.PIXELS,
+                                           image_loading_node, LoadImageNode.IDX_IMAGE)
+                    workflow.connect_nodes(latent_image_node, VAEEncodeTiledNode.VAE,
+                                           vae_model_node, vae_out_index)
+                    latent_out_idx = VAEEncodeTiledNode.IDX_LATENT
+                else:
+                    latent_image_node = VAEEncodeNode()
+                    workflow.connect_nodes(latent_image_node, VAEEncodeNode.PIXELS,
+                                           image_loading_node, LoadImageNode.IDX_IMAGE)
+                    workflow.connect_nodes(latent_image_node, VAEEncodeNode.VAE,
+                                           vae_model_node, vae_out_index)
+                    latent_out_idx = VAEEncodeNode.IDX_LATENT
+
+                latent_source_node = RepeatLatentNode(self.batch_size)
+                if mask_load_node is not None:
+                    mask_apply_node = LatentMaskNode()
+                    workflow.connect_nodes(mask_apply_node, LatentMaskNode.SAMPLES,
+                                           latent_image_node, latent_out_idx)
+                    workflow.connect_nodes(mask_apply_node, LatentMaskNode.MASK,
+                                           mask_load_node, LoadImageMaskNode.IDX_MASK)
+                    workflow.connect_nodes(latent_source_node, RepeatLatentNode.SAMPLES,
+                                           mask_apply_node, LatentMaskNode.IDX_LATENT)
+                else:
+                    workflow.connect_nodes(latent_source_node, RepeatLatentNode.SAMPLES,
+                                           latent_image_node, latent_out_idx)
+                latent_out_idx = RepeatLatentNode.IDX_LATENT
 
         # Load ControlNet Units:
         loaded_images: dict[str, LoadImageNode] = {}
@@ -420,14 +503,21 @@ class DiffusionWorkflowBuilder:
         workflow.connect_nodes(sampling_node, KSamplerNode.NEGATIVE,
                                negative_node, negative_out_idx)
         workflow.connect_nodes(sampling_node, KSamplerNode.LATENT_IMAGE,
-                               latent_source_node, latent_out_index)
+                               latent_source_node, latent_out_idx)
 
         # Decode and save images:
-        latent_decode_node = VAEDecodeNode()
-        workflow.connect_nodes(latent_decode_node, VAEDecodeNode.VAE,
-                               vae_model_node, vae_out_index)
-        workflow.connect_nodes(latent_decode_node, VAEDecodeNode.SAMPLES,
-                               sampling_node, KSamplerNode.IDX_LATENT)
+        if self.vae_tiling_enabled:
+            latent_decode_node: ComfyNode = VAEDecodeTiledNode(self._vae_tile_size)
+            workflow.connect_nodes(latent_decode_node, VAEDecodeTiledNode.VAE,
+                                   vae_model_node, vae_out_index)
+            workflow.connect_nodes(latent_decode_node, VAEDecodeTiledNode.SAMPLES,
+                                   sampling_node, KSamplerNode.IDX_LATENT)
+        else:
+            latent_decode_node = VAEDecodeNode()
+            workflow.connect_nodes(latent_decode_node, VAEDecodeNode.VAE,
+                                   vae_model_node, vae_out_index)
+            workflow.connect_nodes(latent_decode_node, VAEDecodeNode.SAMPLES,
+                                   sampling_node, KSamplerNode.IDX_LATENT)
 
         save_image_node = SaveImageNode(self.filename_prefix)
         workflow.connect_nodes(save_image_node, SaveImageNode.IMAGES,
@@ -463,13 +553,18 @@ class DiffusionWorkflowBuilder:
         scheduler = cache.get(Cache.SCHEDULER)
         if scheduler != '':
             self.scheduler = scheduler
-        seed = cache.get(Cache.SEED)
+        seed = int(cache.get(Cache.SEED))
         if seed < 0:
             seed = random_seed()
         self.seed = seed
 
+        self.load_as_inpainting_model = cache.get(Cache.COMFYUI_INPAINTING_MODEL)
+        self.vae_tiling_enabled = cache.get(Cache.COMFYUI_TILED_VAE)
+        self.vae_tile_size = cache.get(Cache.COMFYUI_TILED_VAE_TILE_SIZE)
+        self.clip_skip = cache.get(Cache.CLIP_SKIP)
+
         # Find and add LoRA and Hypernetwork models:
-        available_loras = cache.get(Cache.LORA_MODELS)
+        available_loras = [lora[LORA_KEY_PATH] for lora in cache.get(Cache.LORA_MODELS)]
         available_hypernetworks = cache.get(Cache.HYPERNETWORK_MODELS)
         lora_name_map: dict[str, str] = {}
         hypernet_name_map: dict[str, str] = {}

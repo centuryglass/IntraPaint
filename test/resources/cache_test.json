@@ -237,6 +237,12 @@
     "sd_comfyui_server_url": "http://localhost:8188",
     "glid_server_url": "http://localhost:5555",
     "sd_model": "",
+    "clip_skip": {
+        "min": 1,
+        "max": 12,
+        "step": 1,
+        "value": 1
+    },
     "controlnet_upscaling": false,
     "controlnet_downsample_rate": {
         "min": 1.0,
@@ -251,5 +257,29 @@
     "controlnet_args_1_comfyui": "",
     "controlnet_args_2_comfyui": "",
     "expect_tablet_input": false,
-    "comfyui_model_config": "auto"
+    "comfyui_model_config": "auto",
+    "comfyui_inpainting_model": false,
+    "comfyui_tiled_vae": false,
+    "comfyui_tiled_vae_tile_size": {
+        "min": 320,
+        "max": 4096,
+        "step": 64,
+        "value": 512
+    },
+    "webui_tiling": false,
+    "webui_restore_faces": false,
+    "webui_subseed": {
+        "min": -1,
+        "max": 18446744073709551615,
+        "step": 1,
+        "value": -1
+    },
+    "webui_subseed_strength": {
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+        "value": 0.0
+    },
+    "webui_seed_resize_enabled": false,
+    "webui_seed_resize": "512x512"
 }
