@@ -1,4 +1,4 @@
-"""Provides access to configurable options for the Automatic1111 or Forge Stable-Diffusion WebUI."""
+"""Provides access to configurable options for the Automatic1111 or Forge Stable Diffusion WebUI."""
 import logging
 
 from PySide6.QtWidgets import QApplication
@@ -25,7 +25,7 @@ WEB_CONFIG_TYPE_ERROR = _tr(TR_ID, 'key "{key}" had unexpected type {value_type}
 
 
 class A1111Config(Config, metaclass=Singleton):
-    """Provides access to configurable options for the Automatic1111 or Forge Stable-Diffusion WebUI."""
+    """Provides access to configurable options for the Automatic1111 or Forge Stable Diffusion WebUI."""
 
     def __init__(self) -> None:
         super().__init__(CONFIG_DEFINITIONS, None, A1111Config)

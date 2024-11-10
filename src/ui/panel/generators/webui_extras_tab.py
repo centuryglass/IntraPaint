@@ -1,4 +1,4 @@
-"""UI for setting extended options related to the WebUI Stable-Diffusion generator."""
+"""UI for setting extended options related to the WebUI Stable Diffusion generator."""
 from typing import Optional
 
 from PySide6.QtCore import Qt
@@ -13,7 +13,7 @@ from src.util.shared_constants import BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENER
 
 
 class WebUIExtrasTab(ExtrasTab):
-    """UI for setting extended options related to the WebUI Stable-Diffusion generator."""
+    """UI for setting extended options related to the WebUI Stable Diffusion generator."""
 
     def __init__(self) -> None:
         super().__init__()

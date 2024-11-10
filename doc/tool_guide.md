@@ -36,7 +36,7 @@ All tools share the same set of basic controls for adjusting the image viewport.
 - **Escape, while any input has keyboard focus**: Return keyboard focus to the image.
 
 The following controls are shared by most tools, but certain tools will override them:
-- **Arrow keys**: Move the image generation area. This is ignored if Stable-Diffusion AI image generation is inactive.
+- **Arrow keys**: Move the image generation area. This is ignored if Stable Diffusion AI image generation is inactive.
 - **Ctrl + arrow keys**: Pan image content.
 
 Each tool also has a key assigned to it that will activate that tool, active whenever you're not entering text.  These keys are configurable in settings under "Keybindings", and are shown in the bottom right corner of each tool icon.
@@ -375,8 +375,8 @@ Select areas by outlining them.
 1. **Select/Deselect toggle**: Switch between selecting image content and deselecting content.
 2. **Clear button**: Remove all selections.
 3. **Select All button**: Select all image content.
-4. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable-Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
-5. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable-Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
+4. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
+5. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
 6. An in-progress selection.
 7. Previously selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
 
@@ -400,8 +400,8 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 2. **Select/Deselect toggle**: Switch between selecting image content and deselecting content.
 3. **Clear button**: Remove all selections.
 4. **Select All button**: Select all image content.
-5. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable-Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
-6. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable-Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
+5. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
+6. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
 7. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
 
 ---
@@ -420,8 +420,8 @@ Select or deselect rectangular or elliptical regions in the image.
 1. **Rectangle/ellipse toggle: Switch between selecting/deselecting rectangular and elliptical regions.
 2. **Clear button**: Remove all selections.
 3. **Select All button**: Select all image content.
-4. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable-Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
-5. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable-Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
+4. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
+5. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
 6. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
 
 ---
@@ -439,8 +439,8 @@ Select content based on connected regions and color similarity.
 2. **"Sample merged" checkbox**:  When checked, the fill selection tool will use all image layers to determine where to select.  When unchecked, content outside the active layer will be ignored.
 3. **"Select all by color" checkbox**:  When checked, color boundaries will be ignored, and the fill selection tool will instead select every point in the image where the color matches the clicked point.  Enabling this will un-check "Fill selection holes".
 4. **"Fill selection holes" checkbox**: When checked, the fill selection tool will ignore image content entirely, and select/deselect based on existing selection content only. Useful for selecting a hole within an existing selection, or deselecting a connected block of image content.  Enabling this will un-check "Select all by color".
-5. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable-Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
-6. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable-Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
+5. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
+6. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
 7. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
 
 ---

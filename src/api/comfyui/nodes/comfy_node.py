@@ -30,6 +30,11 @@ class ComfyNode:
         memo[id(self)] = node_copy
         return node_copy
 
+    @property
+    def node_name(self) -> str:
+        """Returns the node's type name used in the API."""
+        return self._class_type
+
     def clear_connections(self) -> None:
         """Removes all inputs from other nodes."""
         for input_key in self._node_input_keys:

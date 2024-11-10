@@ -13,12 +13,12 @@ support is possible with manual setup and compilation.
 3. [Use Cases](#why-combine-ai-and-traditional-tools)
 4. [Examples](#more-examples)
 5. [Installation](#installation-and-setup)
-6. [AI Setup (Stable-Diffusion)](#ai-setup-stable-diffusion)
+6. [AI Setup (Stable Diffusion)](#ai-setup-stable-diffusion)
 7. [Guides and Tutorials](#guides-and-tutorials)
    - [Main controls and interface](./doc/controls.md)
    - [IntraPaint tool overview](./doc/tool_guide.md)
    - [Menu options](./doc/menu_options.md)
-   - [Stable-Diffusion Controls](./doc/stable-diffusion.md)
+   - [Stable Diffusion Controls](./doc/stable-diffusion.md)
    - [Guide to AI Inpainting](./doc/inpainting_guide.md)
 8. [FAQ](#faq)
 9. [Alternatives](#alternatives)
@@ -40,10 +40,10 @@ support is possible with manual setup and compilation.
 ## Key Features:
 
 ### AI image generation features:
-- Integrates with Stable-Diffusion, running locally or remotely (via API) using [Forge WebUI](https://github.com/lllyasviel/stable-diffusion-webui-forge) or [Automatic1111 WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui).
+- Integrates with Stable Diffusion, running locally or remotely (via API) using [Forge WebUI](https://github.com/lllyasviel/stable-diffusion-webui-forge) or [Automatic1111 WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui).
 - Supports **text-to-image**, **image-to-image**, and **inpainting**, allowing users to generate new images, refine existing ones, or apply specific edits using natural language prompts.
 - Advanced AI guidance through **ControlNet modules**, enabling features like depth mapping, recoloring, pose replication, and more.
-- **AI upscaling** via Stable-Diffusion + ControlNet or other specialized models.
+- **AI upscaling** via Stable Diffusion + ControlNet or other specialized models.
 
 
 ### Traditional Image Editing Tools:
@@ -61,7 +61,7 @@ support is possible with manual setup and compilation.
 |  ![An extremely rough sketch of a person walking down a road under a sunset on the left, a more detailed AI-refined version on the right.](./examples/sketch_example.jpg)  |                       ![A black and white stylized drawing of a dense city, animated to transition to a colored version of the same image](examples/color_example.webp)                       | ![Animation showing a simple drawing alternating between many different styles](./examples/style_example.webp) |
 |                       Prompt: "A small figure walking down a road under a massive cloudy sky, billowing clouds, sunset, fiery fields, god rays, sun"                       | Prompt: "organic sprawling colorful city, ultra dense, gigantic twisted textured detailed realistic climbing vines, pareidolia, stained glass, blue sky, billowing clouds, runes and symbols" |                            Prompt: "Stanford bunny, \[text in image frame above\]"                             |
 
-Control image generation visually by providing rough sketches and brief descriptions, letting Stable-Diffusion handle the rest.
+Control image generation visually by providing rough sketches and brief descriptions, letting Stable Diffusion handle the rest.
 
 Prompt: "on the left, a red lizard with a yellow hat standing on a green pillar in an orange desert under a blue sky, looking at a silver robot in a cowboy hat on the right "
 
@@ -145,8 +145,8 @@ All images below were created using IntraPaint:
 ### Pre-packaged builds:
 Pre-compiled versions for x86_64 Linux and Windows are available on the [releases page](https://github.com/centuryglass/IntraPaint/releases).
 
-- Windows: [IntraPaint.exe](https://github.com/centuryglass/IntraPaint/releases/download/v1.0.0/IntraPaint.exe)
-- Linux: [IntraPaint-linux](https://github.com/centuryglass/IntraPaint/releases/download/v1.0.0/IntraPaint-linux)
+- Windows: [IntraPaint.exe](https://github.com/centuryglass/IntraPaint/releases/latest/download/IntraPaint.exe)
+- Linux: [IntraPaint-linux](https://github.com/centuryglass/IntraPaint/releases/latest/download/IntraPaint-linux)
 
 No installation is required to use non-AI features. Just run the executable directly.
 
@@ -164,19 +164,21 @@ python IntraPaint.py
 ```
 
 
-## AI Setup (Stable-Diffusion):
-To use AI features, you'll need a running Stable-Diffusion client (either [Forge WebUI](https://github.com/lllyasviel/stable-diffusion-webui-forge) or the
-[Automatic1111 WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)) with API access enabled.  The simplest method for getting this is through. [Stability Matrix](https://github.com/LykosAI/StabilityMatrix).
+## AI Setup (Stable Diffusion):
+To use AI features, you'll need a running Stable Diffusion client (either [ComfyUI](https://github.com/comfyanonymous/ComfyUI?tab=readme-ov-file#comfyui),
+[Forge WebUI](https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#stable-diffusion-webui-forge) or the
+[Automatic1111 WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#stable-diffusion-web-ui)) with API access enabled.  The simplest method for getting this is through. [Stability Matrix](https://github.com/LykosAI/StabilityMatrix).
 
 1. Download and install Stability Matrix for your system:
    * [Windows 10, 11](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip)
    * [Linux AppImage](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip)
    * [Arch Linux AUR](https://aur.archlinux.org/packages/stabilitymatrix)
    * [macOS, Apple Silicon](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg)
-2. Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI Forge", and wait for it to install.
-3. Once the installation finishes, click the gear icon next to Forge on the package screen to open launch options. Scroll to the bottom of the launch options, add `--api` to "Extra Launch Arguments", and click "Save"
-4. Click "Launch", and wait for the WebUI to finish starting up.
-5. Open IntraPaint, and it should automatically connect to the Forge API. If IntraPaint is already running, open "Select image generator" under the Image menu, select "Stable-Diffusion WebUI API", and click "Activate".
+2. Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI Forge", "Stable Diffusion WebUI", or "ComfyUI" and wait for it to install.
+3. If you chose either the WebUI or WebUI Forge option, click the gear icon next to package you just installed to the open launch options. Scroll to the bottom of the launch options, add `--api` to "Extra Launch Arguments", and click "Save"
+4. Click "Launch", and wait for the Stable Diffusion client to finish starting.
+5. Open IntraPaint, and it should automatically connect to the Stable Diffusion client. If IntraPaint is already running, open "Select image generator" under the Image menu, select the option that matches the Stable Diffusion client you chose, and click "Activate".
+
 
 
 
@@ -186,7 +188,7 @@ To use AI features, you'll need a running Stable-Diffusion client (either [Forge
 - [IntraPaint Controls](./doc/controls.md): An overview of the main application interface.
 - [IntraPaint Tools](./doc/tool_guide.md): Guides to each of IntraPaint's image editing tools.
 - [Main Menu Options](./doc/menu_options.md): Detailed guide to all main menu options.
-- [Stable-Diffusion Controls](./doc/stable-diffusion.md): In-depth descriptions of all Stable-Diffusion image generation options.
+- [Stable Diffusion Controls](./doc/stable-diffusion.md): In-depth descriptions of all Stable Diffusion image generation options.
 - [Guide to AI Inpainting](./doc/inpainting_guide.md): Tips and tricks for effective AI inpainting.
 
 ### Related Resources
@@ -207,13 +209,18 @@ If you need help locating libmypaint files for a particular system, open a GitHu
 
 #### Q: Where are the ControlNet options?
 
-The ControlNet panel only appears if the WebUI backend has a working ControlNet extension installed with API support.
+The ControlNet panel only appears if the WebUI backend has a working ControlNet extension installed with API support,
+and ControlNet models have been downloaded.
 
 *If using WebUI Forge*:  The most recent version of the Forge WebUI (as of 8/30/24) does not have a working ControlNet
 API. Use Git to revert to commit `bfee03d8`, or install the [v0.0.17 release](https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/previous/webui_forge_cu121_torch21_f0017.7z).
 
 *If using the Automatic1111 WebUI*: The ControlNet panel only appears after you've installed the sd-webui-controlnet 
 extension.  Installation instructions and links to required ControlNet model files can be found [here](https://github.com/Mikubill/sd-webui-controlnet).
+
+*If using ComfyUI*: You shouldn't need to do anything besides downloading ControlNet model files.
+
+*Getting ControlNet models*:  The Stable Diffusion WebUI ControlNet extension [GitHub wiki](https://github.com/Mikubill/sd-webui-controlnet/wiki/Model-download#official-controlnet-11-models) provides a helpful set of download links.  If using Stability Matrix, ControlNet models should go in the `Models/ControlNet` folder within the Stability Matrix data folder.  If you directly installed Stable Diffusion WebUI or Stable Diffusion WebUI Forge, ControlNet models should go in the `models/ControlNet` folder within the WebUI folder. If you directly installed ComfyUI, put ControlNet models in ComfyUI's `models/controlnet` folder.
 
 #### Q: Wasn't there something else here before?
 

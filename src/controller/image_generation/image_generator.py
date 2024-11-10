@@ -211,10 +211,10 @@ class ImageGenerator(MenuBuilder):
                     continue
                 if cache.get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT:
                     assert composite_base is not None
-                    assert composite_base.size() == image.size()
-                    painter = QPainter(image)
-                    painter.drawImage(QPoint(), composite_base)
-                    painter.end()
+                    if composite_base.size() == image.size():
+                        painter = QPainter(image)
+                        painter.drawImage(QPoint(), composite_base)
+                        painter.end()
                 self._window.load_sample_preview(image, idx)
 
         inpaint_task.error_signal.connect(handle_error)

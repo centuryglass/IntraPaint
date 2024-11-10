@@ -72,7 +72,9 @@ URL_REQUEST_MESSAGE = _tr('Enter server URL:')
 ERROR_MESSAGE_TIMEOUT = _tr('Request timed out')
 URL_REQUEST_RETRY_MESSAGE = _tr('Server connection failed, enter a new URL or click "OK" to retry')
 ERROR_MESSAGE_EXISTING_OPERATION = _tr('The AI image generator is busy creating other images, try again later.')
-AUTH_ERROR = _tr('Login cancelled.')
+AUTH_ERROR = _tr('Failed to connect to image generator at "{url}": Login cancelled.')
+MISC_CONNECTION_ERROR = _tr('Failed to connect to image generator at "{url}".  Click "Activate" to try again or choose'
+                            ' a different address. <br/> Full error text: <br/><blockquote>{error_text}</blockquote>')
 
 # "Interrogate" feature:
 INTERROGATE_ERROR_TITLE = _tr('Interrogate failure')

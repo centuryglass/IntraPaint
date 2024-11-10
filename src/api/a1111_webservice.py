@@ -1,6 +1,6 @@
 """
 Accesses the A1111/stable-diffusion-webui through its REST API, providing access to image generation and editing
-through stable-diffusion.
+through Stable Diffusion.
 """
 import json
 import logging
@@ -101,7 +101,7 @@ class A1111Webservice(WebService):
 
     def set_config(self, config_updates: dict) -> None:
         """
-        Updates the stable-diffusion-webui configuration.
+        Updates the Stable Diffusion WebUI configuration.
 
         Parameters
         ----------
@@ -112,17 +112,17 @@ class A1111Webservice(WebService):
         self.post(A1111Webservice.Endpoints.OPTIONS, config_updates, timeout=SETTINGS_UPDATE_TIMEOUT).json()
 
     def refresh_checkpoints(self) -> requests.Response:
-        """Requests an updated list of available stable-diffusion models.
+        """Requests an updated list of available Stable Diffusion models.
 
         Returns
         -------
         response
-            HTTP response with the list of updated stable-diffusion models.
+            HTTP response with the list of updated Stable Diffusion models.
         """
         return self.post(A1111Webservice.Endpoints.REFRESH_CKPT, body={})
 
     def refresh_vae(self) -> requests.Response:
-        """Requests an updated list of available stable-diffusion VAE models.
+        """Requests an updated list of available Stable Diffusion VAE models.
 
         VAE models handle the conversion between images and the latent image space. Different VAE models can be used
         to adjust performance and final image quality.
@@ -131,20 +131,20 @@ class A1111Webservice(WebService):
         Returns
         -------
         response
-            HTTP response with the list of updated stable-diffusion VAE models.
+            HTTP response with the list of updated Stable Diffusion VAE models.
         """
         return self.post(A1111Webservice.Endpoints.REFRESH_VAE, body={})
 
     def refresh_loras(self) -> requests.Response:
-        """Requests an updated list of available stable-diffusion LoRA models.
+        """Requests an updated list of available Stable Diffusion LoRA models.
 
-        LoRA models augment existing stable-diffusion models, usually to provide support for new concepts, characters,
+        LoRA models augment existing Stable Diffusion models, usually to provide support for new concepts, characters,
         or art styles.
 
         Returns
         -------
         response
-            HTTP response with the list of updated stable-diffusion LoRA models.
+            HTTP response with the list of updated Stable Diffusion LoRA models.
         """
         return self.post(A1111Webservice.Endpoints.REFRESH_LORA, body={})
 
@@ -359,11 +359,11 @@ class A1111Webservice(WebService):
 
     # Load misc. service info:
     def get_config(self) -> dict[str, Any]:
-        """Returns a dict containing the current Stable-Diffusion-WebUI configuration."""
+        """Returns a dict containing the current Stable Diffusion WebUI configuration."""
         return self.get('/sdapi/v1/options', timeout=DEFAULT_TIMEOUT).json()
 
     def get_styles(self) -> list[PromptStyleData]:
-        """Returns a list of image generation style objects saved by the Stable-Diffusion-WebUI."""
+        """Returns a list of image generation style objects saved by the Stable Diffusion WebUI."""
         res_body = self.get(A1111Webservice.Endpoints.STYLES).json()
         all_styles: list[PromptStyleData] = []
         for serialized_style in res_body:
@@ -371,7 +371,7 @@ class A1111Webservice(WebService):
         return all_styles
 
     def get_scripts(self) -> ScriptResponseData:
-        """Returns available scripts installed to the stable-diffusion-webui.
+        """Returns available scripts installed to the Stable Diffusion WebUI.
         Returns
         -------
         dict
@@ -401,26 +401,26 @@ class A1111Webservice(WebService):
         return cast(list[UpscalerInfo], self.get(A1111Webservice.Endpoints.UPSCALERS, timeout=DEFAULT_TIMEOUT).json())
 
     def get_latent_upscale_modes(self) -> list[str]:
-        """Returns the list of stable-diffusion enhanced upscaling modes."""
+        """Returns the list of Stable Diffusion enhanced upscaling modes."""
         return self._get_name_list(A1111Webservice.Endpoints.LATENT_UPSCALE_MODES)
 
     def get_hypernetworks(self) -> list[str]:
         """Returns the list of hypernetworks available.
 
-        Hypernetworks are a simpler form of model for augmenting full stable-diffusion models. Each hypernetwork
+        Hypernetworks are a simpler form of model for augmenting full Stable Diffusion models. Each hypernetwork
         introduces a single style or concept.
         """
         return self._get_name_list(A1111Webservice.Endpoints.HYPERNETWORKS)
 
     def get_models(self) -> list[ModelInfo]:
-        """Returns the list of available stable-diffusion models cached by the webui.
+        """Returns the list of available Stable Diffusion models cached by the webui.
 
         If available models may have changed, instead consider using the slower refresh_checkpoints method.
         """
         return cast(list[ModelInfo], self.get(A1111Webservice.Endpoints.SD_MODELS, timeout=DEFAULT_TIMEOUT).json())
 
     def get_vae(self) -> list[VaeInfo]:
-        """Returns the list of available stable-diffusion VAE models cached by the webui.
+        """Returns the list of available Stable Diffusion VAE models cached by the webui.
 
         If available models may have changed, instead consider using the slower refresh_vae method.
         """
@@ -432,28 +432,28 @@ class A1111Webservice(WebService):
 
     def get_controlnet_version(self) -> int:
         """
-        Returns the installed version of the stable-diffusion ControlNet extension, or raises if the exception is not
+        Returns the installed version of the Stable Diffusion ControlNet extension, or raises if the exception is not
         installed.
         """
         return self.get(A1111Webservice.Endpoints.CONTROLNET_VERSION, timeout=DEFAULT_TIMEOUT).json()['version']
 
     def get_controlnet_models(self) -> ControlNetModelResponse:
-        """Returns a dict defining the models available to the stable-diffusion ControlNet extension."""
+        """Returns a dict defining the models available to the Stable Diffusion ControlNet extension."""
         return cast(ControlNetModelResponse,
                     self.get(A1111Webservice.Endpoints.CONTROLNET_MODELS, timeout=DEFAULT_TIMEOUT).json())
 
     def get_controlnet_modules(self) -> ControlNetModuleResponse:
-        """Returns a dict defining the modules available to the stable-diffusion ControlNet extension."""
+        """Returns a dict defining the modules available to the Stable Diffusion ControlNet extension."""
         return cast(ControlNetModuleResponse,
                     self.get(A1111Webservice.Endpoints.CONTROLNET_MODULES, timeout=DEFAULT_TIMEOUT).json())
 
     def get_controlnet_control_types(self) -> ControlTypeResponse:
-        """Returns a dict defining the control types available to the stable-diffusion ControlNet extension."""
+        """Returns a dict defining the control types available to the Stable Diffusion ControlNet extension."""
         return cast(ControlTypeResponse, self.get(A1111Webservice.Endpoints.CONTROLNET_CONTROL_TYPES,
                                                   timeout=DEFAULT_TIMEOUT).json())
 
     def get_controlnet_settings(self) -> dict[str, Any]:
-        """Returns the current settings applied to the stable-diffusion ControlNet extension."""
+        """Returns the current settings applied to the Stable Diffusion ControlNet extension."""
         return self.get(A1111Webservice.Endpoints.CONTROLNET_SETTINGS, timeout=DEFAULT_TIMEOUT).json()
 
     def get_controlnet_preprocessors(self, update_cache=False) -> list[ControlNetPreprocessor]:
@@ -480,7 +480,7 @@ class A1111Webservice(WebService):
         return control_type_builder.get_control_types()
 
     def get_loras(self) -> list[LoraInfo]:
-        """Returns the list of available stable-diffusion LoRA models cached by the webui.
+        """Returns the list of available Stable Diffusion LoRA models cached by the webui.
 
         If available models may have changed, instead consider using the slower refresh_loras method.
         """

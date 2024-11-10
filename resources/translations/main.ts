@@ -94,8 +94,8 @@
     <name>application_config</name>
     <message>
       <location filename="../../src/controller/app_controller.py" line="220"/>
-      <source>Stable-Diffusion</source>
-      <translation>Stable-Diffusion</translation>
+      <source>Stable Diffusion</source>
+      <translation>Stable Diffusion</translation>
     </message>
     <message>
       <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="34"/>
@@ -118,9 +118,9 @@
       <translation>Files</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_generator.py" line="79"/>
-      <source>Stable-Diffusion</source>
-      <translation>Stable-Diffusion</translation>
+      <location filename="../../src/controller/image_generation/sd_generator.py" line="170"/>
+      <source>Stable Diffusion</source>
+      <translation>Stable Diffusion</translation>
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="3"/>
@@ -499,8 +499,8 @@
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="276"/>
-      <source>Stable-Diffusion</source>
-      <translation>Stable-Diffusion</translation>
+      <source>Stable Diffusion</source>
+      <translation>Stable Diffusion</translation>
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="283"/>
@@ -509,8 +509,8 @@
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="285"/>
-      <source>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.</source>
-      <translation>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.</translation>
+      <source>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on Stable Diffusion 1.5.</source>
+      <translation>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on Stable Diffusion 1.5.</translation>
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="291"/>
@@ -1787,8 +1787,8 @@
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="823"/>
-      <source>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</source>
-      <translation>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</translation>
+      <source>Stable Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</source>
+      <translation>Stable Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</translation>
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="823"/>
@@ -1852,8 +1852,8 @@
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="852"/>
-      <source>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</source>
-      <translation>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</translation>
+      <source>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different Stable Diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</source>
+      <translation>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different Stable Diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</translation>
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="28"/>
@@ -2092,13 +2092,13 @@
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="1104"/>
-      <source>Stable-Diffusion model:</source>
-      <translation>Stable-Diffusion model:</translation>
+      <source>Stable Diffusion model:</source>
+      <translation>Stable Diffusion model:</translation>
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="1107"/>
-      <source>Stable-Diffusion model to use for image generation.</source>
-      <translation>Stable-Diffusion model to use for image generation.</translation>
+      <source>Stable Diffusion model to use for image generation.</source>
+      <translation>Stable Diffusion model to use for image generation.</translation>
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="28"/>
@@ -2127,8 +2127,8 @@
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="1140"/>
-      <source>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</source>
-      <translation>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</translation>
+      <source>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the Stable Siffusion WebUI, and the controlnet tile model needs to be downloaded to the correct folder.</source>
+      <translation>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the Stable Siffusion WebUI, and the controlnet tile model needs to be downloaded to the correct folder.</translation>
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="37"/>
@@ -2177,8 +2177,8 @@
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="1243"/>
-      <source>Load the selected Stable-Diffusion model as an inpainting model.</source>
-      <translation>Load the selected Stable-Diffusion model as an inpainting model.</translation>
+      <source>Load the selected Stable Diffusion model as an inpainting model.</source>
+      <translation>Load the selected Stable Diffusion model as an inpainting model.</translation>
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="1084"/>
@@ -2237,8 +2237,8 @@
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="1285"/>
-      <source>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</source>
-      <translation>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</translation>
+      <source>Use a face restoration model to correct image data after Stable Diffusion runs. In most cases you'll probably get better results without it.</source>
+      <translation>Use a face restoration model to correct image data after Stable Diffusion runs. In most cases you'll probably get better results without it.</translation>
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="1074"/>
@@ -3938,13 +3938,13 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="885"/>
-      <source>Access saved stable-diffusion prompt styles</source>
-      <translation>Access saved stable-diffusion prompt styles</translation>
+      <source>Access saved Stable Diffusion prompt styles</source>
+      <translation>Access saved Stable Diffusion prompt styles</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="884"/>
-      <source>Stable-Diffusion Menu</source>
-      <translation>Stable-Diffusion Menu</translation>
+      <source>Stable Diffusion Menu</source>
+      <translation>Stable Diffusion Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="891"/>
@@ -3958,8 +3958,8 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="884"/>
-      <source>Stable-Diffusion Menu</source>
-      <translation>Stable-Diffusion Menu</translation>
+      <source>Stable Diffusion Menu</source>
+      <translation>Stable Diffusion Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="900"/>
@@ -3973,8 +3973,8 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="884"/>
-      <source>Stable-Diffusion Menu</source>
-      <translation>Stable-Diffusion Menu</translation>
+      <source>Stable Diffusion Menu</source>
+      <translation>Stable Diffusion Menu</translation>
     </message>
   </context>
   <context>
@@ -4450,92 +4450,160 @@
     <name>controller.image_generation.sd_comfyui_generator</name>
     <message>
       <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="47"/>
-      <source>Stable-Diffusion ComfyUI API</source>
-      <translation>Stable-Diffusion ComfyUI API</translation>
+      <source>Stable Diffusion ComfyUI API</source>
+      <translation>Stable Diffusion ComfyUI API</translation>
     </message>
     <message>
       <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="48"/>
-      <source>
-&lt;h2&gt;Stable-Diffusion: via ComfyUI API&lt;/h2&gt;
-&lt;p&gt;
-    &lt;b&gt;NOTE:&lt;/b&gt; The ComfyUI generator is still in its early implementation stages, the following features are not yet
-    supported:
-&lt;/p&gt;
-&lt;ul&gt;
-    &lt;li&gt;ControlNet&lt;/li&gt;
-    &lt;li&gt;CLIP interrogation&lt;/li&gt;
-    &lt;li&gt;Upscaling&lt;/li&gt;
-&lt;/ul&gt;
-</source>
-      <translation>
-&lt;h2&gt;Stable-Diffusion: via ComfyUI API&lt;/h2&gt;
-&lt;p&gt;
-    &lt;b&gt;NOTE:&lt;/b&gt; The ComfyUI generator is still in its early implementation stages, the following features are not yet
-    supported:
-&lt;/p&gt;
-&lt;ul&gt;
-    &lt;li&gt;ControlNet&lt;/li&gt;
-    &lt;li&gt;CLIP interrogation&lt;/li&gt;
-    &lt;li&gt;Upscaling&lt;/li&gt;
-&lt;/ul&gt;
-</translation>
+      <source>&lt;h2&gt;Stable Diffusion: via ComfyUI API&lt;/h2&gt;</source>
+      <translation>&lt;h2&gt;Stable Diffusion: via ComfyUI API&lt;/h2&gt;</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="60"/>
+      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="49"/>
       <source>
-&lt;h3&gt;ComfyUI:&lt;/h3&gt;
+&lt;h3&gt;About ComfyUI&lt;/h3&gt;
 &lt;p&gt;
-    ComfyUI is a popular Stable-Diffusion UI with a complex and powerful node-based interface. This IntraPaint
-    generator offloads image generation to that system through a network connection.  The ComfyUI instance can be run on
-    the same computer as IntraPaint, or remotely on a separate server.
-&lt;/p&gt;</source>
-      <translation>
-&lt;h3&gt;ComfyUI:&lt;/h3&gt;
-&lt;p&gt;
-    ComfyUI is a popular Stable-Diffusion UI with a complex and powerful node-based interface. This IntraPaint
-    generator offloads image generation to that system through a network connection.  The ComfyUI instance can be run on
-    the same computer as IntraPaint, or remotely on a separate server.
-&lt;/p&gt;</translation>
-    </message>
-    <message>
-      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="71"/>
-      <source>
-&lt;h2&gt;Installing Stable-Diffusion&lt;/h2&gt;
-&lt;p&gt;
-    To use this Stable-Diffusion image generator with IntraPaint, you will first to install ComfyUI. TODO: what's the
-    most basic ComfyUI install process? Does Stability Matrix support it? Document that here.
+    &lt;a href="https://www.comfy.org/"&gt;ComfyUI&lt;/a&gt; is a popular Stable Diffusion interface with complex and powerful
+    node-based controls. When the ComfyUI is running, IntraPaint can access Stable Diffusion image generation by
+    sending requests to ComfyUI.  You can run ComfyUI on the same computer as IntraPaint, or remotely on a separate
+     server.
 &lt;/p&gt;
 &lt;p&gt;
-    Once ComfyUI has started completely, you should be able to click "Activate" below, and IntraPaint will
-    connect to it automatically.  If you configure the WebUI to use any URL other than the default, IntraPaint
-     will ask for that information before connecting.
+    When connected, IntraPaint provides controls for ComfyUI in the &lt;b&gt;Image Generation&lt;/b&gt; tab and in the &lt;b&gt;settings
+    window&lt;/b&gt; under the Stable Diffusion category. You can also access ComfyUI's interface directly through a web 
+    browser at &lt;a href="http://localhost:8188/"&gt;localhost:8188&lt;/a&gt;.
 &lt;/p&gt;
 </source>
       <translation>
-&lt;h2&gt;Installing Stable-Diffusion&lt;/h2&gt;
+&lt;h3&gt;About ComfyUI&lt;/h3&gt;
 &lt;p&gt;
-    To use this Stable-Diffusion image generator with IntraPaint, you will first to install ComfyUI. TODO: what's the
-    most basic ComfyUI install process? Does Stability Matrix support it? Document that here.
+    &lt;a href="https://www.comfy.org/"&gt;ComfyUI&lt;/a&gt; is a popular Stable Diffusion interface with complex and powerful
+    node-based controls. When the ComfyUI is running, IntraPaint can access Stable Diffusion image generation by
+    sending requests to ComfyUI.  You can run ComfyUI on the same computer as IntraPaint, or remotely on a separate
+     server.
 &lt;/p&gt;
 &lt;p&gt;
-    Once ComfyUI has started completely, you should be able to click "Activate" below, and IntraPaint will
-    connect to it automatically.  If you configure the WebUI to use any URL other than the default, IntraPaint
-     will ask for that information before connecting.
+    When connected, IntraPaint provides controls for ComfyUI in the &lt;b&gt;Image Generation&lt;/b&gt; tab and in the &lt;b&gt;settings
+    window&lt;/b&gt; under the Stable Diffusion category. You can also access ComfyUI's interface directly through a web 
+    browser at &lt;a href="http://localhost:8188/"&gt;localhost:8188&lt;/a&gt;.
 &lt;/p&gt;
 </translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="84"/>
+      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="92"/>
+      <source>
+&lt;hr/&gt;
+&lt;h2&gt;Option 2: Prepackaged Windows version&lt;/h2&gt;
+&lt;p&gt;
+    If you're using Windows and don't need any of the extra features in Stability Matrix, you can download a 
+    prepackaged version of ComfyUI from GitHub.
+&lt;/p&gt;
+&lt;ol&gt;
+    &lt;li&gt;
+        Download &lt;b&gt;ComfyUI_windows_portable_nvidia.7z&lt;/b&gt; from the most recent version listed on the &lt;a href=
+        "https://github.com/comfyanonymous/ComfyUI/releases"&gt;ComfyUI GitHub release page&lt;/a&gt;.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        Extract the downloaded package into a new folder. If you're not using Windows 11, you may need to install
+        &lt;a href="https://www.7-zip.org"&gt;7-Zip&lt;/a&gt; to extract the compressed files.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        If you haven't already found at least one Stable Diffusion model file, do that now. Copy it into the 
+        ComfyUI folder under &lt;b&gt;ComfyUI\models\checkpoints&lt;/b&gt;.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        Launch the &lt;b&gt;run_nvidia_gpu.bat&lt;/b&gt; file in the ComfyUI folder to start Stable Diffusion. A terminal window
+        will open and print startup information as Comfy initializes.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        Once you see &lt;b&gt;"To see the GUI go to: http://127.0.0.1:8188"&lt;/b&gt; in the terminal window, Stable Diffusion is
+        ready to use.  Back in IntraPaint, click the "Activate" button below to connect to Stable Diffusion. &lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        In the future, the only step you'll need to repeat from this list is launching &lt;b&gt;run_nvidia_gpu.bat&lt;/b&gt; and
+        waiting for it to finish starting up. If you do this before launching IntraPaint, it will automatically connect
+        to the ComfyUI image generator on startup.
+    &lt;/li&gt;
+&lt;/ol&gt;
+&lt;hr/&gt;
+&lt;h3&gt;Option 3: Running directly in Python&lt;/h3&gt;
+&lt;p&gt;
+    This method requires a lot more technical knowledge than the previous ones, but it also provides the most
+    flexibility and requires the least amount of storage space.  This is only recommended if you've set up a Python
+    virtual environment and debugged Python dependency issues before, or if you're interested in teaching yourself to
+    do so.
+&lt;/p&gt;
+&lt;p&gt;
+    Because this option isn't recommended, IntraPaint won't provide a full guide.
+    &lt;a href="https://github.com/comfyanonymous/ComfyUI?tab=readme-ov-file#manual-install-windows-linux"&gt;
+    ComfyUI's manual installation instructions&lt;/a&gt; should help you get started. If you run into any problems,
+    searching the &lt;a href="https://github.com/comfyanonymous/ComfyUI/issues"&gt;ComfyUI issues page&lt;/a&gt; will 
+    probably help you find a solution.
+&lt;/p&gt;
+</source>
+      <translation>
+&lt;hr/&gt;
+&lt;h2&gt;Option 2: Prepackaged Windows version&lt;/h2&gt;
+&lt;p&gt;
+    If you're using Windows and don't need any of the extra features in Stability Matrix, you can download a 
+    prepackaged version of ComfyUI from GitHub.
+&lt;/p&gt;
+&lt;ol&gt;
+    &lt;li&gt;
+        Download &lt;b&gt;ComfyUI_windows_portable_nvidia.7z&lt;/b&gt; from the most recent version listed on the &lt;a href=
+        "https://github.com/comfyanonymous/ComfyUI/releases"&gt;ComfyUI GitHub release page&lt;/a&gt;.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        Extract the downloaded package into a new folder. If you're not using Windows 11, you may need to install
+        &lt;a href="https://www.7-zip.org"&gt;7-Zip&lt;/a&gt; to extract the compressed files.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        If you haven't already found at least one Stable Diffusion model file, do that now. Copy it into the 
+        ComfyUI folder under &lt;b&gt;ComfyUI\models\checkpoints&lt;/b&gt;.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        Launch the &lt;b&gt;run_nvidia_gpu.bat&lt;/b&gt; file in the ComfyUI folder to start Stable Diffusion. A terminal window
+        will open and print startup information as Comfy initializes.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        Once you see &lt;b&gt;"To see the GUI go to: http://127.0.0.1:8188"&lt;/b&gt; in the terminal window, Stable Diffusion is
+        ready to use.  Back in IntraPaint, click the "Activate" button below to connect to Stable Diffusion. &lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        In the future, the only step you'll need to repeat from this list is launching &lt;b&gt;run_nvidia_gpu.bat&lt;/b&gt; and
+        waiting for it to finish starting up. If you do this before launching IntraPaint, it will automatically connect
+        to the ComfyUI image generator on startup.
+    &lt;/li&gt;
+&lt;/ol&gt;
+&lt;hr/&gt;
+&lt;h3&gt;Option 3: Running directly in Python&lt;/h3&gt;
+&lt;p&gt;
+    This method requires a lot more technical knowledge than the previous ones, but it also provides the most
+    flexibility and requires the least amount of storage space.  This is only recommended if you've set up a Python
+    virtual environment and debugged Python dependency issues before, or if you're interested in teaching yourself to
+    do so.
+&lt;/p&gt;
+&lt;p&gt;
+    Because this option isn't recommended, IntraPaint won't provide a full guide.
+    &lt;a href="https://github.com/comfyanonymous/ComfyUI?tab=readme-ov-file#manual-install-windows-linux"&gt;
+    ComfyUI's manual installation instructions&lt;/a&gt; should help you get started. If you run into any problems,
+    searching the &lt;a href="https://github.com/comfyanonymous/ComfyUI/issues"&gt;ComfyUI issues page&lt;/a&gt; will 
+    probably help you find a solution.
+&lt;/p&gt;
+</translation>
+    </message>
+    <message>
+      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="146"/>
       <source>Waiting, position {queue_number} in queue.</source>
       <translation>Waiting, position {queue_number} in queue.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="85"/>
+      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="147"/>
       <source>Generating...</source>
       <translation>Generating...</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="86"/>
+      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="148"/>
       <source>Batch {batch_num} of {num_batches}:</source>
       <translation>Batch {batch_num} of {num_batches}:</translation>
     </message>
@@ -4546,62 +4614,109 @@
       <location filename="../../src/controller/image_generation/sd_generator.py" line="48"/>
       <source>
 &lt;p&gt;
-    Released in August 2022, Stable-Diffusion remains the most versatile and useful free image generation model.
+    Released in August 2022, Stable Diffusion remains the most versatile and useful free image generation model.
 &lt;/p&gt;
 &lt;h2&gt;Generator capabilities and limits:&lt;/h2&gt;
 &lt;ul&gt;
     &lt;li&gt;Requires only 4GB of VRAM, or 8GB if using an SDXL model.&lt;/li&gt;
     &lt;li&gt;Tuned for an ideal resolution of 512x512 (1024x1024 for SDXL).&lt;/li&gt;
-    &lt;li&gt;A huge variety of fine-tuned variant models are available.&lt;/li&gt;
     &lt;li&gt;
-        The magnitude of changes made to existing images can be precisely controlled by varying denoising strength.
+     Because it's relatively easy to re-train, a vast library of free &lt;b&gt;fine-tuned variant models&lt;/b&gt; are
+     available.
     &lt;/li&gt;
     &lt;li&gt;
-        Supports LoRAs, miniature extension models adding support for new styles and subjects.
+        The strength of AI image changes can be controlled precisely using the &lt;b&gt;denoising strength&lt;/b&gt; option.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Able to use &lt;b&gt;LoRAs&lt;/b&gt;, miniature extension models adding support for new styles and subjects.
     &lt;/li&gt;
     &lt;li&gt;
         Supports positive and negative prompting, where (parentheses) draw additional attention to prompt sections,
         and [square brackets] reduce attention.
     &lt;/li&gt;
     &lt;li&gt;
-        Supports ControlNet modules, allowing image generation to be guided by arbitrary constraints like depth maps,
-        existing image lines, and pose analysis.
+        Supports &lt;b&gt;ControlNet&lt;/b&gt; models, allowing image generation to be guided by arbitrary constraints like depth
+        maps, existing image lines, and pose analysis.
     &lt;/li&gt;
 &lt;/ul&gt;
 </source>
       <translation>
 &lt;p&gt;
-    Released in August 2022, Stable-Diffusion remains the most versatile and useful free image generation model.
+    Released in August 2022, Stable Diffusion remains the most versatile and useful free image generation model.
 &lt;/p&gt;
 &lt;h2&gt;Generator capabilities and limits:&lt;/h2&gt;
 &lt;ul&gt;
     &lt;li&gt;Requires only 4GB of VRAM, or 8GB if using an SDXL model.&lt;/li&gt;
     &lt;li&gt;Tuned for an ideal resolution of 512x512 (1024x1024 for SDXL).&lt;/li&gt;
-    &lt;li&gt;A huge variety of fine-tuned variant models are available.&lt;/li&gt;
     &lt;li&gt;
-        The magnitude of changes made to existing images can be precisely controlled by varying denoising strength.
+     Because it's relatively easy to re-train, a vast library of free &lt;b&gt;fine-tuned variant models&lt;/b&gt; are
+     available.
     &lt;/li&gt;
     &lt;li&gt;
-        Supports LoRAs, miniature extension models adding support for new styles and subjects.
+        The strength of AI image changes can be controlled precisely using the &lt;b&gt;denoising strength&lt;/b&gt; option.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Able to use &lt;b&gt;LoRAs&lt;/b&gt;, miniature extension models adding support for new styles and subjects.
     &lt;/li&gt;
     &lt;li&gt;
         Supports positive and negative prompting, where (parentheses) draw additional attention to prompt sections,
         and [square brackets] reduce attention.
     &lt;/li&gt;
     &lt;li&gt;
-        Supports ControlNet modules, allowing image generation to be guided by arbitrary constraints like depth maps,
-        existing image lines, and pose analysis.
+        Supports &lt;b&gt;ControlNet&lt;/b&gt; models, allowing image generation to be guided by arbitrary constraints like depth
+        maps, existing image lines, and pose analysis.
     &lt;/li&gt;
 &lt;/ul&gt;
 </translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_generator.py" line="75"/>
+      <location filename="../../src/controller/image_generation/sd_generator.py" line="145"/>
+      <source>
+&lt;h2&gt;Getting Stable Diffusion Model Files&lt;/h2&gt;
+&lt;p&gt;
+    To use Stable Diffusion, you'll need at least one Stable Diffusion model file.  These files (also called
+    checkpoints), contain the data structures that Stable Diffusion uses to create images.  A huge variety of
+    fine-tuned models are available on sites like &lt;a href="https://civitai.com/"&gt;CivitAI&lt;/a&gt; and
+    &lt;a href="https://huggingface.co/"&gt;Hugging Face&lt;/a&gt;, each with its own strengths and weaknesses.
+&lt;/p&gt;
+&lt;p&gt;
+    If you want to use Stable Diffusion with ControlNet, you will also need to download ControlNet model files.
+    Each ControlNet model provides a new way to control image generation. The official ControlNet models for use with
+    Stable Diffusion 1.5 model variants can be downloaded from
+    &lt;a href="https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/tree/main"&gt;this page on Hugging
+    Face&lt;/a&gt;. More options, including ones with support for Stable Diffusion XL, are linked on the 
+    Stable Diffusion WebUI ControlNet extension 
+    &lt;a href="https://github.com/Mikubill/sd-webui-controlnet/wiki/Model-download#official-controlnet-11-models"&gt;
+    GitHub wiki&lt;/a&gt;.
+&lt;/p&gt;
+</source>
+      <translation>
+&lt;h2&gt;Getting Stable Diffusion Model Files&lt;/h2&gt;
+&lt;p&gt;
+    To use Stable Diffusion, you'll need at least one Stable Diffusion model file.  These files (also called
+    checkpoints), contain the data structures that Stable Diffusion uses to create images.  A huge variety of
+    fine-tuned models are available on sites like &lt;a href="https://civitai.com/"&gt;CivitAI&lt;/a&gt; and
+    &lt;a href="https://huggingface.co/"&gt;Hugging Face&lt;/a&gt;, each with its own strengths and weaknesses.
+&lt;/p&gt;
+&lt;p&gt;
+    If you want to use Stable Diffusion with ControlNet, you will also need to download ControlNet model files.
+    Each ControlNet model provides a new way to control image generation. The official ControlNet models for use with
+    Stable Diffusion 1.5 model variants can be downloaded from
+    &lt;a href="https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/tree/main"&gt;this page on Hugging
+    Face&lt;/a&gt;. More options, including ones with support for Stable Diffusion XL, are linked on the 
+    Stable Diffusion WebUI ControlNet extension 
+    &lt;a href="https://github.com/Mikubill/sd-webui-controlnet/wiki/Model-download#official-controlnet-11-models"&gt;
+    GitHub wiki&lt;/a&gt;.
+&lt;/p&gt;
+</translation>
+    </message>
+    <message>
+      <location filename="../../src/controller/image_generation/sd_generator.py" line="166"/>
       <source>ControlNet preview failed</source>
       <translation>ControlNet preview failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_generator.py" line="76"/>
+      <location filename="../../src/controller/image_generation/sd_generator.py" line="167"/>
       <source>Loading ControlNet preprocessor preview failed: {err}</source>
       <translation>Loading ControlNet preprocessor preview failed: {err}</translation>
     </message>
@@ -4610,156 +4725,206 @@
     <name>controller.image_generation.sd_webui_generator</name>
     <message>
       <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="50"/>
-      <source>Stable-Diffusion WebUI API</source>
-      <translation>Stable-Diffusion WebUI API</translation>
+      <source>Stable Diffusion WebUI API</source>
+      <translation>Stable Diffusion WebUI API</translation>
     </message>
     <message>
       <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="51"/>
-      <source>&lt;h2&gt;Stable-Diffusion: via WebUI API&lt;/h2&gt;</source>
-      <translation>&lt;h2&gt;Stable-Diffusion: via WebUI API&lt;/h2&gt;</translation>
+      <source>&lt;h2&gt;Stable Diffusion: via WebUI API&lt;/h2&gt;</source>
+      <translation>&lt;h2&gt;Stable Diffusion: via WebUI API&lt;/h2&gt;</translation>
     </message>
     <message>
       <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="52"/>
       <source>
+&lt;h3&gt;About the Stable Diffusion WebUI&lt;/h3&gt;
 &lt;p&gt;
-    The Stable-Diffusion WebUI is one of the first interfaces created for using Stable-Diffusion. This IntraPaint
-    generator offloads image generation to that system through a network connection.  The WebUI instance can be run on
+    The &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt;Stable Diffusion WebUI&lt;/a&gt; is one of the
+    first interfaces created for using Stable Diffusion. When the WebUI is running and configured correctly, 
+    IntraPaint can access Stable Diffusion image generation by sending requests to the WebUI. You can run the WebUI on
     the same computer as IntraPaint, or remotely on a separate server.
+&lt;/p&gt;
+&lt;p&gt;
+    When connected, IntraPaint provides controls for the WebUI in the &lt;b&gt;Image Generation&lt;/b&gt; tab and in the &lt;b&gt;settings
+    window&lt;/b&gt; under the Stable Diffusion category. When running, you can also access the WebUI's own interface
+    directly through your web browser at &lt;a href="http://localhost:7860/"&gt;localhost:7860&lt;/a&gt;.
+&lt;/p&gt;
+&lt;h3&gt;About Stable Diffusion WebUI Forge&lt;/h3&gt;
+&lt;p&gt;
+    &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Stable Diffusion WebUI Forge&lt;/a&gt; is a popular
+    variant of the original Stable Diffusion WebUI, that adds significant improvements to image generation speed and
+    efficiency.  Forge is the recommended version of the WebUI to use with IntraPaint.
 &lt;/p&gt;
 </source>
       <translation>
+&lt;h3&gt;About the Stable Diffusion WebUI&lt;/h3&gt;
 &lt;p&gt;
-    The Stable-Diffusion WebUI is one of the first interfaces created for using Stable-Diffusion. This IntraPaint
-    generator offloads image generation to that system through a network connection.  The WebUI instance can be run on
+    The &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt;Stable Diffusion WebUI&lt;/a&gt; is one of the
+    first interfaces created for using Stable Diffusion. When the WebUI is running and configured correctly, 
+    IntraPaint can access Stable Diffusion image generation by sending requests to the WebUI. You can run the WebUI on
     the same computer as IntraPaint, or remotely on a separate server.
+&lt;/p&gt;
+&lt;p&gt;
+    When connected, IntraPaint provides controls for the WebUI in the &lt;b&gt;Image Generation&lt;/b&gt; tab and in the &lt;b&gt;settings
+    window&lt;/b&gt; under the Stable Diffusion category. When running, you can also access the WebUI's own interface
+    directly through your web browser at &lt;a href="http://localhost:7860/"&gt;localhost:7860&lt;/a&gt;.
+&lt;/p&gt;
+&lt;h3&gt;About Stable Diffusion WebUI Forge&lt;/h3&gt;
+&lt;p&gt;
+    &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Stable Diffusion WebUI Forge&lt;/a&gt; is a popular
+    variant of the original Stable Diffusion WebUI, that adds significant improvements to image generation speed and
+    efficiency.  Forge is the recommended version of the WebUI to use with IntraPaint.
 &lt;/p&gt;
 </translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="64"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="118"/>
       <source>
-&lt;h2&gt;Installing Stable-Diffusion&lt;/h2&gt;
+&lt;hr/&gt;
+&lt;h2&gt;Option 2: WebUI Forge one-click installer&lt;/h2&gt;
 &lt;p&gt;
-    To use this Stable-Diffusion image generator with IntraPaint, you will need to install the Stable-Diffusion WebUI.
-    You can choose either the &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Forge WebUI&lt;/a&gt;
-    or the original &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt; Stable-Diffusion WebUI&lt;/a&gt;, but
-    the Forge WebUI is the recommended version. The easiest way to install either of these options is through &lt;a href=
-    "https://github.com/LykosAI/StabilityMatrix"&gt;Stability Matrix&lt;/a&gt;.
+    Stable Diffusion WebUI Forge provides a &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/latest/webui_forge_cu121_torch231.7z"&gt;
+    one-click Windows installation package&lt;/a&gt; you can use to easily install the WebUI. This won't work outside of
+    Windows and requires a bit more file management, but it's still a good option if you don't need the extra features
+    in Stability Matrix.
 &lt;/p&gt;
 &lt;ol&gt;
     &lt;li&gt;
-        Install the appropriate version of Stability Matrix for your system:
-        &lt;ul&gt;
-            &lt;li&gt;
-                &lt;a
-                 href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip"
-                 &gt;Windows 10, 11
-                &lt;/a&gt;
-            &lt;/li&gt;
-            &lt;li&gt;
-                &lt;a
-                href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip"
-                &gt;Linux AppImage
-                &lt;/a&gt;
-            &lt;/li&gt;
-            &lt;li&gt;&lt;a href="https://aur.archlinux.org/packages/stabilitymatrix"&gt; Arch Linux AUR&lt;/a&gt;&lt;/li&gt;
-            &lt;li&gt;
-                &lt;a
-              href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg"
-                 &gt;macOS, Apple Silicon
-                &lt;/a&gt;
-            &lt;/li&gt;
-        &lt;/ul&gt;
+        Download the recommended package version &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/latest/webui_forge_cu121_torch231.7z"&gt;
+        here&lt;/a&gt;. If you run into any issues with that version, there are several other options linked on the
+        &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#installing-forge"&gt;
+        WebUI Forge README&lt;/a&gt;.&lt;br/&gt;
     &lt;/li&gt;
     &lt;li&gt;
-        Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI Forge",and wait for it to install.
+        Extract the downloaded package into a new folder. If you're not using Windows 11, you may need to install
+        &lt;a href="https://www.7-zip.org"&gt;7-Zip&lt;/a&gt; to extract the compressed files.&lt;br/&gt;
     &lt;/li&gt;
     &lt;li&gt;
-        Once the installation finishes, click the gear icon next to Forge on the package screen to open launch options.
-         Scroll to the bottom of the launch options, add "--api" to "Extra Launch Arguments", and click "Save".
+        Within the new WebUI-Forge folder, open the &lt;b&gt;webui\webui-user.bat&lt;/b&gt; file in a text editor. Find the 
+        "&lt;b&gt;set COMMANDLINE_ARGS=&lt;/b&gt;" line near the top of the file, and change it to 
+        "&lt;b&gt;set COMMANDLINE_ARGS=--api&lt;/b&gt;".  Save and close the file.This step is needed to make the WebUI accept
+        image generation requests from IntraPaint.&lt;br/&gt;
     &lt;/li&gt;
-    &lt;li&gt;Click "Launch", and wait for the WebUI to finish starting up.&lt;/li&gt;
     &lt;li&gt;
-        Once the WebUI has started completely, you should be able to click "Activate" below, and IntraPaint will
-        connect to it automatically.  If you configure the WebUI to use any URL other than the default or to use a
-        username and password, IntraPaint will ask for that information before connecting.
+        If you haven't already found at least one Stable Diffusion model file, do that now. Copy it into the 
+        WebUI-Forge folder under &lt;b&gt;webui\models\Stable-diffusion&lt;/b&gt;.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        Launch the &lt;b&gt;run.bat&lt;/b&gt; file in the WebUI-Forge folder to start Stable Diffusion.  A terminal window will
+        open and print startup information as the WebUI initializes. If you run into any issues, try launching
+        &lt;b&gt;update.bat&lt;/b&gt; to see if there's any bug fixes that will help.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        Once you see &lt;b&gt;"Running on local URL:  http://0.0.0.0:7860"&lt;/b&gt; in the terminal window, Stable Diffusion is
+        ready to use.  Back in IntraPaint, click the "Activate" button below to connect to Stable Diffusion. &lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        In the future, the only step you'll need to repeat from this list is launching &lt;b&gt;run.bat&lt;/b&gt; and waiting
+        for it to finish starting up. If you do this before launching IntraPaint, it will automatically connect to
+        the WebUI-Forge image generator on startup.
     &lt;/li&gt;
 &lt;/ol&gt;
+&lt;hr/&gt;
+&lt;h3&gt;Option 3: Running directly in Python&lt;/h3&gt;
+&lt;p&gt;
+    This method requires a lot more technical knowledge than the previous ones, but it also provides the most
+    flexibility and requires the least amount of storage space.  This is only recommended if you've set up a Python
+    virtual environment and debugged Python dependency issues before, or if you're interested in teaching yourself to
+    do so.
+&lt;/p&gt;
+&lt;p&gt;
+    Because this option isn't recommended, IntraPaint won't provide a full guide. The
+    &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#automatic-installation-on-windows"&gt;
+    Stable Diffusion WebUI installation instructions&lt;/a&gt; should help you get started. If you run into any problems,
+    searching the &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui/issues"&gt;WebUI issues page&lt;/a&gt; will 
+    probably help you find a solution.
+&lt;/p&gt;
 </source>
       <translation>
-&lt;h2&gt;Installing Stable-Diffusion&lt;/h2&gt;
+&lt;hr/&gt;
+&lt;h2&gt;Option 2: WebUI Forge one-click installer&lt;/h2&gt;
 &lt;p&gt;
-    To use this Stable-Diffusion image generator with IntraPaint, you will need to install the Stable-Diffusion WebUI.
-    You can choose either the &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Forge WebUI&lt;/a&gt;
-    or the original &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt; Stable-Diffusion WebUI&lt;/a&gt;, but
-    the Forge WebUI is the recommended version. The easiest way to install either of these options is through &lt;a href=
-    "https://github.com/LykosAI/StabilityMatrix"&gt;Stability Matrix&lt;/a&gt;.
+    Stable Diffusion WebUI Forge provides a &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/latest/webui_forge_cu121_torch231.7z"&gt;
+    one-click Windows installation package&lt;/a&gt; you can use to easily install the WebUI. This won't work outside of
+    Windows and requires a bit more file management, but it's still a good option if you don't need the extra features
+    in Stability Matrix.
 &lt;/p&gt;
 &lt;ol&gt;
     &lt;li&gt;
-        Install the appropriate version of Stability Matrix for your system:
-        &lt;ul&gt;
-            &lt;li&gt;
-                &lt;a
-                 href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip"
-                 &gt;Windows 10, 11
-                &lt;/a&gt;
-            &lt;/li&gt;
-            &lt;li&gt;
-                &lt;a
-                href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip"
-                &gt;Linux AppImage
-                &lt;/a&gt;
-            &lt;/li&gt;
-            &lt;li&gt;&lt;a href="https://aur.archlinux.org/packages/stabilitymatrix"&gt; Arch Linux AUR&lt;/a&gt;&lt;/li&gt;
-            &lt;li&gt;
-                &lt;a
-              href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg"
-                 &gt;macOS, Apple Silicon
-                &lt;/a&gt;
-            &lt;/li&gt;
-        &lt;/ul&gt;
+        Download the recommended package version &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/latest/webui_forge_cu121_torch231.7z"&gt;
+        here&lt;/a&gt;. If you run into any issues with that version, there are several other options linked on the
+        &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#installing-forge"&gt;
+        WebUI Forge README&lt;/a&gt;.&lt;br/&gt;
     &lt;/li&gt;
     &lt;li&gt;
-        Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI Forge",and wait for it to install.
+        Extract the downloaded package into a new folder. If you're not using Windows 11, you may need to install
+        &lt;a href="https://www.7-zip.org"&gt;7-Zip&lt;/a&gt; to extract the compressed files.&lt;br/&gt;
     &lt;/li&gt;
     &lt;li&gt;
-        Once the installation finishes, click the gear icon next to Forge on the package screen to open launch options.
-         Scroll to the bottom of the launch options, add "--api" to "Extra Launch Arguments", and click "Save".
+        Within the new WebUI-Forge folder, open the &lt;b&gt;webui\webui-user.bat&lt;/b&gt; file in a text editor. Find the 
+        "&lt;b&gt;set COMMANDLINE_ARGS=&lt;/b&gt;" line near the top of the file, and change it to 
+        "&lt;b&gt;set COMMANDLINE_ARGS=--api&lt;/b&gt;".  Save and close the file.This step is needed to make the WebUI accept
+        image generation requests from IntraPaint.&lt;br/&gt;
     &lt;/li&gt;
-    &lt;li&gt;Click "Launch", and wait for the WebUI to finish starting up.&lt;/li&gt;
     &lt;li&gt;
-        Once the WebUI has started completely, you should be able to click "Activate" below, and IntraPaint will
-        connect to it automatically.  If you configure the WebUI to use any URL other than the default or to use a
-        username and password, IntraPaint will ask for that information before connecting.
+        If you haven't already found at least one Stable Diffusion model file, do that now. Copy it into the 
+        WebUI-Forge folder under &lt;b&gt;webui\models\Stable-diffusion&lt;/b&gt;.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        Launch the &lt;b&gt;run.bat&lt;/b&gt; file in the WebUI-Forge folder to start Stable Diffusion.  A terminal window will
+        open and print startup information as the WebUI initializes. If you run into any issues, try launching
+        &lt;b&gt;update.bat&lt;/b&gt; to see if there's any bug fixes that will help.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        Once you see &lt;b&gt;"Running on local URL:  http://0.0.0.0:7860"&lt;/b&gt; in the terminal window, Stable Diffusion is
+        ready to use.  Back in IntraPaint, click the "Activate" button below to connect to Stable Diffusion. &lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        In the future, the only step you'll need to repeat from this list is launching &lt;b&gt;run.bat&lt;/b&gt; and waiting
+        for it to finish starting up. If you do this before launching IntraPaint, it will automatically connect to
+        the WebUI-Forge image generator on startup.
     &lt;/li&gt;
 &lt;/ol&gt;
+&lt;hr/&gt;
+&lt;h3&gt;Option 3: Running directly in Python&lt;/h3&gt;
+&lt;p&gt;
+    This method requires a lot more technical knowledge than the previous ones, but it also provides the most
+    flexibility and requires the least amount of storage space.  This is only recommended if you've set up a Python
+    virtual environment and debugged Python dependency issues before, or if you're interested in teaching yourself to
+    do so.
+&lt;/p&gt;
+&lt;p&gt;
+    Because this option isn't recommended, IntraPaint won't provide a full guide. The
+    &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#automatic-installation-on-windows"&gt;
+    Stable Diffusion WebUI installation instructions&lt;/a&gt; should help you get started. If you run into any problems,
+    searching the &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui/issues"&gt;WebUI issues page&lt;/a&gt; will 
+    probably help you find a solution.
+&lt;/p&gt;
 </translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="117"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="187"/>
       <source>Updating prompt styles failed</source>
       <translation>Updating prompt styles failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="119"/>
-      <source>Failed to load Stable-Diffusion settings</source>
-      <translation>Failed to load Stable-Diffusion settings</translation>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="189"/>
+      <source>Failed to load Stable Diffusion settings</source>
+      <translation>Failed to load Stable Diffusion settings</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="120"/>
-      <source>Failed to save Stable-Diffusion settings</source>
-      <translation>Failed to save Stable-Diffusion settings</translation>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="190"/>
+      <source>Failed to save Stable Diffusion settings</source>
+      <translation>Failed to save Stable Diffusion settings</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="121"/>
-      <source>The connection to the Stable-Diffusion-WebUI image generator was lost. Connected generator settings will not be available.</source>
-      <translation>The connection to the Stable-Diffusion-WebUI image generator was lost. Connected generator settings will not be available.</translation>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="191"/>
+      <source>The connection to the Stable Diffusion WebUI image generator was lost. Connected generator settings will not be available.</source>
+      <translation>The connection to the Stable Diffusion WebUI image generator was lost. Connected generator settings will not be available.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="123"/>
-      <source>The connection to the Stable-Diffusion-WebUI image generator was lost. Any changes to connected generator settings were not saved.</source>
-      <translation>The connection to the Stable-Diffusion-WebUI image generator was lost. Any changes to connected generator settings were not saved.</translation>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="193"/>
+      <source>The connection to the Stable Diffusion WebUI image generator was lost. Any changes to connected generator settings were not saved.</source>
+      <translation>The connection to the Stable Diffusion WebUI image generator was lost. Any changes to connected generator settings were not saved.</translation>
     </message>
   </context>
   <context>
@@ -7241,39 +7406,59 @@ Press ESC to cancel</translation>
   <context>
     <name>ui.window.generator_setup_window</name>
     <message>
-      <location filename="../../src/ui/window/generator_setup_window.py" line="24"/>
+      <location filename="../../src/ui/window/generator_setup_window.py" line="25"/>
       <source>Image Generator Selection</source>
       <translation>Image Generator Selection</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/generator_setup_window.py" line="25"/>
+      <location filename="../../src/ui/window/generator_setup_window.py" line="26"/>
       <source>Activate</source>
       <translation>Activate</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/generator_setup_window.py" line="26"/>
-      <source>&lt;h2&gt;Status:&lt;/h2&gt;</source>
-      <translation>&lt;h2&gt;Status:&lt;/h2&gt;</translation>
-    </message>
-    <message>
       <location filename="../../src/ui/window/generator_setup_window.py" line="27"/>
-      <source>Generator is active.</source>
-      <translation>Generator is active.</translation>
+      <source>&lt;h1&gt;Image generator status:&lt;/h1&gt;</source>
+      <translation>&lt;h1&gt;Image generator status:&lt;/h1&gt;</translation>
     </message>
     <message>
       <location filename="../../src/ui/window/generator_setup_window.py" line="28"/>
-      <source>Generator is available.</source>
-      <translation>Generator is available.</translation>
+      <source>This image generator is active.</source>
+      <translation>This image generator is active.</translation>
     </message>
     <message>
       <location filename="../../src/ui/window/generator_setup_window.py" line="29"/>
+      <source>This image generator is available, click "Activate" to attempt to use it.</source>
+      <translation>This image generator is available, click "Activate" to attempt to use it.</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/generator_setup_window.py" line="30"/>
+      <source>This image generator is not available: {error_reason}</source>
+      <translation>This image generator is not available: {error_reason}</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/generator_setup_window.py" line="31"/>
+      <source>Unknown error encountered, please report this on the &lt;a href="https://github.com/centuryglass/IntraPaint/issues"&gt;GitHub issues page&lt;/a&gt;.</source>
+      <translation>Unknown error encountered, please report this on the &lt;a href="https://github.com/centuryglass/IntraPaint/issues"&gt;GitHub issues page&lt;/a&gt;.</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/generator_setup_window.py" line="33"/>
       <source>&lt;h1&gt;Generator Options:&lt;/h1&gt;</source>
       <translation>&lt;h1&gt;Generator Options:&lt;/h1&gt;</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/generator_setup_window.py" line="30"/>
+      <location filename="../../src/ui/window/generator_setup_window.py" line="34"/>
       <source>&lt;u&gt;Preview: {generator_name}&lt;/u&gt;</source>
       <translation>&lt;u&gt;Preview: {generator_name}&lt;/u&gt;</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/generator_setup_window.py" line="36"/>
+      <source>Description</source>
+      <translation>Description</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/generator_setup_window.py" line="37"/>
+      <source>Setup Guide</source>
+      <translation>Setup Guide</translation>
     </message>
   </context>
   <context>
@@ -7534,81 +7719,86 @@ Press ESC to cancel</translation>
     </message>
     <message>
       <location filename="../../src/util/shared_constants.py" line="75"/>
-      <source>Login cancelled.</source>
-      <translation>Login cancelled.</translation>
+      <source>Failed to connect to image generator at "{url}": Login cancelled.</source>
+      <translation>Failed to connect to image generator at "{url}": Login cancelled.</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="78"/>
+      <location filename="../../src/util/shared_constants.py" line="76"/>
+      <source>Failed to connect to image generator at "{url}".  Click "Activate" to try again or choose a different address. &lt;br/&gt; Full error text: &lt;br/&gt;&lt;blockquote&gt;{error_text}&lt;/blockquote&gt;</source>
+      <translation>Failed to connect to image generator at "{url}".  Click "Activate" to try again or choose a different address. &lt;br/&gt; Full error text: &lt;br/&gt;&lt;blockquote&gt;{error_text}&lt;/blockquote&gt;</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="80"/>
       <source>Interrogate failure</source>
       <translation>Interrogate failure</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="79"/>
+      <location filename="../../src/util/shared_constants.py" line="81"/>
       <source>Open or create an image first.</source>
       <translation>Open or create an image first.</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="80"/>
+      <location filename="../../src/util/shared_constants.py" line="82"/>
       <source>Running CLIP interrogate</source>
       <translation>Running CLIP interrogate</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="83"/>
+      <location filename="../../src/util/shared_constants.py" line="85"/>
       <source>Image generation failed</source>
       <translation>Image generation failed</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="84"/>
+      <location filename="../../src/util/shared_constants.py" line="86"/>
       <source>Nothing was selected in the image generation area. Either use the selection tool to mark part of the image generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</source>
       <translation>Nothing was selected in the image generation area. Either use the selection tool to mark part of the image generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="90"/>
+      <location filename="../../src/util/shared_constants.py" line="92"/>
       <source>Upscale failure</source>
       <translation>Upscale failure</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="91"/>
+      <location filename="../../src/util/shared_constants.py" line="93"/>
       <source>Upscaled image content</source>
       <translation>Upscaled image content</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="92"/>
+      <location filename="../../src/util/shared_constants.py" line="94"/>
       <source>None</source>
       <translation>None</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="98"/>
+      <location filename="../../src/util/shared_constants.py" line="100"/>
       <source>Bilinear</source>
       <translation>Bilinear</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="99"/>
+      <location filename="../../src/util/shared_constants.py" line="101"/>
       <source>Nearest</source>
       <translation>Nearest</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="100"/>
+      <location filename="../../src/util/shared_constants.py" line="102"/>
       <source>Hamming</source>
       <translation>Hamming</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="101"/>
+      <location filename="../../src/util/shared_constants.py" line="103"/>
       <source>Bicubic</source>
       <translation>Bicubic</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="102"/>
+      <location filename="../../src/util/shared_constants.py" line="104"/>
       <source>Lanczos</source>
       <translation>Lanczos</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="103"/>
+      <location filename="../../src/util/shared_constants.py" line="105"/>
       <source>Box</source>
       <translation>Box</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="105"/>
+      <location filename="../../src/util/shared_constants.py" line="107"/>
       <source>{modifier_or_modifiers}: pick color</source>
       <translation>{modifier_or_modifiers}: pick color</translation>
     </message>
@@ -7617,8 +7807,8 @@ Press ESC to cancel</translation>
     <name>config.a1111_config</name>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="3"/>
-      <source>Stable-Diffusion Model:</source>
-      <translation>Stable-Diffusion Model:</translation>
+      <source>Stable Diffusion Model:</source>
+      <translation>Stable Diffusion Model:</translation>
     </message>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="6"/>
@@ -7627,13 +7817,13 @@ Press ESC to cancel</translation>
     </message>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="3"/>
-      <source>Stable-Diffusion</source>
-      <translation>Stable-Diffusion</translation>
+      <source>Stable Diffusion</source>
+      <translation>Stable Diffusion</translation>
     </message>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="5"/>
-      <source>Stable-Diffusion WebUI image generator</source>
-      <translation>Stable-Diffusion WebUI image generator</translation>
+      <source>Stable Diffusion WebUI image generator</source>
+      <translation>Stable Diffusion WebUI image generator</translation>
     </message>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="11"/>
@@ -7647,8 +7837,8 @@ Press ESC to cancel</translation>
     </message>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="5"/>
-      <source>Stable-Diffusion WebUI image generator</source>
-      <translation>Stable-Diffusion WebUI image generator</translation>
+      <source>Stable Diffusion WebUI image generator</source>
+      <translation>Stable Diffusion WebUI image generator</translation>
     </message>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="18"/>
@@ -7662,13 +7852,13 @@ Press ESC to cancel</translation>
     </message>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="5"/>
-      <source>Stable-Diffusion WebUI image generator</source>
-      <translation>Stable-Diffusion WebUI image generator</translation>
+      <source>Stable Diffusion WebUI image generator</source>
+      <translation>Stable Diffusion WebUI image generator</translation>
     </message>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="30"/>
-      <source>Stable-Diffusion VAE model:</source>
-      <translation>Stable-Diffusion VAE model:</translation>
+      <source>Stable Diffusion VAE model:</source>
+      <translation>Stable Diffusion VAE model:</translation>
     </message>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="33"/>
@@ -7677,13 +7867,13 @@ Press ESC to cancel</translation>
     </message>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="5"/>
-      <source>Stable-Diffusion WebUI image generator</source>
-      <translation>Stable-Diffusion WebUI image generator</translation>
+      <source>Stable Diffusion WebUI image generator</source>
+      <translation>Stable Diffusion WebUI image generator</translation>
     </message>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="38"/>
-      <source>Stable-Diffusion VAE models cached:</source>
-      <translation>Stable-Diffusion VAE models cached:</translation>
+      <source>Stable Diffusion VAE models cached:</source>
+      <translation>Stable Diffusion VAE models cached:</translation>
     </message>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="41"/>
@@ -7692,8 +7882,8 @@ Press ESC to cancel</translation>
     </message>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="5"/>
-      <source>Stable-Diffusion WebUI image generator</source>
-      <translation>Stable-Diffusion WebUI image generator</translation>
+      <source>Stable Diffusion WebUI image generator</source>
+      <translation>Stable Diffusion WebUI image generator</translation>
     </message>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="50"/>
@@ -7707,8 +7897,8 @@ Press ESC to cancel</translation>
     </message>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="5"/>
-      <source>Stable-Diffusion WebUI image generator</source>
-      <translation>Stable-Diffusion WebUI image generator</translation>
+      <source>Stable Diffusion WebUI image generator</source>
+      <translation>Stable Diffusion WebUI image generator</translation>
     </message>
   </context>
 </TS>

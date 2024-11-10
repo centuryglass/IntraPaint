@@ -1,4 +1,4 @@
-"""A control panel for the Stable-Diffusion WebUI image generator."""
+"""A control panel for the Stable Diffusion WebUI image generator."""
 from typing import Optional
 
 from PySide6.QtCore import Qt, Signal
@@ -48,7 +48,7 @@ class ExtrasTab(QWidget):
 
 
 class StableDiffusionPanel(GeneratorPanel):
-    """A control panel for the Stable-Diffusion WebUI image generator."""
+    """A control panel for the Stable Diffusion WebUI image generator."""
 
     interrogate_signal = Signal()
     generate_signal = Signal()
@@ -104,7 +104,9 @@ class StableDiffusionPanel(GeneratorPanel):
         self._guidance_scale_label, self._guidance_scale_slider = _get_control_with_label(Cache.GUIDANCE_SCALE)
         self._denoising_strength_label, self._denoising_strength_slider = _get_control_with_label(
             Cache.DENOISING_STRENGTH)
-        self._clip_skip_label, self._clip_skip_slider = _get_control_with_label(Cache.CLIP_SKIP)
+        self._clip_skip_label, self._clip_skip_spinbox = _get_control_with_label(Cache.CLIP_SKIP)
+        assert isinstance(self._clip_skip_spinbox, IntSliderSpinbox)
+        self._clip_skip_spinbox.set_slider_included(False)
         IntSliderSpinbox.align_slider_spinboxes([self._step_count_slider, self._guidance_scale_slider,
                                                  self._denoising_strength_slider])
         self._edit_mode_label, self._edit_mode_combobox = _get_control_with_label(Cache.EDIT_MODE)
@@ -264,7 +266,7 @@ class StableDiffusionPanel(GeneratorPanel):
             for label, input_widget in ((self._edit_mode_label, self._edit_mode_combobox),
                                         (self._model_label, self._model_combobox),
                                         (self._sampler_label, self._sampler_combobox),
-                                        (self._clip_skip_label, self._clip_skip_slider),
+                                        (self._clip_skip_label, self._clip_skip_spinbox),
                                         (self._masked_content_label, self._masked_content_combobox),
                                         (self._full_res_label, self._full_res_checkbox),
                                         (self._padding_label, self._padding_slider),
@@ -307,7 +309,7 @@ class StableDiffusionPanel(GeneratorPanel):
                                         (self._model_label, self._model_combobox),
                                         (self._sampler_label, self._sampler_combobox),
                                         (self._masked_content_label, self._masked_content_combobox),
-                                        (self._clip_skip_label, self._clip_skip_slider),
+                                        (self._clip_skip_label, self._clip_skip_spinbox),
                                         (self._prompt_label, self._prompt_textbox),
                                         (self._negative_label, self._negative_textbox),
                                         (self._gen_size_label, self._gen_size_input),

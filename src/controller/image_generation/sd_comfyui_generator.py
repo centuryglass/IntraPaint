@@ -1,10 +1,10 @@
-"""Generates images through the Stable-Diffusion ComfyUI"""
+"""Generates images through Stable Diffusion and ComfyUI"""
 import logging
 from argparse import Namespace
 from typing import Optional, cast, Any
 
 from PySide6.QtCore import Signal, QSize, QThread, QRect, QPoint
-from PySide6.QtGui import QImage, QPainter
+from PySide6.QtGui import QImage, QPainter, QTransform
 from PySide6.QtWidgets import QApplication
 from requests import ReadTimeout
 
@@ -17,7 +17,7 @@ from src.api.webservice import WebService
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.sd_generator import SDGenerator, SD_BASE_DESCRIPTION, \
-    STABLE_DIFFUSION_CONFIG_CATEGORY
+    STABLE_DIFFUSION_CONFIG_CATEGORY, GETTING_SD_MODELS, INSTALLATION_STABILITY_MATRIX
 from src.image.filter.blur import BlurFilter, MODE_GAUSSIAN
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
@@ -29,7 +29,8 @@ from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING
 from src.util.parameter import TYPE_LIST, TYPE_STR
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, AUTH_ERROR, \
-    GENERATE_ERROR_MESSAGE_EMPTY_MASK, GENERATE_ERROR_TITLE, ERROR_MESSAGE_TIMEOUT
+    GENERATE_ERROR_MESSAGE_EMPTY_MASK, GENERATE_ERROR_TITLE, ERROR_MESSAGE_TIMEOUT, MISC_CONNECTION_ERROR
+from src.util.visual.geometry_utils import map_rect_precise
 from src.util.visual.pil_image_utils import pil_image_scaling
 
 logger = logging.getLogger(__name__)
@@ -43,42 +44,104 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-SD_COMFYUI_GENERATOR_NAME = _tr('Stable-Diffusion ComfyUI API')
-SD_COMFYUI_GENERATOR_DESCRIPTION_HEADER = _tr("""
-<h2>Stable-Diffusion: via ComfyUI API</h2>
-<p>
-    <b>NOTE:</b> The ComfyUI generator is still in its early implementation stages, the following features are not yet
-    supported:
-</p>
-<ul>
-    <li>ControlNet</li>
-    <li>CLIP interrogation</li>
-    <li>Upscaling</li>
-</ul>
-""")
+SD_COMFYUI_GENERATOR_NAME = _tr('Stable Diffusion ComfyUI API')
+SD_COMFYUI_GENERATOR_DESCRIPTION_HEADER = _tr('<h2>Stable Diffusion: via ComfyUI API</h2>')
 SD_COMFYUI_GENERATOR_DESCRIPTION_COMFYUI = _tr("""
-<h3>ComfyUI:</h3>
+<h3>About ComfyUI</h3>
 <p>
-    ComfyUI is a popular Stable-Diffusion UI with a complex and powerful node-based interface. This IntraPaint
-    generator offloads image generation to that system through a network connection.  The ComfyUI instance can be run on
-    the same computer as IntraPaint, or remotely on a separate server.
-</p>""")
+    <a href="https://www.comfy.org/">ComfyUI</a> is a popular Stable Diffusion interface with complex and powerful
+    node-based controls. When the ComfyUI is running, IntraPaint can access Stable Diffusion image generation by
+    sending requests to ComfyUI.  You can run ComfyUI on the same computer as IntraPaint, or remotely on a separate
+     server.
+</p>
+<p>
+    When connected, IntraPaint provides controls for ComfyUI in the <b>Image Generation</b> tab and in the <b>settings
+    window</b> under the Stable Diffusion category. You can also access ComfyUI's interface directly through a web 
+    browser at <a href="http://localhost:8188/">localhost:8188</a>.
+</p>
+""")
 SD_COMFYUI_GENERATOR_DESCRIPTION = (f'{SD_COMFYUI_GENERATOR_DESCRIPTION_HEADER}\n{SD_BASE_DESCRIPTION}'
                                     f'\n{SD_COMFYUI_GENERATOR_DESCRIPTION_COMFYUI}')
 
 # noinspection SpellCheckingInspection
-SD_COMFYUI_GENERATOR_SETUP = _tr("""
-<h2>Installing Stable-Diffusion</h2>
+SD_COMFYUI_GENERATOR_SETUP_OPTIONS = _tr("""
+<h1>Stable Diffusion ComfyUI Generator Setup</h1>
 <p>
-    To use this Stable-Diffusion image generator with IntraPaint, you will first to install ComfyUI. TODO: what's the
-    most basic ComfyUI install process? Does Stability Matrix support it? Document that here.
+    To use the Stable Diffusion ComfyUI generator, you will to download at least one Stable Diffusion model file, 
+    install ComfyUI, and start it.  This guide will explain each of those steps.
+</p>""" + GETTING_SD_MODELS + """
+<hr/>
+<h2>Installing ComfyUI: Available options</h2>
+<p>
+    There are a few different ways you can install ComfyUI. The recommended method is to use
+    <a href="https://github.com/LykosAI/StabilityMatrix?tab=readme-ov-file#stability-matrix">Stability Matrix</a>,
+    but other methods are covered here for the sake of completeness.
+</p>
+<hr/>
+<h2>Option 1: Stability Matrix</h2>
+<p>
+    Installation through Stability Matrix is the recommended method. This method is the simplest option, provides a lot
+    of helpful extra resources, and supports Windows, macOS and Linux.  This method also lets you easily install and use
+    Stable Diffusion WebUI, the other Stable Diffusion client that IntraPaint can use.
+</p>""")
+SD_COMFYUI_GENERATOR_STABILITY_MATRIX_PACKAGE = 'ComfyUI'
+SD_COMFYUI_GENERATOR_SETUP_STABILITY_MATRIX = INSTALLATION_STABILITY_MATRIX.format(
+    generator_package=SD_COMFYUI_GENERATOR_STABILITY_MATRIX_PACKAGE,
+    post_install_generator_setup=''
+)
+SD_COMFYUI_GENERATOR_SETUP_ALTERNATIVES = _tr("""
+<hr/>
+<h2>Option 2: Prepackaged Windows version</h2>
+<p>
+    If you're using Windows and don't need any of the extra features in Stability Matrix, you can download a 
+    prepackaged version of ComfyUI from GitHub.
+</p>
+<ol>
+    <li>
+        Download <b>ComfyUI_windows_portable_nvidia.7z</b> from the most recent version listed on the <a href=
+        "https://github.com/comfyanonymous/ComfyUI/releases">ComfyUI GitHub release page</a>.<br/>
+    </li>
+    <li>
+        Extract the downloaded package into a new folder. If you're not using Windows 11, you may need to install
+        <a href="https://www.7-zip.org">7-Zip</a> to extract the compressed files.<br/>
+    </li>
+    <li>
+        If you haven't already found at least one Stable Diffusion model file, do that now. Copy it into the 
+        ComfyUI folder under <b>ComfyUI\\models\\checkpoints</b>.<br/>
+    </li>
+    <li>
+        Launch the <b>run_nvidia_gpu.bat</b> file in the ComfyUI folder to start Stable Diffusion. A terminal window
+        will open and print startup information as Comfy initializes.<br/>
+    </li>
+    <li>
+        Once you see <b>"To see the GUI go to: http://127.0.0.1:8188"</b> in the terminal window, Stable Diffusion is
+        ready to use.  Back in IntraPaint, click the "Activate" button below to connect to Stable Diffusion. <br/>
+    </li>
+    <li>
+        In the future, the only step you'll need to repeat from this list is launching <b>run_nvidia_gpu.bat</b> and
+        waiting for it to finish starting up. If you do this before launching IntraPaint, it will automatically connect
+        to the ComfyUI image generator on startup.
+    </li>
+</ol>
+<hr/>
+<h3>Option 3: Running directly in Python</h3>
+<p>
+    This method requires a lot more technical knowledge than the previous ones, but it also provides the most
+    flexibility and requires the least amount of storage space.  This is only recommended if you've set up a Python
+    virtual environment and debugged Python dependency issues before, or if you're interested in teaching yourself to
+    do so.
 </p>
 <p>
-    Once ComfyUI has started completely, you should be able to click "Activate" below, and IntraPaint will
-    connect to it automatically.  If you configure the WebUI to use any URL other than the default, IntraPaint
-     will ask for that information before connecting.
+    Because this option isn't recommended, IntraPaint won't provide a full guide.
+    <a href="https://github.com/comfyanonymous/ComfyUI?tab=readme-ov-file#manual-install-windows-linux">
+    ComfyUI's manual installation instructions</a> should help you get started. If you run into any problems,
+    searching the <a href="https://github.com/comfyanonymous/ComfyUI/issues">ComfyUI issues page</a> will 
+    probably help you find a solution.
 </p>
 """)
+SD_COMFYUI_GENERATOR_SETUP = SD_COMFYUI_GENERATOR_SETUP_OPTIONS + SD_COMFYUI_GENERATOR_SETUP_STABILITY_MATRIX \
+                             + SD_COMFYUI_GENERATOR_SETUP_ALTERNATIVES
+
 
 TASK_STATUS_QUEUED = _tr('Waiting, position {queue_number} in queue.')
 TASK_STATUS_GENERATING = _tr('Generating...')
@@ -89,8 +152,6 @@ DEFAULT_COMFYUI_URL = 'http://localhost:8188'
 MAX_ERROR_COUNT = 10
 MIN_RETRY_US = 300000
 MAX_RETRY_US = 60000000
-
-MENU_STABLE_DIFFUSION = 'Stable-Diffusion'
 
 
 def _check_prompt_styles_available(_) -> bool:
@@ -113,6 +174,7 @@ class SDComfyUIGenerator(SDGenerator):
         self._gen_extras_tab = ComfyUIExtrasTab()
         self._active_task_id = ''
         self._active_task_number = 0
+        self._last_cancelled_id = ''
 
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
@@ -127,7 +189,7 @@ class SDComfyUIGenerator(SDGenerator):
         return SD_COMFYUI_GENERATOR_DESCRIPTION
 
     def get_webservice(self) -> Optional[WebService]:
-        """Return the webservice object this module uses to connect to Stable-Diffusion, if initialized."""
+        """Return the webservice object this module uses to connect to Stable Diffusion, if initialized."""
         return self._webservice
 
     def remove_webservice(self) -> None:
@@ -135,7 +197,7 @@ class SDComfyUIGenerator(SDGenerator):
         self._webservice = None
 
     def create_or_get_webservice(self, url: str) -> WebService:
-        """Return the webservice object this module uses to connect to Stable-Diffusion.  If the webservice already
+        """Return the webservice object this module uses to connect to Stable Diffusion.  If the webservice already
            exists but the url doesn't match, a new webservice should replace the existing one, using the new url."""
         if self._webservice is not None:
             if self._webservice.server_url == url:
@@ -186,7 +248,7 @@ class SDComfyUIGenerator(SDGenerator):
         try:
             return self._webservice.get_sd_checkpoints()
         except (RuntimeError, KeyError) as err:
-            logger.error(f'Loading stable-diffusion model list failed: {err}')
+            logger.error(f'Loading Stable Diffusion model list failed: {err}')
             return []
 
     def get_lora_model_info(self) -> list[dict[str, str]]:
@@ -207,7 +269,7 @@ class SDComfyUIGenerator(SDGenerator):
                 })
             return lora_info
         except (RuntimeError, KeyError) as err:
-            logger.error(f'Loading stable-diffusion LoRA model list failed: {err}')
+            logger.error(f'Loading Stable Diffusion LoRA model list failed: {err}')
             return []
 
     def get_diffusion_sampler_names(self) -> list[str]:
@@ -216,7 +278,7 @@ class SDComfyUIGenerator(SDGenerator):
         try:
             return self._webservice.get_sampler_names()
         except (RuntimeError, KeyError) as err:
-            logger.error(f'Loading stable-diffusion sampler option list failed: {err}')
+            logger.error(f'Loading Stable Diffusion sampler option list failed: {err}')
             return []
 
     def get_upscale_method_names(self) -> list[str]:
@@ -225,7 +287,7 @@ class SDComfyUIGenerator(SDGenerator):
         try:
             return self._webservice.get_models(ComfyModelType.UPSCALING)
         except (RuntimeError, KeyError) as err:
-            logger.error(f'Loading stable-diffusion LoRA model list failed: {err}')
+            logger.error(f'Loading Stable Diffusion LoRA model list failed: {err}')
             return []
 
     def cache_generator_specific_data(self) -> None:
@@ -272,6 +334,7 @@ class SDComfyUIGenerator(SDGenerator):
         """Cancels image generation, if in-progress"""
         assert self._webservice is not None
         if AppStateTracker.app_state() == APP_STATE_LOADING:
+            self._last_cancelled_id = self._active_task_id
             self._webservice.interrupt(self._active_task_id)
 
     def load_lora_thumbnail(self, lora_info: Optional[dict[str, str]]) -> Optional[QImage]:
@@ -327,9 +390,11 @@ class SDComfyUIGenerator(SDGenerator):
             system_status = self._webservice.get_system_stats()
             return 'system' in system_status and 'comfyui_version' in system_status['system']
         except RuntimeError as req_err:
+            self.status_signal.emit(MISC_CONNECTION_ERROR.format(url=self._server_url,
+                                                                 error_text=str(req_err)))
             logger.error(f'Login check connection failed: {req_err}')
         except AuthError:
-            self.status_signal.emit(AUTH_ERROR)
+            self.status_signal.emit(AUTH_ERROR.format(url=self._server_url))
         return False
 
     def init_settings(self, settings_modal: SettingsModal) -> None:
@@ -337,7 +402,6 @@ class SDComfyUIGenerator(SDGenerator):
         assert self._webservice is not None
         # TODO: remote config options, similar to A1111Config
         app_config = AppConfig()
-        # TODO: sort stable-diffusion config between ComfyUI and WebUI compatible options.
         settings_modal.load_from_config(app_config, [STABLE_DIFFUSION_CONFIG_CATEGORY])
 
     def refresh_settings(self, settings_modal: SettingsModal) -> None:
@@ -345,7 +409,6 @@ class SDComfyUIGenerator(SDGenerator):
         # TODO: remote config options, similar to A1111Config
         # assert self._webservice is not None
         settings = {}  # settings = self._webservice.get_config()
-        # TODO: sort stable-diffusion config between ComfyUI and WebUI compatible options.
         app_config = AppConfig()
         for key in app_config.get_category_keys(STABLE_DIFFUSION_CONFIG_CATEGORY):
             settings[key] = app_config.get(key)
@@ -361,7 +424,6 @@ class SDComfyUIGenerator(SDGenerator):
         # web_keys = [key for cat in web_categories for key in web_config.get_category_keys(cat)]
         web_keys: list[str] = []
 
-        # TODO: sort stable-diffusion config between ComfyUI and WebUI compatible options.
         app_keys = AppConfig().get_category_keys(STABLE_DIFFUSION_CONFIG_CATEGORY)
         web_changes = {}
         for key, value in changed_settings.items():
@@ -388,7 +450,6 @@ class SDComfyUIGenerator(SDGenerator):
 
     def unload_settings(self, settings_modal: SettingsModal) -> None:
         """Unloads this generator's settings from the settings modal."""
-        # TODO: sort stable-diffusion config between ComfyUI and WebUI compatible options.
         settings_modal.remove_category(AppConfig(), STABLE_DIFFUSION_CONFIG_CATEGORY)
 
         # TODO: remote config options, similar to A1111Config
@@ -474,21 +535,30 @@ class SDComfyUIGenerator(SDGenerator):
         assert status is not None
         return status
 
-    def _inpaint_gen_area_crop_bounds(self) -> QRect:
+    def _inpaint_gen_area_crop_bounds(self, scale_to_generation_size=True) -> QRect:
         cache = Cache()
         edit_mode = cache.get(Cache.EDIT_MODE)
         gen_area = self._image_stack.generation_area
+        if scale_to_generation_size:
+            image_size = cache.get(Cache.GENERATION_SIZE)
+        else:
+            image_size = gen_area.size()
         if edit_mode != EDIT_MODE_INPAINT or not cache.get(Cache.INPAINT_FULL_RES):
-            return QRect(QPoint(), gen_area.size())
+            return QRect(QPoint(), image_size)
 
         selection_layer = self._image_stack.selection_layer
         selection_gen_area = selection_layer.get_selection_gen_area()
         if selection_gen_area is None or selection_gen_area.size() == gen_area.size():
-            return QRect(QPoint(), gen_area.size())
-        return selection_gen_area.translated(-selection_layer.position - gen_area.topLeft())
+            return QRect(QPoint(), image_size)
+        bounds = selection_gen_area.translated(-selection_layer.position - gen_area.topLeft())
+        if scale_to_generation_size and image_size != gen_area.size():
+            transform = QTransform.fromScale(image_size.width()/gen_area.width(), image_size.height()/gen_area.height())
+            bounds = map_rect_precise(bounds, transform).toAlignedRect()
+        return bounds
 
     def _scale_and_crop_gen_qimage(self, image: QImage) -> QImage:
-        crop_bounds = self._inpaint_gen_area_crop_bounds()
+        gen_area = self._image_stack.generation_area
+        crop_bounds = self._inpaint_gen_area_crop_bounds(gen_area.size() != image.size())
         if crop_bounds.size() != image.size():
             image = image.copy(crop_bounds)
         gen_size = Cache().get(Cache.GENERATION_SIZE)
@@ -498,7 +568,8 @@ class SDComfyUIGenerator(SDGenerator):
 
     def _restore_cropped_inpainting_images(self, initial_image: QImage, crop_bounds: QRect,
                                            cropped_images: list[QImage]) -> list[QImage]:
-        assert QRect(QPoint(), initial_image.size()).contains(crop_bounds)
+        assert QRect(QPoint(), initial_image.size()).contains(crop_bounds), (f'{crop_bounds} not in '
+                                                                             f'{initial_image.size()}')
         gen_area = self._image_stack.generation_area
         if gen_area.size() == crop_bounds.size():
             return cropped_images
@@ -545,7 +616,7 @@ class SDComfyUIGenerator(SDGenerator):
 
         if edit_mode == EDIT_MODE_INPAINT and cache.get(Cache.INPAINT_FULL_RES):
             inpaint_inner_bounds = self._inpaint_gen_area_crop_bounds()
-            if inpaint_inner_bounds.size() != gen_area.size():
+            if inpaint_inner_bounds.size() != source_image.size():
                 original_source_image = source_image
 
         # Pre-process image and mask as necessary:
@@ -599,6 +670,9 @@ class SDComfyUIGenerator(SDGenerator):
             except ReadTimeout:
                 raise RuntimeError(ERROR_MESSAGE_TIMEOUT)
             except (RuntimeError, ConnectionError) as image_gen_error:
+                if self._last_cancelled_id == self._active_task_id and self._last_cancelled_id != '':
+                    logger.info(f'Suppressing errors from cancelled task {self._active_task_id}')
+                    return  # Cancelled tasks will trigger a RuntimeError that should be ignored.
                 logger.error(f'request failed: {image_gen_error}')
                 raise RuntimeError(f'request failed: {image_gen_error}') from image_gen_error
             except Exception as unexpected_err:

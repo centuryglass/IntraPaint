@@ -217,7 +217,7 @@ NO_COLOR_SAVE_TITLE = _tr('Image saved without color')
 NO_COLOR_SAVE_MESSAGE = _tr('The {file_format} format saves the image without color. Use another format if you want'
                             ' to preserve image colors.')
 
-IGNORED_APPCONFIG_CATEGORIES = (QApplication.translate('application_config', 'Stable-Diffusion'),
+IGNORED_APPCONFIG_CATEGORIES = (QApplication.translate('application_config', 'Stable Diffusion'),
                                 QApplication.translate('application_config', 'GLID-3-XL'))
 DEV_APPCONFIG_CATEGORY = QApplication.translate('application_config', 'Developer')
 
@@ -526,11 +526,12 @@ class AppController(MenuBuilder):
 
     def load_image_generator(self, generator: ImageGenerator) -> None:
         """Load an image generator, updating controls and settings."""
-        if not generator.is_available():
-            show_error_dialog(self._window, GENERATOR_LOAD_ERROR_TITLE,
-                              GENERATOR_LOAD_ERROR_MESSAGE.format(generator_name=generator.get_display_name()))
-            return
+        # if not generator.is_available():
+        #     show_error_dialog(self._window, GENERATOR_LOAD_ERROR_TITLE,
+        #                       GENERATOR_LOAD_ERROR_MESSAGE.format(generator_name=generator.get_display_name()))
+        #     return
         # unload last generator:
+        last_generator = self._null_generator if self._generator is None else self._generator
         if self._generator is not None:
             for tab in self._generator.get_extra_tabs():
                 self._window.remove_tab(tab)
@@ -546,7 +547,7 @@ class AppController(MenuBuilder):
             show_error_dialog(self._window, GENERATOR_LOAD_ERROR_TITLE,
                               GENERATOR_LOAD_ERROR_MESSAGE.format(generator_name=generator.get_display_name()))
             assert generator != self._null_generator
-            self.load_image_generator(self._null_generator)
+            self.load_image_generator(self._null_generator if last_generator == generator else last_generator)
             return
         self._generator = generator
         self._generator.menu_window = self._window
@@ -1247,7 +1248,7 @@ class AppController(MenuBuilder):
     def update_metadata(self, show_messagebox: bool = True) -> None:
         """
         Adds image editing parameters from config to the image metadata, in a format compatible with the A1111
-        stable-diffusion webui. Parameters will be applied to the image file when save_image is called.
+        Stable Diffusion WebUI. Parameters will be applied to the image file when save_image is called.
 
         Parameters
         ----------

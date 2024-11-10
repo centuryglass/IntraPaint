@@ -135,7 +135,7 @@ class ControlNetUnit:
 
     @property
     def low_vram(self) -> bool:
-        """Accesses the WebUI-specific "low VRAM" option, which automatically swaps out ControlNet and Stable-Diffusion
+        """Accesses the WebUI-specific "low VRAM" option, which automatically swaps out ControlNet and Stable Diffusion
            models in VRAM to decrease memory use at the cost of increased generation time."""
         return self._low_vram
 
