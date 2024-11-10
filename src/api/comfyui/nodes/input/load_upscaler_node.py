@@ -7,7 +7,7 @@ NODE_NAME = 'UpscaleModelLoader'
 
 
 class LoadUpscalerInputs(TypedDict):
-    """Stable-Diffusion model loader inputs."""
+    """Upscale model loader inputs."""
     model_name: str
 
 

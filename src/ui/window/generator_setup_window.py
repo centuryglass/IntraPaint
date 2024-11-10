@@ -3,7 +3,8 @@ from typing import Optional
 
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QMouseEvent, QImage, QFont, QResizeEvent, QIcon
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QApplication, QLabel, QPushButton, QTextBrowser
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QApplication, QLabel, QPushButton, QTextBrowser, \
+    QTabWidget
 
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.ui.layout.bordered_widget import BorderedWidget
@@ -23,11 +24,17 @@ def _tr(*args):
 
 GEN_SETUP_WINDOW_TITLE = _tr('Image Generator Selection')
 GEN_SETUP_ACTIVATE_BUTTON_TEXT = _tr('Activate')
-GEN_STATUS_HEADER = _tr('<h2>Status:</h2>')
-ACTIVE_STATUS_TEXT = _tr('Generator is active.')
-AVAILABLE_STATUS_TEXT = _tr('Generator is available.')
+GEN_STATUS_HEADER = _tr('<h1>Image generator status:</h1>')
+ACTIVE_STATUS_TEXT = _tr('This image generator is active.')
+AVAILABLE_STATUS_TEXT = _tr('This image generator is available, click "Activate" to attempt to use it.')
+UNAVAILABLE_STATUS_TEXT = _tr('This image generator is not available: {error_reason}')
+UNKNOWN_ERROR_REASON = _tr('Unknown error encountered, please report this on the <a'
+                           ' href="https://github.com/centuryglass/IntraPaint/issues">GitHub issues page</a>.')
 GEN_LIST_HEADER = _tr('<h1>Generator Options:</h1>')
 PREVIEW_IMAGE_TITLE = _tr('<u>Preview: {generator_name}</u>')
+
+TAB_TITLE_DESCRIPTION = _tr('Description')
+TAB_TITLE_SETUP = _tr('Setup Guide')
 
 SCROLL_CONTENT_MARGIN = 25
 
@@ -65,9 +72,11 @@ class GeneratorSetupWindow(QWidget):
         self._option_list_layout.addWidget(self._preview_image, stretch=5)
         self._option_list_layout.addSpacing(20)
         self._title = QLabel()
-        self._title.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        self._title_layout.addWidget(self._title, stretch=2)
-        self._detail_panel_layout.addLayout(self._title_layout)
+        self._title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._detail_panel_layout.addWidget(self._title)
+
+        self._text_tab_panel = QTabWidget()
+        self._detail_panel_layout.addWidget(self._text_tab_panel, stretch=10)
 
         def _setup_rich_text_section():
             text_widget = QTextBrowser()
@@ -76,12 +85,10 @@ class GeneratorSetupWindow(QWidget):
             return text_widget
 
         self._description = _setup_rich_text_section()
-        self._detail_panel_layout.addWidget(self._description, stretch=20)
-
-        self._detail_panel_layout.addWidget(DraggableDivider())
+        self._text_tab_panel.addTab(self._description, TAB_TITLE_DESCRIPTION)
 
         self._setup = _setup_rich_text_section()
-        self._detail_panel_layout.addWidget(self._setup, stretch=20)
+        self._text_tab_panel.addTab(self._setup, TAB_TITLE_SETUP)
         self._detail_panel_layout.addWidget(DraggableDivider())
 
         self._status = _setup_rich_text_section()
@@ -139,6 +146,8 @@ class GeneratorSetupWindow(QWidget):
                 self._update_status_text(ACTIVE_STATUS_TEXT)
         elif generator.is_available():
             self._update_status_text(AVAILABLE_STATUS_TEXT)
+        elif self._status.toPlainText() == '':
+            UNAVAILABLE_STATUS_TEXT.format(error_reason=UNKNOWN_ERROR_REASON)
 
     def mark_active_generator(self, generator: ImageGenerator) -> None:
         """Set which generator the window should show as active."""

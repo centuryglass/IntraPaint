@@ -1,4 +1,4 @@
-"""View, apply, and update saved stable-diffusion WebUI prompt info."""
+"""View, apply, and update saved Stable Diffusion WebUI prompt info."""
 import json
 import logging
 from typing import Optional, TypeAlias
@@ -40,12 +40,12 @@ TextField: TypeAlias = PlainTextEdit | LineEdit
 
 
 class PromptStyleWindow(QDialog):
-    """View, apply, and update saved stable-diffusion WebUI prompt info."""
+    """View, apply, and update saved Stable Diffusion WebUI prompt info."""
 
     should_save_changes = Signal(list)
 
     def __init__(self, save_enabled: bool = False) -> None:
-        """View, apply, and update saved stable-diffusion WebUI prompt info."""
+        """View, apply, and update saved Stable Diffusion WebUI prompt info."""
         super().__init__()
         self.setWindowIcon(QIcon(APP_ICON_PATH))
         self.setWindowTitle(STYLE_TITLE)

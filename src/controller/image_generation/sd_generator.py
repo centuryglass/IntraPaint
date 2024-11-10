@@ -1,4 +1,4 @@
-"""Shared base for generators that provide Stable-Diffusion image generation with possible ControlNet and upscaling
+"""Shared base for generators that provide Stable Diffusion image generation with possible ControlNet and upscaling
    support."""
 import logging
 from argparse import Namespace
@@ -47,28 +47,119 @@ def _tr(*args):
 
 SD_BASE_DESCRIPTION = _tr("""
 <p>
-    Released in August 2022, Stable-Diffusion remains the most versatile and useful free image generation model.
+    Released in August 2022, Stable Diffusion remains the most versatile and useful free image generation model.
 </p>
 <h2>Generator capabilities and limits:</h2>
 <ul>
     <li>Requires only 4GB of VRAM, or 8GB if using an SDXL model.</li>
     <li>Tuned for an ideal resolution of 512x512 (1024x1024 for SDXL).</li>
-    <li>A huge variety of fine-tuned variant models are available.</li>
     <li>
-        The magnitude of changes made to existing images can be precisely controlled by varying denoising strength.
+     Because it's relatively easy to re-train, a vast library of free <b>fine-tuned variant models</b> are
+     available.
     </li>
     <li>
-        Supports LoRAs, miniature extension models adding support for new styles and subjects.
+        The strength of AI image changes can be controlled precisely using the <b>denoising strength</b> option.
+    </li>
+    <li>
+        Able to use <b>LoRAs</b>, miniature extension models adding support for new styles and subjects.
     </li>
     <li>
         Supports positive and negative prompting, where (parentheses) draw additional attention to prompt sections,
         and [square brackets] reduce attention.
     </li>
     <li>
-        Supports ControlNet modules, allowing image generation to be guided by arbitrary constraints like depth maps,
-        existing image lines, and pose analysis.
+        Supports <b>ControlNet</b> models, allowing image generation to be guided by arbitrary constraints like depth
+        maps, existing image lines, and pose analysis.
     </li>
 </ul>
+""")
+
+IMAGE_PREVIEW_STABILITY_MATRIX_CHECKPOINTS = f'{PROJECT_DIR}/resources/help_docs/stability_matrix_checkpoint_tab.png'
+IMAGE_PREVIEW_STABILITY_MATRIX_MODELS = f'{PROJECT_DIR}/resources/help_docs/stability_matrix_model_browser_tab.png'
+IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES = f'{PROJECT_DIR}/resources/help_docs/stability_matrix_packages_tab.png'
+
+INSTALLATION_STABILITY_MATRIX = _tr("""
+<h3>Stability Matrix installation and setup</h3>
+<ol>
+    <li>
+        Download the appropriate version of Stability Matrix for your system:
+        <ul>
+            <li>
+                <a
+                 href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip"
+                 >Windows 10, 11
+                </a>
+            </li>
+            <li>
+                <a
+              href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg"
+                 >macOS, Apple Silicon
+                </a>
+            </li>
+            <li>
+                <a
+                href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip"
+                >Linux AppImage
+                </a>
+            </li>
+            <li><a href="https://aur.archlinux.org/packages/stabilitymatrix"> Arch Linux AUR</a></li>
+        </ul>
+    </li>
+    <li>
+        Extract and launch the downloaded file. On the first launch it will ask you to select a data directory, and ask
+        you to select a package to install. Choose <b>"{generator_package}"</b>, and wait for installation to finish.
+        From here, Stability-Matrix will go to the <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES + """'/>
+        <b>Packages</b> tab, where you can configure or launch the WebUI, or install alternate Stable Diffusion
+        packages.<br/>
+    </li>
+    <li>
+        If you've already downloaded Stable Diffusion or ControlNet models, go to the the
+         <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_CHECKPOINTS + """'/><b>Checkpoint Manager</b> tab on the left.
+         Click the "<big>⋯</big>" menu button on the upper right, and choose "Models Folder", and it will open the 
+         folder you need in the system file manager.  Copy Stable Diffusion models into the "StableDiffusion"
+         subfolder, and copy any ControlNet models to the "ControlNet" subfolder.<br/>
+    </li>
+    <li>
+        If you haven't downloaded any Stable Diffusion models yet, you can do that in Stability Matrix.
+        Go to the <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_MODELS + """'/><b>Model Browser</b> tab to find and 
+        download a Stable Diffusion model file.<br/>
+    </li>
+    {post_install_generator_setup}
+    <li>
+        On the <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES + """'/><b>Packages</b> tab, click the 
+        <b>Launch</b> button under <b>"{generator_package}"</b>.  A log screen will open up, showing the status of the
+        package as it starts up.<br/>
+    </li>
+    <li>
+        Once the <b>"Open Web UI"</b> button appears at the top of the window, Stable Diffusion is ready to use.  Back
+        in IntraPaint, click the "Activate" button below to connect to Stable Diffusion. <br/>
+    </li>
+    <li>
+        In the future, the only steps you'll need to repeat from this list are launching Stability Matrix and clicking
+        the "Launch" button. If you do this before launching IntraPaint, it will automatically connect to this image
+        generator on startup.
+    </li>
+</ol>
+""")
+
+GETTING_SD_MODELS = _tr("""
+<h2>Getting Stable Diffusion Model Files</h2>
+<p>
+    To use Stable Diffusion, you'll need at least one Stable Diffusion model file.  These files (also called
+    checkpoints), contain the data structures that Stable Diffusion uses to create images.  A huge variety of
+    fine-tuned models are available on sites like <a href="https://civitai.com/">CivitAI</a> and
+    <a href="https://huggingface.co/">Hugging Face</a>, each with its own strengths and weaknesses.
+</p>
+<p>
+    If you want to use Stable Diffusion with ControlNet, you will also need to download ControlNet model files.
+    Each ControlNet model provides a new way to control image generation. The official ControlNet models for use with
+    Stable Diffusion 1.5 model variants can be downloaded from
+    <a href="https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/tree/main">this page on Hugging
+    Face</a>. More options, including ones with support for Stable Diffusion XL, are linked on the 
+    Stable Diffusion WebUI ControlNet extension 
+    <a href="https://github.com/Mikubill/sd-webui-controlnet/wiki/Model-download#official-controlnet-11-models">
+    GitHub wiki</a>.
+</p>
 """)
 
 
@@ -76,9 +167,9 @@ ERROR_TITLE_PREPROCESSOR_PREVIEW_FAILED = _tr('ControlNet preview failed')
 ERROR_MESSAGE_PREPROCESSOR_PREVIEW_FAILED = _tr('Loading ControlNet preprocessor preview failed: {err}')
 
 SD_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/stable-diffusion.png'
-STABLE_DIFFUSION_CONFIG_CATEGORY = QApplication.translate('config.application_config', 'Stable-Diffusion')
+STABLE_DIFFUSION_CONFIG_CATEGORY = QApplication.translate('config.application_config', 'Stable Diffusion')
 ICON_PATH_CONTROLNET_TAB = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
-MENU_STABLE_DIFFUSION = 'Stable-Diffusion'
+MENU_STABLE_DIFFUSION = 'Stable Diffusion'
 
 
 LCM_SAMPLER = 'LCM'
@@ -105,7 +196,7 @@ def _check_lora_available(_) -> bool:
 
 
 class SDGenerator(ImageGenerator):
-    """Shared base for generators that provide Stable-Diffusion image generation with possible ControlNet and upscaling
+    """Shared base for generators that provide Stable Diffusion image generation with possible ControlNet and upscaling
        support."""
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace, url_cache_key: str,
@@ -124,7 +215,7 @@ class SDGenerator(ImageGenerator):
 
     @property
     def server_url(self) -> str:
-        """Return the Stable-Diffusion server URL."""
+        """Return the Stable Diffusion server URL."""
         return self._server_url
 
     def get_preview_image(self) -> QImage:
@@ -138,7 +229,7 @@ class SDGenerator(ImageGenerator):
         return []
 
     def get_webservice(self) -> Optional[WebService]:
-        """Return the webservice object this module uses to connect to Stable-Diffusion, if initialized."""
+        """Return the webservice object this module uses to connect to Stable Diffusion, if initialized."""
         raise NotImplementedError()
 
     def remove_webservice(self) -> None:
@@ -146,7 +237,7 @@ class SDGenerator(ImageGenerator):
         raise NotImplementedError()
 
     def create_or_get_webservice(self, url: str) -> WebService:
-        """Return the webservice object this module uses to connect to Stable-Diffusion.  If the webservice already
+        """Return the webservice object this module uses to connect to Stable Diffusion.  If the webservice already
            exists but the url doesn't match, a new webservice should replace the existing one, using the new url."""
         raise NotImplementedError()
 
@@ -427,7 +518,7 @@ class SDGenerator(ImageGenerator):
         preview_task.start()
 
     def upscale(self, new_size: QSize) -> bool:
-        """Upscale using AI upscaling modes provided by stable-diffusion-webui, returning whether upscaling
+        """Upscale using AI upscaling modes provided by the Stable Diffusion API, returning whether upscaling
         was attempted."""
         assert self._window is not None
         width = self._image_stack.width
@@ -435,9 +526,11 @@ class SDGenerator(ImageGenerator):
         if new_size.width() <= width and new_size.height() <= height:
             return False
 
-        upscale_method = Cache().get(Cache.UPSCALE_METHOD)
-        if upscale_method in PIL_SCALING_MODES.keys():
-            return super().upscale(new_size)
+        cache = Cache()
+        upscale_method = str(cache.get(Cache.UPSCALE_METHOD))
+        if not cache.get(Cache.CONTROLNET_UPSCALING_AVAILABLE) or not cache.get(Cache.CONTROLNET_UPSCALING):
+            if upscale_method in PIL_SCALING_MODES.keys() or upscale_method.lower() == 'none':
+                return super().upscale(new_size)
 
         class _UpscaleTask(AsyncTask):
             status_signal = Signal(dict)
@@ -485,8 +578,9 @@ class SDGenerator(ImageGenerator):
                         self._image_stack.size = size
 
                     UndoStack().commit_action(_update_size, _revert_size, 'SDWebUIGenerator.upscale_resize')
-                self._image_stack.create_layer(layer_name=UPSCALED_LAYER_NAME,
-                                               layer_parent=self._image_stack.layer_stack, image_data=img)
+                new_layer = self._image_stack.create_layer(layer_name=UPSCALED_LAYER_NAME,
+                                                           layer_parent=self._image_stack.layer_stack, image_data=img)
+                self._image_stack.active_layer = new_layer
 
         task.image_ready.connect(apply_upscaled)
 

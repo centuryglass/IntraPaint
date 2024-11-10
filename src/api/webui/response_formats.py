@@ -58,7 +58,7 @@ class LoraInfo(TypedDict):
 
 
 class ModelInfo(TypedDict):
-    """Data used to define Stable-Diffusion models in WebUI API responses from the /sdapi/v1/sd-models endpoint."""
+    """Data used to define Stable Diffusion models in WebUI API responses from the /sdapi/v1/sd-models endpoint."""
     title: str
     model_name: str
     hash: str
@@ -68,13 +68,13 @@ class ModelInfo(TypedDict):
 
 
 class VaeInfo(TypedDict):
-    """Data used to define Stable-Diffusion VAE models in WebUI API responses from the /sdapi/v1/sd-vae endpoint."""
+    """Data used to define Stable Diffusion VAE models in WebUI API responses from the /sdapi/v1/sd-vae endpoint."""
     model_name: str
     filename: str
 
 
 class SamplerInfo(TypedDict):
-    """Data used to define Stable-Diffusion samplers in WebUI API responses from the /sdap1/v1/samplers endpoint."""
+    """Data used to define Stable Diffusion samplers in WebUI API responses from the /sdap1/v1/samplers endpoint."""
     name: str
     aliases: list[str]
     options: dict[str, str]

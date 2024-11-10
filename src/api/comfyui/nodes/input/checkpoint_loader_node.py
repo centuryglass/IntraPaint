@@ -1,4 +1,4 @@
-"""A ComfyUI node used to load a Stable-Diffusion model, plus associated CLIP and VAE models.
+"""A ComfyUI node used to load a Stable Diffusion model, plus associated CLIP and VAE models.
 
 Outputs are [model, vae, clip]
 """
@@ -10,13 +10,13 @@ NODE_NAME = 'CheckpointLoader'
 
 
 class CheckpointInputs(TypedDict):
-    """Stable-Diffusion model loader inputs."""
+    """Stable Diffusion model loader inputs."""
     config_name: str
     ckpt_name: str
 
 
 class CheckpointLoaderNode(ComfyNode):
-    """A ComfyUI node used to load a Stable-Diffusion model, plus associated CLIP and VAE models.
+    """A ComfyUI node used to load a Stable Diffusion model, plus associated CLIP and VAE models.
 
 Outputs are [model, vae, clip]
 """

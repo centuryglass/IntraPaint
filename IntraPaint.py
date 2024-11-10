@@ -1,6 +1,6 @@
 """
 Runs the main IntraPaint inpainting UI.
-Assuming you're running the A1111 stable-diffusion API on the same machine with default settings, running
+Assuming you're running the ComfyUI or the Stable Diffusion WebUI API on the same machine with default settings, running
 `python IntraPaint.py` should be all you need. For more information on options, run `python IntraPaint.py --help`
 """
 import atexit

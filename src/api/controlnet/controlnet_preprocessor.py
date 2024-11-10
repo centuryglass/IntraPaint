@@ -1,4 +1,4 @@
-"""Defines a ControlNet preprocessor's name and parameters, for use with a Stable-Diffusion API"""
+"""Defines a ControlNet preprocessor's name and parameters, for use with a Stable Diffusion API"""
 import json
 from copy import deepcopy
 from typing import Optional, cast, Any, TypedDict
@@ -9,7 +9,7 @@ from src.util.parameter import TYPE_INT, TYPE_FLOAT
 
 
 class ControlNetPreprocessor:
-    """Defines a ControlNet preprocessor's name and parameters, for use with a Stable-Diffusion API."""
+    """Defines a ControlNet preprocessor's name and parameters, for use with a Stable Diffusion API."""
 
     def __init__(self, name: str, display_name: str, parameters: list[ControlParameter]) -> None:
         """Parameter objects are used similarly to the way they're used in src.image.filter, except that the name value

@@ -820,7 +820,7 @@
         "label": "Edit mode:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool",
+        "description": "Stable Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool",
         "type": "string",
         "default": "Inpaint",
         "options": [
@@ -849,7 +849,7 @@
         "label": "Sampling steps:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits",
+        "description": "Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different Stable Diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits",
         "type": "int",
         "default": 30,
         "saved": true,
@@ -962,7 +962,7 @@
         "description": "Last seed used for image generation",
         "type": "string",
         "default": "-1",
-        "saved": false
+        "saved": true
     },
     "inpaint_options_available": {
         "label": "Inpaint options available",
@@ -1071,20 +1071,20 @@
         }
     },
     "sd_webui_server_url": {
-        "label": "Stable-Diffusion WebUI server URL:",
+        "label": "Stable Diffusion WebUI server URL:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Cached URL for the Stable-Diffusion WebUI image generation server.",
+        "description": "Cached URL for the Stable Diffusion WebUI image generation server.",
         "type": "string",
         "default": "http://localhost:7860",
         "saved": true,
         "translate": false
     },
     "sd_comfyui_server_url": {
-        "label": "Stable-Diffusion ComfyUI server URL:",
+        "label": "Stable Diffusion ComfyUI server URL:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Cached URL for the Stable-Diffusion ComfyUI image generation server.",
+        "description": "Cached URL for the Stable Diffusion ComfyUI image generation server.",
         "type": "string",
         "default": "http://localhost:8188",
         "saved": true,
@@ -1101,10 +1101,10 @@
         "translate": false
     },
     "sd_model": {
-        "label": "Stable-Diffusion model:",
+        "label": "Stable Diffusion model:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Stable-Diffusion model to use for image generation.",
+        "description": "Stable Diffusion model to use for image generation.",
         "type": "string",
         "default": "",
         "options" : [],
@@ -1137,7 +1137,7 @@
         "label": "ControlNet tiled upscaling",
         "category": "Cache",
         "subcategory": "ControlNet",
-        "description": "Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.",
+        "description": "Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the Stable Siffusion WebUI, and the controlnet tile model needs to be downloaded to the correct folder.",
         "type": "bool",
         "default": false,
         "saved": true
@@ -1240,7 +1240,7 @@
         "label": "Load checkpoint as inpainting model",
         "category": "Cache",
         "subcategory": "ComfyUI",
-        "description": "Load the selected Stable-Diffusion model as an inpainting model.",
+        "description": "Load the selected Stable Diffusion model as an inpainting model.",
         "type": "bool",
         "default": false,
         "saved": true
@@ -1282,7 +1282,7 @@
         "label": "Restore faces",
         "category": "Cache",
         "subcategory": "WebUI",
-        "description": "Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.",
+        "description": "Use a face restoration model to correct image data after Stable Diffusion runs. In most cases you'll probably get better results without it.",
         "type": "bool",
         "default": false,
         "saved": true
@@ -1308,7 +1308,7 @@
         "description": "Last variation seed used for image generation",
         "type": "string",
         "default": "-1",
-        "saved": false
+        "saved": true
     },
     "webui_subseed_strength": {
         "label": "Variation strength:",

@@ -1,4 +1,4 @@
-"""UI for setting extended options related to the ComfyUI Stable-Diffusion generator."""
+"""UI for setting extended options related to the ComfyUI Stable Diffusion generator."""
 from typing import cast, Optional
 
 from PySide6.QtCore import Qt, Signal
@@ -25,7 +25,7 @@ TOOLTIP_CLEAR_MEMORY = _tr('Removed cached models from GPU memory within ComfyUI
 
 
 class ComfyUIExtrasTab(ExtrasTab):
-    """UI for setting extended options related to the ComfyUI Stable-Diffusion generator."""
+    """UI for setting extended options related to the ComfyUI Stable Diffusion generator."""
 
     clear_comfyui_memory_signal = Signal()
 

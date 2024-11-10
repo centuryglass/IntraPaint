@@ -1,5 +1,5 @@
 """
-Panel providing controls for the stable-diffusion ControlNet extension. Only supported by stable_diffusion_controller.
+Panel providing controls for the Stable Diffusion ControlNet extension.
 """
 import logging
 from copy import deepcopy
@@ -118,7 +118,7 @@ class TabbedControlNetPanel(QTabWidget):
 
 
 class ControlNetPanel(BorderedWidget):
-    """ControlnetPanel provides controls for the stable-diffusion ControlNet extension."""
+    """ControlnetPanel provides controls for the Stable Diffusion ControlNet extension."""
 
     request_preview = Signal(ControlNetPreprocessor, str)
 
@@ -128,7 +128,7 @@ class ControlNetPanel(BorderedWidget):
                  model_list: list[str],
                  control_types: dict[str, webui_constants.ControlTypeDef],
                  show_webui_options: bool) -> None:
-        """Initializes the panel based on data from the stable-diffusion-webui.
+        """Initializes the panel based on data from a Stable Diffusion API.
 
         Parameters
         ----------
@@ -240,9 +240,9 @@ class ControlNetPanel(BorderedWidget):
         self._load_image_button.clicked.connect(open_control_image_file)
 
         def reuse_image_update(checked: bool):
-            """Update config, disable/enable appropriate components if the 'reuse image as control' box changes."""
+            """Update config, disable/enable appropriate components if the 'generation area as control' box changes."""
             value = CONTROLNET_REUSE_IMAGE_CODE if checked else self._image_path_edit.text()
-            for control_img_widget in (self._control_image_label, self._image_path_edit):
+            for control_img_widget in (self._control_image_label, self._image_path_edit, self._load_image_button):
                 control_img_widget.setEnabled(not checked)
             if checked:
                 self._image_path_edit.setText('')
@@ -274,6 +274,15 @@ class ControlNetPanel(BorderedWidget):
         self._preprocessor_combobox.currentIndexChanged.connect(self._handle_preprocessor_change)
         self._model_combobox.currentIndexChanged.connect(self._handle_model_change)
 
+        control_strength_param = self._control_unit.control_strength
+        control_start_param = self._control_unit.control_start
+        control_end_param = self._control_unit.control_end
+        self._control_strength_slider, self._control_strength_label = control_strength_param.get_input_widget(True)
+        self._control_start_slider, self._control_start_label = control_start_param.get_input_widget(True)
+        self._control_end_slider, self._control_end_label = control_end_param.get_input_widget(True)
+        for module_control in (self._control_start_slider, self._control_end_slider, self._control_strength_slider):
+            module_control.valueChanged.connect(lambda _: self._schedule_cache_update())
+
         # Avoid letting excessively long type/preprocessor/model names distort the UI layout:
         for large_combobox in (self._model_combobox, self._preprocessor_combobox, self._control_type_combobox):
             assert isinstance(large_combobox, QComboBox)
@@ -302,7 +311,6 @@ class ControlNetPanel(BorderedWidget):
                                        self._control_type_combobox,
                                        self._preprocessor_combobox,
                                        self._model_combobox,
-                                       self._preview_button,
                                        self._preview_image_widget
                                    ] + self._dynamic_control_labels + self._dynamic_controls
             control_image_widgets = [
@@ -315,6 +323,8 @@ class ControlNetPanel(BorderedWidget):
                     widget.setEnabled(checked)
             for widget in control_image_widgets:
                 widget.setEnabled(checked and not self._reuse_image_checkbox.isChecked())
+            self._preview_button.setEnabled(checked and self._control_unit.preprocessor.name.lower()
+                                            != PREPROCESSOR_NONE.lower())
             self._control_unit.enabled = checked
             self._schedule_cache_update()
 
@@ -346,6 +356,11 @@ class ControlNetPanel(BorderedWidget):
             self._layout.setRowStretch(row, 0)
         for column in range(self._layout.columnCount()):
             self._layout.setColumnStretch(column, 0)
+
+        labels = [self._control_start_label, self._control_end_label, self._control_strength_label,
+                  *self._dynamic_control_labels]
+        controls = [self._control_start_slider, self._control_end_slider, self._control_strength_slider,
+                    *self._dynamic_controls]
 
         # Build horizontal layout:
         if self._orientation == Qt.Orientation.Horizontal:
@@ -379,7 +394,7 @@ class ControlNetPanel(BorderedWidget):
             ]
             row = 7
             col = 0
-            for label, slider in zip(self._dynamic_control_labels, self._dynamic_controls):
+            for label, slider in zip(labels, controls):
                 layout_items.append((label, row, col, 1, 1))
                 layout_items.append((slider, row, col + 1, 1, 1))
                 if col > 0:
@@ -415,7 +430,7 @@ class ControlNetPanel(BorderedWidget):
                 (self._preview_button, 7, 1, 1, 1)
             ]
             row = 8
-            for label, slider in zip(self._dynamic_control_labels, self._dynamic_controls):
+            for label, slider in zip(labels, controls):
                 layout_items.append((label, row, 0, 1, 1))
                 layout_items.append((slider, row, 1, 1, 1))
                 row += 1
@@ -437,6 +452,16 @@ class ControlNetPanel(BorderedWidget):
         if self._cache_timer.isActive():
             self._cache_timer.stop()
         Cache().set(self._cache_key, self._control_unit.serialize())
+
+    @staticmethod
+    def _preprocessor_display_name(full_name: str) -> str:
+        """Remove any unnecessary 'Preprocessor' or '_preprocessor' suffix."""
+        if not full_name.lower().endswith(PREPROCESSOR_SUFFIX.lower()):
+            return full_name
+        display_name = full_name[:-len(PREPROCESSOR_SUFFIX)]
+        while display_name.endswith('-') or display_name.endswith('_'):
+            display_name = display_name[:-1]
+        return display_name
 
     def _load_control_type(self, control_type_name: str) -> None:
         """Update preprocessor/model options for the selected control type."""
@@ -474,11 +499,9 @@ class ControlNetPanel(BorderedWidget):
             all_preprocessors.sort(key=lambda module: module.name.lower() if module.name != PREPROCESSOR_NONE else '~')
             for preprocessor in all_preprocessors:
                 assert preprocessor is not None
-                display_name = preprocessor.name
-                if display_name not in category_preprocessor_names:
+                if preprocessor.name not in category_preprocessor_names:
                     continue
-                if display_name.endswith(PREPROCESSOR_SUFFIX):
-                    display_name = display_name[:-len(PREPROCESSOR_SUFFIX)]
+                display_name = self._preprocessor_display_name(preprocessor.name)
                 self._preprocessor_combobox.addItem(display_name, userData=preprocessor)
             selected_preprocessor = self._control_unit.preprocessor.name
             if selected_preprocessor not in category_preprocessor_names \
@@ -486,8 +509,7 @@ class ControlNetPanel(BorderedWidget):
                 selected_preprocessor = control_type['default_option']
                 if selected_preprocessor not in category_preprocessor_names:
                     selected_preprocessor = PREPROCESSOR_NONE
-            if selected_preprocessor.endswith(PREPROCESSOR_SUFFIX):
-                selected_preprocessor = selected_preprocessor[:-len(PREPROCESSOR_SUFFIX)]
+            selected_preprocessor = self._preprocessor_display_name(selected_preprocessor)
             preprocessor_index = self._preprocessor_combobox.findText(selected_preprocessor)
             if preprocessor_index < 0:
                 raise RuntimeError(f'Failed to find preprocessor "{selected_preprocessor}" in control type'
@@ -508,6 +530,8 @@ class ControlNetPanel(BorderedWidget):
         for label, parameter_widget in zip(self._dynamic_control_labels, self._dynamic_controls):
             self._layout.removeWidget(label)
             self._layout.removeWidget(parameter_widget)
+            label.setHidden(True)
+            parameter_widget.setHidden(True)
             label.setParent(None)
             parameter_widget.setParent(None)
         self._dynamic_control_labels = []

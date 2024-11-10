@@ -194,7 +194,6 @@ class LatentUpscaleWorkflowBuilder(DiffusionWorkflowBuilder):
             upscale_node_params['tile_height'] = self.tile_size.height()
             if upscale_model_node is not None:
                 upscale_node_params['upscale_by'] = self._upscale_multiplier
-            assert upscale_node_params['tile_width'] == 640
 
             ultimate_upscale_node = UltimateUpscaleNode(upscale_node_params, upscale_model_node is not None)
             workflow.connect_nodes(ultimate_upscale_node, UltimateUpscaleNode.IMAGE,

@@ -33,7 +33,7 @@ from src.api.comfyui.nodes.vae.vae_decode_tiled_node import VAEDecodeTiledNode
 from src.api.comfyui.nodes.vae.vae_encode_node import VAEEncodeNode
 from src.api.comfyui.nodes.vae.vae_encode_tiled_node import VAEEncodeTiledNode
 from src.api.comfyui.workflow_builder_utils import random_seed, image_ref_to_str
-from src.api.controlnet.controlnet_constants import CONTROLNET_MODEL_NONE
+from src.api.controlnet.controlnet_constants import CONTROLNET_MODEL_NONE, PREPROCESSOR_NONE
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.config.cache import Cache
 from src.ui.window.extra_network_window import LORA_KEY_PATH
@@ -143,7 +143,7 @@ class DiffusionWorkflowBuilder:
 
     @property
     def sd_model(self) -> str:
-        """Accesses the stable-diffusion model used for image generation."""
+        """Accesses the Stable Diffusion model used for image generation."""
         return self._sd_model
 
     @sd_model.setter
@@ -328,7 +328,7 @@ class DiffusionWorkflowBuilder:
                 model_node = control_unit_data.model_node
         if model_node is None and model_name != CONTROLNET_MODEL_NONE:
             model_node = LoadControlNetNode(model_name)
-        if preprocessor_node is None:
+        if preprocessor_node is None and preprocessor.name != PREPROCESSOR_NONE:
             control_inputs = {}
             for parameter in preprocessor.parameters:
                 control_inputs[parameter.key] = parameter.value

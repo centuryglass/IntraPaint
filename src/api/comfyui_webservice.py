@@ -1,5 +1,5 @@
 """
-Accesses ComfyUI through its REST API, providing access to image generation and editing through stable-diffusion.
+Accesses ComfyUI through its REST API, providing access to image generation and editing through Stable Diffusion.
 """
 import json
 import logging
@@ -128,7 +128,7 @@ class AsyncTaskProgress(TypedDict):
 
 class ComfyUiWebservice(WebService):
     """
-    ComfyUiWebservice provides access to Stable-Diffusion through the ComfyUI REST API.
+    ComfyUiWebservice provides access to Stable Diffusion through the ComfyUI REST API.
     """
 
     def __init__(self, url: str) -> None:
@@ -176,7 +176,7 @@ class ComfyUiWebservice(WebService):
         return cast(list[str], self.get(ComfyEndpoints.EXTENSIONS, timeout=DEFAULT_TIMEOUT).json())
 
     def get_system_stats(self) -> SystemStatResponse:
-        """Returns information about the system and device running Stable-Diffusion."""
+        """Returns information about the system and device running Stable Diffusion."""
         return cast(SystemStatResponse,
                     self.get(ComfyEndpoints.SYSTEM_STATS, timeout=DEFAULT_TIMEOUT).json())
 
@@ -186,11 +186,11 @@ class ComfyUiWebservice(WebService):
         return cast(list[str], self.get(endpoint, timeout=DEFAULT_TIMEOUT).json())
 
     def get_sd_checkpoints(self) -> list[str]:
-        """Returns the list of available Stable-Diffusion models."""
+        """Returns the list of available Stable Diffusion models."""
         return self.get_models(ComfyModelType.CHECKPOINT)
 
     def get_vae_models(self) -> list[str]:
-        """Returns the list of available Stable-Diffusion VAE models."""
+        """Returns the list of available Stable Diffusion VAE models."""
         return self.get_models(ComfyModelType.VAE)
 
     def get_controlnets(self) -> list[str]:

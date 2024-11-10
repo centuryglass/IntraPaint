@@ -4,7 +4,7 @@ from typing import TypedDict, NotRequired, cast, Any, Literal, Optional
 from src.api.comfyui.nodes.comfy_node import NodeConnection, ComfyNode
 
 ULTIMATE_UPSCALE_NODE_NAME = 'UltimateSDUpscale'
-ULTIMATE_UPDSCEL_NODE_WITHOUT_MODEL_NAME = 'UltimateSDUpscaleNoUpscale'
+ULTIMATE_UPSCALE_NODE_WITHOUT_UPSCALE_MODEL = 'UltimateSDUpscaleNoUpscale'
 
 
 class UltimateUpscaleCoreInputs(TypedDict):
@@ -32,11 +32,16 @@ class SeamFixInputs(TypedDict):
     seam_fix_width: int  # default=64
     seam_fix_mask_blur: int  # default=8
     seam_fix_padding: int  # default=16
-    
+
+
+IMAGE_KEY_WITH_UPSCALER = 'image'
+IMAGE_KEY_WITHOUT_UPSCALER = 'upscaled_image'
+
 
 class UltimateUpscaleInputs(TypedDict):
     """Full inputs for the "Ultimate SD Upscale" node."""
-    image: NotRequired[NodeConnection]  # Image source node (not latent)
+    image: NotRequired[NodeConnection]  # Image source node (upscaler mode only)
+    upscaled_image: NotRequired[NodeConnection]  # Image source node (no upscaler mode only)
     model: NotRequired[NodeConnection]  # Usually CheckpointLoaderSimple
     positive: NotRequired[NodeConnection]  # Usually CLIPTextEncode
     negative: NotRequired[NodeConnection]  # Usually CLIPTextEncode
@@ -110,14 +115,28 @@ class UltimateUpscaleNode(ComfyNode):
         }
         connection_params = {
             UltimateUpscaleNode.IMAGE,
+            IMAGE_KEY_WITHOUT_UPSCALER,
             UltimateUpscaleNode.MODEL,
             UltimateUpscaleNode.POSITIVE,
             UltimateUpscaleNode.NEGATIVE,
             UltimateUpscaleNode.VAE
         }
-        node_name = ULTIMATE_UPDSCEL_NODE_WITHOUT_MODEL_NAME
+        node_name = ULTIMATE_UPSCALE_NODE_WITHOUT_UPSCALE_MODEL
         if use_upscaler:
             node_name = ULTIMATE_UPSCALE_NODE_NAME
             data['upscale_by'] = core_inputs['upscale_by']
             connection_params.add(UltimateUpscaleNode.UPSCALE_MODEL)
         super().__init__(node_name, cast(dict[str, Any], data), connection_params, 1)
+
+    def add_input(self, connected_node: str, output_slot_index: int, input_key: str):
+        """Connect one of this node's inputs to another node's output.
+
+        This will check the validity of the input key, but doesn't do anything to validate that the output is correct.
+        It will also correct the image key if necessary, since the Ultimate Upscale node uses a slightly different key
+        depending on which variant of it is being used.
+        """
+        if input_key == IMAGE_KEY_WITHOUT_UPSCALER and self.node_name == ULTIMATE_UPSCALE_NODE_NAME:
+            input_key = IMAGE_KEY_WITH_UPSCALER
+        elif input_key == IMAGE_KEY_WITH_UPSCALER and self.node_name == ULTIMATE_UPSCALE_NODE_WITHOUT_UPSCALE_MODEL:
+            input_key = IMAGE_KEY_WITHOUT_UPSCALER
+        super().add_input(connected_node, output_slot_index, input_key)

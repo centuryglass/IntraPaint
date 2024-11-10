@@ -881,8 +881,8 @@
     "prompt_style_shortcut": {
         "label": "View saved prompt styles",
         "category": "Menu Shortcuts",
-        "subcategory": "Stable-Diffusion Menu",
-        "description": "Access saved stable-diffusion prompt styles",
+        "subcategory": "Stable Diffusion Menu",
+        "description": "Access saved Stable Diffusion prompt styles",
         "type": "string",
         "default": "Ctrl+Alt+1",
         "saved": true
@@ -890,7 +890,7 @@
     "lora_shortcut": {
         "label": "View LoRA models",
         "category": "Menu Shortcuts",
-        "subcategory": "Stable-Diffusion Menu",
+        "subcategory": "Stable Diffusion Menu",
         "description": "Access available LoRA models.",
         "type": "string",
         "default": "Ctrl+Alt+2",
@@ -899,7 +899,7 @@
     "lcm_mode_shortcut": {
         "label": "LCM mode",
         "category": "Menu Shortcuts",
-        "subcategory": "Stable-Diffusion Menu",
+        "subcategory": "Stable Diffusion Menu",
         "description": "Apply appropriate settings for the LCM LoRA.",
         "type": "string",
         "default": "F10",

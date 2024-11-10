@@ -1,4 +1,4 @@
-"""Generates images through the Stable-Diffusion WebUI (A1111 or Forge)"""
+"""Generates images through the Stable Diffusion WebUI (A1111 or Forge)"""
 import logging
 import os
 from argparse import Namespace
@@ -17,7 +17,7 @@ from src.config.a1111_config import A1111Config
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.sd_generator import SD_BASE_DESCRIPTION, STABLE_DIFFUSION_CONFIG_CATEGORY, \
-    SDGenerator
+    SDGenerator, INSTALLATION_STABILITY_MATRIX, GETTING_SD_MODELS, IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
@@ -33,7 +33,7 @@ from src.util.menu_builder import menu_action
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, PROJECT_DIR, \
     AUTH_ERROR, AUTH_ERROR_MESSAGE, INTERROGATE_ERROR_TITLE, INTERROGATE_ERROR_MESSAGE_NO_IMAGE, \
     ERROR_MESSAGE_TIMEOUT, \
-    GENERATE_ERROR_MESSAGE_EMPTY_MASK, ERROR_MESSAGE_EXISTING_OPERATION
+    GENERATE_ERROR_MESSAGE_EMPTY_MASK, ERROR_MESSAGE_EXISTING_OPERATION, MISC_CONNECTION_ERROR
 
 logger = logging.getLogger(__name__)
 
@@ -46,13 +46,26 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-SD_WEBUI_GENERATOR_NAME = _tr('Stable-Diffusion WebUI API')
-SD_WEBUI_GENERATOR_DESCRIPTION_HEADER = _tr('<h2>Stable-Diffusion: via WebUI API</h2>')
+SD_WEBUI_GENERATOR_NAME = _tr('Stable Diffusion WebUI API')
+SD_WEBUI_GENERATOR_DESCRIPTION_HEADER = _tr('<h2>Stable Diffusion: via WebUI API</h2>')
 SD_WEBUI_GENERATOR_DESCRIPTION_WEBUI = _tr("""
+<h3>About the Stable Diffusion WebUI</h3>
 <p>
-    The Stable-Diffusion WebUI is one of the first interfaces created for using Stable-Diffusion. This IntraPaint
-    generator offloads image generation to that system through a network connection.  The WebUI instance can be run on
+    The <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui">Stable Diffusion WebUI</a> is one of the
+    first interfaces created for using Stable Diffusion. When the WebUI is running and configured correctly, 
+    IntraPaint can access Stable Diffusion image generation by sending requests to the WebUI. You can run the WebUI on
     the same computer as IntraPaint, or remotely on a separate server.
+</p>
+<p>
+    When connected, IntraPaint provides controls for the WebUI in the <b>Image Generation</b> tab and in the <b>settings
+    window</b> under the Stable Diffusion category. When running, you can also access the WebUI's own interface
+    directly through your web browser at <a href="http://localhost:7860/">localhost:7860</a>.
+</p>
+<h3>About Stable Diffusion WebUI Forge</h3>
+<p>
+    <a href="https://github.com/lllyasviel/stable-diffusion-webui-forge">Stable Diffusion WebUI Forge</a> is a popular
+    variant of the original Stable Diffusion WebUI, that adds significant improvements to image generation speed and
+    efficiency.  Forge is the recommended version of the WebUI to use with IntraPaint.
 </p>
 """)
 
@@ -60,73 +73,130 @@ SD_WEBUI_GENERATOR_DESCRIPTION = (f'{SD_WEBUI_GENERATOR_DESCRIPTION_HEADER}\n{SD
                                   f'\n{SD_WEBUI_GENERATOR_DESCRIPTION_WEBUI}')
 
 # noinspection SpellCheckingInspection
-SD_WEBUI_GENERATOR_SETUP = _tr("""
-<h2>Installing Stable-Diffusion</h2>
+SD_WEBUI_GENERATOR_SETUP_OPTIONS = _tr("""
+<h1>Stable Diffusion WebUI Generator Setup</h1>
 <p>
-    To use this Stable-Diffusion image generator with IntraPaint, you will need to install the Stable-Diffusion WebUI.
-    You can choose either the <a href="https://github.com/lllyasviel/stable-diffusion-webui-forge">Forge WebUI</a>
-    or the original <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"> Stable-Diffusion WebUI</a>, but
-    the Forge WebUI is the recommended version. The easiest way to install either of these options is through <a href=
-    "https://github.com/LykosAI/StabilityMatrix">Stability Matrix</a>.
+    To use the Stable Diffusion WebUI generator, you will to download at least one Stable Diffusion model file, 
+    install the WebUI, enable API access, and start the WebUI.  This guide will explain each of those steps.
+</p>""" + GETTING_SD_MODELS + """
+<hr/>
+<h2>Installing Stable Diffusion WebUI: Available options</h2>
+<p>
+    There are a few different ways you can install the WebUI. The recommended method is to use
+    <a href="https://github.com/LykosAI/StabilityMatrix?tab=readme-ov-file#stability-matrix">Stability Matrix</a>,
+    but other methods are covered here for the sake of completeness.
+</p>
+<hr/>
+<h2>Option 1: Stability Matrix</h2>
+<p>
+    Installation through Stability Matrix is the recommended method. This method is the simplest option, provides a lot
+    of helpful extra resources, and supports Windows, macOS and Linux.  This method also lets you switch between the
+    original WebUI and the Forge version easily, or even install ComfyUI if you want to try IntraPaint's
+    Stable Diffusion ComfyUI image generator.
+</p>""")
+
+IMAGE_PREVIEW_STABILITY_MATRIX_SETTINGS = f'{PROJECT_DIR}/resources/help_docs/stability_matrix_settings_button.png'
+SD_WEBUI_GENERATOR_STABILITY_MATRIX_CONFIG = _tr("""
+    <li>
+        On the <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES + """'/><b>Packages</b> tab, click the
+        <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_SETTINGS + """'/><b>Settings</b> button next to the WebUI
+        package to open the launch options.  Scroll to the bottom of the list, and find the <b>"Extra Launch Arguments"
+        </b> text field. Enter <b>--api</b> into that text field, and click the <b>"Save"</b> button.  This step is
+         needed to make the WebUI accept image generation requests from IntraPaint.
+        <br/>
+    </li>
+""")
+
+SD_WEBUI_GENERATOR_STABILITY_MATRIX_PACKAGE = 'Stable Diffusion WebUI Forge'
+
+SD_WEBUI_GENERATOR_SETUP_STABILITY_MATRIX = INSTALLATION_STABILITY_MATRIX.format(
+    generator_package=SD_WEBUI_GENERATOR_STABILITY_MATRIX_PACKAGE,
+    post_install_generator_setup=SD_WEBUI_GENERATOR_STABILITY_MATRIX_CONFIG
+)
+
+SD_WEBUI_GENERATOR_SETUP_ALTERNATIVES = _tr("""
+<hr/>
+<h2>Option 2: WebUI Forge one-click installer</h2>
+<p>
+    Stable Diffusion WebUI Forge provides a <a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/latest/webui_forge_cu121_torch231.7z">
+    one-click Windows installation package</a> you can use to easily install the WebUI. This won't work outside of
+    Windows and requires a bit more file management, but it's still a good option if you don't need the extra features
+    in Stability Matrix.
 </p>
 <ol>
     <li>
-        Install the appropriate version of Stability Matrix for your system:
-        <ul>
-            <li>
-                <a
-                 href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip"
-                 >Windows 10, 11
-                </a>
-            </li>
-            <li>
-                <a
-                href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip"
-                >Linux AppImage
-                </a>
-            </li>
-            <li><a href="https://aur.archlinux.org/packages/stabilitymatrix"> Arch Linux AUR</a></li>
-            <li>
-                <a
-              href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg"
-                 >macOS, Apple Silicon
-                </a>
-            </li>
-        </ul>
+        Download the recommended package version <a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/latest/webui_forge_cu121_torch231.7z">
+        here</a>. If you run into any issues with that version, there are several other options linked on the
+        <a href="https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#installing-forge">
+        WebUI Forge README</a>.<br/>
     </li>
     <li>
-        Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI Forge",and wait for it to install.
+        Extract the downloaded package into a new folder. If you're not using Windows 11, you may need to install
+        <a href="https://www.7-zip.org">7-Zip</a> to extract the compressed files.<br/>
     </li>
     <li>
-        Once the installation finishes, click the gear icon next to Forge on the package screen to open launch options.
-         Scroll to the bottom of the launch options, add "--api" to "Extra Launch Arguments", and click "Save".
+        Within the new WebUI-Forge folder, open the <b>webui\\webui-user.bat</b> file in a text editor. Find the 
+        "<b>set COMMANDLINE_ARGS=</b>" line near the top of the file, and change it to 
+        "<b>set COMMANDLINE_ARGS=--api</b>".  Save and close the file.This step is needed to make the WebUI accept
+        image generation requests from IntraPaint.<br/>
     </li>
-    <li>Click "Launch", and wait for the WebUI to finish starting up.</li>
     <li>
-        Once the WebUI has started completely, you should be able to click "Activate" below, and IntraPaint will
-        connect to it automatically.  If you configure the WebUI to use any URL other than the default or to use a
-        username and password, IntraPaint will ask for that information before connecting.
+        If you haven't already found at least one Stable Diffusion model file, do that now. Copy it into the 
+        WebUI-Forge folder under <b>webui\\models\\Stable-diffusion</b>.<br/>
+    </li>
+    <li>
+        Launch the <b>run.bat</b> file in the WebUI-Forge folder to start Stable Diffusion.  A terminal window will
+        open and print startup information as the WebUI initializes. If you run into any issues, try launching
+        <b>update.bat</b> to see if there's any bug fixes that will help.<br/>
+    </li>
+    <li>
+        Once you see <b>"Running on local URL:  http://0.0.0.0:7860"</b> in the terminal window, Stable Diffusion is
+        ready to use.  Back in IntraPaint, click the "Activate" button below to connect to Stable Diffusion. <br/>
+    </li>
+    <li>
+        In the future, the only step you'll need to repeat from this list is launching <b>run.bat</b> and waiting
+        for it to finish starting up. If you do this before launching IntraPaint, it will automatically connect to
+        the WebUI-Forge image generator on startup.
     </li>
 </ol>
+<hr/>
+<h3>Option 3: Running directly in Python</h3>
+<p>
+    This method requires a lot more technical knowledge than the previous ones, but it also provides the most
+    flexibility and requires the least amount of storage space.  This is only recommended if you've set up a Python
+    virtual environment and debugged Python dependency issues before, or if you're interested in teaching yourself to
+    do so.
+</p>
+<p>
+    Because this option isn't recommended, IntraPaint won't provide a full guide. The
+    <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#automatic-installation-on-windows">
+    Stable Diffusion WebUI installation instructions</a> should help you get started. If you run into any problems,
+    searching the <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui/issues">WebUI issues page</a> will 
+    probably help you find a solution.
+</p>
 """)
+
+SD_WEBUI_GENERATOR_SETUP = SD_WEBUI_GENERATOR_SETUP_OPTIONS + SD_WEBUI_GENERATOR_SETUP_STABILITY_MATRIX \
+                           + SD_WEBUI_GENERATOR_SETUP_ALTERNATIVES
+
 SD_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/stable-diffusion.png'
 ICON_PATH_CONTROLNET_TAB = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
 DEFAULT_WEBUI_URL = 'http://localhost:7860'
 AUTH_ERROR_DETAIL_KEY = 'detail'
 STYLE_ERROR_TITLE = _tr('Updating prompt styles failed')
 
-ERROR_TITLE_SETTINGS_LOAD_FAILED = _tr('Failed to load Stable-Diffusion settings')
-ERROR_TITLE_SETTINGS_SAVE_FAILED = _tr('Failed to save Stable-Diffusion settings')
-ERROR_MESSAGE_SETTINGS_LOAD_FAILED = _tr('The connection to the Stable-Diffusion-WebUI image generator was lost. '
+ERROR_TITLE_SETTINGS_LOAD_FAILED = _tr('Failed to load Stable Diffusion settings')
+ERROR_TITLE_SETTINGS_SAVE_FAILED = _tr('Failed to save Stable Diffusion settings')
+ERROR_MESSAGE_SETTINGS_LOAD_FAILED = _tr('The connection to the Stable Diffusion WebUI image generator was lost. '
                                          'Connected generator settings will not be available.')
-ERROR_MESSAGE_SETTINGS_SAVE_FAILED = _tr('The connection to the Stable-Diffusion-WebUI image generator was lost. '
+ERROR_MESSAGE_SETTINGS_SAVE_FAILED = _tr('The connection to the Stable Diffusion WebUI image generator was lost. '
                                          'Any changes to connected generator settings were not saved.')
 
 MAX_ERROR_COUNT = 10
 MIN_RETRY_US = 300000
 MAX_RETRY_US = 60000000
 
-MENU_STABLE_DIFFUSION = 'Stable-Diffusion'
+MENU_STABLE_DIFFUSION = 'Stable Diffusion'
 
 
 def _check_prompt_styles_available(_) -> bool:
@@ -161,7 +231,7 @@ class SDWebUIGenerator(SDGenerator):
         return SD_WEBUI_GENERATOR_DESCRIPTION
 
     def get_webservice(self) -> Optional[WebService]:
-        """Return the webservice object this module uses to connect to Stable-Diffusion, if initialized."""
+        """Return the webservice object this module uses to connect to Stable Diffusion, if initialized."""
         return self._webservice
 
     def remove_webservice(self) -> None:
@@ -169,7 +239,7 @@ class SDWebUIGenerator(SDGenerator):
         self._webservice = None
 
     def create_or_get_webservice(self, url: str) -> WebService:
-        """Return the webservice object this module uses to connect to Stable-Diffusion.  If the webservice already
+        """Return the webservice object this module uses to connect to Stable Diffusion.  If the webservice already
            exists but the url doesn't match, a new webservice should replace the existing one, using the new url."""
         if self._webservice is not None:
             if self._webservice.server_url == url:
@@ -217,7 +287,7 @@ class SDWebUIGenerator(SDGenerator):
             models = self._webservice.get_models()
             return [model['model_name'] for model in models]
         except (RuntimeError, KeyError) as err:
-            logger.error(f'Loading stable-diffusion model list failed: {err}')
+            logger.error(f'Loading Stable Diffusion model list failed: {err}')
             return []
 
     def get_lora_model_info(self) -> list[dict[str, str]]:
@@ -226,7 +296,7 @@ class SDWebUIGenerator(SDGenerator):
         try:
             return cast(list[dict[str, str]], self._webservice.get_loras())
         except (RuntimeError, KeyError) as err:
-            logger.error(f'Loading stable-diffusion LoRA model list failed: {err}')
+            logger.error(f'Loading Stable Diffusion LoRA model list failed: {err}')
             return []
 
     def get_diffusion_sampler_names(self) -> list[str]:
@@ -236,7 +306,7 @@ class SDWebUIGenerator(SDGenerator):
             sampler_info = self._webservice.get_samplers()
             return [sampler['name'] for sampler in sampler_info]
         except (RuntimeError, KeyError) as err:
-            logger.error(f'Loading stable-diffusion sampler option list failed: {err}')
+            logger.error(f'Loading Stable Diffusion sampler option list failed: {err}')
             return []
 
     def get_upscale_method_names(self) -> list[str]:
@@ -246,7 +316,7 @@ class SDWebUIGenerator(SDGenerator):
             upscaler_info = self._webservice.get_upscalers()
             return [upscaler['name'] for upscaler in upscaler_info]
         except (RuntimeError, KeyError) as err:
-            logger.error(f'Loading stable-diffusion LoRA model list failed: {err}')
+            logger.error(f'Loading Stable Diffusion LoRA model list failed: {err}')
             return []
 
     def cache_generator_specific_data(self) -> None:
@@ -368,9 +438,10 @@ class SDWebUIGenerator(SDGenerator):
                                        and health_check_res.json()[AUTH_ERROR_DETAIL_KEY] == AUTH_ERROR_MESSAGE):
                 return True
         except RuntimeError as req_err:
+            self.status_signal.emit(MISC_CONNECTION_ERROR.format(url=self._server_url, error_text=str(req_err)))
             logger.error(f'Login check connection failed: {req_err}')
         except AuthError:
-            self.status_signal.emit(AUTH_ERROR)
+            self.status_signal.emit(AUTH_ERROR.format(url=self.server_url))
         return False
 
     def init_settings(self, settings_modal: SettingsModal) -> None:
@@ -453,7 +524,7 @@ class SDWebUIGenerator(SDGenerator):
     def interrogate(self) -> None:
         """ Calls the "interrogate" endpoint to automatically generate image prompts.
 
-        Sends the image generation area content to the stable-diffusion-webui API, where an image captioning model
+        Sends the image generation area content to the Stable Diffusion WebUI API, where an image captioning model
         automatically generates an appropriate prompt. Once returned, that prompt is copied to the appropriate field
         in the UI. Displays an error dialog instead if no image is loaded or another API operation is in-progress.
         """
