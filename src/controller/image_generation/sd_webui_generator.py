@@ -197,7 +197,6 @@ MAX_ERROR_COUNT = 10
 MIN_RETRY_US = 300000
 MAX_RETRY_US = 60000000
 
-
 def _check_prompt_styles_available(_) -> bool:
     cache = Cache()
     return len(cache.get(Cache.STYLES)) > 0
