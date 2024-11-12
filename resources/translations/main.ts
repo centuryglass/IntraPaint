@@ -4738,10 +4738,10 @@
       <source>
 &lt;h3&gt;About the Stable Diffusion WebUI&lt;/h3&gt;
 &lt;p&gt;
-    The &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt;Stable Diffusion WebUI&lt;/a&gt; is one of the
-    first interfaces created for using Stable Diffusion. When the WebUI is running and configured correctly, 
-    IntraPaint can access Stable Diffusion image generation by sending requests to the WebUI. You can run the WebUI on
-    the same computer as IntraPaint, or remotely on a separate server.
+    The &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#stable-diffusion-web-ui"&gt;
+    Stable Diffusion WebUI&lt;/a&gt; is one of the first interfaces created for using Stable Diffusion. When the WebUI is
+    running and configured correctly, IntraPaint can access Stable Diffusion image generation by sending requests to
+    the WebUI. You can run the WebUI on the same computer as IntraPaint, or remotely on a separate server.
 &lt;/p&gt;
 &lt;p&gt;
     When connected, IntraPaint provides controls for the WebUI in the &lt;b&gt;Image Generation&lt;/b&gt; tab and in the &lt;b&gt;settings
@@ -4750,18 +4750,26 @@
 &lt;/p&gt;
 &lt;h3&gt;About Stable Diffusion WebUI Forge&lt;/h3&gt;
 &lt;p&gt;
-    &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Stable Diffusion WebUI Forge&lt;/a&gt; is a popular
-    variant of the original Stable Diffusion WebUI, that adds significant improvements to image generation speed and
-    efficiency.  Forge is the recommended version of the WebUI to use with IntraPaint.
+    &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#stable-diffusion-webui-forge"&gt;
+    Stable Diffusion WebUI Forge&lt;/a&gt; is a popular variant of the original Stable Diffusion WebUI, that adds significant
+    improvements to image generation speed and efficiency. It also adds a large number of experimental features that 
+    cause compatibility issues. IntraPaint provides some support for WebUI Forge, but ControlNet will not work with
+    recent versions.
+&lt;/p&gt;
+&lt;h3&gt;About Stable Diffusion WebUI reForge&lt;/h3&gt;
+&lt;p&gt;
+    &lt;a href="https://github.com/Panchovix/stable-diffusion-webui-reForge?tab=readme-ov-file#stable-diffusion-webui-forgereforge"&gt;
+    Stable Diffusion WebUI re Forge&lt;/a&gt; is a third version of the WebUI that includes the improved performance of
+    WebUI Forge without any of the compatibility issues. &lt;b&gt;This is the recommended version to use with IntraPaint&lt;/b&gt;.
 &lt;/p&gt;
 </source>
       <translation>
 &lt;h3&gt;About the Stable Diffusion WebUI&lt;/h3&gt;
 &lt;p&gt;
-    The &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt;Stable Diffusion WebUI&lt;/a&gt; is one of the
-    first interfaces created for using Stable Diffusion. When the WebUI is running and configured correctly, 
-    IntraPaint can access Stable Diffusion image generation by sending requests to the WebUI. You can run the WebUI on
-    the same computer as IntraPaint, or remotely on a separate server.
+    The &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#stable-diffusion-web-ui"&gt;
+    Stable Diffusion WebUI&lt;/a&gt; is one of the first interfaces created for using Stable Diffusion. When the WebUI is
+    running and configured correctly, IntraPaint can access Stable Diffusion image generation by sending requests to
+    the WebUI. You can run the WebUI on the same computer as IntraPaint, or remotely on a separate server.
 &lt;/p&gt;
 &lt;p&gt;
     When connected, IntraPaint provides controls for the WebUI in the &lt;b&gt;Image Generation&lt;/b&gt; tab and in the &lt;b&gt;settings
@@ -4770,29 +4778,37 @@
 &lt;/p&gt;
 &lt;h3&gt;About Stable Diffusion WebUI Forge&lt;/h3&gt;
 &lt;p&gt;
-    &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Stable Diffusion WebUI Forge&lt;/a&gt; is a popular
-    variant of the original Stable Diffusion WebUI, that adds significant improvements to image generation speed and
-    efficiency.  Forge is the recommended version of the WebUI to use with IntraPaint.
+    &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#stable-diffusion-webui-forge"&gt;
+    Stable Diffusion WebUI Forge&lt;/a&gt; is a popular variant of the original Stable Diffusion WebUI, that adds significant
+    improvements to image generation speed and efficiency. It also adds a large number of experimental features that 
+    cause compatibility issues. IntraPaint provides some support for WebUI Forge, but ControlNet will not work with
+    recent versions.
+&lt;/p&gt;
+&lt;h3&gt;About Stable Diffusion WebUI reForge&lt;/h3&gt;
+&lt;p&gt;
+    &lt;a href="https://github.com/Panchovix/stable-diffusion-webui-reForge?tab=readme-ov-file#stable-diffusion-webui-forgereforge"&gt;
+    Stable Diffusion WebUI re Forge&lt;/a&gt; is a third version of the WebUI that includes the improved performance of
+    WebUI Forge without any of the compatibility issues. &lt;b&gt;This is the recommended version to use with IntraPaint&lt;/b&gt;.
 &lt;/p&gt;
 </translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="118"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="126"/>
       <source>
 &lt;hr/&gt;
 &lt;h2&gt;Option 2: WebUI Forge one-click installer&lt;/h2&gt;
 &lt;p&gt;
-    Stable Diffusion WebUI Forge provides a &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/latest/webui_forge_cu121_torch231.7z"&gt;
+    Stable Diffusion WebUI Forge provides a &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/previous/webui_forge_cu121_torch21_f0017.7z"&gt;
     one-click Windows installation package&lt;/a&gt; you can use to easily install the WebUI. This won't work outside of
     Windows and requires a bit more file management, but it's still a good option if you don't need the extra features
     in Stability Matrix.
 &lt;/p&gt;
 &lt;ol&gt;
     &lt;li&gt;
-        Download the recommended package version &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/latest/webui_forge_cu121_torch231.7z"&gt;
-        here&lt;/a&gt;. If you run into any issues with that version, there are several other options linked on the
+        Download the last stable package version &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/previous/webui_forge_cu121_torch21_f0017.7z"&gt;
+        here&lt;/a&gt;. There are several other options linked on the
         &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#installing-forge"&gt;
-        WebUI Forge README&lt;/a&gt;.&lt;br/&gt;
+        WebUI Forge README&lt;/a&gt; you can try, but newer versions may cause compatibility issues.&lt;br/&gt;
     &lt;/li&gt;
     &lt;li&gt;
         Extract the downloaded package into a new folder. If you're not using Windows 11, you may need to install
@@ -4801,7 +4817,7 @@
     &lt;li&gt;
         Within the new WebUI-Forge folder, open the &lt;b&gt;webui\webui-user.bat&lt;/b&gt; file in a text editor. Find the 
         "&lt;b&gt;set COMMANDLINE_ARGS=&lt;/b&gt;" line near the top of the file, and change it to 
-        "&lt;b&gt;set COMMANDLINE_ARGS=--api&lt;/b&gt;".  Save and close the file.This step is needed to make the WebUI accept
+        "&lt;b&gt;set COMMANDLINE_ARGS=--api&lt;/b&gt;".  Save and close the file. This step is needed to make the WebUI accept
         image generation requests from IntraPaint.&lt;br/&gt;
     &lt;/li&gt;
     &lt;li&gt;
@@ -4810,8 +4826,7 @@
     &lt;/li&gt;
     &lt;li&gt;
         Launch the &lt;b&gt;run.bat&lt;/b&gt; file in the WebUI-Forge folder to start Stable Diffusion.  A terminal window will
-        open and print startup information as the WebUI initializes. If you run into any issues, try launching
-        &lt;b&gt;update.bat&lt;/b&gt; to see if there's any bug fixes that will help.&lt;br/&gt;
+        open and print startup information as the WebUI initializes.&lt;br/&gt;
     &lt;/li&gt;
     &lt;li&gt;
         Once you see &lt;b&gt;"Running on local URL:  http://0.0.0.0:7860"&lt;/b&gt; in the terminal window, Stable Diffusion is
@@ -4843,17 +4858,17 @@
 &lt;hr/&gt;
 &lt;h2&gt;Option 2: WebUI Forge one-click installer&lt;/h2&gt;
 &lt;p&gt;
-    Stable Diffusion WebUI Forge provides a &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/latest/webui_forge_cu121_torch231.7z"&gt;
+    Stable Diffusion WebUI Forge provides a &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/previous/webui_forge_cu121_torch21_f0017.7z"&gt;
     one-click Windows installation package&lt;/a&gt; you can use to easily install the WebUI. This won't work outside of
     Windows and requires a bit more file management, but it's still a good option if you don't need the extra features
     in Stability Matrix.
 &lt;/p&gt;
 &lt;ol&gt;
     &lt;li&gt;
-        Download the recommended package version &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/latest/webui_forge_cu121_torch231.7z"&gt;
-        here&lt;/a&gt;. If you run into any issues with that version, there are several other options linked on the
+        Download the last stable package version &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/previous/webui_forge_cu121_torch21_f0017.7z"&gt;
+        here&lt;/a&gt;. There are several other options linked on the
         &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#installing-forge"&gt;
-        WebUI Forge README&lt;/a&gt;.&lt;br/&gt;
+        WebUI Forge README&lt;/a&gt; you can try, but newer versions may cause compatibility issues.&lt;br/&gt;
     &lt;/li&gt;
     &lt;li&gt;
         Extract the downloaded package into a new folder. If you're not using Windows 11, you may need to install
@@ -4862,7 +4877,7 @@
     &lt;li&gt;
         Within the new WebUI-Forge folder, open the &lt;b&gt;webui\webui-user.bat&lt;/b&gt; file in a text editor. Find the 
         "&lt;b&gt;set COMMANDLINE_ARGS=&lt;/b&gt;" line near the top of the file, and change it to 
-        "&lt;b&gt;set COMMANDLINE_ARGS=--api&lt;/b&gt;".  Save and close the file.This step is needed to make the WebUI accept
+        "&lt;b&gt;set COMMANDLINE_ARGS=--api&lt;/b&gt;".  Save and close the file. This step is needed to make the WebUI accept
         image generation requests from IntraPaint.&lt;br/&gt;
     &lt;/li&gt;
     &lt;li&gt;
@@ -4871,8 +4886,7 @@
     &lt;/li&gt;
     &lt;li&gt;
         Launch the &lt;b&gt;run.bat&lt;/b&gt; file in the WebUI-Forge folder to start Stable Diffusion.  A terminal window will
-        open and print startup information as the WebUI initializes. If you run into any issues, try launching
-        &lt;b&gt;update.bat&lt;/b&gt; to see if there's any bug fixes that will help.&lt;br/&gt;
+        open and print startup information as the WebUI initializes.&lt;br/&gt;
     &lt;/li&gt;
     &lt;li&gt;
         Once you see &lt;b&gt;"Running on local URL:  http://0.0.0.0:7860"&lt;/b&gt; in the terminal window, Stable Diffusion is
@@ -4902,27 +4916,27 @@
 </translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="187"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="194"/>
       <source>Updating prompt styles failed</source>
       <translation>Updating prompt styles failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="189"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="196"/>
       <source>Failed to load Stable Diffusion settings</source>
       <translation>Failed to load Stable Diffusion settings</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="190"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="197"/>
       <source>Failed to save Stable Diffusion settings</source>
       <translation>Failed to save Stable Diffusion settings</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="191"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="198"/>
       <source>The connection to the Stable Diffusion WebUI image generator was lost. Connected generator settings will not be available.</source>
       <translation>The connection to the Stable Diffusion WebUI image generator was lost. Connected generator settings will not be available.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="193"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="200"/>
       <source>The connection to the Stable Diffusion WebUI image generator was lost. Any changes to connected generator settings were not saved.</source>
       <translation>The connection to the Stable Diffusion WebUI image generator was lost. Any changes to connected generator settings were not saved.</translation>
     </message>

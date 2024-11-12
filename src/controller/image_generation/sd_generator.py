@@ -113,7 +113,7 @@ INSTALLATION_STABILITY_MATRIX = _tr("""
         packages.<br/>
     </li>
     <li>
-        If you've already downloaded Stable Diffusion or ControlNet models, go to the the
+        If you've already downloaded Stable Diffusion or ControlNet models, go to the 
          <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_CHECKPOINTS + """'/><b>Checkpoint Manager</b> tab on the left.
          Click the "<big>⋯</big>" menu button on the upper right, and choose "Models Folder", and it will open the 
          folder you need in the system file manager.  Copy Stable Diffusion models into the "StableDiffusion"

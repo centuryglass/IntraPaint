@@ -177,11 +177,10 @@ Opens a window where you can edit IntraPaint's saved settings. Hold your mouse o
 5. **"Files" tab**:  Sets the directories IntraPaint will search for extra fonts, MyPaint brush files, or (if necessary) MyPaint library files.  This section also shows you where settings are saved as files, although those values can't be changed.
 6. **"Keybindings" tab**:  Sets editing control keys, navigation keys, and tool shortcuts. You'll need to type in the key's name to set it, e.g. typing "PgDown" instead of pressing the page down key.  You can bind multiple keys to the same action by separating the key names with commas, e.g. "PgDown,D" to bind both page down and D.
 7. **"Menu Shortcuts" tab**:  Sets keyboard shortcuts for all menu options.
-8. **"Connected Generator" tab**:  Visible only when the Stable Diffusion WebUI generator is active, these settings are sent directly to the image generator instead of being saved to a file. See [Stable Diffusion generator settings](./stable-diffusion.md#connected-generator-settings) for more details.
-9. **"Stable Diffusion" tab**:  Visible only when the Stable Diffusion WebUI generator is active, this tab provides access to infrequently-needed image generation settings. See [Stable Diffusion settings](./stable-diffusion.md#stable-diffusion-settings) for details.
-10. **Current category settings**:  Settings for the current selected tab, replaced when a new tab is selected. Hold the mouse over the control for any of these (*not* the label) to see a tooltip describing it.
-11. **Save button**:  Close the settings window, saving changes made across all tabs.  Most changes will be applied immediately, but you may need to restart IntraPaint before some of them take effect.
-12. **Cancel button**:  Close the settings window, discarding all changes.
+8. **"Stable Diffusion" tab**:  Visible only when a Stable Diffusion WebUI generator is active, this tab provides access to infrequently-needed image generation settings. When using the Stable Diffusion WebUI generator, it also provides access to the connected image generation program's settings. See [Stable Diffusion settings](./stable-diffusion.md#stable-diffusion-settings) for details.
+9. **Current category settings**:  Settings for the current selected tab, replaced when a new tab is selected. Hold the mouse over the control for any of these (*not* the label) to see a tooltip describing it.
+10. **Save button**:  Close the settings window, saving changes made across all tabs.  Most changes will be applied immediately, but you may need to restart IntraPaint before some of them take effect.
+11. **Cancel button**:  Close the settings window, discarding all changes.
 
 ---
 
@@ -291,19 +290,20 @@ Opens a window where you can enable or disable AI image generation, or select al
 <img src="./labeled_screenshots/generator_window.png" alt="Screenshot of the image generator selection window, with specific elements numbered."/>
 
 1. The list of available image generation modes. The active mode will be underlined.  Click any option to show more information on the right.
-   - 1a. **Stable Diffusion WebUI API**: The primary AI image generation mode.
-   - 1b. **GLID-3-XL image generation**: Runs the outdated GLID-3-XL image generator directly within IntraPaint.  This option is not available when running the pre-bundled version of IntraPaint, and it requires significant additional setup.
-   - 1c. **GLID-3-XL image generation server**: Use GLID-3-XL image generation over a network.
-   - 1d. **No image generator**: Use IntraPaint without any AI image generation.
-2. **Generator description**: A brief overview of the capabilities and limitations of the selected generator.
-3. **Setup and installation instructions**: Instructions for installing the selected image generator and getting it working with IntraPaint.
-4. **Status window**: Lists any issues detected that would prevent the generator from being used.
+   - 1a. **Stable Diffusion WebUI API**: Provides Stable Diffusion image generation by sending requests to a running copy of the [Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#stable-diffusion-web-ui).
+   - 1b. **Stable Diffusion ComfyUI API**: Provides Stable Diffusion image generation by sending requests to a running copy of [ComfyUI](https://github.com/comfyanonymous/ComfyUI?tab=readme-ov-file#comfyui).
+   - 1c. **GLID-3-XL image generation**: Runs the outdated GLID-3-XL image generator directly within IntraPaint.  This option is not available when running the pre-bundled version of IntraPaint, and it requires significant additional setup.
+   - 1d. **GLID-3-XL image generation server**: Use GLID-3-XL image generation over a network.
+   - 1e. **No image generator**: Use IntraPaint without any AI image generation.
+2. **Description tab**: Provides a brief overview of the capabilities and limitations of the selected generator.
+3. **Setup Guide tab**: Click this tab to view instructions for installing the selected image generator and getting it to work with IntraPaint.
+4. **Status section**: Lists any issues detected that would prevent the generator from being used.
 5. **"Activate" button**:  Click to try and activate the selected generator.
 
 
 ### Generate (F4)
 
-Triggers AI image generation, creating or altering image content to insert into the [image generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](./controls.md#generated-image-selection-view). This has the same effect as the Generate button on the [Image Generation Panel](./stable-diffusion.md#image-generation-panel).  This option will only be available if the [image generator is configured and active](../README.md#ai-setup-stable-diffusion).
+Triggers AI image generation, creating or altering image content to insert into the [image generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](./controls.md#generated-image-selection-view). This has the same effect as the Generate button on the [Image Generation Panel](./stable-diffusion.md#image-generation-panel).  This option will only be available if [an image generator is configured and active](../README.md#ai-setup-stable-diffusion).
 
 ---
 
@@ -496,12 +496,12 @@ This filter simplifies image colors, reducing the color complexity of the image.
 
 ## Stable Diffusion menu
 
-This menu is only available when the Stable Diffusion WebUI image generator is active.  Each of these options will only be provided if IntraPaint detects that the WebUI supports it.
+This menu is only available when a Stable Diffusion image generator is active.  Each of these options will only be provided if IntraPaint detects that the image generator supports it.
 
 
 ### View saved prompt styles (Ctrl+Alt+1)
 
-This option opens a window where you can access prompt presets saved with the WebUI's [prompt style feature](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Features#styles).  If you haven't saved any prompt presets within the WebUI, this option won't be visible.
+This option opens a window where you can access prompt presets saved with the Stable Diffusion WebUI's [prompt style feature](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Features#styles).  If you haven't saved any prompt presets within the WebUI or you're using the ComfyUI generator, this option won't be visible.
 
 I'd like to provide support for adding and editing styles directly within IntraPaint, but the WebUI API does not currently support style editing. I'll probably eventually either have IntraPaint save new custom styles to a file, or let it directly edit the WebUI's styles.csv file if it can access it.
 
@@ -517,7 +517,7 @@ I'd like to provide support for adding and editing styles directly within IntraP
 
 ### View LoRA models (Ctrl+Alt+2)
 
-This option opens a window where you can view and select between LoRA models. LoRA models provide extensions to Stable Diffusion models, usually to introduce new concepts or styles not found in the original training data.  LoRA model files need to be copied to the **models/Lora** directory within the Stable Diffusion WebUI before IntraPaint can use them.  This menu option will only appear if IntraPaint detects at least one available LoRA model.
+This option opens a window where you can view and select between LoRA models. LoRA models provide extensions to Stable Diffusion models, usually to introduce new concepts or styles not found in the original training data.  LoRA model files need to be copied to the **models/Lora** directory within the Stable Diffusion WebUI or the **models/loras** directory within ComfyUI before IntraPaint can use them.  This menu option will only appear if IntraPaint detects at least one available LoRA model.
 
 
 LoRA models are activated by adding text to the prompt in the **\<lora:LORA_NAME:LORA_STRENGTH>** format. LORA_NAME needs to be replaced by the name of the LoRA model's file without the extension, and LORA_STRENGTH should be replaced with a multiplier controlling how strongly the LoRA will be applied, usually defaulting to 1.0.

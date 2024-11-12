@@ -11,7 +11,7 @@
     - 2c. **Extra control tabs**: Provides smaller versions of the [layer window](./menu_options.md#show-layer-window-f7), [color picker control panel](./tool_guide.md#user-interface-color-component-tab), and [navigation window](./menu_options.md#show-navigation-window-ctrlaltw). See [layer menu options](./menu_options.md#layers-menu) for more information on IntraPaint's layer system.
 3. **Image Generation panel**: The main control panel for AI image editing. This panel is only available after you've installed and configured Stable Diffusion, [click here](../README.md#ai-setup-stable-diffusion) for details.
     - 3a. **Stable Diffusion AI settings**:  See the [Stable Diffusion control guide](./stable-diffusion.md) for detailed descriptions of these controls.
-    - 3b. **"Interrogate" button**:  Use AI image analysis to automatically generate a description of the edited image.
+    - 3b. **"Interrogate" button**:  Use AI image analysis to automatically generate a description of the edited image. This button is not available when using ComfyUI for Stable Diffusion image generation.
     - 3c. **"Generate" button**:  Click to trigger AI image generation, creating or altering image content to insert into the [image generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](#generated-image-selection-view).
 4. **Image viewport**: View and interact with the edited image.
     - 4a. **Selected content**: The dashed lines and red tint show areas specifically marked for editing. See the [selection tool guide](./tool_guide.md#selection-tools) for more information on the way IntraPaint uses selection.

@@ -1,9 +1,14 @@
 # Development tasks
 
-More bugs:
+## Remaining tasks:
 - Catch the error message that shows up when you try to scale an image more than 4x and display something more user-friendly.  Better yet, figure out how to repeat upscaling to get greater than 4x multipliers
 - time formatting issues when ETA is more than 1min
-- After ComfyUI->WebUI swap, LCM mode causes "assert LCM_LORA_XL in loras" error
+- Update scaling interface labels: somehow make it clear that the "controlnet tiled upscaling" option uses the ultimate sd upscale script
+- Update docs with references to SD setup doc, any changes to upscaling window
+- Add a warning message to console output at the start when running under Python<3.11
+- Create CHANGELOG.md in docs folder
+- Create windows, linux builds
+- Final testing pass
 
 # v.1.1.0 Plans: ComfyUI support and API expansions
 ## Goals:
@@ -17,25 +22,10 @@ More bugs:
 - Add "extras" tab to the Image Generation panel, with at least a few API-specific options present
 - Reorganize stable diffusion settings, dividing by generator when necessary, and condensing all of them into a single page. 
 
-## Remaining tasks:
-
-Documentation:
-- Document the ComfyUI installation process within the generator selection window.
-- Make sure documentation has a proper local setup section, (include python3.11 requirement)
-- Add expanded stable diffusion installation section, fully covering all options, including ComfyUI
-- Document the differences between Automatic1111, Forge, and ComfyUI, as they apply to IntraPaint.
-- Update labeled screenshots for the generator panel, controlnet panel, and stable diffusion settings
-- Create CHANGELOG.md in docs folder
-
-Misc. cleanup:
-- Add a warning message to console output at the start when running under Python<3.11
-
 Low priority, possibly post-release:
 - Expand WebUI latent upscaling support, and add support for the various "highres. fix" options.
 - Using a custom node, implement the ComfyUI "interrogate" workflow.
 - Add queue support for the WebUI generator/API to keep it in parity with ComfyUI
-- ComfyUI inpainting model support: This requires some significant (but not unmanageable) workflow changes.
-- ComfyUI tiled VAE support:  The ComfyNode classes are implemented, I just need to add UI controls to activate them and set the tile size, probably in image generation extras.
 - Figure out IpAdapter in ComfyUI:  I suspect that also requires a new workflow.
 
 ## What's already done:

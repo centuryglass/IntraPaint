@@ -1,4 +1,4 @@
-![IntraPaint_banner.jpg](./resources/IntraPaint_banner.jpg)  
+# ![IntraPaint_banner.jpg](./resources/IntraPaint_banner.jpg)  
 
 **IntraPaint** is a free and open-source image editor for desktop PCs. It combines standard digital painting
 and image editing tools with advanced AI-based features, including image generation and inpainting. IntraPaint bridges
@@ -213,7 +213,7 @@ The ControlNet panel only appears if the WebUI backend has a working ControlNet 
 and ControlNet models have been downloaded.
 
 *If using WebUI Forge*:  The most recent version of the Forge WebUI (as of 8/30/24) does not have a working ControlNet
-API. Use Git to revert to commit `bfee03d8`, or install the [v0.0.17 release](https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/previous/webui_forge_cu121_torch21_f0017.7z).
+API. Use Git to revert to commit `a9e0c38`, or install the [v0.0.17 release](https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/previous/webui_forge_cu121_torch21_f0017.7z).
 
 *If using the Automatic1111 WebUI*: The ControlNet panel only appears after you've installed the sd-webui-controlnet 
 extension.  Installation instructions and links to required ControlNet model files can be found [here](https://github.com/Mikubill/sd-webui-controlnet).

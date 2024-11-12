@@ -158,9 +158,9 @@ It's much easier to get the AI to do exactly what you want if you can manually s
 
 Example prompt: "infinite cityscapes across recursive realities, maximalist variation, fractal pilgrims, tesseract soul, symbol as reality, infinite information density"
 
-| ![Example 1:ControlNet example original](../examples/controlnet_example_source.png) |    ![Example 2: ControlNet Tile](../examples/controlnet_example_tile.png)     | ![Example 3: ControlNet Canny](../examples/controlnet_example_canny.png) | ![Example 4: ControlNet Scribble](../examples/controlnet_example_scribble.png) |
-|:-----------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------:|:------------------------------------------------------------------------:|:------------------------------------------------------------------------------:|
-|                                   Original image                                    | Denoising strength 1.0, "(abstract illusionism)" added to the original prompt |    Denoising strength 1.0, "(ruby red)" added to the original prompt     |   Denoising strength 1.0, "(macro photography)" added to the original prompt   | 
+| ![Example 1:ControlNet example original](../examples/controlnet_example_source.png) |                       ![Example 2: ControlNet Tile](../examples/controlnet_example_tile.png)                        |                ![Example 3: ControlNet Canny](../examples/controlnet_example_canny.png)                 |                   ![Example 4: ControlNet Scribble](../examples/controlnet_example_scribble.png)                    |
+|:-----------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------:|
+|                                   Original image                                    | Using the ControlNet Tile model:<br/> Denoising strength 1.0, "(abstract illusionism)" added to the original prompt | Using the ControlNet Canny model:<br/>Denoising strength 1.0, "(ruby red)" added to the original prompt | Using the ControlNet Scribble model:<br/>Denoising strength 1.0, "(macro photography)" added to the original prompt | 
 
 
 ## Other tips and tricks
