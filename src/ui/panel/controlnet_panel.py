@@ -223,9 +223,6 @@ class ControlNetPanel(BorderedWidget):
 
         def open_control_image_file() -> None:
             """Select an image to use as the control image."""
-            if self._reuse_image_checkbox.isChecked():
-                with signals_blocked(self._reuse_image_checkbox):
-                    self._reuse_image_checkbox.setChecked(False)
             image_path = open_image_file(self)
             if image_path is not None:
                 if isinstance(image_path, list):
@@ -242,7 +239,7 @@ class ControlNetPanel(BorderedWidget):
         def reuse_image_update(checked: bool):
             """Update config, disable/enable appropriate components if the 'generation area as control' box changes."""
             value = CONTROLNET_REUSE_IMAGE_CODE if checked else self._image_path_edit.text()
-            for control_img_widget in (self._control_image_label, self._image_path_edit, self._load_image_button):
+            for control_img_widget in (self._control_image_label, self._image_path_edit):
                 control_img_widget.setEnabled(not checked)
             if checked:
                 self._image_path_edit.setText('')
@@ -253,10 +250,9 @@ class ControlNetPanel(BorderedWidget):
 
         def image_path_update(text: str):
             """Update config when the selected control image changes."""
-            if self._reuse_image_checkbox.isChecked():
-                return
-
-            self._control_unit.image_string = text
+            if self._reuse_image_checkbox.isChecked() and text != '':
+                self._reuse_image_checkbox.setCheckState(Qt.CheckState.Unchecked)
+                self._control_unit.image_string = text
             self._schedule_cache_update()
 
         self._image_path_edit.textChanged.connect(image_path_update)
@@ -311,11 +307,11 @@ class ControlNetPanel(BorderedWidget):
                                        self._control_type_combobox,
                                        self._preprocessor_combobox,
                                        self._model_combobox,
+                                       self._load_image_button,
                                        self._preview_image_widget
                                    ] + self._dynamic_control_labels + self._dynamic_controls
             control_image_widgets = [
                 self._control_image_label,
-                self._load_image_button,
                 self._image_path_edit
             ]
             for widget in main_control_widgets:
@@ -483,9 +479,8 @@ class ControlNetPanel(BorderedWidget):
                     selected_model = ControlNetModel(CONTROLNET_MODEL_NONE)
             model_index = self._model_combobox.findData(selected_model.full_model_name)
             if model_index < 0:
-                raise RuntimeError(f'Failed to find model "{selected_model}" in control type'
-                                   f' {control_type_name}, options={[self._model_combobox.itemText(i) for
-                                                                     i in range(len(models))]}')
+                raise RuntimeError(f'Failed to find model "{selected_model}" in control type {control_type_name}, '
+                                   f'options={[self._model_combobox.itemText(i) for i in range(len(models))]}')
             self._model_combobox.setCurrentIndex(model_index)
             if selected_model != self._control_unit.model:
                 self._handle_model_change(model_index)
@@ -512,9 +507,10 @@ class ControlNetPanel(BorderedWidget):
             selected_preprocessor = self._preprocessor_display_name(selected_preprocessor)
             preprocessor_index = self._preprocessor_combobox.findText(selected_preprocessor)
             if preprocessor_index < 0:
+                preprocessor_options = [self._preprocessor_combobox.itemData(i).name
+                                        for i in range(self._preprocessor_combobox.count())]
                 raise RuntimeError(f'Failed to find preprocessor "{selected_preprocessor}" in control type'
-                                   f' {control_type_name}, options={[self._preprocessor_combobox.itemData(i).name for
-                                                                     i in range(self._preprocessor_combobox.count())]}')
+                                   f' {control_type_name}, options={preprocessor_options}')
 
             self._preprocessor_combobox.setCurrentIndex(preprocessor_index)
             if selected_preprocessor != self._control_unit.preprocessor.name:
