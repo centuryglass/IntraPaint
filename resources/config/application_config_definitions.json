@@ -272,19 +272,11 @@
         "saved": true
     },
     "interrogate_model": {
-        "label": "Image interrogation model:",
+        "label": "Image interrogation model (WebUI only):",
         "category": "Stable Diffusion",
         "description": "Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.",
         "type": "string",
         "default": "clip",
-        "saved": true
-    },
-    "controlnet_tile_model": {
-        "label": "ControlNet tiled upscaling model:",
-        "category": "Stable Diffusion",
-        "description": "ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on Stable Diffusion 1.5.",
-        "type": "string",
-        "default": "control_v11f1e_sd15_tile [a371b31b]",
         "saved": true
     },
     "mask_blur": {

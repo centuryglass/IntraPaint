@@ -1,18 +1,21 @@
 # Stable Diffusion Image Generation Controls
 
-This guide covers the controls IntraPaint provides for AI image generation.  To access these controls, first install and configure Stable Diffusion following instructions [here](../README.md#ai-setup-stable-diffusion), and activate it in the [generator selection window](./menu_options.md#image-generator-selection-window).  
+This guide covers the controls IntraPaint provides for AI image generation.  To access these controls, first install and configure Stable Diffusion following instructions [here](./stable_diffusion_setup.md), and activate it in the [generator selection window](./menu_options.md#image-generator-selection-window).  
 
-When setting up Stable Diffusion, you have the option to choose between using [ComfyUI](https://github.com/comfyanonymous/ComfyUI?tab=readme-ov-file#comfyui), the [Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#stable-diffusion-web-ui), or [WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#stable-diffusion-webui-forge) to handle IntraPaint's AI image generation requests. In most cases
+When setting up Stable Diffusion, you have the option to choose between using
+[ComfyUI](https://github.com/comfyanonymous/ComfyUI?tab=readme-ov-file#comfyui), the 
+[Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#stable-diffusion-web-ui), 
+[WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#stable-diffusion-webui-forge),
+or [WebUI reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge?tab=readme-ov-file#stable-diffusion-webui-forgereforge)
+to handle IntraPaint's AI image generation requests. In most cases these options will all work the same within IntraPaint,
+but there are a few minor differences in the available controls.
 
 
 ---
 ## Table of Contents
 1. [Image Generation Panel](#image-generation-panel)
 2. [ControlNet Panel](#controlnet-panel)
-3. [Settings and AI model installation](#settings-and-ai-model-installation)
-   - [Stable Diffusion settings](#stable-diffusion-settings)
-   - [Connected generator settings](#connected-generator-settings)
-   - [Installing new AI model files](#installing-new-ai-model-files)
+3. [Stable Diffusion settings](#stable-diffusion-settings)
 4. [Prompt control formatting](#prompt-control-formatting)
 5. [Denoising strength comparisons](#denoising-strength-comparisons)
 6. [Sampling methods](#sampling-methods)
@@ -122,8 +125,6 @@ The wide variety of ControlNet preprocessors and models available can be challen
 
 ---
 
-## Settings and AI model installation
-
 ### Stable Diffusion settings
 
 When a Stable Diffusion image generator is active, extra options will be available in the [settings window](./menu_options.md#settings-f9).
@@ -139,35 +140,10 @@ When a Stable Diffusion image generator is active, extra options will be availab
    - 2e. **Stable Diffusion VAE models cached**: Number of VAE models to keep loaded in RAM at one time.
    - 2f. **CLIP skip**: Sets how many final image generation steps are taken without the guidance of the CLIP image recognition module.  In most cases this is best left at 1, but some models recommend setting it to 2.
 3. **"Stable Diffusion" section**:  Settings in this section are handled directly by IntraPaint, and don't need to be sent back to the connected generator.
-   - 3a. **Image interrogation model**: Enter the image recognition model that the Stable Diffusion WebUI will use when the "Interrogate" button is pressed.  Any option other than "clip" will probably need to be configured separately within the WebUI. As the ComfyUI generator does not support image interrogation, this option won't do anything under that generator.
+   - 3a. **Image interrogation model** (affects the WebUI generator only): Enter the image recognition model that the Stable Diffusion WebUI will use when the "Interrogate" button is pressed.  Any option other than "clip" will probably need to be configured separately within the WebUI. As the ComfyUI generator does not support image interrogation, this option won't do anything under that generator.
    - 3b. **ControlNet tiled upscaling model**: Enter the ControlNet model that should be used for [AI tiled upscaling](#ai-upscaling-with-intrapaint). These models need to be downloaded and added manually. See the [Stable Diffusion]
-4. **Mask blur**: Radius of pixel blurring to use around edited areas when inpainting.
-5. **"Restore faces" checkbox**: If checked, apply an extra face restoration model to generated images. This option is rarely useful, most recent Stable Diffusion models already produce better results than dedicated face restoration models.
-6. **"Tiling" checkbox**: If checked, Stable Diffusion will attempt to generate images that can be seamlessly repeated in a grid. This is mostly useful for generating texture files and tiling wallpapers.
-7. **Save button**: Once clicked, settings will be immediately saved to the local config file, and they will be applied on the next image generation operation. 
-
-### Connected generator settings
-
-These settings are sent directly to the connected Stable Diffusion WebUI when saved.  They will only be visible if the Stable Diffusion WebUI image generator is active.
-
-
-<img src="./labeled_screenshots/sd_remote_options.png" alt="Screenshot of the Connected Generator settings category, with specific elements numbered."/>
-
-1. **Connected generator tab**: Click this tab in the settings window to access these options.
-2. 
-3. 
-4.
-5. 
-6. 
-7. 
-
-### Installing new AI model files
-1. Download Stable Diffusion models, usually found on platforms like [HuggingFace](https://huggingface.co/) and [Civitai](https://civitai.com/). Model files should have the **.safetensors** extension.
-2. The location where model files should go depend
-2. Locate the directory where the Stable Diffusion WebUI was installed. If you used the [recommended process with Stability Matrix](../README.md#ai-setup-stable-diffusion), you'll find it in the StabilityMatrix folder under **Data/Packages/stable-diffusion-webui-forge**.
-3. Copy the model files into the **models/Stable-diffusion** within the WebUI directory.
-4. Restart the WebUI, or open the control page at http://localhost:7860 and click the refresh button next to the model list. If you open the control page, you can select the new model directly from that page and skip the next step.
-5. Restart IntraPaint, or use the ["Select Image generator" window](./menu_options.md#select-image-generator-f11) to disconnect from the Stable Diffusion WebUI, and then reconnect. You can now select the new model file in the settings under the connected generator tab.
+4. **Save button**: Once clicked, settings will be sent back to the WebUI or saved to an IntraPaint config file depending on which section was changed.
+5. **Cancel button**: Discards all changes and closes the settings window.
 
 ---
 ## Prompt control formatting:

@@ -5,6 +5,7 @@ through Stable Diffusion.
 import json
 import logging
 from copy import deepcopy
+from json import JSONDecodeError
 from typing import Optional, Any, cast, TypedDict
 
 import requests  # type: ignore
@@ -14,7 +15,9 @@ from PySide6.QtGui import QImage
 from requests import Response
 
 from src.api.controlnet.controlnet_category_builder import ControlNetCategoryBuilder
+from src.api.controlnet.controlnet_constants import CONTROLNET_MODEL_NONE, PREPROCESSOR_NONE
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
+from src.api.controlnet.controlnet_unit import ControlNetUnit, ControlKeyType
 from src.api.webservice import WebService
 from src.api.webui.controlnet_webui_constants import (ControlNetModelResponse, ControlNetModuleResponse,
                                                       ControlTypeDef, ControlTypeResponse, CONTROLNET_SCRIPT_KEY)
@@ -42,7 +45,7 @@ class ImageResponse(TypedDict):
     info: Optional[GenerationInfoData]
 
 
-UPSCALE_SCRIPT = 'ultimate sd upscale'
+ULTIMATE_UPSCALE_SCRIPT = 'ultimate sd upscale'
 DEFAULT_TIMEOUT = 30
 SETTINGS_UPDATE_TIMEOUT = 90
 
@@ -242,34 +245,53 @@ class A1111Webservice(WebService):
         ImageResponse
             The generated image, plus accompanying image generation data if available.
         """
-        config = AppConfig()
         cache = Cache()
-        if cache.get(Cache.CONTROLNET_UPSCALING):
+        if cache.get(Cache.SD_UPSCALING_AVAILABLE) and cache.get(Cache.USE_STABLE_DIFFUSION_UPSCALING):
             request_body = DiffusionRequestBody()
             request_body.load_data()
-            if request_body.alwayson_scripts is None:
-                request_body.alwayson_scripts = {}
-            controlnet_script_data: ScriptRequestData = {'args': [
-                {
-                    'module': 'tile_resample',
-                    'model': config.get(AppConfig.CONTROLNET_TILE_MODEL),
-                    'threshold_a': cache.get(Cache.CONTROLNET_DOWNSAMPLE_RATE)
-                }
-            ]}
-            request_body.alwayson_scripts[CONTROLNET_SCRIPT_KEY] = controlnet_script_data
+            request_body.denoising_strength = cache.get(Cache.SD_UPSCALING_DENOISING_STRENGTH)
+            request_body.steps = cache.get(Cache.SD_UPSCALING_STEP_COUNT)
             request_body.width = width
             request_body.height = height
             request_body.batch_size = 1
             request_body.n_iter = 1
             request_body.add_init_image(image)
-            script_list = cache.get(Cache.SCRIPTS_IMG2IMG)
-            if UPSCALE_SCRIPT in script_list:
-                upscaler = cache.get(Cache.UPSCALE_METHOD)
+            if request_body.alwayson_scripts is None:
+                request_body.alwayson_scripts = {}
+            try:
+                tile_control_unit: Optional[ControlNetUnit] = ControlNetUnit.deserialize(
+                    cache.get(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS), ControlKeyType.WEBUI)
+                assert tile_control_unit is not None
+                if (tile_control_unit.model.full_model_name == CONTROLNET_MODEL_NONE
+                        or tile_control_unit.preprocessor.name.lower() == PREPROCESSOR_NONE.lower()
+                        or float(tile_control_unit.control_strength.value) == 0.0
+                        or float(tile_control_unit.control_start.value) >= float(tile_control_unit.control_end.value)):
+                    tile_control_unit = None
+                else:
+                    models = self.get_controlnet_models()['model_list']
+                    preprocessors = [preprocessor.name for preprocessor in self.get_controlnet_preprocessors()]
+                    if (tile_control_unit.model.full_model_name not in models
+                            or tile_control_unit.preprocessor.name not in preprocessors):
+                        tile_control_unit = None
+            except (KeyError, ValueError, RuntimeError, JSONDecodeError):
+                tile_control_unit = None
+            if tile_control_unit is not None:
+                control_unit_data = {
+                    'module': tile_control_unit.preprocessor.name,
+                    'model': tile_control_unit.model.full_model_name
+                }
+                for param in [tile_control_unit.control_start, tile_control_unit.control_end,
+                              tile_control_unit.control_strength, *tile_control_unit.preprocessor.parameters]:
+                    control_unit_data[param.key] = param.value  # type: ignore
+                controlnet_script_data: ScriptRequestData = {'args': [control_unit_data]}
+                request_body.alwayson_scripts[CONTROLNET_SCRIPT_KEY] = controlnet_script_data
+            if cache.get(Cache.ULTIMATE_UPSCALE_SCRIPT_AVAILABLE) and cache.get(Cache.USE_ULTIMATE_UPSCALE_SCRIPT):
+                upscaler = cache.get(Cache.SCALING_MODE)
 
                 upscale_options = [upscaler['name'] for upscaler in self.get_upscalers()]
                 if upscaler not in upscale_options:
                     upscaler = upscale_options[0]
-                request_body.script_name = UPSCALE_SCRIPT
+                request_body.script_name = ULTIMATE_UPSCALE_SCRIPT
                 request_body.script_args = [
                     None,  # not used
                     cache.get(Cache.GENERATION_SIZE).width(),  # tile width
@@ -296,7 +318,7 @@ class A1111Webservice(WebService):
             'resize_mode': 1,
             'upscaling_resize_w': width,
             'upscaling_resize_h': height,
-            'upscaler_1': cache.get(Cache.UPSCALE_METHOD),
+            'upscaler_1': cache.get(Cache.SCALING_MODE),
             'image': image_to_base64(image, include_prefix=True)
         }
         res = self.post(A1111Webservice.Endpoints.UPSCALE, body)
@@ -337,20 +359,26 @@ class A1111Webservice(WebService):
     def _handle_image_response(res: Response) -> ImageResponse:
         if res.status_code != 200:
             raise RuntimeError(res.json())
-        res_body = cast(Img2ImgResponse, res.json())
-        info = res_body['info'] if 'info' in res_body else None
+        res_body = res.json()
         images = []
+        info_data: Optional[GenerationInfoData] = None
         if 'images' in res_body:
-            for image in res_body['images']:
-                images.append(qimage_from_base64(image))
-        if isinstance(info, str):
-            try:
-                info_data: Optional[GenerationInfoData] = cast(GenerationInfoData, json.loads(info))
-            except json.JSONDecodeError:
-                logger.error(f'Image response info not valid JSON, got {info}')
-                info_data = None
-        else:
-            info_data = cast(GenerationInfoData, info)
+            img2img_res_body = cast(Img2ImgResponse, res.json())
+            info = img2img_res_body['info'] if 'info' in img2img_res_body else None
+            if 'images' in img2img_res_body:
+                for image in img2img_res_body['images']:
+                    images.append(qimage_from_base64(image))
+            if isinstance(info, str):
+                try:
+                    info_data = cast(GenerationInfoData, json.loads(info))
+                except json.JSONDecodeError:
+                    logger.error(f'Image response info not valid JSON, got {info}')
+                    info_data = None
+            else:
+                info_data = cast(GenerationInfoData, info)
+        elif 'image' in res_body:  # basic upscaling result
+            images = [qimage_from_base64(res_body['image'])]
+            info_data = None
         image_response: ImageResponse = {
             'images': images,
             'info': info_data

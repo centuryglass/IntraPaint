@@ -490,8 +490,9 @@ disable= too-few-public-methods,
         no-name-in-module,
         logging-fstring-interpolation,
         abstract-method,
-        too-many-return-statements
-        too-many-boolean-expressions
+        too-many-return-statements,
+        too-many-boolean-expressions,
+        too-many-positional-arguments
 #       duplicate_code
 
 # Enable the message, report, category or checker with the given id(s). You can

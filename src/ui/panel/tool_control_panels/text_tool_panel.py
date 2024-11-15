@@ -245,7 +245,8 @@ class TextToolPanel(QWidget):
         self._alignment_label = QLabel(LABEL_TEXT_ALIGNMENT_DROPDOWN)
         self._alignment_dropdown = QComboBox()
         self._alignment_label.setBuddy(self._alignment_dropdown)
-        self._alignment_dropdown.addItem(QIcon(ICON_PATH_LEFT_ALIGN), OPTION_TEXT_LEFT_ALIGN, userData=Qt.AlignmentFlag.AlignLeft)
+        self._alignment_dropdown.addItem(QIcon(ICON_PATH_LEFT_ALIGN), OPTION_TEXT_LEFT_ALIGN,
+                                         userData=Qt.AlignmentFlag.AlignLeft)
         self._alignment_dropdown.addItem(QIcon(ICON_PATH_CENTER_ALIGN), OPTION_TEXT_CENTER_ALIGN,
                                          userData=Qt.AlignmentFlag.AlignHCenter)
         self._alignment_dropdown.addItem(QIcon(ICON_PATH_RIGHT_ALIGN), OPTION_TEXT_RIGHT_ALIGN,
@@ -699,4 +700,3 @@ class TextToolPanel(QWidget):
                 if size_input.value() != value:
                     with signals_blocked(size_input):
                         size_input.setValue(value)
-

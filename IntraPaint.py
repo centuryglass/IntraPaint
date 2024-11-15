@@ -6,6 +6,12 @@ Assuming you're running the ComfyUI or the Stable Diffusion WebUI API on the sam
 import atexit
 import os
 import sys
+
+if sys.version_info < (3, 11):
+    detected_version = '.'.join(str(v_num) for v_num in sys.version_info)
+    print(f'ERROR: Detected python version {detected_version}, IntraPaint only supports Python 3.11 and higher.',
+          file=sys.stderr)
+
 import traceback
 import logging
 from logging.handlers import RotatingFileHandler

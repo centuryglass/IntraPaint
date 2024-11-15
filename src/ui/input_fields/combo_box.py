@@ -33,8 +33,9 @@ class ComboBox(QComboBox):
     def value(self) -> Any:
         """Returns the current selected item value."""
         data = self.currentData()
-        if not isinstance(data, self._data_type):
-            raise TypeError(f'Item should have data type {self._data_type}, found {data}')
+        if not isinstance(data, self._data_type) and self.count() > 0 and self.currentIndex() >= 0:
+            raise TypeError(f'Item with text "{self.currentText()}" should have data type {self._data_type},'
+                            f' found {data}')
         return data
 
     # noinspection PyPep8Naming

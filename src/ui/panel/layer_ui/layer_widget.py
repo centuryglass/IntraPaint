@@ -391,7 +391,8 @@ class LayerWidget(BorderedWidget):
 
         if isinstance(self._layer, ImageLayer):
             _add_action(MENU_OPTION_CROP_TO_CONTENT, self._layer.crop_to_content, True)
-        _add_action(MENU_OPTION_CROP_TO_SELECTION, lambda: crop_layer_to_selection(self._image_stack, self._layer), True)
+        _add_action(MENU_OPTION_CROP_TO_SELECTION, lambda: crop_layer_to_selection(self._image_stack, self._layer),
+                    True)
 
         mirror_actions = [_add_action(MENU_OPTION_MIRROR_HORIZONTAL, self._layer.flip_horizontal, True),
                           _add_action(MENU_OPTION_MIRROR_VERTICAL, self._layer.flip_vertical, True)]

@@ -13,7 +13,7 @@ support is possible with manual setup and compilation.
 3. [Use Cases](#why-combine-ai-and-traditional-tools)
 4. [Examples](#more-examples)
 5. [Installation](#installation-and-setup)
-6. [AI Setup (Stable Diffusion)](#ai-setup-stable-diffusion)
+6. [AI Setup (Stable Diffusion)](#ai-image-generation-setup-stable-diffusion)
 7. [Guides and Tutorials](#guides-and-tutorials)
    - [Main controls and interface](./doc/controls.md)
    - [IntraPaint tool overview](./doc/tool_guide.md)
@@ -151,7 +151,7 @@ Pre-compiled versions for x86_64 Linux and Windows are available on the [release
 No installation is required to use non-AI features. Just run the executable directly.
 
 ### Install from GitHub:
-On other systems, you will need to use git and python to install IntraPaint.  Make sure you have git, python 3.9 or
+On other systems, you will need to use git and python to install IntraPaint.  Make sure you have git, python 3.11 or
 greater, and pip installed and added to your system's PATH variable.  On some systems, you might need to change
 "python" to "python3" and "pip" to "pip3" in the commands below. Using a Python virtual environment is also
 recommended, but not required.  Run the following commands to install and start IntraPaint:
@@ -164,7 +164,7 @@ python IntraPaint.py
 ```
 
 
-## AI Setup (Stable Diffusion):
+## AI image generation setup (Stable Diffusion):
 To use AI features, you'll need a running Stable Diffusion client (either [ComfyUI](https://github.com/comfyanonymous/ComfyUI?tab=readme-ov-file#comfyui),
 [Forge WebUI](https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#stable-diffusion-webui-forge) or the
 [Automatic1111 WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#stable-diffusion-web-ui)) with API access enabled.  The simplest method for getting this is through. [Stability Matrix](https://github.com/LykosAI/StabilityMatrix).
@@ -174,12 +174,12 @@ To use AI features, you'll need a running Stable Diffusion client (either [Comfy
    * [Linux AppImage](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip)
    * [Arch Linux AUR](https://aur.archlinux.org/packages/stabilitymatrix)
    * [macOS, Apple Silicon](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg)
-2. Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI Forge", "Stable Diffusion WebUI", or "ComfyUI" and wait for it to install.
-3. If you chose either the WebUI or WebUI Forge option, click the gear icon next to package you just installed to the open launch options. Scroll to the bottom of the launch options, add `--api` to "Extra Launch Arguments", and click "Save"
+2. Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI reForge", "Stable Diffusion WebUI Forge", "Stable Diffusion WebUI", or "ComfyUI" and wait for it to install.
+3. If you chose any of the WebUI options, click the gear icon next to package you just installed to the open launch options. Scroll to the bottom of the launch options, add `--api` to "Extra Launch Arguments", and click "Save"
 4. Click "Launch", and wait for the Stable Diffusion client to finish starting.
 5. Open IntraPaint, and it should automatically connect to the Stable Diffusion client. If IntraPaint is already running, open "Select image generator" under the Image menu, select the option that matches the Stable Diffusion client you chose, and click "Activate".
 
-
+More detailed instructions and a comparison of the available options can be found on the [Stable Diffusion setup guide](./doc/stable_diffusion_setup.md).
 
 
 ### Guides and tutorials
@@ -188,6 +188,7 @@ To use AI features, you'll need a running Stable Diffusion client (either [Comfy
 - [IntraPaint Controls](./doc/controls.md): An overview of the main application interface.
 - [IntraPaint Tools](./doc/tool_guide.md): Guides to each of IntraPaint's image editing tools.
 - [Main Menu Options](./doc/menu_options.md): Detailed guide to all main menu options.
+- [Stable Diffusion Setup](./doc/stable_diffusion_setup.md): All options explained for Stable Diffusion image generation with IntraPaint.
 - [Stable Diffusion Controls](./doc/stable-diffusion.md): In-depth descriptions of all Stable Diffusion image generation options.
 - [Guide to AI Inpainting](./doc/inpainting_guide.md): Tips and tricks for effective AI inpainting.
 

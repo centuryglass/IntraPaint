@@ -10,9 +10,11 @@ from requests import ReadTimeout
 
 from src.api.a1111_webservice import AuthError
 from src.api.comfyui.comfyui_types import ImageFileReference
+from src.api.comfyui.nodes.ultimate_upscale_node import ULTIMATE_UPSCALE_NODE_NAME
 from src.api.comfyui_webservice import ComfyUiWebservice, ComfyModelType, AsyncTaskProgress, AsyncTaskStatus
 from src.api.controlnet.controlnet_constants import ControlTypeDef
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
+from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.api.webservice import WebService
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -168,7 +170,7 @@ class SDComfyUIGenerator(SDGenerator):
     """Interface for providing image generation capabilities."""
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
-        super().__init__(window, image_stack, args, Cache.SD_COMFYUI_SERVER_URL)
+        super().__init__(window, image_stack, args, Cache.SD_COMFYUI_SERVER_URL, ControlKeyType.COMFYUI)
         self._image_stack = image_stack
         self._webservice: Optional[ComfyUiWebservice] = ComfyUiWebservice(self.server_url)
         self._gen_extras_tab = ComfyUIExtrasTab()
@@ -224,7 +226,7 @@ class SDComfyUIGenerator(SDGenerator):
         """Return the list of available ControlNet models."""
         assert self._webservice is not None
         try:
-            return self._webservice.get_controlnets()
+            return self._webservice.get_controlnet_models()
         except (RuntimeError, KeyError) as err:
             logger.error(f'Loading ControlNet models failed: {err}')
             return []
@@ -289,6 +291,15 @@ class SDComfyUIGenerator(SDGenerator):
         except (RuntimeError, KeyError) as err:
             logger.error(f'Loading Stable Diffusion LoRA model list failed: {err}')
             return []
+
+    def ultimate_upscale_script_available(self) -> bool:
+        """Return whether the Stable Diffusion API will support the 'Ultimate SD Upscale' script."""
+        assert self._webservice is not None
+        try:
+            return self._webservice.is_node_available(ULTIMATE_UPSCALE_NODE_NAME)
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Checking for {ULTIMATE_UPSCALE_NODE_NAME} node failed: {err}')
+            return False
 
     def cache_generator_specific_data(self) -> None:
         """When activating the generator, after the webservice is connected, this method should be implemented to
@@ -406,9 +417,7 @@ class SDComfyUIGenerator(SDGenerator):
 
     def refresh_settings(self, settings_modal: SettingsModal) -> None:
         """Reloads current values for this generator's settings, and updates them in the settings modal."""
-        # TODO: remote config options, similar to A1111Config
-        # assert self._webservice is not None
-        settings = {}  # settings = self._webservice.get_config()
+        settings = {}
         app_config = AppConfig()
         for key in app_config.get_category_keys(STABLE_DIFFUSION_CONFIG_CATEGORY):
             settings[key] = app_config.get(key)
@@ -417,11 +426,6 @@ class SDComfyUIGenerator(SDGenerator):
     def update_settings(self, changed_settings: dict[str, Any]) -> None:
         """Applies any changed settings from a SettingsModal that are relevant to the image generator and require
            special handling."""
-        # TODO: remote config options, similar to A1111Config
-        # assert self._webservice is not None
-        # web_config = A1111Config()
-        # web_categories = web_config.get_categories()
-        # web_keys = [key for cat in web_categories for key in web_config.get_category_keys(cat)]
         web_keys: list[str] = []
 
         app_keys = AppConfig().get_category_keys(STABLE_DIFFUSION_CONFIG_CATEGORY)
@@ -431,40 +435,10 @@ class SDComfyUIGenerator(SDGenerator):
                 web_changes[key] = value
             elif key in app_keys and not isinstance(value, (list, dict)):
                 AppConfig().set(key, value)
-        # if len(web_changes) > 0:
-        #     def _update_config() -> None:
-        #         assert self._webservice is not None
-        #         try:
-        #             self._webservice.set_config(changed_settings)
-        #         except ReadTimeout:
-        #             logger.error('Settings update timed out')
-        #
-        #     update_task = AsyncTask(_update_config, True)
-        #
-        #     def _update_setting():
-        #         AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
-        #         update_task.finish_signal.disconnect(_update_setting)
-        #
-        #     update_task.finish_signal.connect(_update_setting)
-        #     update_task.start()
 
     def unload_settings(self, settings_modal: SettingsModal) -> None:
         """Unloads this generator's settings from the settings modal."""
         settings_modal.remove_category(AppConfig(), STABLE_DIFFUSION_CONFIG_CATEGORY)
-
-        # TODO: remote config options, similar to A1111Config
-        # a1111_config = A1111Config()
-        # for category in a1111_config.get_categories():
-        #     settings_modal.remove_category(a1111_config, category)
-
-    # def interrogate(self) -> None:
-    #     """ Use CLIP interrogation to automatically generate image prompts.
-    #
-    #     TODO: ComfyUI doesn't support this by default, I'll probably need to track down a custom node that does it.
-    #           Of course, I'll also need to scan installed nodes to make sure that one is actually there, and I'll need
-    #           to add and remove the "Interrogate" button based on that node's availability.
-    #     """
-    #     print('CLIP interrogate not yet available for ComfyUI!')
 
     def get_control_panel(self) -> Optional[GeneratorPanel]:
         """Returns a widget with inputs for controlling this generator."""
@@ -472,8 +446,6 @@ class SDComfyUIGenerator(SDGenerator):
             self._control_panel = StableDiffusionPanel(False, False)
             self._control_panel.hide()
             self._control_panel.generate_signal.connect(self.start_and_manage_image_generation)
-
-            # self._control_panel.interrogate_signal.connect(self.interrogate)
 
             # Configure "extras" tab in control panel:
             def _clear_comfyui_memory() -> None:
@@ -682,7 +654,6 @@ class SDComfyUIGenerator(SDGenerator):
             status_signal.emit({'seed': str(seed)})
 
     def upscale_image(self, image: QImage, new_size: QSize, status_signal: Signal, image_signal: Signal) -> None:
-        """Upscales an image using cached upscaling settings."""
         assert self._webservice is not None
         queue_info = self._webservice.upscale(self._image_stack.qimage(), new_size.width(),
                                               new_size.height())

@@ -75,6 +75,8 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [View saved prompt styles](#view-saved-prompt-styles-ctrlalt1)
    - [View LoRA models](#view-lora-models-ctrlalt2)
    - [LCM mode](#lcm-mode-f10)
+8. [Help menu](#help-menu)
+   - [Open IntraPaint help pages](#open-intrapaint-help-pages-f1)
 ---
 
 ## File menu
@@ -254,13 +256,26 @@ Scaling the image behaves differently depending on whether AI upscaling is in us
 
 <img src="./labeled_screenshots/scale_image.png" alt="Screenshot of the image scaling window, with specific elements numbered."/>
 
-1. **Upscale method selection**:  Choose between different methods for upscaling the image.
-2. **New resolution (pixels)**:  Set the new image size in pixels.  When changed, "Width scale" and "Height scale" will automatically update to match.
-3. **New resolution (scale)**:  Set the new image size as a multiple of the original size.  When changed, "Width" and "Height" will automatically update to match.
-4. **ControlNet tiled upscaling**:  Only available if the Stable Diffusion generator is active and ControlNet is working.  When checked, use Stable Diffusion with the Tile ControlNet model to upscale the image.
-5. **ControlNet tile downsample rate**:  When "ControlNet tiled upscaling" is checked, increase this value to give Stable Diffusion more freedom to alter details while upscaling.
-6. **"Scale image" button**:  Closes the scaling window and begins scaling the image.
-7. **Cancel button**: Closes the scaling window without making changes.
+1. **Image scaling mode selection**: Choose between different types of image scaling. Depending on image generator setup, not all types may be available. If only one type is available, this dropdown is hidden. Possible options:
+    - **Basic image scaling**: Scale the image entirely within IntraPaint, using basic (non-AI) image scaling algorithms.
+    - **Image generator scaling modes**: Scale the image using a scaling mode provided by the [image generator](#image-generator-selection-window). This option will only be available if the connected image generator provides at least one upscaling method.
+    - **Advanced AI upscaling**:  Use Stable Diffusion to upscale an image. For this option to be available, you must be using a Stable Diffusion image generator with either the "Ultimate SD Upscale" script or a Tile ControlNet model installed.  See the [image upscaling section in the Stable Diffusion setup guide](./stable_diffusion_setup.md#upscaling-models-and-the-ultimate-sd-upscaler) for more information.
+2. **Upscale method selection**:  Choose between different methods for upscaling the image. Obptions vary depending on the selected scaling mode:
+    - In **Basic image scaling** mode, select between image scaling algorithms that use different methods of blending scaled pixels.
+    - In **Image generator scaling modes**, select between modes provided by the image generator.  These may include a mix of basic scaling algorithms and AI upscalers.
+    - In **Advanced AI upscaling**, the options are the same as in "Image generator scaling modes", except that there is also a "None" option. If any option is chosen other than "None", that option will be used in tandem with Stable Diffusion upscaling.
+3. **New resolution (pixels)**:  Set the new image size in pixels.  When changed, "Width scale" and "Height scale" will automatically update to match.  When using advanced AI upscaling, the new dimensions can't be more than four times the original dimensions.
+4. **New resolution (scale)**:  Set the new image size as a multiple of the original size.  When changed, "Width" and "Height" will automatically update to match.
+5. **"Advanced AI upscaling" section**: Everything below this point is only visible in the "Advanced AI Upscaling" mode.
+6. **Use the "Ultimate SD Upscale" script**:  Only available if a Stable Diffusion image generator is active and the "Ultimate SD Upscale script is installed.  See [image upscaling section in the Stable Diffusion setup guide](./stable_diffusion_setup.md#upscaling-models-and-the-ultimate-sd-upscaler) for more information.
+7. **"Denoising strength" slider**: In advanced AI upscaling, this controls how much freedom Stable Diffusion is given when refining the upscaled image.  Higher values have more freedom to fix details, but are also more likely to deviate from the original image.
+8. **"Step count" slider**:  In advanced AI upscaling, this controls how many steps are taken to refine the image in Stable Diffusion.  Higher values may produce better results, but will take longer.
+9. **ControlNet tile model options**:  If a ControlNet tile model is installed and available, it can be used to increase the consistency of Stable Diffusion upscaling.  Controls for this will only be visible if a tile model and preprocessor are available.  Refer to [this guide](./stable_diffusion_setup.md#controlnet) for more information about ControlNet setup.
+    - **9a. Tile ControlNet model**: Select a ControlNet tile model to use.  In most cases the one shown here will be the only option, but other tile models exist for use with Stable Diffusion XL.  ControlNet models will only appear here if they have the word "tile" in their filename.
+    - **9b. Tile ControlNet preprocessor**: Select a ControlNet preprocessor module to use with the tile model.  All ControlNet preprocessors that include the word "tile" will be listed.
+    - **9c. Tile preprocessor settings**: Settings specific to the selected ControlNet preprocessor will be listed here. The one shown here (Downsampling Rate) can be increased to make the tile ControlNet less strict, but other preprocessors may have different options.
+10. **"Scale image" button**:  Closes the scaling window and begins scaling the image.
+11. **Cancel button**: Closes the scaling window without making changes.
 
 ### Crop image to selection (Ctrl+Alt+C)
 Crops the image to the largest rectangle that contains all [selected content](./tool_guide.md#selection-tools).  This will be applied to every layer in the image.  If any locked layers aren't totally within the selected area, this will fail, and an error message will list which layers blocked the change.  Any text layers that need to be cropped will first need to be converted to image layers, and a popup will appear asking to confirm or deny the change.
@@ -303,7 +318,7 @@ Opens a window where you can enable or disable AI image generation, or select al
 
 ### Generate (F4)
 
-Triggers AI image generation, creating or altering image content to insert into the [image generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](./controls.md#generated-image-selection-view). This has the same effect as the Generate button on the [Image Generation Panel](./stable-diffusion.md#image-generation-panel).  This option will only be available if [an image generator is configured and active](../README.md#ai-setup-stable-diffusion).
+Triggers AI image generation, creating or altering image content to insert into the [image generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](./controls.md#generated-image-selection-view). This has the same effect as the Generate button on the [Image Generation Panel](./stable-diffusion.md#image-generation-panel).  This option will only be available if [an image generator is configured and active](./stable_diffusion_setup.md).
 
 ---
 
@@ -538,3 +553,12 @@ This option is only visible when using Stable Diffusion, when the LCM LoRA model
 - The activation text for the LCM LoRA is inserted into the prompt, if not already there.
 - The prompt guidance scale is set to 1.5 (1.5 - 2.0 is the recommended range for LCM).
 - The number of image generation steps is set to 8 (5 - 10 is the recommended range for LCM).
+
+---
+
+## Help menu
+
+This menu provides resources to help you use IntraPaint.
+
+### Open IntraPaint help pages [F1]
+Opens the [IntraPaint documentation index page](./help_index.md) in a web browser.

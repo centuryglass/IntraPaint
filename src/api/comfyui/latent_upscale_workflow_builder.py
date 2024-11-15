@@ -27,6 +27,7 @@ from src.api.comfyui.nodes.upscale_latent_node import UpscaleLatentNode
 from src.api.comfyui.nodes.vae.vae_decode_tiled_node import VAEDecodeTiledNode
 from src.api.comfyui.nodes.vae.vae_encode_tiled_node import TILE_MIN, TILE_STEP, TILE_MAX, VAEEncodeTiledNode
 from src.api.comfyui.workflow_builder_utils import image_ref_to_str
+from src.api.controlnet.controlnet_constants import CONTROLNET_MODEL_NONE
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 
 DEFAULT_UPSCALE_PARAMS: UltimateUpscaleCoreInputs = {
@@ -45,8 +46,7 @@ DEFAULT_UPSCALE_PARAMS: UltimateUpscaleCoreInputs = {
     'tiled_decode': True
 }
 
-# If there's no ultimate sd upscale script and no ControlNet tile model, denoising shouldn't exceed this value:
-MINIMAL_MODE_DENOISING_LIMIT = 0.2
+USE_TILED_VAE = False
 
 
 class LatentUpscaleWorkflowBuilder(DiffusionWorkflowBuilder):
@@ -69,7 +69,9 @@ class LatentUpscaleWorkflowBuilder(DiffusionWorkflowBuilder):
         self._ultimate_sd_upscale = ultimate_upscale_script_available
         self._upscale_model_name = upscale_model
         self._tile_size = QSize(tile_size)
-        if controlnet_tile_preprocessor is not None and controlnet_tile_model is not None:
+        if (controlnet_tile_preprocessor is not None and controlnet_tile_model is not None
+                and controlnet_tile_model != CONTROLNET_MODEL_NONE):
+            print(f'model={controlnet_tile_model}, preproc={controlnet_tile_preprocessor.name}')
             self.add_controlnet_unit(controlnet_tile_model, controlnet_tile_preprocessor, source_image, 1.0,
                                      0.0, 1.0)
 
@@ -167,6 +169,7 @@ class LatentUpscaleWorkflowBuilder(DiffusionWorkflowBuilder):
             positive_out_idx = ApplyControlNetNode.IDX_POSITIVE
             negative_node = tile_control_apply_node
             negative_out_idx = ApplyControlNetNode.IDX_NEGATIVE
+            print('CONNECTED TILE NODES')
 
         # Load upscale model node, if available:
         upscale_model_node: Optional[LoadUpscalerNode] = None
@@ -213,7 +216,7 @@ class LatentUpscaleWorkflowBuilder(DiffusionWorkflowBuilder):
             image_out_index = UltimateUpscaleNode.IDX_IMAGE
 
         else:  # No ultimate SD upscale, we'll try to get by with img2img with tiled VAE encoding/decoding.
-            vae_tile_size = min(self._tile_size.width(), self._tile_size.height())
+            vae_tile_size = self.vae_tile_size
             vae_tile_size -= (vae_tile_size % TILE_STEP)
             if vae_tile_size < TILE_MIN:
                 vae_tile_size = TILE_MIN
@@ -230,8 +233,6 @@ class LatentUpscaleWorkflowBuilder(DiffusionWorkflowBuilder):
                                    vae_encode_node, VAEEncodeTiledNode.IDX_LATENT)
 
             denoising = self.denoising_strength
-            if len(controlnet_units) == 0:
-                denoising = min(denoising, MINIMAL_MODE_DENOISING_LIMIT)
             sampler_node = KSamplerNode(self.cfg_scale, self.steps, self.sampler, denoising, self.scheduler, self.seed)
             workflow.connect_nodes(sampler_node, KSamplerNode.LATENT_IMAGE,
                                    latent_scaling_node, UpscaleLatentNode.IDX_LATENT)

@@ -90,13 +90,8 @@ class DiffusionWorkflowBuilder:
         self._source_image: Optional[str] = None
         self._mask: Optional[str] = None
 
-        # model_name, model_strength, clip_strength, model_type
         self._extension_model_nodes: list[LoraLoaderNode | HypernetLoaderNode] = []
-
         self._controlnet_units: list[ControlNetUnitData] = []
-
-        # TODO: not yet supported:
-        # self._is_inpainting_model = False
 
     @property
     def batch_size(self) -> int:

@@ -8,14 +8,15 @@ use IntraPaint's AI features.  Fortunately, this is a fairly simple process, and
 available.
 
 **If you just want to get it running as quickly as possible, skip to the
-[Stability Matrix setup section](#option-1-stability-matrix)**, and pick "Stable Diffusion WebUI reForge" when it gives
-a choice between Stable Diffusion packages.
+[Stability Matrix setup section](#option-1-stability-matrix) and pick "Stable Diffusion WebUI reForge"** when asked to choose between Stable Diffusion packages.
 
 ---
 ## Table of Contents
 1. [Stable Diffusion generator options compared](#stable-diffusion-generator-options-compared)
     - [Stable Diffusion WebUI](#stable-diffusion-webui)
+        * [IntraPaint features exclusive to the WebUI generator](#intrapaint-features-exclusive-to-the-webui-generator)
     - [ComfyUI](#comfyui)
+        * [IntraPaint features exclusive to the ComfyUI generator](#intrapaint-features-exclusive-to-the-comfyui-generator)
 2. [Stable Diffusion model files](#stable-diffusion-model-files)
 3. [Installation and setup](#installation-and-setup)
     - [Option 1: Stability Matrix](#option-1-stability-matrix)
@@ -24,8 +25,8 @@ a choice between Stable Diffusion packages.
     - [Option 4: Manual setup with git, Python, and Anaconda](#option-4-manual-setup-with-git-python-and-anaconda)
 4. [Extra feature setup](#extra-feature-setup)
     - [ControlNet](#controlnet)
-    - [Upscaling models and the Ultimate SD Upscaler](#upscaling-mdoels-and-the-ultimate-sd-upscaler)
-       * [WebUI/WebUI Forge installation](#webuiwebui-forge-installation)
+    - [Upscaling models and the Ultimate SD Upscaler](#upscaling-models-and-the-ultimate-sd-upscaler)
+       * [WebUI/WebUI Forge installation](#webuiwebui-forgewebui-reforge-installation)
        * [ComfyUI installation](#comfyui-installation)
 
 ---
@@ -33,14 +34,14 @@ a choice between Stable Diffusion packages.
 ## Stable Diffusion generator options compared:
 
 There are two popular programs available for running Stable Diffusion that IntraPaint can use for image generation:
-the Stable Diffusion WebUI, and ComfyUI. When used within IntraPaint, the differences between them are minor. In
-IntraPaint the ComfyUI generator tends to be slightly faster, but automatic image description generation with the 
-"Interrogate" button doesn't work with ComfyUI. Refer to the [Stable Diffusion control guide](./stable-diffusion.md#image-generation-panel)
-for the full list of generator-specific features.
+the **Stable Diffusion WebUI**, and **ComfyUI**. Both options are nearly equivalent when used with IntraPaint, but each
+provides a few minor exclusive features. 
 
 Each of these programs also comes with its own interface, which can be accessed through a web browser. These interfaces
 are less suited for a digital art workflow than IntraPaint, but are occasionally worth using for tasks like bulk 
 image generation or loading extensions.
+
+
 
 ---
 
@@ -60,7 +61,21 @@ Currently, **WebUI reForge is the recommended version** for use with IntraPaint.
 A brief comparison of the three WebUI options:
 - **The original (A1111) Stable Diffusion WebUI** is much less efficient than the alternatives, and performs poorly on older graphics cards.  It has the most powerful ControlNet capabilities, but it's also the only one where you need to manually install ControlNet as an extension.
 - **Stable Diffusion WebUI Forge** comes with vastly improved performance compared to the original WebUI, but it also comes with a lot of experimental features that break extension support. IntraPaint cannot use ControlNet through WebUI Forge unless you downgrade it to an older version.
-- **Stable Diffusion WebUI reForge** includes all of the performance enhancements from WebUI Forge, without any of the experimental features that break compatibility.
+- **Stable Diffusion WebUI reForge** includes all the performance enhancements from WebUI Forge, without any of the experimental features that break compatibility.
+
+### IntraPaint features exclusive to the WebUI generator
+
+- The "Interrogate" button on the [Image generation panel](./stable-diffusion.md#image-generation-panel) that automatically generates a prompt by using AI image analysis is exclusive to the WebUI.
+- The [Saved Prompt Style](./menu_options.md#view-saved-prompt-styles-ctrlalt1) window can only be accessed when using the WebUI generator.
+- The [LoRA option window](./menu_options.md#view-lora-models-ctrlalt2) is only capable of loading image previews when used with the WebUI generator.
+- The [ControlNet Panel](./stable-diffusion.md#controlnet-panel) provides extra controls for image resizing and VRAM management when used with the WebUI generator.
+- The [Stable Diffusion settings tab](./stable-diffusion.md#stable-diffusion-settings) provides some WebUI-exclusive options that let you directly control how the generator caches and loads AI models.
+- When using the WebUI generator with a dedicated inpainting model, that model will automatically be configured for improved inpainting. When using the ComfyUI generator, you need to check an option in the [ComfyUI extras tab](./stable-diffusion.md#image-generation-panel-extras-tab-comfyui-generator) to properly load inpainting models.
+- Options from the [WebUI extras tab](./stable-diffusion.md#image-generation-panel-extras-tab-webui-generator) are exclusive to the WebUI image generator:
+   * Batch variation controls, which lets you set how similar different images within the same batch will be.
+   * Seed resize controls, which help you regenerate similar images at different sizes.
+   * The "Tiling" checkbox, which lets you generate images that can be seamlessly tiled.
+   * The "Restore faces" checkbox, which applies a secondary facial restoration AI to correct issues with face generation.
 
 ---
 
@@ -76,6 +91,15 @@ with complex and powerful node-based controls.
  Its speed and efficiency are at least as good as WebUI Forge and reForge, if not slightly better. It is much more 
 flexible than any of the WebUI options, but the learning curve is also much steeper.
 
+
+### IntraPaint features exclusive to the ComfyUI generator
+
+- Only the ComfyUI generator supports queued image generation. If you attempt to generate images with the ComfyUI generator active and some other program is using ComfyUI for image generation, you will be placed in a queue, and the loading screen will tell you your position in that queue.  When using the WebUI generator, image generation will immedately abort if you attempt it under the same circumstances.
+- Options from the [ComfyUI extras tab](./stable-diffusion.md#image-generation-panel-extras-tab-comfyui-generator) are exclusive to the ComfyUI image generator:
+  * The option to apply a specific config file when loading models, instead of selecting one automatically.
+  * Tiled VAE encoding/decoding controls, which can decrease the amount of memory needed for generating very large images.
+  * A "Clear Memory" button, that makes the ComfyUI generator unload cached AI models from memory and otherwise free up memory resources.
+
 ---
 
 ## Stable Diffusion model files
@@ -83,15 +107,19 @@ flexible than any of the WebUI options, but the learning curve is also much stee
 To use Stable Diffusion, you'll need at least one Stable Diffusion model file.  These files (also called checkpoints),
 contain the data structures that Stable Diffusion uses to create images.  A huge variety of fine-tuned models are
 available on sites like [CivitAI](https://civitai.com/) and [Hugging Face](https://huggingface.co/), each with its own
-strengths and weaknesses. ee [AI model selection](./inpainting_guide.md#ai-model-selection) for more information about
+strengths and weaknesses. See [AI model selection](./inpainting_guide.md#ai-model-selection) for more information about
 model types and selecting image generation models.
 
 If you want to use IntraPaint's [ControlNet Panel](./stable-diffusion.md#controlnet-panel), you will also need to
 download ControlNet model files. Each ControlNet model provides a new way to control image generation. The official
 ControlNet models for use with Stable Diffusion 1.5 model variants can be downloaded from
 [this page on Hugging Face](https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/tree/main). More
-options, including ones with support for Stable Diffusion XL, are linked on the Stable Diffusion WebUI ControlNet
-extension [GitHub wiki](https://github.com/Mikubill/sd-webui-controlnet/wiki/Model-download#official-controlnet-11-models).
+options, including ones with support for Stable Diffusion XL, are linked on the [Stable Diffusion WebUI ControlNet
+extension GitHub wiki](https://github.com/Mikubill/sd-webui-controlnet/wiki/Model-download#official-controlnet-11-models).
+
+To install model files, it's usually enough to just copy them to the right folder.  The exact folder you need varies
+depending on the generator you use and the way you install it.  Exact locations for each option can be found below
+in the general installation instructions.
 
 ## Installation and setup
 
@@ -119,8 +147,8 @@ all three supported WebUI versions can be easily installed through Stability Mat
    * Forge: `Packages/Stable Diffusion WebUI Forge/models/ControlNet`
    * Original WebUI: `Packages/Stable Diffusion WebUI/models/ControlNet`
    * ComfyUI: `Packages/ComfyUI/models/controlnet`
-5. For **WebUI packages only**, you'll need to enable API access. Skip this step if you installed ComfyUI. <br/> Click the settings button next to the WebUI package. <br/> ![settings button location image](./generator_screenshots/matrix_launch_settings.png) <br/> Scroll to the bottom of the list, add `--api` to the **Extra Launch Arguments** section, and click save. </br> ![Stability Matrix API flag screenshot](./generator_screenshots/matrix_add_api_flag.png)
-6. Click the **Launch** button under the Stable Diffusion package you installed. A log screen will open up, showing the status of the package as it starts up.  This might take a couple minutes the first time it runs, as it finishes the last few parts of the setup process.
+5. For **WebUI packages only**, you'll need to enable API access. Skip this step if you installed ComfyUI. <br/> Click the settings button next to the WebUI package: <br/> ![settings button location image](./generator_screenshots/matrix_launch_settings.png) <br/> Scroll to the bottom of the list, add `--api` to the **Extra Launch Arguments** section, and click save. </br> ![Stability Matrix API flag screenshot](./generator_screenshots/matrix_add_api_flag.png)
+6. Click the **Launch** button under the Stable Diffusion package you installed. A log screen will open up, showing the status of the package as it starts up.  This might take a couple of minutes the first time it runs, as it finishes the last few parts of the setup process.
 7. Once the **"Open Web UI"** button appears at the top of the window, Stable Diffusion is ready to use. If you launch IntraPaint on the same computer, it will automatically connect to Stable Diffusion.  If IntraPaint is already running, you can also use the [image generator selection window](./menu_options.md#image-generator-selection-window) to activate the appropriate Stable Diffusion image generator.
 
 ### Option 2: WebUI Forge package install
@@ -189,7 +217,7 @@ The setup process is identical for all versions of the WebUI:
 1. Start the Stable Diffusion WebUI. On the same computer running the WebUI, open a web browser and navigate to (http://127.0.0.1:7860/) to access the web interface.
 2. Click the **"Extensions"** tab near the top of the window. Within the Extensions tab, click the **"Available"** tab on the next row down, and click the "Load from" button. A long list of extensions should load.
 3. In the search box just above the extension list, enter "Ultimate SD Upscale". An extension with that name should be listed, linking to (https://github.com/Coyote-A/ultimate-upscale-for-automatic1111.git).  Click the "Install" button next to that option, and wait for it to finish processing.
-4. Once it finishes, restart the Stable Diffusion WebUI.  TODO: CLEAN UP UPSCALE INTERFACE-FINISH EXPLAINING HERE
+4. Once it finishes, restart the Stable Diffusion WebUI.  When you open the [image scaling window](./menu_options.md#scale-image-window) and select "Advanced AI upscaling", you should now see a checkbox that you can use to enable the Ultimate SD Upscale script.
 
 #### ComfyUI installation
 
@@ -199,4 +227,4 @@ The setup process is identical for all versions of the WebUI:
 2. Once you restart ComfyUI, you should now see a "Manager" button near the bottom right. Click it, and the **ComfyUI Manager Menu** will open.
 3. In the manager menu, click **"Custom Nodes Manager"**, and a list of extensions should open.
 4. In the search box at the top, enter "UltimateSDUpscale", and the list should filter down to only one option. Click the "Install" button next to it and wait.
-5. Once the button text changes to "Restart Required", the installation is finished.  Restart ComfyUI.  TODO: CLEAN UP UPSCALE INTERFACE-FINISH EXPLAINING HERE
+5. Once the button text changes to "Restart Required", the installation is finished.  Restart ComfyUI.  When you open the [image scaling window](./menu_options.md#scale-image-window) and select "Advanced AI upscaling", you should now see a checkbox that you can use to enable the Ultimate SD Upscale script.

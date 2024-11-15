@@ -15,7 +15,7 @@ class UpscaleLatentInputs(TypedDict):
     crop: Literal['disabled', 'center']
 
 
-DEFAULT_UPSCALE_METHOD = 'nearest-exact'
+DEFAULT_UPSCALE_METHOD = 'bilinear'
 
 
 class UpscaleLatentNode(ComfyNode):

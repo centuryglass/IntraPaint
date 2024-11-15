@@ -9,9 +9,10 @@ from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 from requests import ReadTimeout
 
-from src.api.a1111_webservice import A1111Webservice, AuthError
+from src.api.a1111_webservice import A1111Webservice, AuthError, ULTIMATE_UPSCALE_SCRIPT
 from src.api.controlnet.controlnet_constants import ControlTypeDef
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
+from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.api.webservice import WebService
 from src.config.a1111_config import A1111Config
 from src.config.application_config import AppConfig
@@ -204,6 +205,7 @@ MAX_ERROR_COUNT = 10
 MIN_RETRY_US = 300000
 MAX_RETRY_US = 60000000
 
+
 def _check_prompt_styles_available(_) -> bool:
     cache = Cache()
     return len(cache.get(Cache.STYLES)) > 0
@@ -218,7 +220,7 @@ class SDWebUIGenerator(SDGenerator):
     """Interface for providing image generation capabilities."""
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
-        super().__init__(window, image_stack, args, Cache.SD_WEBUI_SERVER_URL, True)
+        super().__init__(window, image_stack, args, Cache.SD_WEBUI_SERVER_URL, ControlKeyType.WEBUI, True)
         self._webservice: Optional[A1111Webservice] = A1111Webservice(self.server_url)
         self._gen_extras_tab = WebUIExtrasTab()
         self._active_task_id = 0
@@ -324,6 +326,11 @@ class SDWebUIGenerator(SDGenerator):
             logger.error(f'Loading Stable Diffusion LoRA model list failed: {err}')
             return []
 
+    def ultimate_upscale_script_available(self) -> bool:
+        """Return whether the Stable Diffusion API will support the 'Ultimate SD Upscale' script."""
+        script_list = Cache().get(Cache.SCRIPTS_IMG2IMG)
+        return ULTIMATE_UPSCALE_SCRIPT in script_list
+
     def cache_generator_specific_data(self) -> None:
         """When activating the generator, after the webservice is connected, this method should be implemented to
            load and cache any generator-specific API data."""
@@ -356,6 +363,7 @@ class SDWebUIGenerator(SDGenerator):
                             self.update_settings(remote_setting_change)
                         return
                 raise RuntimeError(f'Selected model "{model_name}" not found in available options.')
+
             cache.connect(self, Cache.SD_MODEL, _update_remote_model_selection)
 
             def _update_local_model_selection(selected_model_title: str) -> None:
@@ -366,6 +374,7 @@ class SDWebUIGenerator(SDGenerator):
                         cache.set(Cache.SD_MODEL, model_option['model_name'])
                         return
                 raise RuntimeError(f'Selected model "{selected_model_title}" not found in available options.')
+
             _update_local_model_selection(current_model_title)
             webui_config.connect(self, A1111Config.SD_MODEL_CHECKPOINT, _update_local_model_selection)
 
@@ -377,12 +386,14 @@ class SDWebUIGenerator(SDGenerator):
                     return
                 remote_settings_change = {A1111Config.CLIP_STOP_AT_LAST_LAYERS: step}
                 self.update_settings(remote_settings_change)
+
             cache.connect(self, Cache.CLIP_SKIP, _update_remote_clip_skip)
 
             def _update_local_clip_skip(step: int) -> None:
                 if not self._connected:
                     return
                 cache.set(Cache.CLIP_SKIP, step)
+
             webui_config.connect(self, A1111Config.CLIP_STOP_AT_LAST_LAYERS, _update_local_clip_skip)
 
         except (RuntimeError, KeyError) as err:
@@ -631,10 +642,13 @@ class SDWebUIGenerator(SDGenerator):
                         if 'eta_relative' in status and status['eta_relative'] != 0 \
                                 and 0 < progress_percent < 100:
                             eta_sec = status['eta_relative']
-                            minutes = eta_sec // 60
+                            minutes = round(eta_sec // 60)
                             seconds = round(eta_sec % 60)
                             if minutes > 0:
-                                status_text = f'{status_text} ETA: {minutes}:{seconds}'
+                                seconds_str = str(seconds)
+                                if len(seconds_str) == 1:
+                                    seconds_str = '0' + seconds_str
+                                status_text = f'{status_text} ETA: {minutes}:{seconds_str}'
                             else:
                                 status_text = f'{status_text} ETA: {seconds}s'
                         status_signal.emit({'progress': status_text})

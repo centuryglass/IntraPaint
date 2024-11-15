@@ -16,7 +16,7 @@ from src.api.controlnet.controlnet_constants import PREPROCESSOR_NONE, \
     CONTROLNET_REUSE_IMAGE_CODE, CONTROLNET_MODEL_NONE
 from src.api.controlnet.controlnet_model import ControlNetModel
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
-from src.api.controlnet.controlnet_unit import ControlNetUnit, KeyType
+from src.api.controlnet.controlnet_unit import ControlNetUnit, ControlKeyType
 from src.config.cache import Cache
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
@@ -145,7 +145,7 @@ class ControlNetPanel(BorderedWidget):
         try:
             self._control_unit = ControlNetUnit.deserialize(Cache().get(cache_key))
         except (TypeError, KeyError, JSONDecodeError):
-            self._control_unit = ControlNetUnit(KeyType.WEBUI if show_webui_options else KeyType.COMFYUI)
+            self._control_unit = ControlNetUnit(ControlKeyType.WEBUI if show_webui_options else ControlKeyType.COMFYUI)
         self._cache_key = cache_key
         self._control_types = control_types
         self._preprocessors = preprocessors
@@ -484,7 +484,7 @@ class ControlNetPanel(BorderedWidget):
             model_index = self._model_combobox.findData(selected_model.full_model_name)
             if model_index < 0:
                 raise RuntimeError(f'Failed to find model "{selected_model}" in control type'
-                                   f' {control_type_name}, options={[self._model_combobox.itemText(i) for 
+                                   f' {control_type_name}, options={[self._model_combobox.itemText(i) for
                                                                      i in range(len(models))]}')
             self._model_combobox.setCurrentIndex(model_index)
             if selected_model != self._control_unit.model:
@@ -568,4 +568,3 @@ class ControlNetPanel(BorderedWidget):
                                                  f' text = {self._model_combobox.itemText(model_idx)})')
         self._control_unit.model = ControlNetModel(selected_model)
         self._schedule_cache_update()
-

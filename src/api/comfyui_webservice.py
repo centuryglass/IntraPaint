@@ -25,16 +25,14 @@ from src.api.comfyui.controlnet_comfyui_utils import get_all_preprocessors
 from src.api.comfyui.diffusion_workflow_builder import DiffusionWorkflowBuilder
 from src.api.comfyui.latent_upscale_workflow_builder import LatentUpscaleWorkflowBuilder
 from src.api.comfyui.nodes.ksampler_node import KSAMPLER_NAME
-from src.api.comfyui.nodes.ultimate_upscale_node import ULTIMATE_UPSCALE_NODE_NAME
 from src.api.comfyui.preprocessor_preview_workflow_builder import PreprocessorPreviewWorkflowBuilder
 from src.api.controlnet.controlnet_category_builder import ControlNetCategoryBuilder
-from src.api.controlnet.controlnet_constants import CONTROLNET_REUSE_IMAGE_CODE
-from src.api.controlnet.controlnet_model import ControlNetModel
+from src.api.controlnet.controlnet_constants import CONTROLNET_REUSE_IMAGE_CODE, CONTROLNET_MODEL_NONE, \
+    PREPROCESSOR_NONE
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
-from src.api.controlnet.controlnet_unit import ControlNetUnit
+from src.api.controlnet.controlnet_unit import ControlNetUnit, ControlKeyType
 from src.api.webservice import WebService, MULTIPART_FORM_DATA_TYPE
 from src.api.webui.controlnet_webui_constants import ControlTypeDef
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 
 logger = logging.getLogger(__name__)
@@ -193,7 +191,7 @@ class ComfyUiWebservice(WebService):
         """Returns the list of available Stable Diffusion VAE models."""
         return self.get_models(ComfyModelType.VAE)
 
-    def get_controlnets(self) -> list[str]:
+    def get_controlnet_models(self) -> list[str]:
         """Returns the list of available ControlNet models."""
         return self.get_models(ComfyModelType.CONTROLNET)
 
@@ -223,7 +221,7 @@ class ComfyUiWebservice(WebService):
         preprocessor_categories: dict[str, str] = {}
         for module in preprocessors:
             preprocessor_categories[module.name] = module.category_name
-        model_names = self.get_controlnets()
+        model_names = self.get_controlnet_models()
         control_type_builder = ControlNetCategoryBuilder(preprocessor_names, model_names, preprocessor_categories,
                                                          None)
         return control_type_builder.get_control_types()
@@ -556,7 +554,6 @@ class ComfyUiWebservice(WebService):
 
     def upscale(self, image: QImage, width: int, height: int) -> QueueAdditionResponse:
         """Upscale an image using an upscaling model and/or a latent updcaling workflow."""
-        config = AppConfig()
         cache = Cache()
 
         upscale_multiplier = max(width / image.width(), height / image.height())
@@ -565,55 +562,62 @@ class ComfyUiWebservice(WebService):
         image_reference = self.upload_image(image)
 
         # Check for valid upscaling model:
-        upscale_model: Optional[str] = cache.get(Cache.UPSCALE_METHOD)
-        upscale_model_options = self.get_models(ComfyModelType.UPSCALING)
+        upscale_model: Optional[str] = cache.get(Cache.SCALING_MODE)
+        upscale_model_options = cache.get(Cache.GENERATOR_SCALING_MODES)
         if upscale_model not in upscale_model_options:
             upscale_model = None
 
-        if cache.get(Cache.CONTROLNET_UPSCALING):
+        if cache.get(Cache.SD_UPSCALING_AVAILABLE) and cache.get(Cache.USE_STABLE_DIFFUSION_UPSCALING):
             tile_size = cache.get(Cache.GENERATION_SIZE)
-            ultimate_upscale_script_available = False
-            controlnet_tile_preprocessor: Optional[ControlNetPreprocessor] = None
-            controlnet_tile_model: Optional[str] = None
-
             # Check for "Ultimate SD Upscaler" script:
-            if self.is_node_available(ULTIMATE_UPSCALE_NODE_NAME):
-                ultimate_upscale_script_available = True
+            use_ultimate_upscaler = (cache.get(Cache.ULTIMATE_UPSCALE_SCRIPT_AVAILABLE)
+                                     and cache.get(Cache.USE_ULTIMATE_UPSCALE_SCRIPT))
 
             # Check for valid ControlNet tile model:
-            saved_tile_model = ControlNetModel(config.get(AppConfig.CONTROLNET_TILE_MODEL))
-            available_models = [ControlNetModel(model_str) for model_str in self.get_controlnets()]
-            for available_model in available_models:
-                if available_model.display_name == saved_tile_model.display_name:
-                    controlnet_tile_model = available_model.full_model_name
-                    break
-            if controlnet_tile_model is not None:
-                for preprocessor in self.get_controlnet_preprocessors():
-                    if preprocessor.name == TILE_PREPROCESSOR_NODE_NAME:
-                        controlnet_tile_preprocessor = deepcopy(preprocessor)
-                        break
-            if controlnet_tile_preprocessor is not None:
-                for parameter in controlnet_tile_preprocessor.parameters:
-                    if parameter.key == TILE_PREPROCESSOR_DOWNSAMPLING_PARAM_KEY:
-                        tile_downsampling = cache.get(Cache.CONTROLNET_DOWNSAMPLE_RATE)
-                        if isinstance(parameter.default_value, int):
-                            tile_downsampling = round(tile_downsampling)
-                        parameter.value = tile_downsampling
-                        break
-                controlnet_tile_preprocessor.set_value(TILE_PREPROCESSOR_DOWNSAMPLING_PARAM_KEY,
-                                                       cache.get(Cache.CONTROLNET_DOWNSAMPLE_RATE))
+            try:
+                tile_control_unit: Optional[ControlNetUnit] = ControlNetUnit.deserialize(
+                    cache.get(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS), ControlKeyType.COMFYUI)
+                assert tile_control_unit is not None
+                if (tile_control_unit.model.full_model_name == CONTROLNET_MODEL_NONE
+                        or tile_control_unit.preprocessor.name.lower() == PREPROCESSOR_NONE.lower()
+                        or tile_control_unit.control_strength.value == 0.0
+                        or float(tile_control_unit.control_start.value) >= float(tile_control_unit.control_end.value)):
+                    tile_control_unit = None
+                else:
+                    models = self.get_controlnet_models()
+                    preprocessors = [preprocessor.name for preprocessor in self.get_controlnet_preprocessors()]
+                    if (tile_control_unit.model.full_model_name not in models
+                            or tile_control_unit.preprocessor.name not in preprocessors):
+                        tile_control_unit = None
+            except (KeyError, ValueError, RuntimeError, JSONDecodeError) as err:
+                logger.error(f'Error loading upscale tile ControlNet: {err}')
+                tile_control_unit = None
+            if tile_control_unit is None:
+                controlnet_tile_model = CONTROLNET_MODEL_NONE
+                controlnet_tile_preprocessor = ControlNetPreprocessor(PREPROCESSOR_NONE, PREPROCESSOR_NONE, [])
             else:
-                controlnet_tile_model = None
+                controlnet_tile_model = tile_control_unit.model.full_model_name
+                controlnet_tile_preprocessor = tile_control_unit.preprocessor
+                available_models = self.get_controlnet_models()
+                if controlnet_tile_model not in available_models:
+                    controlnet_tile_model = CONTROLNET_MODEL_NONE
+                available_preprocessors = [preprocessor.name for preprocessor in self.get_controlnet_preprocessors()]
+                if controlnet_tile_preprocessor.name not in available_preprocessors:
+                    controlnet_tile_preprocessor = ControlNetPreprocessor(PREPROCESSOR_NONE, PREPROCESSOR_NONE, [])
+                    controlnet_tile_model = CONTROLNET_MODEL_NONE
+
             workflow_builder = LatentUpscaleWorkflowBuilder(image_reference, upscale_multiplier, QSize(width, height),
-                                                            tile_size, ultimate_upscale_script_available,
+                                                            tile_size, use_ultimate_upscaler,
                                                             upscale_model, controlnet_tile_preprocessor,
                                                             controlnet_tile_model)
+            workflow_builder.denoising_strength = cache.get(Cache.SD_UPSCALING_DENOISING_STRENGTH)
+            workflow_builder.steps = cache.get(Cache.SD_UPSCALING_STEP_COUNT)
             self._build_diffusion_body(None, workflow_builder)
             workflow_node_graph = workflow_builder.build_workflow()
 
         else:  # Basic upscaling workflow:
             if upscale_model is None:
-                raise RuntimeError(f'No valid upscaling model, cached value was "{cache.get(Cache.UPSCALE_METHOD)}"')
+                raise RuntimeError(f'No valid upscaling model, cached value was "{cache.get(Cache.SCALING_MODE)}"')
             workflow_node_graph = build_basic_upscaling_workflow(image_reference, upscale_model)
 
         prompt = workflow_node_graph.get_workflow_dict()
@@ -713,4 +717,3 @@ class ComfyUiWebservice(WebService):
             'free_memory': True
         }
         self.post(ComfyEndpoints.FREE, body, timeout=DEFAULT_TIMEOUT)
-

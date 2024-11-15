@@ -141,8 +141,8 @@ def save_image_with_metadata(image: Image.Image | QImage, file_path: str, metada
     if delimiter_index < 0:
         raise ValueError(f'Invalid path {file_path} missing extension')
     file_format = file_path[delimiter_index + 1:].upper()
-    if file_format in RENAMED_FORMATS:
-        file_format = RENAMED_FORMATS[file_format]
+    # Apply replacement format if present, keep unchanged otherwise:
+    file_format = RENAMED_FORMATS.get(file_format, file_format)
     if file_format not in IMAGE_FORMATS_SUPPORTING_METADATA:
         raise ValueError(f'Format {file_format} cannot be used to store metadata.')
     parameter_text = ''
@@ -192,8 +192,8 @@ def save_image(image: Image.Image | QImage, file_path: str, exif: Optional[Image
     if delimiter_index < 0:
         raise ValueError(f'Invalid path {file_path} missing extension')
     file_format = file_path[delimiter_index + 1:].upper()
-    if file_format in RENAMED_FORMATS:
-        file_format = RENAMED_FORMATS[file_format]
+    # Apply replacement format if present, keep unchanged otherwise:
+    file_format = RENAMED_FORMATS.get(file_format, file_format)
 
     if isinstance(image, Image.Image):
         if file_format in PIL_WRITE_FORMATS:

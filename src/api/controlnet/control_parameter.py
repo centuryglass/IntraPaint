@@ -1,6 +1,6 @@
 """Defines an input parameter and the associated value for a ControlNet preprocessor or unit."""
 import json
-from typing import Optional, TypeAlias, cast, TypedDict, Any
+from typing import Optional, TypeAlias, cast, TypedDict, Any, Callable
 
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QLabel
@@ -70,6 +70,9 @@ class ControlParameter(QObject):
         self._key = key
         self._value = default_value
         self._multiline = False
+
+        # map input widgets to disconnect functions:
+        self._input_widgets: dict[DynamicControlFieldWidget, Callable[..., None]] = {}
         if options is not None:
             self._parameter.set_valid_options(options)
 
@@ -83,6 +86,11 @@ class ControlParameter(QObject):
             return False
         return self._key == other.key and self.value == other.value \
             and self._multiline == other._multiline and self._parameter == other._parameter
+
+    @property
+    def display_name(self) -> str:
+        """Returns the parameter's display name."""
+        return self._parameter.name
 
     @property
     def key(self) -> str:
@@ -130,7 +138,21 @@ class ControlParameter(QObject):
             if input_widget.value() != new_value:
                 input_widget.setValue(new_value)  # type: ignore
         self.value_changed.connect(_update_control)
+
+        def _disconnect_fn(control_widget=input_widget, param_callback=_update_control,
+                           control_callback=_update_parameter) -> None:
+            self.value_changed.disconnect(param_callback)
+            control_widget.valueChanged.disconnect(control_callback)
+        self._input_widgets[input_widget] = _disconnect_fn
+
         return input_widget, label
+
+    def disconnect_input_widget(self, input_widget: DynamicControlFieldWidget) -> None:
+        """Removes any connections between this parameter and an input widget it created."""
+        if input_widget in self._input_widgets:
+            # Run saved disconnect function:
+            self._input_widgets[input_widget]()
+            del self._input_widgets[input_widget]
 
     class _DataFormat(TypedDict):
         key: str

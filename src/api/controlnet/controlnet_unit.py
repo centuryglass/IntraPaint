@@ -3,7 +3,7 @@
  and ComfyUI formats."""
 import json
 from enum import Enum
-from typing import TypedDict, cast
+from typing import TypedDict, cast, Optional
 
 from PySide6.QtWidgets import QApplication
 
@@ -36,7 +36,7 @@ LABEL_TEXT_CONTROL_END = _tr('Ending control step')
 TOOLTIP_CONTROL_END = _tr('Step where the ControlNet unit is deactivated, as a fraction of the total step count.')
 
 
-class KeyType(Enum):
+class ControlKeyType(Enum):
     """Sets the key format used for ControlNet model parameters (start, end, weight/strength)"""
     WEBUI = 0
     COMFYUI = 1
@@ -47,7 +47,7 @@ class ControlNetUnit:
        model (usually both, but not always), and all associated settings. Values can be serialized and deserialized in
        both WebUI and ComfyUI formats."""
 
-    def __init__(self, key_type: KeyType) -> None:
+    def __init__(self, key_type: ControlKeyType) -> None:
         self._enabled = False
         self._image = CONTROLNET_REUSE_IMAGE_CODE
         self._pixel_perfect = True
@@ -55,16 +55,16 @@ class ControlNetUnit:
         self._preprocessor = ControlNetPreprocessor(PREPROCESSOR_NONE, PREPROCESSOR_NONE, [])
         self._model = ControlNetModel(CONTROLNET_MODEL_NONE)
         self._control_strength = ControlParameter(
-            webui_constants.CONTROL_WEIGHT_KEY if key_type == KeyType.WEBUI
+            webui_constants.CONTROL_WEIGHT_KEY if key_type == ControlKeyType.WEBUI
             else CONTROLNET_COMFTUI_CONTROL_WEIGHT_KEY,
             LABEL_TEXT_CONTROL_STRENGTH,
             TYPE_FLOAT, 1.0, TOOLTIP_CONTROL_STRENGTH, 0.0,
             1.0, 0.01)
-        self._control_start = ControlParameter(webui_constants.START_STEP_KEY if key_type == KeyType.WEBUI
+        self._control_start = ControlParameter(webui_constants.START_STEP_KEY if key_type == ControlKeyType.WEBUI
                                                else CONTROLNET_COMFYUI_START_STEP_KEY, LABEL_TEXT_CONTROL_START,
                                                TYPE_FLOAT, 0.0, TOOLTIP_CONTROL_START, 0.0, 1.0,
                                                0.01)
-        self._control_end = ControlParameter(webui_constants.END_STEP_KEY if key_type == KeyType.WEBUI
+        self._control_end = ControlParameter(webui_constants.END_STEP_KEY if key_type == ControlKeyType.WEBUI
                                              else CONTROLNET_COMFYUI_END_STEP_KEY, LABEL_TEXT_CONTROL_END,
                                              TYPE_FLOAT, 1.0, TOOLTIP_CONTROL_END, 0.0, 1.0,
                                              0.01)
@@ -172,10 +172,11 @@ class ControlNetUnit:
         return json.dumps(data_dict)
 
     @staticmethod
-    def deserialize(data_str: str) -> 'ControlNetUnit':
+    def deserialize(data_str: str, key_type: Optional[ControlKeyType] = None) -> 'ControlNetUnit':
         """Loads a ControlNetUnit from serialized data."""
         data_dict = cast(ControlNetUnit._SerializedDataFormat, json.loads(data_str))
-        key_type = KeyType(data_dict['key_type'])
+        if key_type is None:
+            key_type = ControlKeyType(data_dict['key_type'])
         control_unit = ControlNetUnit(key_type)
         control_unit.enabled = data_dict['enabled']
         control_unit.image_string = data_dict['image']

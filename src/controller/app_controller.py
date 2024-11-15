@@ -47,8 +47,8 @@ from typing import Optional, Any, Callable
 
 from PIL import Image, UnidentifiedImageError, ExifTags
 from PIL.ExifTags import IFD
-from PySide6.QtCore import QSize
-from PySide6.QtGui import QImage, Qt, QIcon
+from PySide6.QtCore import QSize, QUrl
+from PySide6.QtGui import QImage, Qt, QIcon, QDesktopServices
 from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
 
 from src.config.application_config import AppConfig
@@ -59,6 +59,7 @@ from src.controller.image_generation.glid3_xl_generator import Glid3XLGenerator
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.controller.image_generation.null_generator import NullGenerator
 from src.controller.image_generation.sd_comfyui_generator import SDComfyUIGenerator, DEFAULT_COMFYUI_URL
+from src.controller.image_generation.sd_generator import MENU_STABLE_DIFFUSION
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator, DEFAULT_WEBUI_URL
 from src.controller.image_generation.test_generator import TestGenerator
 from src.controller.tool_controller import ToolController
@@ -147,6 +148,7 @@ MENU_IMAGE = _tr('Image')
 MENU_SELECTION = _tr('Selection')
 MENU_LAYERS = _tr('Layers')
 MENU_FILTERS = _tr('Filters')
+MENU_HELP = _tr('Help')
 
 SUBMENU_MOVE = _tr('Move')
 SUBMENU_SELECT = _tr('Select')
@@ -158,6 +160,7 @@ ICON_PATH_GEN_TAB = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
 ICON_PATH_LAYER_TAB = f'{PROJECT_DIR}/resources/icons/tabs/layers.svg'
 ICON_PATH_NAVIGATION_TAB = f'{PROJECT_DIR}/resources/icons/tabs/navigation.svg'
 ICON_PATH_COLOR_TAB = f'{PROJECT_DIR}/resources/icons/tabs/colors.svg'
+HELP_INDEX_LINK = 'https://github.com/centuryglass/IntraPaint/blob/master/doc/help_index.md'
 
 GENERATOR_LOAD_ERROR_TITLE = _tr('Loading image generator failed')
 GENERATOR_LOAD_ERROR_MESSAGE = _tr('Unable to load the {generator_name} image generator')
@@ -275,6 +278,20 @@ class AppController(MenuBuilder):
             image = QImage(config.get(AppConfig.DEFAULT_IMAGE_SIZE), QImage.Format.Format_ARGB32_Premultiplied)
             image.fill(Cache().get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, Qt.GlobalColor.white))
             self._image_stack.load_image(image)
+
+        # Set up menus in the expected order, so menus don't need to be shown in the order they're initialized:
+        ordered_menus = [
+            MENU_FILE,
+            MENU_EDIT,
+            MENU_IMAGE,
+            MENU_SELECTION,
+            MENU_LAYERS,
+            MENU_FILTERS,
+            MENU_STABLE_DIFFUSION,
+            MENU_HELP
+        ]
+        for menu_name in ordered_menus:
+            self.add_menu(menu_name)
 
         self._generator: Optional[ImageGenerator] = None
 
@@ -1004,7 +1021,7 @@ class AppController(MenuBuilder):
                 if param_str is not None and not isinstance(param_str, str):
                     # noinspection PyTypeChecker
                     param_str = str(param_str, encoding='utf-8')
-                match = re.match(r'^(.*\n?.*)\nSteps: ?(\d+), Sampler: ?(.*), CFG scale: ?(.*), Seed: ?(.+),'
+                match = re.match(r'^((?:.|\n)*)\nSteps: ?(\d+), Sampler: ?(.*), CFG scale: ?(.*), Seed: ?(.+),'
                                  r' Size: ?(\d+)x?(\d+)', param_str)
                 if match:
                     prompt = match.group(1)
@@ -1013,7 +1030,7 @@ class AppController(MenuBuilder):
                     sampler = match.group(3)
                     cfg_scale = float(match.group(4))
                     seed = int(match.group(5))
-                    divider_match = re.match('^(.*)\nNegative prompt: ?(.*)$', prompt)
+                    divider_match = re.match('^((?:.|\n)*)\nNegative prompt: ?(.*)$', prompt)
                     if divider_match:
                         prompt = divider_match.group(1)
                         negative = divider_match.group(2)
@@ -1468,6 +1485,11 @@ class AppController(MenuBuilder):
         assert isinstance(layer, (ImageLayer, LayerGroup))
         layer.crop_to_content()
 
+    @menu_action(MENU_HELP, 'help_index_shortcut', 600)
+    def open_help_index(self) -> None:
+        """Open the IntraPaint documentation index in a browser window."""
+        QDesktopServices.openUrl(QUrl(HELP_INDEX_LINK))
+
     # Internal/protected:
 
     def _set_alt_window_fractional_bounds(self, alt_window: QWidget, preferred_scale: float = 0.8) -> None:
@@ -1498,9 +1520,6 @@ class AppController(MenuBuilder):
         alt_window.setGeometry(window_bounds)
 
     def _scale(self, new_size: QSize) -> None:  # Override to allow alternate or external upscalers:
-        scaling_mode_name = Cache().get(Cache.UPSCALE_METHOD)
-        if scaling_mode_name in PIL_SCALING_MODES:
-            scaling_mode = PIL_SCALING_MODES[scaling_mode_name]
-        else:
-            scaling_mode = None
+        scaling_mode_name = Cache().get(Cache.SCALING_MODE)
+        scaling_mode_name = PIL_SCALING_MODES.get(scaling_mode_name, None)
         scale_all_layers(self._image_stack, new_size.width(), new_size.height(), scaling_mode)

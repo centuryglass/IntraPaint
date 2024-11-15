@@ -111,7 +111,7 @@ class ImageGenerator(MenuBuilder):
 
     def upscale(self, new_size: QSize) -> bool:
         """Optionally upscale using a custom upscaler, returning whether upscaling was attempted."""
-        upscale_mode = Cache().get(Cache.UPSCALE_METHOD)
+        upscale_mode = Cache().get(Cache.SCALING_MODE)
         if upscale_mode in PIL_SCALING_MODES:
             scale_all_layers(self._image_stack, new_size.width(), new_size.height(), PIL_SCALING_MODES[upscale_mode])
         else:

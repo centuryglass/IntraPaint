@@ -893,30 +893,6 @@
         "options": ["default"],
         "saved": true
     },
-    "upscale_method": {
-        "label": "Upscale method:",
-        "category": "Cache",
-        "subcategory": "Image generation",
-        "description": "Method to use when increasing image resolution. Available options will be loaded from the active image generator.",
-        "type": "string",
-        "default": "",
-        "options": [],
-        "saved": true
-    },
-    "image_layer_scaling_behavior": {
-        "label": "Image scaling behavior:",
-        "category": "Cache",
-        "subcategory": "Image generation",
-        "description": "Controls how multi-layer images are scaled.",
-        "type": "string",
-        "default": "Scale merged, keep source layers",
-        "options": [
-            "Independent layer scaling",
-            "Scale merged, keep source layers",
-            "Scale merged, discard source layers"
-        ],
-        "saved": true
-    },
     "canvas_resize_layer_mode": {
         "label": "Layer expand mode:",
         "category": "Cache",
@@ -1124,38 +1100,6 @@
             "step": 1
         }
     },
-    "controlnet_upscaling_available": {
-        "label": "ControlNet upscaling available",
-        "category": "Cache",
-        "subcategory": "ControlNet",
-        "description": "Whether the active image generator was able to find the necessary components for ControlNet tiled upscaling",
-        "type": "bool",
-        "default": false,
-        "translate": false
-    },
-    "controlnet_upscaling": {
-        "label": "ControlNet tiled upscaling",
-        "category": "Cache",
-        "subcategory": "ControlNet",
-        "description": "Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the Stable Siffusion WebUI, and the controlnet tile model needs to be downloaded to the correct folder.",
-        "type": "bool",
-        "default": false,
-        "saved": true
-    },
-    "controlnet_downsample_rate": {
-        "label": "Tile downsample rate:",
-        "category": "Cache",
-        "subcategory": "ControlNet",
-        "description": "Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.",
-        "type": "float",
-        "range_options": {
-            "min": 1.0,
-            "max": 4.0,
-            "step": 0.1
-        },
-        "default": 1.0,
-        "saved": true
-    },
     "controlnet_args_0_webui": {
         "label": "ControlNet Settings (first layer, WebUI API)",
         "category": "Cache",
@@ -1258,7 +1202,7 @@
         "label": "VAE tile size:",
         "category": "Cache",
         "subcategory": "ComfyUI",
-        "description": "Tile size when using tiled VAE encoding/decoding.  Smaller values decrease memory further, but may increase generation time..",
+        "description": "Tile size when using tiled VAE encoding/decoding.  Smaller values decrease memory further, but may increase image generation time.",
         "type": "int",
         "default": 512,
         "range_options": {
@@ -1268,7 +1212,26 @@
         },
         "saved": true
     },
-
+    "comfyui_cached_scaling_mode": {
+        "label": "Cached ComfyUI scaling mode",
+        "category": "Cache",
+        "subcategory": "ComfyUI",
+        "description": "Last generator upscale mode used with the ComfyUI image generator",
+        "type": "string",
+        "default": "",
+        "saved": true,
+        "translate": false
+    },
+    "webui_cached_scaling_mode": {
+        "label": "Cached ComfyUI scaling mode",
+        "category": "Cache",
+        "subcategory": "ComfyUI",
+        "description": "Last generator upscale mode used with the ComfyUI image generator",
+        "type": "string",
+        "default": "",
+        "saved": true,
+        "translate": false
+    },
     "webui_tiling": {
         "label": "Tiling",
         "category": "Cache",
@@ -1340,6 +1303,135 @@
         "description": "Generated images using the same seed will match images created at this resolution, regardless of generation size.",
         "type": "Size",
         "default": "512x512",
+        "saved": true
+    },
+    "scaling_mode": {
+        "label": "Scaling mode:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Method to use when scaling images through the 'Scale Image' menu option",
+        "type": "string",
+        "default": "",
+        "translate": false,
+        "saved": true
+    },
+    "generator_scaling_modes": {
+        "label": "Image generator caling modes:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Scaling modes provided by the connected image generator",
+        "type": "list",
+        "default": [],
+        "translate": false,
+        "saved": false
+    },
+    "image_layer_scaling_behavior": {
+        "label": "Image scaling behavior:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Controls how multi-layer images are scaled.",
+        "type": "string",
+        "default": "Scale merged, keep source layers",
+        "options": [
+            "Independent layer scaling",
+            "Scale merged, keep source layers",
+            "Scale merged, discard source layers"
+        ],
+        "saved": true
+    },
+    "sd_upscaling_available": {
+        "label": "Stable Diffusion upscaling available",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion Upscale",
+        "description": "Whether Stable Diffusion image upscaling is available",
+        "type": "bool",
+        "default": false,
+        "saved": false,
+        "translate": false
+    },
+    "ultimate_upscale_script_available": {
+        "label": "Ultimate SD Upscale script available",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion Upscale",
+        "description": "Whether the Ultimate SD Upscale script can be used for image upscaling",
+        "type": "bool",
+        "default": false,
+        "saved": false,
+        "translate": false
+    },
+    "use_stable_diffusion_upscaling": {
+        "label": "Stable Diffusion upscaling:",
+        "category": "Cache",
+        "subcategory": "ControlNet",
+        "description": "If selected, Stable Diffusion will be used for upscaling, and settings within the Image Generation panel will affect the upscaling process.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "sd_upscaling_denoising_strength": {
+        "label": "Denoising strength:",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion Upscale",
+        "description": "Controls how much freedom Stable Diffusion will be given to adjust the image during upscaling.",
+        "type": "float",
+        "default": 0.3,
+        "saved": true,
+        "range_options": {
+            "min": 0.0,
+            "max": 0.7,
+            "step": 0.01
+        }
+    },
+    "sd_upscaling_step_count": {
+        "label": "Step count:",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion Upscale",
+        "description": "Number of diffusion steps to use when upscaling with Stable Diffusion",
+        "type": "int",
+        "default": 30,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 150,
+            "step": 1
+        }
+    },
+    "sd_upscaling_controlnet_tile_models": {
+        "label": "Tile ControlNet model list:",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion Upscale",
+        "description": "List of ControlNet tile model options for Stable Diffusion upscaling.",
+        "type": "list",
+        "default": ["None"],
+        "saved": false
+    },
+    "sd_upscaling_controlnet_tile_preprocessors": {
+        "label": "Tile ControlNet preprocessors",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion Upscale",
+        "description": "Serialized definitions of available ControlNet Tile preprocessors",
+        "type": "list",
+        "default": [],
+        "translate": false,
+        "saved": false
+    },
+    "sd_upscaling_controlnet_tile_settings": {
+        "label": "Tile ControlNet parameters:",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion Upscale",
+        "description": "Serialized ControlNet tiled upsaling parameters",
+        "type": "string",
+        "default": "",
+        "saved": true,
+        "translate": false
+    },
+    "use_ultimate_upscale_script": {
+        "label": "Use the \"Ultimate SD Upscale\" script:",
+        "category": "Cache",
+        "subcategory": "ControlNet",
+        "description": "If selected, the \"Ultimate SD Upscale\" script will be used for enhanced image upscaling",
+        "type": "bool",
+        "default": true,
         "saved": true
     }
 }

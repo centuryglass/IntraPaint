@@ -75,6 +75,11 @@ class MenuBuilder:
     def menu_window(self, window: QMainWindow) -> None:
         self._menu_window = window
 
+    def add_menu(self, menu_name: str) -> None:
+        """Add a menu to the menu bar. Useful for ensuring menus are ordered correctly even when not initialized in
+           order."""
+        self._find_or_add_menu(menu_name)
+
     def add_menu_action(self,
                         menu_name: str,
                         new_action: Callable[..., None],
@@ -248,6 +253,7 @@ class MenuBuilder:
             assert next_menu is not None
             menu_iter = next_menu
         assert menu_iter == self._menus[menu_name]
+        _menu_set_visible(menu_iter, False)
         return menu_iter
 
     def _find_action(self, menu: Optional[str | QMenu], action_name: str) -> Optional[QAction]:

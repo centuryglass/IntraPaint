@@ -13,7 +13,6 @@ from src.util.parameter import TYPE_INT, TYPE_BOOL, TYPE_FLOAT, TYPE_STR
 # If a preprocessor name ends in "Preprocessor", we can leave that part out of the display name.
 PREPROCESSOR_SUFFIX = 'Preprocessor'
 
-
 logger = logging.getLogger(__name__)
 
 # These nodes are categorized under ControlNet preprocessors, and appear to have valid inputs and outputs, but
@@ -116,12 +115,12 @@ def get_all_preprocessors(node_data: dict[str, NodeInfoResponse]) -> list[Contro
                     options = input_type_or_list
                     default_value = options[0]
                 elif input_category == 'optional':
-                    logger.error(f'"{key}" preprocessor: not sure how to handle optional input'
-                                 f' {input_name}={input_tuple}, ignoring it.')
+                    logger.warning(f'"{key}" preprocessor: not sure how to handle optional input'
+                                   f' {input_name}={input_tuple}, ignoring it.')
                     continue
                 else:
-                    logger.error(f'Skipping "{key}" preprocessor node: not sure how to handle input'
-                                 f' {input_name}={input_tuple}')
+                    logger.warning(f'Skipping "{key}" preprocessor node: not sure how to handle input'
+                                   f' {input_name}={input_tuple}')
                     invalid_input_found = True
                     break
                 parameter = ControlParameter(param_key, param_key, parameter_type, default_value, param_description,

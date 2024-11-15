@@ -904,5 +904,14 @@
         "type": "string",
         "default": "F10",
         "saved": true
+    },
+    "help_index_shortcut": {
+        "label": "Open IntraPaint help pages",
+        "category": "Menu Shortcuts",
+        "subcategory": "Help Menu",
+        "description": "Open a page with links to all of IntraPaint's documentation and tutorials in a web browser.",
+        "type": "string",
+        "default": "F1",
+        "saved": true
     }
 }

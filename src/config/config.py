@@ -500,8 +500,24 @@ class Config:
         if key not in self._entries:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         options = self._entries[key].options
-        assert options is not None
-        return options.copy()
+        if options is None:
+            raise RuntimeError(f'{key} has no options list.')
+        return options
+
+    def get_default_options(self, key: str) -> ParamTypeList:
+        """Returns the default set of valid options accepted for a given key.
+
+        Raises
+        ------
+        RuntimeError
+            If the value associated with the key does not have a predefined list of options.
+        """
+        if key not in self._entries:
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
+        options = self._entries[key].default_options()
+        if options is None:
+            raise RuntimeError(f'{key} has no default options list.')
+        return options
 
     def update_options(self, key: str, options_list: ParamTypeList) -> None:
         """

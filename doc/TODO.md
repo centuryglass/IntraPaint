@@ -1,11 +1,7 @@
 # Development tasks
 
 ## Remaining tasks:
-- Catch the error message that shows up when you try to scale an image more than 4x and display something more user-friendly.  Better yet, figure out how to repeat upscaling to get greater than 4x multipliers
-- time formatting issues when ETA is more than 1min
-- Update scaling interface labels: somehow make it clear that the "controlnet tiled upscaling" option uses the ultimate sd upscale script
 - Update docs with references to SD setup doc, any changes to upscaling window
-- Add a warning message to console output at the start when running under Python<3.11
 - Create CHANGELOG.md in docs folder
 - Create windows, linux builds
 - Final testing pass

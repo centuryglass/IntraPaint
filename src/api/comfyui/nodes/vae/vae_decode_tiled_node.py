@@ -7,6 +7,7 @@ NODE_NAME = 'VAEDecodeTiled'
 TILE_MIN = 320
 TILE_MAX = 4096
 TILE_STEP = 64
+OVERLAP_DEFAULT = 64
 
 
 class VAEDecodeTiledInputs(TypedDict):
@@ -14,6 +15,7 @@ class VAEDecodeTiledInputs(TypedDict):
     samples: NotRequired[NodeConnection]  # Latent image data, e.g. from KSampler.
     vae: NotRequired[NodeConnection]  # VAE model used for decoding. May be baked-in to a regular SD model.
     tile_size: int
+    overlap: int
 
 
 class VAEDecodeTiledNode(ComfyNode):
@@ -37,5 +39,5 @@ class VAEDecodeTiledNode(ComfyNode):
             VAEDecodeTiledNode.SAMPLES,
             VAEDecodeTiledNode.VAE
         }
-        data: VAEDecodeTiledInputs = {'tile_size': tile_size}
+        data: VAEDecodeTiledInputs = {'tile_size': tile_size, 'overlap': OVERLAP_DEFAULT}
         super().__init__(NODE_NAME, cast(dict[str, Any], data), connection_params, 1)

@@ -2,6 +2,7 @@
    support."""
 import logging
 from argparse import Namespace
+from json import JSONDecodeError
 from typing import Optional, cast, Any
 
 from PySide6.QtCore import Signal, QSize
@@ -9,11 +10,11 @@ from PySide6.QtGui import QImage, QIcon
 from PySide6.QtWidgets import QInputDialog, QApplication
 
 from src.api.a1111_webservice import AuthError
-from src.api.controlnet.controlnet_constants import ControlTypeDef, CONTROLNET_REUSE_IMAGE_CODE
+from src.api.controlnet.controlnet_constants import ControlTypeDef, CONTROLNET_REUSE_IMAGE_CODE, CONTROLNET_MODEL_NONE
 from src.api.controlnet.controlnet_model import ControlNetModel
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
+from src.api.controlnet.controlnet_unit import ControlKeyType, ControlNetUnit
 from src.api.webservice import WebService
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.image_generation.image_generator import ImageGenerator
@@ -200,6 +201,7 @@ class SDGenerator(ImageGenerator):
        support."""
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace, url_cache_key: str,
+                 controlnet_key_type: ControlKeyType,
                  show_extended_controlnet_options=False) -> None:
         super().__init__(window, image_stack)
         self._image_stack = image_stack
@@ -211,6 +213,7 @@ class SDGenerator(ImageGenerator):
         self._preview = QImage(SD_PREVIEW_IMAGE)
         self._controlnet_tab: Optional[Tab] = None
         self._controlnet_panel: Optional[TabbedControlNetPanel] = None
+        self._controlnet_key_type = controlnet_key_type
         self._show_extended_controlnet_options = show_extended_controlnet_options
 
     @property
@@ -275,6 +278,10 @@ class SDGenerator(ImageGenerator):
 
     def get_upscale_method_names(self) -> list[str]:
         """Return the list of available upscale methods."""
+        raise NotImplementedError()
+
+    def ultimate_upscale_script_available(self) -> bool:
+        """Return whether the Stable Diffusion API will support the 'Ultimate SD Upscale' script."""
         raise NotImplementedError()
 
     def cache_generator_specific_data(self) -> None:
@@ -352,7 +359,7 @@ class SDGenerator(ImageGenerator):
             sd_models = self.get_diffusion_model_names()
             lora_models = self.get_lora_model_info()
             for api_data, cache_key in ((sampler_names, Cache.SAMPLING_METHOD),
-                                        (upscale_methods, Cache.UPSCALE_METHOD),
+                                        (upscale_methods, Cache.GENERATOR_SCALING_MODES),
                                         (sd_models, Cache.SD_MODEL),
                                         (lora_models, Cache.LORA_MODELS)):
                 cache_data_type = cache.get_data_type(cache_key)
@@ -376,14 +383,9 @@ class SDGenerator(ImageGenerator):
                         # options like "any"/"none"/"auto" when appropriate.
                         cache.restore_default_options(cache_key)
                         option_list = cast(list, cache.get_options(cache_key))
-                        if cache_key == Cache.UPSCALE_METHOD:
-                            for i, pil_scaling_mode in enumerate(PIL_SCALING_MODES):
-                                option_list.insert(i, pil_scaling_mode)
                         for option in api_data:
                             if option not in option_list:
                                 option_list.append(option)
-                        if cache_key == Cache.UPSCALE_METHOD and UPSCALE_OPTION_NONE not in option_list:
-                            option_list.append(UPSCALE_OPTION_NONE)
                         cache.update_options(cache_key, option_list)
 
                 except (RuntimeError, KeyError) as err:
@@ -395,26 +397,19 @@ class SDGenerator(ImageGenerator):
                         cache.restore_default_options(cache_key)
             self.cache_generator_specific_data()
 
+            controlnet_model_list: list[str] = []
+            controlnet_preprocessor_list: list[ControlNetPreprocessor] = []
+
             # Build ControlNet tab, if available through the API:
             if self._controlnet_tab is None:
                 try:
-                    model_list = self.get_controlnet_models()
-                    preprocessors = self.get_controlnet_preprocessors()
+                    controlnet_model_list = self.get_controlnet_models()
+                    controlnet_preprocessor_list = self.get_controlnet_preprocessors()
                     control_types = self.get_controlnet_types()
                     control_keys = self.get_controlnet_unit_cache_keys()
-
-                    tile_model = AppConfig().get(AppConfig.CONTROLNET_TILE_MODEL)
-                    if tile_model in model_list:
-                        cache.set(Cache.CONTROLNET_UPSCALING_AVAILABLE, True)
-                    else:
-                        # Check if it's present but missed due to some minor formatting issue:
-                        tile_model_display_name = ControlNetModel(tile_model).display_name
-                        model_display_names = [ControlNetModel(model_name).display_name for model_name in model_list]
-                        if tile_model_display_name in model_display_names:
-                            cache.set(Cache.CONTROLNET_UPSCALING_AVAILABLE, True)
-                    if len(preprocessors) > 0 and len(control_types) > 0:
-                        controlnet_panel = TabbedControlNetPanel(preprocessors,
-                                                                 model_list,
+                    if len(controlnet_preprocessor_list) > 0 and len(control_types) > 0:
+                        controlnet_panel = TabbedControlNetPanel(controlnet_preprocessor_list,
+                                                                 controlnet_model_list,
                                                                  control_types,
                                                                  control_keys,
                                                                  self._show_extended_controlnet_options)
@@ -426,6 +421,31 @@ class SDGenerator(ImageGenerator):
                         self._controlnet_panel = controlnet_panel
                 except (KeyError, RuntimeError) as err:
                     logger.error(f'Loading ControlNet failed. {err.__class__}: {err}')
+
+            # Determine and cache Stable Diffusion upscaling capabilities:
+            ultimate_sd_upscale_found = self.ultimate_upscale_script_available()
+            tile_models = [model_name for model_name in controlnet_model_list if 'tile' in model_name.lower()]
+            tile_preprocessors = [preprocessor for preprocessor in controlnet_preprocessor_list
+                                  if 'tile' in preprocessor.name.lower()]
+            tiled_upscaling_available = len(tile_models) > 0 and len(tile_preprocessors) > 0
+            if tiled_upscaling_available:
+                tile_models.append(CONTROLNET_MODEL_NONE)
+            cache.set(Cache.SD_UPSCALING_AVAILABLE, ultimate_sd_upscale_found or tiled_upscaling_available)
+            cache.set(Cache.ULTIMATE_UPSCALE_SCRIPT_AVAILABLE, ultimate_sd_upscale_found)
+            cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_MODELS, tile_models)
+            cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_PREPROCESSORS,
+                      [preprocessor.serialize() for preprocessor in tile_preprocessors])
+
+            if tiled_upscaling_available:
+                try:
+                    upscale_tile_control_unit = ControlNetUnit.deserialize(
+                        cache.get(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS), self._controlnet_key_type)
+                    cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS, upscale_tile_control_unit.serialize())
+                except (KeyError, RuntimeError, JSONDecodeError):
+                    upscale_tile_control_unit = ControlNetUnit(self._controlnet_key_type)
+                    upscale_tile_control_unit.model = ControlNetModel(tile_models[0])
+                    upscale_tile_control_unit.preprocessor = tile_preprocessors[0]
+                    cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS, upscale_tile_control_unit.serialize())
 
             assert self._window is not None
             self._window.cancel_generation.connect(self.cancel_generation)
@@ -450,8 +470,11 @@ class SDGenerator(ImageGenerator):
             self._lora_images.clear()
             self._lora_images = None
         cache = Cache()
+        cache.set(Cache.SD_UPSCALING_AVAILABLE, False)
+        cache.set(Cache.ULTIMATE_UPSCALE_SCRIPT_AVAILABLE, False)
         for cache_key in (Cache.SD_MODEL, Cache.LORA_MODELS, Cache.HYPERNETWORK_MODELS, Cache.SAMPLING_METHOD,
-                          Cache.SCHEDULER, Cache.UPSCALE_METHOD):
+                          Cache.SCHEDULER, Cache.GENERATOR_SCALING_MODES, Cache.SD_UPSCALING_CONTROLNET_TILE_MODELS,
+                          Cache.SD_UPSCALING_CONTROLNET_TILE_PREPROCESSORS):
             cache_data_type = cache.get_data_type(cache_key)
             if cache_data_type == TYPE_FLOAT:
                 cache.set(cache_key, -1.0)
@@ -527,9 +550,17 @@ class SDGenerator(ImageGenerator):
             return False
 
         cache = Cache()
-        upscale_method = str(cache.get(Cache.UPSCALE_METHOD))
-        if not cache.get(Cache.CONTROLNET_UPSCALING_AVAILABLE) or not cache.get(Cache.CONTROLNET_UPSCALING):
-            if upscale_method in PIL_SCALING_MODES.keys() or upscale_method.lower() == 'none':
+        upscale_method = str(cache.get(Cache.SCALING_MODE))
+        generator_scaling_modes = cast(list[str], cache.get(Cache.GENERATOR_SCALING_MODES))
+        if upscale_method in generator_scaling_modes and upscale_method != UPSCALE_OPTION_NONE:
+            if self._controlnet_key_type == ControlKeyType.WEBUI:
+                cache.set(Cache.WEBUI_CACHED_SCALING_MODE, upscale_method)
+            else:
+                cache.set(Cache.COMFYUI_CACHED_SCALING_MODE, upscale_method)
+        if not (cache.get(Cache.SD_UPSCALING_AVAILABLE) and cache.get(Cache.USE_STABLE_DIFFUSION_UPSCALING)):
+            if (upscale_method not in generator_scaling_modes and upscale_method in PIL_SCALING_MODES.keys()) \
+                                                                  or upscale_method.lower() \
+                                                                  == UPSCALE_OPTION_NONE.lower():
                 return super().upscale(new_size)
 
         class _UpscaleTask(AsyncTask):
