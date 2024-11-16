@@ -1,5 +1,5 @@
 """Control panel for the GenerationAreaTool."""
-from typing import List, cast, Tuple
+from typing import cast
 
 from PySide6.QtCore import Qt, QRect, QSize
 from PySide6.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, QHBoxLayout, QLabel, QSlider, QSpinBox, \
@@ -51,10 +51,10 @@ class GenerationAreaToolPanel(QWidget):
         self._gen_area_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         # wire x/y coordinate boxes to set image generation area coordinates:
-        self._coordinate_controls: List[Tuple[QWidget, QWidget, QWidget]] = []
+        self._coordinate_controls: list[tuple[QWidget, QWidget, QWidget]] = []
         control_boxes = get_generation_area_control_boxes(image_stack, True)
 
-        def _extract_widgets(idx: int) -> Tuple[QWidget, ...]:
+        def _extract_widgets(idx: int) -> tuple[QWidget, ...]:
             return tuple(cast(QWidget, child) for child in control_boxes[idx].children() if isinstance(child, QWidget))
         self._x_label, self._x_slider, self._x_spinbox = _extract_widgets(0)
         self._y_label, self._y_slider, self._y_spinbox = _extract_widgets(1)
@@ -179,7 +179,7 @@ class GenerationAreaToolPanel(QWidget):
 
 
 def get_generation_area_control_boxes(image_stack: ImageStack,
-                                      include_sliders: bool = False) -> List[QWidget]:
+                                      include_sliders: bool = False) -> list[QWidget]:
     """
     Creates and returns labeled widgets for controlling the image generation area.
     Parameters

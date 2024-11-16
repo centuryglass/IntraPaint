@@ -1,5 +1,5 @@
 """Popup modal window that applies an arbitrary image filtering action."""
-from typing import List, Callable, Optional, TypeAlias, Any
+from typing import Callable, Optional, TypeAlias, Any
 
 from PySide6.QtCore import QSize, Signal
 from PySide6.QtGui import QImage, QIcon, Qt
@@ -26,7 +26,7 @@ APPLY_BUTTON_TEXT = _tr('Apply')
 MIN_PREVIEW_SIZE = 450
 
 # parameters: filter_param_values: list
-FilterFunction: TypeAlias = Callable[[List[Any]], Optional[QImage]]
+FilterFunction: TypeAlias = Callable[[list[Any]], Optional[QImage]]
 
 
 class ImageFilterModal(QDialog):
@@ -38,7 +38,7 @@ class ImageFilterModal(QDialog):
     def __init__(self,
                  title: str,
                  description: str,
-                 parameters: List[Parameter],
+                 parameters: list[Parameter],
                  generate_preview: FilterFunction,
                  apply_filter: FilterFunction,
                  filter_selection_only_default: bool = True,
@@ -49,7 +49,7 @@ class ImageFilterModal(QDialog):
         self._preview = ImageWidget(None, self)
         self._preview.setMinimumSize(QSize(MIN_PREVIEW_SIZE, MIN_PREVIEW_SIZE))
         self._layout = QFormLayout(self)
-        self._param_inputs: List[DynamicFieldWidget] = []
+        self._param_inputs: list[DynamicFieldWidget] = []
         self._generate_preview = generate_preview
         self._apply_filter = apply_filter
 

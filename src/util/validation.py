@@ -1,6 +1,6 @@
 """Provides a convenience function for miscellaneous validation."""
 import json
-from typing import Any, Iterable, Dict
+from typing import Any, Iterable
 
 from PySide6.QtCore import QSize, QRect, QRectF, QSizeF, QMargins, QMarginsF
 from PySide6.QtGui import QColor, Qt, QRegion, QScreen
@@ -171,7 +171,7 @@ def orientation_str(orientation: Qt.Orientation) -> str:
     return 'horizontal' if orientation == Qt.Orientation.Horizontal else 'vertical'
 
 
-def all_layout_info(item: Any, include_containing_layout_data=True) -> Dict[str, str]:
+def all_layout_info(item: Any, include_containing_layout_data=True) -> dict[str, str]:
     """Get all layout info for a single item, checking for all known properties."""
     layout_data = {'type': str(type(item))}
     expected_attrs = [
@@ -263,9 +263,9 @@ def all_layout_info(item: Any, include_containing_layout_data=True) -> Dict[str,
 
 def layout_debug(widget: QWidget) -> None:
     """Dump nested layout info to a JSON file for inspection."""
-    layout_data: Dict[str, Any] = {}
+    layout_data: dict[str, Any] = {}
 
-    def _add_item(item: QLayout | QWidget, record: Dict[str, Any]) -> None:
+    def _add_item(item: QLayout | QWidget, record: dict[str, Any]) -> None:
         item_data = all_layout_info(item, True)
         for k, v in item_data.items():
             record[k] = v
@@ -280,7 +280,7 @@ def layout_debug(widget: QWidget) -> None:
                 child = item.itemAt(i)
                 assert child is not None
                 child_widget = child.widget()
-                data: Dict[str, Any] = {}
+                data: dict[str, Any] = {}
                 if child_widget is not None:
                     _add_item(child_widget, data)
                     record['children'].append(data)

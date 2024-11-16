@@ -4,7 +4,7 @@ Runs a simple HTTP server that provides access to GLID-3-XL image editing operat
 
 from datetime import datetime
 from threading import Thread, Lock
-from typing import Any, Dict
+from typing import Any
 
 import flask  # type: ignore
 from flask import Flask, request, jsonify, make_response, abort, current_app
@@ -141,12 +141,12 @@ def start_server(device, model_params, model, diffusion, ldm_model, bert_model, 
     # Request updated images:
     @app.route("/sample", methods=["GET"])
     @cross_origin()
-    def list_updated() -> Dict[str, Dict[Any, Any]]:
+    def list_updated() -> dict[str, dict[Any, Any]]:
         json = request.get_json(force=True)
         # Parse (sampleName, timestamp) pairs from request.samples
         # Check (sampleName, timestamp) pairs from the most recent request. If any missing from the request or have a
         # newer timestamp, set response.samples[sampleName] = { timestamp, base64Image }
-        response: Dict[str, Dict[Any, Any]] = {"samples": {}}
+        response: dict[str, dict[Any, Any]] = {"samples": {}}
         with current_app.lock:
             for key, sample in current_app.samples.items():
                 if key not in json["samples"] or json["samples"][key] < sample["timestamp"]:

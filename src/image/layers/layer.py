@@ -1,7 +1,7 @@
 """Interface for any entity that can exist within an image layer stack."""
 import datetime
 from contextlib import contextmanager
-from typing import Any, Callable, Optional, Set, Generator
+from typing import Any, Callable, Optional, Generator
 
 from PySide6.QtCore import QObject, Signal, QRect, QPoint, QSize, QRectF
 from PySide6.QtGui import QImage, QPixmap, QPainter, QTransform, QPainterPath, QPolygonF
@@ -234,7 +234,7 @@ class Layer(QObject):
         if visible == self.visible:
             return
         if visible:  # Un-hide hidden parents without making other child layers visible:
-            toggled_layers: Set[Layer] = set()
+            toggled_layers: set[Layer] = set()
             if not self._visible:
                 toggled_layers.add(self)
             parent = self.layer_parent
@@ -464,8 +464,9 @@ class Layer(QObject):
 
             # Any part of source_bounds that doesn't intersect with the layer can also be excluded:
             source_bounds = source_bounds.intersected(self.bounds)
-
-            clip_path.addPolygon(inverse.map(QPolygonF(QRectF(final_bounds))))
+            source_bounds_in_image = inverse.map(QPolygonF(QRectF(final_bounds)))
+            assert isinstance(source_bounds_in_image, QPolygonF)
+            clip_path.addPolygon(source_bounds_in_image)
         else:  # transform is None
             source_bounds = self.bounds.intersected(final_bounds)
             clip_path.addRect(final_bounds)

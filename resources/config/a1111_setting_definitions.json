@@ -1,20 +1,23 @@
 {
   "sd_model_checkpoint": {
-    "label": "Stable-Diffusion Model:",
-    "category": "Connected generator",
+    "label": "Stable Diffusion Model:",
+    "category": "Stable Diffusion",
+    "subcategory": "Stable Diffusion WebUI image generator",
     "description": "Active image generation model",
     "type": "string",
     "options": []
   },
   "sd_checkpoints_keep_in_cpu": {
     "label": "Only keep one model on GPU/TPU",
-    "category": "Connected generator",
+    "category": "Stable Diffusion",
+    "subcategory": "Stable Diffusion WebUI image generator",
     "description": "If selected, checkpoints after the first are cached in RAM instead",
     "type": "bool"
   },
   "sd_checkpoints_limit": {
     "label": "Max checkpoints loaded:",
-    "category": "Connected generator",
+    "category": "Stable Diffusion",
+    "subcategory": "Stable Diffusion WebUI image generator",
     "description": "Number of image generation models to keep in memory.",
     "type": "int",
     "range_options": {
@@ -24,15 +27,17 @@
     }
   },
   "sd_vae": {
-    "label": "Stable-Diffusion VAE model:",
-    "category": "Connected generator",
+    "label": "Stable Diffusion VAE model:",
+    "category": "Stable Diffusion",
+    "subcategory": "Stable Diffusion WebUI image generator",
     "description": "VAE model used for final image data creation.",
     "options": [],
     "type": "string"
   },
   "sd_vae_checkpoint_cache": {
-    "label": "Stable-Diffusion VAE models cached:",
-    "category": "Connected generator",
+    "label": "Stable Diffusion VAE models cached:",
+    "category": "Stable Diffusion",
+    "subcategory": "Stable Diffusion WebUI image generator",
     "description": "Number of VAE models to keep in memory.",
     "type": "int",
     "range_options": {
@@ -43,7 +48,8 @@
   },
   "CLIP_stop_at_last_layers": {
     "label": "CLIP skip:",
-    "category": "Connected generator",
+    "category": "Stable Diffusion",
+    "subcategory": "Stable Diffusion WebUI image generator",
     "description": "Number of final image generation steps taken without prompt guidance.",
     "type": "int",
     "range_options": {

@@ -1,7 +1,7 @@
 """
 Interact with edited image layers through the Qt6 2D graphics engine.
 """
-from typing import Optional, Dict
+from typing import Optional
 
 from PySide6.QtCore import Qt, QRect, QRectF, QSize
 from PySide6.QtGui import QPainter, QColor, QTransform
@@ -37,7 +37,7 @@ class ImageViewer(ImageGraphicsView):
 
         self._image_stack = image_stack
         self._generation_area = image_stack.generation_area
-        self._layer_items: Dict[int, 'LayerGraphicsItem'] = {}
+        self._layer_items: dict[int, 'LayerGraphicsItem'] = {}
         self.content_size = image_stack.size
         self.background = get_transparency_tile_pixmap()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))

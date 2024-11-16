@@ -87,4 +87,3 @@ class LayerGraphicsItem(PixmapItem):
             self.setTransform(QTransform.fromTranslate(bounds.x(), bounds.y()))
         else:
             self._pending_bounds = QRect(bounds)  # Wait for the pixmap to update
-

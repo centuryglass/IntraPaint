@@ -1,0 +1,10 @@
+# Misc. dev tools, helpful but not required in most cases
+
+# `pyinstaller IntraPaint.spec` creates a packaged build at dist/IntraPaint
+pyinstaller==6.11.0
+
+# `pur -r requirements.txt` updates version numbers automatically
+pur==7.3.2
+
+# Allows quickly running all tests in pycharm without extra configuration:
+pytest==8.3.3

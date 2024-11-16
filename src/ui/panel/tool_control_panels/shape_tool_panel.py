@@ -1,6 +1,6 @@
 """Shape tool control panel. Sets shape type, stroke properties, and fill properties."""
 import logging
-from typing import Optional, Tuple
+from typing import Optional
 
 from PySide6.QtCore import Qt, QSize, QRegularExpression
 from PySide6.QtGui import QPen, QBrush, QColor, QRegularExpressionValidator
@@ -155,7 +155,7 @@ class ShapeToolPanel(QWidget):
         clear_layout(self._layout, hide=True)
         if self._orientation == Qt.Orientation.Horizontal:
             # widget, row, col, row_span, col_span
-            grid_contents: Tuple[Tuple[QWidget, int, int, int, int], ...] = (
+            grid_contents: tuple[tuple[QWidget, int, int, int, int], ...] = (
                 (self._shape_mode_label, 0, 0, 1, 1),
                 (self._shape_mode_combobox, 0, 1, 1, 8),
                 (self._line_width_slider, 1, 0, 1, 9),

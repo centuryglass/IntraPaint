@@ -1,5 +1,5 @@
 """Editable path item used to create a polygon."""
-from typing import List, Optional
+from typing import Optional
 
 from PySide6.QtCore import QPointF, QRectF, QLineF, Signal
 from PySide6.QtGui import QPainterPath, QPolygonF, QPainter
@@ -19,8 +19,8 @@ class PathCreationItem(AnimatedDashItem):
 
     def __init__(self, scene: QGraphicsScene) -> None:
         super().__init__()
-        self._points: List[QPointF] = []
-        self._handles: List[TransformHandle] = []
+        self._points: list[QPointF] = []
+        self._handles: list[TransformHandle] = []
         scene.addItem(self)
         self.animated = True
 

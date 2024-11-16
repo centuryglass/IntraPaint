@@ -1,7 +1,7 @@
 """
 Provides a widget that can be dragged to resize UI elements.
 """
-from typing import Optional, Tuple
+from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QSize, QRect, Signal
 from PySide6.QtGui import QPainter, QPen, QResizeEvent, QMouseEvent, QPaintEvent, QCursor
@@ -247,7 +247,7 @@ class DraggableDivider(QWidget):
         return layout
 
 
-def _item_at_minimum_size(item: Optional[QWidget | QLayout | QSpacerItem]) -> Tuple[bool, bool]:
+def _item_at_minimum_size(item: Optional[QWidget | QLayout | QSpacerItem]) -> tuple[bool, bool]:
     """Returns at_minimum_width, at_minimum_height"""
     if item is None:
         return True, True
@@ -278,7 +278,7 @@ def _item_at_minimum_size(item: Optional[QWidget | QLayout | QSpacerItem]) -> Tu
     return at_minimum_width, at_minimum_height
 
 
-def _item_at_maximum_size(item: Optional[QWidget | QLayout | QSpacerItem]) -> Tuple[bool, bool]:
+def _item_at_maximum_size(item: Optional[QWidget | QLayout | QSpacerItem]) -> tuple[bool, bool]:
     """Returns at_maximum_width, at_maximum_height"""
     if item is None:
         return True, True

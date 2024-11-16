@@ -1,5 +1,5 @@
 """A horizontal slider and spinbox that both control the same value."""
-from typing import Optional, List
+from typing import Optional
 
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSlider, QDoubleSpinBox, QSpinBox, QSizePolicy
@@ -10,8 +10,8 @@ from src.util.layout import synchronize_row_widths
 class _SliderSpinbox(QWidget):
 
     @staticmethod
-    def align_slider_spinboxes(boxes: 'List[_SliderSpinbox]',
-                               extra_rows: Optional[List[List[Optional[QWidget]]]] = None) -> None:
+    def align_slider_spinboxes(boxes: 'list[_SliderSpinbox]',
+                               extra_rows: Optional[list[list[Optional[QWidget]]]] = None) -> None:
         """Adjust inner component layouts so that all parts of a column of slider spinboxes are sized equally"""
         if len(boxes) < 2:
             return

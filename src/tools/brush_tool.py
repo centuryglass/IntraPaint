@@ -2,7 +2,7 @@
 import datetime
 import logging
 import math
-from typing import Optional, List
+from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QLineF, QPointF, QEvent, QRect
 from PySide6.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QWheelEvent, QPointingDevice
@@ -67,9 +67,9 @@ class BrushTool(BaseTool):
         self._tablet_y_tilt: Optional[float] = None
         self._tablet_input: Optional[QPointingDevice.PointerType] = None
         self._tablet_event_timestamp = 0.0
-        self._pressure_curve: List[float] = AppConfig().get(AppConfig.TABLET_PRESSURE_CURVE)
+        self._pressure_curve: list[float] = AppConfig().get(AppConfig.TABLET_PRESSURE_CURVE)
 
-        def _update_pressure_curve(new_curve: List[float]) -> None:
+        def _update_pressure_curve(new_curve: list[float]) -> None:
             self._pressure_curve = new_curve
         AppConfig().connect(self, AppConfig.TABLET_PRESSURE_CURVE, _update_pressure_curve)
 

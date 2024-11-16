@@ -5,13 +5,9 @@ inpainting modes.  Other editing modes should provide subclasses with implementa
 import logging
 import sys
 from enum import Enum
-from typing import Optional, Dict, List, Set
+from typing import Optional
 
-try:
-    from enum import StrEnum
-except ImportError:  # Use third-party StrEnum if python version < 3.11
-    # noinspection PyUnresolvedReferences
-    from strenum import StrEnum  # type: ignore
+from enum import StrEnum
 
 from PySide6.QtCore import Qt, QRect, QSize, Signal
 from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, QAction, QMoveEvent
@@ -232,8 +228,8 @@ class MainWindow(QMainWindow):
 
         # Image/Mask editing layout:
 
-        self._tab_actions: Dict[Tab, Dict[TabMoveActions, QAction]] = {}
-        self._tab_bar_actions: List[QAction] = []
+        self._tab_actions: dict[Tab, dict[TabMoveActions, QAction]] = {}
+        self._tab_bar_actions: list[QAction] = []
         for tab_box_id in TabBoxID:
             assert isinstance(tab_box_id, TabBoxID)
             tab_box = self._get_tab_box(tab_box_id)
@@ -256,7 +252,7 @@ class MainWindow(QMainWindow):
             tab_box.tab_added.connect(_tab_added)
 
             def _move_all(_, box=tab_box, box_id=tab_box_id) -> None:
-                all_tabs: List[Tab] = []
+                all_tabs: list[Tab] = []
                 for other_box_id in TabBoxID:
                     assert isinstance(other_box_id, TabBoxID)
                     if other_box_id == box_id:
@@ -433,7 +429,7 @@ class MainWindow(QMainWindow):
            if this would happen."""
         assert not opening_tab_box.is_open  # It shouldn't be open yet, otherwise this whole function is irrelevant
         opening_box_id = None
-        tab_boxes: Dict[TabBoxID, TabBox] = {}
+        tab_boxes: dict[TabBoxID, TabBox] = {}
         for box_id_str in TabBoxID:
             tab_box_id = TabBoxID(box_id_str)
             tab_box = self._get_tab_box(tab_box_id)
@@ -448,7 +444,7 @@ class MainWindow(QMainWindow):
                              else vertical_tab_box_ids)
         parallel_tabs.remove(opening_box_id)
         perpendicular_tabs = horizontal_tab_box_ids if opening_box_id in vertical_tab_box_ids else vertical_tab_box_ids
-        to_close: Set[TabBox] = set()
+        to_close: set[TabBox] = set()
         max_size = self.size()
         min_opening_box_size = opening_tab_box.minimum_active_size
 

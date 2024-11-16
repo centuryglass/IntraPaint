@@ -1,6 +1,6 @@
 """Interface for providing image generation capabilities."""
 import logging
-from typing import List, Dict, Optional, Any
+from typing import Optional, Any
 
 from PIL import Image, ImageFilter
 from PySide6.QtCore import QPoint, QRect, QSize, Signal, QTimer, QObject
@@ -47,7 +47,7 @@ class ImageGenerator(MenuBuilder):
         super().__init__()
         self._window = window
         self._image_stack = image_stack
-        self._generated_images: List[QImage] = []
+        self._generated_images: list[QImage] = []
         self._generating = False
 
         class _SignalObject(QObject):
@@ -84,7 +84,7 @@ class ImageGenerator(MenuBuilder):
            connect to required external services, returning whether the process completed correctly."""
         raise NotImplementedError()
 
-    def get_extra_tabs(self) -> List[Tab]:
+    def get_extra_tabs(self) -> list[Tab]:
         """Returns any extra tabs that the generator will add to the main window."""
         return []
 
@@ -111,7 +111,7 @@ class ImageGenerator(MenuBuilder):
 
     def upscale(self, new_size: QSize) -> bool:
         """Optionally upscale using a custom upscaler, returning whether upscaling was attempted."""
-        upscale_mode = Cache().get(Cache.UPSCALE_METHOD)
+        upscale_mode = Cache().get(Cache.SCALING_MODE)
         if upscale_mode in PIL_SCALING_MODES:
             scale_all_layers(self._image_stack, new_size.width(), new_size.height(), PIL_SCALING_MODES[upscale_mode])
         else:
@@ -120,7 +120,7 @@ class ImageGenerator(MenuBuilder):
 
     def generate(self,
                  status_signal: Signal,
-                 source_image: Optional[QImage] = None,
+                 source_image: QImage,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. should be loaded from AppConfig as needed.
         Implementations should call self._cache_generated_image to pass back each generated image.
@@ -129,10 +129,11 @@ class ImageGenerator(MenuBuilder):
         ----------
         status_signal : Signal[dict]
             Signal to emit when status updates are available. Expected keys are 'seed' and 'progress'.
-        source_image : QImage, optional
-            Image used as a basis for the edited image.
+        source_image : QImage
+            Image to potentially use as a basis for the created or edited image.  This will be ignored if the editing
+            mode is text-to-image and there are no ControlNet units using the image generation area.
         mask_image : QImage, optional
-            Mask marking edited image region.
+            Mask marking the edited image region.
         """
         raise NotImplementedError()
 
@@ -174,7 +175,7 @@ class ImageGenerator(MenuBuilder):
             status_signal = Signal(dict)
             error_signal = Signal(Exception)
 
-            def signals(self) -> List[Signal]:
+            def signals(self) -> list[Signal]:
                 return [self.status_signal, self.error_signal]
 
         def _do_inpaint(status_signal: Signal, error_signal: Signal,
@@ -210,10 +211,10 @@ class ImageGenerator(MenuBuilder):
                     continue
                 if cache.get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT:
                     assert composite_base is not None
-                    assert composite_base.size() == image.size()
-                    painter = QPainter(image)
-                    painter.drawImage(QPoint(), composite_base)
-                    painter.end()
+                    if composite_base.size() == image.size():
+                        painter = QPainter(image)
+                        painter.drawImage(QPoint(), composite_base)
+                        painter.end()
                 self._window.load_sample_preview(image, idx)
 
         inpaint_task.error_signal.connect(handle_error)
@@ -262,10 +263,12 @@ class ImageGenerator(MenuBuilder):
         # Load in main thread:
         QTimer.singleShot(0, self._window, lambda: self._load_generated_image_for_selection(index))
 
-    def _apply_status_update(self, status_dict: Dict[str, str]) -> None:
+    def _apply_status_update(self, status_dict: dict[str, str]) -> None:
         """Show status updates in the UI."""
         assert self._window is not None
         if 'seed' in status_dict:
             Cache().set(Cache.LAST_SEED, str(status_dict['seed']))
+        if 'subseed' in status_dict:
+            Cache().set(Cache.WEBUI_LAST_SUBSEED, str(status_dict['subseed']))
         if 'progress' in status_dict:
             self._window.set_loading_message(status_dict['progress'])

@@ -1,5 +1,5 @@
 """A Qt color picker widget with multiple layouts, heavily based on QColorDialog."""
-from typing import Optional, Tuple
+from typing import Optional
 
 from PySide6.QtCore import QSize, QPoint
 from PySide6.QtGui import QColor
@@ -251,7 +251,7 @@ class TabbedColorPicker(ScreenColorWidget):
         self._tab_panel.show()
         self._tab_panel.setEnabled(True)
 
-    def _new_pick_screen_color_button(self) -> Tuple[QPushButton, QLabel]:
+    def _new_pick_screen_color_button(self) -> tuple[QPushButton, QLabel]:
         """Make a new 'pick screen color' button"""
         pick_color_button = QPushButton()
         pick_color_button.setText(BUTTON_LABEL_PICK_SCREEN_COLOR)

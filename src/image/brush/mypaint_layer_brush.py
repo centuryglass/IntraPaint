@@ -2,7 +2,7 @@
 Performs drawing operations on an image layer using the MyPaint brush engine.
 """
 import math
-from typing import Optional, Set
+from typing import Optional
 
 from PySide6.QtCore import QRect
 from PySide6.QtGui import QColor, QImage
@@ -22,7 +22,7 @@ class MyPaintLayerBrush(LayerBrush):
         super().__init__(layer)
         self._mp_surface = MyPaintLayerSurface(None)
         self._last_stroke_bounds = QRect()
-        self._last_stroke_tiles: Set[MyPaintSceneTile] = set()
+        self._last_stroke_tiles: set[MyPaintSceneTile] = set()
         self._last_eraser_value: Optional[float] = None
         super()._set_brush_color(self._mp_surface.brush.color)
         if layer is not None:

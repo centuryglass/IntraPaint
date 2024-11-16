@@ -2,7 +2,7 @@
 Performs drawing operations on an image layer using basic Qt drawing operations.
 """
 import logging
-from typing import Optional, List
+from typing import Optional
 
 import numpy as np
 from PySide6.QtCore import Qt, QPoint, QPointF, QRectF, QTimer, QRect, QSize
@@ -29,11 +29,11 @@ class QtPaintBrush(LayerBrush):
         self._opacity = 1.0
         self._hardness = 1.0
         self._last_point: Optional[QPoint] = None
-        self._last_sizes: List[float] = []
-        self._last_opacity: List[float] = []
-        self._last_hardness: List[float] = []
+        self._last_sizes: list[float] = []
+        self._last_opacity: list[float] = []
+        self._last_hardness: list[float] = []
         self._change_bounds = QRectF()
-        self._input_buffer: List[QtPaintBrush._InputEvent] = []
+        self._input_buffer: list[QtPaintBrush._InputEvent] = []
         self._buffer_timer = QTimer()
         self._buffer_timer.setInterval(PAINT_BUFFER_DELAY_MS)
         self._buffer_timer.setSingleShot(True)
@@ -318,7 +318,7 @@ class QtPaintBrush(LayerBrush):
             np_image = image_data_as_numpy_8bit(layer_image)
             np_prev_image = image_data_as_numpy_8bit(self._prev_image_buffer)
             for event in self._input_buffer:
-                def _update_rolling_avg_list(values: List[float], new_value: float) -> None:
+                def _update_rolling_avg_list(values: list[float], new_value: float) -> None:
                     values.append(new_value)
                     while len(values) > AVG_COUNT:
                         values.pop(0)
@@ -327,7 +327,7 @@ class QtPaintBrush(LayerBrush):
                 _update_rolling_avg_list(self._last_opacity, event.opacity)
                 _update_rolling_avg_list(self._last_hardness, event.hardness)
 
-                def _float_avg(values: List[float], default_value: float) -> float:
+                def _float_avg(values: list[float], default_value: float) -> float:
                     if len(values) == 0:
                         return default_value
                     value_sum = 0.0

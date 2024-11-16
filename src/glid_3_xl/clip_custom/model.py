@@ -241,7 +241,7 @@ class CLIP(nn.Module):
                  embed_dim: int,
                  # vision
                  image_resolution: int,
-                 vision_layers: Union[Tuple[int, int, int, int], int],
+                 vision_layers: Union[tuple[int, int, int, int], int],
                  vision_width: int,
                  vision_patch_size: int,
                  # text

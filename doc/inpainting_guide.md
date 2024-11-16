@@ -3,8 +3,8 @@ I’ve spent the last two years experimenting with AI-driven image editing, and 
 the best results with inpainting.  This guide will help you get the results you want with minimal hassle.
 
 
-If you don't have any previous experience with AI image editing with Stable-Diffusion, you may want to review
-the [Stable-Diffusion guide](./stable-diffusion.md) first.
+If you don't have any previous experience with AI image editing with Stable Diffusion, you may want to review
+the [Stable Diffusion guide](./stable-diffusion.md) first.
 ---
 ## Table of Contents
 1. [Key Terms](#key-terms)
@@ -60,27 +60,27 @@ drawn within the generation area around selected content.
 ---
 
 # AI Model selection
-Choosing the right model is crucial for achieving the best results.  To install new Stable-Diffusion model files, follow [these steps](./stable-diffusion.md#installing-new-ai-model-files). Here are some tips for model selection:
+Choosing the right model is crucial for achieving the best results.  Here are some tips for model selection:
 
 ## Base model selection
-Most Stable-Diffusion models are variants of two different base model types, each with its own strengths and weaknesses.
-- Stable-Diffusion 1.5 (SD1.5): More efficient for inpainting tasks. Variants usually perform poorly at resolutions above 512x512, but can still deliver great results on small areas.
-- Stable-Diffusion XL (SDXL): Best for whole-image generation. Slower, but works well for larger compositions.
+Most Stable Diffusion models are variants of two different base model types, each with its own strengths and weaknesses.
+- Stable Diffusion 1.5 (SD1.5): More efficient for inpainting tasks. Variants usually perform poorly at resolutions above 512x512, but can still deliver great results on small areas.
+- Stable Diffusion XL (SDXL): Best for whole-image generation. Slower, but works well for larger compositions.
 
 ### Other notable base models
-- [CommonCanvas](https://huggingface.co/papers/2310.16825): Uses the same architecture as Stable-Diffusion, trained from scratch on a dataset that uses only Creative-Commons licensed images.
-- Stable-Diffusion 2.1: An intermediate model with capabilities roughly between Stable-Diffusion 1.5 and Stable-Diffusion XL, not frequently used.
-- Stable-Diffusion 3: Exceeds the capabilities of SDXL in many respects, but notoriously poor at reliably generating humans and animals without serious errors.
-- Flux: Not a Stable-Diffusion model, but many Stable-Diffusion clients support it. Its capabilities dramatically surpass SDXL, but it's even slower and more resource-intensive.
+- [CommonCanvas](https://huggingface.co/papers/2310.16825): Uses the same architecture as Stable Diffusion, trained from scratch on a dataset that uses only Creative-Commons licensed images.
+- Stable Diffusion 2.1: An intermediate model with capabilities roughly between Stable Diffusion 1.5 and Stable Diffusion XL, not frequently used.
+- Stable Diffusion 3: Exceeds the capabilities of SDXL in many respects, but notoriously poor at reliably generating humans and animals without serious errors.
+- Flux: Not a Stable Diffusion model, but many Stable Diffusion clients support it. Its capabilities dramatically surpass SDXL, but it's even slower and more resource-intensive.
 
 ### Community Models
 It's rarely recommended to use the base models directly, as they are usually surpassed by fine-tuned model variants and mixes released by hobbyists and enthusiasts on platforms like [HuggingFace](https://huggingface.co/) and [Civitai](https://civitai.com/). Some models specialize in specific artistic styles, while others have more general improvements. There's no one best option, it really depends on what you're trying to do. Keep experimenting since new models are released frequently.
 
 #### Some examples:
 
-| Stable-Diffusion 1.5 (base model)                                               |       [Photon](https://civitai.com/models/84728/photon)        |   [Arthemy Comics](https://civitai.com/models/54073?modelVersionId=830649)    | [Oil painting](https://civitai.com/models/20184/oil-painting?modelVersionId=23979) |
+|                        Stable Diffusion 1.5 (base model)                        |       [Photon](https://civitai.com/models/84728/photon)        |   [Arthemy Comics](https://civitai.com/models/54073?modelVersionId=830649)    | [Oil painting](https://civitai.com/models/20184/oil-painting?modelVersionId=23979) |
 |:-------------------------------------------------------------------------------:|:--------------------------------------------------------------:|:-----------------------------------------------------------------------------:|:----------------------------------------------------------------------------------:|
-| ![Model example, base Stable-Diffusion 1.5](../examples/model_example_SD15.png) | ![Model example, Photon](../examples/model_example_photon.png) | ![Model example, Arthemy Comics](../examples/model_example_arthemyComics.png) |     ![Model example, Oil painting](../examples/model_example_oilpainting.png)      |
+| ![Model example, base Stable Diffusion 1.5](../examples/model_example_SD15.png) | ![Model example, Photon](../examples/model_example_photon.png) | ![Model example, Arthemy Comics](../examples/model_example_arthemyComics.png) |     ![Model example, Oil painting](../examples/model_example_oilpainting.png)      |
 
 Each of those images were generated at 640x640 with the exact same parameters:
 - **Prompt**: Cinematic, photoshoot, Legendary hacker outlaw, 90's fashion, pastel colors, creative anachronism, weird tattoos, balding, realistic hologram, Soviet art, tapestry, sitting at retro computer, many CRTs
@@ -90,7 +90,7 @@ Each of those images were generated at 640x640 with the exact same parameters:
 - **Sampling method**: Euler a
 - **Seed**: 3915102715
 
-In each case the only difference is the AI model chosen. All models used are variants of Stable-Diffusion 1.5.
+In each case the only difference is the AI model chosen. All models used are variants of Stable Diffusion 1.5.
 
 ---
 # Inpainting strategies
@@ -99,9 +99,9 @@ In each case the only difference is the AI model chosen. All models used are var
 
 **Know Your Model’s Capabilities**: Models based on SD1.5 work best at 512x512, but fine-tuned models based on SD1.5 can often perform well at 640x640 or higher. SDXL models work best at 1024x1024.
 
-|                                ![Stable-diffusion 1.5 at unrecommended resolutions](../examples/resolution_example_1.png)                                |                                                                                       ![Stable-diffusion XL at unrecommended resolutions](../examples/resolution_example_2.png)                                                                                       |                                                                                    ![Reasonable resolution variation example](../examples/resolution_example_3.png)                                                                                    |
-|:--------------------------------------------------------------------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
-| Base Stable-Diffusion 1.5, original size 1200x512. Although possible, pushing resolution beyond normal levels creates worse images with far more errors. | Stable-Diffusion XL, generated at 512x512 directly on the left, downscaled from 1024x1024 on the right, all other settings unchanged. Reducing image resolution too much also creates worse images, it's often better to generate larger than you need and downscale. | [CyberRealistic model](https://civitai.com/models/15003/cyberrealistic) (SD 1.5-based) at 512x512, 640x480, and 512x768, all other settings unchanged. If not too extreme, going slightly outside of normal bounds can still produce decent results. |
+|                                ![Stable Diffusion 1.5 at unrecommended resolutions](../examples/resolution_example_1.png)                                |                                                                                       ![Stable Diffusion XL at unrecommended resolutions](../examples/resolution_example_2.png)                                                                                       |                                                                                   ![Reasonable resolution variation example](../examples/resolution_example_3.png)                                                                                   |
+|:--------------------------------------------------------------------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+| Base Stable Diffusion 1.5, original size 1200x512. Although possible, pushing resolution beyond normal levels creates worse images with far more errors. | Stable Diffusion XL, generated at 512x512 directly on the left, downscaled from 1024x1024 on the right, all other settings unchanged. Reducing image resolution too much also creates worse images, it's often better to generate larger than you need and downscale. | [CyberRealistic model](https://civitai.com/models/15003/cyberrealistic) (SD 1.5-based) at 512x512, 640x480, and 512x768, all other settings unchanged. If not too extreme, going slightly outside of normal bounds can still produce decent results. |
 
 **Use Downscaling for Detail Work**: Set your generation resolution higher than your generation area size to allow for error correction during downscaling.  This provides the same effect as the "inpaint full resolution" option.
 
@@ -136,7 +136,7 @@ It's much easier to get the AI to do exactly what you want if you can manually s
 
 |                                                           ![Example 1: AI fails to get it](../examples/visual_guidance_1.png)                                                           |                    ![Example 2: Better results after the sketch is adjusted](../examples/visual_guidance_2.png)                     |                   ![Example 3: finished editing](../examples/visual_guidance_3.png)                    |
 |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------------------:|
-| AI still struggles to get hands right, especially in unusual positions. Given fifteen chances, not once did Stable-Diffusion get the pinky finger right, even with ControlNet guidance. | After I added darker lines to emphasize the missing finger, the next fifteen attempts all completely avoid making the same mistake. | Repeating the process for other details that don't look right eventually leads to much better results. |
+| AI still struggles to get hands right, especially in unusual positions. Given fifteen chances, not once did Stable Diffusion get the pinky finger right, even with ControlNet guidance. | After I added darker lines to emphasize the missing finger, the next fifteen attempts all completely avoid making the same mistake. | Repeating the process for other details that don't look right eventually leads to much better results. |
 
 
 ## Prompt adjusting
@@ -146,7 +146,7 @@ It's much easier to get the AI to do exactly what you want if you can manually s
 |                                      ![Example 1: Prompt mismatch in a small area](../examples/prompt_adjusting_1.png)                                       | ![Example 2: Prompt mismatch corrected](../examples/prompt_adjusting_2.png)  |   ![Example 3: Low denoising to sidestep prompt issues](../examples/prompt_adjusting_3.png)    |
 |:------------------------------------------------------------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------:|
 | prompt: "Detailed painting of an outlandish colorful fantasy marketplace at the top of a mountain, filled with strange creatures and beautiful architecture" |            prompt: "Detailed painting of billowing orange clouds"            |                   prompt: "photograph of an abandoned rusty car in a ditch"                    |
-|                                  0.6 denoising strength, Stable-Diffusion tries to apply the whole prompt to a small area.                                   | With the prompt adjusted, high denoising strength no longer causes problems. | With denoising strength reduced to 0.2, even a completely incorrect prompt can sometimes work. |
+|                                  0.6 denoising strength, Stable Diffusion tries to apply the whole prompt to a small area.                                   | With the prompt adjusted, high denoising strength no longer causes problems. | With denoising strength reduced to 0.2, even a completely incorrect prompt can sometimes work. |
 
 ## Effective ControlNet use
 - When inpainting with ControlNet, you can increase the denoising strength much higher, even up to 100%, and ControlNet will make sure the appropriate content is still preserved.
@@ -158,9 +158,9 @@ It's much easier to get the AI to do exactly what you want if you can manually s
 
 Example prompt: "infinite cityscapes across recursive realities, maximalist variation, fractal pilgrims, tesseract soul, symbol as reality, infinite information density"
 
-| ![Example 1:ControlNet example original](../examples/controlnet_example_source.png) |    ![Example 2: ControlNet Tile](../examples/controlnet_example_tile.png)     | ![Example 3: ControlNet Canny](../examples/controlnet_example_canny.png) | ![Example 4: ControlNet Scribble](../examples/controlnet_example_scribble.png) |
-|:-----------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------:|:------------------------------------------------------------------------:|:------------------------------------------------------------------------------:|
-|                                   Original image                                    | Denoising strength 1.0, "(abstract illusionism)" added to the original prompt |    Denoising strength 1.0, "(ruby red)" added to the original prompt     |   Denoising strength 1.0, "(macro photography)" added to the original prompt   | 
+| ![Example 1:ControlNet example original](../examples/controlnet_example_source.png) |                       ![Example 2: ControlNet Tile](../examples/controlnet_example_tile.png)                        |                ![Example 3: ControlNet Canny](../examples/controlnet_example_canny.png)                 |                   ![Example 4: ControlNet Scribble](../examples/controlnet_example_scribble.png)                    |
+|:-----------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------:|
+|                                   Original image                                    | Using the ControlNet Tile model:<br/> Denoising strength 1.0, "(abstract illusionism)" added to the original prompt | Using the ControlNet Canny model:<br/>Denoising strength 1.0, "(ruby red)" added to the original prompt | Using the ControlNet Scribble model:<br/>Denoising strength 1.0, "(macro photography)" added to the original prompt | 
 
 
 ## Other tips and tricks
@@ -168,7 +168,7 @@ Example prompt: "infinite cityscapes across recursive realities, maximalist vari
   * Right-click the image option in the selection screen, click "send to new layer", exit the selection screen
   * Select the new layer, erase the part that you don't like, select "merge down" to manually add the rest of the change to the edited layer.
 - Sometimes models will have issues matching colors across gradients, especially older models.  Use the smudge tool to smooth out visible seams and inpaint again at a lower denoising strength to fix these issues.
-- AI upscaling is extremely effective, but it's much easier to fix large-scale image issues when the image is lower-resolution.  Sometimes it's even worthwhile to scale down an image to make large-scale changes go more smoothly, then upscale it again once the issues are resolved. See [Stable-Diffusion upscaling](./stable-diffusion.md#ai-upscaling-with-intrapaint) for more tips for effective upscaling.
+- AI upscaling is extremely effective, but it's much easier to fix large-scale image issues when the image is lower-resolution.  Sometimes it's even worthwhile to scale down an image to make large-scale changes go more smoothly, then upscale it again once the issues are resolved. See [Stable Diffusion upscaling](./stable-diffusion.md#ai-upscaling-with-intrapaint) for more tips for effective upscaling.
 - AI is excellent at cleaning up rough edges. You can copy/paste whole blocks of content, roughly scale and transform image regions, or drop in mismatched sketches, and a quick inpainting pass will clean it up easily.
 
 |                         ![Example 1: Rough photomanipulation](../examples/photomanipulation_rough.png)                         |           ![Example 2: Photomanipulation polished](../examples/photomanipulation_polished.png)            |

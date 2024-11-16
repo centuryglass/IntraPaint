@@ -8,10 +8,11 @@ Most of the functionality in draggable_tabs is handled within the TabBar, includ
 - Displaying a set of optional tab bar widgets for each Tab, except when that tab's main content widget is showing.
 - Accepting Tabs dragged from other TabBars
 """
-from typing import Optional, List
+from typing import Optional
 
 from PySide6.QtCore import Signal, Qt, QPointF, QLine, QSize, QTimer
-from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter
+from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter, \
+    QResizeEvent
 from PySide6.QtWidgets import QWidget, QBoxLayout, QHBoxLayout, QVBoxLayout, QToolButton, QSizePolicy, QFrame
 
 from src.ui.layout.draggable_tabs.tab import Tab
@@ -58,15 +59,15 @@ class TabBar(QFrame):
         self._active_tab: Optional[Tab] = None
 
         # Remaining layout contents: all tabs, a spacer, then all additional widgets
-        self._tabs: List[Tab] = []
+        self._tabs: list[Tab] = []
         self._spacer_widget = QWidget(self)
         self._layout.addWidget(self._spacer_widget, stretch=5)
-        self._widgets: List[QWidget] = []
+        self._widgets: list[QWidget] = []
 
         # Track pending drag and drop state:
         self._insert_pos: Optional[int] = None
         self._insert_index: Optional[int] = None
-        self._drag_list: Optional[List[QWidget] | List[Tab]] = None
+        self._drag_list: Optional[list[QWidget] | list[Tab]] = None
         self.setAcceptDrops(True)
 
         # Track active tab, tab widget open/close state:
@@ -214,6 +215,7 @@ class TabBar(QFrame):
             self.add_widget(tab_bar_widget, widget_insert_idx)
             widget_insert_idx += 1
         self.tab_added.emit(tab)
+        self._update_fixed_size()
         if self.active_tab is None:
             self.active_tab = tab
             self.tab_clicked.emit(tab)
@@ -272,6 +274,7 @@ class TabBar(QFrame):
             self._toggle_button.setEnabled(False)
             self._toggle_button.setVisible(False)
         self._update_widget_order()
+        self._update_fixed_size()
 
     def remove_widget(self, widget: QWidget) -> None:
         """Remove a widget from the bar."""
@@ -309,7 +312,7 @@ class TabBar(QFrame):
         self._update_widget_order()
 
     @property
-    def tabs(self) -> List[Tab]:
+    def tabs(self) -> list[Tab]:
         """Returns all tabs in this tab bar."""
         return list(self._tabs)
 
@@ -381,6 +384,14 @@ class TabBar(QFrame):
             self._layout.insertWidget(layout_idx, non_tab_widget)
             widget_idx += 1
             layout_idx += 1
+
+    def _update_fixed_size(self) -> None:
+        if self._orientation == Qt.Orientation.Horizontal:
+            self.setMinimumHeight(self.sizeHint().height())
+            self.setMaximumHeight(self.sizeHint().height())
+        else:
+            self.setMinimumWidth(self.sizeHint().width())
+            self.setMaximumWidth(self.sizeHint().width())
 
     def _alignment(self) -> Qt.AlignmentFlag:
         if self._orientation == Qt.Orientation.Horizontal:
@@ -550,3 +561,7 @@ class TabBar(QFrame):
             else:
                 painter.drawLine(QLine(0, self._insert_pos, self.width(), self._insert_pos))
         painter.end()
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+        """Re-apply size restrictions when the widget size changes."""
+        self._update_fixed_size()

@@ -1,5 +1,7 @@
 """Represents a value with a fixed type, descriptive metadata, and optional limitations and defaults."""
-from typing import Any, Optional, TypeAlias, List, cast
+import json
+from copy import copy, deepcopy
+from typing import Optional, TypeAlias, cast, Any, TypedDict, NotRequired
 
 from PySide6.QtCore import QSize
 
@@ -44,10 +46,30 @@ def get_parameter_type(value: Any) -> str:
     raise TypeError(f'Unsupported type encountered: {type(value)}')
 
 
-ParamType: TypeAlias = int | float | str | bool | QSize | list | dict
+ParamType: TypeAlias = int | float | str | bool | QSize | list[Any] | dict[str, Any]
+ParamTypeList: TypeAlias = (list[int] | list[float] | list[str] | list[bool] | list[QSize] | list[list[Any]]
+                            | list[dict[str, Any]])
 
 DynamicFieldWidget: TypeAlias = (BigIntSpinbox | CheckBox | ComboBox | DualToggle | LineEdit | PlainTextEdit |
                                  SizeField | IntSliderSpinbox | FloatSliderSpinbox | PressureCurveInput)
+
+
+class SizeDict(TypedDict):
+    """Format used to serialize a QSize."""
+    width: int
+    height: int
+
+
+class SerializedParameter(TypedDict):
+    """Dictionary format used to serialize a parameter, optionally including an associated value."""
+    name: str
+    value_type: str
+    default_value: NotRequired[ParamType]
+    description: str
+    minimum: NotRequired[int | float | SizeDict]
+    maximum: NotRequired[int | float | SizeDict]
+    step: NotRequired[int | float]
+    options: NotRequired[ParamTypeList | list[SizeDict]]
 
 
 class Parameter:
@@ -61,13 +83,34 @@ class Parameter:
                  minimum: Optional[int | float | QSize] = None,
                  maximum: Optional[int | float | QSize] = None,
                  single_step: Optional[int | float] = None) -> None:
+        """
+        Initializes a new Parameter.
+
+        Parameters:
+        -----------
+        name: str
+            The name this parameter uses when labeling associated input widgets
+        value_type: str
+            A string identifying the type of value being stored.  Valid options are defined in src.util.parameter.py
+            as PARAMETER_TYPES.
+        default_value: Optional[ParamType] = None
+            Initial parameter value, to use if no alternative is specified.
+        description: str = ''
+            Description string to use as a tooltip on associated control widgets.
+        minimum: Optional[int | float] = None
+            Minimum permitted value, ignored if the parameter is not int, float, or QSize.
+        maximum: Optional[int | float] = None
+            Maximum permitted value, ignored if the parameter is not int, float, or QSize.
+        single_step: Optional[int | float] = None
+            Minimum interval between accepted values, ignored if the parameter is not an int or float.
+        """
         self._name = name
         assert len(name) > 0
         if value_type not in PARAMETER_TYPES:
             raise ValueError(f'Invalid parameter type for {name}: {value_type}')
         self._type = value_type
         self._default_value = default_value
-        self._options: Optional[List[ParamType]] = None
+        self._options: Optional[list[ParamType]] = None
         if default_value is not None:
             default_type = get_parameter_type(default_value)
             if default_type != value_type:
@@ -87,13 +130,71 @@ class Parameter:
             if single_step is not None:
                 self.single_step = single_step
 
-    def set_valid_options(self, valid_options: List[ParamType]) -> None:
+    def serialize(self, value: Optional[ParamType] = None) -> str:
+        """Serializes the parameter."""
+        if value is not None:
+            self.validate(value, True)
+        data_dict: SerializedParameter = {
+            'name': self._name,
+            'value_type': self._type,
+            'description': self.description
+        }
+
+        def _converting_qsize(data_value: ParamType) -> ParamType | SizeDict:
+            if isinstance(data_value, QSize):
+                return {'width': data_value.width(), 'height': data_value.height()}
+            return data_value
+        if self._default_value is not None:
+            data_dict['default_value'] = _converting_qsize(self._default_value)
+        if self._minimum is not None:
+            data_dict['minimum'] = cast(int | float | SizeDict, _converting_qsize(self._minimum))
+        if self._maximum is not None:
+            data_dict['maximum'] = cast(int | float | SizeDict, _converting_qsize(self._maximum))
+        if self._step is not None:
+            data_dict['step'] = self._step
+        if self._options is not None:
+            data_dict['options'] = [_converting_qsize(option) for option in self._options]
+        return json.dumps(data_dict)
+
+    @staticmethod
+    def deserialize(data_string: str) -> 'Parameter':
+        """Parses and returns a serialized parameter, possibly with an associated value. """
+        data_dict = cast(SerializedParameter, json.loads(data_string))
+
+        def _creating_qsize(data_value: Optional[ParamType | SizeDict]) -> Optional[ParamType]:
+            if isinstance(data_value, dict) and len(data_value) == 2 and 'width' in data_value \
+                    and 'height' in data_value:
+                data_value = cast(SizeDict, data_value)
+                return QSize(data_value['width'], data_value['height'])
+            assert data_value is None or isinstance(data_value, ParamType)
+            return data_value
+
+        min_val = _creating_qsize(data_dict.get('minimum', None))
+        max_val = _creating_qsize(data_dict.get('maximum', None))
+        default_val = _creating_qsize(data_dict.get('default_value', None))
+        step = data_dict.get('step', None)
+        options = data_dict.get('options', None)
+        parameter = Parameter(data_dict['name'], data_dict['value_type'], default_val, data_dict['description'],
+                              min_val, max_val, step)
+        if options is not None:
+            parameter.set_valid_options(options)
+        return parameter
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> 'Parameter':
+        copy_param = Parameter(self._name, self._type, copy(self._default_value), copy(self._description),
+                               copy(self._minimum), copy(self._maximum), copy(self.single_step))
+        if self._options is not None:
+            copy_param.set_valid_options(deepcopy(self._options, memo))
+        memo[id(self)] = copy_param
+        return copy_param
+
+    def set_valid_options(self, valid_options: ParamTypeList) -> None:
         """Set a restricted list of valid options to accept."""
         for option in valid_options:
             option_type = get_parameter_type(option)
             if option_type != self._type:
                 raise TypeError(f'Param {self.name}: option parameter type {option_type} does not match value type'
-                                f' {self._type}')
+                                f' {self._type}, options={valid_options}')
             if self._maximum is not None or self._minimum is not None:
                 assert isinstance(option, (int, float, QSize))
                 if not _in_range(option, self._minimum, self._maximum):
@@ -104,7 +205,7 @@ class Parameter:
         self._options = [*valid_options]
 
     @property
-    def options(self) -> Optional[List[ParamType]]:
+    def options(self) -> Optional[ParamTypeList]:
         """Accesses the list of accepted options, if any."""
         if self._options is None:
             return None
@@ -191,12 +292,12 @@ class Parameter:
             return False
         if self._options is not None and len(self._options) > 0 and test_value not in self._options:
             if raise_on_failure:
-                raise ValueError(f'{self.name} parameter: {test_value} not found in {len(self._options)} available'
+                raise ValueError(f'{self.name} parameter: "{test_value}" not found in {len(self._options)} available'
                                  f' options {self._options}')
             return False
         return True
 
-    def get_input_widget(self, multi_line=False) -> DynamicFieldWidget:
+    def get_input_widget(self, multi_line=False, allow_dual_toggle=True) -> DynamicFieldWidget:
         """Creates a widget that can be used to set this parameter."""
         if multi_line and self._type != TYPE_STR:
             raise ValueError(f'multi_line=True is only valid for text parameters, value {self.name}'
@@ -205,7 +306,7 @@ class Parameter:
             if multi_line:
                 raise ValueError('multi_line=True is not valid for parameters with fixed option lists')
             assert self.type_name == TYPE_STR, 'Widget support for non-string option lists is not implemented'
-            if len(self._options) == 2:
+            if len(self._options) == 2 and allow_dual_toggle:
                 toggle = DualToggle(parent=None, options=cast(list[str], self.options))
                 assert self._default_value is None or isinstance(self._default_value, str)
                 toggle.setValue(self._default_value)

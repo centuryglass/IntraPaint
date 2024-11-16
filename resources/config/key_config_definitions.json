@@ -881,17 +881,17 @@
     "prompt_style_shortcut": {
         "label": "View saved prompt styles",
         "category": "Menu Shortcuts",
-        "subcategory": "Stable-Diffusion Menu",
-        "description": "Access saved stable-diffusion prompt styles",
+        "subcategory": "Stable Diffusion Menu",
+        "description": "Access saved Stable Diffusion prompt styles",
         "type": "string",
         "default": "Ctrl+Alt+1",
         "saved": true
     },
     "lora_shortcut": {
-        "label": "View LORA models",
+        "label": "View LoRA models",
         "category": "Menu Shortcuts",
-        "subcategory": "Stable-Diffusion Menu",
-        "description": "Access available LORA models.",
+        "subcategory": "Stable Diffusion Menu",
+        "description": "Access available LoRA models.",
         "type": "string",
         "default": "Ctrl+Alt+2",
         "saved": true
@@ -899,10 +899,19 @@
     "lcm_mode_shortcut": {
         "label": "LCM mode",
         "category": "Menu Shortcuts",
-        "subcategory": "Stable-Diffusion Menu",
-        "description": "Apply appropriate settings for the LCM LORA.",
+        "subcategory": "Stable Diffusion Menu",
+        "description": "Apply appropriate settings for the LCM LoRA.",
         "type": "string",
         "default": "F10",
+        "saved": true
+    },
+    "help_index_shortcut": {
+        "label": "Open IntraPaint help pages",
+        "category": "Menu Shortcuts",
+        "subcategory": "Help Menu",
+        "description": "Open a page with links to all of IntraPaint's documentation and tutorials in a web browser.",
+        "type": "string",
+        "default": "F1",
         "saved": true
     }
 }

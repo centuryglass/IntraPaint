@@ -1,6 +1,5 @@
 """Use the Config module's data sharing capabilities to cache temporary values."""
 from argparse import Namespace
-from typing import Dict
 
 from PySide6.QtCore import QRect, QTimer
 from PySide6.QtWidgets import QWidget, QApplication
@@ -35,8 +34,8 @@ class Cache(Config, metaclass=Singleton):
         self._geometry_timer = QTimer()
         self._geometry_timer.setInterval(GEOMETRY_CHECK_INTERVAL)
         self._geometry_timer.timeout.connect(self._check_bounds)
-        self._final_bounds: Dict[QWidget, QRect] = {}
-        self._last_bounds: Dict[QWidget, QRect] = {}
+        self._final_bounds: dict[QWidget, QRect] = {}
+        self._last_bounds: dict[QWidget, QRect] = {}
 
     def apply_args(self, args: Namespace) -> None:
         """Loads expected parameters from command line arguments"""
@@ -102,6 +101,7 @@ class Cache(Config, metaclass=Singleton):
     BATCH_SIZE: str
     CANVAS_RESIZE_CROP_LAYERS: str
     CANVAS_RESIZE_LAYER_MODE: str
+    CLIP_SKIP: str
     CLONE_STAMP_TOOL_ANTIALIAS: str
     CLONE_STAMP_TOOL_BRUSH_SIZE: str
     CLONE_STAMP_TOOL_HARDNESS: str
@@ -110,16 +110,18 @@ class Cache(Config, metaclass=Singleton):
     CLONE_STAMP_TOOL_PRESSURE_OPACITY: str
     CLONE_STAMP_TOOL_PRESSURE_SIZE: str
     COLOR_SELECT_MODE: str
-    CONTROLNET_ARGS_0: str
-    CONTROLNET_ARGS_1: str
-    CONTROLNET_ARGS_2: str
-    CONTROLNET_CONTROL_TYPES: str
-    CONTROLNET_DOWNSAMPLE_RATE: str
-    CONTROLNET_MODELS: str
-    CONTROLNET_MODULES: str
+    COMFYUI_CACHED_SCALING_MODE: str
+    COMFYUI_INPAINTING_MODEL: str
+    COMFYUI_MODEL_CONFIG: str
+    COMFYUI_TILED_VAE: str
+    COMFYUI_TILED_VAE_TILE_SIZE: str
+    CONTROLNET_ARGS_0_COMFYUI: str
+    CONTROLNET_ARGS_0_WEBUI: str
+    CONTROLNET_ARGS_1_COMFYUI: str
+    CONTROLNET_ARGS_1_WEBUI: str
+    CONTROLNET_ARGS_2_COMFYUI: str
+    CONTROLNET_ARGS_2_WEBUI: str
     CONTROLNET_TAB_BAR: str
-    CONTROLNET_UPSCALING: str
-    CONTROLNET_VERSION: str
     CUTN: str
     DENOISING_STRENGTH: str
     DRAW_TOOL_ANTIALIAS: str
@@ -153,8 +155,10 @@ class Cache(Config, metaclass=Singleton):
     FILTER_TOOL_SELECTED_FILTER: str
     GENERATION_SIZE: str
     GENERATION_TAB_BAR: str
+    GENERATOR_SCALING_MODES: str
     GLID_SERVER_URL: str
     GUIDANCE_SCALE: str
+    HYPERNETWORK_MODELS: str
     IMAGE_LAYER_SCALING_BEHAVIOR: str
     INPAINT_FULL_RES: str
     INPAINT_FULL_RES_PADDING: str
@@ -179,9 +183,19 @@ class Cache(Config, metaclass=Singleton):
     SAVED_LAYER_WINDOW_POS: str
     SAVED_MAIN_WINDOW_POS: str
     SAVED_NAVIGATION_WINDOW_POS: str
+    SCALING_MODE: str
+    SCHEDULER: str
     SCRIPTS_IMG2IMG: str
     SCRIPTS_TXT2IMG: str
-    SD_SERVER_URL: str
+    SD_COMFYUI_SERVER_URL: str
+    SD_MODEL: str
+    SD_UPSCALING_AVAILABLE: str
+    SD_UPSCALING_CONTROLNET_TILE_MODELS: str
+    SD_UPSCALING_CONTROLNET_TILE_PREPROCESSORS: str
+    SD_UPSCALING_CONTROLNET_TILE_SETTINGS: str
+    SD_UPSCALING_DENOISING_STRENGTH: str
+    SD_UPSCALING_STEP_COUNT: str
+    SD_WEBUI_SERVER_URL: str
     SEED: str
     SELECTION_BRUSH_SIZE: str
     SHAPE_TOOL_ANTIALIAS: str
@@ -207,4 +221,14 @@ class Cache(Config, metaclass=Singleton):
     TEXT_BACKGROUND_COLOR: str
     TEXT_TOOL_PARAMS: str
     TOOL_TAB_BAR: str
-    UPSCALE_METHOD: str
+    ULTIMATE_UPSCALE_SCRIPT_AVAILABLE: str
+    USE_STABLE_DIFFUSION_UPSCALING: str
+    USE_ULTIMATE_UPSCALE_SCRIPT: str
+    WEBUI_CACHED_SCALING_MODE: str
+    WEBUI_LAST_SUBSEED: str
+    WEBUI_RESTORE_FACES: str
+    WEBUI_SEED_RESIZE: str
+    WEBUI_SEED_RESIZE_ENABLED: str
+    WEBUI_SUBSEED: str
+    WEBUI_SUBSEED_STRENGTH: str
+    WEBUI_TILING: str

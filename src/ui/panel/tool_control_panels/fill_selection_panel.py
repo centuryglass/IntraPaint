@@ -6,6 +6,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.selection_layer import SelectionLayer
+from src.tools.base_tool import BaseTool
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.slider_spinbox import FloatSliderSpinbox
 from src.ui.layout.divider import Divider
@@ -28,8 +29,8 @@ FILL_BY_SELECTION_TOOLTIP = _tr('Fill based on selection shape only.')
 class FillSelectionPanel(SelectionPanel):
     """Selection panel for the SelectionFillTool class."""
 
-    def __init__(self, selection_layer: SelectionLayer) -> None:
-        super().__init__(selection_layer)
+    def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool) -> None:
+        super().__init__(selection_layer, selection_tool)
         cache = Cache()
         threshold_slider = cache.get_control_widget(Cache.FILL_THRESHOLD)
         assert isinstance(threshold_slider, FloatSliderSpinbox)
@@ -45,7 +46,7 @@ class FillSelectionPanel(SelectionPanel):
         checkbox_row.addWidget(toggle_hint)
 
         def _try_toggle() -> bool:
-            if not self.isVisible():
+            if not self.selection_tool_is_active:
                 return False
             sample_merged_checkbox.toggle()
             return True

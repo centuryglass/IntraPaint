@@ -1,6 +1,6 @@
 """Generate images using GLID-3-XL running on a web server."""
 from argparse import Namespace
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 
 import requests
 from PySide6.QtCore import Signal, QThread, QSize
@@ -11,14 +11,13 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.glid3_xl_generator import GLID_PREVIEW_IMAGE, GLID_GENERATOR_DESCRIPTION
 from src.controller.image_generation.image_generator import ImageGenerator
-from src.controller.image_generation.sd_webui_generator import URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, \
-    URL_REQUEST_TITLE
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.glid_panel import GlidPanel
 from src.ui.window.main_window import MainWindow
-from src.util.shared_constants import EDIT_MODE_INPAINT
+from src.util.shared_constants import EDIT_MODE_INPAINT, URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, \
+    URL_REQUEST_TITLE
 from src.util.visual.image_utils import image_to_base64, qimage_from_base64
 from src.util.visual.text_drawing_utils import rich_text_code_block
 
@@ -264,7 +263,7 @@ class Glid3WebserviceGenerator(ImageGenerator):
 
     def generate(self,
                  status_signal: Signal,
-                 source_image: Optional[QImage] = None,
+                 source_image: QImage,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. are loaded from AppConfig as needed.
 
@@ -272,7 +271,7 @@ class Glid3WebserviceGenerator(ImageGenerator):
         ----------
         status_signal : Signal[str]
             Signal to emit when status updates are available.
-        source_image : QImage, optional
+        source_image : QImage
             Image used as a basis for the edited image.
         mask_image : QImage, optional
             Mask marking edited image region.
@@ -312,7 +311,7 @@ class Glid3WebserviceGenerator(ImageGenerator):
 
         # POST to server_url, check response
         # If invalid or error response, throw Exception
-        samples: Dict[str, Any] = {}
+        samples: dict[str, Any] = {}
         in_progress = True
         error_count = 0
         max_errors = 10

@@ -45,7 +45,7 @@ class ShapeSelectionTool(BaseTool):
         assert scene is not None
         self._scene = scene
         self._image_stack = image_stack
-        self._control_panel = ShapeSelectionPanel(image_stack.selection_layer)
+        self._control_panel = ShapeSelectionPanel(image_stack.selection_layer, self)
         self._selection_handler = ClickAndDragSelection(scene)
         self._dragging = False
         self._clearing = False

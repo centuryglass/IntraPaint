@@ -4,7 +4,7 @@ Provides an interface for choosing between AI-generated changes to selected imag
 import math
 import sys
 import time
-from typing import Callable, Optional, cast, List
+from typing import Callable, Optional, cast
 
 from PIL import Image
 from PySide6.QtCore import Qt, QRect, QSize, QSizeF, QRectF, QEvent, Signal, QPointF, QObject, QPoint
@@ -139,9 +139,9 @@ class GeneratedImageSelector(QWidget):
         self._image_stack = image_stack
         self._generation_area = image_stack.generation_area
         self._close_selector = close_selector
-        self._options: List[_ImageOption] = []
-        self._outlines: List[Outline] = []
-        self._selections: List[PolygonOutline] = []
+        self._options: list[_ImageOption] = []
+        self._outlines: list[Outline] = []
+        self._selections: list[PolygonOutline] = []
         self._loading_image = QImage()
         self._zoomed_in = False
         self._zoom_to_changes = AppConfig().get(AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED)

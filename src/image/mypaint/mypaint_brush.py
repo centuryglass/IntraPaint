@@ -4,7 +4,7 @@ import os
 import sys
 from ctypes import c_void_p, c_float, c_char_p, c_int
 from multiprocessing import Process, Pipe
-from typing import Optional, Any, List
+from typing import Optional, Any
 
 from PySide6.QtCore import Qt, QByteArray, QFile, QIODevice
 from PySide6.QtGui import QColor
@@ -169,7 +169,7 @@ class MyPaintBrush:
     STROKE_HOLDTIME: int
     STROKE_THRESHOLD: int
     TRACKING_NOISE: int
-    _setting_info: List['BrushSetting']
+    _setting_info: list['BrushSetting']
 
 
 class BrushSetting:

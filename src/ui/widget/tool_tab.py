@@ -1,6 +1,6 @@
 """Tab widget associated with the ToolBar panel.  Connects to the ToolController to keep an up-to-date set of toolbar
    widgets for selecting the active tool."""
-from typing import Dict, Optional, List
+from typing import Optional
 
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QWidget, QApplication
@@ -35,8 +35,8 @@ class ToolTab(Tab):
     def __init__(self, tool_panel: QWidget, tool_controller: ToolController, parent: Optional[QWidget] = None) -> None:
         super().__init__(TOOL_TAB_NAME, tool_panel, KeyConfig.SELECT_TOOL_TAB, parent=parent)
         self.setIcon(QIcon(ICON_PATH_TOOL_TAB))
-        self._toolbar_tool_widgets: Dict[BaseTool, QWidget] = {}
-        self._recent_tools: List[BaseTool] = []
+        self._toolbar_tool_widgets: dict[BaseTool, QWidget] = {}
+        self._recent_tools: list[BaseTool] = []
         self._recent_tool_count = AppConfig().get(AppConfig.TOOLBAR_TOOL_BUTTON_COUNT)
         self._tool_controller = tool_controller
         recent_tool_list = Cache().get(Cache.RECENT_TOOLS)

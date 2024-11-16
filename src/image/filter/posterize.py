@@ -1,5 +1,5 @@
 """Simplify images by reducing color count."""
-from typing import List, Callable
+from typing import Callable
 
 from PIL import ImageOps
 from PySide6.QtWidgets import QApplication
@@ -74,6 +74,6 @@ class PosterizeFilter(ImageFilter):
         painter.end()
         return filtered_image
 
-    def get_parameters(self) -> List[Parameter]:
+    def get_parameters(self) -> list[Parameter]:
         """Return parameter definitions for the posterize filter."""
         return [Parameter(PARAM_LABEL, TYPE_INT, 3, PARAM_TEXT, 1, 8, 1)]

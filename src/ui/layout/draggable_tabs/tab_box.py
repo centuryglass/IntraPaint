@@ -5,7 +5,7 @@ The sole responsibility of the TabBox is to create, display and provide access t
 content widget if the TabBar is in the open state.
 """
 
-from typing import Optional, List, Set
+from typing import Optional
 
 from PySide6.QtCore import Signal, Qt, QSize
 from PySide6.QtGui import QAction
@@ -38,13 +38,14 @@ class TabBox(BorderedWidget):
         self._layout.setSpacing(0)
         self._layout.setContentsMargins(1, 1, 1, 1)
         self._last_stretch = INITIAL_STRETCH
-        self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         if orientation == Qt.Orientation.Horizontal:
+            self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
             if at_parent_start:
                 self._layout.setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignVCenter)
             else:
                 self._layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignVCenter)
         else:
+            self.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.MinimumExpanding)
             if at_parent_start:
                 self._layout.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignHCenter)
             else:
@@ -114,7 +115,7 @@ class TabBox(BorderedWidget):
         return widget.parent() == self._tab_bar
 
     @property
-    def tabs(self) -> List[Tab]:
+    def tabs(self) -> list[Tab]:
         """Returns all tabs in this tab box."""
         return self._tab_bar.tabs
 
@@ -177,7 +178,7 @@ class TabBox(BorderedWidget):
         total_stretch = 0
         own_idx = -1
         stretch_values = []
-        skipped_indexes: Set[int] = set()
+        skipped_indexes: set[int] = set()
         for i in range(parent_layout.count()):
             stretch = parent_layout.stretch(i)
             total_stretch += stretch
@@ -233,6 +234,8 @@ class TabBox(BorderedWidget):
 
     def _update_tab_content_slot(self, new_tab_content: QWidget) -> None:
         assert self._active_tab is not None and new_tab_content == self._active_tab.content_widget
+        if hasattr(new_tab_content, 'set_orientation'):
+            new_tab_content.set_orientation(self._orientation)
         self.set_active_tab(self._active_tab)
 
     def _box_opened_slot(self, is_open: bool) -> None:
@@ -246,3 +249,9 @@ class TabBox(BorderedWidget):
             if is_open:
                 tab_widget.show()
             self._layout.setStretch(content_index, 1 if is_open else 0)
+        if self._orientation == Qt.Orientation.Horizontal:
+            self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding,
+                               QSizePolicy.Policy.MinimumExpanding if is_open else QSizePolicy.Policy.Fixed)
+        else:
+            self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding if is_open else QSizePolicy.Policy.Fixed,
+                               QSizePolicy.Policy.MinimumExpanding)

@@ -1,5 +1,5 @@
 """Control panel for brush tools that apply size/opacity/hardness cache value changes."""
-from typing import Optional, List, cast
+from typing import Optional, cast
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
@@ -28,7 +28,7 @@ class BrushToolPanel(QWidget):
                  pattern_key: Optional[str] = None,
                  antialias_key: Optional[str] = None,
                  selection_only_label: Optional[str] = None,
-                 added_rows: Optional[List[QWidget | QLayout]] = None) -> None:
+                 added_rows: Optional[list[QWidget | QLayout]] = None) -> None:
         super().__init__()
         self._layout = QVBoxLayout(self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)

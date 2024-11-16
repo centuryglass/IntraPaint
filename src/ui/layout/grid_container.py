@@ -1,7 +1,7 @@
 """Arrange equal-sized widgets in a grid with dimensions that adjust based on available space."""
 import logging
 import math
-from typing import Optional, List, Tuple
+from typing import Optional
 
 from PySide6.QtCore import QSize, Qt, QRect
 from PySide6.QtGui import QResizeEvent
@@ -19,7 +19,7 @@ class GridContainer(QWidget):
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self._children: List[QWidget] = []
+        self._children: list[QWidget] = []
         self._layout = QGridLayout(self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         self._max_rows = DEFAULT_MAX
@@ -142,7 +142,7 @@ class GridContainer(QWidget):
         """Return a null sizeHint so the grid adapts to available space as needed."""
         return QSize()
 
-    def _get_constrained_grid_bounds(self, ignore_bounds=False) -> Tuple[int, int, int, int]:
+    def _get_constrained_grid_bounds(self, ignore_bounds=False) -> tuple[int, int, int, int]:
         # Rows/column count must be within range, can't be less than 1:
         min_cols, max_cols, min_rows, max_rows = (max(edge, 1) for edge in (self._min_columns, self._max_columns,
                                                                             self._min_rows, self._max_rows))

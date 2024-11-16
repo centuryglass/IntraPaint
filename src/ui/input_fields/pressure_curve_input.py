@@ -1,6 +1,6 @@
 """Widget used to adjust a tablet pressure curve."""
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from PySide6.QtCore import Signal, QRect, QSize, QPoint
 from PySide6.QtGui import QPaintEvent, QPainter, QMouseEvent, Qt, QAction
@@ -37,9 +37,9 @@ class PressureCurveInput(QFrame):
 
     valueChanged = Signal(list)
 
-    def __init__(self, curve_values: Optional[List[float]] = None) -> None:
+    def __init__(self, curve_values: Optional[list[float]] = None) -> None:
         super().__init__()
-        self._pressure_curve: List[float] = []
+        self._pressure_curve: list[float] = []
         self._drag_point: Optional[int] = None
         if curve_values is not None:
             try:
@@ -54,11 +54,11 @@ class PressureCurveInput(QFrame):
         self._reset_action.triggered.connect(self._set_defaults)
         self.addAction(self._reset_action)
 
-    def value(self) -> List[float]:
+    def value(self) -> list[float]:
         """Access the pressure curve values."""
         return list(self._pressure_curve)
 
-    def setValue(self, curve_values: List[float]) -> None:
+    def setValue(self, curve_values: list[float]) -> None:
         """Updates pressure curve values."""
         if len(curve_values) != CURVE_POINT_COUNT:
             raise ValueError(f'Expected {CURVE_POINT_COUNT} pressure curve points, got {len(curve_values)}')
@@ -186,9 +186,3 @@ class PressureCurveInput(QFrame):
             self._drag_point = None
             self.valueChanged.emit(self.value())
             self.update()
-
-
-
-
-
-

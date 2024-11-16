@@ -7,7 +7,7 @@ import importlib.util
 import os
 import re
 import sys
-from typing import Dict, Tuple, TypeAlias
+from typing import TypeAlias
 
 from PySide6.QtWidgets import QApplication
 
@@ -38,19 +38,20 @@ def type_hint(value):
         return 'str'
     if isinstance(value, bool):
         return 'bool'
+
     def iter_hint(iterable):
-        group_hints = set(type_hint(v) for v in iterable)
+        group_hints = list(set(type_hint(v) for v in iterable))
         if len(group_hints) == 1:
             return group_hints[0]
         return 'Any'
     if isinstance(value, set):
-        return f'Set[{iter_hint(value)}]'
+        return f'set[{iter_hint(value)}]'
     if isinstance(value, tuple):
-        return f'Tuple[{iter_hint(value)}]'
+        return f'tuple[{iter_hint(value)}]'
     if isinstance(value, list):
-        return f'List[{iter_hint(value)}'
+        return f'list[{iter_hint(value)}'
     if isinstance(value, dict):
-        return f'Dict[{iter_hint(value.keys())},{iter_hint(value.values())}]'
+        return f'dict[{iter_hint(value.keys())},{iter_hint(value.values())}]'
     print(f'warning: unexpected value type: "{value}" (type {type(value)}), returning Any')
     return 'Any'
 
@@ -59,8 +60,8 @@ with open(module_path, 'r', encoding='utf-8') as file:
     file_text = file.read()
 
 pattern = re.compile(r'(:?^|\n)[ \t]*class (?P<class_name>[a-zA-Z0-9_]*)(?:\:|\()[^\n]*\n+(?P<indent>[ \t]*)')
-DataDict: TypeAlias = Dict[str, str | int]
-class_items: Dict[str, DataDict] = {}
+DataDict: TypeAlias = dict[str, str | int]
+class_items: dict[str, DataDict] = {}
 search_text = file_text
 file_idx = 0
 while (match := re.search(pattern, file_text[file_idx:])) is not None:
@@ -78,7 +79,7 @@ while (match := re.search(pattern, file_text[file_idx:])) is not None:
     class_items[class_name] = {'start': class_idx, 'end': end_idx, 'indent': indent}
     file_idx = end_idx
 
-insertions: Dict[int, Tuple[str, DataDict]] = {}
+insertions: dict[int, tuple[str, DataDict]] = {}
 
 
 for class_name, data in class_items.items():

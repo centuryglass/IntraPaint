@@ -43,12 +43,12 @@ import os
 import re
 import sys
 from argparse import Namespace
-from typing import Optional, Any, List, Tuple, Callable, Set
+from typing import Optional, Any, Callable
 
 from PIL import Image, UnidentifiedImageError, ExifTags
 from PIL.ExifTags import IFD
-from PySide6.QtCore import QSize
-from PySide6.QtGui import QImage, Qt, QIcon
+from PySide6.QtCore import QSize, QUrl
+from PySide6.QtGui import QImage, Qt, QIcon, QDesktopServices
 from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
 
 from src.config.application_config import AppConfig
@@ -58,7 +58,9 @@ from src.controller.image_generation.glid3_webservice_generator import Glid3Webs
 from src.controller.image_generation.glid3_xl_generator import Glid3XLGenerator
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.controller.image_generation.null_generator import NullGenerator
-from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator, DEFAULT_SD_URL
+from src.controller.image_generation.sd_comfyui_generator import SDComfyUIGenerator, DEFAULT_COMFYUI_URL
+from src.controller.image_generation.sd_generator import MENU_STABLE_DIFFUSION
+from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator, DEFAULT_WEBUI_URL
 from src.controller.image_generation.test_generator import TestGenerator
 from src.controller.tool_controller import ToolController
 from src.hotkey_filter import HotkeyFilter
@@ -132,9 +134,10 @@ TOOL_PANEL_LAYER_TAB = _tr('Layers')
 TOOL_PANEL_COLOR_TAB = _tr('Color')
 TOOL_PANEL_NAV_TAB = _tr('Navigation')
 
-GENERATION_MODE_SD_WEBUI = 'stable'
-GENERATION_MODE_LOCAL_GLID = 'local'
-GENERATION_MODE_WEB_GLID = 'web'
+GENERATION_MODE_SD_WEBUI = 'stable-diffusion-webui'
+GENERATION_MODE_COMFYUI = 'comfyui'
+GENERATION_MODE_LOCAL_GLID = 'glid-local'
+GENERATION_MODE_WEB_GLID = 'glid-api'
 GENERATION_MODE_NONE = 'none'
 GENERATION_MODE_TEST = 'mock'
 GENERATION_MODE_AUTO = 'auto'
@@ -145,6 +148,7 @@ MENU_IMAGE = _tr('Image')
 MENU_SELECTION = _tr('Selection')
 MENU_LAYERS = _tr('Layers')
 MENU_FILTERS = _tr('Filters')
+MENU_HELP = _tr('Help')
 
 SUBMENU_MOVE = _tr('Move')
 SUBMENU_SELECT = _tr('Select')
@@ -156,6 +160,7 @@ ICON_PATH_GEN_TAB = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
 ICON_PATH_LAYER_TAB = f'{PROJECT_DIR}/resources/icons/tabs/layers.svg'
 ICON_PATH_NAVIGATION_TAB = f'{PROJECT_DIR}/resources/icons/tabs/navigation.svg'
 ICON_PATH_COLOR_TAB = f'{PROJECT_DIR}/resources/icons/tabs/colors.svg'
+HELP_INDEX_LINK = 'https://github.com/centuryglass/IntraPaint/blob/master/doc/help_index.md'
 
 GENERATOR_LOAD_ERROR_TITLE = _tr('Loading image generator failed')
 GENERATOR_LOAD_ERROR_MESSAGE = _tr('Unable to load the {generator_name} image generator')
@@ -215,12 +220,12 @@ NO_COLOR_SAVE_TITLE = _tr('Image saved without color')
 NO_COLOR_SAVE_MESSAGE = _tr('The {file_format} format saves the image without color. Use another format if you want'
                             ' to preserve image colors.')
 
-IGNORED_APPCONFIG_CATEGORIES = (QApplication.translate('application_config', 'Stable-Diffusion'),
+IGNORED_APPCONFIG_CATEGORIES = (QApplication.translate('application_config', 'Stable Diffusion'),
                                 QApplication.translate('application_config', 'GLID-3-XL'))
 DEV_APPCONFIG_CATEGORY = QApplication.translate('application_config', 'Developer')
 
 
-def _get_config_categories() -> List[str]:
+def _get_config_categories() -> list[str]:
     categories = AppConfig().get_categories()
     for ignored in IGNORED_APPCONFIG_CATEGORIES:
         if ignored in categories:
@@ -274,6 +279,20 @@ class AppController(MenuBuilder):
             image.fill(Cache().get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, Qt.GlobalColor.white))
             self._image_stack.load_image(image)
 
+        # Set up menus in the expected order, so menus don't need to be shown in the order they're initialized:
+        ordered_menus = [
+            MENU_FILE,
+            MENU_EDIT,
+            MENU_IMAGE,
+            MENU_SELECTION,
+            MENU_LAYERS,
+            MENU_FILTERS,
+            MENU_STABLE_DIFFUSION,
+            MENU_HELP
+        ]
+        for menu_name in ordered_menus:
+            self.add_menu(menu_name)
+
         self._generator: Optional[ImageGenerator] = None
 
         # Load settings:
@@ -295,7 +314,7 @@ class AppController(MenuBuilder):
 
         # Since image filter menus follow a very simple pattern, add them here instead of using @menu_action.
         # At the same time, make sure the filter tool's list of available options contains all filters.
-        filter_class_names: List[str] = []
+        filter_class_names: list[str] = []
         for filter_class in (RGBColorBalanceFilter,
                              BrightnessContrastFilter,
                              BlurFilter,
@@ -451,7 +470,8 @@ class AppController(MenuBuilder):
 
         # Prepare image generator options, and select one based on availability and command line arguments.
         self._null_generator = NullGenerator(self._window, self._image_stack)
-        self._sd_generator = SDWebUIGenerator(self._window, self._image_stack, args)
+        self._sd_webui_generator = SDWebUIGenerator(self._window, self._image_stack, args)
+        self._sd_comfyui_generator = SDComfyUIGenerator(self._window, self._image_stack, args)
         if not is_pyinstaller_bundle():
             self._glid_generator = Glid3XLGenerator(self._window, self._image_stack, args)
         self._glid_web_generator = Glid3WebserviceGenerator(self._window, self._image_stack, args)
@@ -462,7 +482,9 @@ class AppController(MenuBuilder):
             case _ if mode == GENERATION_MODE_NONE:
                 self.load_image_generator(self._null_generator)
             case _ if mode == GENERATION_MODE_SD_WEBUI:
-                self.load_image_generator(self._sd_generator)
+                self.load_image_generator(self._sd_webui_generator)
+            case _ if mode == GENERATION_MODE_COMFYUI:
+                self.load_image_generator(self._sd_comfyui_generator)
             case _ if mode == GENERATION_MODE_WEB_GLID and not is_pyinstaller_bundle():
                 self.load_image_generator(self._glid_web_generator)
             case _ if mode == GENERATION_MODE_LOCAL_GLID and not is_pyinstaller_bundle():
@@ -473,13 +495,17 @@ class AppController(MenuBuilder):
                 if mode != GENERATION_MODE_AUTO:
                     logger.error(f'Unexpected mode {mode}, defaulting to mode=auto')
                 server_url = args.server_url
-                if server_url == DEFAULT_SD_URL:
-                    self.load_image_generator(self._sd_generator)
-                elif server_url == DEFAULT_GLID_URL and not is_pyinstaller_bundle():
+                if server_url == DEFAULT_WEBUI_URL:
+                    self.load_image_generator(self._sd_webui_generator)
+                elif server_url == DEFAULT_COMFYUI_URL:
+                    self.load_image_generator(self._sd_comfyui_generator)
+                elif server_url == DEFAULT_GLID_URL:
                     self.load_image_generator(self._glid_web_generator)
-                if self._sd_generator.is_available():
-                    self.load_image_generator(self._sd_generator)
-                elif not is_pyinstaller_bundle() and self._glid_web_generator.is_available():
+                if self._sd_webui_generator.is_available():
+                    self.load_image_generator(self._sd_webui_generator)
+                elif self._sd_comfyui_generator.is_available():
+                    self.load_image_generator(self._sd_comfyui_generator)
+                elif self._glid_web_generator.is_available():
                     self.load_image_generator(self._glid_generator)
                 elif args.dev:
                     self.load_image_generator(self._test_generator)
@@ -517,11 +543,12 @@ class AppController(MenuBuilder):
 
     def load_image_generator(self, generator: ImageGenerator) -> None:
         """Load an image generator, updating controls and settings."""
-        if not generator.configure_or_connect():
-            show_error_dialog(self._window, GENERATOR_LOAD_ERROR_TITLE,
-                              GENERATOR_LOAD_ERROR_MESSAGE.format(generator_name=generator.get_display_name()))
-            return
+        # if not generator.is_available():
+        #     show_error_dialog(self._window, GENERATOR_LOAD_ERROR_TITLE,
+        #                       GENERATOR_LOAD_ERROR_MESSAGE.format(generator_name=generator.get_display_name()))
+        #     return
         # unload last generator:
+        last_generator = self._null_generator if self._generator is None else self._generator
         if self._generator is not None:
             for tab in self._generator.get_extra_tabs():
                 self._window.remove_tab(tab)
@@ -533,6 +560,12 @@ class AppController(MenuBuilder):
             self._generator.disconnect_or_disable()
 
         # load new generator:
+        if not generator.configure_or_connect():
+            show_error_dialog(self._window, GENERATOR_LOAD_ERROR_TITLE,
+                              GENERATOR_LOAD_ERROR_MESSAGE.format(generator_name=generator.get_display_name()))
+            assert generator != self._null_generator
+            self.load_image_generator(self._null_generator if last_generator == generator else last_generator)
+            return
         self._generator = generator
         self._generator.menu_window = self._window
         self._generator.init_settings(self._settings_modal)
@@ -642,13 +675,13 @@ class AppController(MenuBuilder):
             return app_state in data.valid_app_states
 
         selection_is_empty = self._image_stack.selection_layer.empty
-        selection_methods: Set[Callable[..., None]] = {
+        selection_methods: set[Callable[..., None]] = {
             self.grow_selection,
             self.shrink_selection,
             self.crop_image_to_selection,
             self.crop_layer_to_selection
         }
-        unlocked_layer_methods: Set[Callable[..., None]] = {
+        unlocked_layer_methods: set[Callable[..., None]] = {
             self.layer_mirror_horizontal,
             self.layer_mirror_vertical,
             self.layer_rotate_cw,
@@ -661,17 +694,17 @@ class AppController(MenuBuilder):
             self.crop_layer_to_selection
 
         }
-        not_bottom_layer_methods: Set[Callable[..., None]] = {
+        not_bottom_layer_methods: set[Callable[..., None]] = {
             self.select_next_layer,
             self.move_layer_down,
             self.merge_layer_down
         }
-        not_top_layer_methods: Set[Callable[..., None]] = {
+        not_top_layer_methods: set[Callable[..., None]] = {
             self.select_previous_layer,
             self.move_layer_up,
             self.move_layer_to_top
         }
-        not_layer_stack_methods: Set[Callable[..., None]] = {
+        not_layer_stack_methods: set[Callable[..., None]] = {
             self.select_previous_layer,
             self.move_layer_up,
             self.move_layer_down,
@@ -680,13 +713,13 @@ class AppController(MenuBuilder):
             self.copy_layer,
             self.delete_layer
         }
-        not_flat_methods: Set[Callable[..., None]] = {self.flatten_layer}
-        not_layer_group_methods: Set[Callable[..., None]] = {
+        not_flat_methods: set[Callable[..., None]] = {self.flatten_layer}
+        not_layer_group_methods: set[Callable[..., None]] = {
             self.merge_layer_down,
             self.layer_to_image_size
         }
 
-        not_text_layer_methods: Set[Callable[..., None]] = {self.crop_layer_to_content}
+        not_text_layer_methods: set[Callable[..., None]] = {self.crop_layer_to_content}
 
         managed_menu_methods = selection_methods | unlocked_layer_methods | not_bottom_layer_methods \
                                | not_top_layer_methods | not_layer_stack_methods | not_layer_group_methods
@@ -875,7 +908,7 @@ class AppController(MenuBuilder):
                 color_loss_message = NO_COLOR_SAVE_MESSAGE
                 write_only_message = WRITE_ONLY_SAVE_MESSAGE
 
-                def _extension_str(extensions: Tuple[str, ...]) -> str:
+                def _extension_str(extensions: tuple[str, ...]) -> str:
                     return ', '.join((f'.{ext.lower()}' for ext in extensions))
 
                 format_str = f'.{file_format.lower()}'
@@ -930,7 +963,7 @@ class AppController(MenuBuilder):
 
     @menu_action(MENU_FILE, 'load_shortcut', 3,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
-    def load_image(self, file_path: Optional[str | List[str]] = None) -> None:
+    def load_image(self, file_path: Optional[str | list[str]] = None) -> None:
         """Open a loading dialog, then load the selected image for editing."""
         cache = Cache()
         if file_path is None:
@@ -988,7 +1021,7 @@ class AppController(MenuBuilder):
                 if param_str is not None and not isinstance(param_str, str):
                     # noinspection PyTypeChecker
                     param_str = str(param_str, encoding='utf-8')
-                match = re.match(r'^(.*\n?.*)\nSteps: ?(\d+), Sampler: ?(.*), CFG scale: ?(.*), Seed: ?(.+),'
+                match = re.match(r'^((?:.|\n)*)\nSteps: ?(\d+), Sampler: ?(.*), CFG scale: ?(.*), Seed: ?(.+),'
                                  r' Size: ?(\d+)x?(\d+)', param_str)
                 if match:
                     prompt = match.group(1)
@@ -997,7 +1030,7 @@ class AppController(MenuBuilder):
                     sampler = match.group(3)
                     cfg_scale = float(match.group(4))
                     seed = int(match.group(5))
-                    divider_match = re.match('^(.*)\nNegative prompt: ?(.*)$', prompt)
+                    divider_match = re.match('^((?:.|\n)*)\nNegative prompt: ?(.*)$', prompt)
                     if divider_match:
                         prompt = divider_match.group(1)
                         negative = divider_match.group(2)
@@ -1033,8 +1066,8 @@ class AppController(MenuBuilder):
         layer_paths, layers_selected = open_image_layers(self._window)
         if not layers_selected or not layer_paths or len(layer_paths) == 0:
             return
-        layers: List[Tuple[QImage, str]] = []
-        errors: List[str] = []
+        layers: list[tuple[QImage, str]] = []
+        errors: list[str] = []
         for layer_path in layer_paths:
             try:
                 image, _, _ = load_image(layer_path)
@@ -1232,7 +1265,7 @@ class AppController(MenuBuilder):
     def update_metadata(self, show_messagebox: bool = True) -> None:
         """
         Adds image editing parameters from config to the image metadata, in a format compatible with the A1111
-        stable-diffusion webui. Parameters will be applied to the image file when save_image is called.
+        Stable Diffusion WebUI. Parameters will be applied to the image file when save_image is called.
 
         Parameters
         ----------
@@ -1260,7 +1293,8 @@ class AppController(MenuBuilder):
         assert self._generator is not None
         if self._generator_window is None:
             self._generator_window = GeneratorSetupWindow()
-            self._generator_window.add_generator(self._sd_generator)
+            self._generator_window.add_generator(self._sd_webui_generator)
+            self._generator_window.add_generator(self._sd_comfyui_generator)
             if not is_pyinstaller_bundle():
                 self._generator_window.add_generator(self._glid_generator)
             self._generator_window.add_generator(self._glid_web_generator)
@@ -1451,6 +1485,11 @@ class AppController(MenuBuilder):
         assert isinstance(layer, (ImageLayer, LayerGroup))
         layer.crop_to_content()
 
+    @menu_action(MENU_HELP, 'help_index_shortcut', 600)
+    def open_help_index(self) -> None:
+        """Open the IntraPaint documentation index in a browser window."""
+        QDesktopServices.openUrl(QUrl(HELP_INDEX_LINK))
+
     # Internal/protected:
 
     def _set_alt_window_fractional_bounds(self, alt_window: QWidget, preferred_scale: float = 0.8) -> None:
@@ -1481,9 +1520,6 @@ class AppController(MenuBuilder):
         alt_window.setGeometry(window_bounds)
 
     def _scale(self, new_size: QSize) -> None:  # Override to allow alternate or external upscalers:
-        scaling_mode_name = Cache().get(Cache.UPSCALE_METHOD)
-        if scaling_mode_name in PIL_SCALING_MODES:
-            scaling_mode = PIL_SCALING_MODES[scaling_mode_name]
-        else:
-            scaling_mode = None
+        scaling_mode_name = Cache().get(Cache.SCALING_MODE)
+        scaling_mode_name = PIL_SCALING_MODES.get(scaling_mode_name, None)
         scale_all_layers(self._image_stack, new_size.width(), new_size.height(), scaling_mode)

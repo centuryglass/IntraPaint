@@ -1,6 +1,5 @@
 """Select colors via HSV, RGBA, or HTML inputs, adapted from the Qt library's internal QColorShower found within
      QColorDialog."""
-from typing import Tuple
 
 from PySide6.QtCore import Signal, QRegularExpression
 from PySide6.QtGui import QColor, Qt, QRegularExpressionValidator
@@ -162,7 +161,7 @@ class ComponentSpinboxPicker(QWidget):
         self.color_selected.emit(color)
 
     @property
-    def _label_input_pairs(self) -> Tuple[Tuple[QLabel, QWidget], ...]:
+    def _label_input_pairs(self) -> tuple[tuple[QLabel, QWidget], ...]:
         return ((self._hue_label, self._hue_box),
                 (self._sat_label, self._sat_box),
                 (self._val_label, self._val_box),

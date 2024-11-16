@@ -1,7 +1,7 @@
 """
 Brush implementing smudge tool operations.
 """
-from typing import Optional, List
+from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QPointF, QTimer, QRect
 from PySide6.QtGui import QPainter, QImage, QColor
@@ -25,7 +25,7 @@ class SmudgeBrush(LayerBrush):
         self._hardness = 1.0
         self._last_point: Optional[QPoint] = None
         self._last_point_img = QImage()
-        self._input_buffer: List['_SmudgePoint'] = []
+        self._input_buffer: list['_SmudgePoint'] = []
         self._buffer_timer = QTimer()
         self._buffer_timer.setInterval(PAINT_BUFFER_DELAY_MS)
         self._buffer_timer.setSingleShot(True)

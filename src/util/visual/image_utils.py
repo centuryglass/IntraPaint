@@ -4,7 +4,8 @@ import io
 import logging
 import os
 import tempfile
-from typing import Optional, Any, Tuple, TypeAlias, Callable
+import uuid
+from typing import Optional, Any, TypeAlias, Callable
 
 # noinspection PyPackageRequirements
 import cv2
@@ -69,7 +70,7 @@ def qimage_from_base64(image_str: str) -> QImage:
     if image_str.startswith(BASE_64_PREFIX):
         image_str = image_str[len(BASE_64_PREFIX):]
     image_data = QByteArray.fromBase64(image_str.encode())
-    image = QImage.fromData(image_data, 'PNG')
+    image = QImage.fromData(image_data, 'PNG')  # type: ignore
     if image.isNull():
         raise ValueError('Invalid base64 image string')
     if image.hasAlphaChannel():
@@ -93,7 +94,7 @@ def image_to_base64(image: QImage | Image.Image | str, include_prefix=False) -> 
     elif isinstance(image, QImage):
         image_bytes = QByteArray()
         buffer = QBuffer(image_bytes)
-        image.save(buffer, 'PNG')
+        image.save(buffer, 'PNG')  # type: ignore
         image_str = base64.b64encode(image_bytes.data()).decode('utf-8')
     else:
         assert isinstance(image, Image.Image)
@@ -301,7 +302,7 @@ def color_fill(image: QImage, color: QColor, threshold: float) -> QImage:
     """Return an image mask marking all pixels where the color value matches a given color within a threshold range."""
     un_multiplied_image = image.convertToFormat(QImage.Format.Format_ARGB32)
     np_image = image_data_as_numpy_8bit(un_multiplied_image)
-    color = [ color.blue(), color.green(), color.red(), color.alpha()]
+    color = [color.blue(), color.green(), color.red(), color.alpha()]
     np_color = np.array(color, dtype=np_image.dtype)
 
     # Create a 4-channel difference image for comparison
@@ -363,7 +364,7 @@ def numpy_bounds_index(np_image: NpAnyArray, bounds: QRect) -> NpAnyArray:
 
 
 def numpy_intersect(arr1: NpAnyArray, arr2: NpAnyArray,
-                    x: int = 0, y: int = 0) -> Tuple[NpAnyArray, NpAnyArray] | Tuple[None, None]:
+                    x: int = 0, y: int = 0) -> tuple[NpAnyArray, NpAnyArray] | tuple[None, None]:
     """Takes two offset numpy arrays and returns only their intersecting regions."""
     w1 = arr1.shape[1]
     w2 = arr2.shape[1]
@@ -404,15 +405,20 @@ def get_color_icon(color: QColor | Qt.GlobalColor, size: Optional[QSize] = None)
     return pixmap
 
 
-def temp_image_path(image_name: str, image_draw_fn: Callable[[], QImage]) -> str:
+def temp_image_path(image_name: Optional[str], image_or_draw_fn: Callable[[], QImage] | QImage) -> str:
     """Creates or loads a temporary image with a particular filename."""
     global temp_image_dir
     if temp_image_dir == '':
         temp_image_dir = tempfile.mkdtemp()
+    if image_name is None:
+        image_name = f'{uuid.uuid4()}.png'
     img_path = os.path.join(temp_image_dir, f'{image_name}.png')
     if os.path.isfile(img_path):
         return img_path
-    image = image_draw_fn()
+    if isinstance(image_or_draw_fn, QImage):
+        image = image_or_draw_fn
+    else:
+        image = image_or_draw_fn()
     image.save(img_path)
     return img_path
 

@@ -1,5 +1,5 @@
 """Adjust image brightness/contrast."""
-from typing import List, Callable
+from typing import Callable
 from PIL import ImageEnhance
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QImage
@@ -59,7 +59,7 @@ class BrightnessContrastFilter(ImageFilter):
         pil_image = ImageEnhance.Contrast(pil_image).enhance(contrast)
         return pil_image_to_qimage(pil_image)
 
-    def get_parameters(self) -> List[Parameter]:
+    def get_parameters(self) -> list[Parameter]:
         """Return parameter definitions for the brightness/contrast filter."""
         return [
             Parameter(BRIGHTNESS_LABEL,

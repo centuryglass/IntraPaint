@@ -4,17 +4,17 @@ Provides simple popup windows for error messages, requesting confirmation, and l
 import logging
 import os
 import traceback
-from typing import Optional, Set
+from typing import Optional
 
 from PIL import UnidentifiedImageError
 from PySide6.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle, QApplication
 
 from src.config.application_config import AppConfig
 from src.ui.input_fields.check_box import CheckBox
+from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.visual.display_size import get_screen_size
 from src.util.visual.image_format_utils import IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, OPENRASTER_FORMAT
 from src.util.visual.image_utils import get_standard_qt_icon
-from src.util.pyinstaller import is_pyinstaller_bundle
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ REMEMBER_OPTION_CONFIRM = 'confirm'
 REMEMBER_OPTION_CANCEL = 'cancel'
 
 
-def _extension_set_to_filter_string(str_set: Set[str]) -> str:
+def _extension_set_to_filter_string(str_set: set[str]) -> str:
     format_list = [f'*.{file_format.lower()}' for file_format in str_set]
     format_list.sort()
     # Move .ora to the front of the list to make sure it's the recommended format:

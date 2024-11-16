@@ -1,6 +1,6 @@
 """Shows image layers, and allows the user to manipulate them."""
 import logging
-from typing import Optional, List, Callable, Any
+from typing import Optional, Callable, Any
 
 from PySide6.QtCore import Qt, QSize, QPointF, QTimer
 from PySide6.QtGui import QIcon
@@ -154,7 +154,8 @@ class LayerPanel(QWidget):
         self._add_button = _create_button(ICON_PATH_ADD_BUTTON, ADD_BUTTON_TOOLTIP, self._image_stack.create_layer)
         self._add_group_button = _create_button(ICON_PATH_ADD_GROUP_BUTTON, ADD_GROUP_BUTTON_TOOLTIP,
                                                 self._image_stack.create_layer_group)
-        self._delete_button = _create_button(ICON_PATH_DELETE_BUTTON, DELETE_BUTTON_TOOLTIP, self._image_stack.remove_layer)
+        self._delete_button = _create_button(ICON_PATH_DELETE_BUTTON, DELETE_BUTTON_TOOLTIP,
+                                             self._image_stack.remove_layer)
         self._move_up_button = _create_button(ICON_PATH_LAYER_UP_BUTTON, LAYER_UP_BUTTON_TOOLTIP,
                                               lambda: self._image_stack.move_layer_by_offset(-1))
         self._move_down_button = _create_button(ICON_PATH_LAYER_DOWN_BUTTON, LAYER_DOWN_BUTTON_TOOLTIP,
@@ -272,9 +273,9 @@ class LayerPanel(QWidget):
         if active_layer.composition_mode != mode:
             active_layer.composition_mode = mode
 
-    def _find_layer_parent_widgets(self, layer: Layer) -> List[LayerGroupWidget]:
+    def _find_layer_parent_widgets(self, layer: Layer) -> list[LayerGroupWidget]:
         """Returns a list of all LayerGroupWidgets connected to layers that contain the given layer"""
-        parent_layers: List[LayerGroup] = []
+        parent_layers: list[LayerGroup] = []
         # Iterate through parent/child pairs, starting with layer.layer_parent and layer, and continue up the tree
         # until the topmost layer group is reached. For each pair, insert (parent, child_index) into parent_map
         # at the start.
@@ -286,7 +287,7 @@ class LayerPanel(QWidget):
         assert len(parent_layers) == 0 or parent_layers[0] == self._image_stack.layer_stack
 
         # Follow the parent map in reverse through the layer widget tree, appending each parent layer widget to a list:
-        parent_widgets: List[LayerGroupWidget] = []
+        parent_widgets: list[LayerGroupWidget] = []
         widget_iter: LayerGroupWidget = self._parent_group_item
         assert isinstance(widget_iter, LayerGroupWidget)
         for i, parent_layer in enumerate(parent_layers):
@@ -315,7 +316,7 @@ class LayerPanel(QWidget):
             button.setEnabled(new_active_layer != self._image_stack.layer_stack)
         self._lock_change_slot(new_active_layer, new_active_layer.locked)
         layer_id = new_active_layer.id
-        layer_groups: List[LayerGroupWidget] = [self._parent_group_item]
+        layer_groups: list[LayerGroupWidget] = [self._parent_group_item]
         while len(layer_groups) > 0:
             group = layer_groups.pop()
             group.layer_item.active = group.layer_item.layer.id == layer_id

@@ -1,6 +1,6 @@
 """A layer used to mark masked regions for inpainting."""
 import logging
-from typing import Optional, List
+from typing import Optional
 
 import cv2
 import numpy as np
@@ -56,7 +56,7 @@ class SelectionLayer(ImageLayer):
         """
         Initializes a new selection layer.
         """
-        self._outline_polygons: List[QPolygonF] = []
+        self._outline_polygons: list[QPolygonF] = []
         self._generation_area = QRect()
         super().__init__(size, SELECTION_LAYER_NAME)
         self._bounding_box: Optional[QRect] = None
@@ -92,7 +92,7 @@ class SelectionLayer(ImageLayer):
         raise RuntimeError('The selection layer cannot be copied.')
 
     @property
-    def outline(self) -> List[QPolygonF]:
+    def outline(self) -> list[QPolygonF]:
         """Access the selection outline polygons directly."""
         return [*self._outline_polygons]
 

@@ -41,7 +41,7 @@ class SelectionFillTool(BaseTool):
         super().__init__(KeyConfig.SELECTION_FILL_TOOL_KEY, SELECTION_FILL_LABEL, SELECTION_FILL_TOOLTIP,
                          QIcon(ICON_PATH_SELECTION_FILL_TOOL))
         self._image_stack = image_stack
-        self._control_panel = FillSelectionPanel(image_stack.selection_layer)
+        self._control_panel = FillSelectionPanel(image_stack.selection_layer, self)
         self._color = QColor()
 
         def _update_color(color_str: str) -> None:

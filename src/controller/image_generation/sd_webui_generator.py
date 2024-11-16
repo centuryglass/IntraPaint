@@ -1,41 +1,41 @@
-"""Generates images through the Stable-Diffusion WebUI (A1111 or Forge)"""
-import datetime
-import json
+"""Generates images through the Stable Diffusion WebUI (A1111 or Forge)"""
 import logging
 import os
 from argparse import Namespace
-from typing import Optional, Dict, List, cast, Any, Callable, Tuple
+from typing import Optional, Any, cast
 
-import requests
 from PySide6.QtCore import Signal, QSize, QThread
-from PySide6.QtGui import QImage, QAction, QIcon
-from PySide6.QtWidgets import QInputDialog, QApplication
+from PySide6.QtGui import QImage
+from PySide6.QtWidgets import QApplication
 from requests import ReadTimeout
 
-from src.api.a1111_webservice import A1111Webservice, AuthError
+from src.api.a1111_webservice import A1111Webservice, AuthError, ULTIMATE_UPSCALE_SCRIPT
+from src.api.controlnet.controlnet_constants import ControlTypeDef
+from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
+from src.api.controlnet.controlnet_unit import ControlKeyType
+from src.api.webservice import WebService
 from src.config.a1111_config import A1111Config
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.config.key_config import KeyConfig
-from src.controller.image_generation.image_generator import ImageGenerator
+from src.controller.image_generation.sd_generator import SD_BASE_DESCRIPTION, STABLE_DIFFUSION_CONFIG_CATEGORY, \
+    SDGenerator, INSTALLATION_STABILITY_MATRIX, GETTING_SD_MODELS, IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES, \
+    MENU_STABLE_DIFFUSION
 from src.image.layers.image_stack import ImageStack
-from src.image.layers.image_stack_utils import scale_all_layers
-from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.controlnet_panel import TabbedControlnetPanel, CONTROLNET_TITLE
 from src.ui.panel.generators.generator_panel import GeneratorPanel
-from src.ui.panel.generators.sd_webui_panel import SDWebUIPanel
-from src.ui.window.extra_network_window import ExtraNetworkWindow
+from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
+from src.ui.panel.generators.webui_extras_tab import WebUIExtrasTab
 from src.ui.window.main_window import MainWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING, APP_STATE_NO_IMAGE
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
-from src.util.parameter import ParamType
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, PROJECT_DIR, \
-    PIL_SCALING_MODES
+    AUTH_ERROR, AUTH_ERROR_MESSAGE, INTERROGATE_ERROR_TITLE, INTERROGATE_ERROR_MESSAGE_NO_IMAGE, \
+    ERROR_MESSAGE_TIMEOUT, \
+    GENERATE_ERROR_MESSAGE_EMPTY_MASK, ERROR_MESSAGE_EXISTING_OPERATION, MISC_CONNECTION_ERROR
 
 logger = logging.getLogger(__name__)
 
@@ -48,136 +48,162 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-SD_WEBUI_GENERATOR_NAME = _tr('Stable-Diffusion WebUI API')
-SD_WEBUI_GENERATOR_DESCRIPTION = _tr("""
-<h2>Stable-Diffusion: via WebUI API</h2>
+SD_WEBUI_GENERATOR_NAME = _tr('Stable Diffusion WebUI API')
+SD_WEBUI_GENERATOR_DESCRIPTION_HEADER = _tr('<h2>Stable Diffusion: via WebUI API</h2>')
+SD_WEBUI_GENERATOR_DESCRIPTION_WEBUI = _tr("""
+<h3>About the Stable Diffusion WebUI</h3>
 <p>
-    Released in August 2022, Stable-Diffusion remains the most versatile and useful free image generation model.
+    The <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#stable-diffusion-web-ui">
+    Stable Diffusion WebUI</a> is one of the first interfaces created for using Stable Diffusion. When the WebUI is
+    running and configured correctly, IntraPaint can access Stable Diffusion image generation by sending requests to
+    the WebUI. You can run the WebUI on the same computer as IntraPaint, or remotely on a separate server.
 </p>
-<h2>Generator capabilities and limits:</h2>
-<ul>
-    <li>Requires only 4GB of VRAM, or 8GB if using an SDXL model.</li>
-    <li>Tuned for an ideal resolution of 512x512 (1024x1024 for SDXL).</li>
-    <li>A huge variety of fine-tuned variant models are available.</li>
-    <li>
-        The magnitude of changes made to existing images can be precisely controlled by varying denoising strength.
-    </li>
-    <li>
-        Supports LORAs, miniature extension models adding support for new styles and subjects.
-    </li>
-    <li>
-        Supports positive and negative prompting, where (parentheses) draw additional attention to prompt sections,
-        and [square brackets] reduce attention.
-    </li>
-    <li>
-        Supports ControlNet modules, allowing image generation to be guided by arbitrary constraints like depth maps,
-        existing image lines, and pose analysis.
-    </li>
-</ul>
-<h3>Stable-Diffusion WebUI:</h3>
 <p>
-    The Stable-Diffusion WebUI is one of the first interfaces created for using Stable-Diffusion. This IntraPaint
-    generator offloads image generation to that system through a network connection.  The WebUI instance can be run on
-    the same computer as IntraPaint, or remotely on a separate server.
-</p>""")
+    When connected, IntraPaint provides controls for the WebUI in the <b>Image Generation</b> tab and in the <b>settings
+    window</b> under the Stable Diffusion category. When running, you can also access the WebUI's own interface
+    directly through your web browser at <a href="http://localhost:7860/">localhost:7860</a>.
+</p>
+<h3>About Stable Diffusion WebUI Forge</h3>
+<p>
+    <a href="https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#stable-diffusion-webui-forge">
+    Stable Diffusion WebUI Forge</a> is a popular variant of the original Stable Diffusion WebUI, that adds significant
+    improvements to image generation speed and efficiency. It also adds a large number of experimental features that 
+    cause compatibility issues. IntraPaint provides some support for WebUI Forge, but ControlNet will not work with
+    recent versions.
+</p>
+<h3>About Stable Diffusion WebUI reForge</h3>
+<p>
+    <a href="https://github.com/Panchovix/stable-diffusion-webui-reForge?tab=readme-ov-file#stable-diffusion-webui-forgereforge">
+    Stable Diffusion WebUI re Forge</a> is a third version of the WebUI that includes the improved performance of
+    WebUI Forge without any of the compatibility issues. <b>This is the recommended version to use with IntraPaint</b>.
+</p>
+""")
+
+SD_WEBUI_GENERATOR_DESCRIPTION = (f'{SD_WEBUI_GENERATOR_DESCRIPTION_HEADER}\n{SD_BASE_DESCRIPTION}'
+                                  f'\n{SD_WEBUI_GENERATOR_DESCRIPTION_WEBUI}')
 
 # noinspection SpellCheckingInspection
-SD_WEBUI_GENERATOR_SETUP = _tr("""
-<h2>Installing Stable-Diffusion</h2>
+SD_WEBUI_GENERATOR_SETUP_OPTIONS = _tr("""
+<h1>Stable Diffusion WebUI Generator Setup</h1>
 <p>
-    To use Stable-Diffusion with IntraPaint, you will need to install the Stable-Diffusion WebUI. You can choose either
-    the <a href="https://github.com/lllyasviel/stable-diffusion-webui-forge">Forge WebUI</a> or the original
-    <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"> Stable-Diffusion WebUI</a>, but the Forge
-    WebUI is the recommended version. The easiest way to install either of these options is through <a href=
-    "https://github.com/LykosAI/StabilityMatrix">Stability Matrix</a>.
+    To use the Stable Diffusion WebUI generator, you will to download at least one Stable Diffusion model file, 
+    install the WebUI, enable API access, and start the WebUI.  This guide will explain each of those steps.
+</p>""" + GETTING_SD_MODELS + """
+<hr/>
+<h2>Installing Stable Diffusion WebUI: Available options</h2>
+<p>
+    There are a few different ways you can install the WebUI. The recommended method is to use
+    <a href="https://github.com/LykosAI/StabilityMatrix?tab=readme-ov-file#stability-matrix">Stability Matrix</a>,
+    but other methods are covered here for the sake of completeness.
+</p>
+<hr/>
+<h2>Option 1: Stability Matrix</h2>
+<p>
+    Installation through Stability Matrix is the recommended method. This method is the simplest option, provides a lot
+    of helpful extra resources, and supports Windows, macOS and Linux.  This method also lets you switch between the
+    original WebUI and the Forge version easily, or even install ComfyUI if you want to try IntraPaint's
+    Stable Diffusion ComfyUI image generator.
+</p>""")
+
+IMAGE_PREVIEW_STABILITY_MATRIX_SETTINGS = f'{PROJECT_DIR}/resources/help_docs/stability_matrix_settings_button.png'
+SD_WEBUI_GENERATOR_STABILITY_MATRIX_CONFIG = _tr("""
+    <li>
+        On the <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES + """'/><b>Packages</b> tab, click the
+        <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_SETTINGS + """'/><b>Settings</b> button next to the WebUI
+        package to open the launch options.  Scroll to the bottom of the list, and find the <b>"Extra Launch Arguments"
+        </b> text field. Enter <b>--api</b> into that text field, and click the <b>"Save"</b> button.  This step is
+         needed to make the WebUI accept image generation requests from IntraPaint.
+        <br/>
+    </li>
+""")
+
+SD_WEBUI_GENERATOR_STABILITY_MATRIX_PACKAGE = 'Stable Diffusion WebUI reForge'
+
+SD_WEBUI_GENERATOR_SETUP_STABILITY_MATRIX = INSTALLATION_STABILITY_MATRIX.format(
+    generator_package=SD_WEBUI_GENERATOR_STABILITY_MATRIX_PACKAGE,
+    post_install_generator_setup=SD_WEBUI_GENERATOR_STABILITY_MATRIX_CONFIG
+)
+
+SD_WEBUI_GENERATOR_SETUP_ALTERNATIVES = _tr("""
+<hr/>
+<h2>Option 2: WebUI Forge one-click installer</h2>
+<p>
+    Stable Diffusion WebUI Forge provides a <a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/previous/webui_forge_cu121_torch21_f0017.7z">
+    one-click Windows installation package</a> you can use to easily install the WebUI. This won't work outside of
+    Windows and requires a bit more file management, but it's still a good option if you don't need the extra features
+    in Stability Matrix.
 </p>
 <ol>
     <li>
-        Install the appropriate version of Stability Matrix for your system:
-        <ul>
-            <li>
-                <a
-                 href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip"
-                 >Windows 10, 11
-                </a>
-            </li>
-            <li>
-                <a
-                href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip"
-                >Linux AppImage
-                </a>
-            </li>
-            <li><a href="https://aur.archlinux.org/packages/stabilitymatrix"> Arch Linux AUR</a></li>
-            <li>
-                <a
-              href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg"
-                 >macOS, Apple Silicon
-                </a>
-            </li>
-        </ul>
+        Download the last stable package version <a href="https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/previous/webui_forge_cu121_torch21_f0017.7z">
+        here</a>. There are several other options linked on the
+        <a href="https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#installing-forge">
+        WebUI Forge README</a> you can try, but newer versions may cause compatibility issues.<br/>
     </li>
     <li>
-        Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI Forge",and wait for it to install.
+        Extract the downloaded package into a new folder. If you're not using Windows 11, you may need to install
+        <a href="https://www.7-zip.org">7-Zip</a> to extract the compressed files.<br/>
     </li>
     <li>
-        Once the installation finishes, click the gear icon next to Forge on the package screen to open launch options.
-         Scroll to the bottom of the launch options, add "--api" to "Extra Launch Arguments", and click "Save".
+        Within the new WebUI-Forge folder, open the <b>webui\\webui-user.bat</b> file in a text editor. Find the 
+        "<b>set COMMANDLINE_ARGS=</b>" line near the top of the file, and change it to 
+        "<b>set COMMANDLINE_ARGS=--api</b>".  Save and close the file. This step is needed to make the WebUI accept
+        image generation requests from IntraPaint.<br/>
     </li>
-    <li>Click "Launch", and wait for the WebUI to finish starting up.</li>
     <li>
-        Once the WebUI has started completely, you should be able to click "Activate" below, and IntraPaint will
-        connect to it automatically.  If you configure the WebUI to use any URL other than the default or to use a
-        username and password, IntraPaint will ask for that information before connecting.
+        If you haven't already found at least one Stable Diffusion model file, do that now. Copy it into the 
+        WebUI-Forge folder under <b>webui\\models\\Stable-diffusion</b>.<br/>
+    </li>
+    <li>
+        Launch the <b>run.bat</b> file in the WebUI-Forge folder to start Stable Diffusion.  A terminal window will
+        open and print startup information as the WebUI initializes.<br/>
+    </li>
+    <li>
+        Once you see <b>"Running on local URL:  http://0.0.0.0:7860"</b> in the terminal window, Stable Diffusion is
+        ready to use.  Back in IntraPaint, click the "Activate" button below to connect to Stable Diffusion. <br/>
+    </li>
+    <li>
+        In the future, the only step you'll need to repeat from this list is launching <b>run.bat</b> and waiting
+        for it to finish starting up. If you do this before launching IntraPaint, it will automatically connect to
+        the WebUI-Forge image generator on startup.
     </li>
 </ol>
+<hr/>
+<h3>Option 3: Running directly in Python</h3>
+<p>
+    This method requires a lot more technical knowledge than the previous ones, but it also provides the most
+    flexibility and requires the least amount of storage space.  This is only recommended if you've set up a Python
+    virtual environment and debugged Python dependency issues before, or if you're interested in teaching yourself to
+    do so.
+</p>
+<p>
+    Because this option isn't recommended, IntraPaint won't provide a full guide. The
+    <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#automatic-installation-on-windows">
+    Stable Diffusion WebUI installation instructions</a> should help you get started. If you run into any problems,
+    searching the <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui/issues">WebUI issues page</a> will 
+    probably help you find a solution.
+</p>
 """)
+
+SD_WEBUI_GENERATOR_SETUP = SD_WEBUI_GENERATOR_SETUP_OPTIONS + SD_WEBUI_GENERATOR_SETUP_STABILITY_MATRIX \
+                           + SD_WEBUI_GENERATOR_SETUP_ALTERNATIVES
+
 SD_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/stable-diffusion.png'
 ICON_PATH_CONTROLNET_TAB = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
-DEFAULT_SD_URL = 'http://localhost:7860'
-STABLE_DIFFUSION_CONFIG_CATEGORY = QApplication.translate('config.application_config', 'Stable-Diffusion')
+DEFAULT_WEBUI_URL = 'http://localhost:7860'
 AUTH_ERROR_DETAIL_KEY = 'detail'
-AUTH_ERROR_MESSAGE = _tr('Not authenticated')
-INTERROGATE_ERROR_MESSAGE_NO_IMAGE = _tr('Open or create an image first.')
-ERROR_MESSAGE_EXISTING_OPERATION = _tr('Stable-Diffusion is busy generating other images, try again later.')
-ERROR_MESSAGE_TIMEOUT = _tr('Request timed out')
-INTERROGATE_ERROR_TITLE = _tr('Interrogate failure')
-INTERROGATE_LOADING_TEXT = _tr('Running CLIP interrogate')
-URL_REQUEST_TITLE = _tr('Inpainting UI')
-URL_REQUEST_MESSAGE = _tr('Enter server URL:')
-URL_REQUEST_RETRY_MESSAGE = _tr('Server connection failed, enter a new URL or click "OK" to retry')
-CONTROLNET_MODEL_LIST_KEY = 'model_list'
-UPSCALE_ERROR_TITLE = _tr('Upscale failure')
-PROGRESS_KEY_CURRENT_IMAGE = 'current_image'
-PROGRESS_KEY_FRACTION = 'progress'
-PROGRESS_KEY_ETA_RELATIVE = 'eta_relative'
 STYLE_ERROR_TITLE = _tr('Updating prompt styles failed')
-UPSCALED_LAYER_NAME = _tr('Upscaled image content')
 
-GENERATE_ERROR_TITLE = _tr('Image generation failed')
-GENERATE_ERROR_MESSAGE_EMPTY_MASK = _tr('Nothing was selected in the image generation area. Either use the selection'
-                                        ' tool to mark part of the image generation area for inpainting, move the image'
-                                        ' generation area to cover selected content, or switch to another image'
-                                        ' generation mode.')
-CONTROLNET_TAB = _tr('ControlNet')
-CONTROLNET_UNIT_TAB = _tr('ControlNet Unit {unit_number}')
-AUTH_ERROR = _tr('Login cancelled.')
+ERROR_TITLE_SETTINGS_LOAD_FAILED = _tr('Failed to load Stable Diffusion settings')
+ERROR_TITLE_SETTINGS_SAVE_FAILED = _tr('Failed to save Stable Diffusion settings')
+ERROR_MESSAGE_SETTINGS_LOAD_FAILED = _tr('The connection to the Stable Diffusion WebUI image generator was lost. '
+                                         'Connected generator settings will not be available.')
+ERROR_MESSAGE_SETTINGS_SAVE_FAILED = _tr('The connection to the Stable Diffusion WebUI image generator was lost. '
+                                         'Any changes to connected generator settings were not saved.')
 
 MAX_ERROR_COUNT = 10
 MIN_RETRY_US = 300000
 MAX_RETRY_US = 60000000
-
-LCM_SAMPLER = 'LCM'
-LCM_LORA_1_5 = 'lcm-lora-sdv1-5'
-LCM_LORA_XL = 'lcm-lora-sdxl'
-
-MENU_STABLE_DIFFUSION = 'Stable-Diffusion'
-
-
-def _check_lcm_mode_available(_) -> bool:
-    if LCM_SAMPLER not in Cache().get_options(Cache.SAMPLING_METHOD):
-        return False
-    loras = [lora['name'] for lora in Cache().get(Cache.LORA_MODELS)]
-    return LCM_LORA_1_5 in loras or LCM_LORA_XL in loras
 
 
 def _check_prompt_styles_available(_) -> bool:
@@ -190,29 +216,18 @@ def _check_lora_available(_) -> bool:
     return len(cache.get(Cache.LORA_MODELS)) > 0
 
 
-class SDWebUIGenerator(ImageGenerator):
+class SDWebUIGenerator(SDGenerator):
     """Interface for providing image generation capabilities."""
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
-        super().__init__(window, image_stack)
-        self._server_url = args.server_url if args.server_url != '' else Cache().get(Cache.SD_SERVER_URL)
-        self._webservice: Optional[A1111Webservice] = A1111Webservice(self._server_url)
-        self._lora_images: Optional[Dict[str, Optional[QImage]]] = None
-        self._menu_actions: Dict[str, List[QAction]] = {}
-        self._connected = False
-        self._control_panel: Optional[SDWebUIPanel] = None
-        self._preview = QImage(SD_PREVIEW_IMAGE)
-        self._controlnet_tab: Optional[Tab] = None
-        self._controlnet_panel: Optional[TabbedControlnetPanel] = None
+        super().__init__(window, image_stack, args, Cache.SD_WEBUI_SERVER_URL, ControlKeyType.WEBUI, True)
+        self._webservice: Optional[A1111Webservice] = A1111Webservice(self.server_url)
+        self._gen_extras_tab = WebUIExtrasTab()
         self._active_task_id = 0
 
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
         return SD_WEBUI_GENERATOR_NAME
-
-    def get_preview_image(self) -> QImage:
-        """Returns a preview image for this generator."""
-        return self._preview
 
     def get_setup_text(self) -> str:
         """Returns a rich text description of how to set up this generator."""
@@ -222,11 +237,208 @@ class SDWebUIGenerator(ImageGenerator):
         """Returns an extended description of this generator."""
         return SD_WEBUI_GENERATOR_DESCRIPTION
 
-    def get_extra_tabs(self) -> List[Tab]:
-        """Returns any extra tabs that the generator will add to the main window."""
-        if self._controlnet_tab is not None:
-            return [self._controlnet_tab]
-        return []
+    def get_webservice(self) -> Optional[WebService]:
+        """Return the webservice object this module uses to connect to Stable Diffusion, if initialized."""
+        return self._webservice
+
+    def remove_webservice(self) -> None:
+        """Destroy and remove any active webservice object."""
+        self._webservice = None
+
+    def create_or_get_webservice(self, url: str) -> WebService:
+        """Return the webservice object this module uses to connect to Stable Diffusion.  If the webservice already
+           exists but the url doesn't match, a new webservice should replace the existing one, using the new url."""
+        if self._webservice is not None:
+            if self._webservice.server_url == url:
+                return self._webservice
+            self._webservice.disconnect()
+            self._webservice = None
+        self._webservice = A1111Webservice(url)
+        return self._webservice
+
+    def get_controlnet_preprocessors(self) -> list[ControlNetPreprocessor]:
+        """Return the list of available Controlnet preprocessors."""
+        assert self._webservice is not None
+        try:
+            return self._webservice.get_controlnet_preprocessors()
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading ControlNet preprocessors failed: {err}')
+            return []
+
+    def get_controlnet_models(self) -> list[str]:
+        """Return the list of available ControlNet models."""
+        assert self._webservice is not None
+        try:
+            return self._webservice.get_controlnet_models()['model_list']
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading ControlNet models failed: {err}')
+            return []
+
+    def get_controlnet_types(self) -> dict[str, ControlTypeDef]:
+        """Return available ControlNet categories."""
+        assert self._webservice is not None
+        try:
+            return self._webservice.get_controlnet_type_categories()
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading ControlNet types failed: {err}')
+            return {}
+
+    def get_controlnet_unit_cache_keys(self) -> list[str]:
+        """Return keys used to cache serialized ControlNet units as strings."""
+        return [Cache.CONTROLNET_ARGS_0_WEBUI, Cache.CONTROLNET_ARGS_1_WEBUI, Cache.CONTROLNET_ARGS_2_WEBUI]
+
+    def get_diffusion_model_names(self) -> list[str]:
+        """Return the list of available image generation models."""
+        assert self._webservice is not None
+        try:
+            models = self._webservice.get_models()
+            return [model['model_name'] for model in models]
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading Stable Diffusion model list failed: {err}')
+            return []
+
+    def get_lora_model_info(self) -> list[dict[str, str]]:
+        """Return available LoRA model extensions."""
+        assert self._webservice is not None
+        try:
+            return cast(list[dict[str, str]], self._webservice.get_loras())
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading Stable Diffusion LoRA model list failed: {err}')
+            return []
+
+    def get_diffusion_sampler_names(self) -> list[str]:
+        """Return the list of available samplers."""
+        assert self._webservice is not None
+        try:
+            sampler_info = self._webservice.get_samplers()
+            return [sampler['name'] for sampler in sampler_info]
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading Stable Diffusion sampler option list failed: {err}')
+            return []
+
+    def get_upscale_method_names(self) -> list[str]:
+        """Return the list of available upscale methods."""
+        assert self._webservice is not None
+        try:
+            upscaler_info = self._webservice.get_upscalers()
+            return [upscaler['name'] for upscaler in upscaler_info]
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading Stable Diffusion LoRA model list failed: {err}')
+            return []
+
+    def ultimate_upscale_script_available(self) -> bool:
+        """Return whether the Stable Diffusion API will support the 'Ultimate SD Upscale' script."""
+        script_list = Cache().get(Cache.SCRIPTS_IMG2IMG)
+        return ULTIMATE_UPSCALE_SCRIPT in script_list
+
+    def cache_generator_specific_data(self) -> None:
+        """When activating the generator, after the webservice is connected, this method should be implemented to
+           load and cache any generator-specific API data."""
+        assert self._webservice is not None
+        cache = Cache()
+        try:
+            # Synchronize local config options with remote WebUI settings:
+            for cross_config_key in (Cache.SD_MODEL, Cache.CLIP_SKIP):
+                try:
+                    cache.disconnect(self, cross_config_key)
+                except KeyError:
+                    pass  # No previous connection to remove, which isn't a problem here.
+
+            webui_config = A1111Config()
+            webui_config.load_all(self._webservice)
+            current_model_title = webui_config.get(A1111Config.SD_MODEL_CHECKPOINT)
+            model_options = self._webservice.get_models()
+            for model in model_options:
+                if model['title'] == current_model_title:
+                    cache.set(Cache.SD_MODEL, model['model_name'])
+                    break
+
+            def _update_remote_model_selection(model_name: str) -> None:
+                if not self._connected:
+                    return
+                for model_option in model_options:
+                    if model_option['model_name'] == model_name:
+                        if model_option['title'] != webui_config.get(A1111Config.SD_MODEL_CHECKPOINT):
+                            remote_setting_change = {A1111Config.SD_MODEL_CHECKPOINT: model_option['title']}
+                            self.update_settings(remote_setting_change)
+                        return
+                raise RuntimeError(f'Selected model "{model_name}" not found in available options.')
+
+            cache.connect(self, Cache.SD_MODEL, _update_remote_model_selection)
+
+            def _update_local_model_selection(selected_model_title: str) -> None:
+                if not self._connected:
+                    return
+                for model_option in model_options:
+                    if model_option['title'] == selected_model_title:
+                        cache.set(Cache.SD_MODEL, model_option['model_name'])
+                        return
+                raise RuntimeError(f'Selected model "{selected_model_title}" not found in available options.')
+
+            _update_local_model_selection(current_model_title)
+            webui_config.connect(self, A1111Config.SD_MODEL_CHECKPOINT, _update_local_model_selection)
+
+            clip_skip = webui_config.get(A1111Config.CLIP_STOP_AT_LAST_LAYERS)
+            cache.set(Cache.CLIP_SKIP, clip_skip)
+
+            def _update_remote_clip_skip(step: int) -> None:
+                if not self._connected or step == webui_config.get(A1111Config.CLIP_STOP_AT_LAST_LAYERS):
+                    return
+                remote_settings_change = {A1111Config.CLIP_STOP_AT_LAST_LAYERS: step}
+                self.update_settings(remote_settings_change)
+
+            cache.connect(self, Cache.CLIP_SKIP, _update_remote_clip_skip)
+
+            def _update_local_clip_skip(step: int) -> None:
+                if not self._connected:
+                    return
+                cache.set(Cache.CLIP_SKIP, step)
+
+            webui_config.connect(self, A1111Config.CLIP_STOP_AT_LAST_LAYERS, _update_local_clip_skip)
+
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading WebUI model connection failed: {err}')
+        try:
+            scripts = self._webservice.get_scripts()
+            if 'txt2img' in scripts:
+                cache.set(Cache.SCRIPTS_TXT2IMG, scripts['txt2img'])
+            if 'img2img' in scripts:
+                cache.set(Cache.SCRIPTS_IMG2IMG, scripts['img2img'])
+        except (KeyError, RuntimeError) as err:
+            logger.error(f'error loading scripts from {self._server_url}: {err}')
+        try:
+            styles = self._webservice.get_styles()
+            cache.set(Cache.STYLES, styles)
+        except (KeyError, RuntimeError) as err:
+            logger.error(f'error loading prompt styles from {self._server_url}: {err}')
+
+    def clear_cached_generator_data(self) -> None:
+        """Clear any cached data specific to this image generator."""
+        cache = Cache()
+        for list_key in (Cache.SCRIPTS_TXT2IMG, Cache.SCRIPTS_IMG2IMG, Cache.STYLES):
+            cache.set(list_key, [])
+
+    def load_lora_thumbnail(self, lora_info: Optional[dict[str, str]]) -> Optional[QImage]:
+        """Attempt to load a LoRA model thumbnail image from the API."""
+        if lora_info is None:
+            return None
+        try:
+            assert self._webservice is not None
+            path = lora_info['path']
+            path = path[:path.rindex('.')] + '.png'
+            return self._webservice.get_thumbnail(path)
+        except (KeyError, RuntimeError) as err:
+            logger.error(f'error loading LoRA thumbnail from {self._server_url}: {err}')
+            return None
+
+    def load_preprocessor_preview(self, preprocessor: ControlNetPreprocessor,
+                                  image: QImage, mask: Optional[QImage],
+                                  status_signal: Signal,
+                                  image_signal: Signal) -> None:
+        """Requests a ControlNet preprocessor preview image."""
+        assert self._webservice is not None
+        preview_image = self._webservice.controlnet_preprocessor_preview(image, mask, preprocessor)
+        image_signal.emit(preview_image)
 
     def is_available(self) -> bool:
         """Returns whether the generator is supported on the current system."""
@@ -241,156 +453,35 @@ class SDWebUIGenerator(ImageGenerator):
             if health_check_res.ok or (health_check_res.status_code == 401
                                        and health_check_res.json()[AUTH_ERROR_DETAIL_KEY] == AUTH_ERROR_MESSAGE):
                 return True
-        except (requests.exceptions.RequestException, requests.exceptions.ConnectionError) as req_err:
+        except RuntimeError as req_err:
+            self.status_signal.emit(MISC_CONNECTION_ERROR.format(url=self._server_url, error_text=str(req_err)))
             logger.error(f'Login check connection failed: {req_err}')
         except AuthError:
-            self.status_signal.emit(AUTH_ERROR)
+            self.status_signal.emit(AUTH_ERROR.format(url=self.server_url))
         return False
-
-    def connect_to_url(self, url: str) -> bool:
-        """Attempt to connect to a specific URL, returning whether the connection succeeded."""
-        assert self._webservice is not None
-        if url == self._server_url:
-            if self._connected:
-                return True
-            return self.configure_or_connect()
-        self._server_url = url
-        self._webservice.disconnect()
-        self._webservice = A1111Webservice(url)
-        return self.configure_or_connect()
-
-    def configure_or_connect(self) -> bool:
-        """Handles any required steps necessary to configure the generator, install required components, and/or
-           connect to required external services, returning whether the process completed correctly."""
-        # Check for a valid connection, requesting a URL if needed:
-        try:
-            if self._webservice is None:
-                self._webservice = A1111Webservice(self._server_url)
-            while self._server_url == '' or not self.is_available():
-                prompt_text = URL_REQUEST_MESSAGE if self._server_url == '' else URL_REQUEST_RETRY_MESSAGE
-                new_url, url_entered = QInputDialog.getText(self.menu_window, URL_REQUEST_TITLE, prompt_text,
-                                                            text=self._server_url)
-                if not url_entered:
-                    return False
-                if self.connect_to_url(new_url):
-                    Cache().set(Cache.SD_SERVER_URL, new_url)
-                    return True
-                return False
-
-            # If a login is required and none is defined in the environment, the webservice will automatically request
-            # one during the following setup process:
-            cache = Cache()
-            try:
-                model_list = self._webservice.get_controlnet_models()
-                if model_list is not None and CONTROLNET_MODEL_LIST_KEY in model_list and len(
-                        model_list[CONTROLNET_MODEL_LIST_KEY]) > 0:
-                    cache.set(Cache.CONTROLNET_VERSION, 1.0)
-                else:
-                    cache.set(Cache.CONTROLNET_VERSION, -1.0)
-            except RuntimeError as err:
-                logger.error(f'Loading controlnet config failed: {err}')
-                cache.set(Cache.CONTROLNET_VERSION, -1.0)
-
-            option_loading_params: Tuple[Tuple[str, Callable[[], List[str]]], ...] = (
-                (Cache.SAMPLING_METHOD, self._webservice.get_samplers),
-                (Cache.UPSCALE_METHOD, self._webservice.get_upscalers)
-            )
-
-            # Enable inpainting cropping and padding:
-            cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, True)
-
-            # load various option lists:
-            for config_key, option_loading_fn in option_loading_params:
-                try:
-                    options = cast(List[ParamType], option_loading_fn())
-                    if options is not None and len(options) > 0:
-                        if config_key in cache.get_keys():
-                            cache.update_options(config_key, options)
-                        else:
-                            AppConfig().update_options(config_key, options)
-                except (KeyError, RuntimeError) as err:
-                    logger.error(f'error loading {config_key} from {self._server_url}: {err}')
-
-            try:
-                scripts = self._webservice.get_scripts()
-                if 'txt2img' in scripts:
-                    cache.set(Cache.SCRIPTS_TXT2IMG, scripts['txt2img'])
-                if 'img2img' in scripts:
-                    cache.set(Cache.SCRIPTS_IMG2IMG, scripts['img2img'])
-            except (KeyError, RuntimeError) as err:
-                logger.error(f'error loading scripts from {self._server_url}: {err}')
-
-            data_params = (
-                (Cache.STYLES, self._webservice.get_styles),
-                (Cache.CONTROLNET_CONTROL_TYPES, self._webservice.get_controlnet_control_types),
-                (Cache.CONTROLNET_MODULES, self._webservice.get_controlnet_modules),
-                (Cache.CONTROLNET_MODELS, self._webservice.get_controlnet_models),
-                (Cache.LORA_MODELS, self._webservice.get_loras)
-            )
-
-            for config_key, data_loading_fn in data_params:
-                try:
-                    value = data_loading_fn()
-                    if value is not None and len(value) > 0:
-                        cache.set(config_key, value)
-                except (KeyError, RuntimeError) as err:
-                    logger.error(f'error loading {config_key} from {self._server_url}: {err}')
-            # Build ControlNet tab:
-            if cache.get(cache.CONTROLNET_VERSION) > 0 and self._controlnet_tab is None:
-                controlnet_panel = TabbedControlnetPanel(Cache().get(Cache.CONTROLNET_CONTROL_TYPES),
-                                                         Cache().get(Cache.CONTROLNET_MODULES),
-                                                         Cache().get(Cache.CONTROLNET_MODELS))
-                self._controlnet_tab = Tab(CONTROLNET_TITLE, controlnet_panel, KeyConfig.SELECT_CONTROLNET_TAB,
-                                           parent=self.menu_window)
-                self._controlnet_tab.hide()
-                self._controlnet_tab.setIcon(QIcon(ICON_PATH_CONTROLNET_TAB))
-
-            assert self._window is not None
-            self._window.cancel_generation.connect(self.cancel_generation)
-
-            return True
-        except AuthError:
-            return False
-
-    def disconnect_or_disable(self) -> None:
-        """Closes any connections, unloads models, or otherwise turns off this generator."""
-        if self._webservice is not None:
-            self._webservice.disconnect()
-            self._webservice = None
-        # Turn off inpainting cropping and padding again:
-        Cache().set(Cache.INPAINT_OPTIONS_AVAILABLE, False)
-        # Clear cached webservice data:
-        if self._lora_images is not None:
-            self._lora_images.clear()
-            self._lora_images = None
-        cache = Cache()
-        cache.set(Cache.CONTROLNET_VERSION, -1.0)
-        cache.set(Cache.CONTROLNET_CONTROL_TYPES, {})
-        cache.set(Cache.CONTROLNET_MODULES, {})
-        cache.set(Cache.CONTROLNET_MODELS, {})
-        cache.set(Cache.LORA_MODELS, [])
-        if self._controlnet_tab is not None:
-            self._controlnet_tab.setParent(None)
-            self._controlnet_tab.deleteLater()
-            self._controlnet_tab = None
-            self._controlnet_panel = None
-        assert self._window is not None
-        self._window.cancel_generation.disconnect(self.cancel_generation)
-        self.clear_menus()
 
     def init_settings(self, settings_modal: SettingsModal) -> None:
         """Updates a settings modal to add settings relevant to this generator."""
         assert self._webservice is not None
         web_config = A1111Config()
-        web_config.load_all(self._webservice)
-        settings_modal.load_from_config(web_config)
+        try:
+            web_config.load_all(self._webservice)
+            settings_modal.load_from_config(web_config)
+        except (KeyError, RuntimeError) as err:
+            logger.error(f'Failed to init WebUI API settings: {err}')
+            show_error_dialog(None, ERROR_TITLE_SETTINGS_LOAD_FAILED, ERROR_MESSAGE_SETTINGS_LOAD_FAILED)
         app_config = AppConfig()
         settings_modal.load_from_config(app_config, [STABLE_DIFFUSION_CONFIG_CATEGORY])
 
     def refresh_settings(self, settings_modal: SettingsModal) -> None:
         """Reloads current values for this generator's settings, and updates them in the settings modal."""
         assert self._webservice is not None
-        settings = self._webservice.get_config()
+        try:
+            settings = self._webservice.get_config()
+        except (KeyError, RuntimeError) as err:
+            logger.error(f'Failed to init WebUI API settings: {err}')
+            show_error_dialog(None, ERROR_TITLE_SETTINGS_LOAD_FAILED, ERROR_MESSAGE_SETTINGS_LOAD_FAILED)
+            settings = {}
         app_config = AppConfig()
         for key in app_config.get_category_keys(STABLE_DIFFUSION_CONFIG_CATEGORY):
             settings[key] = app_config.get(key)
@@ -411,20 +502,32 @@ class SDWebUIGenerator(ImageGenerator):
             elif key in app_keys and not isinstance(value, (list, dict)):
                 AppConfig().set(key, value)
         if len(web_changes) > 0:
-            def _update_config() -> None:
+
+            class _SettingsUpdateTask(AsyncTask):
+                error_signal = Signal(Exception)
+
+                def signals(self) -> list[Signal]:
+                    return [self.error_signal]
+
+            def _update_config(error_signal: Signal) -> None:
                 assert self._webservice is not None
                 try:
                     self._webservice.set_config(changed_settings)
-                except ReadTimeout:
-                    logger.error('Settings update timed out')
+                except (KeyError, RuntimeError) as err:
+                    error_signal.emit(err)
 
-            update_task = AsyncTask(_update_config, True)
+            update_task = _SettingsUpdateTask(_update_config, True)
 
-            def _update_setting():
+            def _update_setting() -> None:
                 AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
                 update_task.finish_signal.disconnect(_update_setting)
 
+            def _handle_error(err: Exception) -> None:
+                logger.error(f'Error updating settings: {err}')
+                show_error_dialog(None, ERROR_TITLE_SETTINGS_SAVE_FAILED, ERROR_MESSAGE_SETTINGS_SAVE_FAILED)
+
             update_task.finish_signal.connect(_update_setting)
+            update_task.error_signal.connect(_handle_error)
             update_task.start()
 
     def unload_settings(self, settings_modal: SettingsModal) -> None:
@@ -437,7 +540,7 @@ class SDWebUIGenerator(ImageGenerator):
     def interrogate(self) -> None:
         """ Calls the "interrogate" endpoint to automatically generate image prompts.
 
-        Sends the image generation area content to the stable-diffusion-webui API, where an image captioning model
+        Sends the image generation area content to the Stable Diffusion WebUI API, where an image captioning model
         automatically generates an appropriate prompt. Once returned, that prompt is copied to the appropriate field
         in the UI. Displays an error dialog instead if no image is loaded or another API operation is in-progress.
         """
@@ -451,7 +554,7 @@ class SDWebUIGenerator(ImageGenerator):
             prompt_ready = Signal(str)
             error_signal = Signal(Exception)
 
-            def signals(self) -> List[Signal]:
+            def signals(self) -> list[Signal]:
                 return [self.prompt_ready, self.error_signal]
 
         def _interrogate(prompt_ready: Signal, error_signal: Signal) -> None:
@@ -493,10 +596,11 @@ class SDWebUIGenerator(ImageGenerator):
     def get_control_panel(self) -> Optional[GeneratorPanel]:
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
-            self._control_panel = SDWebUIPanel()
+            self._control_panel = StableDiffusionPanel(True, True)
             self._control_panel.hide()
             self._control_panel.generate_signal.connect(self.start_and_manage_image_generation)
             self._control_panel.interrogate_signal.connect(self.interrogate)
+            self._control_panel.add_extras_tab(self._gen_extras_tab)
         return self._control_panel
 
     def _async_progress_check(self, external_status_signal: Optional[Signal] = None):
@@ -513,11 +617,10 @@ class SDWebUIGenerator(ImageGenerator):
                 self._id = task_id
                 self.should_stop = False
 
-            def signals(self) -> List[Signal]:
+            def signals(self) -> list[Signal]:
                 return [external_status_signal if external_status_signal is not None else self.status_signal]
 
             def _check_progress(self, status_signal) -> None:
-                init_timestamp: Optional[float] = None
                 error_count = 0
                 max_progress = 0
                 while not self.should_stop:
@@ -528,7 +631,7 @@ class SDWebUIGenerator(ImageGenerator):
                     try:
                         assert webservice is not None
                         status = webservice.progress_check()
-                        progress_percent = int(status[PROGRESS_KEY_FRACTION] * 100)
+                        progress_percent = int(status['progress'] * 100)
                         if (progress_percent < max_progress or progress_percent >= 100
                                 or generator._active_task_id != self._id):
                             break
@@ -536,20 +639,18 @@ class SDWebUIGenerator(ImageGenerator):
                             continue
                         status_text = f'{progress_percent}%'
                         max_progress = progress_percent
-                        if PROGRESS_KEY_ETA_RELATIVE in status and status[PROGRESS_KEY_ETA_RELATIVE] != 0:
-                            timestamp = datetime.datetime.now().timestamp()
-                            if init_timestamp is None:
-                                init_timestamp = timestamp
+                        if 'eta_relative' in status and status['eta_relative'] != 0 \
+                                and 0 < progress_percent < 100:
+                            eta_sec = status['eta_relative']
+                            minutes = round(eta_sec // 60)
+                            seconds = round(eta_sec % 60)
+                            if minutes > 0:
+                                seconds_str = str(seconds)
+                                if len(seconds_str) == 1:
+                                    seconds_str = '0' + seconds_str
+                                status_text = f'{status_text} ETA: {minutes}:{seconds_str}'
                             else:
-                                seconds_passed = timestamp - init_timestamp
-                                fraction_complete = status[PROGRESS_KEY_FRACTION]
-                                eta_sec = int(seconds_passed / fraction_complete)
-                                minutes = eta_sec // 60
-                                seconds = eta_sec % 60
-                                if minutes > 0:
-                                    status_text = f'{status_text} ETA: {minutes}:{seconds}'
-                                else:
-                                    status_text = f'{status_text} ETA: {seconds}s'
+                                status_text = f'{status_text} ETA: {seconds}s'
                         status_signal.emit({'progress': status_text})
                     except ReadTimeout:
                         error_count += 1
@@ -573,83 +674,6 @@ class SDWebUIGenerator(ImageGenerator):
             task.finish_signal.connect(_finish)
         task.start()
 
-    def upscale(self, new_size: QSize) -> bool:
-        """Upscale using AI upscaling modes provided by stable-diffusion-webui, returning whether upscaling
-        was attempted."""
-        assert self._window is not None
-        width = self._image_stack.width
-        height = self._image_stack.height
-        if new_size.width() <= width and new_size.height() <= height:
-            return False
-
-        upscale_method = Cache().get(Cache.UPSCALE_METHOD)
-        if upscale_method in PIL_SCALING_MODES.keys():
-            return super().upscale(new_size)
-
-        class _UpscaleTask(AsyncTask):
-            image_ready = Signal(QImage)
-            error_signal = Signal(Exception)
-
-            def signals(self) -> List[Signal]:
-                return [self.image_ready, self.error_signal]
-
-        def _upscale(image_ready: Signal, error_signal: Signal) -> None:
-            try:
-                assert self._webservice is not None
-                images, info = self._webservice.upscale(self._image_stack.qimage(), new_size.width(),
-                                                        new_size.height())
-                if info is not None:
-                    logger.debug(f'Upscaling result info: {info}')
-                image_ready.emit(images[-1])
-            except ReadTimeout:
-                error_signal.emit(RuntimeError(ERROR_MESSAGE_TIMEOUT))
-            except (IOError, RuntimeError) as err:
-                error_signal.emit(err)
-            except Exception as err:
-                print(f'unexpected error: {err}')
-                error_signal.emit(err)
-
-        task = _UpscaleTask(_upscale, True)
-
-        def handle_error(err: IOError) -> None:
-            """Show an error dialog if upscaling fails."""
-            show_error_dialog(self._window, UPSCALE_ERROR_TITLE, err)
-
-        task.error_signal.connect(handle_error)
-
-        def apply_upscaled(img: QImage) -> None:
-            """Copy the upscaled image into the image stack."""
-            with UndoStack().combining_actions('SDWebUIGenerator.upscale'):
-                if self._image_stack.confirm_no_locked_layers():
-                    scale_all_layers(self._image_stack, img.width(), img.height())
-                else:
-                    old_size = self._image_stack.size
-                    scaled_size = img.size()
-
-                    def _update_size(size=scaled_size) -> None:
-                        self._image_stack.size = size
-
-                    def _revert_size(size=old_size) -> None:
-                        self._image_stack.size = size
-
-                    UndoStack().commit_action(_update_size, _revert_size, 'SDWebUIGenerator.upscale_resize')
-                self._image_stack.create_layer(layer_name=UPSCALED_LAYER_NAME,
-                                               layer_parent=self._image_stack.layer_stack, image_data=img)
-
-        task.image_ready.connect(apply_upscaled)
-
-        def _on_finish() -> None:
-            assert self._window is not None
-            self._window.set_is_loading(False)
-            task.error_signal.disconnect(handle_error)
-            task.image_ready.disconnect(apply_upscaled)
-            task.finish_signal.disconnect(_on_finish)
-
-        task.finish_signal.connect(_on_finish)
-        self._async_progress_check()
-        task.start()
-        return True
-
     def cancel_generation(self) -> None:
         """Cancels image generation, if in-progress"""
         assert self._webservice is not None
@@ -666,10 +690,11 @@ class SDWebUIGenerator(ImageGenerator):
         ----------
         status_signal : Signal[str]
             Signal to emit when status updates are available.
-        source_image : QImage, optional
-            Image used as a basis for the edited image.
+        source_image : QImage
+            Image to potentially use as a basis for the created or edited image.  This will be ignored if the editing
+            mode is text-to-image and there are no ControlNet units using the image generation area.
         mask_image : QImage, optional
-            Mask marking edited image region.
+            Mask marking the edited image region.
         """
         assert self._webservice is not None
         edit_mode = Cache().get(Cache.EDIT_MODE)
@@ -684,23 +709,26 @@ class SDWebUIGenerator(ImageGenerator):
         assert self._webservice is not None
         try:
             init_data = self._webservice.progress_check()
-            if init_data[PROGRESS_KEY_CURRENT_IMAGE] is not None:
+            if init_data['current_image'] is not None:
                 raise RuntimeError(ERROR_MESSAGE_EXISTING_OPERATION)
             self._async_progress_check(status_signal)
             if edit_mode == EDIT_MODE_TXT2IMG:
-                gen_size = Cache().get(Cache.GENERATION_SIZE)
-                width = gen_size.width()
-                height = gen_size.height()
-                image_data, info = self._webservice.txt2img(width, height, image=source_image)
+                image_response = self._webservice.txt2img(control_image=source_image)
             else:
                 assert source_image is not None
-                image_data, info = self._webservice.img2img(source_image, mask=mask_image)
+                image_response = self._webservice.img2img(source_image, mask=mask_image)
+            image_data = image_response['images']
+            info = image_response['info']
             for i, response_image in enumerate(image_data):
                 self._cache_generated_image(response_image, i)
             if info is not None:
-                logger.info(f'Image generation result info: {info}')
-                if isinstance(info, dict) and 'seed' in info:
-                    status = {'seed': str(info['seed'])}
+                # logger.info(f'Image generation result info: {json.dumps(info, indent=2)}')
+                if isinstance(info, dict):
+                    status = {}
+                    if 'seed' in info:
+                        status['seed'] = str(info['seed'])
+                    if 'subseed' in info:
+                        status['subseed'] = str(info['subseed'])
                     status_signal.emit(status)
         except ReadTimeout:
             raise RuntimeError(ERROR_MESSAGE_TIMEOUT)
@@ -711,15 +739,16 @@ class SDWebUIGenerator(ImageGenerator):
             logger.error('Unexpected error:', unexpected_err)
             raise RuntimeError(f'unexpected error: {unexpected_err}') from unexpected_err
 
-    def _update_styles(self, style_list: List[Dict[str, str]]) -> None:
-        try:
-            assert self._webservice is not None
-            self._webservice.set_styles(style_list)
-        except RuntimeError as err:
-            show_error_dialog(None, STYLE_ERROR_TITLE, err)
-            return
-        style_strings = [json.dumps(style) for style in style_list]
-        Cache().update_options(Cache.STYLES, cast(List[ParamType], style_strings))
+    def upscale_image(self, image: QImage, new_size: QSize, status_signal: Signal, image_signal: Signal) -> None:
+        """Upscales an image using cached upscaling settings."""
+        assert self._webservice is not None
+        image_response = self._webservice.upscale(self._image_stack.qimage(), new_size.width(),
+                                                  new_size.height())
+        images = image_response['images']
+        info = image_response['info']
+        if info is not None:
+            logger.debug(f'Upscaling result info: {info}')
+        image_signal.emit(images[-1])
 
     @menu_action(MENU_STABLE_DIFFUSION, 'prompt_style_shortcut', 200, [APP_STATE_EDITING],
                  condition_check=_check_prompt_styles_available)
@@ -729,64 +758,3 @@ class SDWebUIGenerator(ImageGenerator):
         # TODO: update after the prompt style endpoint gets POST support
         # style_window.should_save_changes.connect(self._update_styles)
         style_window.exec()
-
-    @menu_action(MENU_STABLE_DIFFUSION, 'lora_shortcut', 201, [APP_STATE_EDITING],
-                 condition_check=_check_lora_available)
-    def show_lora_window(self) -> None:
-        """Show the Lora model selection window."""
-        cache = Cache()
-        loras = cache.get(Cache.LORA_MODELS).copy()
-        if self._lora_images is None:
-            self._lora_images = {}
-            AppStateTracker.set_app_state(APP_STATE_LOADING)
-
-            class _LoadingTask(AsyncTask):
-                status = Signal(str)
-
-                def signals(self) -> List[Signal]:
-                    return [self.status]
-
-            def _load_and_open(status_signal: Signal) -> None:
-                for i, lora in enumerate(loras):
-                    status_signal.emit(f'Loading thumbnail {i + 1}/{len(loras)}')
-                    path = lora['path']
-                    path = path[:path.rindex('.')] + '.png'
-                    assert self._lora_images is not None
-                    assert self._webservice is not None
-                    self._lora_images[lora['name']] = self._webservice.get_thumbnail(path)
-
-            task = _LoadingTask(_load_and_open)
-
-            def _resume_and_show() -> None:
-                AppStateTracker.set_app_state(APP_STATE_EDITING)
-                assert self._lora_images is not None
-                assert self._window is not None
-                task.status.disconnect(self._window.set_loading_message)
-                task.finish_signal.disconnect(_resume_and_show)
-                delayed_lora_window = ExtraNetworkWindow(loras, self._lora_images)
-                delayed_lora_window.exec()
-
-            assert self._window is not None
-            task.status.connect(self._window.set_loading_message)
-            task.finish_signal.connect(_resume_and_show)
-            task.start()
-        else:
-            lora_window = ExtraNetworkWindow(loras, self._lora_images)
-            lora_window.exec()
-
-    @menu_action(MENU_STABLE_DIFFUSION, 'lcm_mode_shortcut', 210, condition_check=_check_lcm_mode_available)
-    def set_lcm_mode(self) -> None:
-        """Apply all settings required for using an LCM LoRA module."""
-        cache = Cache()
-        loras = [lora['name'] for lora in Cache().get(Cache.LORA_MODELS)]
-        if LCM_LORA_1_5 in loras:
-            lora_name = LCM_LORA_1_5
-        else:
-            lora_name = LCM_LORA_XL
-        lora_key = f'<lora:{lora_name}:1>'
-        prompt = cache.get(Cache.PROMPT)
-        if lora_key not in prompt:
-            cache.set(Cache.PROMPT, f'{prompt} {lora_key}')
-        cache.set(Cache.GUIDANCE_SCALE, 1.5)
-        cache.set(Cache.SAMPLING_STEPS, 8)
-        cache.set(Cache.SAMPLING_METHOD, 'LCM')

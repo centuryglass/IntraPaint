@@ -369,6 +369,7 @@
         "description": "Selected image filter",
         "type": "string",
         "default": "",
+        "options": [],
         "saved": true
     },
     "filter_tool_cached_parameters": {
@@ -819,7 +820,7 @@
         "label": "Edit mode:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool",
+        "description": "Stable Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool",
         "type": "string",
         "default": "Inpaint",
         "options": [
@@ -848,10 +849,10 @@
         "label": "Sampling steps:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits",
+        "description": "Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different Stable Diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits",
         "type": "int",
         "default": 30,
-        "saved": false,
+        "saved": true,
         "range_options": {
             "min": 1,
             "max": 150,
@@ -882,28 +883,14 @@
         "options": [],
         "saved": true
     },
-    "upscale_method": {
-        "label": "Upscale method:",
+    "scheduler": {
+        "label": "Scheduler:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Method to use when increasing image resolution. Available options will be loaded from the active image generator.",
+        "description": "Algorithm used to divide  the image generation process into steps.",
         "type": "string",
-        "default": "None",
-        "options": [],
-        "saved": true
-    },
-    "image_layer_scaling_behavior": {
-        "label": "Image scaling behavior:",
-        "category": "Cache",
-        "subcategory": "Image generation",
-        "description": "Controls how multi-layer images are scaled.",
-        "type": "string",
-        "default": "Scale merged, keep source layers",
-        "options": [
-            "Independent layer scaling",
-            "Scale merged, keep source layers",
-            "Scale merged, discard source layers"
-        ],
+        "default": "default",
+        "options": ["default"],
         "saved": true
     },
     "canvas_resize_layer_mode": {
@@ -951,7 +938,7 @@
         "description": "Last seed used for image generation",
         "type": "string",
         "default": "-1",
-        "saved": false
+        "saved": true
     },
     "inpaint_options_available": {
         "label": "Inpaint options available",
@@ -998,7 +985,16 @@
     "lora_models": {
         "label": "LoRA models:",
         "category": "Cache",
-        "description": "LoRA model definitions loaded from the webui",
+        "description": "LoRA extension model options loaded from the image generator.",
+        "type": "list",
+        "default": [],
+        "saved": false,
+        "translate": false
+    },
+    "hypernetwork_models": {
+        "label": "Hypernetwork models:",
+        "category": "Cache",
+        "description": "Hypernetwork extension model options loaded from the image generator.",
         "type": "list",
         "default": [],
         "saved": false,
@@ -1050,13 +1046,23 @@
             "step": 1
         }
     },
-    "sd_server_url": {
-        "label": "Stable-Diffusion server URL:",
+    "sd_webui_server_url": {
+        "label": "Stable Diffusion WebUI server URL:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Cached URL for the Stable-Diffusion image generation server.",
+        "description": "Cached URL for the Stable Diffusion WebUI image generation server.",
         "type": "string",
         "default": "http://localhost:7860",
+        "saved": true,
+        "translate": false
+    },
+    "sd_comfyui_server_url": {
+        "label": "Stable Diffusion ComfyUI server URL:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Cached URL for the Stable Diffusion ComfyUI image generation server.",
+        "type": "string",
+        "default": "http://localhost:8188",
         "saved": true,
         "translate": false
     },
@@ -1070,97 +1076,88 @@
         "saved": true,
         "translate": false
     },
-    "controlnet_upscaling": {
-        "label": "ControlNet tiled upscaling",
+    "sd_model": {
+        "label": "Stable Diffusion model:",
         "category": "Cache",
-        "subcategory": "ControlNet",
-        "description": "Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.",
-        "type": "bool",
-        "default": false,
+        "subcategory": "Image generation",
+        "description": "Stable Diffusion model to use for image generation.",
+        "type": "string",
+        "default": "",
+        "options" : [],
         "saved": true
     },
-    "controlnet_downsample_rate": {
-        "label": "Tile downsample rate:",
+    "clip_skip": {
+        "label": "CLIP skip:",
         "category": "Cache",
-        "subcategory": "ControlNet",
-        "description": "Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.",
-        "type": "float",
+        "subcategory": "Image generation",
+        "description": "Number of final image generation steps to take without the prompt applied.  Usually best left at one, but some models produce better results at two.",
+        "type": "int",
+        "default": 1,
+        "saved": true,
         "range_options": {
-            "min": 1.0,
-            "max": 4.0,
-            "step": 0.1
-        },
-        "default": 1.0,
-        "saved": true
+            "min": 1,
+            "max": 12,
+            "step": 1
+        }
     },
-    "controlnet_args_0": {
-        "label": "ControlNet Settings (first layer)",
+    "controlnet_args_0_webui": {
+        "label": "ControlNet Settings (first layer, WebUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
-        "description": "First layer ControlNet extension settings.",
-        "type": "dict",
-        "default": {},
+        "description": "WebUI API first layer ControlNet extension settings.",
+        "type": "string",
+        "default": "",
         "saved": true,
         "translate": false
     },
-    "controlnet_args_1": {
-        "label": "ControlNet Settings (second layer)",
+    "controlnet_args_1_webui": {
+        "label": "ControlNet Settings (second layer, WebUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
-        "description": "Second layer ControlNet extension settings.",
-        "type": "dict",
-        "default": {},
+        "description": "WebUI API second layer ControlNet extension settings.",
+        "type": "string",
+        "default": "",
         "saved": true,
         "translate": false
     },
-    "controlnet_args_2": {
-        "label": "ControlNet Settings (third layer)",
+    "controlnet_args_2_webui": {
+        "label": "ControlNet Settings (third layer, ComfyUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
-        "description": "Second layer ControlNet extension settings.",
-        "type": "dict",
-        "default": {},
+        "description": "ComfyUI API third layer ControlNet extension settings.",
+        "type": "string",
+        "default": "",
         "saved": true,
         "translate": false
     },
-    "controlnet_version": {
-        "label": "ControlNet version:",
+    "controlnet_args_0_comfyui": {
+        "label": "ControlNet Settings (first layer, ComfyUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
-        "description": "ControlNet extension version loaded from the webui",
-        "type": "float",
-        "default": -1.0,
-        "saved": false,
+        "description": "ComfyUI API first layer ControlNet extension settings.",
+        "type": "string",
+        "default": "",
+        "saved": true,
         "translate": false
     },
-    "controlnet_control_types": {
-        "label": "ControlNet control types:",
+    "controlnet_args_1_comfyui": {
+        "label": "ControlNet Settings (second layer, ComfyUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
-        "description": "ControlNet control type definitions loaded from the webui",
-        "type": "dict",
-        "default": {},
-        "saved": false,
+        "description": "ComfyUI API second layer ControlNet extension settings.",
+        "type": "string",
+        "default": "",
+        "saved": true,
         "translate": false
     },
-    "controlnet_modules": {
-        "label": "ControlNet modules:",
+    "controlnet_args_2_comfyui": {
+        "label": "ControlNet Settings (third layer, WebUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
-        "description": "ControlNet module definitions loaded from the webui",
-        "type": "dict",
-        "default": {},
-        "saved": false,
-        "translate": false
-    },
-    "controlnet_models": {
-        "label": "ControlNet models:",
-        "category": "Cache",
-        "subcategory": "ControlNet",
-        "description": "ControlNet model definitions loaded from the webui",
-        "type": "dict",
-        "default": {},
-        "saved": false,
+        "description": "ComfyUI API third layer ControlNet extension settings.",
+        "type": "string",
+        "default": "",
+        "saved": true,
         "translate": false
     },
     "expect_tablet_input": {
@@ -1172,5 +1169,269 @@
         "default": false,
         "saved": true,
         "translate": false
+    },
+    "comfyui_model_config": {
+        "label": "Model config:",
+        "category": "Cache",
+        "subcategory": "ComfyUI",
+        "description": "Configuration file used when loading image generation models.",
+        "type": "string",
+        "default": "auto",
+        "options" : ["auto"],
+        "saved": true
+    },
+    "comfyui_inpainting_model": {
+        "label": "Load checkpoint as inpainting model",
+        "category": "Cache",
+        "subcategory": "ComfyUI",
+        "description": "Load the selected Stable Diffusion model as an inpainting model.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "comfyui_tiled_vae": {
+        "label": "Use tiled VAE image encoding",
+        "category": "Cache",
+        "subcategory": "ComfyUI",
+        "description": "Encode and decode latent images in tiled blocks, decreasing GPU memory use.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "comfyui_tiled_vae_tile_size": {
+        "label": "VAE tile size:",
+        "category": "Cache",
+        "subcategory": "ComfyUI",
+        "description": "Tile size when using tiled VAE encoding/decoding.  Smaller values decrease memory further, but may increase image generation time.",
+        "type": "int",
+        "default": 512,
+        "range_options": {
+            "min": 320,
+            "max": 4096,
+            "step": 64
+        },
+        "saved": true
+    },
+    "comfyui_cached_scaling_mode": {
+        "label": "Cached ComfyUI scaling mode",
+        "category": "Cache",
+        "subcategory": "ComfyUI",
+        "description": "Last generator upscale mode used with the ComfyUI image generator",
+        "type": "string",
+        "default": "",
+        "saved": true,
+        "translate": false
+    },
+    "webui_cached_scaling_mode": {
+        "label": "Cached ComfyUI scaling mode",
+        "category": "Cache",
+        "subcategory": "ComfyUI",
+        "description": "Last generator upscale mode used with the ComfyUI image generator",
+        "type": "string",
+        "default": "",
+        "saved": true,
+        "translate": false
+    },
+    "webui_tiling": {
+        "label": "Tiling",
+        "category": "Cache",
+        "subcategory": "WebUI",
+        "description": "Generate tiling images that can be seamlessly repeated.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "webui_restore_faces": {
+        "label": "Restore faces",
+        "category": "Cache",
+        "subcategory": "WebUI",
+        "description": "Use a face restoration model to correct image data after Stable Diffusion runs. In most cases you'll probably get better results without it.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "webui_subseed": {
+        "label": "Variation seed:",
+        "category": "Cache",
+        "subcategory": "WebUI",
+        "description": "Controls randomness across imagees generated in the same batch.",
+        "type": "int",
+        "default": -1,
+        "range_options": {
+            "min": -1,
+            "max": 18446744073709551615,
+            "step": 1
+        },
+        "saved": true
+    },
+    "webui_last_subseed": {
+        "label": "Last variation seed:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Last variation seed used for image generation",
+        "type": "string",
+        "default": "-1",
+        "saved": true
+    },
+    "webui_subseed_strength": {
+        "label": "Variation strength:",
+        "category": "Cache",
+        "subcategory": "WebUI",
+        "description": "Controls the amount of variation within images in the same batch. Lower values will have less variation. If set to zero, this setting is ignored.",
+        "type": "float",
+        "default": 0.0,
+        "range_options": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.01
+        },
+        "saved": true
+    },
+    "webui_seed_resize_enabled": {
+        "label": "Resize seed from alternate resolution",
+        "category": "Cache",
+        "subcategory": "WebUI",
+        "description": "If enabled, reusing the same seed value will produce a similar image even if the resolution changes.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "webui_seed_resize": {
+        "label": "Resize from resolution:",
+        "category": "Cache",
+        "subcategory": "WebUI",
+        "description": "Generated images using the same seed will match images created at this resolution, regardless of generation size.",
+        "type": "Size",
+        "default": "512x512",
+        "saved": true
+    },
+    "scaling_mode": {
+        "label": "Scaling mode:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Method to use when scaling images through the 'Scale Image' menu option",
+        "type": "string",
+        "default": "",
+        "translate": false,
+        "saved": true
+    },
+    "generator_scaling_modes": {
+        "label": "Image generator caling modes:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Scaling modes provided by the connected image generator",
+        "type": "list",
+        "default": [],
+        "translate": false,
+        "saved": false
+    },
+    "image_layer_scaling_behavior": {
+        "label": "Image scaling behavior:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Controls how multi-layer images are scaled.",
+        "type": "string",
+        "default": "Scale merged, keep source layers",
+        "options": [
+            "Independent layer scaling",
+            "Scale merged, keep source layers",
+            "Scale merged, discard source layers"
+        ],
+        "saved": true
+    },
+    "sd_upscaling_available": {
+        "label": "Stable Diffusion upscaling available",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion Upscale",
+        "description": "Whether Stable Diffusion image upscaling is available",
+        "type": "bool",
+        "default": false,
+        "saved": false,
+        "translate": false
+    },
+    "ultimate_upscale_script_available": {
+        "label": "Ultimate SD Upscale script available",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion Upscale",
+        "description": "Whether the Ultimate SD Upscale script can be used for image upscaling",
+        "type": "bool",
+        "default": false,
+        "saved": false,
+        "translate": false
+    },
+    "use_stable_diffusion_upscaling": {
+        "label": "Stable Diffusion upscaling:",
+        "category": "Cache",
+        "subcategory": "ControlNet",
+        "description": "If selected, Stable Diffusion will be used for upscaling, and settings within the Image Generation panel will affect the upscaling process.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "sd_upscaling_denoising_strength": {
+        "label": "Denoising strength:",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion Upscale",
+        "description": "Controls how much freedom Stable Diffusion will be given to adjust the image during upscaling.",
+        "type": "float",
+        "default": 0.3,
+        "saved": true,
+        "range_options": {
+            "min": 0.0,
+            "max": 0.7,
+            "step": 0.01
+        }
+    },
+    "sd_upscaling_step_count": {
+        "label": "Step count:",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion Upscale",
+        "description": "Number of diffusion steps to use when upscaling with Stable Diffusion",
+        "type": "int",
+        "default": 30,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 150,
+            "step": 1
+        }
+    },
+    "sd_upscaling_controlnet_tile_models": {
+        "label": "Tile ControlNet model list:",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion Upscale",
+        "description": "List of ControlNet tile model options for Stable Diffusion upscaling.",
+        "type": "list",
+        "default": ["None"],
+        "saved": false
+    },
+    "sd_upscaling_controlnet_tile_preprocessors": {
+        "label": "Tile ControlNet preprocessors",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion Upscale",
+        "description": "Serialized definitions of available ControlNet Tile preprocessors",
+        "type": "list",
+        "default": [],
+        "translate": false,
+        "saved": false
+    },
+    "sd_upscaling_controlnet_tile_settings": {
+        "label": "Tile ControlNet parameters:",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion Upscale",
+        "description": "Serialized ControlNet tiled upsaling parameters",
+        "type": "string",
+        "default": "",
+        "saved": true,
+        "translate": false
+    },
+    "use_ultimate_upscale_script": {
+        "label": "Use the \"Ultimate SD Upscale\" script:",
+        "category": "Cache",
+        "subcategory": "ControlNet",
+        "description": "If selected, the \"Ultimate SD Upscale\" script will be used for enhanced image upscaling",
+        "type": "bool",
+        "default": true,
+        "saved": true
     }
 }

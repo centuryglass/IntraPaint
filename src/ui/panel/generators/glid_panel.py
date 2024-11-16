@@ -1,6 +1,4 @@
 """Control panel widget for GLID-3-XL inpainting."""
-from typing import List
-
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import QPushButton, QLabel, QGridLayout, QSizePolicy, QWidget
 
@@ -135,6 +133,6 @@ class GlidPanel(GeneratorPanel):
     def orientation(self, new_orientation: Qt.Orientation) -> None:
         self.set_orientation(new_orientation)
 
-    def get_tab_bar_widgets(self) -> List[QWidget]:
+    def get_tab_bar_widgets(self) -> list[QWidget]:
         """Returns the toolbar generate button as the only toolbar widget."""
         return [self._toolbar_generate_button]

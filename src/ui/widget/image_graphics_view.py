@@ -1,6 +1,6 @@
 """A QGraphicsView meant for displaying image content without using scrollbars."""
 import math
-from typing import Optional, List, cast
+from typing import Optional, cast
 
 from PySide6.QtCore import Qt, QObject, QPoint, QPointF, QRect, QRectF, QSize, QMarginsF, Signal, QEvent
 from PySide6.QtGui import (QPixmap, QImage, QPainter, QPen, QTransform, QResizeEvent, QMouseEvent, QCursor, QWheelEvent,
@@ -30,7 +30,7 @@ class ImageGraphicsView(QGraphicsView):
         self._content_size: QSize = QSize(0, 0)
         self._content_rect: Optional[QRect] = None
         self._background: Optional[QPixmap] = None
-        self._event_filters: List[QObject] = []
+        self._event_filters: list[QObject] = []
         self._last_cursor_pos: Optional[QPoint] = None
         self._last_scene_cursor_pos: Optional[QPointF] = None
         self._cursor_pixmap: Optional[QPixmap] = None

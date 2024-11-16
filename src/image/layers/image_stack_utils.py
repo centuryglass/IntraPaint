@@ -1,6 +1,6 @@
 """Provides various functions that act on an ImageStack.  Includes only functions that the ImageStack itself does not
    need to access, which don't access any protected internal data."""
-from typing import Optional, Dict
+from typing import Optional
 
 from PIL import Image
 from PySide6.QtCore import QSize, QPoint, QRectF, QRect
@@ -89,7 +89,7 @@ def crop_layer_to_selection(image_stack: ImageStack, layer: Optional[Layer] = No
         to_delete = []
         deleted_layer_names = []
         if len(text_layers) > 0:
-            replacements: Dict[int, Layer] = {}
+            replacements: dict[int, Layer] = {}
             for i, updated_layer in enumerate(all_layers):
                 if isinstance(updated_layer, TextLayer):
                     replacements[i] = image_stack.replace_text_layer_with_image(updated_layer)
@@ -200,8 +200,8 @@ def top_layer_at_point(image_stack: ImageStack, image_coordinates: QPoint) -> Op
         pixel_color = layer_image.pixelColor(layer_point)
         if pixel_color.alpha() > 0:
             return layer
-        elif top_transparent is None or (top_transparent.locked or top_transparent.parent_locked
-                                         or not top_transparent.visible):
+        if top_transparent is None or (top_transparent.locked or top_transparent.parent_locked
+                                       or not top_transparent.visible):
             top_transparent = layer
     return top_transparent
 
@@ -214,6 +214,7 @@ def image_stack_outline_path(image_stack: ImageStack) -> QPainterPath:
         layer_bounds = QRectF(layer.bounds)
         if isinstance(layer, TransformLayer):
             transformed_bounds_polygon = layer.transform.map(layer_bounds)
+            assert isinstance(transformed_bounds_polygon, QPolygonF)
             polygon = polygon.united(transformed_bounds_polygon)
         else:
             polygon = polygon.united(layer_bounds)

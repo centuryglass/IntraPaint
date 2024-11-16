@@ -1,12 +1,12 @@
 """
 Accesses the A1111/stable-diffusion-webui through its REST API, providing access to image generation and editing
-through stable-diffusion.
+through Stable Diffusion.
 """
-import io
 import json
 import logging
-import os
-from typing import Optional, List, Dict, Any
+from copy import deepcopy
+from json import JSONDecodeError
+from typing import Optional, Any, cast, TypedDict
 
 import requests  # type: ignore
 from PIL import Image  # type: ignore
@@ -14,11 +14,22 @@ from PySide6.QtCore import QByteArray
 from PySide6.QtGui import QImage
 from requests import Response
 
+from src.api.controlnet.controlnet_category_builder import ControlNetCategoryBuilder
+from src.api.controlnet.controlnet_constants import CONTROLNET_MODEL_NONE, PREPROCESSOR_NONE
+from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
+from src.api.controlnet.controlnet_unit import ControlNetUnit, ControlKeyType
 from src.api.webservice import WebService
+from src.api.webui.controlnet_webui_constants import (ControlNetModelResponse, ControlNetModuleResponse,
+                                                      ControlTypeDef, ControlTypeResponse, CONTROLNET_SCRIPT_KEY)
+from src.api.webui.controlnet_webui_utils import get_all_preprocessors
+from src.api.webui.diffusion_request_body import DiffusionRequestBody
+from src.api.webui.request_formats import UpscalingRequestBody
+from src.api.webui.response_formats import GenerationInfoData, ProgressResponseBody, Img2ImgResponse, \
+    InterrogateResponse, PromptStyleData, SamplerInfo, UpscalerInfo, ModelInfo, VaeInfo, LoraInfo
+from src.api.webui.script_info_types import ScriptRequestData, ScriptResponseData, ScriptInfo
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.modal.login_modal import LoginModal
-from src.util.shared_constants import CONTROLNET_REUSE_IMAGE_CODE
 from src.util.visual.image_utils import image_to_base64, qimage_from_base64
 
 logger = logging.getLogger(__name__)
@@ -28,7 +39,13 @@ class AuthError(Exception):
     """Identifies login failures."""
 
 
-UPSCALE_SCRIPT = 'ultimate sd upscale'
+class ImageResponse(TypedDict):
+    """Defines image generation response format."""
+    images: list[QImage]
+    info: Optional[GenerationInfoData]
+
+
+ULTIMATE_UPSCALE_SCRIPT = 'ultimate sd upscale'
 DEFAULT_TIMEOUT = 30
 SETTINGS_UPDATE_TIMEOUT = 90
 
@@ -66,6 +83,7 @@ class A1111Webservice(WebService):
         CONTROLNET_MODULES = '/controlnet/module_list'
         CONTROLNET_CONTROL_TYPES = '/controlnet/control_types'
         CONTROLNET_SETTINGS = '/controlnet/settings'
+        CONTROLNET_PREVIEW = '/controlnet/detect'
         LOGIN = '/login'
         EXTRA_NW_DATA = '/sd_extra_networks/metadata'
         EXTRA_NW_THUMB = '/sd_extra_networks/thumb'
@@ -75,39 +93,18 @@ class A1111Webservice(WebService):
         """REST API endpoint constants (Forge WebUI alternates)"""
         SD_MODULES = '/sdapi/v1/sd-modules'
 
-    class ImgParams:
-        """Image generation body key constants."""
-        INIT_IMAGES = 'init_images'
-        DENOISING = 'denoising_strength'
-        WIDTH = 'width'
-        HEIGHT = 'height'
-        MASK = 'mask'
-        MASK_BLUR = 'mask_blur'
-        MASK_INVERT = 'inpainting_mask_invert'
-        INPAINT_FILL = 'inpainting_fill'
-        INPAINT_FULL_RES = 'inpaint_full_res'
-        INPAINT_FULL_RES_PADDING = 'inpaint_full_res_padding'
-        PROMPT = 'prompt'
-        NEGATIVE = 'negative_prompt'
-        SEED = 'seed'
-        BATCH_SIZE = 'batch_size'
-        BATCH_COUNT = 'n_iter'
-        STEPS = 'steps'
-        CFG_SCALE = 'cfg_scale'
-        RESTORE_FACES = 'restore_faces'
-        TILING = 'tiling'
-        OVERRIDE_SETTINGS = 'override_settings'
-        SAMPLER_IDX = 'sampler_index'
-        ALWAYS_ON_SCRIPTS = 'alwayson_scripts'
+    def __init__(self, url: str) -> None:
+        super().__init__(url)
+        self._preprocessor_cache: Optional[list[ControlNetPreprocessor]] = None
 
     # General utility:
     def login_check(self):
         """Calls the login check endpoint, returning a status 401 response if a login is required."""
         return self.get('/login_check')
 
-    def set_config(self, config_updates: dict) -> requests.Response:
+    def set_config(self, config_updates: dict) -> None:
         """
-        Updates the stable-diffusion-webui configuration.
+        Updates the Stable Diffusion WebUI configuration.
 
         Parameters
         ----------
@@ -115,20 +112,20 @@ class A1111Webservice(WebService):
             Maps settings that should change to their updated values. Use the get_settings method's response body
             to check available options.
         """
-        return self.post(A1111Webservice.Endpoints.OPTIONS, config_updates, timeout=SETTINGS_UPDATE_TIMEOUT).json()
+        self.post(A1111Webservice.Endpoints.OPTIONS, config_updates, timeout=SETTINGS_UPDATE_TIMEOUT).json()
 
     def refresh_checkpoints(self) -> requests.Response:
-        """Requests an updated list of available stable-diffusion models.
+        """Requests an updated list of available Stable Diffusion models.
 
         Returns
         -------
         response
-            HTTP response with the list of updated stable-diffusion models.
+            HTTP response with the list of updated Stable Diffusion models.
         """
         return self.post(A1111Webservice.Endpoints.REFRESH_CKPT, body={})
 
     def refresh_vae(self) -> requests.Response:
-        """Requests an updated list of available stable-diffusion VAE models.
+        """Requests an updated list of available Stable Diffusion VAE models.
 
         VAE models handle the conversion between images and the latent image space. Different VAE models can be used
         to adjust performance and final image quality.
@@ -137,120 +134,103 @@ class A1111Webservice(WebService):
         Returns
         -------
         response
-            HTTP response with the list of updated stable-diffusion VAE models.
+            HTTP response with the list of updated Stable Diffusion VAE models.
         """
         return self.post(A1111Webservice.Endpoints.REFRESH_VAE, body={})
 
     def refresh_loras(self) -> requests.Response:
-        """Requests an updated list of available stable-diffusion LORA models.
+        """Requests an updated list of available Stable Diffusion LoRA models.
 
-        LORA models augment existing stable-diffusion models, usually to provide support for new concepts, characters,
+        LoRA models augment existing Stable Diffusion models, usually to provide support for new concepts, characters,
         or art styles.
 
         Returns
         -------
         response
-            HTTP response with the list of updated stable-diffusion LORA models.
+            HTTP response with the list of updated Stable Diffusion LoRA models.
         """
         return self.post(A1111Webservice.Endpoints.REFRESH_LORA, body={})
 
-    def progress_check(self) -> dict:
-        """Checks the progress of an ongoing image operation.
-
-        Returns
-        -------
-        dict
-            An HTTP response body with 'current_image', 'progress', and 'eta_relative' properties
-        """
-        return self.get(A1111Webservice.Endpoints.PROGRESS).json()
+    def progress_check(self) -> ProgressResponseBody:
+        """Checks the progress of an ongoing image operation."""
+        return cast(ProgressResponseBody, self.get(A1111Webservice.Endpoints.PROGRESS, timeout=DEFAULT_TIMEOUT).json())
 
     # Image manipulation:
-    def img2img(self,
-                image: QImage,
-                mask: Optional[QImage] = None,
-                width: Optional[int] = None,
-                height: Optional[int] = None,
-                overrides: Optional[dict] = None,
-                scripts: Optional[Dict[str, Any]] = None) -> Response | tuple[List[QImage], Dict[str, Any] | None]:
-        """Starts a request to alter an image section using selected parameters.
+    def img2img(self, image: QImage, mask: Optional[QImage] = None,
+                request_body: Optional[DiffusionRequestBody] = None) -> ImageResponse:
+        """Sends a request to alter an image section using selected parameters.
 
         Parameters
         ----------
-        image : QImage
-            Source image, usually contents of the ImageStack image generation area.
-        mask : QImage, optional
-            A 1-bit image mask that's the same size as the image parameter, used to mark which areas should be altered.
-            If not provided, the entire image will be altered.
-        width : int, optional
-            Generated image width requested, in pixels. If not provided, width of the image parameter is used.
-        height : int, optional
-            Generated image height requested, in pixels. If not provided, height of the image parameter is used.
-        overrides : dict, optional
-            A dict of request body parameters that should override parameters derived from the config.
-        scripts : list, optional
-            Array of parameters to add to the request that will trigger stable-diffusion-webui scripts or extensions.
+        image: QImage
+            Source image to transform. If request_body is not None, and it already has an image, this parameter is
+            ignored.
+        mask: Optional[QImage] = None
+            Optional inpainting mask.  This will also be ignored if request_body is not None, and it already has a mask.
+        request_body : Optional[DiffusionRequestBody] = None
+            Optional initial request body to use. If None, a new one will be constructed from cache/config parameters.
         Returns
         -------
-        list of QImages
-            All images returned in the API response
-        dict or None
-            Any additional information sent back with the generated images.
+        ImageResponse
+            All generated images, plus accompanying image generation data if available.
         """
-        config = AppConfig()
-        cache = Cache()
-        body = self._get_base_diffusion_body(image, scripts)
-        body[A1111Webservice.ImgParams.INIT_IMAGES] = [image_to_base64(image, include_prefix=True)]
-        body[A1111Webservice.ImgParams.DENOISING] = cache.get(Cache.DENOISING_STRENGTH)
-        body[A1111Webservice.ImgParams.WIDTH] = image.width() if width is None else width
-        body[A1111Webservice.ImgParams.HEIGHT] = image.height() if height is None else height
+        if request_body is None:
+            request_body = DiffusionRequestBody()
+            request_body.load_data(image, mask)
+        else:
+            if request_body.init_images is None:
+                request_body.init_images = [image_to_base64(image, True)]
+            elif len(request_body.init_images) == 0:
+                request_body.init_images.append(image_to_base64(image, True))
+            if request_body.mask is None and mask is not None:
+                request_body.mask = image_to_base64(mask, True)
+        res = self.post(A1111Webservice.Endpoints.IMG2IMG, request_body.to_dict())
+        return self._handle_image_response(res)
+
+    def txt2img(self, request_body: Optional[DiffusionRequestBody] = None,
+                control_image: Optional[QImage] = None) -> ImageResponse:
+        """Sends a request to generate new images using selected parameter.
+
+        Parameters
+        ----------
+        request_body : Optional[DiffusionRequestBody] = None
+            Optional initial request body to use. If None, a new one will be constructed from cache/config parameters.
+        control_image: Optional[QImage]
+            Optional image to use for ControlNet. If request_body is already defined, this will instead be ignored.
+        Returns
+        -------
+        ImageResponse
+            All generated images, plus accompanying image generation data if available.
+        """
+        if request_body is None:
+            request_body = DiffusionRequestBody()
+            request_body.load_data(image=control_image)
+        res = self.post(A1111Webservice.Endpoints.TXT2IMG, request_body.to_dict())
+        return self._handle_image_response(res)
+
+    def controlnet_preprocessor_preview(self, image: QImage, mask: Optional[QImage],
+                                        preprocessor: ControlNetPreprocessor) -> QImage:
+        """Gets a preview image for a ControlNet preprocessor.
+
+        TODO:
+        """
+        input_images: list[str] = [image_to_base64(image, True)]
         if mask is not None:
-            body[A1111Webservice.ImgParams.MASK] = image_to_base64(mask, include_prefix=True)
-            body[A1111Webservice.ImgParams.MASK_BLUR] = config.get(AppConfig.MASK_BLUR)
-            body[A1111Webservice.ImgParams.INPAINT_FILL] = cache.get_option_index(Cache.MASKED_CONTENT)
-            body[A1111Webservice.ImgParams.MASK_INVERT] = 0  # Don't invert
-            body[A1111Webservice.ImgParams.INPAINT_FULL_RES] = cache.get(Cache.INPAINT_FULL_RES)
-            body[A1111Webservice.ImgParams.INPAINT_FULL_RES_PADDING] = cache.get(Cache.INPAINT_FULL_RES_PADDING)
-        if overrides is not None:
-            for key in overrides:
-                body[key] = overrides[key]
-        res = self.post(A1111Webservice.Endpoints.IMG2IMG, body)
-        return self._handle_image_response(res)
-
-    def txt2img(self,
-                width: Optional[int] = None,
-                height: Optional[int] = None,
-                scripts: Optional[Dict[str, Any]] = None,
-                image: Optional[QImage] = None) -> Response | tuple[List[QImage], Dict[str, Any] | None]:
-        """Starts a request to generate new images using selected parameters.
-
-        Parameters
-        ----------
-        width : int, optional
-            Generated image width requested, in pixels.
-        height : int, optional
-            Generated image height requested, in pixels.
-        scripts : list, optional
-            Array of parameters to add to the request that will trigger stable-diffusion-webui scripts or extensions.
-        image: QImage, optional
-            If scripts use an image to augment image generation, it should be provided through this parameter.
-        Returns
-        -------
-        list of QImages
-            All images returned in the API response
-        dict or None
-            Any additional information sent back with the generated images.
-        """
-        body = self._get_base_diffusion_body(image, scripts)
-        body[A1111Webservice.ImgParams.WIDTH] = width
-        body[A1111Webservice.ImgParams.HEIGHT] = height
-        res = self.post(A1111Webservice.Endpoints.TXT2IMG, body)
-        return self._handle_image_response(res)
+            input_images.append(image_to_base64(mask, True))
+        body: dict[str, int | float | str | list[str]] = {
+            'controlnet_module': preprocessor.name,
+            'controlnet_input_images': input_images
+        }
+        for param in preprocessor.parameters:
+            body[param.key] = param.value
+        res = self.post(A1111Webservice.Endpoints.CONTROLNET_PREVIEW, body)
+        return self._handle_image_response(res)['images'][0]
 
     def upscale(self,
                 image: QImage,
                 width: int,
-                height: int) -> Response | tuple[List[QImage], Dict[str, Any] | None]:
-        """Starts a request to upscale an image.
+                height: int) -> ImageResponse:
+        """Sends a request to upscale an image.
 
         Parameters
         ----------
@@ -262,61 +242,83 @@ class A1111Webservice(WebService):
             New image height in pixels requested.
         Returns
         -------
-        list of QImages
-            All images returned in the API response
-        dict or None
-            Any additional information sent back with the generated images.
+        ImageResponse
+            The generated image, plus accompanying image generation data if available.
         """
-        config = AppConfig()
         cache = Cache()
-        if cache.get(Cache.CONTROLNET_UPSCALING):
-            scripts = {
-                'controlNet': {
-                    'args': [{
-                        'module': 'tile_resample',
-                        'model': config.get(AppConfig.CONTROLNET_TILE_MODEL),
-                        'threshold_a': cache.get(Cache.CONTROLNET_DOWNSAMPLE_RATE)
-                    }]
+        if cache.get(Cache.SD_UPSCALING_AVAILABLE) and cache.get(Cache.USE_STABLE_DIFFUSION_UPSCALING):
+            request_body = DiffusionRequestBody()
+            request_body.load_data()
+            request_body.denoising_strength = cache.get(Cache.SD_UPSCALING_DENOISING_STRENGTH)
+            request_body.steps = cache.get(Cache.SD_UPSCALING_STEP_COUNT)
+            request_body.width = width
+            request_body.height = height
+            request_body.batch_size = 1
+            request_body.n_iter = 1
+            request_body.add_init_image(image)
+            if request_body.alwayson_scripts is None:
+                request_body.alwayson_scripts = {}
+            try:
+                tile_control_unit: Optional[ControlNetUnit] = ControlNetUnit.deserialize(
+                    cache.get(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS), ControlKeyType.WEBUI)
+                assert tile_control_unit is not None
+                if (tile_control_unit.model.full_model_name == CONTROLNET_MODEL_NONE
+                        or tile_control_unit.preprocessor.name.lower() == PREPROCESSOR_NONE.lower()
+                        or float(tile_control_unit.control_strength.value) == 0.0
+                        or float(tile_control_unit.control_start.value) >= float(tile_control_unit.control_end.value)):
+                    tile_control_unit = None
+                else:
+                    models = self.get_controlnet_models()['model_list']
+                    preprocessors = [preprocessor.name for preprocessor in self.get_controlnet_preprocessors()]
+                    if (tile_control_unit.model.full_model_name not in models
+                            or tile_control_unit.preprocessor.name not in preprocessors):
+                        tile_control_unit = None
+            except (KeyError, ValueError, RuntimeError, JSONDecodeError):
+                tile_control_unit = None
+            if tile_control_unit is not None:
+                control_unit_data = {
+                    'module': tile_control_unit.preprocessor.name,
+                    'model': tile_control_unit.model.full_model_name
                 }
-            }
-            overrides: Dict[str, Any] = {
-                'width': width,
-                'height': height,
-                'batch_size': 1,
-                'n_iter': 1
-            }
-            upscaler = cache.get(Cache.UPSCALE_METHOD)
-            if upscaler != 'None':
-                script_list = cache.get(Cache.SCRIPTS_IMG2IMG)
-                if UPSCALE_SCRIPT in script_list:
-                    overrides['script_name'] = UPSCALE_SCRIPT
-                    overrides['script_args'] = [
-                        None,  # not used
-                        cache.get(Cache.GENERATION_SIZE).width(),  # tile width
-                        cache.get(Cache.GENERATION_SIZE).height(),  # tile height
-                        8,  # mask_blur
-                        32,  # padding
-                        64,  # seams_fix_width
-                        0.35,  # seams_fix_denoise
-                        32,  # seams_fix_padding
-                        cache.get_options(Cache.UPSCALE_METHOD).index(upscaler),  # upscaler_index
-                        False,  # save_upscaled_image a.k.a Upscaled
-                        0,  # redraw_mode (linear)
-                        False,  # save_seams_fix_image a.k.a Seams fix
-                        8,  # seams_fix_mask_blur
-                        0,  # seams_fix_type (none)
-                        1,  # target_size_type (use below)
-                        width,  # custom_width
-                        height,  # custom_height
-                        None  # custom_scale (ignored)
-                    ]
-            return self.img2img(image, width=width, height=height, overrides=overrides, scripts=scripts)
+                for param in [tile_control_unit.control_start, tile_control_unit.control_end,
+                              tile_control_unit.control_strength, *tile_control_unit.preprocessor.parameters]:
+                    control_unit_data[param.key] = param.value  # type: ignore
+                controlnet_script_data: ScriptRequestData = {'args': [control_unit_data]}
+                request_body.alwayson_scripts[CONTROLNET_SCRIPT_KEY] = controlnet_script_data
+            if cache.get(Cache.ULTIMATE_UPSCALE_SCRIPT_AVAILABLE) and cache.get(Cache.USE_ULTIMATE_UPSCALE_SCRIPT):
+                upscaler = cache.get(Cache.SCALING_MODE)
+
+                upscale_options = [upscaler['name'] for upscaler in self.get_upscalers()]
+                if upscaler not in upscale_options:
+                    upscaler = upscale_options[0]
+                request_body.script_name = ULTIMATE_UPSCALE_SCRIPT
+                request_body.script_args = [
+                    None,  # not used
+                    cache.get(Cache.GENERATION_SIZE).width(),  # tile width
+                    cache.get(Cache.GENERATION_SIZE).height(),  # tile height
+                    8,  # mask_blur
+                    32,  # padding
+                    64,  # seams_fix_width
+                    0.35,  # seams_fix_denoise
+                    32,  # seams_fix_padding
+                    upscale_options.index(upscaler),  # upscaler_index
+                    False,  # save_upscaled_image a.k.a Upscaled
+                    0,  # redraw_mode (linear)
+                    False,  # save_seams_fix_image a.k.a Seams fix
+                    8,  # seams_fix_mask_blur
+                    0,  # seams_fix_type (none)
+                    1,  # target_size_type (use below)
+                    width,  # custom_width
+                    height,  # custom_height
+                    None  # custom_scale (ignored)
+                ]
+            return self.img2img(image, None, request_body)
         # otherwise, normal upscaling without controlNet:
-        body = {
+        body: UpscalingRequestBody = {
             'resize_mode': 1,
             'upscaling_resize_w': width,
             'upscaling_resize_h': height,
-            'upscaler_1': cache.get(Cache.UPSCALE_METHOD),
+            'upscaler_1': cache.get(Cache.SCALING_MODE),
             'image': image_to_base64(image, include_prefix=True)
         }
         res = self.post(A1111Webservice.Endpoints.UPSCALE, body)
@@ -338,8 +340,12 @@ class A1111Webservice(WebService):
             'model': AppConfig().get(AppConfig.INTERROGATE_MODEL),
             'image': image_to_base64(image, include_prefix=True)
         }
-        res = self.post(A1111Webservice.Endpoints.INTERROGATE, body, timeout=60)
-        return res.json()['caption']
+        res = self.post(A1111Webservice.Endpoints.INTERROGATE, body, timeout=60).json()
+        if isinstance(res, dict):
+            res = cast(InterrogateResponse, res)
+            return res['caption']
+        assert isinstance(res, str)
+        return res
 
     def interrupt(self) -> dict:
         """
@@ -350,190 +356,163 @@ class A1111Webservice(WebService):
         return res.json()
 
     @staticmethod
-    def _get_base_diffusion_body(image: Optional[QImage] = None,
-                                 scripts: Optional[dict] = None) -> dict:
-        config = AppConfig()
-        cache = Cache()
-        body = {
-            A1111Webservice.ImgParams.PROMPT: cache.get(Cache.PROMPT),
-            A1111Webservice.ImgParams.SEED: cache.get(Cache.SEED),
-            A1111Webservice.ImgParams.BATCH_SIZE: cache.get(Cache.BATCH_SIZE),
-            A1111Webservice.ImgParams.BATCH_COUNT: cache.get(Cache.BATCH_COUNT),
-            A1111Webservice.ImgParams.STEPS: cache.get(Cache.SAMPLING_STEPS),
-            A1111Webservice.ImgParams.CFG_SCALE: cache.get(Cache.GUIDANCE_SCALE),
-            A1111Webservice.ImgParams.RESTORE_FACES: config.get(AppConfig.RESTORE_FACES),
-            A1111Webservice.ImgParams.TILING: config.get(AppConfig.TILING),
-            A1111Webservice.ImgParams.NEGATIVE: cache.get(Cache.NEGATIVE_PROMPT),
-            A1111Webservice.ImgParams.OVERRIDE_SETTINGS: {},
-            A1111Webservice.ImgParams.SAMPLER_IDX: cache.get(Cache.SAMPLING_METHOD),
-            A1111Webservice.ImgParams.ALWAYS_ON_SCRIPTS: {}
-        }
-        for controlnet_key in (Cache.CONTROLNET_ARGS_0, Cache.CONTROLNET_ARGS_1, Cache.CONTROLNET_ARGS_2):
-            controlnet = dict(cache.get(controlnet_key))
-            if len(controlnet) > 0 and 'model' in controlnet:
-                if 'image' in controlnet:
-                    if controlnet['image'] == CONTROLNET_REUSE_IMAGE_CODE and image is not None:
-                        controlnet['image'] = image_to_base64(image, include_prefix=True)
-                    elif os.path.exists(controlnet['image']):
-                        try:
-                            controlnet['image'] = image_to_base64(controlnet['image'], include_prefix=True)
-                        except (IOError, KeyError) as err:
-                            logger.error(f"Error loading controlnet image {controlnet['image']}: {err}")
-                            del controlnet['image']
-                    else:
-                        del controlnet['image']
-                    empty_keys = [k for k, value in controlnet.items() if value is None]
-                    for empty_key in empty_keys:
-                        del controlnet[empty_key]
-                if scripts is None:
-                    scripts = {}
-                if 'controlNet' not in scripts:
-                    scripts['controlNet'] = {'args': []}
-                scripts['controlNet']['args'].append(controlnet)
-        if scripts is not None:
-            body['alwayson_scripts'] = scripts
-        return body
-
-    def _handle_image_response(self, res: Response) -> Response | tuple[List[QImage], Dict[str, Any] | None]:
+    def _handle_image_response(res: Response) -> ImageResponse:
         if res.status_code != 200:
-            return res
+            raise RuntimeError(res.json())
         res_body = res.json()
-        info = res_body['info'] if 'info' in res_body else None
         images = []
-        if 'image' in res_body:
-            images.append(qimage_from_base64(res_body['image']))
+        info_data: Optional[GenerationInfoData] = None
         if 'images' in res_body:
-            for image in res_body['images']:
-                if isinstance(image, dict):
-                    if not image['is_file'] and image['data'] is not None:
-                        images.append(image['data'])
-                    else:
-                        file_path = image['name']
-                        res = self.get(f'/file={file_path}')
-                        res.raise_for_status()
-                        buffer = io.BytesIO()
-                        buffer.write(res.content)
-                        buffer.seek(0)
-                        images.append(QImage(buffer))
-                elif isinstance(image, str):
+            img2img_res_body = cast(Img2ImgResponse, res.json())
+            info = img2img_res_body['info'] if 'info' in img2img_res_body else None
+            if 'images' in img2img_res_body:
+                for image in img2img_res_body['images']:
                     images.append(qimage_from_base64(image))
-        if isinstance(info, str):
-            try:
-                info = json.loads(info)
-            except json.JSONDecodeError:
-                logger.error(f'Image response info not valid JSON, got {info}')
-                info = None
-        return images, info
+            if isinstance(info, str):
+                try:
+                    info_data = cast(GenerationInfoData, json.loads(info))
+                except json.JSONDecodeError:
+                    logger.error(f'Image response info not valid JSON, got {info}')
+                    info_data = None
+            else:
+                info_data = cast(GenerationInfoData, info)
+        elif 'image' in res_body:  # basic upscaling result
+            images = [qimage_from_base64(res_body['image'])]
+            info_data = None
+        image_response: ImageResponse = {
+            'images': images,
+            'info': info_data
+        }
+        return image_response
 
     # Load misc. service info:
-    def get_config(self) -> dict:
-        """Returns a dict containing the current Stable-Diffusion-WebUI configuration."""
+    def get_config(self) -> dict[str, Any]:
+        """Returns a dict containing the current Stable Diffusion WebUI configuration."""
         return self.get('/sdapi/v1/options', timeout=DEFAULT_TIMEOUT).json()
 
-    def get_styles(self) -> list:
-        """Returns a list of image generation style objects saved by the Stable-Diffusion-WebUI.
-        Returns
-        -------
-        list of dict
-            Styles will have 'name', 'prompt', and 'negative_prompt' keys.
-        """
+    def get_styles(self) -> list[PromptStyleData]:
+        """Returns a list of image generation style objects saved by the Stable Diffusion WebUI."""
         res_body = self.get(A1111Webservice.Endpoints.STYLES).json()
-        return [json.dumps(s) for s in res_body]
+        all_styles: list[PromptStyleData] = []
+        for serialized_style in res_body:
+            all_styles.append(cast(PromptStyleData, json.dumps(serialized_style)))
+        return all_styles
 
-    def set_styles(self, style_list: List[Dict[str, str]]) -> None:
-        """Updates the set of available styles. NOTE: this currently does not work, the endpoint has no POST support.
-        I'm going to submit a PR to fix it at some point."""
-        self.post(A1111Webservice.Endpoints.STYLES, json.dumps(style_list))
-
-    def get_scripts(self) -> dict:
-        """Returns available scripts installed to the stable-diffusion-webui.
+    def get_scripts(self) -> ScriptResponseData:
+        """Returns available scripts installed to the Stable Diffusion WebUI.
         Returns
         -------
         dict
             Response will have 'txt2img' and 'img2img' keys, each holding a list of scripts available for that mode.
         """
-        return self.get(A1111Webservice.Endpoints.SCRIPTS).json()
+        return cast(ScriptResponseData, self.get(A1111Webservice.Endpoints.SCRIPTS).json())
 
-    def get_script_info(self) -> list[dict]:
+    def get_script_info(self) -> list[ScriptInfo]:
         """Returns information on expected script parameters
         Returns
         -------
         list of dict
             Objects defining all parameters required by each script.
         """
-        return self.get(A1111Webservice.Endpoints.SCRIPT_INFO).json()
+        return cast(list[ScriptInfo], self.get(A1111Webservice.Endpoints.SCRIPT_INFO).json())
 
     def _get_name_list(self, endpoint: str) -> list[str]:
         res_body = self.get(endpoint, timeout=30).json()
         return [obj['name'] for obj in res_body]
 
-    def get_samplers(self) -> list[str]:
+    def get_samplers(self) -> list[SamplerInfo]:
         """Returns the list of image sampler algorithms available for image generation."""
-        return self._get_name_list(A1111Webservice.Endpoints.SAMPLERS)
+        return cast(list[SamplerInfo], self.get(A1111Webservice.Endpoints.SAMPLERS, timeout=DEFAULT_TIMEOUT).json())
 
-    def get_upscalers(self) -> list[str]:
+    def get_upscalers(self) -> list[UpscalerInfo]:
         """Returns the list of image upscalers available."""
-        return self._get_name_list(A1111Webservice.Endpoints.UPSCALERS)
+        return cast(list[UpscalerInfo], self.get(A1111Webservice.Endpoints.UPSCALERS, timeout=DEFAULT_TIMEOUT).json())
 
     def get_latent_upscale_modes(self) -> list[str]:
-        """Returns the list of stable-diffusion enhanced upscaling modes."""
+        """Returns the list of Stable Diffusion enhanced upscaling modes."""
         return self._get_name_list(A1111Webservice.Endpoints.LATENT_UPSCALE_MODES)
 
     def get_hypernetworks(self) -> list[str]:
         """Returns the list of hypernetworks available.
 
-        Hypernetworks are a simpler form of model for augmenting full stable-diffusion models. Each hypernetwork
+        Hypernetworks are a simpler form of model for augmenting full Stable Diffusion models. Each hypernetwork
         introduces a single style or concept.
         """
         return self._get_name_list(A1111Webservice.Endpoints.HYPERNETWORKS)
 
-    def get_models(self) -> list[dict]:
-        """Returns the list of available stable-diffusion models cached by the webui.
+    def get_models(self) -> list[ModelInfo]:
+        """Returns the list of available Stable Diffusion models cached by the webui.
 
         If available models may have changed, instead consider using the slower refresh_checkpoints method.
         """
-        return self.get(A1111Webservice.Endpoints.SD_MODELS, timeout=DEFAULT_TIMEOUT).json()
+        return cast(list[ModelInfo], self.get(A1111Webservice.Endpoints.SD_MODELS, timeout=DEFAULT_TIMEOUT).json())
 
-    def get_vae(self) -> list[dict]:
-        """Returns the list of available stable-diffusion VAE models cached by the webui.
+    def get_vae(self) -> list[VaeInfo]:
+        """Returns the list of available Stable Diffusion VAE models cached by the webui.
 
         If available models may have changed, instead consider using the slower refresh_vae method.
         """
         try:
-            return self.get(A1111Webservice.Endpoints.VAE_MODELS, timeout=DEFAULT_TIMEOUT).json()
+            vae_models = self.get(A1111Webservice.Endpoints.VAE_MODELS, timeout=DEFAULT_TIMEOUT).json()
         except RuntimeError:
-            return self.get(A1111Webservice.ForgeEndpoints.SD_MODULES, timeout=DEFAULT_TIMEOUT).json()
+            vae_models = self.get(A1111Webservice.ForgeEndpoints.SD_MODULES, timeout=DEFAULT_TIMEOUT).json()
+        return cast(list[VaeInfo], vae_models)
 
     def get_controlnet_version(self) -> int:
         """
-        Returns the installed version of the stable-diffusion ControlNet extension, or raises if the exception is not
+        Returns the installed version of the Stable Diffusion ControlNet extension, or raises if the exception is not
         installed.
         """
         return self.get(A1111Webservice.Endpoints.CONTROLNET_VERSION, timeout=DEFAULT_TIMEOUT).json()['version']
 
-    def get_controlnet_models(self) -> dict:
-        """Returns a dict defining the models available to the stable-diffusion ControlNet extension."""
-        return self.get(A1111Webservice.Endpoints.CONTROLNET_MODELS, timeout=DEFAULT_TIMEOUT).json()
+    def get_controlnet_models(self) -> ControlNetModelResponse:
+        """Returns a dict defining the models available to the Stable Diffusion ControlNet extension."""
+        return cast(ControlNetModelResponse,
+                    self.get(A1111Webservice.Endpoints.CONTROLNET_MODELS, timeout=DEFAULT_TIMEOUT).json())
 
-    def get_controlnet_modules(self) -> dict:
-        """Returns a dict defining the modules available to the stable-diffusion ControlNet extension."""
-        return self.get(A1111Webservice.Endpoints.CONTROLNET_MODULES, timeout=DEFAULT_TIMEOUT).json()
+    def get_controlnet_modules(self) -> ControlNetModuleResponse:
+        """Returns a dict defining the modules available to the Stable Diffusion ControlNet extension."""
+        return cast(ControlNetModuleResponse,
+                    self.get(A1111Webservice.Endpoints.CONTROLNET_MODULES, timeout=DEFAULT_TIMEOUT).json())
 
-    def get_controlnet_control_types(self) -> dict:
-        """Returns a dict defining the control types available to the stable-diffusion ControlNet extension."""
-        return self.get(A1111Webservice.Endpoints.CONTROLNET_CONTROL_TYPES,
-                        timeout=DEFAULT_TIMEOUT).json()['control_types']
+    def get_controlnet_control_types(self) -> ControlTypeResponse:
+        """Returns a dict defining the control types available to the Stable Diffusion ControlNet extension."""
+        return cast(ControlTypeResponse, self.get(A1111Webservice.Endpoints.CONTROLNET_CONTROL_TYPES,
+                                                  timeout=DEFAULT_TIMEOUT).json())
 
-    def get_controlnet_settings(self) -> dict:
-        """Returns the current settings applied to the stable-diffusion ControlNet extension."""
+    def get_controlnet_settings(self) -> dict[str, Any]:
+        """Returns the current settings applied to the Stable Diffusion ControlNet extension."""
         return self.get(A1111Webservice.Endpoints.CONTROLNET_SETTINGS, timeout=DEFAULT_TIMEOUT).json()
 
-    def get_loras(self) -> list:
-        """Returns the list of available stable-diffusion LORA models cached by the webui.
+    def get_controlnet_preprocessors(self, update_cache=False) -> list[ControlNetPreprocessor]:
+        """Queries the API for ControlNet preprocessor modules, and parameterizes and returns all options."""
+        if update_cache or self._preprocessor_cache is None:
+            modules = cast(ControlNetModuleResponse, self.get_controlnet_modules())
+            module_names = modules['module_list']
+            module_details = None if 'module_details' not in modules else modules['module_details']
+            self._preprocessor_cache = get_all_preprocessors(module_names, module_details)
+        return deepcopy(self._preprocessor_cache)
+
+    def get_controlnet_type_categories(self) -> dict[str, ControlTypeDef]:
+        """Gets the set of valid ControlNet proeprocessor/model categories, taking into account available options and
+           API category definitions if possible."""
+        modules = cast(ControlNetModuleResponse, self.get_controlnet_modules())
+        models = self.get_controlnet_models()
+        try:
+            control_type_defs: Optional[dict[str, str]] = cast(dict[str, str], self.get_controlnet_control_types())
+        except (KeyError, RuntimeError):
+            control_type_defs = None
+        preprocessor_names = modules['module_list']
+        model_names = models['model_list']
+        control_type_builder = ControlNetCategoryBuilder(preprocessor_names, model_names, control_type_defs)
+        return control_type_builder.get_control_types()
+
+    def get_loras(self) -> list[LoraInfo]:
+        """Returns the list of available Stable Diffusion LoRA models cached by the webui.
 
         If available models may have changed, instead consider using the slower refresh_loras method.
         """
-        return self.get(A1111Webservice.Endpoints.LORA_MODELS, timeout=DEFAULT_TIMEOUT).json()
+        return cast(list[LoraInfo], self.get(A1111Webservice.Endpoints.LORA_MODELS, timeout=DEFAULT_TIMEOUT).json())
 
     def get_thumbnail(self, file_path: str) -> Optional[QImage]:
         """Attempts to load one of the extra model thumbnails given a path parameter."""

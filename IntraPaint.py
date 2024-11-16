@@ -1,13 +1,20 @@
 """
 Runs the main IntraPaint inpainting UI.
-Assuming you're running the A1111 stable-diffusion API on the same machine with default settings, running
+Assuming you're running the ComfyUI or the Stable Diffusion WebUI API on the same machine with default settings, running
 `python IntraPaint.py` should be all you need. For more information on options, run `python IntraPaint.py --help`
 """
 import atexit
-import logging
 import os
 import sys
+
+if sys.version_info < (3, 11):
+    detected_version = '.'.join(str(v_num) for v_num in sys.version_info)
+    print(f'ERROR: Detected python version {detected_version}, IntraPaint only supports Python 3.11 and higher.',
+          file=sys.stderr)
+
 import traceback
+import logging
+from logging.handlers import RotatingFileHandler
 
 from PySide6.QtCore import QTranslator, QObject, QEvent
 from PySide6.QtGui import QPixmap
@@ -35,11 +42,12 @@ DEFAULT_GLID_MODEL = f'{PROJECT_DIR}/models/inpaint.pt'
 
 MODE_OPTION_HELP = ('Set how image generation operations should be completed. \nOptions:\n'
                     '"auto": Attempt to guess at the most appropriate image generation mode.\n'
-                    '"stable": A remote server handles inpainting over a network using stable-diffusion.\n'
-                    '"web": A remote server handles inpainting over a network using GLID-3-XL.\n'
+                    '"stable-diffusion-webui": Image generation through the Stable-Diffusion-WebUI API.\n'
+                    '"comfyui": Image generation through the ComfyUI API.\n'
+                    '"glid-api": Image generation through IntraPaint\'s GLID-3-XL server script.\n'
                     '"none": No AI image generation capabilities, manual editing only.\n')
 if not is_pyinstaller_bundle():
-    MODE_OPTION_HELP += ('"local": Handle inpainting on the local machine (requires a GPU with ~10GB VRAM).\n'
+    MODE_OPTION_HELP += ('"glid-local": Handle inpainting on the local machine (requires a GPU with ~10GB VRAM).\n'
                          '"mock": No actual inpainting performed, for UI testing only')
 
 # argument parsing:
@@ -65,7 +73,7 @@ args = parser.parse_args()
 
 # Logging setup:
 LOG_FILE_PATH = os.path.join(LOG_DIR, 'IntraPaint.log')
-log_file_handler = logging.FileHandler(LOG_FILE_PATH)
+log_file_handler = RotatingFileHandler(LOG_FILE_PATH, maxBytes=20000000, backupCount=3)
 log_file_handler.setLevel(logging.INFO)
 log_formatter = logging.Formatter('%(asctime)s: %(levelname)s: %(name)s: %(message)s')
 log_file_handler.setFormatter(log_formatter)  # Also log to stdout if --verbose is set:
@@ -119,6 +127,7 @@ if args.dev:
                 sys.exit(1)
             return False
 
+
     event_filter = WindowEventFilter()
     app.installEventFilter(event_filter)
 
@@ -126,6 +135,7 @@ if args.dev:
 try:
     # noinspection PyUnresolvedReferences
     import pyi_splash
+
     pyi_splash.close()
 except ImportError:
     pass  # Not using the pyinstaller bundle

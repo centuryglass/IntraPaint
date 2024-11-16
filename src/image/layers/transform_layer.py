@@ -1,5 +1,5 @@
 """Interface for layers that have a persistent transformation."""
-from typing import Tuple, Optional, Callable
+from typing import Optional, Callable
 
 from PySide6.QtCore import QObject, Signal, QRect, QPoint, QPointF
 from PySide6.QtGui import QPainter, QImage, QTransform
@@ -49,7 +49,7 @@ class TransformLayer(Layer):
             if self.visible and self.opacity > 0.0:
                 self.signal_content_changed(self.bounds)
 
-    def transformed_image(self) -> Tuple[QImage, QTransform]:
+    def transformed_image(self) -> tuple[QImage, QTransform]:
         """Apply all non-translating transformations to a copy of the image, returning it with the final translation."""
         bounds = self.transformed_bounds
         layer_transform = self.transform

@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QPushButton, Q
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.selection_layer import SelectionLayer
+from src.tools.base_tool import BaseTool
 from src.util.shared_constants import PROJECT_DIR, SMALL_ICON_SIZE
 from src.util.visual.text_drawing_utils import get_key_display_string
 
@@ -29,9 +30,10 @@ ICON_PATH_FILL = f'{PROJECT_DIR}/resources/icons/tool_modes/fill.svg'
 class SelectionPanel(QWidget):
     """Base control panel for selection editing tools."""
 
-    def __init__(self, selection_layer: SelectionLayer) -> None:
+    def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool) -> None:
         super().__init__()
         self._selection_layer = selection_layer
+        self._selection_tool = selection_tool
         self._layout = QVBoxLayout(self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._insert_index = 0
@@ -120,3 +122,8 @@ class SelectionPanel(QWidget):
     def selection_layer(self) -> SelectionLayer:
         """Returns the controlled selection layer."""
         return self._selection_layer
+
+    @property
+    def selection_tool_is_active(self) -> bool:
+        """Returns whether this panel's tool is the active tool."""
+        return self._selection_tool.is_active

@@ -1,6 +1,6 @@
 """Outlines a region in a variable QGraphicsView, adjusting line width based on view scale."""
 import sys
-from typing import Optional, List
+from typing import Optional
 
 from PySide6.QtCore import Qt, QPropertyAnimation, QRectF, QRect, Property
 from PySide6.QtGui import QPainter, QPen, QPainterPath, QColor, QShowEvent, QHideEvent
@@ -53,12 +53,12 @@ class Outline(QGraphicsObject):
     dash_offset = Property(int, dash_offset_getter, dash_offset_setter)
 
     @property
-    def dash_pattern(self) -> List[int]:
+    def dash_pattern(self) -> list[int]:
         """Returns the dash pattern used by the outline."""
         return self._dash_pattern
 
     @dash_pattern.setter
-    def dash_pattern(self, dash_pattern: List[int]) -> None:
+    def dash_pattern(self, dash_pattern: list[int]) -> None:
         """Updates the dash pattern used by the outline."""
         self._dash_pattern = dash_pattern
         pattern_length = 0

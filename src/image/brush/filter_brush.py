@@ -1,6 +1,6 @@
 """Brush class that applies ImageFilter to brush stroke regions."""
 import math
-from typing import Optional, List, Any
+from typing import Optional, Any
 
 import numpy as np
 from PySide6.QtCore import QRect
@@ -34,12 +34,12 @@ class FilterBrush(QtPaintBrush):
             self._parameter_values[new_filter] = [param.default_value for param in filter_params]
 
     @property
-    def parameter_values(self) -> List[Any]:
+    def parameter_values(self) -> list[Any]:
         """Access the parameter values that will be applied to the filter."""
         return list(self._parameter_values[self._filter])
 
     @parameter_values.setter
-    def parameter_values(self, values: List[Any]) -> None:
+    def parameter_values(self, values: list[Any]) -> None:
         parameters = self._filter.get_parameters()
         if len(values) != len(parameters):
             raise ValueError(f'Expected {len(parameters)} values, got {len(values)}')

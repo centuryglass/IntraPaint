@@ -1,5 +1,5 @@
 """Define image blurring functions."""
-from typing import List, Callable, Any, cast
+from typing import Callable, Any, cast
 from PIL import ImageFilter as PilImageFilter
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QImage
@@ -64,7 +64,7 @@ class BlurFilter(ImageFilter):
         into account (False)."""
         return False
 
-    def radius(self, parameter_values: List[Any]) -> float:
+    def radius(self, parameter_values: list[Any]) -> float:
         """Given a set of valid parameters, estimate how far each pixel's influence extends in the final image."""
         self.validate_parameter_values(parameter_values)
         mode = cast(str, parameter_values[0])
@@ -87,7 +87,7 @@ class BlurFilter(ImageFilter):
             raise ValueError(f'Invalid blur mode {mode}')
         return pil_image_to_qimage(pil_image.filter(image_filter))
 
-    def get_parameters(self) -> List[Parameter]:
+    def get_parameters(self) -> list[Parameter]:
         """Return parameter definitions for the blur filter."""
         mode_parameter = Parameter(MODE_LABEL, TYPE_STR, MODE_BOX, MODE_DESCRIPTION)
         mode_parameter.set_valid_options([MODE_BOX, MODE_GAUSSIAN, MODE_SIMPLE])

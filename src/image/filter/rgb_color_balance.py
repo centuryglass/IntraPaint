@@ -1,5 +1,5 @@
 """Adjust RGB color levels."""
-from typing import Callable, List
+from typing import Callable
 
 import numpy as np
 from PySide6.QtWidgets import QApplication
@@ -72,7 +72,7 @@ class RGBColorBalanceFilter(ImageFilter):
         np_image[~alpha_zero, 3] = np.clip(np_image[~alpha_zero, 3] * alpha, 0, 255)
         return final_image
 
-    def get_parameters(self) -> List[Parameter]:
+    def get_parameters(self) -> list[Parameter]:
         """Returns definitions for the non-image parameters passed to the filtering function."""
         return [
             Parameter(RED_LABEL, TYPE_FLOAT, 1.0, '', 0.0, MAX_VALUE, 1.0),

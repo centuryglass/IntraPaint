@@ -56,7 +56,7 @@
     "draw_tool_pressure_opacity": false,
     "draw_tool_pressure_hardness": false,
     "draw_tool_brush_pattern": "Solid",
-    "draw_tool_antialias": false,
+    "draw_tool_antialias": true,
     "eraser_tool_size": {
         "min": 1,
         "max": 300,
@@ -78,7 +78,7 @@
     "eraser_tool_pressure_size": true,
     "eraser_tool_pressure_opacity": false,
     "eraser_tool_pressure_hardness": false,
-    "eraser_tool_antialias": false,
+    "eraser_tool_antialias": true,
     "filter_tool_selected_filter": "RGBA Color Balance",
     "filter_tool_cached_parameters": "{\"Blur\": [\"Box\", 3.0], \"Brightness/Contrast\": [1.0, 1.0], \"Posterize\": [3], \"RGBA Color Balance\": [1.0, 1.0, 1.0, 1.0], \"Sharpen\": [2.0]}",
     "filter_tool_brush_size": {
@@ -102,7 +102,7 @@
     "filter_tool_pressure_size": true,
     "filter_tool_pressure_opacity": false,
     "filter_tool_pressure_hardness": false,
-    "filter_tool_antialias": false,
+    "filter_tool_antialias": true,
     "smudge_tool_brush_size": {
         "min": 1,
         "max": 300,
@@ -124,7 +124,7 @@
     "smudge_tool_pressure_size": true,
     "smudge_tool_pressure_opacity": false,
     "smudge_tool_pressure_hardness": false,
-    "smudge_tool_antialias": false,
+    "smudge_tool_antialias": true,
     "clone_stamp_tool_brush_size": {
         "min": 1,
         "max": 300,
@@ -146,7 +146,7 @@
     "clone_stamp_tool_pressure_size": true,
     "clone_stamp_tool_pressure_opacity": false,
     "clone_stamp_tool_pressure_hardness": false,
-    "clone_stamp_tool_antialias": false,
+    "clone_stamp_tool_antialias": true,
     "shape_tool_mode": "",
     "shape_tool_vertex_count": {
         "min": 3,
@@ -172,8 +172,8 @@
     },
     "shape_tool_fill_pattern": "",
     "shape_tool_fill_color": "#FFFFFFFF",
-    "shape_tool_antialias": false,
-    "saved_main_window_pos": "1,28,800,600",
+    "shape_tool_antialias": true,
+    "saved_main_window_pos": "",
     "saved_layer_window_pos": "",
     "saved_navigation_window_pos": "",
     "guidance_scale": {
@@ -196,7 +196,14 @@
     },
     "edit_mode": "Inpaint",
     "masked_content": "original",
+    "sampling_steps": {
+        "min": 1,
+        "max": 150,
+        "step": 1,
+        "value": 30
+    },
     "sampling_method": "Euler a",
+    "scheduler": "default",
     "upscale_method": "None",
     "image_layer_scaling_behavior": "Scale merged, keep source layers",
     "canvas_resize_layer_mode": "Only expand full-image layers",
@@ -226,8 +233,16 @@
         "step": 1,
         "value": 0
     },
-    "sd_server_url": "http://localhost:7860",
+    "sd_webui_server_url": "http://localhost:7860",
+    "sd_comfyui_server_url": "http://localhost:8188",
     "glid_server_url": "http://localhost:5555",
+    "sd_model": "",
+    "clip_skip": {
+        "min": 1,
+        "max": 12,
+        "step": 1,
+        "value": 1
+    },
     "controlnet_upscaling": false,
     "controlnet_downsample_rate": {
         "min": 1.0,
@@ -235,8 +250,36 @@
         "step": 0.1,
         "value": 1.0
     },
-    "controlnet_args_0": {},
-    "controlnet_args_1": {},
-    "controlnet_args_2": {},
-    "expect_tablet_input": false
+    "controlnet_args_0_webui": "",
+    "controlnet_args_1_webui": "",
+    "controlnet_args_2_webui": "",
+    "controlnet_args_0_comfyui": "",
+    "controlnet_args_1_comfyui": "",
+    "controlnet_args_2_comfyui": "",
+    "expect_tablet_input": false,
+    "comfyui_model_config": "auto",
+    "comfyui_inpainting_model": false,
+    "comfyui_tiled_vae": false,
+    "comfyui_tiled_vae_tile_size": {
+        "min": 320,
+        "max": 4096,
+        "step": 64,
+        "value": 512
+    },
+    "webui_tiling": false,
+    "webui_restore_faces": false,
+    "webui_subseed": {
+        "min": -1,
+        "max": 18446744073709551615,
+        "step": 1,
+        "value": -1
+    },
+    "webui_subseed_strength": {
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+        "value": 0.0
+    },
+    "webui_seed_resize_enabled": false,
+    "webui_seed_resize": "512x512"
 }

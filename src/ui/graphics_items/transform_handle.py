@@ -1,15 +1,15 @@
 """Draggable GraphicsItem used to reposition scene elements."""
 import math
-from typing import Optional, Tuple
+from typing import Optional
 
+from PySide6.QtCore import QRectF, Qt, QPointF, QSizeF, QLineF, Signal
 from PySide6.QtGui import QIcon, QPainterPath, QPainter
 from PySide6.QtWidgets import QGraphicsItem, QStyleOptionGraphicsItem, QWidget, QGraphicsSceneMouseEvent, \
     QGraphicsObject
-from PySide6.QtCore import QRectF, Qt, QPointF, QSizeF, QLineF, Signal
 
+from src.util.shared_constants import MIN_NONZERO, PROJECT_DIR
 from src.util.visual.geometry_utils import extract_transform_parameters
 from src.util.visual.graphics_scene_utils import map_scene_item_point_to_view_point, get_scene_item_bounds_of_view_rect
-from src.util.shared_constants import MIN_NONZERO, PROJECT_DIR
 
 IMAGE_PATH_CORNER_SCALE_ARROW = f'{PROJECT_DIR}/resources/icons/transform/arrow_corner.svg'
 IMAGE_PATH_CORNER_ROTATE_ARROW = f'{PROJECT_DIR}/resources/icons/transform/arrow_corner_rot.svg'
@@ -118,7 +118,7 @@ class TransformHandle(QGraphicsObject):
         path.addRect(QRectF(self._arrow_bounds(bounds)))
         return path
 
-    def _get_parent_transform_params(self) -> Tuple[float, float, float]:
+    def _get_parent_transform_params(self) -> tuple[float, float, float]:
         _, _, scale_x, scale_y, angle = extract_transform_parameters(self._parent.transform(),
                                                                      self._parent.boundingRect().center())
         return scale_x, scale_y, angle

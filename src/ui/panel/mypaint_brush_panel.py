@@ -5,7 +5,7 @@ brushlib/libmypaint QT library is available, currently only true for x86_64 Linu
 import logging
 import os
 import re
-from typing import Optional, List, Dict, cast
+from typing import Optional, cast
 
 from PySide6.QtCore import Qt, QRect, QPoint, Signal, QSize
 from PySide6.QtGui import QPixmap, QImage, QPainter, QPaintEvent, QMouseEvent, QResizeEvent, QIcon
@@ -59,10 +59,10 @@ class MypaintBrushPanel(QTabWidget):
         """
         super().__init__(parent)
         self._brush_config_key = brush_config_key
-        self._groups: List[str] = []
-        self._group_dirs: Dict[str, str] = {}
-        self._group_orders: Dict[str, List[str]] = {}
-        self._pages: Dict[str, GridContainer] = {}
+        self._groups: list[str] = []
+        self._group_dirs: dict[str, str] = {}
+        self._group_orders: dict[str, list[str]] = {}
+        self._pages: dict[str, GridContainer] = {}
         self._read_order_file(os.path.join(BRUSH_DIR, BRUSH_CONF_FILE))
         self._setup_brush_tabs()
         self._setup_favorites_tab()
@@ -73,7 +73,7 @@ class MypaintBrushPanel(QTabWidget):
         custom_brush_dir = AppConfig().get(AppConfig.ADDED_MYPAINT_BRUSH_DIR)
         if os.path.isdir(custom_brush_dir):
             brush_dirs.append(custom_brush_dir)
-        brush_files: Dict[str, List[str]] = {}
+        brush_files: dict[str, list[str]] = {}
         while len(brush_dirs) > 0:
             brush_dir = brush_dirs.pop(0)
             dir_name = os.path.basename(brush_dir)

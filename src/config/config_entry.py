@@ -1,11 +1,11 @@
 """Represents configurable typed values loaded from JSON definitions."""
 import logging
-from typing import Any, Optional, Dict
+from typing import Any, Optional
 
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QApplication
 
-from src.util.parameter import Parameter, get_parameter_type, TYPE_DICT, TYPE_INT, TYPE_FLOAT, TYPE_QSIZE
+from src.util.parameter import Parameter, get_parameter_type, TYPE_DICT, TYPE_INT, TYPE_FLOAT, TYPE_QSIZE, ParamTypeList
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ class ConfigEntry(Parameter):
                  category: str,
                  subcategory: Optional[str],
                  tooltip: str,
-                 options: Optional[list[Any]] = None,
+                 options: Optional[ParamTypeList] = None,
                  range_options: Optional[dict[str, int | float]] = None,
                  save_json: bool = True) -> None:
         minimum = None
@@ -93,7 +93,9 @@ class ConfigEntry(Parameter):
         self._category = category
         self._subcategory = subcategory
         self.save_json = save_json
+        self._default_options: Optional[ParamTypeList] = None
         if options is not None:
+            self._default_options = [*options]
             self.set_valid_options(options)
 
     def set_value(self,
@@ -144,6 +146,12 @@ class ConfigEntry(Parameter):
             return self._value.copy()
         return self._value
 
+    def default_options(self) -> Optional[ParamTypeList]:
+        """Returns a copy of the list of default options provided when the entry was created, if any."""
+        if self._default_options is None:
+            return None
+        return [*self._default_options]
+
     @property
     def category(self) -> str:
         """Gets the config option's category name."""
@@ -170,7 +178,7 @@ class ConfigEntry(Parameter):
             options.append(option)
         self.set_valid_options(options)
 
-    def save_to_json_dict(self, json_dict: Dict[str, Any]) -> None:
+    def save_to_json_dict(self, json_dict: dict[str, Any]) -> None:
         """Adds the value to a dict in a format that can be written to a JSON file."""
         if self.save_json is True:
             if isinstance(self._value, QSize):
@@ -194,7 +202,7 @@ class ConfigEntry(Parameter):
             else:
                 json_dict[self._key] = self._value
 
-    def load_from_json_dict(self, json_dict: Dict[str, Any]) -> None:
+    def load_from_json_dict(self, json_dict: dict[str, Any]) -> None:
         """Reads the value from a dict that was loaded from a JSON file."""
         if self._key not in json_dict:
             return
@@ -210,16 +218,22 @@ class ConfigEntry(Parameter):
 
         json_value = json_dict[self._key]
         if isinstance(json_value, dict) and self.type_name != TYPE_DICT:
-            if RangeKey.MIN in json_value and json_value[RangeKey.MIN] is not None:
-                self.minimum = _apply_type(json_value[RangeKey.MIN], self.type_name)
-            if RangeKey.MAX in json_value and json_value[RangeKey.MAX] is not None:
-                self.maximum = _apply_type(json_value[RangeKey.MAX], self.type_name)
-            if RangeKey.STEP in json_value and json_value[RangeKey.STEP] is not None:
-                step_type = TYPE_FLOAT if self.type_name == TYPE_FLOAT else TYPE_INT
-                self.single_step = _apply_type(json_value[RangeKey.STEP], step_type)
-            if VALUE_KEY not in json_value:
-                raise RuntimeError(MISSING_VALUE_ERROR.format(key=self._key))
-            json_value = json_value[VALUE_KEY]
+            if self.type_name in (TYPE_INT, TYPE_FLOAT, TYPE_QSIZE):
+                if RangeKey.MIN in json_value and json_value[RangeKey.MIN] is not None:
+                    self.minimum = _apply_type(json_value[RangeKey.MIN], self.type_name)
+                if RangeKey.MAX in json_value and json_value[RangeKey.MAX] is not None:
+                    self.maximum = _apply_type(json_value[RangeKey.MAX], self.type_name)
+                if RangeKey.STEP in json_value and json_value[RangeKey.STEP] is not None:
+                    step_type = TYPE_FLOAT if self.type_name == TYPE_FLOAT else TYPE_INT
+                    self.single_step = _apply_type(json_value[RangeKey.STEP], step_type)
+                if VALUE_KEY not in json_value:
+                    logger.error(MISSING_VALUE_ERROR.format(key=self._key))
+                    json_value = self.default_value
+                else:
+                    json_value = json_value[VALUE_KEY]
+            else:
+                logger.error(f'"{self.name}" expected type {self.type_name}, got dict. Replacing with default value.')
+                json_value = self.default_value
 
         if self.type_name == TYPE_QSIZE:
             json_value = _apply_type(json_value, TYPE_QSIZE)

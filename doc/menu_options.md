@@ -71,10 +71,12 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Blur](#blur-ctrl3)
    - [Sharpen](#sharpen-ctrl4)
    - [Posterize](#posterize-ctrl5)
-7. [Stable-Diffusion menu](#stable-diffusion-menu)
+7. [Stable Diffusion menu](#stable-diffusion-menu)
    - [View saved prompt styles](#view-saved-prompt-styles-ctrlalt1)
-   - [View LORA models](#view-lora-models-ctrlalt2)
+   - [View LoRA models](#view-lora-models-ctrlalt2)
    - [LCM mode](#lcm-mode-f10)
+8. [Help menu](#help-menu)
+   - [Open IntraPaint help pages](#open-intrapaint-help-pages-f1)
 ---
 
 ## File menu
@@ -177,11 +179,10 @@ Opens a window where you can edit IntraPaint's saved settings. Hold your mouse o
 5. **"Files" tab**:  Sets the directories IntraPaint will search for extra fonts, MyPaint brush files, or (if necessary) MyPaint library files.  This section also shows you where settings are saved as files, although those values can't be changed.
 6. **"Keybindings" tab**:  Sets editing control keys, navigation keys, and tool shortcuts. You'll need to type in the key's name to set it, e.g. typing "PgDown" instead of pressing the page down key.  You can bind multiple keys to the same action by separating the key names with commas, e.g. "PgDown,D" to bind both page down and D.
 7. **"Menu Shortcuts" tab**:  Sets keyboard shortcuts for all menu options.
-8. **"Connected Generator" tab**:  Visible only when the Stable-Diffusion WebUI generator is active, these settings are sent directly to the image generator instead of being saved to a file. See [Stable-Diffusion generator settings](./stable-diffusion.md#connected-generator-settings) for more details.
-9. **"Stable-Diffusion" tab**:  Visible only when the Stable-Diffusion WebUI generator is active, this tab provides access to infrequently-needed image generation settings. See [Stable-Diffusion settings](./stable-diffusion.md#stable-diffusion-settings) for details.
-10. **Current category settings**:  Settings for the current selected tab, replaced when a new tab is selected. Hold the mouse over the control for any of these (*not* the label) to see a tooltip describing it.
-11. **Save button**:  Close the settings window, saving changes made across all tabs.  Most changes will be applied immediately, but you may need to restart IntraPaint before some of them take effect.
-12. **Cancel button**:  Close the settings window, discarding all changes.
+8. **"Stable Diffusion" tab**:  Visible only when a Stable Diffusion WebUI generator is active, this tab provides access to infrequently-needed image generation settings. When using the Stable Diffusion WebUI generator, it also provides access to the connected image generation program's settings. See [Stable Diffusion settings](./stable-diffusion.md#stable-diffusion-settings) for details.
+9. **Current category settings**:  Settings for the current selected tab, replaced when a new tab is selected. Hold the mouse over the control for any of these (*not* the label) to see a tooltip describing it.
+10. **Save button**:  Close the settings window, saving changes made across all tabs.  Most changes will be applied immediately, but you may need to restart IntraPaint before some of them take effect.
+11. **Cancel button**:  Close the settings window, discarding all changes.
 
 ---
 
@@ -245,23 +246,36 @@ Opens a window that lets you change the image size without scaling image content
 
 #### Scale image window
 
-Opens a window that lets you resize the image by scaling image content.  If the Stable-Diffusion image generator is connected, this will also provide options for AI image upscaling. See the [IntraPaint Stable-Diffusion guide](./stable-diffusion.md#ai-upscaling-with-intrapaint) for more details.
+Opens a window that lets you resize the image by scaling image content.  If the Stable Diffusion image generator is connected, this will also provide options for AI image upscaling. See the [IntraPaint Stable Diffusion guide](./stable-diffusion.md#ai-upscaling-with-intrapaint) for more details.
 
 Scaling the image behaves differently depending on whether AI upscaling is in use:
 
-- If the image size is decreasing or the image is being scaled while Stable-Diffusion is not connected, each layer will be individually scaled with the chosen scaling algorithm.
-- If Stable-Diffusion is not connected and "None" is chosen, image data will not be resized. Instead, all layers will have a scaling [transformation](./tool_guide.md#-transform-layer-tool-t) applied to make them display at the new size.
+- If the image size is decreasing or the image is being scaled while Stable Diffusion is not connected, each layer will be individually scaled with the chosen scaling algorithm.
+- If Stable Diffusion is not connected and "None" is chosen, image data will not be resized. Instead, all layers will have a scaling [transformation](./tool_guide.md#-transform-layer-tool-t) applied to make them display at the new size.
 - If AI upscaling is in use, the entire merged image will be used for scaling.  The upscaled image will be created as a new layer above all the previous layers.  As long as none of the layers are locked, all existing layers will have scaling transformations applied so that they are shown at the new size.
 
 <img src="./labeled_screenshots/scale_image.png" alt="Screenshot of the image scaling window, with specific elements numbered."/>
 
-1. **Upscale method selection**:  Choose between different methods for upscaling the image.
-2. **New resolution (pixels)**:  Set the new image size in pixels.  When changed, "Width scale" and "Height scale" will automatically update to match.
-3. **New resolution (scale)**:  Set the new image size as a multiple of the original size.  When changed, "Width" and "Height" will automatically update to match.
-4. **ControlNet tiled upscaling**:  Only available if the Stable-Diffusion generator is active and ControlNet is working.  When checked, use Stable-Diffusion with the Tile ControlNet model to upscale the image.
-5. **ControlNet tile downsample rate**:  When "ControlNet tiled upscaling" is checked, increase this value to give Stable-Diffusion more freedom to alter details while upscaling.
-6. **"Scale image" button**:  Closes the scaling window and begins scaling the image.
-7. **Cancel button**: Closes the scaling window without making changes.
+1. **Image scaling mode selection**: Choose between different types of image scaling. Depending on image generator setup, not all types may be available. If only one type is available, this dropdown is hidden. Possible options:
+    - **Basic image scaling**: Scale the image entirely within IntraPaint, using basic (non-AI) image scaling algorithms.
+    - **Image generator scaling modes**: Scale the image using a scaling mode provided by the [image generator](#image-generator-selection-window). This option will only be available if the connected image generator provides at least one upscaling method.
+    - **Advanced AI upscaling**:  Use Stable Diffusion to upscale an image. For this option to be available, you must be using a Stable Diffusion image generator with either the "Ultimate SD Upscale" script or a Tile ControlNet model installed.  See the [image upscaling section in the Stable Diffusion setup guide](./stable_diffusion_setup.md#upscaling-models-and-the-ultimate-sd-upscaler) for more information.
+2. **Upscale method selection**:  Choose between different methods for upscaling the image. Obptions vary depending on the selected scaling mode:
+    - In **Basic image scaling** mode, select between image scaling algorithms that use different methods of blending scaled pixels.
+    - In **Image generator scaling modes**, select between modes provided by the image generator.  These may include a mix of basic scaling algorithms and AI upscalers.
+    - In **Advanced AI upscaling**, the options are the same as in "Image generator scaling modes", except that there is also a "None" option. If any option is chosen other than "None", that option will be used in tandem with Stable Diffusion upscaling.
+3. **New resolution (pixels)**:  Set the new image size in pixels.  When changed, "Width scale" and "Height scale" will automatically update to match.  When using advanced AI upscaling, the new dimensions can't be more than four times the original dimensions.
+4. **New resolution (scale)**:  Set the new image size as a multiple of the original size.  When changed, "Width" and "Height" will automatically update to match.
+5. **"Advanced AI upscaling" section**: Everything below this point is only visible in the "Advanced AI Upscaling" mode.
+6. **Use the "Ultimate SD Upscale" script**:  Only available if a Stable Diffusion image generator is active and the "Ultimate SD Upscale script is installed.  See [image upscaling section in the Stable Diffusion setup guide](./stable_diffusion_setup.md#upscaling-models-and-the-ultimate-sd-upscaler) for more information.
+7. **"Denoising strength" slider**: In advanced AI upscaling, this controls how much freedom Stable Diffusion is given when refining the upscaled image.  Higher values have more freedom to fix details, but are also more likely to deviate from the original image.
+8. **"Step count" slider**:  In advanced AI upscaling, this controls how many steps are taken to refine the image in Stable Diffusion.  Higher values may produce better results, but will take longer.
+9. **ControlNet tile model options**:  If a ControlNet tile model is installed and available, it can be used to increase the consistency of Stable Diffusion upscaling.  Controls for this will only be visible if a tile model and preprocessor are available.  Refer to [this guide](./stable_diffusion_setup.md#controlnet) for more information about ControlNet setup.
+    - **9a. Tile ControlNet model**: Select a ControlNet tile model to use.  In most cases the one shown here will be the only option, but other tile models exist for use with Stable Diffusion XL.  ControlNet models will only appear here if they have the word "tile" in their filename.
+    - **9b. Tile ControlNet preprocessor**: Select a ControlNet preprocessor module to use with the tile model.  All ControlNet preprocessors that include the word "tile" will be listed.
+    - **9c. Tile preprocessor settings**: Settings specific to the selected ControlNet preprocessor will be listed here. The one shown here (Downsampling Rate) can be increased to make the tile ControlNet less strict, but other preprocessors may have different options.
+10. **"Scale image" button**:  Closes the scaling window and begins scaling the image.
+11. **Cancel button**: Closes the scaling window without making changes.
 
 ### Crop image to selection (Ctrl+Alt+C)
 Crops the image to the largest rectangle that contains all [selected content](./tool_guide.md#selection-tools).  This will be applied to every layer in the image.  If any locked layers aren't totally within the selected area, this will fail, and an error message will list which layers blocked the change.  Any text layers that need to be cropped will first need to be converted to image layers, and a popup will appear asking to confirm or deny the change.
@@ -282,28 +296,29 @@ IntraPaint can read and write the following AI image generation parameters in im
 - Guidance scale
 - Seed
 
-It does this in a format compatible with the Stable-Diffusion WebUI, so IntraPaint can load those values directly into the image generation panel when the image is opened in IntraPaint.  When saving, IntraPaint will ask you if you want to save this metadata to the file, and you have the option to make it always save metadata automatically, or never save automatically or ask again.  If automatic metadata updates are disabled, choosing "update metadata" will manually prepare the metadata update, so it'll be written to the image file on the next save.
+It does this in a format compatible with the Stable Diffusion WebUI, so IntraPaint can load those values directly into the image generation panel when the image is opened in IntraPaint.  When saving, IntraPaint will ask you if you want to save this metadata to the file, and you have the option to make it always save metadata automatically, or never save automatically or ask again.  If automatic metadata updates are disabled, choosing "update metadata" will manually prepare the metadata update, so it'll be written to the image file on the next save.
 
 ### Select image generator (F11)
-Opens a window where you can enable or disable AI image generation, or select alternate AI image generators.  IntraPaint still provides limited support for the obsolete GLID-3-XL image generator, but in most cases you'll probably want to use the Stable-Diffusion image generator instead.  Support for other AI image generators may become available in the future.
+Opens a window where you can enable or disable AI image generation, or select alternate AI image generators.  IntraPaint still provides limited support for the obsolete GLID-3-XL image generator, but in most cases you'll probably want to use the Stable Diffusion image generator instead.  Support for other AI image generators may become available in the future.
 
 #### Image Generator Selection window
 <img src="./labeled_screenshots/generator_window.png" alt="Screenshot of the image generator selection window, with specific elements numbered."/>
 
 1. The list of available image generation modes. The active mode will be underlined.  Click any option to show more information on the right.
-   - 1a. **Stable-Diffusion WebUI API**: The primary AI image generation mode.
-   - 1b. **GLID-3-XL image generation**: Runs the outdated GLID-3-XL image generator directly within IntraPaint.  This option is not available when running the pre-bundled version of IntraPaint, and it requires significant additional setup.
-   - 1c. **GLID-3-XL image generation server**: Use GLID-3-XL image generation over a network.
-   - 1d. **No image generator**: Use IntraPaint without any AI image generation.
-2. **Generator description**: A brief overview of the capabilities and limitations of the selected generator.
-3. **Setup and installation instructions**: Instructions for installing the selected image generator and getting it working with IntraPaint.
-4. **Status window**: Lists any issues detected that would prevent the generator from being used.
+   - 1a. **Stable Diffusion WebUI API**: Provides Stable Diffusion image generation by sending requests to a running copy of the [Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#stable-diffusion-web-ui).
+   - 1b. **Stable Diffusion ComfyUI API**: Provides Stable Diffusion image generation by sending requests to a running copy of [ComfyUI](https://github.com/comfyanonymous/ComfyUI?tab=readme-ov-file#comfyui).
+   - 1c. **GLID-3-XL image generation**: Runs the outdated GLID-3-XL image generator directly within IntraPaint.  This option is not available when running the pre-bundled version of IntraPaint, and it requires significant additional setup.
+   - 1d. **GLID-3-XL image generation server**: Use GLID-3-XL image generation over a network.
+   - 1e. **No image generator**: Use IntraPaint without any AI image generation.
+2. **Description tab**: Provides a brief overview of the capabilities and limitations of the selected generator.
+3. **Setup Guide tab**: Click this tab to view instructions for installing the selected image generator and getting it to work with IntraPaint.
+4. **Status section**: Lists any issues detected that would prevent the generator from being used.
 5. **"Activate" button**:  Click to try and activate the selected generator.
 
 
 ### Generate (F4)
 
-Triggers AI image generation, creating or altering image content to insert into the [image generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](./controls.md#generated-image-selection-view). This has the same effect as the Generate button on the [Image Generation Panel](./stable-diffusion.md#image-generation-panel).  This option will only be available if the [image generator is configured and active](../README.md#ai-setup-stable-diffusion).
+Triggers AI image generation, creating or altering image content to insert into the [image generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](./controls.md#generated-image-selection-view). This has the same effect as the Generate button on the [Image Generation Panel](./stable-diffusion.md#image-generation-panel).  This option will only be available if [an image generator is configured and active](./stable_diffusion_setup.md).
 
 ---
 
@@ -494,14 +509,14 @@ This filter simplifies image colors, reducing the color complexity of the image.
 
 ---
 
-## Stable-Diffusion menu
+## Stable Diffusion menu
 
-This menu is only available when the Stable-Diffusion WebUI image generator is active.  Each of these options will only be provided if IntraPaint detects that the WebUI supports it.
+This menu is only available when a Stable Diffusion image generator is active.  Each of these options will only be provided if IntraPaint detects that the image generator supports it.
 
 
 ### View saved prompt styles (Ctrl+Alt+1)
 
-This option opens a window where you can access prompt presets saved with the WebUI's [prompt style feature](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Features#styles).  If you haven't saved any prompt presets within the WebUI, this option won't be visible.
+This option opens a window where you can access prompt presets saved with the Stable Diffusion WebUI's [prompt style feature](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Features#styles).  If you haven't saved any prompt presets within the WebUI or you're using the ComfyUI generator, this option won't be visible.
 
 I'd like to provide support for adding and editing styles directly within IntraPaint, but the WebUI API does not currently support style editing. I'll probably eventually either have IntraPaint save new custom styles to a file, or let it directly edit the WebUI's styles.csv file if it can access it.
 
@@ -515,26 +530,35 @@ I'd like to provide support for adding and editing styles directly within IntraP
 6. **"Replace prompt" button**:  If clicked, the selected preset's prompt and negative prompt completely replace the contents of the prompt and negative prompt sections in the [image generation panel](./stable-diffusion.md#image-generation-panel).
 7. **Close button**:  Closes the window.
 
-### View LORA models (Ctrl+Alt+2)
+### View LoRA models (Ctrl+Alt+2)
 
-This option opens a window where you can view and select between LORA models. LORA models provide extensions to Stable-Diffusion models, usually to introduce new concepts or styles not found in the original training data.  LORA model files need to be copied to the **models/Lora** directory within the Stable-Diffusion WebUI before IntraPaint can use them.  This menu option will only appear if IntraPaint detects at least one available LORA model.
-
-
-LORA models are activated by adding text to the prompt in the **\<lora:LORA_NAME:LORA_STRENGTH>** format. LORA_NAME needs to be replaced by the name of the LORA model's file without the extension, and LORA_STRENGTH should be replaced with a multiplier controlling how strongly the LORA will be applied, usually defaulting to 1.0.
+This option opens a window where you can view and select between LoRA models. LoRA models provide extensions to Stable Diffusion models, usually to introduce new concepts or styles not found in the original training data.  LoRA model files need to be copied to the **models/Lora** directory within the Stable Diffusion WebUI or the **models/loras** directory within ComfyUI before IntraPaint can use them.  This menu option will only appear if IntraPaint detects at least one available LoRA model.
 
 
-<img src="./labeled_screenshots/lora_window.png" alt="Screenshot of the LORA window, with specific elements numbered."/>
+LoRA models are activated by adding text to the prompt in the **\<lora:LORA_NAME:LORA_STRENGTH>** format. LORA_NAME needs to be replaced by the name of the LoRA model's file without the extension, and LORA_STRENGTH should be replaced with a multiplier controlling how strongly the LoRA will be applied, usually defaulting to 1.0.
 
-1. **LORA model option, not selected**:  Click any option in the list to select it.
-2. **Selected LORA model option**:  Once selected, the "add to prompt"/"remove from prompt" button will use that LORA.
-3. **LORA model option, no preview**:  The LORA preview images can be set within the Stable-Diffusion WebUI's LORA interface, and IntraPaint will load them when the LORA selection window is opened.  Any LORA without a preview will use this placeholder image.
-4. **"Add to prompt"/"Remove from prompt" button:**:  If the LORA is not already enabled, clicking this button will add it to the prompt field in the [image generation panel](./stable-diffusion.md#image-generation-panel).  If the selected LORA has already been added to the prompt, clicking this button will remove it.
-5. **Close button**:  Close the LORA window.
+
+<img src="./labeled_screenshots/lora_window.png" alt="Screenshot of the LoRA window, with specific elements numbered."/>
+
+1. **LoRA model option, not selected**:  Click any option in the list to select it.
+2. **Selected LoRA model option**:  Once selected, the "add to prompt"/"remove from prompt" button will use that LoRA.
+3. **LoRA model option, no preview**:  The LoRA preview images can be set within the Stable Diffusion WebUI's LoRA interface, and IntraPaint will load them when the LoRA selection window is opened.  Any LoRA without a preview will use this placeholder image.
+4. **"Add to prompt"/"Remove from prompt" button:**:  If the LORA is not already enabled, clicking this button will add it to the prompt field in the [image generation panel](./stable-diffusion.md#image-generation-panel).  If the selected LoRA has already been added to the prompt, clicking this button will remove it.
+5. **Close button**:  Close the LoRA window.
 
 ### LCM Mode [F10]
-This option is only visible when using Stable-Diffusion, when the LCM LORA model and support for the LCM sampler are detected.  LCM mode dramatically decreases image generation time, and gives more predictable but less creative results. Selecting this option adjusts image generation parameters to match the settings needed by LCM models:
+This option is only visible when using Stable Diffusion, when the LCM LoRA model and support for the LCM sampler are detected.  LCM mode dramatically decreases image generation time, and gives more predictable but less creative results. Selecting this option adjusts image generation parameters to match the settings needed by LCM models:
 
 - The image sampling mode is set to LCM
-- The activation text for the LCM LORA is inserted into the prompt, if not already there.
+- The activation text for the LCM LoRA is inserted into the prompt, if not already there.
 - The prompt guidance scale is set to 1.5 (1.5 - 2.0 is the recommended range for LCM).
 - The number of image generation steps is set to 8 (5 - 10 is the recommended range for LCM).
+
+---
+
+## Help menu
+
+This menu provides resources to help you use IntraPaint.
+
+### Open IntraPaint help pages [F1]
+Opens the [IntraPaint documentation index page](./help_index.md) in a web browser.

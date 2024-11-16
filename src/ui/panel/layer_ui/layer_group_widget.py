@@ -1,6 +1,6 @@
 """Represents an image layer group."""
 import logging
-from typing import Dict, Optional, List
+from typing import Optional
 
 from PySide6.QtCore import QPointF, QPoint, QLine, Qt, Signal
 from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter, \
@@ -31,7 +31,7 @@ class LayerGroupWidget(BorderedWidget):
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._layer = layer_stack
         self._image_stack = image_stack
-        self._layer_items: Dict[Layer, LayerGroupWidget | LayerWidget] = {}
+        self._layer_items: dict[Layer, LayerGroupWidget | LayerWidget] = {}
 
         # Own layer item and toggle switch:
         self._parent_frame = BorderedWidget(self)
@@ -227,7 +227,7 @@ class LayerGroupWidget(BorderedWidget):
         return self._parent_item
 
     @property
-    def child_items(self) -> List[QWidget]:
+    def child_items(self) -> list[QWidget]:
         """Returns the list widgets for all child layers."""
         return list(self._layer_items.values())
 
