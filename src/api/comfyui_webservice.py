@@ -372,6 +372,13 @@ class ComfyUiWebservice(WebService):
                 continue
             model_name = control_unit.model.full_model_name
             preprocessor = control_unit.preprocessor
+            if preprocessor.name == PREPROCESSOR_NONE and model_name == CONTROLNET_MODEL_NONE:
+                logger.info(f'Skipping unit {control_unit_key}, no model or preprocessor set')
+                continue
+            if model_name == CONTROLNET_MODEL_NONE and not preprocessor.model_free:
+                logger.info(f'Skipping unit {control_unit_key} with preprocessor {preprocessor.name}: no model set and'
+                            ' preprocessor is not model-free')
+                continue
 
             control_image_str = control_unit.image_string
             assert control_image_str is not None

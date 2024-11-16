@@ -106,7 +106,7 @@ def get_all_preprocessors(preprocessor_names: list[str],
         if preprocessor_details is not None and preprocessor_name in preprocessor_details:
             preprocessor.model_free = preprocessor_details[preprocessor_name]['model_free']
         else:
-            preprocessor.model_free = preprocessor_name not in PREPROCESSOR_MODEL_FREE
+            preprocessor.model_free = preprocessor_name in PREPROCESSOR_MODEL_FREE
         preprocessors.append(preprocessor)
     return preprocessors
 
@@ -148,6 +148,14 @@ def load_cached_controlnet_units() -> list[ControlNetUnitDict]:
         if not control_unit.enabled:
             continue
         preprocessor = control_unit.preprocessor
+        model = control_unit.model.full_model_name
+        if preprocessor.name == PREPROCESSOR_NONE and model == CONTROLNET_MODEL_NONE:
+            logger.info(f'skipping control unit {control_unit_key}: both model and preprocessor are unset.')
+            continue
+        if model == CONTROLNET_MODEL_NONE and not preprocessor.model_free:
+            logger.info(f'skipping control unit {control_unit_key}: both model is unset and preprocessor'
+                        f' {preprocessor.name} is not model-free.')
+            continue
         control_dict = default_controlnet_unit()
         control_dict['enabled'] = True
         control_dict['pixel_perfect'] = control_unit.pixel_perfect
