@@ -340,7 +340,8 @@ class ImageScaleModal(QDialog):
         self._schedule_controlnet_cache_save()
 
     def _remove_controlnet_tile_preprocessor_inputs(self) -> None:
-        assert self._tile_control_unit is not None
+        if self._tile_control_unit is None:
+            return
         if len(self._tile_preprocessor_param_controls) > 0:
             tile_preprocessor_params = [param for param in self._tile_control_unit.preprocessor.parameters
                                         if param.key not in EXCLUDED_PREPROCESSOR_PARAM_KEYS]
