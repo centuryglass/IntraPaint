@@ -42,13 +42,14 @@ import logging
 import os
 import re
 import sys
+import webbrowser
 from argparse import Namespace
 from typing import Optional, Any, Callable
 
 from PIL import Image, UnidentifiedImageError, ExifTags
 from PIL.ExifTags import IFD
-from PySide6.QtCore import QSize, QUrl
-from PySide6.QtGui import QImage, Qt, QIcon, QDesktopServices
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QImage, Qt, QIcon
 from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
 
 from src.config.application_config import AppConfig
@@ -1488,7 +1489,7 @@ class AppController(MenuBuilder):
     @menu_action(MENU_HELP, 'help_index_shortcut', 600)
     def open_help_index(self) -> None:
         """Open the IntraPaint documentation index in a browser window."""
-        QDesktopServices.openUrl(QUrl(HELP_INDEX_LINK))
+        webbrowser.open(HELP_INDEX_LINK)
 
     # Internal/protected:
 
@@ -1521,5 +1522,5 @@ class AppController(MenuBuilder):
 
     def _scale(self, new_size: QSize) -> None:  # Override to allow alternate or external upscalers:
         scaling_mode_name = Cache().get(Cache.SCALING_MODE)
-        scaling_mode_name = PIL_SCALING_MODES.get(scaling_mode_name, None)
+        scaling_mode = PIL_SCALING_MODES.get(scaling_mode_name, None)
         scale_all_layers(self._image_stack, new_size.width(), new_size.height(), scaling_mode)

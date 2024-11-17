@@ -12,7 +12,7 @@ a = Analysis(
     runtime_hooks=[],
     excludes=['PySide6.QtNetwork', 'PySide6.QtDBus', 'libKf6BreezeIcons.so.6'],
     noarchive=False,
-    optimize=0,
+    optimize=1,
 )
 pyz = PYZ(a.pure)
 

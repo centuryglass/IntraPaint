@@ -1,5 +1,5 @@
 {
-    "style": "Breeze",
+    "style": "Windows",
     "theme": "None",
     "font_point_size": {
         "min": 1,
@@ -78,7 +78,6 @@
         1.0
     ],
     "interrogate_model": "clip",
-    "controlnet_tile_model": "control_v11f1e_sd15_tile [a371b31b]",
     "mask_blur": {
         "min": 0,
         "max": 64,

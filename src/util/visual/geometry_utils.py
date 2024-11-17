@@ -1,4 +1,5 @@
 """Provides a utility function for handling image or widget placement."""
+import logging
 import math
 from typing import Optional
 
@@ -7,6 +8,8 @@ from PySide6.QtGui import QTransform, QPolygonF, QPainter, QColor
 
 from src.util.math_utils import convert_degrees
 from src.util.shared_constants import MIN_NONZERO, FLOAT_MAX
+
+logger = logging.getLogger(__name__)
 
 
 def get_scaled_placement(container_rect: QRect | QSize,
@@ -55,8 +58,26 @@ def align_inner_bounds(outer_bounds: QRect | QRectF, inner_bounds: QRect | QRect
         right_margin = margins.right()
         top_margin = margins.top()
         bottom_margin = margins.bottom()
-    assert outer_bounds.width() >= (inner_bounds.width() + left_margin + right_margin)
-    assert outer_bounds.height() >= (inner_bounds.height() + top_margin + bottom_margin)
+
+    def _validate_and_correct_margins(dim_name: str, outer_size: int, inner_size: int,
+                                      start_margin: int, end_margin: int) -> tuple[int, int]:
+        if outer_size >= (inner_size + start_margin + end_margin):
+            return start_margin, end_margin
+        else:
+            logger.warning(f'inner {dim_name} plus margins exceeds outer {dim_name}, margins will be adjusted.  '
+                           f'outer={outer_size}, inner={inner_size}, margins={start_margin},{end_margin}')
+            margin_available = outer_size - inner_size
+            if margin_available == 0:
+                return 0, 0
+            if start_margin == 0:
+                return 0, margin_available
+            new_start_margin = round(margin_available * start_margin / (start_margin + end_margin))
+            return new_start_margin, margin_available - new_start_margin
+
+    left_margin, right_margin = _validate_and_correct_margins('width', outer_bounds.width(),
+                                                              inner_bounds.width(), left_margin, right_margin)
+    top_margin, bottom_margin = _validate_and_correct_margins('height', outer_bounds.height(),
+                                                              inner_bounds.height(), top_margin, bottom_margin)
     x: int | float = outer_bounds.x() + left_margin
     y: int | float = outer_bounds.y() + top_margin
     if alignment & Qt.AlignmentFlag.AlignHCenter == Qt.AlignmentFlag.AlignHCenter:

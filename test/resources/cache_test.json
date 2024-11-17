@@ -204,8 +204,6 @@
     },
     "sampling_method": "Euler a",
     "scheduler": "default",
-    "upscale_method": "None",
-    "image_layer_scaling_behavior": "Scale merged, keep source layers",
     "canvas_resize_layer_mode": "Only expand full-image layers",
     "canvas_resize_crop_layers": true,
     "seed": {
@@ -214,6 +212,7 @@
         "step": 1,
         "value": -1
     },
+    "last_seed": "-1",
     "inpaint_full_res": true,
     "inpaint_full_res_padding": {
         "min": 0,
@@ -243,13 +242,6 @@
         "step": 1,
         "value": 1
     },
-    "controlnet_upscaling": false,
-    "controlnet_downsample_rate": {
-        "min": 1.0,
-        "max": 4.0,
-        "step": 0.1,
-        "value": 1.0
-    },
     "controlnet_args_0_webui": "",
     "controlnet_args_1_webui": "",
     "controlnet_args_2_webui": "",
@@ -266,6 +258,8 @@
         "step": 64,
         "value": 512
     },
+    "comfyui_cached_scaling_mode": "",
+    "webui_cached_scaling_mode": "",
     "webui_tiling": false,
     "webui_restore_faces": false,
     "webui_subseed": {
@@ -274,6 +268,7 @@
         "step": 1,
         "value": -1
     },
+    "webui_last_subseed": "-1",
     "webui_subseed_strength": {
         "min": 0.0,
         "max": 1.0,
@@ -281,5 +276,22 @@
         "value": 0.0
     },
     "webui_seed_resize_enabled": false,
-    "webui_seed_resize": "512x512"
+    "webui_seed_resize": "512x512",
+    "scaling_mode": "",
+    "image_layer_scaling_behavior": "Scale merged, keep source layers",
+    "use_stable_diffusion_upscaling": false,
+    "sd_upscaling_denoising_strength": {
+        "min": 0.0,
+        "max": 0.7,
+        "step": 0.01,
+        "value": 0.3
+    },
+    "sd_upscaling_step_count": {
+        "min": 1,
+        "max": 150,
+        "step": 1,
+        "value": 30
+    },
+    "sd_upscaling_controlnet_tile_settings": "",
+    "use_ultimate_upscale_script": true
 }
