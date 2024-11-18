@@ -158,6 +158,7 @@ class ResizeCanvasModal(QDialog):
         """Recalculate preview bounds on resize."""
         min_preview = math.ceil(min(self.width(), self.height()) * 0.8)
         self._preview.setMinimumSize(QSize(min_preview, min_preview))
+        self._preview.setMaximumSize(self.width(), self.height())
         IntSliderSpinbox.align_slider_spinboxes([self._width_slider, self._height_slider,
                                                  self._x_offset_slider, self._y_offset_slider])
 
