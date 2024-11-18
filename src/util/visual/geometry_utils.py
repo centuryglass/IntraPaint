@@ -100,19 +100,22 @@ def get_rect_transformation(source: QRect | QRectF | QSize, destination: QRect |
     """Gets the transformation required to transform source into destination. Parameters may be either QRect or QSize,
        if QSize is used they will be treated as a rectangle of that size at the origin."""
 
-    def _as_rect_f(param):
+    def _as_rect_f(param: QRect | QRectF | QSize | QSizeF) -> QRectF:
         if isinstance(param, (QSize, QSizeF)):
             return QRectF(0.0, 0.0, param.width(), param.height())
         return QRectF(param)
 
-    source, destination = (_as_rect_f(param) for param in (source, destination))
+    source_rect: QRectF
+    dest_rect: QRectF
+    source_rect, dest_rect = (_as_rect_f(param) for param in (source, destination))
+    if dest_rect.size().isEmpty():
+        logger.error('Invalid rect transform: destination is empty')
+        return QTransform()
     # Extract points from the original rectangle
-    orig_points, trans_points = (QPolygonF([rect.topLeft(), rect.topRight(), rect.bottomLeft(), rect.bottomRight()])
-                                 for rect in (source, destination))
-    transform = QTransform()
-    assert QTransform.quadToQuad(orig_points, trans_points,
-                                 transform), f'Failed transformation: {source} -> {destination}'
-    return transform
+    sx = dest_rect.width() / source_rect.width()
+    sy = dest_rect.height() / source_rect.height()
+    return QTransform.fromTranslate(-source_rect.x(), -source_rect.y()) * QTransform().scale(sx, sy) \
+        * QTransform.fromTranslate(dest_rect.x(), dest_rect.y())
 
 
 def map_rect_precise(rect: QRect | QRectF, transform: QTransform) -> QRectF:
