@@ -179,8 +179,7 @@ class QtPaintBrush(LayerBrush):
                 painter.drawLine(last_pt, change_pt)
         painter.restore()
 
-    @staticmethod
-    def _input_event_paint_segment(painter: QPainter, input_event: 'QtPaintBrush._InputEvent') -> None:
+    def _input_event_paint_segment(self, painter: QPainter, input_event: 'QtPaintBrush._InputEvent') -> None:
         QtPaintBrush.paint_segment(painter, round(input_event.size), input_event.opacity, input_event.hardness,
                                    input_event.color, input_event.change_pt, input_event.last_pt)
 

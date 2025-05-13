@@ -615,6 +615,20 @@
         "default": true,
         "saved": true
     },
+    "clone_stamp_tool_source_mode": {
+        "label": "Source mode:",
+        "category": "Cache",
+        "subcategory": "Clone Stamp Tool",
+        "description": "Control if and when the source point tracks cursor movement.",
+        "type": "string",
+        "default": "Fixed offset",
+        "options": [
+            "Fixed offset",
+            "Dynamic offset",
+            "Fixed position"
+        ],
+        "saved": true
+    },
     "shape_tool_mode": {
         "label": "Shape Type:",
         "category": "Cache",

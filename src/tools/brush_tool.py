@@ -270,7 +270,7 @@ class BrushTool(BaseTool):
             self._tablet_x_tilt = None
             self._tablet_y_tilt = None
         if self._layer is not None:
-            image_coordinates = self._layer.map_from_image(image_coordinates)
+            layer_coordinates = self._layer.map_from_image(image_coordinates)
         if not self._image_stack.has_image:
             return
         if self._tablet_input == QPointingDevice.PointerType.Eraser:
@@ -288,17 +288,19 @@ class BrushTool(BaseTool):
             else:
                 closest_point = closest_point_keeping_angle(last_pos, current_pos, self._fixed_angle).toPoint()
             image_coordinates = closest_point
+            layer_coordinates = self._layer.map_from_image(image_coordinates)
         if KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER) and self._last_pos is not None:
+            last_layer_coordinates = self._layer.map_from_image(self._last_pos)
             pressure = self._last_pressure if self._tablet_pressure is None else self._tablet_pressure
             if pressure is not None:
                 pressure = max(pressure, MIN_LINE_PRESSURE)
-            self._brush.stroke_to(self._last_pos.x(), self._last_pos.y(), pressure, self._tablet_x_tilt,
-                                  self._tablet_y_tilt)
-            self._brush.stroke_to(image_coordinates.x(), image_coordinates.y(), pressure,
+            self._brush.stroke_to(last_layer_coordinates.x(), last_layer_coordinates.y(), pressure,
+                                  self._tablet_x_tilt, self._tablet_y_tilt)
+            self._brush.stroke_to(layer_coordinates.x(), layer_coordinates.y(), pressure,
                                   self._tablet_x_tilt, self._tablet_y_tilt)
             self._preview_line.setVisible(False)  # Hide it until it can update with new last_pos value
         else:
-            self._brush.stroke_to(image_coordinates.x(), image_coordinates.y(), self._tablet_pressure,
+            self._brush.stroke_to(layer_coordinates.x(), layer_coordinates.y(), self._tablet_pressure,
                                   self._tablet_x_tilt, self._tablet_y_tilt)
 
         if self._tablet_input == QPointingDevice.PointerType.Eraser:

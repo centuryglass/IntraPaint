@@ -232,3 +232,9 @@ class Cache(Config, metaclass=Singleton):
     WEBUI_SUBSEED: str
     WEBUI_SUBSEED_STRENGTH: str
     WEBUI_TILING: str
+
+
+    # DYNAMIC PROPERTIES:
+    # Generate with `python /home/anthony/Workspace/ML/IntraPaint/./scripts/dynamic_import_typing.py ./src/config/cache.py`
+
+    CLONE_STAMP_TOOL_SOURCE_MODE: str

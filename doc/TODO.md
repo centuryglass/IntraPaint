@@ -1,63 +1,29 @@
 # Development tasks
 
-## Remaining tasks:
-- Update docs with references to SD setup doc, any changes to upscaling window
-- Create CHANGELOG.md in docs folder
-- Create windows, linux builds
-- Final testing pass
+# Latest bugs, next priorities:
 
-# v.1.1.0 Plans: ComfyUI support and API expansions
-## Goals:
-- Provide support for the ComfyUI API as an alternate image generator choice, keeping feature-parity with WebUI implementations across all features:
-  * text-to-image, image-to-image, and inpainting through the Image Generation panel.
-  * LoRA model loading from prompts
-  * ControlNet support through the ControlNetPanel.
-  * Basic AI upscaling, latent upscaling, through the ImageScaleModal.
-  * CLIP interrogate support (if possible)
-- Clean up WebUI API code, making it easier to handle required compatibility conversions, and to make it easier to support more API features in the future, especially custom scripts.
-- Add "extras" tab to the Image Generation panel, with at least a few API-specific options present
-- Reorganize stable diffusion settings, dividing by generator when necessary, and condensing all of them into a single page. 
 
-Low priority, possibly post-release:
-- Expand WebUI latent upscaling support, and add support for the various "highres. fix" options.
-- Using a custom node, implement the ComfyUI "interrogate" workflow.
-- Add queue support for the WebUI generator/API to keep it in parity with ComfyUI
-- Figure out IpAdapter in ComfyUI:  I suspect that also requires a new workflow.
-
-## What's already done:
-ComfyUI support:
-- Created the api.comfyui.nodes package, diffusion_workflow_builder.py for dynamically constructing the ComfyUI workflow.
-- Created comfyui_webservice.py to handle API access including applying cached parameters, fully implemented and mostly tested.
-- Created sd_comfyui_generator.py to use the API for image generation tasks.
-- Added the websockets-client library to handle ComfyUI progress monitoring.
-- Text-to-image, image-to-image, inpainting, and ControlNet all tested and confirmed working, with only minor bugs left to resolve.
-- "inpaint full res" implemented by pre-cropping and scaling image content in SDComfyUIGenerator.
-
-UI Changes (Image Generation tab):
-- Minor adjustments made to allow this to work with both WebUI and ComfyUI generators:
-  * "interrogate" button removed in ComfyUI for now
-- Added model selection dropdown
-- Tab now supports an inner "Extras" tab that can be used for generator-specific options
-
-ControlNet:
-- Added ControlNetPreprocessor class for tracking a preprocessor option's name and valid parameters in a standardized way
-- Added ControlNetCategoryBuilder class for tracking valid preprocessor/model pairings in a standardized way.
-- Added hard-coded preprocessor parameters to use with the Forge WebUI, which doesn't send preprocessor parameters.
-- Added hard-coded preprocessor/model category pairings with regex support to allow ControlNetCategoryBuilder to work in Forge and ComfyUI instead of just A1111.
-- Removed most of the Cache entries for ControlNet data, since a lot of that is API specific, and can all be managed by the ImageGenerator anyway.
-- Adjusted ControlNetPanel to use new standardized data types, simplifying a lot of code and enabling ComfyUI support.
-
-WebUI compatibility and cleanup:
-- Added and applied TypedDict classes defining all API request and response formats, so that code accessing API dicts will be properly validated.
-- Added diffusion_request_body.py to automatically assemble cached parameters into a valid request body, with support for parameters IntraPaint currently ignores.
-- A1111Webservice methods added to provide ControlNet preprocessors, types using new standardized formats.
-- ControlNet preprocessor resolution, balance mode, and resize mode are now shown properly in the ControlNet panel
-
-Misc. cleanup:
-- Updated minimum required Python version to 3.11, removed some workarounds that were previously present to allow use with earlier versions.
-- Removed Set, Dict, List, Tuple imports from typing that are no longer required.
-- Adjust various dropdown list sizing properties so that the UI doesn't get distorted if the API sends an extremely long option.
-
+- text layer offset is buggy: transform tool offsets aren't in sync with text tool coordinates, copy/paste puts layers in weird places.
+- Weird resize glitch sometimes when moving the window between monitors, possibly related to panel orientation/layout
+- When inpainting creates a new layer, that layer should become active
+- "Mirror layer vertically" mirrors horizontally instead
+- transform: translate up/down keys should be reversed
+- Stable Diffusion model menu on gen panel still doesn't sync properly
+- Line previews linger with the ctrl+s shortcut
+- Shape tool should use eyedropper
+- Custom pallets don't sync between color pickers properly
+- Alpha lock doesn't save to .ora
+- Occasional crash when removing alpha lock after layer changes
+- Rare crash: selection_layer.py line 340, height_to_add < 0
+- Selection areas don't always sync properly
+- "Draw in selection only" setting shouldn't apply to tools that don't use it
+- Perceptual color algorithms should apply to "select all by color"
+- Pan and zoom should be disabled in the mini nav panel
+- Possible partial alpha compositing glitches (brush tool on alpha-locked layer)
+- Shift key conflict messes up transforms on switch from transform tool -> shape tool
+- Remove ControlNet preprocessor images from results
+- Test logarithmic zoom intervals: doubling the zoom level should be quicker
+- Brush tool: incorrect initial brush size bug is definitely still triggering sometimes
 
 ---
 
@@ -66,7 +32,7 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 - Nested layer selection state shown in the layer panel isn't updating properly (recursive active layer update logic in LayerPanel looks fine)
 - changing gen. area size still doesn't always sync fully - width changes but not height. Possibly fixed, keep an eye out for it.
 - Weird bug where every new image loads with a seemingly-arbitrary transformation pre-applied.  Maybe a bug with layer group transforms? Haven't been able to reproduce.
-
+- .ora save fails when layer name is "" (couldn't reproduce, but I don't remember fixing this)
 
 ## General concerns and ideas
 * Solid color selection layer is less than ideal, even with a configurable color.  Maybe some sort of animated fill?

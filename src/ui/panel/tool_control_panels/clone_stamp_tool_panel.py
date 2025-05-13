@@ -17,17 +17,17 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-LABEL_TEXT_OFFSET = _tr('Offset:')
 LABEL_TEXT_SELECTION_ONLY = _tr('Update selection only')
 
 
 class CloneStampToolPanel(BrushToolPanel):
     """Control panel widget for the clone stamp tool."""
 
-    offset_changed = Signal(QPoint)
+    source_xy_change = Signal(QPoint)
 
     def __init__(self) -> None:
-        self._offset_row = QWidget()
+        self._source_xy_row = QWidget()
+        self._source_mode_row = QWidget()
         super().__init__(size_key=Cache.CLONE_STAMP_TOOL_BRUSH_SIZE,
                          pressure_size_key=Cache.CLONE_STAMP_TOOL_PRESSURE_SIZE,
                          opacity_key=Cache.CLONE_STAMP_TOOL_OPACITY,
@@ -36,42 +36,51 @@ class CloneStampToolPanel(BrushToolPanel):
                          pressure_hardness_key=Cache.CLONE_STAMP_TOOL_PRESSURE_HARDNESS,
                          antialias_key=Cache.CLONE_STAMP_TOOL_ANTIALIAS,
                          selection_only_label=LABEL_TEXT_SELECTION_ONLY,
-                         added_rows=[self._offset_row, Divider(Qt.Orientation.Horizontal)])
-        self._offset = QPoint()
-        self._offset_layout = QHBoxLayout(self._offset_row)
-        self._offset_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self._offset_layout.addWidget(QLabel(SHORT_LABEL_X_POS))
+                         added_rows=[self._source_xy_row, self._source_mode_row, Divider(Qt.Orientation.Horizontal)])
+        self._source_xy = QPoint()
+        self._source_xy_layout = QHBoxLayout(self._source_xy_row)
+        self._source_xy_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self._source_xy_layout.addWidget(QLabel(SHORT_LABEL_X_POS))
         self._x_spinbox = QSpinBox()
-        self._offset_layout.addWidget(self._x_spinbox, stretch=1)
-        self._offset_layout.addWidget(QLabel(SHORT_LABEL_Y_POS))
+        self._source_xy_layout.addWidget(self._x_spinbox, stretch=1)
+        self._source_xy_layout.addWidget(QLabel(SHORT_LABEL_Y_POS))
         self._y_spinbox = QSpinBox()
-        self._offset_layout.addWidget(self._y_spinbox, stretch=1)
+        self._source_xy_layout.addWidget(self._y_spinbox, stretch=1)
         for spinbox in (self._x_spinbox, self._y_spinbox):
             spinbox.setValue(0)
             spinbox.setRange(INT_MIN, INT_MAX)
 
+
+        cache = Cache()
+        self._source_mode_layout = QHBoxLayout(self._source_mode_row)
+        self._source_mode_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self._source_mode_label = QLabel(cache.get_label(Cache.CLONE_STAMP_TOOL_SOURCE_MODE))
+        self._source_mode_combobox = cache.get_control_widget(Cache.CLONE_STAMP_TOOL_SOURCE_MODE)
+        self._source_mode_layout.addWidget(self._source_mode_label)
+        self._source_mode_layout.addWidget(self._source_mode_combobox)
+
         def _update_x(new_x: int) -> None:
-            if new_x == self._offset.x():
+            if new_x == self._source_xy.x():
                 return
-            self._offset.setX(new_x)
-            self.offset_changed.emit(QPoint(self._offset))
+            self._source_xy.setX(new_x)
+            self.source_xy_change.emit(QPoint(self._source_xy))
 
         self._x_spinbox.valueChanged.connect(_update_x)
 
         def _update_y(new_y: int) -> None:
-            if new_y == self._offset.y():
+            if new_y == self._source_xy.y():
                 return
-            self._offset.setY(new_y)
-            self.offset_changed.emit(QPoint(self._offset))
+            self._source_xy.setY(new_y)
+            self.source_xy_change.emit(QPoint(self._source_xy))
 
         self._y_spinbox.valueChanged.connect(_update_y)
 
     @property
-    def offset(self) -> QPoint:
-        """Accesses the current offset value."""
-        return QPoint(self._offset)
+    def source_xy(self) -> QPoint:
+        """Accesses the current source position or offset value."""
+        return QPoint(self._source_xy)
 
-    @offset.setter
-    def offset(self, new_offset: QPoint) -> None:
-        self._x_spinbox.setValue(new_offset.x())
-        self._y_spinbox.setValue(new_offset.y())
+    @source_xy.setter
+    def source_xy(self, new_source_xy: QPoint) -> None:
+        self._x_spinbox.setValue(new_source_xy.x())
+        self._y_spinbox.setValue(new_source_xy.y())
