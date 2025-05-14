@@ -147,6 +147,7 @@
     "clone_stamp_tool_pressure_opacity": false,
     "clone_stamp_tool_pressure_hardness": false,
     "clone_stamp_tool_antialias": true,
+    "clone_stamp_tool_source_mode": "Fixed offset",
     "shape_tool_mode": "",
     "shape_tool_vertex_count": {
         "min": 3,

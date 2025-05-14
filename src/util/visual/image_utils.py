@@ -8,12 +8,12 @@ import uuid
 from typing import Optional, Any, TypeAlias, Callable
 
 # noinspection PyPackageRequirements
-import cv2
 import numpy as np
 from PIL import Image
 from PySide6.QtCore import QBuffer, QRect, QSize, Qt, QPoint, QFile, QIODevice, QByteArray
 from PySide6.QtGui import QImage, QIcon, QPixmap, QPainter, QColor
 from PySide6.QtWidgets import QStyle, QWidget, QApplication
+from numba import njit
 from numpy import ndarray, dtype
 
 from src.util.shared_constants import ICON_SIZE
@@ -216,75 +216,215 @@ def get_transparency_tile_pixmap(size: Optional[QSize] = None) -> QPixmap:
     return transparency_pixmap
 
 
+@njit
+def rgb_to_lab(r: int, g: int, b: int) -> tuple[float, float, float]:
+    """
+    Convert RGB to LAB colorspace.
+
+    Parameters
+    ----------
+    r: int
+        Red color component (range [0, 255]).
+    g: int
+        Green color component (range [0, 255]).
+    b: int
+        Blue color component (range [0, 255]).
+
+    Returns
+    -------
+        lightness: float
+            Lightness LAB component (range [0, 100]).
+        a: float
+            a* color axis LAB component (unbound).
+        b: float
+            b* color axis LAB component (unbound).
+    """
+    # Convert to XYZ
+    r = r / 255.0
+    g = g / 255.0
+    b = b / 255.0
+
+    # Linearize sRGB values
+    r = ((r + 0.055) / 1.055) ** 2.4 if r > 0.04045 else r / 12.92
+    g = ((g + 0.055) / 1.055) ** 2.4 if g > 0.04045 else g / 12.92
+    b = ((b + 0.055) / 1.055) ** 2.4 if b > 0.04045 else b / 12.92
+
+    # Convert to XYZ using D65 illuminant
+    x = (r * 0.4124 + g * 0.3576 + b * 0.1805) * 100
+    y = (r * 0.2126 + g * 0.7152 + b * 0.0722) * 100
+    z = (r * 0.0193 + g * 0.1192 + b * 0.9505) * 100
+
+    # Convert XYZ to LAB
+    # D65 reference white
+    xn, yn, zn = 95.047, 100.0, 108.883
+
+    x = x / xn
+    y = y / yn
+    z = z / zn
+
+    x = x ** (1 / 3) if x > 0.008856 else (7.787 * x) + (16 / 116)
+    y = y ** (1 / 3) if y > 0.008856 else (7.787 * y) + (16 / 116)
+    z = z ** (1 / 3) if z > 0.008856 else (7.787 * z) + (16 / 116)
+
+    L = (116 * y) - 16
+    a = 500 * (x - y)
+    b = 200 * (y - z)
+
+    return float(L), float(a), float(b)
+
+
+@njit
+def calculate_color_distance(lab_plus_alpha_color: tuple[float, float, float, int],
+                             bgra_color: tuple[int, int, int, int] | NpAnyArray) -> float:
+    """
+    Calculate perceptual color distance using LAB colorspace, with one color preconverted.
+    Alpha is handled separately to maintain edge detection.
+
+
+    Parameters
+    ----------
+        lab_plus_alpha_color: tuple[float, float, float, int]
+            Pre-converted LAB color, as a tuple of  L A B float components plus an int alpha component.
+        bgra_color: tuple[int, int, int, int]
+            Second color, as a tuple of BGRA int components (range [0, 255]).
+    Returns
+    -------
+        distance: float
+            A float value used to represent the distance between colors.  Range is between 0 and 300 in theory.  In
+            practice, I haven't found any pairs within RGB colorspace with distance>278, and more precise calculation
+            of extremes will likely take longer than it's worth.
+    """
+    l1, a1, b1, alpha1 = lab_plus_alpha_color
+    b, g, r, alpha2 = bgra_color
+    L2, a2, b2 = rgb_to_lab(r, g, b)
+
+    # Calculate LAB color difference (deltaE)
+    d_l = l1 - L2
+    d_a = a1 - a2
+    d_b = b1 - b2
+
+    # Calculate alpha difference separately (normalized to similar scale as LAB)
+    d_alpha = float(alpha1 - alpha2) / 2.55  # Scale from [0,255] to [0,100]
+    # Combine LAB difference with alpha difference
+    # Weight factors can be adjusted if needed
+    return np.sqrt(d_l * d_l + d_a * d_a + d_b * d_b + d_alpha * d_alpha)
+
+
+@njit
+def make_lab_mask(pixels: np.ndarray, target_lab_color: tuple[float, float, float, int],
+                  threshold: float) -> np.ndarray:
+    """
+    Creates a boolean mask marking each pixel in an image within a certain distance of a LAB color value.
+
+    Parameters
+    ----------
+        pixels: np.ndarray
+            A 1-dimensional array of ARGB32 (b, g, r, a) image pixel values, range 0-255
+        target_lab_color: tuple[float, float, float, int]
+            The target color to match, pre-converted to LAB format, with alpha appended at the final index.
+        threshold: float
+            Maximum distance allowed between an image pixel and target_lab_color in order for it to be flagged.
+    Returns
+    -------
+        mask: np.ndarray
+            A 1-dimensional array of 0/1 int flags indicating if pixels are within the threshold.
+    """
+    mask = np.zeros(pixels.shape[0], dtype=np.float64)
+    for i in range(pixels.shape[0]):
+        dist = calculate_color_distance(target_lab_color, pixels[i])
+        if dist <= threshold:
+            mask[i] = 1
+    return mask
+
+
+@njit
+def fast_flood_fill(image: NpAnyArray, seed_x: int, seed_y: int, threshold: float):
+    """
+    Perform flood fill operation using a numba-optimized approach.
+
+     Parameters
+    ----------
+        image: np.ndarray
+            A 2-dimensional array of ARGB32 (b, g, r, a) image pixel values, range 0-255
+        seed_x: int
+            x coordinate where the flood fill operation should start.
+        seed_y: int
+            y coordinate where the flood fill operation should start.
+        threshold: float
+            Maximum distance allowed between an image pixel and the seed pixel in order for it to be filled.
+    Returns
+    -------
+        mask: np.ndarray
+            A boolean mask of filled pixels.
+    """
+    height, width = image.shape[:2]
+    mask = np.zeros((height, width), dtype=np.bool_)
+
+    # Early exit if seed point is out of bounds
+    if not (0 <= seed_x < width and 0 <= seed_y < height):
+        return mask
+
+    seed_color = image[seed_y, seed_x]
+    l, a, b = rgb_to_lab(int(seed_color[2]), int(seed_color[1]), int(seed_color[0]))
+    lab_seed_color = (l, a, b, int(seed_color[3]))
+
+    # Using a standard 4-connected flood fill to avoid horizontal artifacts
+    stack = [(seed_y, seed_x)]
+    max_stack_size = width * height  # Safety limit
+    while stack and len(stack) < max_stack_size:
+        y, x = stack.pop()
+
+        if mask[y, x]:  # Skip if already filled
+            continue
+        if calculate_color_distance(lab_seed_color, image[y, x]) <= threshold:
+            mask[y, x] = True
+
+            # Check 4-connected neighbors
+            for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                new_y, new_x = y + dy, x + dx
+                if (0 <= new_x < width and 0 <= new_y < height and
+                        not mask[new_y, new_x]):
+                    stack.append((new_y, new_x))
+    return mask
+
+
 def flood_fill(image: QImage, pos: QPoint, color: QColor, threshold: float, in_place: bool = False) -> Optional[QImage]:
     """Returns a mask image marking all areas of similar color directly connected to a point in an image.
 
-     Parameters
-     ----------
-         image: QImage
-             Source image, in format Format_ARGB32_Premultiplied.
-         pos: QPoint
-             Seed point for the fill operation.
-         color: QColor
-             Color used to draw filled pixels in the final mask image.
-         threshold: float
-             Maximum color difference to ignore when determining which pixels to fill.
-         in_place: bool, default=False
-             If True, modify the image in-place and do not return a mask.
-     Returns
-     -------
-         mask: Optional[QImage]
-             Mask image marking the area to be filled, returned only if in_place=False. The mask image will be the same
-             size as the source image. filled pixels will be set to the color parameter, while unfilled pixels will be
-             fully transparent.
-     """
+    Parameters
+    ----------
+        image: QImage
+            Source image, in format Format_ARGB32_Premultiplied.
+        pos: QPoint
+            Seed point for the fill operation.
+        color: QColor
+            Color used to draw filled pixels in the final mask image.
+        threshold: float
+            Maximum color difference to ignore when determining which pixels to fill.
+        in_place: bool, default=False
+            If True, modify the image in-place and do not return a mask.
+    Returns
+    -------
+        mask: Optional[QImage]
+            Mask image marking the area to be filled, returned only if in_place=False. The mask image will be the same
+            size as the source image. filled pixels will be set to black, while unfilled pixels will be
+            fully transparent.
+    """
+    # Convert image to proper format and get numpy array
     un_multiplied_image = image.convertToFormat(QImage.Format.Format_ARGB32)
     np_image = image_data_as_numpy_8bit(un_multiplied_image)
-    seed_color = np.array(np_image[pos.y(), pos.x(), :], dtype=np_image.dtype)
 
-    h, w = np_image.shape[:2]
-    mask = np.zeros((h + 2, w + 2), dtype=np.uint8)
-
-    # Create a 4-channel difference image for comparison
-    diff_image = np.zeros_like(np_image)
-    for i in range(4):  # Include alpha channel
-        diff_image[:, :, i] = np.abs(np_image[:, :, i] - seed_color[i])
-
-    # Maximum difference across all channels
-    max_diff = np.max(diff_image, axis=2)
-
-    # Create initial mask of pixels within threshold
-    within_threshold = max_diff <= threshold
-
-    # Perform flood fill to find connected components
-    seed_mask = mask.copy()
-    flags = 4  # 4-connected
-    cv2.floodFill(
-        within_threshold.astype(np.uint8),
-        seed_mask,
-        (pos.x(), pos.y()),
-        1,
-        loDiff=0,
-        upDiff=0,
-        flags=flags
-    )
-
-    # Extract the filled region (removing the border)
-    filled_mask = seed_mask[1:-1, 1:-1] == 1
+    # Get filled mask using our fast implementation
+    filled_mask = fast_flood_fill(np_image, pos.x(), pos.y(), threshold)
 
     if not in_place:
         # Create new mask image
-        result = QImage(w, h, QImage.Format.Format_ARGB32)
+        result = QImage(image.width(), image.height(), QImage.Format.Format_ARGB32)
         result.fill(Qt.GlobalColor.transparent)
         mask_data = image_data_as_numpy_8bit(result)
 
         # Set color for filled pixels
-        mask_data[filled_mask] = [
-            color.blue(),  # Note: QImage stores in BGRA format
-            color.green(),
-            color.red(),
-            color.alpha()
-        ]
+        mask_data[filled_mask] = [0, 0, 0, 255]
 
         return result
     else:
@@ -302,22 +442,16 @@ def color_fill(image: QImage, color: QColor, threshold: float) -> QImage:
     """Return an image mask marking all pixels where the color value matches a given color within a threshold range."""
     un_multiplied_image = image.convertToFormat(QImage.Format.Format_ARGB32)
     np_image = image_data_as_numpy_8bit(un_multiplied_image)
-    color = [color.blue(), color.green(), color.red(), color.alpha()]
-    np_color = np.array(color, dtype=np_image.dtype)
+    l, a, b = rgb_to_lab(color.red(), color.green(), color.blue())
+    lab_color_with_alpha = (l, a, b, color.alpha())
 
-    # Create a 4-channel difference image for comparison
-    diff_image = np.zeros_like(np_image)
-    for i in range(4):  # Include alpha channel
-        diff_image[:, :, i] = np.abs(np_image[:, :, i] - np_color[i])
+    pixels = np_image.reshape((-1, 4))
+    mask_flat = make_lab_mask(pixels, lab_color_with_alpha, threshold)
+    mask = mask_flat.reshape((image.height(), image.width()))
 
-    # Maximum difference across all channels
-    max_diff = np.max(diff_image, axis=2)
-
-    # Create and return mask of pixels within threshold
-    within_threshold = max_diff <= threshold
     mask_image = create_transparent_image(image.size())
     np_mask_image = image_data_as_numpy_8bit(mask_image)
-    np_mask_image[within_threshold, 3] = 255
+    np_mask_image[mask.astype(bool), 3] = 255
     return mask_image
 
 
@@ -456,3 +590,20 @@ def numpy_source_over_composition(source: NpUInt8Array, destination: NpUInt8Arra
 
     # apply source alpha across the image:
     destination[~alpha_unchanged, 3] = source[~alpha_unchanged, 3]
+
+
+def np_composite_with_mask(source: NpUInt8Array, destination: NpUInt8Array, mask: NpUInt8Array) -> None:
+    """ Performs an image composition operation on two premultiplied ARGB images of equal size, writing
+    changes directly to the destination image, and using a mask of equal size to further restrict compositing based on
+    the mask alpha channel."""
+    alpha_mask = mask[:, :, 3] / 255.0
+
+    # Where the mask is 100% opaque, the source completely overrides the destination:
+    full_alpha = alpha_mask[:, :] == 1.0
+    destination[full_alpha, :] = source[full_alpha, :]
+
+    # Where the mask has partial alpha, fade between source and destination based on mask alpha level:
+    partial_alpha = (alpha_mask[:, :] > 0) & (~full_alpha)
+    if np.any(partial_alpha):
+        destination[partial_alpha, :] = (source[partial_alpha, :] * alpha_mask[partial_alpha, None]
+                                         + destination[partial_alpha, :] * (1 - alpha_mask[partial_alpha, None]))
