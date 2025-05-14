@@ -266,11 +266,11 @@ def rgb_to_lab(r: int, g: int, b: int) -> tuple[float, float, float]:
     y = y ** (1 / 3) if y > 0.008856 else (7.787 * y) + (16 / 116)
     z = z ** (1 / 3) if z > 0.008856 else (7.787 * z) + (16 / 116)
 
-    L = (116 * y) - 16
+    l_component = (116 * y) - 16
     a = 500 * (x - y)
     b = 200 * (y - z)
 
-    return float(L), float(a), float(b)
+    return float(l_component), float(a), float(b)
 
 
 @njit
@@ -296,10 +296,10 @@ def calculate_color_distance(lab_plus_alpha_color: tuple[float, float, float, in
     """
     l1, a1, b1, alpha1 = lab_plus_alpha_color
     b, g, r, alpha2 = bgra_color
-    L2, a2, b2 = rgb_to_lab(r, g, b)
+    l2, a2, b2 = rgb_to_lab(r, g, b)
 
     # Calculate LAB color difference (deltaE)
-    d_l = l1 - L2
+    d_l = l1 - l2
     d_a = a1 - a2
     d_b = b1 - b2
 

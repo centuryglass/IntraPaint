@@ -4,7 +4,6 @@ Brush implementing the clone stamp tool, copying image content from one spot to 
 import math
 from typing import Optional
 
-import numpy as np
 from PySide6.QtCore import QPoint, QRect
 from PySide6.QtGui import QPainter, QImage
 
@@ -12,7 +11,7 @@ from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.layers.image_layer import ImageLayer
 from src.util.math_utils import clamp
 from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit, numpy_bounds_index, \
-    NpAnyArray, numpy_intersect, np_composite_with_mask, numpy_source_over_composition
+    NpAnyArray, numpy_intersect, np_composite_with_mask
 
 
 class CloneStampBrush(QtPaintBrush):

@@ -156,6 +156,7 @@ class PlacementOutline(QGraphicsObject):
     def move_corner(self, corner_id: str, scene_pos: QPointF, _) -> None:
         """Move one of the corners, leaving the position of the opposite corner unchanged."""
         local_pos = self.mapFromScene(scene_pos)
+        assert isinstance(local_pos, QPointF)
         local_rect = self._get_local_rect()
 
         # update offset based on scene coordinates:

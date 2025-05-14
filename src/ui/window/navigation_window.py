@@ -1,7 +1,7 @@
 """Shows the edited image in its own window, with controls for adjusting the main image view and generation area."""
 from typing import Optional
 
-from PySide6.QtCore import QPoint
+from PySide6.QtCore import QPoint, SignalInstance
 from PySide6.QtGui import QIcon, Qt, QCursor, QMouseEvent, QResizeEvent
 from PySide6.QtWidgets import QWidget, QApplication, QHBoxLayout, QPushButton
 
@@ -21,9 +21,9 @@ from src.util.shared_constants import APP_ICON_PATH, PROJECT_DIR, ICON_SIZE
 TR_ID = 'ui.window.navigation_window'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 WINDOW_TITLE = _tr('Navigate')
@@ -137,6 +137,7 @@ class NavigationWindow(ImagePanel):
         if not include_zoom_controls:
             self._reset_zoom_button: Optional[QPushButton] = QPushButton()
             self._reset_zoom_button.setText(BUTTON_TEXT_RESET_VIEW)
+            assert isinstance(self._reset_zoom_button.clicked, SignalInstance)
             self._reset_zoom_button.clicked.connect(self.image_viewer.reset_scale)
             self._nav_control_bar_layout.addWidget(self._reset_zoom_button)
         else:

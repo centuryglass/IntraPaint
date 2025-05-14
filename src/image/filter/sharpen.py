@@ -16,9 +16,9 @@ from src.util.parameter import Parameter, TYPE_FLOAT
 TR_ID = 'image.filter.sharpen'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 SHARPEN_FILTER_TITLE = _tr('Sharpen')

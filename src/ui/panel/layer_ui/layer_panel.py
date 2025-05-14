@@ -22,9 +22,9 @@ logger = logging.getLogger(__name__)
 TR_ID = 'ui.panel.layer_ui.layer_panel'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 LIST_SPACING = 4

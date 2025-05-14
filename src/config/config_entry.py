@@ -16,9 +16,9 @@ VALUE_KEY = 'value'
 TR_ID = 'config.config_entry'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 INVALID_INNER_KEY_TYPE_ERROR = _tr('Tried to set "{key}.{inner_key}" to value "{value}", but {key} is type'
@@ -213,7 +213,8 @@ class ConfigEntry(Parameter):
             if param_type == TYPE_FLOAT:
                 return float(value)
             if param_type == TYPE_QSIZE:
-                return QSize(*(int(n) for n in value.split('x')))
+                width, height = (int(n) for n in value.split('x'))
+                return QSize(width, height)
             raise ValueError(UNEXPECTED_TYPE_ERROR, param_type)
 
         json_value = json_dict[self._key]

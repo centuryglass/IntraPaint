@@ -52,6 +52,7 @@ class TextRect:
             self._font.fromString(source[TextRectKeys.FONT])
             self._text_color = QColor(source[TextRectKeys.TEXT_COLOR])
             self._background_color = QColor(source[TextRectKeys.BG_COLOR])
+            # noinspection PyArgumentList
             self._size = QSize(*source[TextRectKeys.SIZE][:2])
             self._text_alignment = Qt.AlignmentFlag(source[TextRectKeys.ALIGNMENT])
             self._fill_background = source[TextRectKeys.FILL_BG]

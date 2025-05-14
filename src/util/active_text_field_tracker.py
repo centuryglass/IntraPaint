@@ -2,7 +2,7 @@
    action availability change for an active text widget."""
 from typing import TypeAlias, Optional
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal, SignalInstance
 from PySide6.QtWidgets import QLineEdit, QTextEdit, QPlainTextEdit, QWidget, QAbstractSpinBox, QApplication
 
 TextInput: TypeAlias = QLineEdit | QTextEdit | QPlainTextEdit
@@ -95,21 +95,28 @@ class ActiveTextFieldTracker(QObject):
         if widget == self._active_widget:
             return
         if self._active_widget is not None:
+            assert isinstance(self._active_widget.selectionChanged, SignalInstance)
             self._active_widget.selectionChanged.disconnect(self._send_update_signal)
             if isinstance(self._active_widget, (QTextEdit, QPlainTextEdit)):
+                assert isinstance(self._active_widget.redoAvailable, SignalInstance)
+                assert isinstance(self._active_widget.undoAvailable, SignalInstance)
                 self._active_widget.undoAvailable.disconnect(self._send_update_signal)
                 self._active_widget.redoAvailable.disconnect(self._send_update_signal)
             else:
+                assert isinstance(self._active_widget.textChanged, SignalInstance)
                 self._active_widget.textChanged.disconnect(self._send_update_signal)
 
         self._active_widget = widget
         if isinstance(self._active_widget, TextInput):
             self._active_widget.selectionChanged.connect(self._send_update_signal)
             if isinstance(self._active_widget, (QTextEdit, QPlainTextEdit)):
+                assert isinstance(self._active_widget.undoAvailable, SignalInstance)
+                assert isinstance(self._active_widget.redoAvailable, SignalInstance)
                 self._active_widget.undoAvailable.connect(self._send_update_signal)
                 self._active_widget.redoAvailable.connect(self._send_update_signal)
             else:
                 assert self._active_widget is not None
+                assert isinstance(self._active_widget.textChanged, SignalInstance)
                 self._active_widget.textChanged.connect(self._send_update_signal)
         self.status_changed.emit()
 

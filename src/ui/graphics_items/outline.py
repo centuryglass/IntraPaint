@@ -35,6 +35,7 @@ class Outline(QGraphicsObject):
         self._animated = False
         self._dash_pattern = [2, 2, 4, 2, 2, 2]
         self._dash_offset = 0
+        # noinspection PyTypeChecker
         self._anim = QPropertyAnimation(self, b"dash_offset")
         self._anim.setLoopCount(-1)
         self._anim.setStartValue(0)
@@ -50,7 +51,8 @@ class Outline(QGraphicsObject):
         """Update the animated dash offset."""
         self._dash_offset = offset
 
-    dash_offset = Property(int, dash_offset_getter, dash_offset_setter)
+    # noinspection PyTypeChecker
+    dash_offset = Property(int, dash_offset_getter, dash_offset_setter, None, '')
 
     @property
     def dash_pattern(self) -> list[int]:

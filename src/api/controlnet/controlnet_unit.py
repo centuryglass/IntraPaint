@@ -21,9 +21,9 @@ from src.util.parameter import TYPE_FLOAT
 TR_ID = 'api.controlnet.controlnet_unit'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 LABEL_TEXT_CONTROL_STRENGTH = _tr('Strength')

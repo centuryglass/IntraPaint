@@ -1,7 +1,7 @@
 """Displays the image panel with zoom controls and input hints."""
 from typing import Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, SignalInstance
 from PySide6.QtGui import QResizeEvent, QAction
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QSlider, QPushButton, \
     QSizePolicy, QApplication
@@ -16,9 +16,9 @@ from src.ui.layout.draggable_tabs.tab_box import TabBox
 TR_ID = 'ui.panel.image_panel'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 SCALE_SLIDER_LABEL = _tr('Scale:')
@@ -129,6 +129,7 @@ class ImagePanel(QWidget):
 
             self._scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
             self._scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
+            assert isinstance(self._scale_reset_button.clicked, SignalInstance)
             self._scale_reset_button.clicked.connect(toggle_scale)
             # Zoom slider:
             self._control_layout.addWidget(QLabel(SCALE_SLIDER_LABEL))

@@ -3,7 +3,7 @@ import os
 from typing import Optional, cast
 
 from PySide6.QtGui import QColor, QWindow, Qt, QMouseEvent, QKeyEvent, QKeySequence, QCursor
-from PySide6.QtCore import QObject, QPoint, QTimer, QEvent, Signal
+from PySide6.QtCore import QObject, QPoint, QTimer, QEvent, Signal, SignalInstance
 from PySide6.QtWidgets import QApplication, QWidget
 
 
@@ -36,6 +36,7 @@ class ScreenColorWidget(QWidget):
             self._transparent_selection_window.resize(1, 1)
             self._transparent_selection_window.setFlag(Qt.WindowType.Tool | Qt.WindowType.FramelessWindowHint)
             self._update_timer: Optional[QTimer] = QTimer()
+            assert isinstance(self._update_timer.timeout, SignalInstance)
             self._update_timer.timeout.connect(self._update_color_picking_timeout)
         else:
             self._transparent_selection_window = None

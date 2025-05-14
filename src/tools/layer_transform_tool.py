@@ -1,7 +1,7 @@
 """An image editing tool that moves the selected editing region."""
 from typing import Optional, Callable
 
-from PySide6.QtCore import Qt, QRect, QRectF, QSize, QPoint
+from PySide6.QtCore import Qt, QRect, QRectF, QSize, QPoint, SignalInstance
 from PySide6.QtGui import QCursor, QIcon, QTransform, QMouseEvent
 from PySide6.QtWidgets import QWidget, QSpinBox, QDoubleSpinBox, QApplication
 
@@ -26,9 +26,9 @@ from src.util.visual.text_drawing_utils import left_button_hint_text
 TR_ID = 'tools.layer_transform_tool'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 TRANSFORM_LABEL = _tr('Transform Layers')
@@ -281,6 +281,7 @@ class LayerTransformTool(BaseTool):
 
     @staticmethod
     def _update_control(field: QSpinBox | QDoubleSpinBox, value: float, change_handler: Callable[..., None]):
+        assert isinstance(field.valueChanged, SignalInstance)
         field.valueChanged.disconnect(change_handler)
         if field.value() != value:
             if isinstance(field, QSpinBox):

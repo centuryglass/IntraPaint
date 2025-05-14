@@ -16,9 +16,9 @@ from src.ui.widget.color_picker.screen_color import ScreenColorWidget
 TR_ID = 'ui.widget.color_picker'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 BASIC_PALETTE_TITLE = _tr('&Basic colors')

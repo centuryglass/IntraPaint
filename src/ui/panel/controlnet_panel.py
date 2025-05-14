@@ -6,7 +6,7 @@ from copy import deepcopy
 from json import JSONDecodeError
 from typing import Optional
 
-from PySide6.QtCore import Qt, QTimer, Signal, QSize
+from PySide6.QtCore import Qt, QTimer, Signal, QSize, SignalInstance
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QCheckBox, QPushButton, QLineEdit, QComboBox, QApplication, QTabWidget, QGridLayout, \
     QLabel, QWidget
@@ -34,9 +34,9 @@ logger = logging.getLogger(__name__)
 TR_ID = 'ui.panel.controlnet_panel'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 # UI/Label text:
@@ -263,6 +263,7 @@ class ControlNetPanel(BorderedWidget):
         for control in control_types:
             self._control_type_combobox.addItem(control)
         self._control_type_combobox.setCurrentIndex(self._control_type_combobox.findText(DEFAULT_CONTROL_TYPE))
+        assert isinstance(self._control_type_combobox.currentTextChanged, SignalInstance)
         self._control_type_combobox.currentTextChanged.connect(self._load_control_type)
 
         self._preprocessor_combobox = QComboBox(self)

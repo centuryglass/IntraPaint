@@ -5,7 +5,7 @@ from argparse import Namespace
 from json import JSONDecodeError
 from typing import Optional, cast, Any
 
-from PySide6.QtCore import Signal, QSize
+from PySide6.QtCore import Signal, QSize, SignalInstance
 from PySide6.QtGui import QImage, QIcon
 from PySide6.QtWidgets import QInputDialog, QApplication
 
@@ -41,9 +41,9 @@ logger = logging.getLogger(__name__)
 TR_ID = 'controller.image_generation.sd_generator'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 SD_BASE_DESCRIPTION = _tr("""
@@ -303,12 +303,13 @@ class SDGenerator(ImageGenerator):
 
     def load_preprocessor_preview(self, preprocessor: ControlNetPreprocessor,
                                      image: QImage, mask: Optional[QImage],
-                                     status_signal: Signal,
-                                     image_signal: Signal) -> None:
+                                     status_signal: SignalInstance,
+                                     image_signal: SignalInstance) -> None:
         """Requests a ControlNet preprocessor preview image."""
         raise NotImplementedError()
 
-    def upscale_image(self, image: QImage, new_size: QSize, status_signal: Signal, image_signal: Signal) -> None:
+    def upscale_image(self, image: QImage, new_size: QSize, status_signal: SignalInstance,
+                      image_signal: SignalInstance) -> None:
         """Upscales an image using cached upscaling settings."""
         raise NotImplementedError()
 
@@ -509,10 +510,11 @@ class SDGenerator(ImageGenerator):
             error_signal = Signal(Exception)
             preview_ready = Signal(QImage)
 
-            def signals(self) -> list[Signal]:
+            def signals(self) -> list[SignalInstance]:
                 return [self.status_signal, self.error_signal, self.preview_ready]
 
-        def _get_preview(status_signal: Signal, error_signal: Signal, preview_signal: Signal) -> None:
+        def _get_preview(status_signal: SignalInstance, error_signal: SignalInstance,
+                         preview_signal: SignalInstance) -> None:
             try:
                 self.load_preprocessor_preview(preprocessor, image, mask, status_signal, preview_signal)
             except Exception as err:
@@ -568,10 +570,10 @@ class SDGenerator(ImageGenerator):
             image_ready = Signal(QImage)
             error_signal = Signal(Exception)
 
-            def signals(self) -> list[Signal]:
+            def signals(self) -> list[SignalInstance]:
                 return [self.status_signal, self.image_ready, self.error_signal]
 
-        def _upscale(status_signal: Signal, image_ready: Signal, error_signal: Signal) -> None:
+        def _upscale(status_signal: SignalInstance, image_ready: SignalInstance, error_signal: SignalInstance) -> None:
             try:
                 self.upscale_image(self._image_stack.qimage(), new_size, status_signal, image_ready)
             except (IOError, KeyError, RuntimeError) as err:
@@ -643,10 +645,10 @@ class SDGenerator(ImageGenerator):
             class _LoadingTask(AsyncTask):
                 status = Signal(str)
 
-                def signals(self) -> list[Signal]:
+                def signals(self) -> list[SignalInstance]:
                     return [self.status]
 
-            def _load_and_open(status_signal: Signal) -> None:
+            def _load_and_open(status_signal: SignalInstance) -> None:
                 if self._lora_images is None:
                     self._lora_images = {}
                 for i, lora in enumerate(loras):

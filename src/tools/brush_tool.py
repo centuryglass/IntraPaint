@@ -31,9 +31,9 @@ CURSOR_PATH_BRUSH_MIN = f'{PROJECT_DIR}/resources/cursors/min_cursor.svg'
 TR_ID = 'tools.brush_tool'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 LINE_HINT = _tr('{modifier_or_modifiers}+{left_mouse_icon}/{right_mouse_icon}: draw line')
@@ -271,6 +271,8 @@ class BrushTool(BaseTool):
             self._tablet_y_tilt = None
         if self._layer is not None:
             layer_coordinates = self._layer.map_from_image(image_coordinates)
+        else:
+            return
         if not self._image_stack.has_image:
             return
         if self._tablet_input == QPointingDevice.PointerType.Eraser:

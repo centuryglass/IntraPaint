@@ -25,9 +25,9 @@ from src.util.visual.text_drawing_utils import left_button_hint_text, right_butt
 TR_ID = 'tools.shape_tool'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 ICON_PATH_SHAPE_TOOL = f'{PROJECT_DIR}/resources/icons/tools/shape_icon.svg'

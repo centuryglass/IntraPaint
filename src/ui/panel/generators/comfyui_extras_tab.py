@@ -15,9 +15,9 @@ from src.util.shared_constants import BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENER
 TR_ID = 'ui.panel.generators.comfyui_extras_tab'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 BUTTON_TEXT_CLEAR_MEMORY = _tr('Clear Memory')

@@ -19,6 +19,7 @@ class LoadingWidget(QWidget):
         self._message = message
         self._rotation = 0
         self._font_size: Optional[int] = None
+        # noinspection PyTypeChecker
         self._anim = QPropertyAnimation(self, b'rotation')
         self._anim.setLoopCount(-1)
         self._anim.setStartValue(0)
@@ -72,7 +73,8 @@ class LoadingWidget(QWidget):
         self._rotation = rotation % 360
         self.update()
 
-    rotation = Property(int, rotation_getter, rotation_setter)
+    # noinspection PyTypeChecker
+    rotation = Property(int, rotation_getter, rotation_setter, None, '')
 
     def showEvent(self, unused_event: Optional[QShowEvent]) -> None:
         """Starts the animation when the widget is shown."""

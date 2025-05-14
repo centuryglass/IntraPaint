@@ -32,9 +32,9 @@ logger = logging.getLogger(__name__)
 TR_ID = 'config.config'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 MISSING_DEF_ERROR = _tr('Config definition file not found at {definition_path}')
@@ -106,7 +106,8 @@ class Config:
                             initial_value = definition[DefinitionKey.DEFAULT]
                             match definition[DefinitionKey.TYPE]:
                                 case DefinitionType.QSIZE:
-                                    initial_value = QSize(*(int(n) for n in initial_value.split('x')))
+                                    width, height = (int(n) for n in initial_value.split('x'))
+                                    initial_value = QSize(width, height)
                                 case DefinitionType.INT:
                                     initial_value = int(initial_value)
                                 case DefinitionType.FLOAT:
@@ -639,6 +640,7 @@ class Config:
             for entry in self._entries.values():
                 entry.save_to_json_dict(converted_dict)
             with open(self._json_path, 'w', encoding='utf-8') as file:
+                # noinspection PyTypeChecker
                 json.dump(converted_dict, file, ensure_ascii=False, indent=4)
 
     def _read_from_json(self) -> None:

@@ -12,9 +12,9 @@ from src.util.shared_constants import SHORT_LABEL_X_POS, INT_MAX, INT_MIN, SHORT
 TR_ID = 'ui.panel.tool_control_panels.clone_stamp_tool_panel'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 LABEL_TEXT_SELECTION_ONLY = _tr('Update selection only')
@@ -49,7 +49,6 @@ class CloneStampToolPanel(BrushToolPanel):
         for spinbox in (self._x_spinbox, self._y_spinbox):
             spinbox.setValue(0)
             spinbox.setRange(INT_MIN, INT_MAX)
-
 
         cache = Cache()
         self._source_mode_layout = QHBoxLayout(self._source_mode_row)

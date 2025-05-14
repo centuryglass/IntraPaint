@@ -1,7 +1,7 @@
 """Provides an input widget for setting a QSize value."""
 from typing import Optional
 
-from PySide6.QtCore import Signal, QSize, Qt
+from PySide6.QtCore import Signal, QSize, Qt, SignalInstance
 from PySide6.QtWidgets import QWidget, QLabel, QSpinBox, QSlider, QGridLayout, QApplication
 
 from src.util.layout import clear_layout
@@ -12,9 +12,9 @@ from src.util.shared_constants import INT_MAX
 TR_ID = 'ui.input_fields.size_field'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 WIDTH_LABEL = _tr('W:')
@@ -36,6 +36,8 @@ class SizeField(QWidget):
         if include_sliders:
             self._width_slider: Optional[QSlider] = QSlider(Qt.Orientation.Horizontal)
             self._width_slider.setValue(0)
+            assert isinstance(self._width_slider.valueChanged, SignalInstance)
+            assert isinstance(self._height_slider.valueChanged, SignalInstance)
             self._width_slider.valueChanged.connect(self._width_changed_slot)
             self._height_slider: Optional[QSlider] = QSlider(Qt.Orientation.Horizontal)
             self._height_slider.setValue(0)

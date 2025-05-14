@@ -13,9 +13,9 @@ from src.util.signals_blocked import signals_blocked
 TR_ID = 'ui.widget.color_picker.component_spinbox_picker'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 LABEL_HUE = _tr('Hu&e:')

@@ -20,9 +20,9 @@ from src.util.shared_constants import PROJECT_DIR
 TR_ID = 'ui.panel.tool_control_panels.brush_selection_panel'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 SELECTION_SIZE_SHORT_LABEL = _tr('Size:')

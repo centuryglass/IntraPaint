@@ -5,7 +5,7 @@ from typing import Optional
 import cv2
 import numpy as np
 from PIL import Image
-from PySide6.QtCore import QRect, QPoint, QSize, Signal, QPointF
+from PySide6.QtCore import QRect, QPoint, QSize, Signal, QPointF, SignalInstance
 from PySide6.QtGui import QImage, QPolygonF, QPainter, QColor
 from PySide6.QtWidgets import QApplication
 
@@ -20,9 +20,9 @@ from src.util.visual.pil_image_utils import qimage_to_pil_image
 TR_ID = 'image.layers.selection_layer'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class SelectionLayer(ImageLayer):
 
     selection_cleared = Signal()
 
-    def __init__(self, size: QSize, generation_window_signal: Signal) -> None:
+    def __init__(self, size: QSize, generation_window_signal: SignalInstance) -> None:
         """
         Initializes a new selection layer.
         """

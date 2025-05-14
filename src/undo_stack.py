@@ -5,7 +5,7 @@ import datetime
 from threading import Lock
 from typing import Callable, Optional, Any, Generator
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal, SignalInstance
 
 from src.config.application_config import AppConfig
 from src.util.singleton import Singleton
@@ -78,12 +78,12 @@ class UndoStack(metaclass=Singleton):
         return self._undo_in_progress
 
     @property
-    def undo_count_changed(self) -> Signal:
+    def undo_count_changed(self) -> SignalInstance:
         """Returns the signal emitted whenever undo action count changes."""
         return self._signal_manager.undo_count_changed
 
     @property
-    def redo_count_changed(self) -> Signal:
+    def redo_count_changed(self) -> SignalInstance:
         """Returns the signal emitted whenever redo action count changes."""
         return self._signal_manager.redo_count_changed
 

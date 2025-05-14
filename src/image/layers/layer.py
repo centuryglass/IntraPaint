@@ -19,9 +19,9 @@ from src.util.visual.image_utils import (create_transparent_image, NpAnyArray, i
 TR_ID = 'image.layer.layer'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 ERROR_TITLE_SHOW_LAYER_FAILED = _tr('Showing layer failed')
@@ -355,7 +355,7 @@ class Layer(QObject):
 
     def set_size(self, new_size: QSize) -> None:
         """Updates the layer's size."""
-        if self._size != QSize:
+        if self._size != new_size:
             self._size = QSize(new_size)
             self._pixmap.invalidate()
             self.size_changed.emit(self, new_size)

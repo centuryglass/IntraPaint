@@ -32,6 +32,7 @@ class PolygonOutline(QGraphicsItemGroup):
             def __init__(self, parent_outline: PolygonOutline) -> None:
                 super().__init__()
                 self._parent = parent_outline
+                # noinspection PyTypeChecker
                 self._anim = QPropertyAnimation(self, b"dash_offset")
                 self._anim.setLoopCount(-1)
                 self._anim.setStartValue(0)
@@ -51,7 +52,8 @@ class PolygonOutline(QGraphicsItemGroup):
                 """Updates the animation offset value."""
                 self._parent.dash_offset = offset
 
-            dash_offset = Property(int, dash_offset_getter, dash_offset_setter)
+            # noinspection PyTypeChecker
+            dash_offset = Property(int, dash_offset_getter, dash_offset_setter, None, '')
 
         self._animator = _Animator(self)
 

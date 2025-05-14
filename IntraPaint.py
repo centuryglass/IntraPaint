@@ -8,8 +8,9 @@ import os
 import sys
 
 if sys.version_info < (3, 11):
-    detected_version = '.'.join(str(v_num) for v_num in sys.version_info)
-    print(f'ERROR: Detected python version {detected_version}, IntraPaint only supports Python 3.11 and higher.',
+    version_str = '.'.join(map(str, sys.version_info))
+    # noinspection PyUnresolvedReferences
+    print(f'ERROR: Detected python version {version_str}, IntraPaint only supports Python 3.11 and higher.',
           file=sys.stderr)
 
 import traceback

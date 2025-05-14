@@ -1,7 +1,7 @@
 """A horizontal slider and spinbox that both control the same value."""
 from typing import Optional
 
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtCore import Signal, Qt, SignalInstance
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSlider, QDoubleSpinBox, QSpinBox, QSizePolicy
 
 from src.util.layout import synchronize_row_widths
@@ -48,6 +48,7 @@ class _SliderSpinbox(QWidget):
             self._spinbox = QSpinBox()
         self._layout.addWidget(self._spinbox)
         self._spinbox.setValue(initial_value)
+        assert isinstance(self._spinbox.valueChanged, SignalInstance)
         self._spinbox.valueChanged.connect(self.setValue)
         self._spinbox.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
         self._label.setBuddy(self._spinbox)

@@ -37,9 +37,9 @@ logger = logging.getLogger(__name__)
 TR_ID = 'image.layers.image_stack'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 NEW_IMAGE_LAYER_GROUP_NAME = _tr('new image')

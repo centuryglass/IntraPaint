@@ -32,9 +32,9 @@ from src.util.visual.text_drawing_utils import find_text_size
 TR_ID = 'ui.panel.layer.image_layer_widget'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 PREVIEW_SIZE = QSize(80, 80)

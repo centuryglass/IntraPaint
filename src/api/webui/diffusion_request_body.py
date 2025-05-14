@@ -19,6 +19,7 @@ from src.util.visual.image_utils import image_to_base64
 logger = logging.getLogger(__name__)
 
 
+# noinspection GrazieInspection
 @dataclass
 class DiffusionRequestBody:
     """Request body format for image generation (all types)"""
@@ -63,7 +64,7 @@ class DiffusionRequestBody:
     mask_round: Optional[bool] = None
     initial_noise_multiplier: Optional[float] = None  # Adjust extra noise added to masked areas
 
-    # Img2img/inpaint exlcusive options end here.
+    # Img2img/inpaint exclusive options end here.
 
     # Prompt:
     prompt: str = ''
@@ -130,6 +131,7 @@ class DiffusionRequestBody:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the request body to a dict, removing unused optional parameters."""
+        # noinspection PyTypeChecker
         data = asdict(self)
         empty_keys = [key for key in data if data[key] is None]
         for key in empty_keys:

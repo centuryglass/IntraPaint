@@ -4,7 +4,7 @@ from copy import deepcopy
 from json import JSONDecodeError
 from typing import Optional, cast, TypeAlias
 
-from PySide6.QtCore import QSize, QTimer
+from PySide6.QtCore import QSize, QTimer, SignalInstance
 from PySide6.QtGui import QIcon, Qt
 from PySide6.QtWidgets import QDialog, QFormLayout, QPushButton, QComboBox, QSpinBox, QHBoxLayout, QDoubleSpinBox, \
     QWidget, QApplication, QVBoxLayout, QLabel
@@ -27,9 +27,9 @@ from src.util.signals_blocked import signals_blocked
 TR_ID = 'ui.modal.image_scale_modal'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 TITLE_TEXT = _tr('Scale image')
@@ -106,6 +106,7 @@ class ImageScaleModal(QDialog):
             elif cache.get(Cache.SCALING_MODE) in self._generator_scaling_modes:
                 initial_mode = SCALING_MODE_OPTION_GENERATOR
             self._scaling_mode_dropdown.setCurrentText(initial_mode)
+            assert isinstance(self._scaling_mode_dropdown.currentTextChanged, SignalInstance)
             self._scaling_mode_dropdown.currentTextChanged.connect(self._change_scaling_mode_category)
             self._form_layout.addRow(LABEL_TEXT_SCALING_MODE, self._scaling_mode_dropdown)
 
@@ -148,7 +149,10 @@ class ImageScaleModal(QDialog):
             # Ignore rounding errors:
             if round(int(current_pixel_size) / base_value, 2) != scale:
                 px_box.setValue(new_pixel_size)
-
+        assert isinstance(self._width_box.valueChanged, SignalInstance)
+        assert isinstance(self._x_mult_box.valueChanged, SignalInstance)
+        assert isinstance(self._height_box.valueChanged, SignalInstance)
+        assert isinstance(self._y_mult_box.valueChanged, SignalInstance)
         self._width_box.valueChanged.connect(
             lambda px: set_scale_on_px_change(px, default_width, self._x_mult_box))
         self._x_mult_box.valueChanged.connect(

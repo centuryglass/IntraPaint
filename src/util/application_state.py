@@ -2,7 +2,7 @@
    in particular states."""
 from typing import Any
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal, SignalInstance
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QWidget
 
@@ -79,7 +79,7 @@ class AppStateTracker(metaclass=Singleton):
         assert widget not in AppStateTracker()._connections
 
     @staticmethod
-    def signal() -> Signal:
+    def signal() -> SignalInstance:
         """Accesses the state change signal."""
         return AppStateTracker()._state_changed
 
