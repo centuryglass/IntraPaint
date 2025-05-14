@@ -52,7 +52,6 @@ class StableDiffusionPanel(GeneratorPanel):
 
     interrogate_signal = Signal()
     generate_signal = Signal()
-    model_change_signal = Signal(str)
 
     def __init__(self,
                  show_interrogate_button: bool,

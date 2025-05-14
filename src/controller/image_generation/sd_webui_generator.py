@@ -356,11 +356,13 @@ class SDWebUIGenerator(SDGenerator):
             def _update_remote_model_selection(model_name: str) -> None:
                 if not self._connected:
                     return
+                webui_config.load_all(self._webservice)
                 for model_option in model_options:
                     if model_option['model_name'] == model_name:
                         if model_option['title'] != webui_config.get(A1111Config.SD_MODEL_CHECKPOINT):
                             remote_setting_change = {A1111Config.SD_MODEL_CHECKPOINT: model_option['title']}
                             self.update_settings(remote_setting_change)
+                            webui_config.load_all(self._webservice)
                         return
                 raise RuntimeError(f'Selected model "{model_name}" not found in available options.')
 
@@ -495,7 +497,7 @@ class SDWebUIGenerator(SDGenerator):
         web_categories = web_config.get_categories()
         web_keys = [key for cat in web_categories for key in web_config.get_category_keys(cat)]
         app_keys = AppConfig().get_category_keys(STABLE_DIFFUSION_CONFIG_CATEGORY)
-        web_changes = {}
+        web_changes: dict[str, Any] = {}
         for key, value in changed_settings.items():
             if key in web_keys:
                 web_changes[key] = value
@@ -520,6 +522,8 @@ class SDWebUIGenerator(SDGenerator):
 
             def _update_setting() -> None:
                 AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
+                for key, value in web_changes.items():
+                    web_config.set(key, value)
                 update_task.finish_signal.disconnect(_update_setting)
 
             def _handle_error(err: Exception) -> None:
