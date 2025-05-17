@@ -108,7 +108,7 @@ class ShapeTool(BaseTool):
         self._last_color_changed = Cache.SHAPE_TOOL_FILL_COLOR
 
         def _update_last_color(color_str: str) -> None:
-            if self.is_active and QColor.isValidColor(color_str):
+            if QColor.isValidColor(color_str):
                 cache.set(self._last_color_changed, color_str)
         cache.connect(self, Cache.LAST_BRUSH_COLOR, _update_last_color)
 

@@ -259,6 +259,7 @@ class BrushTool(BaseTool):
             self._tablet_pressure = None
             self._tablet_x_tilt = None
             self._tablet_y_tilt = None
+        self._preview_line.setVisible(False)
         self._brush.connect_to_layer(None)
 
     # Event handlers:

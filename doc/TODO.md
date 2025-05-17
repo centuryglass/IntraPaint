@@ -2,16 +2,12 @@
 
 # Latest bugs, next priorities:
 
-- transform: translate up/down keys should be reversed
-- Line previews linger with the ctrl+s shortcut
-- Shape tool should use eyedropper
 - Custom pallets don't sync between color pickers properly
 - Alpha lock doesn't save to .ora
 - Occasional crash when removing alpha lock after layer changes
 - Rare crash: selection_layer.py line 340, height_to_add < 0
 - Selection areas don't always sync properly
 - "Draw in selection only" setting shouldn't apply to tools that don't use it
-- Perceptual color algorithms should apply to "select all by color"
 - Pan and zoom should be disabled in the mini nav panel
 - Possible partial alpha compositing glitches (brush tool on alpha-locked layer)
 - Shift key conflict messes up transforms on switch from transform tool -> shape tool
