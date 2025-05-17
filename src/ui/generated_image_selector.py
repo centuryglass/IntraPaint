@@ -21,7 +21,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.ui.graphics_items.outline import Outline
-from src.ui.graphics_items.polygon_outline import PolygonOutline
+from src.ui.graphics_items.selection_outline import SelectionOutline
 from src.ui.graphics_items.toast_message import ToastMessageItem
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.modal.modal_utils import open_image_file, SAVE_IMAGE_MODE, show_warning_dialog
@@ -141,7 +141,7 @@ class GeneratedImageSelector(QWidget):
         self._close_selector = close_selector
         self._options: list[_ImageOption] = []
         self._outlines: list[Outline] = []
-        self._selections: list[PolygonOutline] = []
+        self._selections: list[SelectionOutline] = []
         self._loading_image = QImage()
         self._zoomed_in = False
         self._zoom_to_changes = AppConfig().get(AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED)
@@ -263,8 +263,9 @@ class GeneratedImageSelector(QWidget):
             assert isinstance(scene_item_list, list)
             while len(scene_item_list) > 0:
                 scene_item = scene_item_list.pop()
-                if hasattr(scene_item, 'animated'):
-                    scene_item.animated = False
+                if isinstance(scene_item, SelectionOutline):
+                    scene_item.animated_outline = False
+                    scene_item.animated_fill = False
                 if scene_item in scene.items():
                     scene.removeItem(scene_item)
 
@@ -325,8 +326,8 @@ class GeneratedImageSelector(QWidget):
         selection_polys = (poly.intersected(selection_crop).translated(-origin.x(), -origin.y())
                            for poly in self._image_stack.selection_layer.outline)
         polys = [QPolygonF(poly) for poly in selection_polys]
-        outline = PolygonOutline(self._view, polys)
-        outline.animated = AppConfig().get(AppConfig.ANIMATE_OUTLINES)
+        outline = SelectionOutline(self._view, polys)
+        outline.show_overlay = False
         outline.setScale(self._image_stack.width / self._image_stack.generation_area.width())
         outline.setVisible(AppConfig().get(AppConfig.SHOW_SELECTIONS_IN_GENERATION_OPTIONS))
         self._selections.append(outline)

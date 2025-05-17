@@ -237,7 +237,8 @@ class MenuBuilder:
                 next_menu = self._menus[full_menu_name]
             else:
                 for action in menu_iter.actions():
-                    possible_menu: Optional[QMenu] = action.menu()
+                    possible_menu = action.menu()
+                    assert possible_menu is None or isinstance(possible_menu, QMenu)
                     if _action_has_title(possible_menu, submenu_name):
                         next_menu = possible_menu
                         if full_menu_name not in self._menus:

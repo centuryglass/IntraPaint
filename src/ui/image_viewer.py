@@ -16,7 +16,7 @@ from src.image.layers.transform_layer import TransformLayer
 from src.ui.graphics_items.border import Border
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.graphics_items.outline import Outline
-from src.ui.graphics_items.polygon_outline import PolygonOutline
+from src.ui.graphics_items.selection_outline import SelectionOutline
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.visual.image_utils import get_transparency_tile_pixmap
 
@@ -43,8 +43,7 @@ class ImageViewer(ImageGraphicsView):
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
         self._follow_generation_area = False
         self._hidden: set[int] = set()
-        self._selection_poly_outline = PolygonOutline(self)
-        self._selection_poly_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
+        self._selection_poly_outline = SelectionOutline(self)
 
         # Generation area and border rectangle setup:
         scene = self.scene()
@@ -57,16 +56,21 @@ class ImageViewer(ImageGraphicsView):
         self._image_border.setVisible(True)
         self._image_outline.dash_pattern = [1, 0]  # solid line
         self._generation_area_outline = Outline(scene, self)
-        self._generation_area_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
 
         # "inpaint selected only" generation area outline:
         self._generation_area_selection_outline = Outline(scene, self)
         self._generation_area_selection_outline.setOpacity(GENERATION_AREA_BORDER_OPACITY)
-        self._generation_area_selection_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
         selection_layer = image_stack.selection_layer
         selection_layer.content_changed.connect(self._selection_content_change_slot)
         Cache().connect(self, Cache.INPAINT_FULL_RES, self._selection_content_change_slot)
         Cache().connect(self, Cache.INPAINT_FULL_RES_PADDING, self._selection_content_change_slot)
+
+        # animate gen area/selected content borders based on config:
+        def _update_outline_animation(is_animating: bool) -> None:
+            self._generation_area_selection_outline.animated = is_animating
+            self._generation_area_outline.animated = is_animating
+        config.connect(self, AppConfig.ANIMATE_OUTLINES_AND_PREVIEWS, _update_outline_animation)
+        _update_outline_animation(config.get(AppConfig.ANIMATE_OUTLINES_AND_PREVIEWS))
 
         # active layer outline:
         self._active_layer_id = -1
@@ -125,7 +129,7 @@ class ImageViewer(ImageGraphicsView):
         self._follow_generation_area = should_follow
         if self._generation_area_outline.isVisible():
             self._generation_area_outline.animated = not should_follow and AppConfig().get(
-                AppConfig.ANIMATE_OUTLINES)
+                AppConfig.ANIMATE_OUTLINES_AND_PREVIEWS)
             self._generation_area_border.setVisible(should_follow)
             if should_follow:
                 self.zoom_to_generation_area()

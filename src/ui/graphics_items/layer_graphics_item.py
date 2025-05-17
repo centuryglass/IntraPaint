@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QGraphicsItem
 from src.image.composite_mode import CompositeMode
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
+from src.image.layers.selection_layer import SelectionLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.graphics_items.pixmap_item import PixmapItem
 
@@ -30,7 +31,11 @@ class LayerGraphicsItem(PixmapItem):
         layer.z_value_changed.connect(lambda _, z_value: self.setZValue(z_value))
         layer.composition_mode_changed.connect(self._update_mode)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent, True)
-        self.setOpacity(layer.opacity)
+
+        if not isinstance(self._layer, SelectionLayer):
+            self.setOpacity(layer.opacity)
+        else:
+            self.setOpacity(0)
         if isinstance(layer, TransformLayer):
             self.setTransform(layer.transform)
         elif isinstance(layer, LayerGroup):
@@ -69,7 +74,8 @@ class LayerGraphicsItem(PixmapItem):
         self.setVisible(visible and not self.hidden)
 
     def _update_opacity(self, _, opacity: float) -> None:
-        self.setOpacity(opacity)
+        if not isinstance(self._layer, SelectionLayer):
+            self.setOpacity(opacity)
 
     def _update_mode(self, _, mode: CompositeMode) -> None:
         self.composition_mode = mode

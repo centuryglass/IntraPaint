@@ -1,24 +1,27 @@
 """Displays polygon outlines as animated dashes with subtle color changes."""
-import sys, os
+import sys
 from typing import Optional
 
-from PySide6.QtCore import Qt, Property, QPropertyAnimation, QObject, QPointF
-from PySide6.QtGui import QPen, QColor, QShowEvent, QHideEvent, QPolygonF, QTransform, QBitmap, QBrush, QPixmap, \
-    QPainterPath
-from PySide6.QtWidgets import QGraphicsItem, QGraphicsView, QGraphicsItemGroup, QGraphicsPolygonItem, QGraphicsScene, \
+from PySide6.QtCore import Qt, Property, QPropertyAnimation, QObject, QPointF, SignalInstance
+from PySide6.QtGui import QPen, QColor, QShowEvent, QHideEvent, QPolygonF, QTransform, QBrush, QPixmap, \
+    QPainterPath, QImage, QPainter
+from PySide6.QtWidgets import QGraphicsItem, QGraphicsView, QGraphicsScene, \
     QGraphicsPathItem
 
-from src.config.application_config import AppConfig
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR
+from src.util.visual.contrast_color import contrast_color
+from src.util.visual.image_utils import create_transparent_image
 
 PEN_WIDTH = 3
 MAX_DASH_OFFSET = 560
+FILL_OFFSET = 0.3
 ANIM_DURATION = 36000
-SELECTION_ANIM_PREFIX = f'{PROJECT_DIR}/resources/selection_anim_'
-SELECTION_ANIM_EXT = '.pbm'
+SCALE_MULTIPLIER = 0.1
+SELECTION_PATTERN_0_RESOURCE = f'{PROJECT_DIR}/resources/animated_fill_pattern_0.png'
+SELECTION_PATTERN_1_RESOURCE = f'{PROJECT_DIR}/resources/animated_fill_pattern_1.png'
 
 
-class PolygonOutline(QGraphicsItemGroup):
+class PolygonOutline(QGraphicsPathItem):
     """Displays polygon outlines as animated dashes with subtle color changes."""
 
     def __init__(self,
@@ -26,22 +29,24 @@ class PolygonOutline(QGraphicsItemGroup):
                  polygons: Optional[list[QPolygonF]] = None,
                  parent: Optional[QGraphicsItem] = None):
         super().__init__(parent)
-        self._polygons: list[QGraphicsPathItem] = []
         self._offset = QPointF()
+        self._height_offset = 0.0
         self._view = view
-        self._animated = True
+        self._animated_outline = True
         self._animation_offset = 0
         self._animated_fill = True
         self._scene: Optional[QGraphicsScene] = None
-        self._bitmaps: list[QBitmap] = []
+        self._transform_scale = SCALE_MULTIPLIER
 
-        bitmap_idx = 0
-        bitmap_path = f'{SELECTION_ANIM_PREFIX}{bitmap_idx}{SELECTION_ANIM_EXT}'
-        while os.path.isfile(bitmap_path):
-            bitmap = QBitmap(bitmap_path)
-            self._bitmaps.append(bitmap)
-            bitmap_idx += 1
-            bitmap_path = f'{SELECTION_ANIM_PREFIX}{bitmap_idx}{SELECTION_ANIM_EXT}'
+        def _update_scale(new_scale):
+            inverse_scale = 1.0 / new_scale * SCALE_MULTIPLIER
+            if self._transform_scale != inverse_scale:
+                self._transform_scale = inverse_scale
+                self._update_pen_and_brush()
+
+        if hasattr(view, 'scale_changed'):
+            assert isinstance(view.scale_changed, SignalInstance)
+            view.scale_changed.connect(_update_scale)
 
         class _Animator(QObject):
             def __init__(self, parent_outline: PolygonOutline) -> None:
@@ -76,17 +81,25 @@ class PolygonOutline(QGraphicsItemGroup):
         self._pen.setDashPattern([4, 4, 8, 4, 4, 4])
         self._pen.setCosmetic(True)
         self._pen.setWidth(PEN_WIDTH)
-        self._color = QColor(Qt.GlobalColor.black)
+
+        self._fill_pattern_0 = QImage(SELECTION_PATTERN_0_RESOURCE)
+        self._fill_pattern_1 = QImage(SELECTION_PATTERN_1_RESOURCE)
+        self._fill_color_0 = QColor()
+        self._fill_color_1 = QColor()
+        self._fill_pixmap = QPixmap()
+
+        self._line_color = QColor(Qt.GlobalColor.black)
         if polygons is not None:
             self.load_polygons(polygons)
+        self._update_pen_and_brush()
         scene = view.scene()
         assert scene is not None
         scene.addItem(self)
         if TIMELAPSE_MODE_FLAG in sys.argv:
             self._animator.animation.stop()
-            self._animated = False
+            self._animated_outline = False
 
-    def _get_pen(self) -> QPen:
+    def _update_pen_and_brush(self) -> None:
         offset = self._animation_offset
         max_color = 0.6
         min_color = 0.2
@@ -96,41 +109,79 @@ class PolygonOutline(QGraphicsItemGroup):
             cmp = min_color + (fraction * (max_color - min_color))
         else:
             cmp = max_color - (fraction * (max_color - min_color))
-        self._color.setRgbF(cmp, cmp, cmp)
-        self._pen.setDashOffset(self._animation_offset)
-        self._pen.setColor(self._color)
-        return self._pen
+        self._line_color.setRgbF(cmp, cmp, cmp)
+        if self._animated_outline:
+            self._pen.setDashOffset(self._animation_offset)
+        self._pen.setColor(self._line_color)
+        self.setPen(self._pen)
+
+        brush = QBrush(self._fill_pixmap)
+        if self._animated_fill:
+            texture_height = self._fill_pixmap.height()
+            self._height_offset += FILL_OFFSET
+            if self._height_offset > texture_height:
+                self._height_offset = 0
+            brush_transform = QTransform.fromTranslate(0, self._height_offset)
+        else:
+            brush_transform = QTransform()
+        brush_transform.scale(self._transform_scale, self._transform_scale)
+        brush.setTransform(brush_transform)
+        self.setBrush(brush)
 
     def move_to(self, pos: QPointF) -> None:
-        """Updates the group position, ensuring the offset is applied to all polygons."""
+        """Updates the path's position."""
         transform = QTransform()
         offset = pos + self.pos()
         transform.translate(offset.x(), offset.y())
-        for poly in self._polygons:
-            poly.setTransform(transform)
+        self.setTransform(transform)
 
     def load_polygons(self, polygons: list[QPolygonF]):
         """Replace the current outline polygons with new ones."""
         scene = self._view.scene()
         assert scene is not None
-        for polygon_item in self._polygons:
-            self.removeFromGroup(polygon_item)
-            scene.removeItem(polygon_item)
-        self._polygons.clear()
-        pen = self._get_pen()
         path = QPainterPath()
         path.setFillRule(Qt.FillRule.OddEvenFill)
         for polygon in polygons:
             path.addPolygon(polygon)
-        polygon_item = QGraphicsPathItem(path)
-        polygon_item.setBrush(QBrush(self._fill_color()))
-        polygon_item.setPen(pen)
-        self.addToGroup(polygon_item)
-        self._polygons.append(polygon_item)
-        if len(self._polygons) > 0 and self._animated:
+        self.setPath(path)
+        if (self._animated_outline or self._animated_fill) and not self.path().isEmpty():
             self._animator.animation.start()
         else:
             self._animator.animation.stop()
+
+    @property
+    def fill_color(self) -> QColor:
+        """Returns the primary fill color."""
+        return QColor(self._fill_color_0)
+
+    @fill_color.setter
+    def fill_color(self, fill_color: QColor) -> None:
+        """Updates the primary fill color."""
+        if fill_color == self._fill_color_0:
+            return
+        self._fill_color_0 = fill_color
+        self._fill_color_1 = contrast_color(fill_color)
+        self._fill_color_1.setAlpha(self._fill_color_0.alpha())
+
+        fill_main = self._fill_pattern_0.copy()
+        fill_main_painter = QPainter(fill_main)
+        fill_main_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
+        fill_main_painter.fillRect(fill_main.rect(), self._fill_color_0)
+        fill_main_painter.end()
+
+        fill_contrast = self._fill_pattern_1.copy()
+        fill_contrast_painter = QPainter(fill_contrast)
+        fill_contrast_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
+        fill_contrast_painter.fillRect(fill_contrast.rect(), self._fill_color_1)
+        fill_contrast_painter.end()
+
+        recolored_pattern = create_transparent_image(self._fill_pattern_0.size())
+        painter = QPainter(recolored_pattern)
+        painter.drawImage(0, 0, fill_main)
+        painter.drawImage(0, 0, fill_contrast)
+        painter.end()
+        self._fill_pixmap = QPixmap(recolored_pattern)
+        self._update_pen_and_brush()
 
     @property
     def animation_offset(self) -> int:
@@ -148,32 +199,30 @@ class PolygonOutline(QGraphicsItemGroup):
         if self._scene is None and scene is not None:
             self._scene = scene
         self._animation_offset = offset
-        pen = self._get_pen()
-        brush = QBrush(self._fill_color())
-        if self._animated_fill and len(self._bitmaps) > 1:
-            bitmap_idx = offset % len(self._bitmaps)
-            bitmap = self._bitmaps[bitmap_idx]
-            brush.setTexture(bitmap)
-        for polygon_item in self._polygons:
-            polygon_item.setPen(pen)
-            polygon_item.setBrush(brush)
+        self._update_pen_and_brush()
         self.update()
 
     @property
-    def animated(self) -> bool:
+    def animated_outline(self) -> bool:
         """Returns whether dotted lines are animated."""
-        return self._animated
+        return self._animated_outline
 
-    @animated.setter
-    def animated(self, should_animate: bool) -> None:
-        """Sets whether dotted lines are animated."""
-        if TIMELAPSE_MODE_FLAG in sys.argv:
+    def _start_or_stop_animation(self):
+        if TIMELAPSE_MODE_FLAG in sys.argv or self.path().isEmpty():
+            self._animator.animation.stop()
             return
-        self._animated = should_animate
-        if self._animated and self.isVisible():
+        if self._animated_outline or self._animated_fill:
             self._animator.animation.start()
         else:
             self._animator.animation.stop()
+
+    @animated_outline.setter
+    def animated_outline(self, should_animate: bool) -> None:
+        """Sets whether dotted lines are animated."""
+        if TIMELAPSE_MODE_FLAG in sys.argv:
+            return
+        self._animated_outline = should_animate
+        self._start_or_stop_animation()
 
     @property
     def animated_fill(self) -> bool:
@@ -183,25 +232,16 @@ class PolygonOutline(QGraphicsItemGroup):
     @animated_fill.setter
     def animated_fill(self, should_animate: bool) -> None:
         """Sets whether the outline should be filled with an animated texture."""
+        if TIMELAPSE_MODE_FLAG in sys.argv:
+            return
         self._animated_fill = should_animate
-        fill_color = self._fill_color()
-        for polygon_item in self._polygons:
-            brush = polygon_item.brush()
-            brush.setColor(fill_color)
-            if not should_animate:
-                brush.setStyle(Qt.BrushStyle.SolidPattern)
-            else:
-                brush.setStyle(Qt.BrushStyle.TexturePattern)
-
-    def _fill_color(self) -> QColor:
-        if self.animated_fill:
-            return AppConfig().get_color(AppConfig.SELECTION_COLOR, Qt.GlobalColor.black)
-        return QColor(Qt.GlobalColor.black)
+        self._start_or_stop_animation()
+        self._update_pen_and_brush()
 
     # noinspection PyPep8Naming
     def showEvent(self, _: Optional[QShowEvent]) -> None:
         """Starts the animation when the outline is shown."""
-        if self._animated:
+        if self._animated_outline:
             self._animator.animation.start()
 
     # noinspection PyPep8Naming
