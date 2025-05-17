@@ -524,6 +524,8 @@ class GeneratedImageSelector(QWidget):
             show_warning_dialog(None, warning_title, warning_message, AppConfig.WARN_WHEN_LOCK_FORCES_LAYER_CREATE)
         self._image_stack.generation_area = self._generation_area
         self._image_stack.set_generation_area_content(image, layer)
+        if self._image_stack.active_layer != layer:
+            self._image_stack.active_layer = layer
 
     def _select_option_and_close(self, option_index: int) -> None:
         """Insert the selection and close this selector."""

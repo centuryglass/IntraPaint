@@ -2,12 +2,7 @@
 
 # Latest bugs, next priorities:
 
-- text layer offset is buggy: transform tool offsets aren't in sync with text tool coordinates, copy/paste puts layers in weird places.
-- Weird resize glitch sometimes when moving the window between monitors, possibly related to panel orientation/layout
-- When inpainting creates a new layer, that layer should become active
-- "Mirror layer vertically" mirrors horizontally instead
 - transform: translate up/down keys should be reversed
-- Stable Diffusion model menu on gen panel still doesn't sync properly
 - Line previews linger with the ctrl+s shortcut
 - Shape tool should use eyedropper
 - Custom pallets don't sync between color pickers properly
@@ -33,11 +28,11 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 - changing gen. area size still doesn't always sync fully - width changes but not height. Possibly fixed, keep an eye out for it.
 - Weird bug where every new image loads with a seemingly-arbitrary transformation pre-applied.  Maybe a bug with layer group transforms? Haven't been able to reproduce.
 - .ora save fails when layer name is "" (couldn't reproduce, but I don't remember fixing this)
+- text layer offset is buggy: transform tool offsets aren't in sync with text tool coordinates, copy/paste puts layers in weird places. (can't reproduce - probably conditional. Requires specific transform type?)
+- Weird resize glitch sometimes when moving the window between monitors, possibly related to panel orientation/layout (Probably requires specific panel positions/sizes, display sizes)
+
 
 ## General concerns and ideas
-* Solid color selection layer is less than ideal, even with a configurable color.  Maybe some sort of animated fill?
-* Fill and color fill algorithms are not ideal, look into measuring color differences with a perceptual algorithm instead of plain distance
-  - Adaptive thresholding and texture fill are possibilities. scikit provides useful tools for this.
 * Do more profiling, performance is adequate but there's still some noticeable lag in a few places
 * TabBar should have some mechanism for scrolling so the UI doesn't break when you turn up the tab bar shortcut count
 * There should be a mechanism for sending UI tabs to new windows
