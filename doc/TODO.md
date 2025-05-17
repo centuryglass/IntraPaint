@@ -2,7 +2,6 @@
 
 # Latest bugs, next priorities:
 
-- Issues when multiple custom mypaint brush files exist: they all load as duplicates, selection doesn't register properly
 - text layer offset is buggy: transform tool offsets aren't in sync with text tool coordinates, copy/paste puts layers in weird places.
 - Weird resize glitch sometimes when moving the window between monitors, possibly related to panel orientation/layout
 - When inpainting creates a new layer, that layer should become active
@@ -25,6 +24,7 @@
 - Test logarithmic zoom intervals: doubling the zoom level should be quicker
 - Brush tool: incorrect initial brush size bug is definitely still triggering sometimes
 - Clone tool docs need update
+- Color picker crashes on component change
 ---
 
 ## Possible lurking bugs

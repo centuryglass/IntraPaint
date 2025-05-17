@@ -26,7 +26,9 @@
         "value": 4
     },
     "show_tool_control_hints": true,
-    "animate_outlines": true,
+    "animate_selection_outline": false,
+    "animate_outlines_and_previews": true,
+    "animate_selection_fill": true,
     "selection_color": "#55ff0000",
     "show_selections_in_generation_options": true,
     "selection_screen_zooms_to_changed": false,

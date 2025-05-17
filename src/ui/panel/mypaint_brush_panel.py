@@ -89,7 +89,7 @@ class MypaintBrushPanel(QTabWidget):
                 elif os.path.isdir(full_path):
                     brush_dirs.append(full_path)
                 elif full_path.endswith(BRUSH_EXTENSION):
-                    if brush_dir not in brush_files:
+                    if dir_name not in brush_files:
                         brush_files[dir_name] = []
                         self._groups.append(dir_name)
                         self._group_dirs[dir_name] = brush_dir
@@ -99,7 +99,7 @@ class MypaintBrushPanel(QTabWidget):
                 del brush_files[group]
         for group, group_brushes in brush_files.items():
             group_brushes.sort()
-            self._group_orders[group] = group_brushes
+            self._group_orders[group] = [*group_brushes]
         for group in self._groups:
             group_dir = self._group_dirs[group]
             if not os.path.isdir(group_dir) or len(self._group_orders[group]) == 0:
@@ -271,9 +271,11 @@ class _IconButton(QWidget):
 
     def is_selected(self) -> bool:
         """Checks whether this brush is the selected brush."""
-        active_brush: Optional[str] = f'{PROJECT_DIR}/{Cache().get(self._brush_config_key)}'
+        active_brush: Optional[str] = Cache().get(self._brush_config_key)
         if active_brush is not None and not os.path.isfile(active_brush):
-            active_brush = None
+            active_brush = f'{PROJECT_DIR}/{Cache().get(self._brush_config_key)}'
+            if not not os.path.isfile(active_brush):
+                active_brush = None
         return active_brush is not None and os.path.abspath(active_brush) == os.path.abspath(self._brush_path)
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
