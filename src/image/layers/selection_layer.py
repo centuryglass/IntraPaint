@@ -336,8 +336,10 @@ class SelectionLayer(ImageLayer):
             right += d_right
         else:
             target_height = int(width // image_ratio)
-            height_to_add = target_height - height
-            assert height_to_add >= 0
+            if target_height < height:
+                logger.warning(f'Target height < height! old size={width}x{height}, target_height={target_height},'
+                               f' image_ratio={image_ratio}, bounds_ratio={bounds_ratio}')
+            height_to_add = max(target_height - height, 0)
             d_top = min(top - area_top, height_to_add // 2)
             height_to_add -= d_top
             d_bottom = min(area_bottom - bottom, height_to_add)
