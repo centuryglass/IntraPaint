@@ -11,11 +11,14 @@ from PySide6.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsP
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
+from src.util.math_utils import clamp
 from src.util.visual.contrast_color import contrast_color
 from src.util.visual.geometry_utils import get_scaled_placement
 
 CURSOR_ITEM_Z_LEVEL = 9999
-BASE_ZOOM_OFFSET = 0.05
+MIN_ZOOM = 0.05
+MAX_ZOOM = 40.0
+ZOOM_FACTOR = 1.1
 
 
 class ImageGraphicsView(QGraphicsView):
@@ -50,6 +53,8 @@ class ImageGraphicsView(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.NoAnchor)
         self.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        self.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, False)
 
         self._opengl_view: Optional[QOpenGLWidget] = None
 
@@ -106,13 +111,12 @@ class ImageGraphicsView(QGraphicsView):
                 HotkeyFilter.instance().register_speed_modified_keybinding(binding_id, _scroll, scroll_key)
 
             # Bind zoom keys:
-            for config_key, direction in ((KeyConfig.ZOOM_IN, 1), (KeyConfig.ZOOM_OUT, -1)):
-                zoom_offset = BASE_ZOOM_OFFSET * direction
-
-                def _zoom(mult, change=zoom_offset) -> bool:
+            for config_key, multiplier in ((KeyConfig.ZOOM_IN, ZOOM_FACTOR), (KeyConfig.ZOOM_OUT, 1.0 / ZOOM_FACTOR)):
+                def _zoom(mult, change=multiplier) -> bool:
                     if not self.isVisible():
                         return False
-                    self.scene_scale = self.scene_scale + change * mult
+                    scale = self.scene_scale * change * mult
+                    self.scene_scale = clamp(scale, MIN_ZOOM, MAX_ZOOM)
                     self.resizeEvent(None)
                     return True
                 binding_id = f'ImageGraphicsView_{id(self)}_{config_key}'
@@ -460,9 +464,9 @@ class ImageGraphicsView(QGraphicsView):
             if event.angleDelta().y() == 0:
                 return False
             if event.angleDelta().y() > 0:
-                self.scene_scale = self.scene_scale + 0.05
-            elif event.angleDelta().y() < 0 and self.scene_scale > 0.05:
-                self.scene_scale = self.scene_scale - 0.05
+                self.scene_scale = clamp(self.scene_scale * ZOOM_FACTOR, MIN_ZOOM, MAX_ZOOM)
+            elif event.angleDelta().y() < 0 and self.scene_scale > MIN_ZOOM:
+                self.scene_scale = clamp(self.scene_scale / ZOOM_FACTOR, MIN_ZOOM, MAX_ZOOM)
             self._update_scale_and_transform()
         return False
 

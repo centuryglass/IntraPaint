@@ -186,24 +186,23 @@ TRANSPARENCY_PATTERN_BACKGROUND_DIM = 640
 TRANSPARENCY_PATTERN_TILE_DIM = 16
 
 
-def tile_pattern_fill(pixmap: QPixmap,
+def tile_pattern_fill(painter: QPainter,
+                      bounds: QRect,
                       tile_size: int,
                       tile_color_1: QColor | Qt.GlobalColor,
                       tile_color_2: QColor | Qt.GlobalColor) -> None:
-    """Draws an alternating tile pattern onto a QPixmap."""
+    """Draws an alternating tile pattern onto a painter."""
     fill_pixmap_size = tile_size * 2
     fill_pixmap = QPixmap(QSize(fill_pixmap_size, fill_pixmap_size))
     fill_pixmap.fill(tile_color_1)
-    painter = QPainter(fill_pixmap)
+    tile_painter = QPainter(fill_pixmap)
     for x in range(tile_size, fill_pixmap_size + tile_size, tile_size):
         for y in range(tile_size, fill_pixmap_size + tile_size, tile_size):
             if (x % (tile_size * 2)) == (y % (tile_size * 2)):
                 continue
-            painter.fillRect(x - tile_size, y - tile_size, tile_size, tile_size, tile_color_2)
-    painter.end()
-    painter = QPainter(pixmap)
-    painter.drawTiledPixmap(0, 0, pixmap.width(), pixmap.height(), fill_pixmap)
-    painter.end()
+            tile_painter.fillRect(x - tile_size, y - tile_size, tile_size, tile_size, tile_color_2)
+    tile_painter.end()
+    painter.drawTiledPixmap(bounds, fill_pixmap)
 
 
 def get_transparency_tile_pixmap(size: Optional[QSize] = None) -> QPixmap:
@@ -218,8 +217,10 @@ def get_transparency_tile_pixmap(size: Optional[QSize] = None) -> QPixmap:
         height = max(min_tile_size, size.height())
         size = QSize(width, height)
     transparency_pixmap = QPixmap(size)
-    tile_pattern_fill(transparency_pixmap, TRANSPARENCY_PATTERN_TILE_DIM, Qt.GlobalColor.lightGray,
+    painter = QPainter(transparency_pixmap)
+    tile_pattern_fill(painter, transparency_pixmap.rect(), TRANSPARENCY_PATTERN_TILE_DIM, Qt.GlobalColor.lightGray,
                       Qt.GlobalColor.darkGray)
+    painter.end()
     if initial_size != size:
         return transparency_pixmap.scaled(initial_size)
     return transparency_pixmap

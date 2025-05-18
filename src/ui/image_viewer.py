@@ -18,7 +18,8 @@ from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.selection_outline import SelectionOutline
 from src.ui.widget.image_graphics_view import ImageGraphicsView
-from src.util.visual.image_utils import get_transparency_tile_pixmap
+from src.util.visual.graphics_scene_utils import get_view_bounds_of_scene_item_rect
+from src.util.visual.image_utils import get_transparency_tile_pixmap, tile_pattern_fill, TRANSPARENCY_PATTERN_TILE_DIM
 
 GENERATION_AREA_BORDER_OPACITY = 0.6
 IMAGE_BORDER_OPACITY = 0.2
@@ -140,9 +141,14 @@ class ImageViewer(ImageGraphicsView):
 
     def drawBackground(self, painter: Optional[QPainter], rect: QRectF) -> None:
         """Draw the background as a fixed size tiling image."""
-        background = self.background
-        assert painter is not None and background is not None
-        painter.drawTiledPixmap(rect, background)
+        assert painter is not None
+        painter.save()
+        painter.setTransform(QTransform())
+        content_bounds = get_view_bounds_of_scene_item_rect(self._image_outline.boundingRect(),
+                                                            self._image_outline).toAlignedRect()
+        tile_size = TRANSPARENCY_PATTERN_TILE_DIM
+        tile_pattern_fill(painter, content_bounds, tile_size, Qt.GlobalColor.lightGray, Qt.GlobalColor.darkGray)
+        painter.restore()
 
     def scroll_content(self, dx: int | float, dy: int | float) -> bool:
         """Scroll the image generation area by the given offset, returning whether it was able to move."""

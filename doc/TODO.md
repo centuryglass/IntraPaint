@@ -3,15 +3,20 @@
 # Latest bugs, next priorities:
 
 - Occasional crash when removing alpha lock after layer changes
-- Selection areas don't always sync properly
+- Selection areas don't always sync properly (selection poly?)
 - "Draw in selection only" setting shouldn't apply to tools that don't use it
 - Pan and zoom should be disabled in the mini nav panel
-- Possible partial alpha compositing glitches (brush tool on alpha-locked layer, partial alpha?)
+- Partial alpha compositing glitches (brush tool on alpha-locked layer, partial alpha?)
 - Shift key conflict messes up transforms on switch from transform tool -> shape tool
 - Remove ControlNet preprocessor images from results
-- Test logarithmic zoom intervals: doubling the zoom level should be quicker
-- Brush tool: incorrect initial brush size bug is definitely still triggering sometimes
 - Clone tool docs need update
+- Scroll wheel/key zoom:  snap to integer scaling above 3.0
+- Fix brush precision issues when pixel-level editing
+- "new image" seems to overwrite brush color
+- fix rotation aliasing issues
+- transform tool isn't properly blocking scale=0
+- invalid bounds errors (empty) in mypaint_layer_tile when cropping to bounds with the brush tool open
+- fix slowness when layer size = 6k
 ---
 
 ## Possible lurking bugs
