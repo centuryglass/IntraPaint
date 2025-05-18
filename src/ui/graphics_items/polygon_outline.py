@@ -14,7 +14,7 @@ from src.util.visual.image_utils import create_transparent_image
 
 PEN_WIDTH = 3
 MAX_DASH_OFFSET = 560
-FILL_OFFSET = 0.3
+FILL_OFFSET = 2.0
 ANIM_DURATION = 36000
 SCALE_MULTIPLIER = 0.1
 SELECTION_PATTERN_0_RESOURCE = f'{PROJECT_DIR}/resources/animated_fill_pattern_0.png'
@@ -39,7 +39,7 @@ class PolygonOutline(QGraphicsPathItem):
         self._transform_scale = SCALE_MULTIPLIER
 
         def _update_scale(new_scale):
-            inverse_scale = 1.0 / new_scale * SCALE_MULTIPLIER
+            inverse_scale = min(1.0 / new_scale, 1.0) * SCALE_MULTIPLIER
             if self._transform_scale != inverse_scale:
                 self._transform_scale = inverse_scale
                 self._update_pen_and_brush()
@@ -116,15 +116,13 @@ class PolygonOutline(QGraphicsPathItem):
         self.setPen(self._pen)
 
         brush = QBrush(self._fill_pixmap)
+        brush_transform = QTransform.fromScale(self._transform_scale, self._transform_scale)
         if self._animated_fill:
             texture_height = self._fill_pixmap.height()
             self._height_offset += FILL_OFFSET
             if self._height_offset > texture_height:
-                self._height_offset = 0
-            brush_transform = QTransform.fromTranslate(0, self._height_offset)
-        else:
-            brush_transform = QTransform()
-        brush_transform.scale(self._transform_scale, self._transform_scale)
+                self._height_offset = 0.0
+            brush_transform.translate(self._height_offset, self._height_offset)
         brush.setTransform(brush_transform)
         self.setBrush(brush)
 
