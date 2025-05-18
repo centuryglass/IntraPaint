@@ -3,9 +3,10 @@ from typing import Optional
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QColor, QIcon, QPixmap
-from PySide6.QtWidgets import QPushButton, QColorDialog, QApplication, QWidget, QSizePolicy
+from PySide6.QtWidgets import QPushButton, QApplication, QWidget, QSizePolicy, QColorDialog
 
 from src.config.config_from_key import get_config_from_key
+from src.ui.modal.color_dialog import ColorDialog
 from src.util.shared_constants import SMALL_ICON_SIZE
 from src.util.visual.image_utils import get_color_icon
 
@@ -64,11 +65,10 @@ class ColorButton(QPushButton):
 
     def select_color(self) -> None:
         """Open the color picker, then apply the selection if connected to config."""
-        color_dialog = QColorDialog()
-        color_dialog.setOption(QColorDialog.ColorDialogOption.ShowAlphaChannel, True)
-        color_dialog.setOption(QColorDialog.ColorDialogOption.DontUseNativeDialog, True)
-        selection = color_dialog.getColor(self._color)
-        if selection != self._color:
+        #dialog = QColorDialog()
+        #selection = dialog.getColor(self._color)
+        selection = ColorDialog.show_color_dialog(self._color)
+        if selection is not None and selection != self._color:
             if self._config_key is not None:
                 config = get_config_from_key(self._config_key)
                 config.set(self._config_key, selection.name(QColor.NameFormat.HexArgb))

@@ -7,6 +7,7 @@ from PySide6.QtGui import QColor, QPaintEvent, QPainter, QMouseEvent, Qt, QPixma
 from PySide6.QtWidgets import QFrame, QApplication, QSizePolicy
 
 from src.ui.widget.color_picker.palette_widget import CELL_WIDTH, NUM_COLUMNS, CELL_HEIGHT
+from src.util.visual.image_utils import get_transparency_tile_pixmap
 
 
 class ColorShowLabel(QFrame):
@@ -22,6 +23,7 @@ class ColorShowLabel(QFrame):
         self._mouse_pressed = False
         self._color = QColor()
         self._mouse_pos: Optional[QPoint] = None
+        self._alpha_pixmap: Optional[QPixmap] = None
 
     @property
     def color(self) -> QColor:
@@ -38,6 +40,10 @@ class ColorShowLabel(QFrame):
         """Draw the color preview."""
         painter = QPainter(self)
         self.drawFrame(painter)
+        if self._color.alpha() < 255:
+            if self._alpha_pixmap is None or self._alpha_pixmap.size() != self.contentsRect().size():
+                self._alpha_pixmap = get_transparency_tile_pixmap(self.contentsRect().size())
+            painter.drawPixmap(self.contentsRect().topLeft(), self._alpha_pixmap)
         painter.fillRect(self.contentsRect(), self._color)
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:

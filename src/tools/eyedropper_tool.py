@@ -3,7 +3,7 @@ from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QIcon, QCursor, QColor, QMouseEvent
-from PySide6.QtWidgets import QWidget, QColorDialog, QApplication
+from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
@@ -39,7 +39,7 @@ class EyedropperTool(BaseTool):
         super().__init__(KeyConfig.EYEDROPPER_TOOL_KEY, EYEDROPPER_LABEL, EYEDROPPER_TOOLTIP,
                          QIcon(ICON_PATH_EYEDROPPER_TOOL))
         self._image_stack = image_stack
-        self._control_panel: Optional[QColorDialog] = None
+        self._control_panel: Optional[ColorControlPanel] = None
         cursor_icon = QIcon(CURSOR_PATH_EYEDROPPER_TOOL)
         self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE), 0, CURSOR_SIZE)
 

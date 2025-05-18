@@ -45,6 +45,10 @@ class HsvValuePicker(QWidget):
             self._pixmap = None
         self.repaint()
 
+    def value(self) -> int:
+        """Returns the current value."""
+        return self._val
+
     def paintEvent(self, event: Optional[QPaintEvent]) -> None:
         """Draw the slider, using current hue and saturation."""
         assert event is not None

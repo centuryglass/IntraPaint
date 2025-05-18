@@ -208,11 +208,20 @@ def tile_pattern_fill(pixmap: QPixmap,
 
 def get_transparency_tile_pixmap(size: Optional[QSize] = None) -> QPixmap:
     """Returns a tiling pixmap used to represent transparency."""
+    initial_size = size
+    min_tile_size = TRANSPARENCY_PATTERN_TILE_DIM * 2
     if size is None:
         size = QSize(TRANSPARENCY_PATTERN_BACKGROUND_DIM, TRANSPARENCY_PATTERN_BACKGROUND_DIM)
+        initial_size = size
+    elif size.width() < min_tile_size or size.height() < min_tile_size:
+        width = max(min_tile_size, size.width())
+        height = max(min_tile_size, size.height())
+        size = QSize(width, height)
     transparency_pixmap = QPixmap(size)
     tile_pattern_fill(transparency_pixmap, TRANSPARENCY_PATTERN_TILE_DIM, Qt.GlobalColor.lightGray,
                       Qt.GlobalColor.darkGray)
+    if initial_size != size:
+        return transparency_pixmap.scaled(initial_size)
     return transparency_pixmap
 
 

@@ -7423,12 +7423,12 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.widget.brush_color_button</name>
     <message>
-      <location filename="../../src/ui/widget/color_button.py" line="21"/>
+      <location filename="../../src/ui/widget/color_button.py" line="22"/>
       <source>Color</source>
       <translation>Color</translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_button.py" line="22"/>
+      <location filename="../../src/ui/widget/color_button.py" line="23"/>
       <source>Select paint color</source>
       <translation>Select paint color</translation>
     </message>

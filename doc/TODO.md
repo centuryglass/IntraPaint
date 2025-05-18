@@ -2,20 +2,16 @@
 
 # Latest bugs, next priorities:
 
-- Custom pallets don't sync between color pickers properly
-- Alpha lock doesn't save to .ora
 - Occasional crash when removing alpha lock after layer changes
-- Rare crash: selection_layer.py line 340, height_to_add < 0
 - Selection areas don't always sync properly
 - "Draw in selection only" setting shouldn't apply to tools that don't use it
 - Pan and zoom should be disabled in the mini nav panel
-- Possible partial alpha compositing glitches (brush tool on alpha-locked layer)
+- Possible partial alpha compositing glitches (brush tool on alpha-locked layer, partial alpha?)
 - Shift key conflict messes up transforms on switch from transform tool -> shape tool
 - Remove ControlNet preprocessor images from results
 - Test logarithmic zoom intervals: doubling the zoom level should be quicker
 - Brush tool: incorrect initial brush size bug is definitely still triggering sometimes
 - Clone tool docs need update
-- Color picker crashes on component change
 ---
 
 ## Possible lurking bugs
@@ -26,6 +22,7 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 - .ora save fails when layer name is "" (couldn't reproduce, but I don't remember fixing this)
 - text layer offset is buggy: transform tool offsets aren't in sync with text tool coordinates, copy/paste puts layers in weird places. (can't reproduce - probably conditional. Requires specific transform type?)
 - Weird resize glitch sometimes when moving the window between monitors, possibly related to panel orientation/layout (Probably requires specific panel positions/sizes, display sizes)
+- selection_layer.py line 340, height_to_add < 0:  Should be non-breaking now, keep an eye on logs
 
 
 ## General concerns and ideas

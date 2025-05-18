@@ -197,6 +197,8 @@ class TabbedColorPicker(ScreenColorWidget):
         self._main_layout.addLayout(component_layout)
         for panel in self._panels():
             panel.show()
+        self._basic_palette_preview.setHidden(True)
+        self._custom_palette_preview.setHidden(True)
 
     def set_horizontal_mode(self) -> None:
         """Displays the color picker in a wide 4x1 layout"""
@@ -277,8 +279,8 @@ class TabbedColorPicker(ScreenColorWidget):
     def _use_linear_layout(self, layout_class) -> None:
         self._clear_layouts()
         self._main_layout = layout_class()
-        self._basic_palette_preview.setVisible(False)
-        self._custom_palette_preview.setVisible(False)
+        self._basic_palette_preview.setHidden(True)
+        self._custom_palette_preview.setHidden(True)
         self._outer_layout.addLayout(self._main_layout)
         for panel in self._panels():
             assert self._main_layout is not None
