@@ -191,6 +191,9 @@ class LayerWidget(BorderedWidget):
             layer_image, _ = self._layer.transformed_image()
         else:
             layer_image = self._layer.image
+        min_dim = min(layer_image.width(), layer_image.height())
+        if min_dim > 1000:
+            layer_image = layer_image.scaled(layer_image.width() // 4, layer_image.height() // 4)
         self._layer_image = crop_to_content(layer_image)
         self._update_pixmap()
 

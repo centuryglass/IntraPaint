@@ -84,7 +84,7 @@ WARNING_MESSAGE_CROP_DELETED_LAYERS = _tr('<p>Cropping the image deleted the fol
 
 RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
 
-RENDER_DELAY_MS = 5
+RENDER_DELAY_MS = 50
 SELECTION_UPDATE_DELAY_MS = 50
 
 
@@ -123,6 +123,7 @@ class ImageStack(QObject):
         Cache().connect(self, Cache.EDIT_SIZE, _update_gen_area_size)
 
         self._layer_stack = LayerGroup(NEW_IMAGE_LAYER_GROUP_NAME)
+        self._layer_stack.isolate = True
         self._image = CachedData(None)
         self._render_timer = QTimer()
         self._render_timer.setSingleShot(True)

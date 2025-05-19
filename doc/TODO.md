@@ -6,11 +6,12 @@
 - Shift key conflict messes up transforms on switch from transform tool -> shape tool
 - Remove ControlNet preprocessor images from results
 - Clone tool docs need update
-- Fix brush precision issues when pixel-level editing
-- "new image" seems to overwrite brush color
-- transform tool isn't properly blocking scale=0
 - invalid bounds errors (empty) in mypaint_layer_tile when cropping to bounds with the brush tool open
-- fix slowness when layer size = 6k
+- fix slowness when layer size = 6k:
+  - Refactor to remove unnecessary layer copying in ImageLayer._handle_content_change
+  - QtPaintBrush._draw_input_event:  Make sure the numpy copying really is faster
+  - QtPaintBrush.start_stroke: Refactor to avoid copying the whole layer into prev_image_buffer
+  - layer_widget:  Also copies the whole image, see if we can get a scaled copy instead
 ---
 
 ## Possible lurking bugs

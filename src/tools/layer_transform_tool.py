@@ -133,15 +133,12 @@ class LayerTransformTool(BaseTool):
         self._transform_outline.y_pos = float(y_pos)
 
     def set_x_scale(self, x_scale: float) -> None:
-        """Sets the x-scale of the layer transformation, also changing y-scale if aspect ratio is preserved."""
+        """Sets the x-scale of the layer transformation."""
         _, prev_y_scale = self._transform_outline.transform_scale
-        if self._control_panel.preserve_aspect_ratio:
-            self._transform_outline.transform_scale = (x_scale, x_scale)
-        else:
-            self._transform_outline.transform_scale = (x_scale, prev_y_scale)
+        self._transform_outline.transform_scale = (x_scale, prev_y_scale)
 
     def set_y_scale(self, y_scale: float) -> None:
-        """Sets the y-scale of the layer transformation, also changing x-scale if aspect ratio is preserved."""
+        """Sets the y-scale of the layer transformation."""
         prev_x_scale, _ = self._transform_outline.transform_scale
         self._transform_outline.transform_scale = (prev_x_scale, y_scale)
 
