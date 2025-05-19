@@ -11,7 +11,7 @@ from src.config.application_config import AppConfig
 from src.image.composite_mode import CompositeMode
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.cached_data import CachedData
-from src.util.visual.geometry_utils import map_rect_precise
+from src.util.visual.geometry_utils import map_rect_precise, transform_scale, rotation_angle
 from src.util.visual.image_utils import (create_transparent_image, NpAnyArray, image_data_as_numpy_8bit_readonly,
                                          image_is_fully_transparent)
 
@@ -489,6 +489,10 @@ class Layer(QObject):
                 painter.setCompositionMode(qt_composite_mode)
                 if transform is not None:
                     painter.setTransform(transform)
+                    s_x, s_y = transform_scale(transform)
+                    angle = rotation_angle(transform)
+                    if (s_x % 1.0) != 0.0 or (s_y % 1.0) != 0.0 or (angle % 90.0) != 0.0:
+                        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
                 painter.setClipPath(clip_path)
                 painter.drawImage(source_bounds, layer_image, source_bounds)
                 painter.end()
