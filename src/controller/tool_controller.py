@@ -1,5 +1,6 @@
 """Manages available tools and handles tool input events."""
 import logging
+import math
 from typing import Optional, cast
 
 from PySide6.QtCore import Qt, QObject, QEvent, QRect, QPoint, Signal
@@ -25,7 +26,7 @@ from src.tools.shape_selection_tool import ShapeSelectionTool
 from src.tools.shape_tool import ShapeTool
 from src.tools.smudge_tool import SmudgeTool
 from src.tools.text_tool import TextTool
-from src.ui.image_viewer import ImageViewer
+from src.ui.image_viewer import ImageViewer, MIN_OUTLINE_PIXEL_SIZE
 from src.ui.modal.modal_utils import show_warning_dialog
 from src.util.optional_import import optional_import
 
@@ -229,7 +230,11 @@ class ToolController(QObject):
             self._image_viewer.set_cursor_pos(pos)
             image_size = self._image_viewer.content_size
             assert image_size is not None
-            image_coordinates = self._image_viewer.mapToScene(pos).toPoint()
+            image_coordinates_f = self._image_viewer.widget_point_to_scene(pos)
+            if self._image_viewer.scene_scale >= MIN_OUTLINE_PIXEL_SIZE:
+                image_coordinates = QPoint(math.floor(image_coordinates_f.x()), math.floor(image_coordinates_f.y()))
+            else:
+                image_coordinates = image_coordinates_f.toPoint()
             point_in_image = QRect(QPoint(0, 0), image_size).contains(image_coordinates)
             if point_in_image and not self._mouse_in_bounds:
                 self._mouse_in_bounds = True

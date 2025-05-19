@@ -129,39 +129,36 @@ class ImageGraphicsView(QGraphicsView):
     def mouse_navigation_enabled(self, enabled: bool) -> None:
         self._mouse_navigation_enabled = enabled
 
-    def _scene_point_to_widget(self, scene_point: QPointF | QPoint) -> QPoint:
+    def scene_point_to_widget(self, scene_point: QPointF | QPoint) -> QPoint:
+        """Maps a point from scene to widget coordinates."""
         if isinstance(scene_point, QPoint):
             scene_point = scene_point.toPointF()
         view_point = self.mapFromScene(scene_point).boundingRect().topLeft()
         return self.viewport().mapTo(self, view_point)
 
-    def _widget_point_to_scene(self, widget_point: QPoint | QPointF) -> QPointF:
+    def widget_point_to_scene(self, widget_point: QPoint | QPointF) -> QPointF:
+        """Maps a point from widget to scene coordinates."""
         if isinstance(widget_point, QPointF):
             widget_point = widget_point.toPoint()
         view_point = self.viewport().mapFromParent(widget_point)
         return self.mapToScene(view_point)
 
-    def _scene_rect_to_widget(self, scene_rect: QRectF) -> QRect:
-        return QRect(self._scene_point_to_widget(scene_rect.topLeft()),
-                     self._scene_point_to_widget(scene_rect.bottomRight()))
+    def scene_rect_to_widget_rect(self, scene_rect: QRectF) -> QRect:
+        """Maps a rectangle from scene to widget coordinates."""
+        return QRect(self.scene_point_to_widget(scene_rect.topLeft()),
+                     self.scene_point_to_widget(scene_rect.bottomRight()))
 
-    def _widget_rect_to_scene(self, widget_rect: QRect) -> QRectF:
+    def widget_rect_to_scene_rect(self, widget_rect: QRect) -> QRectF:
+        """Maps a rectangle from widget to scene coordinates."""
         top_left = widget_rect.topLeft()
         bottom_right = QPoint(top_left.x() + widget_rect.width(), top_left.y() + widget_rect.height())
-        return QRectF(self._widget_point_to_scene(top_left), self._widget_point_to_scene(bottom_right))
-
-    def scene_pixel_size(self) -> float:
-        """Returns the rendered width/height of a pixel in the scene."""
-        # To avoid losing precision to type conversion, we'll actually find widget pixel size in the scene, then divide.
-        widget_rect = QRect(0, 0, 1, 1)
-        scene_rect = self._widget_rect_to_scene(widget_rect)
-        return 1.0 / scene_rect.width()
+        return QRectF(self.widget_point_to_scene(top_left), self.widget_point_to_scene(bottom_right))
 
     @property
     def visible_scene_bounds(self) -> QRectF:
         """Returns the actual scene bounds currently shown within the image view."""
         widget_bounds = self.rect()
-        return self._widget_rect_to_scene(widget_bounds)
+        return self.widget_rect_to_scene_rect(widget_bounds)
 
     @property
     def widget_content_bounds(self) -> QRect:
@@ -218,7 +215,7 @@ class ImageGraphicsView(QGraphicsView):
         if isinstance(widget_cursor_pos, QPointF):
             widget_cursor_pos = widget_cursor_pos.toPoint()
         self._last_widget_cursor_pos = widget_cursor_pos
-        scene_cursor_pos = None if widget_cursor_pos is None else self._widget_point_to_scene(widget_cursor_pos)
+        scene_cursor_pos = None if widget_cursor_pos is None else self.widget_point_to_scene(widget_cursor_pos)
         self._last_scene_cursor_pos = scene_cursor_pos
         if self._cursor_pixmap_item is not None and self._cursor_pixmap_item.scene() is not None:
             self._cursor_pixmap_item.setVisible(widget_cursor_pos is not None)
@@ -289,12 +286,13 @@ class ImageGraphicsView(QGraphicsView):
         center_offset.setX(center_offset.x() / scale_change)
         center_offset.setY(center_offset.y() / scale_change)
         new_widget_center = fixed_widget_pos + center_offset.toPoint()
-        new_scene_center = self._widget_point_to_scene(new_widget_center)
+        new_scene_center = self.widget_point_to_scene(new_widget_center)
         self.center_on_point(new_scene_center)
         self._update_scale_and_transform()
 
-        new_fixed_scene_point = self._widget_point_to_scene(fixed_widget_pos)
+        new_fixed_scene_point = self.widget_point_to_scene(fixed_widget_pos)
         rounding_error = new_fixed_scene_point - fixed_scene_pos
+
         #Tweak offset/scale to deal with rounding errors:
         if abs(rounding_error.x()) > 0.01 or abs(rounding_error.y() > 0.01):
             horizontal_scroll = self.horizontalScrollBar()

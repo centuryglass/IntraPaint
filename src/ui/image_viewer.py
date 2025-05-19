@@ -1,9 +1,10 @@
 """
 Interact with edited image layers through the Qt6 2D graphics engine.
 """
+import math
 from typing import Optional
 
-from PySide6.QtCore import Qt, QRect, QRectF, QSize
+from PySide6.QtCore import Qt, QRect, QRectF, QSize, QPoint, QPointF
 from PySide6.QtGui import QPainter, QColor, QTransform
 from PySide6.QtWidgets import QWidget, QSizePolicy
 
@@ -24,6 +25,7 @@ from src.util.visual.image_utils import get_transparency_tile_pixmap, tile_patte
 GENERATION_AREA_BORDER_OPACITY = 0.6
 IMAGE_BORDER_OPACITY = 0.2
 GENERATION_AREA_BORDER_COLOR = Qt.GlobalColor.black
+MIN_OUTLINE_PIXEL_SIZE = 8.0
 
 
 class ImageViewer(ImageGraphicsView):
@@ -66,10 +68,16 @@ class ImageViewer(ImageGraphicsView):
         Cache().connect(self, Cache.INPAINT_FULL_RES, self._selection_content_change_slot)
         Cache().connect(self, Cache.INPAINT_FULL_RES_PADDING, self._selection_content_change_slot)
 
+        # pixel outline
+        self._pixel_outline = Outline(scene, self, cosmetic_line_draw=True)
+        self._pixel_outline.setVisible(False)
+        self.scale_changed.connect(self._scale_change_slot)
+
         # animate gen area/selected content borders based on config:
         def _update_outline_animation(is_animating: bool) -> None:
             self._generation_area_selection_outline.animated = is_animating
             self._generation_area_outline.animated = is_animating
+            self._pixel_outline.animated = is_animating
         config.connect(self, AppConfig.ANIMATE_OUTLINES_AND_PREVIEWS, _update_outline_animation)
         _update_outline_animation(config.get(AppConfig.ANIMATE_OUTLINES_AND_PREVIEWS))
 
@@ -156,6 +164,25 @@ class ImageViewer(ImageGraphicsView):
         self._image_stack.generation_area = generation_area.translated(int(dx), int(dy))
         self.resizeEvent(None)
         return self._image_stack.generation_area != generation_area
+
+    def _update_pixel_outline(self, cursor_pos: QPoint) -> None:
+        scene_pos = self.widget_point_to_scene(cursor_pos)
+        outline_rect = (QRectF(float(math.floor(scene_pos.x())), float(math.floor(scene_pos.y())), 1.0, 1.0)
+                        .adjusted(0.1, 0.1, -0.1, -0.1))
+        self._pixel_outline.outlined_region = outline_rect
+        self._pixel_outline.setVisible(self.scene_scale >= MIN_OUTLINE_PIXEL_SIZE)
+
+    def _scale_change_slot(self, scale: float) -> None:
+        self._pixel_outline.setVisible(scale >= MIN_OUTLINE_PIXEL_SIZE)
+
+    def set_cursor_pos(self, widget_cursor_pos: Optional[QPoint | QPointF]) -> None:
+        """Updates the last cursor position within the widget so that pixmap cursor rendering stays active."""
+        if widget_cursor_pos is None:
+            self._pixel_outline.setVisible(False)
+        else:
+            self._update_pixel_outline(widget_cursor_pos if isinstance(widget_cursor_pos, QPoint)
+                                       else widget_cursor_pos.toPoint())
+        super().set_cursor_pos(widget_cursor_pos)
 
     def _update_drawn_borders(self):
         """Make sure that the image generation area and layer borders are in the right place in the scene."""

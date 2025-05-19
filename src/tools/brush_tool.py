@@ -427,8 +427,9 @@ class BrushTool(BaseTool):
         """Recalculates the brush cursor size if using a scaling cursor."""
         if not self.is_active or self._scaling_cursor is False or self._scaled_icon_cursor is None:
             return
-        brush_cursor_size = int(self.brush_size * self._image_viewer.scene_scale)
-        if brush_cursor_size <= MIN_SMALL_CURSOR_SIZE:
+        pixel_size = self._image_viewer.scene_scale
+        brush_cursor_size = int(self.brush_size * pixel_size)
+        if brush_cursor_size <= MIN_SMALL_CURSOR_SIZE or self.brush_size == 1:
             self.cursor = self._small_brush_cursor
         else:
             icon = self._scaled_icon_cursor if brush_cursor_size > MIN_CURSOR_SIZE else self._small_brush_icon

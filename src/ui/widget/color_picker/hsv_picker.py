@@ -71,7 +71,8 @@ class HsvPicker(QWidget):
         with signals_blocked(self._value_picker):
             self._value_picker.set_color(hue, saturation, self._value_picker.value())
         new_color = QColor.fromHsv(hue, saturation, self._color.value())
-        new_color.setAlpha(self._color.alpha())
+        if self._color.alpha() > 0:
+            new_color.setAlpha(self._color.alpha())
         self.color = new_color
 
     def _value_change_slot(self, value: int) -> None:
