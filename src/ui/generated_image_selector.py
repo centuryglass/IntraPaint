@@ -464,7 +464,7 @@ class GeneratedImageSelector(QWidget):
             if (event.button() not in (Qt.MouseButton.LeftButton, Qt.MouseButton.RightButton)
                     or AppStateTracker.app_state() == APP_STATE_LOADING):
                 return False
-            scene_pos = self._view.mapToScene(view_pos).toPoint()
+            scene_pos = self._view.widget_point_to_scene(view_pos).toPoint()
             for i, option in enumerate(self._options):
                 if option.bounds.contains(scene_pos):
                     if event.button() == Qt.MouseButton.LeftButton:
@@ -561,9 +561,8 @@ class GeneratedImageSelector(QWidget):
         self._view.zoom_to_bounds(bounds)
         self._base_option_offset = self._view.offset
         self._base_option_scale = self._view.scene_scale
-        self._view.set_cursor_pos(None)   # Disable cursor tracking when manually adjusting option zoom/offset
-        self._view.scene_scale = self._view.scene_scale + self._option_scale_offset
         self._view.offset = self._base_option_offset + self._option_pos_offset
+        self._view.scale_without_fixed_scene_point(self._view.scene_scale + self._option_scale_offset)
         self._view.scale_changed.connect(self._scale_change_slot)
         self._view.offset_changed.connect(self._offset_change_slot)
         for i, option in enumerate(self._options):

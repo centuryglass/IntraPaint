@@ -8,7 +8,6 @@
 - Clone tool docs need update
 - Fix brush precision issues when pixel-level editing
 - "new image" seems to overwrite brush color
-- fix rotation aliasing issues
 - transform tool isn't properly blocking scale=0
 - invalid bounds errors (empty) in mypaint_layer_tile when cropping to bounds with the brush tool open
 - fix slowness when layer size = 6k

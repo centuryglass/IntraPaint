@@ -311,6 +311,15 @@ class ImageGraphicsView(QGraphicsView):
         self._update_scale_and_transform()
         self.scale_changed.emit(new_scale)
 
+    def scale_without_fixed_scene_point(self, new_scale: float) -> None:
+        """Updates image content scale without fixing any particular scene point within the view."""
+        new_scale = max(new_scale, 0.01)
+        self._content_scale_adjustment = new_scale - self._default_content_scale
+        self.center_on_point(QPointF(self._content_size.width() / 2 + self._offset.x(),
+                                     self._content_size.height() / 2 + self._offset.y()))
+        self._update_scale_and_transform()
+        self.scale_changed.emit(new_scale)
+
     @property
     def offset(self) -> QPointF:
         """Gets the image offset in image/scene pixels."""
@@ -322,7 +331,8 @@ class ImageGraphicsView(QGraphicsView):
         change = (QPointF(new_offset) if isinstance(new_offset, QPoint) else new_offset) - self._offset
         self._offset.setX(float(new_offset.x()))
         self._offset.setY(float(new_offset.y()))
-        self.center_on_point(self._centered_on + change)
+        centered_scene_pt = self.widget_point_to_scene(self.rect().center())
+        self.center_on_point(centered_scene_pt + change)
         self.offset_changed.emit(self._offset.toPoint())
         self._update_scale_and_transform()
 
