@@ -418,6 +418,7 @@ class AppController(MenuBuilder):
         # Add utility widgets to the tool panel:
         self._tool_panel_navigation_panel = NavigationWindow(self._image_stack, self._image_viewer,
                                                              include_zoom_controls=False, use_keybindings=False)
+        self._tool_panel_navigation_panel.mouse_navigation_enabled = False
         self._tool_panel.add_utility_widget_tab(LayerPanel(self._image_stack), TOOL_PANEL_LAYER_TAB,
                                                 QIcon(ICON_PATH_LAYER_TAB))
         self._tool_panel_color_picker = ColorControlPanel(disable_extended_layouts=True)

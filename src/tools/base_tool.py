@@ -88,7 +88,8 @@ class BaseTool(QObject):
 
     cursor_change = Signal()
 
-    def __init__(self, activation_config_key: str, label_text: str, tooltip_text: str, icon: QIcon) -> None:
+    def __init__(self, activation_config_key: str, label_text: str, tooltip_text: str, icon: QIcon,
+                 enable_selection_restrictions: bool = True) -> None:
         super().__init__()
         self._activation_config_key = activation_config_key
         self._cursor: Optional[QCursor | QPixmap] = None
@@ -98,6 +99,7 @@ class BaseTool(QObject):
         self._label_text = label_text
         self._tooltip_text = tooltip_text
         self._icon = icon
+        self._enable_selection_restrictions = enable_selection_restrictions
 
     @staticmethod
     def modifier_hint(modifier_key: str, modifier_hint_str: str) -> str:
@@ -209,7 +211,8 @@ class BaseTool(QObject):
             error_message = ERROR_MESSAGE_LAYER_GROUP_LOCKED
         elif not layer.visible:
             error_message = ERROR_MESSAGE_LAYER_HIDDEN
-        elif image_stack is not None and Cache().get(Cache.PAINT_SELECTION_ONLY):
+        elif (image_stack is not None and Cache().get(Cache.PAINT_SELECTION_ONLY)
+              and self._enable_selection_restrictions):
             mask_image = image_stack.selection_layer.image_bits_readonly
             if image_is_fully_transparent(mask_image):
                 error_message = ERROR_MESSAGE_EMPTY_MASK

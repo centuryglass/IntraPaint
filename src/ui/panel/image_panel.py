@@ -11,6 +11,7 @@ from src.image.layers.image_stack import ImageStack
 from src.ui.image_viewer import ImageViewer
 from src.ui.layout.draggable_divider import DraggableDivider
 from src.ui.layout.draggable_tabs.tab_box import TabBox
+from src.ui.widget.image_graphics_view import MIN_IMAGE_ZOOM, MAX_IMAGE_ZOOM
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.image_panel'
@@ -137,12 +138,12 @@ class ImagePanel(QWidget):
             assert image_scale_slider is not None
             self._image_scale_slider = image_scale_slider
             self._control_layout.addWidget(image_scale_slider)
-            image_scale_slider.setRange(1, 4000)
+            image_scale_slider.setRange(round(MIN_IMAGE_ZOOM * 100), round(MAX_IMAGE_ZOOM * 100))
             image_scale_slider.setSingleStep(10)
             image_scale_slider.setValue(int(self._image_viewer.scene_scale * 100))
             image_scale_box = QDoubleSpinBox()
             self._control_layout.addWidget(image_scale_box)
-            image_scale_box.setRange(0.001, 40)
+            image_scale_box.setRange(MIN_IMAGE_ZOOM, MAX_IMAGE_ZOOM)
             image_scale_box.setSingleStep(0.1)
             image_scale_box.setValue(self._image_viewer.scene_scale)
             self._control_layout.addWidget(self._scale_reset_button)

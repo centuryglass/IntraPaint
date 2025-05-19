@@ -2,15 +2,10 @@
 
 # Latest bugs, next priorities:
 
-- Occasional crash when removing alpha lock after layer changes
-- Selection areas don't always sync properly (selection poly?)
-- "Draw in selection only" setting shouldn't apply to tools that don't use it
-- Pan and zoom should be disabled in the mini nav panel
 - Partial alpha compositing glitches (brush tool on alpha-locked layer, partial alpha?)
 - Shift key conflict messes up transforms on switch from transform tool -> shape tool
 - Remove ControlNet preprocessor images from results
 - Clone tool docs need update
-- Scroll wheel/key zoom:  snap to integer scaling above 3.0
 - Fix brush precision issues when pixel-level editing
 - "new image" seems to overwrite brush color
 - fix rotation aliasing issues
@@ -28,6 +23,7 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 - text layer offset is buggy: transform tool offsets aren't in sync with text tool coordinates, copy/paste puts layers in weird places. (can't reproduce - probably conditional. Requires specific transform type?)
 - Weird resize glitch sometimes when moving the window between monitors, possibly related to panel orientation/layout (Probably requires specific panel positions/sizes, display sizes)
 - selection_layer.py line 340, height_to_add < 0:  Should be non-breaking now, keep an eye on logs
+- Crash on alpha unlock:  Requires some sort of complex multi-layer sequence
 
 
 ## General concerns and ideas

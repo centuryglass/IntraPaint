@@ -125,7 +125,7 @@ class NavigationWindow(ImagePanel):
         self._main_view_outline = Outline(scene, self.image_viewer)
         self._main_view_outline.animated = False
         self._main_view_outline.dash_pattern = [2, 0]
-        self._main_view_outline.outlined_region = main_image_view.view_scene_bounds
+        self._main_view_outline.outlined_region = main_image_view.visible_scene_bounds
         self._main_view_outline.setVisible(True)
 
         self._nav_control_bar = QWidget(self)
@@ -158,6 +158,16 @@ class NavigationWindow(ImagePanel):
         if initial_tool in self._tool_toggle.options:
             self._tool_toggle.setValue(initial_tool)
 
+
+    @property
+    def mouse_navigation_enabled(self) -> bool:
+        """Returns whether mouse events should be allowed to pan and zoom within the scene."""
+        return self.image_viewer.mouse_navigation_enabled
+
+    @mouse_navigation_enabled.setter
+    def mouse_navigation_enabled(self, enabled: bool) -> None:
+        self.image_viewer.mouse_navigation_enabled = enabled
+
     def set_image_generation_controls_visible(self, visible: bool) -> None:
         """Only show the tool toggle if generation area controls are visible."""
         if not visible and self._tool_controller.active_tool == self._generation_area_tool:
@@ -189,11 +199,11 @@ class NavigationWindow(ImagePanel):
 
     # noinspection PyUnusedLocal
     def _main_offset_change_slot(self, offset: QPoint) -> None:
-        self._main_view_outline.outlined_region = self._main_image_viewer.view_scene_bounds
+        self._main_view_outline.outlined_region = self._main_image_viewer.visible_scene_bounds
 
     # noinspection PyUnusedLocal
     def _main_scale_change_slot(self, scale: float) -> None:
-        self._main_view_outline.outlined_region = self._main_image_viewer.view_scene_bounds
+        self._main_view_outline.outlined_region = self._main_image_viewer.visible_scene_bounds
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Save navigation window bounds changes when visible."""

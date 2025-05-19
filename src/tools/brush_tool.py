@@ -57,7 +57,7 @@ class BrushTool(BaseTool):
     def __init__(self, activation_config_key: str,  label_text: str, tooltip_text: str, icon: QIcon,
                  image_stack: ImageStack, image_viewer: ImageViewer, brush: LayerBrush,
                  enable_selection_restrictions=True, follow_active_layer=True) -> None:
-        super().__init__(activation_config_key, label_text, tooltip_text, icon)
+        super().__init__(activation_config_key, label_text, tooltip_text, icon, enable_selection_restrictions)
         self._layer: Optional[ImageLayer] = None
         self._drawing = False
         self._cached_size: Optional[int] = None
