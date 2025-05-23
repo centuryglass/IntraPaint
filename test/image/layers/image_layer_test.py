@@ -4,8 +4,8 @@ import sys
 import unittest
 from unittest.mock import MagicMock
 
-from PySide6.QtCore import QSize, QRect, QPoint
-from PySide6.QtGui import QImage, QPainter, QTransform, Qt
+from PySide6.QtCore import QSize, QRect, QPoint, QRectF
+from PySide6.QtGui import QImage, QPainter, QTransform, Qt, QPainterPath, QPolygonF
 from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
@@ -165,6 +165,7 @@ class ImageLayerTest(unittest.TestCase):
         transform_image = create_transparent_image(final_bounds.size())
         painter = QPainter(transform_image)
         painter.setTransform(painter_transform)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
         painter.drawImage(source_bounds, self.image_layer.image)
         painter.end()
 
@@ -188,15 +189,18 @@ class ImageLayerTest(unittest.TestCase):
         self.image_layer.image = init_image
         transform = (QTransform.fromTranslate(5, 10) * QTransform.fromScale(.5, 1)
                      * QTransform().rotate(50))
+        inverse = transform.inverted()[0]
         image_bounds = QRect(50, 50, 100, 100)
-        source_bounds = QRect(QPoint(), init_image.size())
-        final_bounds = map_rect_precise(source_bounds, transform).toAlignedRect().intersected(image_bounds)
+        final_bounds = QRect(image_bounds)
+        source_bounds = map_rect_precise(final_bounds, inverse).toAlignedRect().intersected(self.image_layer.bounds)
 
         expected_image = create_transparent_image(final_bounds.size())
         painter_transform = transform * QTransform.fromTranslate(-final_bounds.x(), -final_bounds.y())
         painter = QPainter(expected_image)
         painter.setTransform(painter_transform)
-        painter.drawImage(source_bounds, self.image_layer.image)
+
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+        painter.drawImage(source_bounds, self.image_layer.image, source_bounds)
         painter.end()
 
         render = self.image_layer.render_to_new_image(transform=transform, inner_bounds=image_bounds)
@@ -251,18 +255,25 @@ class ImageLayerTest(unittest.TestCase):
 
         # Apply the transformation, then copy into the render bounds
         transform = QTransform.fromTranslate(5, 10) * QTransform.fromScale(2, 1.5)
-        source_bounds = QRect(QPoint(), init_image.size())
-        final_bounds = map_rect_precise(source_bounds, transform).toAlignedRect().united(source_bounds)
+        inverse = transform.inverted()[0]
+        final_bounds = QRect(image_bounds)
+        source_bounds = map_rect_precise(final_bounds, inverse).toAlignedRect().intersected(self.image_layer.bounds)
 
         transform_image = create_transparent_image(final_bounds.size())
+        painter_transform = transform * QTransform.fromTranslate(-final_bounds.x(), -final_bounds.y())
+
         painter = QPainter(transform_image)
-        painter.setTransform(transform)
-        painter.drawImage(source_bounds, self.image_layer.image)
+
+        painter.setTransform(painter_transform)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+
+        painter.drawImage(source_bounds, self.image_layer.image, source_bounds)
         painter.end()
 
         expected_image = base_image.copy()
         painter = QPainter(expected_image)
-        painter.drawImage(image_bounds, transform_image, image_bounds)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+        painter.drawImage(image_bounds, transform_image)
         painter.end()
 
         # Confirm that the rendered layer matches:
@@ -284,18 +295,28 @@ class ImageLayerTest(unittest.TestCase):
 
         transform = (QTransform.fromTranslate(5, 10) * QTransform.fromScale(2, 1.5)
                      * QTransform().rotate(50))
-        source_bounds = QRect(QPoint(), init_image.size())
-        final_bounds = map_rect_precise(source_bounds, transform).toAlignedRect().united(source_bounds)
+        inverse = transform.inverted()[0]
+        final_bounds = QRect(image_bounds)
+        source_bounds = map_rect_precise(final_bounds, inverse).toAlignedRect().intersected(self.image_layer.bounds)
 
         transform_image = create_transparent_image(final_bounds.size())
+        painter_transform = transform * QTransform.fromTranslate(-final_bounds.x(), -final_bounds.y())
+
         painter = QPainter(transform_image)
-        painter.setTransform(transform)
-        painter.drawImage(source_bounds, self.image_layer.image)
+
+        painter.setTransform(painter_transform)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+
+        clip_path = QPainterPath()
+        clip_path.addPolygon(QPolygonF(source_bounds.toRectF()))
+        painter.setClipPath(clip_path)
+
+        painter.drawImage(source_bounds, self.image_layer.image, source_bounds)
         painter.end()
 
         expected_image = base_image.copy()
         painter = QPainter(expected_image)
-        painter.drawImage(image_bounds, transform_image, image_bounds)
+        painter.drawImage(image_bounds, transform_image)
         painter.end()
 
         self.image_layer.render(base_image=base_image, transform=transform, image_bounds=image_bounds)
