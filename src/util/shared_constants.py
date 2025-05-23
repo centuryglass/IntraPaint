@@ -25,6 +25,8 @@ for app_dir in [DATA_DIR, LOG_DIR]:
 # Numeric:
 INT_MIN = -2147483647
 INT_MAX = 2147483647
+# It's a pretty insignificant micro-optimization to replace "x / 255" with "x * INV_255", but why not?
+INV_255 = 1 / 255
 # For when zero values are best avoided due to division-by-zero errors and the like:
 MIN_NONZERO = 0.001
 # Not actually hard limits, just reasonable extremes guaranteed to be within hard limits:
