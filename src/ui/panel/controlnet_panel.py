@@ -336,6 +336,11 @@ class ControlNetPanel(BorderedWidget):
         if self._preview_image_widget.image == preview_image:
             return
         self._preview_image_widget.image = preview_image
+        if preview_image.isNull():
+            self._layout.removeWidget(self._preview_image_widget)
+            self._preview_image_widget.setVisible(False)
+        else:
+            self._preview_image_widget.setVisible(True)
         if not skip_layout_update:
             self._build_layout()
 
@@ -347,7 +352,7 @@ class ControlNetPanel(BorderedWidget):
 
     def _build_layout(self) -> None:
         """Builds the panel layout, or updates it when orientation changes."""
-        clear_layout(self._layout)
+        clear_layout(self._layout, hide=True)
 
         for row in range(self._layout.rowCount()):
             self._layout.setRowStretch(row, 0)
@@ -437,6 +442,7 @@ class ControlNetPanel(BorderedWidget):
         for widget, row, column, row_span, column_span in layout_items:
             if widget is not None:
                 self._layout.addWidget(widget, row, column, row_span, column_span)
+                widget.setHidden(False)
 
         self._preview_image_widget.setHidden(self._preview_image_widget.image is None
                                              or self._preview_image_widget.image.isNull())
