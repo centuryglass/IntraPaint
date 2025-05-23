@@ -105,7 +105,8 @@ class MyPaintBrushTool(BrushTool):
                 if os.path.isfile(resource_path):
                     new_path = resource_path
                 else:
-                    raise RuntimeError(f'Brush file {new_path} does not exist, not even at {resource_path}')
+                    logger.warning(f'Brush file {new_path} does not exist, not even at {resource_path}')
+                    return
             brush.brush_path = new_path
         except (OSError, RuntimeError) as err:
             logger.error(f'loading brush {new_path} failed', err)
