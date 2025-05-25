@@ -235,8 +235,6 @@ class MyPaintLayerSurface(QObject):
 
     def clear(self) -> None:
         """Disconnects and discards all tiles."""
-        if self._size.isNull():
-            return
         for tile in self._tiles.values():
             tile.set_layer(None)
         self._tiles.clear()
@@ -264,9 +262,8 @@ class MyPaintLayerSurface(QObject):
         width = size.width()
         height = size.height()
         assert width > 0 and height > 0, f'Surface size must be positive, got {width}x{height}'
-        if not self._size.isNull():
-            self.clear()
-            self._null_tile.clear()
+        self.clear()
+        self._null_tile.clear()
         self._size = size
         self._tiles_width = math.ceil(width / TILE_DIM)
         self._tiles_height = math.ceil(height / TILE_DIM)

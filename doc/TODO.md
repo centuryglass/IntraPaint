@@ -3,10 +3,13 @@
 # Latest bugs, next priorities:
 
 - Partial alpha compositing glitches (brush tool on alpha-locked layer, partial alpha?)
-- Shift key conflict messes up transforms on switch from transform tool -> shape tool
 - Remove ControlNet preprocessor images from results
 - Clone tool docs need update
 - invalid bounds errors (empty) in mypaint_layer_tile when cropping to bounds with the brush tool open
+  * mypaint_layer_tile.py L166 (_layer_size_changed_slot):
+  * mypaint_layer_tile.py L 43 (set_layer):
+  * invalid bounds (0, 0, 0, 0) from (2752, 2496, 64, 64)
+  * Looks like I need better handling for the case where tiles get removed entirely...
 - fix slowness when layer size = 6k:
   - Refactor to remove unnecessary layer copying in ImageLayer._handle_content_change
   - QtPaintBrush._draw_input_event:  Make sure the numpy copying really is faster
@@ -27,7 +30,6 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 - text layer offset is buggy: transform tool offsets aren't in sync with text tool coordinates, copy/paste puts layers in weird places. (can't reproduce - probably conditional. Requires specific transform type?)
 - Weird resize glitch sometimes when moving the window between monitors, possibly related to panel orientation/layout (Probably requires specific panel positions/sizes, display sizes)
 - selection_layer.py line 340, height_to_add < 0:  Should be non-breaking now, keep an eye on logs
-- Crash on alpha unlock:  Requires some sort of complex multi-layer sequence
 
 
 ## General concerns and ideas
@@ -46,6 +48,9 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 - LayerPanel layout still shows some odd glitches on occasion
 - "crop layer to selection": overlap handling on layer groups may still have some issues with groups overlapping the selection boundary
 
+
+## Extremely low-priority edge-cases:
+- All my QImage data indexing assumes a little-endian data structure. Odds of ever running on a big-endian system are extremely slim, but a lot of things are going to fail if it ever does. Consider checking endianness and using it to set channel indexes on launch.
 ---
 
 ## Help window
@@ -110,5 +115,4 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 It would be cool to add support for these, if only for the nostalgia.  Probably best done with standalone server programs with minimal REST interfaces.
 - DeepDream
 - VQGAN+CLIP
-
 

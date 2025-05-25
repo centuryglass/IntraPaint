@@ -111,7 +111,6 @@ class MyPaintLayerTile:
             self._layer.content_changed.connect(self._layer_content_changed_slot)
             self._layer.size_changed.connect(self._layer_size_changed_slot)
             self._layer.lock_changed.connect(self._layer_lock_change_slot)
-            self._layer.alpha_lock_changed.connect(self._layer_lock_change_slot)
 
     def disconnect_layer_signals(self) -> None:
         """disconnect layer change signals to stop the tile from updating when the layer changes."""
@@ -119,7 +118,6 @@ class MyPaintLayerTile:
             self._layer.content_changed.disconnect(self._layer_content_changed_slot)
             self._layer.size_changed.disconnect(self._layer_size_changed_slot)
             self._layer.lock_changed.disconnect(self._layer_lock_change_slot)
-            self._layer.alpha_lock_changed.connect(self._layer_lock_change_slot)
 
     @property
     def bounds(self) -> QRect:

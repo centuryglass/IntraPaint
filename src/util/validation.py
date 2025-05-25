@@ -317,9 +317,6 @@ def profile_on_exit(func):
         start = time.perf_counter()
         result = func(*args, **kwargs)
         duration = time.perf_counter() - start
-        if duration > 1.0:
-            return result
-
         stats = _stats[name]
         stats['count'] += 1
         stats['total_time'] += duration
