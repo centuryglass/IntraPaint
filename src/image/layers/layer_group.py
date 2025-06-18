@@ -16,7 +16,7 @@ from src.util.cached_data import CachedData
 from src.util.signals_blocked import signals_blocked
 from src.util.validation import assert_valid_index
 from src.util.visual.geometry_utils import map_rect_precise
-from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit
+from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit, image_is_fully_transparent
 
 RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
 
@@ -253,14 +253,20 @@ class LayerGroup(Layer, LayerParent):
         base_image_bounds = QRect(QPoint(), base_image.size())
         final_bounds = final_bounds.intersected(base_image_bounds)
 
+        qt_composite_mode = self.composition_mode.qt_composite_mode()
+        isolate = self.isolate
+        intermediate_base = base_image
+        simple_compositing = (qt_composite_mode == QPainter.CompositionMode.CompositionMode_SourceOver
+                              and self.opacity == 1.0 and final_bounds.size() == base_image.size())
+        if isolate:
+            simple_compositing = simple_compositing and image_is_fully_transparent(base_image)
+
         # Create an intermediate base to render child layers onto. All layers get rendered here, then that image is
-        # rendered to the base with this layer's opacity and composition mode.
-        if self.isolate:
-            intermediate_base = create_transparent_image(final_bounds.size())
-            compositing_mask = None if returned_mask is None else create_transparent_image(final_bounds.size())
-        else:
-            intermediate_base = base_image.copy(final_bounds)
-            compositing_mask = create_transparent_image(final_bounds.size())
+        # rendered to the base with this layer's opacity and composition mode. We can skip this step 9f using normal
+        # composition mode and full opacity, as long as either self.isolate is false or the base is fully transparent.
+        if not simple_compositing:
+            intermediate_base = create_transparent_image(final_bounds.size()) if isolate else base_image.copy(final_bounds)
+        compositing_mask = None if (not isolate and returned_mask is None) else create_transparent_image(final_bounds.size())
 
         # if there's no cropping, layer content would be translated so that the group bounds are at (0, 0)
         # if there is cropping, translate so that the final bounds are at (0, 0)
@@ -269,21 +275,20 @@ class LayerGroup(Layer, LayerParent):
         for layer in reversed(self._layers):
             layer.render(base_image=intermediate_base, transform=layer_translation, z_max=z_max,
                          image_adjuster=image_adjuster, returned_mask=compositing_mask)
-        if not self.isolate:
+        if not self.isolate and returned_mask is not None and not simple_compositing:
             assert compositing_mask is not None
             np_base = image_data_as_numpy_8bit(intermediate_base)
             np_mask = image_data_as_numpy_8bit(compositing_mask)
             mask_empty = np_mask[:, :, 3] == 0
             np_base[mask_empty, :] = 0
 
-        qt_composite_mode = self.composition_mode.qt_composite_mode()
-
         if qt_composite_mode is not None:
-            painter = QPainter(base_image)
-            painter.setOpacity(self.opacity)
-            painter.setCompositionMode(qt_composite_mode)
-            painter.drawImage(final_bounds, intermediate_base)
-            painter.end()
+            if intermediate_base != base_image:
+                painter = QPainter(base_image)
+                painter.setOpacity(self.opacity)
+                painter.setCompositionMode(qt_composite_mode)
+                painter.drawImage(final_bounds, intermediate_base)
+                painter.end()
         else:
             composite_op = self.composition_mode.custom_composite_op()
             composite_transform = QTransform.fromTranslate(final_bounds.x(), final_bounds.y())

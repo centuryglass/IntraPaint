@@ -11,10 +11,8 @@
   * invalid bounds (0, 0, 0, 0) from (2752, 2496, 64, 64)
   * Looks like I need better handling for the case where tiles get removed entirely...
 - fix slowness when layer size = 6k:
-  - Refactor to remove unnecessary layer copying in ImageLayer._handle_content_change
   - QtPaintBrush._draw_input_event:  Make sure the numpy copying really is faster
   - QtPaintBrush.start_stroke: Refactor to avoid copying the whole layer into prev_image_buffer
-  - layer_widget:  Also copies the whole image, see if we can get a scaled copy instead
 - Selection issues: Try reproducing with selection_debug.ora
 - Clone tool sample brush seems off by a couple pixels
 - line previews are also off by <1 scene pixel

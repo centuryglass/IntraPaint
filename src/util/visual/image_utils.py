@@ -18,7 +18,6 @@ from numba import njit
 from numpy import ndarray, dtype
 
 from src.util.shared_constants import ICON_SIZE
-from src.util.validation import profile_on_exit
 
 logger = logging.getLogger(__name__)
 
