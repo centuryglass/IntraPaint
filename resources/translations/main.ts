@@ -93,19 +93,19 @@
   <context>
     <name>application_config</name>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="224"/>
+      <location filename="../../src/controller/app_controller.py" line="226"/>
       <source>Stable Diffusion</source>
       <translation>Stable Diffusion</translation>
     </message>
     <message>
       <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="34"/>
       <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="50"/>
-      <location filename="../../src/controller/app_controller.py" line="225"/>
+      <location filename="../../src/controller/app_controller.py" line="227"/>
       <source>GLID-3-XL</source>
       <translation>GLID-3-XL</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="226"/>
+      <location filename="../../src/controller/app_controller.py" line="228"/>
       <source>Developer</source>
       <translation>Developer</translation>
     </message>
@@ -4021,61 +4021,91 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="882"/>
+      <source>Saturation</source>
+      <translation>Saturation</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="885"/>
+      <source>Adjust image color saturation</source>
+      <translation>Adjust image color saturation</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="839"/>
+      <source>Filter Menu</source>
+      <translation>Filter Menu</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="633"/>
+      <source>Invert</source>
+      <translation>Invert</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="894"/>
+      <source>Invert image colors</source>
+      <translation>Invert image colors</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="839"/>
+      <source>Filter Menu</source>
+      <translation>Filter Menu</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="900"/>
       <source>View saved prompt styles</source>
       <translation>View saved prompt styles</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="885"/>
+      <location filename="../config/key_config_definitions.json" line="903"/>
       <source>Access saved Stable Diffusion prompt styles</source>
       <translation>Access saved Stable Diffusion prompt styles</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="884"/>
-      <source>Stable Diffusion Menu</source>
-      <translation>Stable Diffusion Menu</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="891"/>
-      <source>View LoRA models</source>
-      <translation>View LoRA models</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="894"/>
-      <source>Access available LoRA models.</source>
-      <translation>Access available LoRA models.</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="884"/>
-      <source>Stable Diffusion Menu</source>
-      <translation>Stable Diffusion Menu</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="900"/>
-      <source>LCM mode</source>
-      <translation>LCM mode</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="903"/>
-      <source>Apply appropriate settings for the LCM LoRA.</source>
-      <translation>Apply appropriate settings for the LCM LoRA.</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="884"/>
+      <location filename="../config/key_config_definitions.json" line="902"/>
       <source>Stable Diffusion Menu</source>
       <translation>Stable Diffusion Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="909"/>
+      <source>View LoRA models</source>
+      <translation>View LoRA models</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="912"/>
+      <source>Access available LoRA models.</source>
+      <translation>Access available LoRA models.</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="902"/>
+      <source>Stable Diffusion Menu</source>
+      <translation>Stable Diffusion Menu</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="918"/>
+      <source>LCM mode</source>
+      <translation>LCM mode</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="921"/>
+      <source>Apply appropriate settings for the LCM LoRA.</source>
+      <translation>Apply appropriate settings for the LCM LoRA.</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="902"/>
+      <source>Stable Diffusion Menu</source>
+      <translation>Stable Diffusion Menu</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="927"/>
       <source>Open IntraPaint help pages</source>
       <translation>Open IntraPaint help pages</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="912"/>
+      <location filename="../config/key_config_definitions.json" line="930"/>
       <source>Open a page with links to all of IntraPaint's documentation and tutorials in a web browser.</source>
       <translation>Open a page with links to all of IntraPaint's documentation and tutorials in a web browser.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="911"/>
+      <location filename="../config/key_config_definitions.json" line="929"/>
       <source>Help Menu</source>
       <translation>Help Menu</translation>
     </message>
@@ -4083,244 +4113,244 @@
   <context>
     <name>controller.app_controller</name>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="150"/>
-      <location filename="../../src/controller/app_controller.py" line="134"/>
+      <location filename="../../src/controller/app_controller.py" line="152"/>
+      <location filename="../../src/controller/app_controller.py" line="136"/>
       <source>Layers</source>
       <translation>Layers</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="135"/>
+      <location filename="../../src/controller/app_controller.py" line="137"/>
       <source>Color</source>
       <translation>Color</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="136"/>
+      <location filename="../../src/controller/app_controller.py" line="138"/>
       <source>Navigation</source>
       <translation>Navigation</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="146"/>
+      <location filename="../../src/controller/app_controller.py" line="148"/>
       <source>File</source>
       <translation>File</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="147"/>
+      <location filename="../../src/controller/app_controller.py" line="149"/>
       <source>Edit</source>
       <translation>Edit</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="148"/>
+      <location filename="../../src/controller/app_controller.py" line="150"/>
       <source>Image</source>
       <translation>Image</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="149"/>
+      <location filename="../../src/controller/app_controller.py" line="151"/>
       <source>Selection</source>
       <translation>Selection</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="151"/>
+      <location filename="../../src/controller/app_controller.py" line="153"/>
       <source>Filters</source>
       <translation>Filters</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="152"/>
+      <location filename="../../src/controller/app_controller.py" line="154"/>
       <source>Help</source>
       <translation>Help</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="154"/>
+      <location filename="../../src/controller/app_controller.py" line="156"/>
       <source>Move</source>
       <translation>Move</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="155"/>
+      <location filename="../../src/controller/app_controller.py" line="157"/>
       <source>Select</source>
       <translation>Select</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="156"/>
+      <location filename="../../src/controller/app_controller.py" line="158"/>
       <source>Transform</source>
       <translation>Transform</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="158"/>
+      <location filename="../../src/controller/app_controller.py" line="160"/>
       <source>Image Generation</source>
       <translation>Image Generation</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="166"/>
+      <location filename="../../src/controller/app_controller.py" line="168"/>
       <source>Loading image generator failed</source>
       <translation>Loading image generator failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="167"/>
+      <location filename="../../src/controller/app_controller.py" line="169"/>
       <source>Unable to load the {generator_name} image generator</source>
       <translation>Unable to load the {generator_name} image generator</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="168"/>
+      <location filename="../../src/controller/app_controller.py" line="170"/>
       <source>Quit now?</source>
       <translation>Quit now?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="169"/>
+      <location filename="../../src/controller/app_controller.py" line="171"/>
       <source>All unsaved changes will be lost.</source>
       <translation>All unsaved changes will be lost.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="170"/>
+      <location filename="../../src/controller/app_controller.py" line="172"/>
       <source>Create new image?</source>
       <translation>Create new image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="186"/>
-      <location filename="../../src/controller/app_controller.py" line="171"/>
+      <location filename="../../src/controller/app_controller.py" line="188"/>
+      <location filename="../../src/controller/app_controller.py" line="173"/>
       <source>This will discard all unsaved changes.</source>
       <translation>This will discard all unsaved changes.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="172"/>
+      <location filename="../../src/controller/app_controller.py" line="174"/>
       <source>Save failed</source>
       <translation>Save failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="173"/>
+      <location filename="../../src/controller/app_controller.py" line="175"/>
       <source>Open failed</source>
       <translation>Open failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="174"/>
+      <location filename="../../src/controller/app_controller.py" line="176"/>
       <source>Saving as "{file_path}" failed due to an unknown error, please open a new issue on the IntraPaint GitHub page, and let me know what file format you tried and any other details that might be relevant. Meanwhile, try saving in a different format or to a different disk.</source>
       <translation>Saving as "{file_path}" failed due to an unknown error, please open a new issue on the IntraPaint GitHub page, and let me know what file format you tried and any other details that might be relevant. Meanwhile, try saving in a different format or to a different disk.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="178"/>
+      <location filename="../../src/controller/app_controller.py" line="180"/>
       <source>Saving files with the  "{extension}" extension is not supported, try again with a supported image file format.</source>
       <translation>Saving files with the  "{extension}" extension is not supported, try again with a supported image file format.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="180"/>
+      <location filename="../../src/controller/app_controller.py" line="182"/>
       <source>Tried to save with no file extension as "{file_path}", add a valid image file extension and try again.</source>
       <translation>Tried to save with no file extension as "{file_path}", add a valid image file extension and try again.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="182"/>
+      <location filename="../../src/controller/app_controller.py" line="184"/>
       <source>Reload failed</source>
       <translation>Reload failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="183"/>
+      <location filename="../../src/controller/app_controller.py" line="185"/>
       <source>Image path "{file_path}" is not a valid image file.</source>
       <translation>Image path "{file_path}" is not a valid image file.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="184"/>
+      <location filename="../../src/controller/app_controller.py" line="186"/>
       <source>Enter an image path or click "Open Image" first.</source>
       <translation>Enter an image path or click "Open Image" first.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="185"/>
+      <location filename="../../src/controller/app_controller.py" line="187"/>
       <source>Reload image?</source>
       <translation>Reload image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="187"/>
+      <location filename="../../src/controller/app_controller.py" line="189"/>
       <source>Metadata updated</source>
       <translation>Metadata updated</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="188"/>
+      <location filename="../../src/controller/app_controller.py" line="190"/>
       <source>On save, current image generation parameters will be stored within the image</source>
       <translation>On save, current image generation parameters will be stored within the image</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="189"/>
+      <location filename="../../src/controller/app_controller.py" line="191"/>
       <source>Opening layers failed</source>
       <translation>Opening layers failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="190"/>
+      <location filename="../../src/controller/app_controller.py" line="192"/>
       <source>Could not open the following images: </source>
       <translation>Could not open the following images: </translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="192"/>
+      <location filename="../../src/controller/app_controller.py" line="194"/>
       <source>Save image generation metadata?</source>
       <translation>Save image generation metadata?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="193"/>
+      <location filename="../../src/controller/app_controller.py" line="195"/>
       <source>No image metadata is cached, would you like to save image generation parameters to this image?</source>
       <translation>No image metadata is cached, would you like to save image generation parameters to this image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="195"/>
+      <location filename="../../src/controller/app_controller.py" line="197"/>
       <source>Update image generation metadata?</source>
       <translation>Update image generation metadata?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="196"/>
+      <location filename="../../src/controller/app_controller.py" line="198"/>
       <source>Image generation parameters have changed, would you like this image to be saved with the most recent values?</source>
       <translation>Image generation parameters have changed, would you like this image to be saved with the most recent values?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="200"/>
+      <location filename="../../src/controller/app_controller.py" line="202"/>
       <source>Image saved without layer data</source>
       <translation>Image saved without layer data</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="201"/>
+      <location filename="../../src/controller/app_controller.py" line="203"/>
       <source>To save layer data, images must be saved in .ora format.</source>
       <translation>To save layer data, images must be saved in .ora format.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="203"/>
+      <location filename="../../src/controller/app_controller.py" line="205"/>
       <source>Image saved without full transparency</source>
       <translation>Image saved without full transparency</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="204"/>
+      <location filename="../../src/controller/app_controller.py" line="206"/>
       <source>To preserve transparency, save using one of the following file formats: {alpha_formats}</source>
       <translation>To preserve transparency, save using one of the following file formats: {alpha_formats}</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="207"/>
+      <location filename="../../src/controller/app_controller.py" line="209"/>
       <source>Image saved without image generation metadata</source>
       <translation>Image saved without image generation metadata</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="208"/>
+      <location filename="../../src/controller/app_controller.py" line="210"/>
       <source>To preserve image generation metadata, save using one of the following file formats: {metadata_formats}</source>
       <translation>To preserve image generation metadata, save using one of the following file formats: {metadata_formats}</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="211"/>
+      <location filename="../../src/controller/app_controller.py" line="213"/>
       <source>Image saved in a write-only format</source>
       <translation>Image saved in a write-only format</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="212"/>
+      <location filename="../../src/controller/app_controller.py" line="214"/>
       <source>IntraPaint can write images in the {file_format} format, but cannot load them. Use another file format if you want to be able to load this image in IntraPaint again.</source>
       <translation>IntraPaint can write images in the {file_format} format, but cannot load them. Use another file format if you want to be able to load this image in IntraPaint again.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="215"/>
+      <location filename="../../src/controller/app_controller.py" line="217"/>
       <source>Image saved in a format that changes size</source>
       <translation>Image saved in a format that changes size</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="216"/>
+      <location filename="../../src/controller/app_controller.py" line="218"/>
       <source>The image is {width_px}x{height_px}, but the {file_format} format saves all images at {saved_width_px}x{saved_height_px} resolution. Use another file format if you want to preserve the original image size.</source>
       <translation>The image is {width_px}x{height_px}, but the {file_format} format saves all images at {saved_width_px}x{saved_height_px} resolution. Use another file format if you want to preserve the original image size.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="220"/>
+      <location filename="../../src/controller/app_controller.py" line="222"/>
       <source>Image saved without color</source>
       <translation>Image saved without color</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="221"/>
+      <location filename="../../src/controller/app_controller.py" line="223"/>
       <source>The {file_format} format saves the image without color. Use another format if you want to preserve image colors.</source>
       <translation>The {file_format} format saves the image without color. Use another format if you want to preserve image colors.</translation>
     </message>
@@ -5070,12 +5100,12 @@
   <context>
     <name>controller.tool_controller</name>
     <message>
-      <location filename="../../src/controller/tool_controller.py" line="45"/>
+      <location filename="../../src/controller/tool_controller.py" line="46"/>
       <source>Failed to load libmypaint brush library files</source>
       <translation>Failed to load libmypaint brush library files</translation>
     </message>
     <message>
-      <location filename="../../src/controller/tool_controller.py" line="46"/>
+      <location filename="../../src/controller/tool_controller.py" line="47"/>
       <source>The brush tool will not be available unless this is fixed.</source>
       <translation>The brush tool will not be available unless this is fixed.</translation>
     </message>
@@ -5150,102 +5180,102 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>image.composite_mode</name>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="34"/>
+      <location filename="../../src/image/composite_mode.py" line="33"/>
       <source>Normal</source>
       <translation>Normal</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="35"/>
+      <location filename="../../src/image/composite_mode.py" line="34"/>
       <source>Multiply</source>
       <translation>Multiply</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="36"/>
+      <location filename="../../src/image/composite_mode.py" line="35"/>
       <source>Screen</source>
       <translation>Screen</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="37"/>
+      <location filename="../../src/image/composite_mode.py" line="36"/>
       <source>Overlay</source>
       <translation>Overlay</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="38"/>
+      <location filename="../../src/image/composite_mode.py" line="37"/>
       <source>Darken</source>
       <translation>Darken</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="39"/>
+      <location filename="../../src/image/composite_mode.py" line="38"/>
       <source>Lighten</source>
       <translation>Lighten</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="40"/>
+      <location filename="../../src/image/composite_mode.py" line="39"/>
       <source>Color Dodge</source>
       <translation>Color Dodge</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="41"/>
+      <location filename="../../src/image/composite_mode.py" line="40"/>
       <source>Color Burn</source>
       <translation>Color Burn</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="42"/>
+      <location filename="../../src/image/composite_mode.py" line="41"/>
       <source>Hard Light</source>
       <translation>Hard Light</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="43"/>
+      <location filename="../../src/image/composite_mode.py" line="42"/>
       <source>Soft Light</source>
       <translation>Soft Light</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="44"/>
+      <location filename="../../src/image/composite_mode.py" line="43"/>
       <source>Difference</source>
       <translation>Difference</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="45"/>
+      <location filename="../../src/image/composite_mode.py" line="44"/>
       <source>Color</source>
       <translation>Color</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="46"/>
+      <location filename="../../src/image/composite_mode.py" line="45"/>
       <source>Luminosity</source>
       <translation>Luminosity</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="47"/>
+      <location filename="../../src/image/composite_mode.py" line="46"/>
       <source>Hue</source>
       <translation>Hue</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="48"/>
+      <location filename="../../src/image/composite_mode.py" line="47"/>
       <source>Saturation</source>
       <translation>Saturation</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="49"/>
+      <location filename="../../src/image/composite_mode.py" line="48"/>
       <source>Plus</source>
       <translation>Plus</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="50"/>
+      <location filename="../../src/image/composite_mode.py" line="49"/>
       <source>Destination In</source>
       <translation>Destination In</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="51"/>
+      <location filename="../../src/image/composite_mode.py" line="50"/>
       <source>Destination Out</source>
       <translation>Destination Out</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="52"/>
+      <location filename="../../src/image/composite_mode.py" line="51"/>
       <source>Source Atop</source>
       <translation>Source Atop</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="53"/>
+      <location filename="../../src/image/composite_mode.py" line="52"/>
       <source>Destination Atop</source>
       <translation>Destination Atop</translation>
     </message>
@@ -5330,6 +5360,19 @@ Please remember to include the traceback from the Details expander.</translation
     </message>
   </context>
   <context>
+    <name>image.filter.invert</name>
+    <message>
+      <location filename="../../src/image/filter/invert.py" line="24"/>
+      <source>Invert</source>
+      <translation>Invert</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/invert.py" line="25"/>
+      <source>Invert image colors</source>
+      <translation>Invert image colors</translation>
+    </message>
+  </context>
+  <context>
     <name>image.filter.posterize</name>
     <message>
       <location filename="../../src/image/filter/posterize.py" line="25"/>
@@ -5383,6 +5426,25 @@ Please remember to include the traceback from the Details expander.</translation
       <location filename="../../src/image/filter/rgb_color_balance.py" line="30"/>
       <source>Alpha</source>
       <translation>Alpha</translation>
+    </message>
+  </context>
+  <context>
+    <name>image.filter.saturation</name>
+    <message>
+      <location filename="../../src/image/filter/saturation.py" line="27"/>
+      <location filename="../../src/image/filter/saturation.py" line="24"/>
+      <source>Saturation</source>
+      <translation>Saturation</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/saturation.py" line="25"/>
+      <source>Adjust image color saturation</source>
+      <translation>Adjust image color saturation</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/saturation.py" line="28"/>
+      <source>Saturation multiplier</source>
+      <translation>Saturation multiplier</translation>
     </message>
   </context>
   <context>
@@ -5767,17 +5829,17 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>tools.filter_tool</name>
     <message>
-      <location filename="../../src/tools/filter_tool.py" line="36"/>
+      <location filename="../../src/tools/filter_tool.py" line="38"/>
       <source>Filter Brush</source>
       <translation>Filter Brush</translation>
     </message>
     <message>
-      <location filename="../../src/tools/filter_tool.py" line="37"/>
+      <location filename="../../src/tools/filter_tool.py" line="39"/>
       <source>Draw to apply an image filter</source>
       <translation>Draw to apply an image filter</translation>
     </message>
     <message>
-      <location filename="../../src/tools/filter_tool.py" line="38"/>
+      <location filename="../../src/tools/filter_tool.py" line="40"/>
       <source>{left_mouse_icon}: filter - {right_mouse_icon}: 1px filter</source>
       <translation>{left_mouse_icon}: filter - {right_mouse_icon}: 1px filter</translation>
     </message>
@@ -6804,37 +6866,37 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.panel.image_panel</name>
     <message>
-      <location filename="../../src/ui/panel/image_panel.py" line="24"/>
+      <location filename="../../src/ui/panel/image_panel.py" line="25"/>
       <source>Scale:</source>
       <translation>Scale:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/image_panel.py" line="25"/>
+      <location filename="../../src/ui/panel/image_panel.py" line="26"/>
       <source>Reset View</source>
       <translation>Reset View</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/image_panel.py" line="26"/>
+      <location filename="../../src/ui/panel/image_panel.py" line="27"/>
       <source>Restore default image zoom and offset</source>
       <translation>Restore default image zoom and offset</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/image_panel.py" line="27"/>
+      <location filename="../../src/ui/panel/image_panel.py" line="28"/>
       <source>Zoom in</source>
       <translation>Zoom in</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/image_panel.py" line="28"/>
+      <location filename="../../src/ui/panel/image_panel.py" line="29"/>
       <source>Zoom in on the area selected for image generation</source>
       <translation>Zoom in on the area selected for image generation</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/image_panel.py" line="30"/>
+      <location filename="../../src/ui/panel/image_panel.py" line="31"/>
       <source>Show tool control hints</source>
       <translation>Show tool control hints</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/image_panel.py" line="31"/>
+      <location filename="../../src/ui/panel/image_panel.py" line="32"/>
       <source>Hide tool control hints</source>
       <translation>Hide tool control hints</translation>
     </message>
@@ -7745,237 +7807,237 @@ Press ESC to cancel</translation>
   <context>
     <name>util.shared_constants</name>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="36"/>
+      <location filename="../../src/util/shared_constants.py" line="38"/>
       <source>Inpaint</source>
       <translation>Inpaint</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="37"/>
+      <location filename="../../src/util/shared_constants.py" line="39"/>
       <source>Text to Image</source>
       <translation>Text to Image</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="38"/>
+      <location filename="../../src/util/shared_constants.py" line="40"/>
       <source>Image to Image</source>
       <translation>Image to Image</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="41"/>
+      <location filename="../../src/util/shared_constants.py" line="43"/>
       <source>Generate</source>
       <translation>Generate</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="42"/>
+      <location filename="../../src/util/shared_constants.py" line="44"/>
       <source>Start AI image generation or modification</source>
       <translation>Start AI image generation or modification</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="43"/>
+      <location filename="../../src/util/shared_constants.py" line="45"/>
       <source>W:</source>
       <translation>W:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="44"/>
+      <location filename="../../src/util/shared_constants.py" line="46"/>
       <source>H:</source>
       <translation>H:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="45"/>
+      <location filename="../../src/util/shared_constants.py" line="47"/>
       <source>X:</source>
       <translation>X:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="46"/>
+      <location filename="../../src/util/shared_constants.py" line="48"/>
       <source>Y:</source>
       <translation>Y:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="48"/>
+      <location filename="../../src/util/shared_constants.py" line="50"/>
       <source>Width:</source>
       <translation>Width:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="49"/>
+      <location filename="../../src/util/shared_constants.py" line="51"/>
       <source>Height:</source>
       <translation>Height:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="50"/>
+      <location filename="../../src/util/shared_constants.py" line="52"/>
       <source>Color:</source>
       <translation>Color:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="51"/>
+      <location filename="../../src/util/shared_constants.py" line="53"/>
       <source>Size:</source>
       <translation>Size:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="52"/>
+      <location filename="../../src/util/shared_constants.py" line="54"/>
       <source>Scale:</source>
       <translation>Scale:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="53"/>
+      <location filename="../../src/util/shared_constants.py" line="55"/>
       <source>Padding:</source>
       <translation>Padding:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="54"/>
+      <location filename="../../src/util/shared_constants.py" line="56"/>
       <source>Zoom In</source>
       <translation>Zoom In</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="55"/>
+      <location filename="../../src/util/shared_constants.py" line="57"/>
       <source>Reset Zoom</source>
       <translation>Reset Zoom</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="56"/>
+      <location filename="../../src/util/shared_constants.py" line="58"/>
       <source>Keep aspect ratio</source>
       <translation>Keep aspect ratio</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="59"/>
+      <location filename="../../src/util/shared_constants.py" line="61"/>
       <source>Editing failed</source>
       <translation>Editing failed</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="60"/>
+      <location filename="../../src/util/shared_constants.py" line="62"/>
       <source>The selected layer is locked, unlock it or select a different layer.</source>
       <translation>The selected layer is locked, unlock it or select a different layer.</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="61"/>
+      <location filename="../../src/util/shared_constants.py" line="63"/>
       <source>The selected layer is in a locked group, unlock it or select a different layer.</source>
       <translation>The selected layer is in a locked group, unlock it or select a different layer.</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="63"/>
+      <location filename="../../src/util/shared_constants.py" line="65"/>
       <source>The selected layer is hidden, un-hide it before trying to edit it.</source>
       <translation>The selected layer is hidden, un-hide it before trying to edit it.</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="64"/>
+      <location filename="../../src/util/shared_constants.py" line="66"/>
       <source>The selected layer is not an image layer, select an image layer first.</source>
       <translation>The selected layer is not an image layer, select an image layer first.</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="65"/>
+      <location filename="../../src/util/shared_constants.py" line="67"/>
       <source>Changes are restricted to selected content only, but nothing is selected in this layer. Select layer content or enable changes in unselected areas.</source>
       <translation>Changes are restricted to selected content only, but nothing is selected in this layer. Select layer content or enable changes in unselected areas.</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="69"/>
+      <location filename="../../src/util/shared_constants.py" line="71"/>
       <source>Not authenticated</source>
       <translation>Not authenticated</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="70"/>
+      <location filename="../../src/util/shared_constants.py" line="72"/>
       <source>Image generator connection</source>
       <translation>Image generator connection</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="71"/>
+      <location filename="../../src/util/shared_constants.py" line="73"/>
       <source>Enter server URL:</source>
       <translation>Enter server URL:</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="72"/>
+      <location filename="../../src/util/shared_constants.py" line="74"/>
       <source>Request timed out</source>
       <translation>Request timed out</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="73"/>
+      <location filename="../../src/util/shared_constants.py" line="75"/>
       <source>Server connection failed, enter a new URL or click "OK" to retry</source>
       <translation>Server connection failed, enter a new URL or click "OK" to retry</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="74"/>
+      <location filename="../../src/util/shared_constants.py" line="76"/>
       <source>The AI image generator is busy creating other images, try again later.</source>
       <translation>The AI image generator is busy creating other images, try again later.</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="75"/>
+      <location filename="../../src/util/shared_constants.py" line="77"/>
       <source>Failed to connect to image generator at "{url}": Login cancelled.</source>
       <translation>Failed to connect to image generator at "{url}": Login cancelled.</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="76"/>
+      <location filename="../../src/util/shared_constants.py" line="78"/>
       <source>Failed to connect to image generator at "{url}".  Click "Activate" to try again or choose a different address. &lt;br/&gt; Full error text: &lt;br/&gt;&lt;blockquote&gt;{error_text}&lt;/blockquote&gt;</source>
       <translation>Failed to connect to image generator at "{url}".  Click "Activate" to try again or choose a different address. &lt;br/&gt; Full error text: &lt;br/&gt;&lt;blockquote&gt;{error_text}&lt;/blockquote&gt;</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="80"/>
+      <location filename="../../src/util/shared_constants.py" line="82"/>
       <source>Interrogate failure</source>
       <translation>Interrogate failure</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="81"/>
+      <location filename="../../src/util/shared_constants.py" line="83"/>
       <source>Open or create an image first.</source>
       <translation>Open or create an image first.</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="82"/>
+      <location filename="../../src/util/shared_constants.py" line="84"/>
       <source>Running CLIP interrogate</source>
       <translation>Running CLIP interrogate</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="85"/>
+      <location filename="../../src/util/shared_constants.py" line="87"/>
       <source>Image generation failed</source>
       <translation>Image generation failed</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="86"/>
+      <location filename="../../src/util/shared_constants.py" line="88"/>
       <source>Nothing was selected in the image generation area. Either use the selection tool to mark part of the image generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</source>
       <translation>Nothing was selected in the image generation area. Either use the selection tool to mark part of the image generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="92"/>
+      <location filename="../../src/util/shared_constants.py" line="94"/>
       <source>Upscale failure</source>
       <translation>Upscale failure</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="93"/>
+      <location filename="../../src/util/shared_constants.py" line="95"/>
       <source>Upscaled image content</source>
       <translation>Upscaled image content</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="94"/>
+      <location filename="../../src/util/shared_constants.py" line="96"/>
       <source>None</source>
       <translation>None</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="100"/>
+      <location filename="../../src/util/shared_constants.py" line="102"/>
       <source>Bilinear</source>
       <translation>Bilinear</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="101"/>
+      <location filename="../../src/util/shared_constants.py" line="103"/>
       <source>Nearest</source>
       <translation>Nearest</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="102"/>
+      <location filename="../../src/util/shared_constants.py" line="104"/>
       <source>Hamming</source>
       <translation>Hamming</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="103"/>
+      <location filename="../../src/util/shared_constants.py" line="105"/>
       <source>Bicubic</source>
       <translation>Bicubic</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="104"/>
+      <location filename="../../src/util/shared_constants.py" line="106"/>
       <source>Lanczos</source>
       <translation>Lanczos</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="105"/>
+      <location filename="../../src/util/shared_constants.py" line="107"/>
       <source>Box</source>
       <translation>Box</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="107"/>
+      <location filename="../../src/util/shared_constants.py" line="109"/>
       <source>{modifier_or_modifiers}: pick color</source>
       <translation>{modifier_or_modifiers}: pick color</translation>
     </message>

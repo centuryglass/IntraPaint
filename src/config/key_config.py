@@ -222,6 +222,7 @@ class KeyConfig(Config, metaclass=Singleton):
     HELP_INDEX_SHORTCUT: str
     IMAGE_TO_LAYERS_SHORTCUT: str
     INVERT_SELECTION_SHORTCUT: str
+    INVERT_SHORTCUT: str
     LAYER_MIRROR_HORIZONTAL_SHORTCUT: str
     LAYER_MIRROR_VERTICAL_SHORTCUT: str
     LAYER_ROTATE_CCW_SHORTCUT: str
@@ -258,6 +259,7 @@ class KeyConfig(Config, metaclass=Singleton):
     RESIZE_CANVAS_SHORTCUT: str
     ROTATE_CCW_KEY: str
     ROTATE_CW_KEY: str
+    SATURATION_SHORTCUT: str
     SAVE_AS_SHORTCUT: str
     SAVE_SHORTCUT: str
     SCALE_IMAGE_SHORTCUT: str

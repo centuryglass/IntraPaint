@@ -67,8 +67,10 @@ from src.controller.tool_controller import ToolController
 from src.hotkey_filter import HotkeyFilter
 from src.image.filter.blur import BlurFilter
 from src.image.filter.brightness_contrast import BrightnessContrastFilter
+from src.image.filter.invert import InvertFilter
 from src.image.filter.posterize import PosterizeFilter
 from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
+from src.image.filter.saturation import SaturationFilter
 from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
@@ -320,7 +322,9 @@ class AppController(MenuBuilder):
                              BrightnessContrastFilter,
                              BlurFilter,
                              SharpenFilter,
-                             PosterizeFilter):
+                             PosterizeFilter,
+                             SaturationFilter,
+                             InvertFilter):
             image_filter = filter_class(self._image_stack)
             filter_class_names.append(image_filter.get_name())
 

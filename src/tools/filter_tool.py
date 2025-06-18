@@ -11,8 +11,10 @@ from src.image.brush.filter_brush import FilterBrush
 from src.image.filter.blur import BlurFilter
 from src.image.filter.brightness_contrast import BrightnessContrastFilter
 from src.image.filter.filter import ImageFilter
+from src.image.filter.invert import InvertFilter
 from src.image.filter.posterize import PosterizeFilter
 from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
+from src.image.filter.saturation import SaturationFilter
 from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
@@ -49,7 +51,9 @@ class FilterTool(QtPaintBrushTool):
             BrightnessContrastFilter(image_stack),
             PosterizeFilter(image_stack),
             RGBColorBalanceFilter(image_stack),
-            SharpenFilter(image_stack)
+            SharpenFilter(image_stack),
+            SaturationFilter(image_stack),
+            InvertFilter(image_stack)
         ]
         try:
             self._filter_params = json.loads(cache.get(Cache.FILTER_TOOL_CACHED_PARAMETERS))
