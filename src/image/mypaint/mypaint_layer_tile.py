@@ -106,17 +106,15 @@ class MyPaintLayerTile:
         self._layer.content_changed.connect(self._layer_content_changed_slot)
 
     def connect_layer_signals(self) -> None:
-        """Connect to layer change signals to automatically update tile bounds, lock state, and image content."""
+        """Connect to layer change signals to automatically update lock state and image content."""
         if self._layer is not None:
             self._layer.content_changed.connect(self._layer_content_changed_slot)
-            self._layer.size_changed.connect(self._layer_size_changed_slot)
             self._layer.lock_changed.connect(self._layer_lock_change_slot)
 
     def disconnect_layer_signals(self) -> None:
         """disconnect layer change signals to stop the tile from updating when the layer changes."""
         if self._layer is not None:
             self._layer.content_changed.disconnect(self._layer_content_changed_slot)
-            self._layer.size_changed.disconnect(self._layer_size_changed_slot)
             self._layer.lock_changed.disconnect(self._layer_lock_change_slot)
 
     @property
@@ -158,10 +156,6 @@ class MyPaintLayerTile:
         assert layer == self._layer
         if bounds.intersects(self._bounds):
             self.load_pixels_from_layer()
-
-    def _layer_size_changed_slot(self, layer: ImageLayer, _) -> None:
-        assert layer == self._layer
-        self.set_layer(layer, self._base_bounds)
 
     def _layer_lock_change_slot(self, layer: ImageLayer, locked: bool) -> None:
         """Reset the pixel buffer on unlock"""
