@@ -232,17 +232,16 @@ class CompositeMode(StrEnum):
         at = alpha_top[alpha_nonzero]
         ab = alpha_base[alpha_nonzero]
         ac = alpha_combined[alpha_nonzero]
-        rgb_b = blended_rgb[alpha_nonzero]
-        base_b = np_base[alpha_nonzero]
 
         # final compositing of RGB channels onto the base image:
         for c in range(3):
-            base_b[:, c] = (rgb_b[:, c] * at + base_b[:, c] * ab * (1 - at)) / ac
- 
+            np_base[alpha_nonzero, c] = (
+                    (blended_rgb[alpha_nonzero, c] * at
+                     + np_base[alpha_nonzero, c] * ab * (1 - at)) / ac
+            )
 
         # Update alpha channel:
         np_base[:, :, 3] = (alpha_combined * 255).astype(np.uint8)
-
 
         # Index areas in the base where alpha is 0 and top is not, directly copy the top layer into these areas. Note
         # that this is in parity with Krita, but *not* with GIMP.
