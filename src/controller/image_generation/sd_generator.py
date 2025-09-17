@@ -703,3 +703,27 @@ class SDGenerator(ImageGenerator):
         cache.set(Cache.GUIDANCE_SCALE, 1.5)
         cache.set(Cache.SAMPLING_STEPS, 8)
         cache.set(Cache.SAMPLING_METHOD, lcm_sampler)
+
+    def _load_generated_image_for_selection(self, index: int) -> None:
+        cache = Cache()
+        expected_count = cache.get(Cache.BATCH_COUNT) * cache.get(Cache.BATCH_SIZE)
+        if index < expected_count:
+            super()._load_generated_image_for_selection(index)
+            return
+        active_control_index = index - expected_count
+        control_index = -1
+        control_units = [ControlNetUnit.deserialize(cache.get(control_key))
+                         for control_key in self.get_controlnet_unit_cache_keys()]
+        for i, control_unit in enumerate(control_units):
+            if control_unit.enabled:
+                active_control_index -= 1
+                if active_control_index < 0:
+                    control_index = i
+                    break
+        if control_index >= 0:
+            self._controlnet_panel.set_preview(self._generated_images[index], control_index)
+
+        assert len(self._generated_images) > index
+        image = self._generated_images[index]
+        if not image.isNull():
+            self._window.load_sample_preview(image, index)

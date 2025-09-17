@@ -106,9 +106,9 @@ class TabbedControlNetPanel(QTabWidget):
             self._panels.append(panel)
             panel.request_preview.connect(self.request_preview)
 
-    def set_preview(self, preview_image: QImage) -> None:
+    def set_preview(self, preview_image: QImage, index: int = -1) -> None:
         """Shows a preprocessor preview image in the active tab."""
-        active_panel = self._panels[self.currentIndex()]
+        active_panel = self._panels[self.currentIndex() if index < 0 else index]
         active_panel.set_preprocessor_preview(preview_image)
 
     def set_orientation(self, orientation: Qt.Orientation) -> None:
