@@ -46,7 +46,7 @@ class SelectionBrushTool(BrushTool):
         self._active = False
         self._drawing = False
         self._cached_size: Optional[int] = None
-        self.set_scaling_icon_cursor(QIcon(CURSOR_PATH_SELECTION_TOOL))
+        self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_SELECTION_TOOL))
 
         # Setup brush, load size from config
         self.brush_color = QColor()

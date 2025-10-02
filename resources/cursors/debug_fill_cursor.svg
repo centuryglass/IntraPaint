@@ -8,7 +8,7 @@
    version="1.1"
    id="svg18"
    inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
-   sodipodi:docname="fill_cursor.svg"
+   sodipodi:docname="debug_fill_cursor.svg"
    xml:space="preserve"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -65,7 +65,13 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-76.110902,-105.93279)"><path
+     transform="translate(-76.110902,-105.93279)"><rect
+       style="fill:#0000ff;fill-opacity:0.411111;fill-rule:evenodd;stroke-width:0.196816;-inkscape-stroke:none;paint-order:markers stroke fill"
+       id="rect1"
+       width="49.999996"
+       height="49.995895"
+       x="76.110901"
+       y="105.93279" /><path
        id="path9-6"
        style="fill:#808080;fill-rule:evenodd;stroke:#000000;stroke-width:1.34698;stroke-linejoin:bevel;stroke-dasharray:none"
        inkscape:transform-center-x="0.93649165"

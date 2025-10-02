@@ -9,7 +9,6 @@
   - QtPaintBrush._draw_input_event:  Make sure the numpy copying really is faster
   - QtPaintBrush.start_stroke: Refactor to avoid copying the whole layer into prev_image_buffer
 - Selection issues: Try reproducing with selection_debug.ora
-- Clone tool sample brush seems off by a couple pixels
 - line previews are also off by <1 scene pixel
 - assertion error: image_stack.py L1466, after reload then undo on multi-layer .ora file
 ---

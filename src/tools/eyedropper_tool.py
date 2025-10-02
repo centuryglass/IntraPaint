@@ -40,8 +40,9 @@ class EyedropperTool(BaseTool):
                          QIcon(ICON_PATH_EYEDROPPER_TOOL))
         self._image_stack = image_stack
         self._control_panel: Optional[ColorControlPanel] = None
-        cursor_icon = QIcon(CURSOR_PATH_EYEDROPPER_TOOL)
-        self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE), 0, CURSOR_SIZE)
+        cursor_icon = self.load_cursor_icon(CURSOR_PATH_EYEDROPPER_TOOL)
+        cursor_pixmap = cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE)
+        self.cursor = QCursor(cursor_pixmap, 0, cursor_pixmap.height())
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

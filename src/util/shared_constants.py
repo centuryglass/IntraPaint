@@ -98,6 +98,9 @@ UPSCALE_OPTION_NONE = _tr('None')
 # Argument used to disable or alter certain UI elements for better use in timelapse footage:
 TIMELAPSE_MODE_FLAG = '--timelapse_mode'
 
+# Environment variable setting whether debug cursors are loaded:
+DEBUG_CURSOR_ENV_VAR = 'INTRAPAINT_DEBUG_CURSORS'
+
 PIL_SCALING_MODES = {
     _tr('Bilinear'): Image.Resampling.BILINEAR,
     _tr('Nearest'): Image.Resampling.NEAREST,

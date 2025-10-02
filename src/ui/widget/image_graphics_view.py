@@ -221,10 +221,10 @@ class ImageGraphicsView(QGraphicsView):
             self._cursor_pixmap_item.setVisible(widget_cursor_pos is not None)
             if scene_cursor_pos is None:
                 return
-            self._cursor_pixmap_item.setPos(scene_cursor_pos.x() - self._cursor_pixmap_item.pixmap().width()
-                                            * self._cursor_pixmap_item.scale() / 2,
-                                            scene_cursor_pos.y() - self._cursor_pixmap_item.pixmap().height()
-                                            * self._cursor_pixmap_item.scale() / 2)
+            self._cursor_pixmap_item.setPos(scene_cursor_pos.x() - self._cursor_pixmap_item.boundingRect().width()
+                                            / 2 / self.scene_scale,
+                                            scene_cursor_pos.y() - self._cursor_pixmap_item.boundingRect().height()
+                                            / 2 / self.scene_scale)
 
     def reset_scale(self) -> None:
         """Resets the scale to fit content in the view and re-centers the scene."""

@@ -51,7 +51,7 @@ class SelectionFillTool(BaseTool):
             self._color.setAlphaF(1.0)
         _update_color(AppConfig().get(AppConfig.SELECTION_COLOR))
         AppConfig().connect(self, AppConfig.SELECTION_COLOR, _update_color)
-        cursor_icon = QIcon(CURSOR_PATH_SELECTION_FILL_TOOL)
+        cursor_icon = self.load_cursor_icon(CURSOR_PATH_SELECTION_FILL_TOOL)
         self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE))
 
     def get_input_hint(self) -> str:

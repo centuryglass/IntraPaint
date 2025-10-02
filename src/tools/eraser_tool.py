@@ -45,7 +45,7 @@ class EraserTool(QtPaintBrushTool):
         cache = Cache()
         cache.disconnect(self, Cache.LAST_BRUSH_COLOR)
         self._control_panel: Optional[EraserToolPanel] = None
-        self.set_scaling_icon_cursor(QIcon(CURSOR_PATH_ERASER_TOOL))
+        self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_ERASER_TOOL))
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""

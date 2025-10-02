@@ -40,7 +40,7 @@ class SmudgeTool(BrushTool):  # type: ignore
         brush = SmudgeBrush()
         super().__init__(KeyConfig.SMUDGE_TOOL_KEY, SMUDGE_LABEL, SMUDGE_TOOLTIP, QIcon(ICON_PATH_SMUDGE_TOOL),
                          image_stack, image_viewer, brush)
-        self.set_scaling_icon_cursor(QIcon(CURSOR_PATH_SMUDGE_TOOL))
+        self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_SMUDGE_TOOL))
         self._control_panel = SmudgeToolPanel()
         cache = Cache()
         key_filter = HotkeyFilter.instance()

@@ -39,7 +39,7 @@ def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
 LINE_HINT = _tr('{modifier_or_modifiers}+{left_mouse_icon}/{right_mouse_icon}: draw line')
 FIXED_ANGLE_HINT = _tr('{modifier_or_modifiers}: fixed angle')
 
-MAX_CURSOR_SIZE = 255
+MAX_CURSOR_SIZE = 128
 MIN_CURSOR_SIZE = 20
 MIN_SMALL_CURSOR_SIZE = 15
 MIN_LINE_PRESSURE = 0.5
@@ -79,9 +79,9 @@ class BrushTool(BaseTool):
         assert scene is not None
         self._preview_line = TempDashedLineItem(scene)
 
-        self._small_brush_icon = QIcon(CURSOR_PATH_BRUSH_MIN)
+        self._small_brush_icon = self.load_cursor_icon(CURSOR_PATH_BRUSH_MIN)
         self._small_brush_cursor = QCursor(self._small_brush_icon.pixmap(MIN_SMALL_CURSOR_SIZE, MIN_SMALL_CURSOR_SIZE))
-        self._default_scaled_cursor_icon = QIcon(CURSOR_PATH_BRUSH_DEFAULT)
+        self._default_scaled_cursor_icon = self.load_cursor_icon(CURSOR_PATH_BRUSH_DEFAULT)
         self._scaled_icon_cursor: Optional[QIcon] = self._default_scaled_cursor_icon
         self._scaling_cursor = True
         image_viewer.scale_changed.connect(self.update_brush_cursor)
@@ -437,7 +437,7 @@ class BrushTool(BaseTool):
             if brush_cursor_size > MAX_CURSOR_SIZE:
                 self.cursor = scaled_cursor
             else:
-                self.cursor = QCursor(scaled_cursor)
+                self.cursor = QCursor(scaled_cursor, hotX=scaled_cursor.width() // 2, hotY=scaled_cursor.height() // 2)
 
     def wheel_event(self, event: Optional[QWheelEvent]) -> bool:
         """Adjust brush size if scrolling horizontal."""

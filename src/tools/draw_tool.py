@@ -44,7 +44,7 @@ class DrawTool(QtPaintBrushTool):
                          color_key=Cache.LAST_BRUSH_COLOR, pattern_key=Cache.DRAW_TOOL_BRUSH_PATTERN,
                          antialias_key=Cache.DRAW_TOOL_ANTIALIAS)
         self._control_panel: Optional[DrawToolPanel] = None
-        self.set_scaling_icon_cursor(QIcon(CURSOR_PATH_DRAW_TOOL))
+        self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_DRAW_TOOL))
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
