@@ -1299,8 +1299,6 @@ class ImageStack(QObject):
             self._active_layer_id = self._layer_stack.id
             while self._layer_stack.count > 0:
                 self._remove_layer_internal(self._layer_stack.child_layers[0])
-            for restored_layer in old_layers:
-                self._insert_layer_internal(restored_layer, self._layer_stack, self._layer_stack.count)
             self._layer_stack.restore_state(stack_state)
             self._update_z_values()
             self._active_layer_id = active

@@ -722,8 +722,3 @@ class SDGenerator(ImageGenerator):
                     break
         if control_index >= 0:
             self._controlnet_panel.set_preview(self._generated_images[index], control_index)
-
-        assert len(self._generated_images) > index
-        image = self._generated_images[index]
-        if not image.isNull():
-            self._window.load_sample_preview(image, index)

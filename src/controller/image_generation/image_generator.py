@@ -206,8 +206,9 @@ class ImageGenerator(MenuBuilder):
             inpaint_task.error_signal.disconnect(handle_error)
             inpaint_task.status_signal.disconnect(self._apply_status_update)
             inpaint_task.finish_signal.disconnect(_finished)
+            expected_count = Cache().get(Cache.BATCH_COUNT) * Cache().get(Cache.BATCH_SIZE)
             for idx, image in enumerate(self._generated_images):
-                if image.isNull():
+                if image.isNull() or idx >= expected_count:
                     continue
                 if cache.get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT:
                     assert composite_base is not None

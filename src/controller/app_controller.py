@@ -132,6 +132,8 @@ def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
+APP_NAME = 'IntraPaint'
+APP_VERSION = 'v1.2.0'
 
 TOOL_PANEL_LAYER_TAB = _tr('Layers')
 TOOL_PANEL_COLOR_TAB = _tr('Color')
@@ -244,6 +246,9 @@ class AppController(MenuBuilder):
     def __init__(self, args: Namespace) -> None:
         super().__init__()
         app = QApplication.instance() or QApplication(sys.argv)
+        app.setApplicationName(APP_NAME)
+        app.setApplicationDisplayName(APP_NAME)
+        app.setApplicationVersion(APP_VERSION)
         config = AppConfig()
         cache = Cache()
         cache.apply_args(args)

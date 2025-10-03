@@ -349,7 +349,8 @@ class BrushTool(BaseTool):
 
                 line_end, angle = closest_point_at_angle_option(QPointF(self._last_pos), line_end,
                                                                 list(range(0, 360, 45)))
-            self._preview_line.set_line(QLineF(QPointF(self._last_pos), line_end))
+            half_px_offset = QPointF(0.5, 0.5)  # Draw from the center of the pixel, not the corner.
+            self._preview_line.set_line(QLineF(QPointF(self._last_pos) + half_px_offset, line_end + half_px_offset))
         if (event.buttons() == Qt.MouseButton.LeftButton or event.buttons() == Qt.MouseButton.RightButton
                 and self._drawing):
             self._stroke_to(image_coordinates)

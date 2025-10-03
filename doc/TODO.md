@@ -2,13 +2,8 @@
 
 # Latest bugs, next priorities:
 
-- Partial alpha compositing glitches (brush tool on alpha-locked layer, partial alpha?)
-- Remove ControlNet preprocessor images from results
+
 - Clone tool docs need update
-- fix slowness when layer size = 6k:
-- Selection issues: Try reproducing with selection_debug.ora
-- line previews are also off by <1 scene pixel
-- assertion error: image_stack.py L1466, after reload then undo on multi-layer .ora file
 ---
 
 ## Possible lurking bugs
@@ -20,7 +15,8 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 - text layer offset is buggy: transform tool offsets aren't in sync with text tool coordinates, copy/paste puts layers in weird places. (can't reproduce - probably conditional. Requires specific transform type?)
 - Weird resize glitch sometimes when moving the window between monitors, possibly related to panel orientation/layout (Probably requires specific panel positions/sizes, display sizes)
 - selection_layer.py line 340, height_to_add < 0:  Should be non-breaking now, keep an eye on logs
-
+- selection outline issues: sometimes the vectorization doesn't properly join the sections, but it's hard to reproduce. Selection layer could use a revamp anyway to get rid of the need for large bitmaps.
+- - Partial alpha compositing glitches (brush tool on alpha-locked layer, partial alpha?) - Seems like a GraphicsView rendering issue, so this one might be tricky.
 
 ## General concerns and ideas
 * Do more profiling, performance is adequate but there's still some noticeable lag in a few places
