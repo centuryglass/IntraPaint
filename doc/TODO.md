@@ -6,8 +6,6 @@
 - Remove ControlNet preprocessor images from results
 - Clone tool docs need update
 - fix slowness when layer size = 6k:
-  - QtPaintBrush._draw_input_event:  Make sure the numpy copying really is faster
-  - QtPaintBrush.start_stroke: Refactor to avoid copying the whole layer into prev_image_buffer
 - Selection issues: Try reproducing with selection_debug.ora
 - line previews are also off by <1 scene pixel
 - assertion error: image_stack.py L1466, after reload then undo on multi-layer .ora file
