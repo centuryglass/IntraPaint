@@ -379,11 +379,11 @@ class TransformOutline(QGraphicsObject):
         """Perform required changes whenever one of the handles moves."""
         assert handle_id in self._handles, str(self._handles)
         pos = self.mapFromScene(pos)
-        assert isinstance(pos, QPoint)
+        assert isinstance(pos, QPointF)
         if handle_id == ORIGIN_HANDLE_ID:
-            self.transformation_origin = pos.toPointF()
+            self.transformation_origin = pos
         elif handle_id in (TL_HANDLE_ID, TR_HANDLE_ID, BL_HANDLE_ID, BR_HANDLE_ID):
-            self.move_corner(handle_id, pos.toPointF())
+            self.move_corner(handle_id, pos)
         else:
             raise RuntimeError(f'Invalid handle id {handle_id}')
 
