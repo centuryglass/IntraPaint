@@ -27,6 +27,16 @@ class _ShapeItem(QGraphicsItem):
         self._inner_radius_fraction = 0.5
         self._start_point = QPointF()
         self._end_point = QPointF()
+        self._opacity = 1.0
+
+    @property
+    def opacity(self) -> float:
+        """Overrides brush opacity within the scene."""
+        return self._opacity
+
+    @opacity.setter
+    def opacity(self, new_value: float) -> None:
+        self._opacity = new_value
 
     def is_empty(self) -> bool:
         """Returns whether the shape currently has zero size and is not drawn in the scene."""
@@ -136,6 +146,7 @@ class _ShapeItem(QGraphicsItem):
             return
         painter.save()
         path = self.painter_path()
+        painter.setOpacity(self._opacity)
         painter.fillPath(path, self._brush)
         painter.setPen(self._pen)
         painter.drawPath(path)
@@ -159,6 +170,15 @@ class ClickAndDragSelection(QObject):
         self._inner_radius_fraction = 0.5
         self._vertex_count = 5
         self._selecting = False
+
+    @property
+    def opacity(self) -> float:
+        """Overrides brush opacity within the scene."""
+        return self._selection_shape.opacity
+
+    @opacity.setter
+    def opacity(self, new_value: float) -> None:
+        self._selection_shape.opacity = new_value
 
     @property
     def last_selection_bounds(self) -> Optional[QRect]:

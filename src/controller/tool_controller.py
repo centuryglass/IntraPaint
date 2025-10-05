@@ -5,7 +5,7 @@ from typing import Optional, cast
 
 from PySide6.QtCore import Qt, QObject, QEvent, QRect, QPoint, Signal
 from PySide6.QtGui import QMouseEvent, QTabletEvent, QWheelEvent
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -102,7 +102,7 @@ class ToolController(QObject):
 
         eyedropper_modifier = KeyConfig().get_modifier(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER)
         if eyedropper_modifier != Qt.KeyboardModifier.NoModifier:
-            for tool in (brush_tool, fill_tool, draw_tool, text_tool, shape_tool):
+            for tool in (brush_tool, fill_tool, draw_tool, shape_tool, text_tool):
                 if tool is not None:
                     if isinstance(eyedropper_modifier, list):
                         for mod in eyedropper_modifier:
@@ -156,7 +156,7 @@ class ToolController(QObject):
     def register_tool_delegate(self, source_tool: BaseTool, delegate_tool: BaseTool,
                                modifiers: Qt.KeyboardModifier) -> None:
         """Registers a delegate relationship between tools. Delegates take over when certain hotkeys are held, and the
-           original tool reactivates when tho set of held keys changes.
+           original tool reactivates when the set of held keys changes.
 
         Parameters
         ----------
@@ -181,6 +181,11 @@ class ToolController(QObject):
             self._active_tool.reactivate_after_delegation()
             self.active_tool_changed.emit(self._active_tool)
         if modifiers in self._tool_modifier_delegates[self._active_tool]:
+            # Special case: if a text input widget is active, modifiers should be used for text input, not delegation.
+            focused_widget = QApplication.focusWidget()
+            if (isinstance(focused_widget, (QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox))
+                    and focused_widget.isVisible()):
+                return
             self._active_tool.is_active = False
             self._active_delegate = self._tool_modifier_delegates[self._active_tool][modifiers]
             self._active_delegate.is_active = True

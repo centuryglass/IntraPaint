@@ -35,6 +35,7 @@ ICON_PATH_SHAPE_TOOL = f'{PROJECT_DIR}/resources/icons/tools/shape_icon.svg'
 SHAPE_TOOL_LABEL = _tr('Draw Shapes')
 SHAPE_TOOL_TOOLTIP = _tr('Create rectangles, ellipses, and other polygons')
 SHAPE_TOOL_CONTROL_HINT = _tr('{left_mouse_icon}, drag: draw shape')
+PREVIEW_OPACITY = 0.7
 
 
 class ShapeTool(BaseTool):
@@ -50,6 +51,7 @@ class ShapeTool(BaseTool):
         self._image_stack = image_stack
         self._control_panel: Optional[ShapeToolPanel] = None
         self._selection_handler = ClickAndDragSelection(scene)
+        self._selection_handler.opacity = PREVIEW_OPACITY
         self._layer: Optional[ImageLayer] = None
         image_stack.active_layer_changed.connect(self._active_layer_change_slot)
         self._active_layer_change_slot(image_stack.active_layer)
