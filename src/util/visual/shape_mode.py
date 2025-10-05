@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QApplication
 TR_ID = 'ui.panel.tool_control_panels.shape_tool_panel'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
@@ -39,7 +39,6 @@ class ShapeMode(Enum):
                 return SHAPE_MODE_POLYGON_LABEL
             case ShapeMode.STAR:
                 return SHAPE_MODE_STAR_LABEL
-        raise RuntimeError('Missing shape label definition')
 
     @staticmethod
     def is_valid_mode_str(mode_str: str) -> bool:

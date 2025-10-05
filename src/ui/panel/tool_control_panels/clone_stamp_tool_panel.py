@@ -1,4 +1,5 @@
 """Control panel widget for the clone stamp tool."""
+from typing import Optional
 
 from PySide6.QtCore import Qt, Signal, QPoint
 from PySide6.QtWidgets import QWidget, QApplication, QLabel, QHBoxLayout, QSpinBox
@@ -12,7 +13,7 @@ from src.util.shared_constants import SHORT_LABEL_X_POS, INT_MAX, INT_MIN, SHORT
 TR_ID = 'ui.panel.tool_control_panels.clone_stamp_tool_panel'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

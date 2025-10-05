@@ -16,7 +16,7 @@ VALUE_KEY = 'value'
 TR_ID = 'config.config_entry'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
@@ -180,7 +180,7 @@ class ConfigEntry(Parameter):
 
     def save_to_json_dict(self, json_dict: dict[str, Any]) -> None:
         """Adds the value to a dict in a format that can be written to a JSON file."""
-        if self.save_json is True:
+        if self.save_json:
             if isinstance(self._value, QSize):
                 json_dict[self._key] = f'{self._value.width()}x{self._value.height()}'
             minimum = self.minimum

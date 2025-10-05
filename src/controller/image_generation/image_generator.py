@@ -25,7 +25,7 @@ from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_i
 TR_ID = 'controller.image_generation.image_generator'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 TR_ID = 'config.key_config'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

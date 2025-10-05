@@ -21,7 +21,7 @@ from src.util.shared_constants import APP_ICON_PATH, PROJECT_DIR, ICON_SIZE
 TR_ID = 'ui.window.navigation_window'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
@@ -157,7 +157,6 @@ class NavigationWindow(ImagePanel):
         initial_tool = Cache().get(Cache.LAST_NAV_PANEL_TOOL)
         if initial_tool in self._tool_toggle.options:
             self._tool_toggle.setValue(initial_tool)
-
 
     @property
     def mouse_navigation_enabled(self) -> bool:

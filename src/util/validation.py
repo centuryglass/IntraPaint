@@ -299,7 +299,7 @@ def layout_debug(widget: QWidget) -> None:
 
 
 # Execution time tracking:
-_stats = defaultdict(lambda: {
+_stats: defaultdict[Any, dict[str, int | float]] = defaultdict(lambda: {
     'count': 0,
     'total_time': 0.0,
     'min_time': float('inf'),
@@ -330,6 +330,7 @@ def profile_on_exit(func):
 
 @atexit.register
 def print_stats():
+    """On exit print execution stats for functions tagged with profile_on_exit."""
     for name, s in _stats.items():
         avg = s['total_time'] / s['count'] if s['count'] else 0
         print(f"Function: {name}")

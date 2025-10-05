@@ -13,7 +13,7 @@ from src.util.shared_constants import APP_ICON_PATH
 TR_ID = 'ui.modal.login_modal'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

@@ -1,5 +1,5 @@
 """Control panel for the GenerationAreaTool."""
-from typing import cast
+from typing import cast, Optional
 
 from PySide6.QtCore import Qt, QRect, QSize
 from PySide6.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, QHBoxLayout, QLabel, QSlider, QSpinBox, \
@@ -15,7 +15,7 @@ from src.ui.layout.divider import Divider
 TR_ID = 'ui.panel.tool_control_panel.generation_area_tool_panel'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

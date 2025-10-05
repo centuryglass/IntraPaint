@@ -27,7 +27,7 @@ from src.util.signals_blocked import signals_blocked
 TR_ID = 'ui.modal.image_scale_modal'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

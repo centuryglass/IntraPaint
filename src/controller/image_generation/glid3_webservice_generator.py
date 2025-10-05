@@ -25,7 +25,7 @@ from src.util.visual.text_drawing_utils import rich_text_code_block
 TR_ID = 'controller.image_generation.glid3_webservice_generator'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

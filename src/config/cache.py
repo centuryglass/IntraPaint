@@ -1,5 +1,6 @@
 """Use the Config module's data sharing capabilities to cache temporary values."""
 from argparse import Namespace
+from typing import Optional
 
 from PySide6.QtCore import QRect, QTimer
 from PySide6.QtWidgets import QWidget, QApplication
@@ -17,7 +18,7 @@ GEOMETRY_CHECK_INTERVAL = 100
 TR_ID = 'config.cache'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

@@ -293,7 +293,7 @@ class ImageGraphicsView(QGraphicsView):
         new_fixed_scene_point = self.widget_point_to_scene(fixed_widget_pos)
         rounding_error = new_fixed_scene_point - fixed_scene_pos
 
-        #Tweak offset/scale to deal with rounding errors:
+        # Tweak offset/scale to deal with rounding errors:
         if abs(rounding_error.x()) > 0.01 or abs(rounding_error.y() > 0.01):
             horizontal_scroll = self.horizontalScrollBar()
             vertical_scroll = self.verticalScrollBar()

@@ -80,7 +80,7 @@
     "eraser_tool_pressure_hardness": false,
     "eraser_tool_antialias": true,
     "filter_tool_selected_filter": "RGBA Color Balance",
-    "filter_tool_cached_parameters": "{\"Blur\": [\"Box\", 3.0], \"Brightness/Contrast\": [1.0, 1.0], \"Posterize\": [3], \"RGBA Color Balance\": [1.0, 1.0, 1.0, 1.0], \"Sharpen\": [2.0]}",
+    "filter_tool_cached_parameters": "{\"Blur\": [\"Box\", 3.0], \"Brightness/Contrast\": [1.0, 1.0], \"Posterize\": [3], \"RGBA Color Balance\": [1.0, 1.0, 1.0, 1.0], \"Sharpen\": [2.0], \"Saturation\": [1.0], \"Invert\": []}",
     "filter_tool_brush_size": {
         "min": 1,
         "max": 300,

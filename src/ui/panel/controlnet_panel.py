@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 TR_ID = 'ui.panel.controlnet_panel'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
@@ -544,6 +544,7 @@ class ControlNetPanel(BorderedWidget):
         if preprocessor.name.lower() != PREPROCESSOR_NONE.lower():
             for parameter in preprocessor.parameters:
                 parameter_widget, label = parameter.get_input_widget(True)
+                assert label is not None
                 parameter_widget.valueChanged.connect(lambda _: self._schedule_cache_update())
                 if self._px_perfect_checkbox is not None \
                         and parameter.key == webui_constants.PREPROCESSOR_RES_PARAM_KEY:

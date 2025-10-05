@@ -1,10 +1,6 @@
 # Development tasks
 
-# Latest bugs, next priorities:
 
-
-- Clone tool docs need update
----
 
 ## Possible lurking bugs
 Things I never fixed but can no longer reproduce, or that come from external issues:

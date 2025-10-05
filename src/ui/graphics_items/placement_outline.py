@@ -229,6 +229,7 @@ class PlacementOutline(QGraphicsObject):
         for handle_id, point in ((TL_HANDLE_ID, bounds.topLeft()), (TR_HANDLE_ID, bounds.topRight()),
                                  (BL_HANDLE_ID, bounds.bottomLeft()), (BR_HANDLE_ID, bounds.bottomRight())):
             handle_pos = self._handles[handle_id].mapFromScene(self.mapToScene(point))
+            assert isinstance(handle_pos, QPointF)
             self._handles[handle_id].move_rect_center(handle_pos)
 
 

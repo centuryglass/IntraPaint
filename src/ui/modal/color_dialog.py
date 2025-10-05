@@ -11,7 +11,7 @@ from src.ui.widget.color_picker.tabbed_color_picker import TabbedColorPicker
 TR_ID = 'ui.modal.color_dialog'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
@@ -31,6 +31,7 @@ class ColorDialog(QDialog):
         self._layout = QVBoxLayout(self)
         self._layout.addWidget(self._colorPicker)
 
+        # noinspection PyTypeChecker
         self._button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
         self._button_box.accepted.connect(self.accept)
         self._button_box.rejected.connect(self.reject)

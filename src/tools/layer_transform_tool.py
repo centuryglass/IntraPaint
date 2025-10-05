@@ -26,7 +26,7 @@ from src.util.visual.text_drawing_utils import left_button_hint_text
 TR_ID = 'tools.layer_transform_tool'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

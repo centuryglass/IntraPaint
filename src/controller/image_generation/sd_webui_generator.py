@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 TR_ID = 'controller.image_generation.sd_webui_generator'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
@@ -356,12 +356,14 @@ class SDWebUIGenerator(SDGenerator):
             def _update_remote_model_selection(model_name: str) -> None:
                 if not self._connected:
                     return
+                assert self._webservice is not None
                 webui_config.load_all(self._webservice)
                 for model_option in model_options:
                     if model_option['model_name'] == model_name:
                         if model_option['title'] != webui_config.get(A1111Config.SD_MODEL_CHECKPOINT):
                             remote_setting_change = {A1111Config.SD_MODEL_CHECKPOINT: model_option['title']}
                             self.update_settings(remote_setting_change)
+                            assert self._webservice is not None
                             webui_config.load_all(self._webservice)
                         return
                 raise RuntimeError(f'Selected model "{model_name}" not found in available options.')

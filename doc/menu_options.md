@@ -71,6 +71,8 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Blur](#blur-ctrl3)
    - [Sharpen](#sharpen-ctrl4)
    - [Posterize](#posterize-ctrl5)
+   - [Saturation](#saturation-ctrl6)
+   - [Invert](#invert-ctrl7)
 7. [Stable Diffusion menu](#stable-diffusion-menu)
    - [View saved prompt styles](#view-saved-prompt-styles-ctrlalt1)
    - [View LoRA models](#view-lora-models-ctrlalt2)
@@ -506,6 +508,14 @@ This filter enhances noise and edges, reducing blurring.  It has only one contro
 ### Posterize (Ctrl+5)
 
 This filter simplifies image colors, reducing the color complexity of the image.  Its only control is the **bit count** slider, which controls the range of color values allowed within the filtered areas.  At eight the image is unchanged, and colors become increasingly limited as it decreases.
+
+### Saturation (Ctrl+6)
+
+This filter adjusts image saturation. Its one control, the **Saturation** slider, controls the amount of change. Values below 1.0 will reduce the vividness of colors, while values above 1.0 increase vividness.
+
+### Invert (Ctrl+7)
+
+This filter inverts image pixel color. It has no filter-specific controls.
 
 ---
 

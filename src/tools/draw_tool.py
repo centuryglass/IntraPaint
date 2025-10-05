@@ -20,7 +20,7 @@ from src.util.visual.text_drawing_utils import left_button_hint_text, right_butt
 TR_ID = 'tools.draw_tool'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
@@ -36,6 +36,7 @@ class DrawTool(QtPaintBrushTool):
     """Implements brush controls using a minimal QPainter-based brush engine."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
+        self._control_panel: Optional[DrawToolPanel] = None
         super().__init__(KeyConfig.DRAW_TOOL_KEY, LABEL_TEXT_DRAW_TOOL, TOOLTIP_DRAW_TOOL, QIcon(ICON_PATH_DRAW_TOOL),
                          image_stack, image_viewer, size_key=Cache.DRAW_TOOL_BRUSH_SIZE,
                          pressure_size_key=Cache.DRAW_TOOL_PRESSURE_SIZE, opacity_key=Cache.DRAW_TOOL_OPACITY,
@@ -43,7 +44,6 @@ class DrawTool(QtPaintBrushTool):
                          hardness_key=Cache.DRAW_TOOL_HARDNESS, pressure_hardness_key=Cache.DRAW_TOOL_PRESSURE_HARDNESS,
                          color_key=Cache.LAST_BRUSH_COLOR, pattern_key=Cache.DRAW_TOOL_BRUSH_PATTERN,
                          antialias_key=Cache.DRAW_TOOL_ANTIALIAS)
-        self._control_panel: Optional[DrawToolPanel] = None
         self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_DRAW_TOOL))
 
     def get_input_hint(self) -> str:

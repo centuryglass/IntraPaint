@@ -1,6 +1,6 @@
 """Types and constants associated with ControlNet.  All values are either not specific to a single API, or are reused
    because they don't have a useful equivalent in both APIs."""
-from typing import TypedDict, NotRequired
+from typing import TypedDict, NotRequired, Optional
 
 from PySide6.QtWidgets import QApplication
 
@@ -16,7 +16,7 @@ CONTROLNET_REUSE_IMAGE_CODE = 'SELECTION'
 TR_ID = 'api.controlnet_constants'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

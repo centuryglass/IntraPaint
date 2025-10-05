@@ -21,7 +21,7 @@ from src.util.shared_constants import BUTTON_TEXT_GENERATE, EDIT_MODE_INPAINT, E
 TR_ID = 'ui.panel.generators.sd_webui_panel'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

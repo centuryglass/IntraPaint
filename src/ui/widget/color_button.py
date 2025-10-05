@@ -14,7 +14,7 @@ from src.util.visual.image_utils import get_color_icon
 TR_ID = 'ui.widget.brush_color_button'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
@@ -65,8 +65,6 @@ class ColorButton(QPushButton):
 
     def select_color(self) -> None:
         """Open the color picker, then apply the selection if connected to config."""
-        #dialog = QColorDialog()
-        #selection = dialog.getColor(self._color)
         selection = ColorDialog.show_color_dialog(self._color)
         if selection is not None and selection != self._color:
             if self._config_key is not None:

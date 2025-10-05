@@ -19,7 +19,7 @@ from src.util.shared_constants import ICON_SIZE
 TR_ID = 'ui.panel.tool_control_panels.filter_tool_panel'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

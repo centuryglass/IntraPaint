@@ -21,7 +21,7 @@ from src.util.parameter import TYPE_FLOAT
 TR_ID = 'api.controlnet.controlnet_unit'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
@@ -165,7 +165,7 @@ class ControlNetUnit:
             'control_strength': cast(float, self._control_strength.value),
             'control_start': cast(float, self.control_start.value),
             'control_end': cast(float, self.control_end.value),
-            'key_type': self._key_type.value,
+            'key_type': cast(int, self._key_type.value),
             'pixel_perfect': self._pixel_perfect,
             'low_vram': self._low_vram
         }

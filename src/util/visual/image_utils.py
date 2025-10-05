@@ -250,19 +250,19 @@ def rgb_to_lab(r: int, g: int, b: int) -> tuple[float, float, float]:
             b* color axis LAB component (unbound).
     """
     # Convert to XYZ
-    r = r / 255.0
-    g = g / 255.0
-    b = b / 255.0
+    r_f = r / 255.0
+    g_f = g / 255.0
+    b_f = b / 255.0
 
     # Linearize sRGB values
-    r = ((r + 0.055) / 1.055) ** 2.4 if r > 0.04045 else r / 12.92
-    g = ((g + 0.055) / 1.055) ** 2.4 if g > 0.04045 else g / 12.92
-    b = ((b + 0.055) / 1.055) ** 2.4 if b > 0.04045 else b / 12.92
+    r_f = ((r_f + 0.055) / 1.055) ** 2.4 if r_f > 0.04045 else r_f / 12.92
+    g_f = ((g_f + 0.055) / 1.055) ** 2.4 if g_f > 0.04045 else g_f / 12.92
+    b_f = ((b_f + 0.055) / 1.055) ** 2.4 if b_f > 0.04045 else b_f / 12.92
 
     # Convert to XYZ using D65 illuminant
-    x = (r * 0.4124 + g * 0.3576 + b * 0.1805) * 100
-    y = (r * 0.2126 + g * 0.7152 + b * 0.0722) * 100
-    z = (r * 0.0193 + g * 0.1192 + b * 0.9505) * 100
+    x = (r_f * 0.4124 + g_f * 0.3576 + b_f * 0.1805) * 100
+    y = (r_f * 0.2126 + g_f * 0.7152 + b_f * 0.0722) * 100
+    z = (r_f * 0.0193 + g_f * 0.1192 + b_f * 0.9505) * 100
 
     # Convert XYZ to LAB
     # D65 reference white
@@ -277,10 +277,10 @@ def rgb_to_lab(r: int, g: int, b: int) -> tuple[float, float, float]:
     z = z ** (1 / 3) if z > 0.008856 else (7.787 * z) + (16 / 116)
 
     l_component = (116 * y) - 16
-    a = 500 * (x - y)
-    b = 200 * (y - z)
+    a_component = 500 * (x - y)
+    b_component = 200 * (y - z)
 
-    return float(l_component), float(a), float(b)
+    return float(l_component), float(a_component), float(b_component)
 
 
 @njit

@@ -35,7 +35,6 @@ class QtPaintBrushTool(BrushTool):
             assert isinstance(brush, QtPaintBrush)
         super().__init__(activation_config_key, label_text, tooltip_text, icon, image_stack, image_viewer, brush)
         self._last_click = None
-        self._control_panel: Optional[DrawToolPanel] = None
         self._drawing = False
         self._cached_size = None
         self._size_key = size_key

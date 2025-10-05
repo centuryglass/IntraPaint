@@ -277,6 +277,7 @@ class MenuBuilder:
             if callable(attr) and getattr(attr, IS_MENU_ACTION_ATTR, False):
                 data = getattr(attr, MENU_DATA_ATTR, None)
                 assert isinstance(data, MenuData)
+                # noinspection PyTypeChecker
                 action_definitions.append((data, attr))
         action_definitions.sort(key=lambda action: action[0].priority)
         return action_definitions

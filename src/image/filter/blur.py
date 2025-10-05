@@ -1,5 +1,5 @@
 """Define image blurring functions."""
-from typing import Callable, Any, cast
+from typing import Callable, Any, cast, Optional
 from PIL import ImageFilter as PilImageFilter
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QImage
@@ -15,7 +15,7 @@ from src.util.parameter import Parameter, TYPE_FLOAT, TYPE_STR
 TR_ID = 'image.filter.blur'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

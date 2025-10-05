@@ -40,7 +40,6 @@ class SelectionOutline(PolygonOutline):
         config.connect(self, AppConfig.ANIMATE_SELECTION_FILL, _update_fill_animate)
         _update_fill_animate(config.get(AppConfig.ANIMATE_SELECTION_FILL))
 
-
     @property
     def show_overlay(self) -> bool:
         """Returns whether the outline should be filled with a non-transparent pattern."""

@@ -12,7 +12,7 @@ from src.util.shared_constants import ICON_SIZE, SMALL_ICON_SIZE
 TR_ID = 'ui.input_fields.pen_join_style_combo_box'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

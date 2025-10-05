@@ -13,7 +13,7 @@ from src.util.signals_blocked import signals_blocked
 TR_ID = 'ui.input_fields.pressure_curve_input'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

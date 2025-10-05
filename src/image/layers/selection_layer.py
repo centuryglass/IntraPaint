@@ -20,7 +20,7 @@ from src.util.visual.pil_image_utils import qimage_to_pil_image
 TR_ID = 'image.layers.selection_layer'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
@@ -157,7 +157,7 @@ class SelectionLayer(ImageLayer):
             adjusted_mask = masked
         else:
             kernel_size = abs(num_pixels * 3)
-            kernel = np.ones((kernel_size, kernel_size), np.uint8)
+            kernel: NpAnyArray = np.ones((kernel_size, kernel_size), np.uint8)
             if num_pixels > 0:
                 adjusted_mask = cv2.dilate(mask_uint8, kernel, iterations=1)
             else:

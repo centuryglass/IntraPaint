@@ -131,7 +131,7 @@ class QtPaintBrush(LayerBrush):
         if layer != self.layer:
             layer.size_changed.disconnect(self._layer_size_change_slot)
             return
-        layer_size = layer.size
+        layer_size = size
         self._brush_stroke_buffer = QImage(layer_size, QImage.Format.Format_ARGB32_Premultiplied)
         self._paint_buffer = QImage(layer_size, QImage.Format.Format_ARGB32_Premultiplied)
         self._prev_image_buffer = QImage(layer_size, QImage.Format.Format_ARGB32_Premultiplied)
@@ -204,6 +204,7 @@ class QtPaintBrush(LayerBrush):
 
     def _update_image_buffer_bounds(self) -> None:
         # To avoid excessive image copying, refresh buffer contents as change bounds adjust.
+        assert self.layer is not None
         layer_size = self.layer.size
         if self._change_bounds.isNull() or layer_size.isNull():
             self._image_buffer_bounds = QRect()
@@ -242,6 +243,7 @@ class QtPaintBrush(LayerBrush):
                         continue
                     buffer_edge = numpy_bounds_index(draw_buffer, edge_rect)
                     buffer_edge[:, :, :] = 0
+            assert self.layer is not None
             with self.layer.borrow_image(new_buffer_bounds) as layer_image:
                 np_image = image_data_as_numpy_8bit(layer_image)
                 np_image = numpy_bounds_index(np_image, new_buffer_bounds)
@@ -255,6 +257,7 @@ class QtPaintBrush(LayerBrush):
             # Initializing buffers for the first time this brush stroke:
             for draw_buffer in (np_stroke_buffer, np_paint_buffer):
                 draw_buffer[:, :, :] = 0
+            assert self.layer is not None
             with self.layer.borrow_image(new_buffer_bounds) as layer_image:
                 np_image = image_data_as_numpy_8bit(layer_image)
                 np_image = numpy_bounds_index(np_image, new_buffer_bounds)

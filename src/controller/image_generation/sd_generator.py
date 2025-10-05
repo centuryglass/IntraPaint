@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 TR_ID = 'controller.image_generation.sd_generator'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
@@ -721,4 +721,5 @@ class SDGenerator(ImageGenerator):
                     control_index = i
                     break
         if control_index >= 0:
+            assert self._controlnet_panel is not None
             self._controlnet_panel.set_preview(self._generated_images[index], control_index)

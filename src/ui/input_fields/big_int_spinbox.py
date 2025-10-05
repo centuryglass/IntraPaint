@@ -70,6 +70,7 @@ class BigIntSpinbox(QAbstractSpinBox):
 
     def stepEnabled(self) -> Any:
         """Returns whether incrementing/decrementing the value by steps is enabled."""
+        # noinspection PyTypeChecker
         return self.StepEnabledFlag.StepUpEnabled | self.StepEnabledFlag.StepDownEnabled
 
     # noinspection PyPep8Naming

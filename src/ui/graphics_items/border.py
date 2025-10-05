@@ -6,7 +6,6 @@ from PySide6.QtGui import QPainter, QPainterPath, QColor
 from PySide6.QtWidgets import QWidget, QGraphicsItem, QGraphicsScene, QStyleOptionGraphicsItem, QGraphicsView
 
 
-
 class Border(QGraphicsItem):
     """Fills in all bounds except an inner rectangular region with a solid color.
 

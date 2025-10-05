@@ -7,6 +7,7 @@ import atexit
 import os
 import sys
 
+# noinspection PyUnreachableCode
 if sys.version_info < (3, 11):
     version_str = '.'.join(map(str, sys.version_info))
     # noinspection PyUnresolvedReferences

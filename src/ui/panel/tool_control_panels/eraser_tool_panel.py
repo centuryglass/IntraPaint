@@ -1,4 +1,5 @@
 """Control panel for the basic eraser tool."""
+from typing import Optional
 
 from PySide6.QtWidgets import QApplication
 
@@ -9,7 +10,7 @@ from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
 TR_ID = 'ui.panel.tool_control_panels.eraser_tool_panel'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

@@ -21,7 +21,7 @@ from src.util.visual.text_drawing_utils import left_button_hint_text, right_butt
 TR_ID = 'tools.clone_stamp_tool'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
@@ -62,6 +62,7 @@ class CloneStampTool(QtPaintBrushTool):
         self._scene = scene
         scene.addItem(self._source_marker)
 
+        self._control_panel: Optional[CloneStampToolPanel] = None
         super().__init__(KeyConfig.CLONE_STAMP_TOOL_KEY, CLONE_STAMP_LABEL, CLONE_STAMP_TOOLTIP,
                          QIcon(ICON_PATH_CLONE_STAMP_TOOL),
                          image_stack, image_viewer, size_key=Cache.CLONE_STAMP_TOOL_BRUSH_SIZE,
@@ -71,7 +72,6 @@ class CloneStampTool(QtPaintBrushTool):
                          hardness_key=Cache.CLONE_STAMP_TOOL_HARDNESS,
                          pressure_hardness_key=Cache.CLONE_STAMP_TOOL_PRESSURE_HARDNESS,
                          antialias_key=Cache.CLONE_STAMP_TOOL_ANTIALIAS, brush=CloneStampBrush())
-        self._control_panel: Optional[CloneStampToolPanel] = None
         self._source_marker.setVisible(False)
         self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_CLONE_STAMP_TOOL))
         cache.connect(self, Cache.CLONE_STAMP_TOOL_SOURCE_MODE, self._update_source_mode)

@@ -23,7 +23,7 @@ from src.util.visual.image_utils import get_transparency_tile_pixmap
 TR_ID = 'ui.panel.tool_control_panels.layer_transform_tool_panel'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

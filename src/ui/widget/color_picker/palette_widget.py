@@ -159,6 +159,7 @@ class _PaletteGrid(QWidget):
         opt.midLineWidth = 1
         opt.rect = bounds.adjusted(margin, margin, -margin, -margin)
         opt.palette = palette
+        # noinspection PyTypeChecker
         opt.state = QStyle.StateFlag.State_Enabled | QStyle.StateFlag.State_Sunken
         self.style().drawPrimitive(QStyle.PrimitiveElement.PE_Frame, opt, painter, self)
         margin += dfw
@@ -168,6 +169,7 @@ class _PaletteGrid(QWidget):
                 opt = QStyleOptionFocusRect()
                 opt.palette = palette
                 opt.rect = bounds
+                # noinspection PyTypeChecker
                 opt.state = QStyle.StateFlag.State_None | QStyle.StateFlag.State_KeyboardFocusChange
                 self.style().drawPrimitive(QStyle.PrimitiveElement.PE_FrameFocusRect, opt, painter, self)
         self._paint_cell_contents(painter, row, col, opt.rect.adjusted(dfw, dfw, -dfw, -dfw))

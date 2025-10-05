@@ -128,9 +128,10 @@ logger = logging.getLogger(__name__)
 TR_ID = 'controller.app_controller'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
+
 
 APP_NAME = 'IntraPaint'
 APP_VERSION = 'v1.2.0'
@@ -175,9 +176,7 @@ NEW_IMAGE_CONFIRMATION_TITLE = _tr('Create new image?')
 NEW_IMAGE_CONFIRMATION_MESSAGE = _tr('This will discard all unsaved changes.')
 SAVE_ERROR_TITLE = _tr('Save failed')
 LOAD_ERROR_TITLE = _tr('Open failed')
-SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE = _tr('Saving as "{file_path}" failed due to an unknown error, please open a new issue'
-                                       ' on the IntraPaint GitHub page, and let me know what file format you tried '
-                                       'and any other details that might be relevant. Meanwhile, try saving in a'
+SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE = _tr('Saving as "{file_path}" failed due to an unknown error, try saving in a'
                                        ' different format or to a different disk.')
 SAVE_ERROR_MESSAGE_INVALID_EXTENSION = _tr('Saving files with the  "{extension}" extension is not supported, try again'
                                            ' with a supported image file format.')
@@ -1004,6 +1003,7 @@ class AppController(MenuBuilder):
                 # try and load metadata:
                 if image_info is not None:
                     if METADATA_COMMENT_KEY in image_info and METADATA_PARAMETER_KEY not in image_info:
+                        # noinspection PyTypeChecker
                         image_info[METADATA_PARAMETER_KEY] = image_info[METADATA_COMMENT_KEY]
                     self._metadata = image_info
                 if exif is not None:

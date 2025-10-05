@@ -20,7 +20,7 @@ from src.util.visual.image_utils import image_content_bounds, create_transparent
 TR_ID = 'image.layers.image_layer'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
@@ -231,7 +231,6 @@ class ImageLayer(TransformLayer):
         if transform != self.transform:
             self.set_image(image)
             self.set_transform(transform)
-
 
     def insert_image_content(
             self,

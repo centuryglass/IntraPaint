@@ -37,7 +37,7 @@ PIL_READ_FORMATS = {ex[1:].upper() for ex, f in Image.registered_extensions().it
 PIL_WRITE_FORMATS = {ex[1:].upper() for ex, f in Image.registered_extensions().items() if f in Image.SAVE}
 
 # Formats that are programmatically listed as valid, but fail in testing.
-INVALID_WRITE_FORMATS = {'MSP', 'JFIF', 'H5', 'HDF', 'PFM', 'APNG', 'WBMP'}
+INVALID_WRITE_FORMATS = {'MSP', 'JFIF', 'H5', 'HDF', 'PFM', 'APNG', 'WBMP', 'AVIFS'}
 
 # Formats that need to be renamed to work correctly:
 RENAMED_FORMATS = {'ICB': 'TGA', 'VST': 'TGA', 'VDA': 'TGA', 'EMF': 'WMF', 'JPE': 'JPEG', 'JPG': 'JPEG', 'PS': 'EPS',

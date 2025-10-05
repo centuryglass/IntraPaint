@@ -205,6 +205,14 @@ class PolygonOutline(QGraphicsPathItem):
         """Returns whether dotted lines are animated."""
         return self._animated_outline
 
+    @animated_outline.setter
+    def animated_outline(self, should_animate: bool) -> None:
+        """Sets whether dotted lines are animated."""
+        if TIMELAPSE_MODE_FLAG in sys.argv:
+            return
+        self._animated_outline = should_animate
+        self._start_or_stop_animation()
+
     def _start_or_stop_animation(self):
         if TIMELAPSE_MODE_FLAG in sys.argv or self.path().isEmpty():
             self._animator.animation.stop()
@@ -214,13 +222,6 @@ class PolygonOutline(QGraphicsPathItem):
         else:
             self._animator.animation.stop()
 
-    @animated_outline.setter
-    def animated_outline(self, should_animate: bool) -> None:
-        """Sets whether dotted lines are animated."""
-        if TIMELAPSE_MODE_FLAG in sys.argv:
-            return
-        self._animated_outline = should_animate
-        self._start_or_stop_animation()
 
     @property
     def animated_fill(self) -> bool:

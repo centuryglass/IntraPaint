@@ -2,7 +2,7 @@
 import math
 from typing import Optional, Any, Generator, Iterable
 
-from PySide6.QtCore import Qt, QRectF, QPointF, Signal, QSizeF
+from PySide6.QtCore import Qt, QRectF, QPointF, Signal, QSizeF, QPoint
 from PySide6.QtGui import QPainter, QPen, QTransform, QPainterPath, QImage
 from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, \
     QGraphicsSceneMouseEvent, QGraphicsTransform, \
@@ -137,7 +137,9 @@ class TransformOutline(QGraphicsObject):
         if angle_changed:
             self.angle_changed.emit(angle)
         if offset_changed or scale_changed:
-            transformed_rect = QRectF(self.mapToScene(self._rect.topLeft()),
+            scene_pos = self.mapToScene(self._rect.topLeft())
+            assert isinstance(scene_pos, QPointF)
+            transformed_rect = QRectF(scene_pos,
                                       QSizeF(abs(sx) * self._rect.width(), abs(sy) * self._rect.height()))
             self.transformed_rect_changed.emit(transformed_rect)
 
@@ -294,7 +296,7 @@ class TransformOutline(QGraphicsObject):
 
         # Find descendants, excluding handles:
         children = set()
-        add_children = [self]
+        add_children: list[QGraphicsItem] = [self]
         while len(add_children) > 0:
             item = add_children.pop()
             for child in item.childItems():
@@ -377,10 +379,11 @@ class TransformOutline(QGraphicsObject):
         """Perform required changes whenever one of the handles moves."""
         assert handle_id in self._handles, str(self._handles)
         pos = self.mapFromScene(pos)
+        assert isinstance(pos, QPoint)
         if handle_id == ORIGIN_HANDLE_ID:
-            self.transformation_origin = pos
+            self.transformation_origin = pos.toPointF()
         elif handle_id in (TL_HANDLE_ID, TR_HANDLE_ID, BL_HANDLE_ID, BR_HANDLE_ID):
-            self.move_corner(handle_id, pos)
+            self.move_corner(handle_id, pos.toPointF())
         else:
             raise RuntimeError(f'Invalid handle id {handle_id}')
 
@@ -417,7 +420,9 @@ class TransformOutline(QGraphicsObject):
                     transform = self.transform() * QTransform.fromTranslate(offset.x(), offset.y())
                     self.setTransform(transform)
                 else:
-                    transformed_rect = QRectF(self.mapToScene(self._rect.topLeft()),
+                    scene_pos = self.mapToScene(self._rect.topLeft())
+                    assert isinstance(scene_pos, QPointF)
+                    transformed_rect = QRectF(scene_pos,
                                               QSizeF(abs(current_x_scale) * self._rect.width(),
                                                      abs(current_y_scale) * self._rect.height()))
                     self.transformed_rect_changed.emit(transformed_rect)
@@ -506,10 +511,13 @@ class TransformOutline(QGraphicsObject):
                                rect.y() + rect.height() * self._relative_origin.y())
         self._update_handles()
 
-    def _corner_points_in_scene(self) -> Generator[QPointF | QPointF, Any, None]:
+    def _corner_points_in_scene(self) -> list[QPointF]:
         bounds = self.rect()
-        corners = (self.mapToScene(pt) for pt in (bounds.topLeft(), bounds.topRight(),
-                                                  bounds.bottomLeft(), bounds.bottomRight()))
+        corners: list[QPointF] = []
+        for pt in (bounds.topLeft(), bounds.topRight(), bounds.bottomLeft(), bounds.bottomRight()):
+            corner = self.mapToScene(pt)
+            assert isinstance(corner, QPointF)
+            corners.append(corner)
         return corners
 
     def _update_handles(self) -> None:

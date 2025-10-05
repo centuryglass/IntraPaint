@@ -19,7 +19,7 @@ from src.util.visual.image_utils import (create_transparent_image, NpAnyArray, i
 TR_ID = 'image.layer.layer'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

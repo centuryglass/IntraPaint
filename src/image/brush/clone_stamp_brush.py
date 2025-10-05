@@ -55,7 +55,7 @@ class CloneStampBrush(QtPaintBrush):
                               bounds: QRect) -> None:
         """Handles the final drawing operation that copies an input segment to the layer image."""
         if self._source_pos is not None:
-            self._draw_segment_with_fixed_source(segment_image, layer_image, bounds)
+            self._draw_segment_with_fixed_source(segment_image, layer_image)
         elif self._source_offset is not None:
             self._draw_segment_with_offset_source(segment_image, layer_image, bounds)
 
@@ -87,7 +87,7 @@ class CloneStampBrush(QtPaintBrush):
         np_stroke_mask = numpy_bounds_index(image_data_as_numpy_8bit(segment_image), bounds)
         np_composite_with_mask(np_source, np_image, np_stroke_mask)
 
-    def _draw_segment_with_fixed_source(self, segment_image: QImage, layer_image: QImage, bounds: QRect) -> None:
+    def _draw_segment_with_fixed_source(self, segment_image: QImage, layer_image: QImage) -> None:
         assert self._source_pos is not None
         brush_radius = math.ceil(self.brush_size / 2)
         source_bounds = QRect(self._source_pos.x() - brush_radius, self._source_pos.y() - brush_radius,
@@ -128,8 +128,9 @@ class CloneStampBrush(QtPaintBrush):
                               brush_radius * 2, brush_radius * 2).intersected(layer_bounds)
             if pt_bounds.isEmpty():
                 continue
-            np_segment_img_pt = numpy_bounds_index(np_segment_image, pt_bounds)
-            np_layer_img_pt = numpy_bounds_index(np_layer_image, pt_bounds)
+            np_segment_img_pt: Optional[NpAnyArray] = numpy_bounds_index(np_segment_image, pt_bounds)
+            np_layer_img_pt: Optional[NpAnyArray] = numpy_bounds_index(np_layer_image, pt_bounds)
+            assert np_segment_img_pt is not None and np_layer_img_pt is not None
             np_segment_img_pt, cropped_np_source = numpy_intersect(np_segment_img_pt, np_source)
             if np_segment_img_pt is None or cropped_np_source is None:
                 continue

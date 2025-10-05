@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 TR_ID = 'image.layers.image_stack'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
@@ -785,11 +785,13 @@ class ImageStack(QObject):
         @self._with_batch_content_update
         def _move_back(moving=layer, parent=layer_parent, idx=layer_index):
             if parent == moving.layer_parent:
+                assert isinstance(parent, LayerGroup)
                 parent.move_layer(moving, idx)
                 self._update_z_values()
             else:
                 is_active = layer.id == self.active_layer_id
                 self._remove_layer_internal(moving)
+                assert isinstance(parent, LayerGroup)
                 self._insert_layer_internal(moving, parent, idx)
                 if is_active:
                     self._set_active_layer_internal(moving)

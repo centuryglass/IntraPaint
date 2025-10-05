@@ -1,5 +1,5 @@
 """Control panel widget for the MyPaint Brush tool."""
-from typing import cast
+from typing import cast, Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QApplication, QHBoxLayout, QLabel
@@ -16,7 +16,7 @@ from src.ui.widget.key_hint_label import KeyHintLabel
 TR_ID = 'ui.panel.tool_control_panels.brush_control_panel'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

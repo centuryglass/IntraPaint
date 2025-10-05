@@ -1,4 +1,5 @@
 """Icon button used to activate or deactivate layer group isolation."""
+from typing import Optional
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QApplication
@@ -12,7 +13,7 @@ from src.util.shared_constants import PROJECT_DIR
 TR_ID = 'ui.panel.layer.layer_isolate_button'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 

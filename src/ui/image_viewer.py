@@ -271,8 +271,8 @@ class ImageViewer(ImageGraphicsView):
     # noinspection PyUnusedLocal
     def _layer_transform_change_slot(self, layer: Layer, transform: QTransform) -> None:
         """Apply layer transformations to outlines."""
-        assert isinstance(layer, TransformLayer)
         if layer == self._image_stack.active_layer:
+            assert isinstance(layer, TransformLayer)
             self._active_layer_outline.setTransform(layer.transform)
 
     def _add_layer_item(self, new_layer: Layer) -> None:

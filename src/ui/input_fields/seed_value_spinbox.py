@@ -1,5 +1,5 @@
 """A widget packaging a seed value input with 'randomize' and 'repeat' buttons."""
-from typing import cast, Callable, Any
+from typing import cast, Callable, Any, Optional
 
 from PySide6.QtCore import QSize, Signal
 from PySide6.QtGui import Qt, QIcon
@@ -13,7 +13,7 @@ from src.util.shared_constants import PROJECT_DIR, SMALL_ICON_SIZE
 TR_ID = 'ui.input_fields.seed_value_spinbox'
 
 
-def _tr(key: str, disambiguation: str = None, n: int = -1) -> str:
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
