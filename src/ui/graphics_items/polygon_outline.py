@@ -73,7 +73,7 @@ class PolygonOutline(QGraphicsPathItem):
                 self._parent.animation_offset = offset
 
             # noinspection PyTypeChecker
-            animation_offset = Property(int, animation_offset_getter, animation_offset_setter, None, '')
+            animation_offset = Property(int, animation_offset_getter, animation_offset_setter)
 
         self._animator = _Animator(self)
 

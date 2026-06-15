@@ -50,7 +50,7 @@ class AnimatedDashItem(QGraphicsObject):
         self.update()
 
     # noinspection PyTypeChecker
-    dash_offset = Property(int, dash_offset_getter, dash_offset_setter, None, '')
+    dash_offset = Property(int, dash_offset_getter, dash_offset_setter)
 
     def get_pen(self) -> QPen:
         """Get the pen used to draw dashed lines."""

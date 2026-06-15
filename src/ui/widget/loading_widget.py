@@ -74,7 +74,7 @@ class LoadingWidget(QWidget):
         self.update()
 
     # noinspection PyTypeChecker
-    rotation = Property(int, rotation_getter, rotation_setter, None, '')
+    rotation = Property(int, rotation_getter, rotation_setter)
 
     def showEvent(self, unused_event: Optional[QShowEvent]) -> None:
         """Starts the animation when the widget is shown."""

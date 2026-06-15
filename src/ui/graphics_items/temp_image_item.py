@@ -54,7 +54,7 @@ class TempImageItem(QGraphicsObject):
         self._opacity_percent = opacity
 
     # noinspection PyTypeChecker
-    _opacity = Property(int, _opacity_getter, _opacity_setter, None, '')
+    _opacity = Property(int, _opacity_getter, _opacity_setter)
 
     def _start_delay(self):
         self._timer.start()

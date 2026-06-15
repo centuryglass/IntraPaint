@@ -1,6 +1,7 @@
 """Coordinate the current application state, mostly for enabling/disabling components that should only be active
    in particular states."""
 from typing import Any
+import logging
 
 from PySide6.QtCore import QObject, Signal, SignalInstance
 from PySide6.QtGui import QAction
@@ -28,6 +29,7 @@ APP_STATE_SELECTION = 'selection'
 APP_STATE_ALL = [APP_STATE_INIT, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, APP_STATE_SELECTION]
 APP_STATE_NOT_LOADING = [APP_STATE_INIT, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_SELECTION]
 
+logger = logging.getLogger(__name__)
 
 class AppStateTracker(metaclass=Singleton):
     """Singleton QObject that tracks the current application state and sends signals on state change."""
@@ -87,5 +89,6 @@ class AppStateTracker(metaclass=Singleton):
         if new_state not in APP_STATE_ALL:
             raise RuntimeError(f'Invalid application state {new_state}')
         if new_state != self._app_state:
+            logger.info(f'State change: from {self._app_state} to {new_state}')
             self._app_state = new_state
             self._state_changed.emit(new_state)

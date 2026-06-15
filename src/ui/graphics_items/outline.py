@@ -54,7 +54,7 @@ class Outline(QGraphicsObject):
         self._dash_offset = offset
 
     # noinspection PyTypeChecker
-    dash_offset = Property(int, dash_offset_getter, dash_offset_setter, None, '')
+    dash_offset = Property(int, dash_offset_getter, dash_offset_setter)
 
     @property
     def dash_pattern(self) -> list[int]:

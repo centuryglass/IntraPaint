@@ -6,12 +6,7 @@ PySide6
 platformdirs
 websocket-client
 
-torch
-torchvision
-tqdm
 regex
-Flask
-PyYAML
 scipy
 pytest
 setuptools
