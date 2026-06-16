@@ -14,7 +14,10 @@ from PIL import Image
 from PySide6.QtCore import QBuffer, QRect, QSize, Qt, QPoint, QFile, QIODevice, QByteArray
 from PySide6.QtGui import QImage, QIcon, QPixmap, QPainter, QColor
 from PySide6.QtWidgets import QStyle, QWidget, QApplication
-from numba import njit
+try:
+    from numba import njit
+except ImportError:
+    from src.util.numba_placeholder import njit
 from numpy import ndarray, dtype
 
 from src.util.shared_constants import ICON_SIZE
