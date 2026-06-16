@@ -13,7 +13,7 @@ from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool
 from src.ui.panel.tool_control_panels.fill_selection_panel import FillSelectionPanel
 from src.util.shared_constants import PROJECT_DIR
-from src.util.visual.image_utils import flood_fill, color_fill
+from src.util.visual.image_fill import flood_fill, color_fill
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
