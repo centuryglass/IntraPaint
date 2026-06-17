@@ -5,7 +5,7 @@
 June 17 2026
 
 ### New features:
-- The Fill tool is dramatically improved, using LAB color space thresholding to better match perceived colors and cython compilation to increase speed.
+- The Fill tool has been significantly improved, using LAB color space thresholding to better match perceived colors and cython compilation to increase speed.
 - Added "source mode" options to the clone stamp tool to better control how it samples image content and follows the cursor.
 - Added color invert and saturation filters
 - Improve pixel-level precision when editing at high zoom levels, highlighting targeted pixels and fixing sub-pixel offset issues.

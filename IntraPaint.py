@@ -17,6 +17,16 @@ if sys.version_info < (3, 11):
 import traceback
 import logging
 from logging.handlers import RotatingFileHandler
+import subprocess
+
+from src.util.pyinstaller import is_pyinstaller_bundle
+if not is_pyinstaller_bundle():
+    try:
+        import src.util.visual.image_fill
+    except ImportError:
+        print('Building missing compiled image_fill module with cython...')
+        subprocess.run([sys.executable, 'setup.py', 'build_ext', '--inplace'])
+
 
 from PySide6.QtCore import QTranslator, QObject, QEvent
 from PySide6.QtGui import QPixmap
@@ -35,9 +45,8 @@ from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.main_window import MainWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
 from src.util.arg_parser import build_arg_parser
-from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.optional_import import check_import
-from src.util.pyinstaller import is_pyinstaller_bundle
+from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR, LOG_DIR, DEBUG_CURSOR_ENV_VAR
 
 DEFAULT_GLID_MODEL = f'{PROJECT_DIR}/models/inpaint.pt'

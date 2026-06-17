@@ -1,8 +1,19 @@
-"""Handles flood fill and color fill algorithms using perceptual color spaces."""
-from typing import Optional, TypeAlias, Any
+"""
+Handles flood fill and color fill algorithms using perceptual color spaces.
+
+The existing flood fill implementation in cv2 does not support alpha, and isn't meant for perceptual color spaces
+either. This sort of pixel-level operation is too slow to do in pure Python, so IntraPaint uses Cython to translate
+the module into C and directly compile it.
+"""
+from typing import Optional
 
 import cython
-from cython.cimports.cython.view import array as cvarray
+try:
+    from cython.cimports.cython.view import array as cvarray
+except AttributeError:
+    # This AttributeError throws if you're importing this file directly instead of importing the compiled version.
+    # You shouldn't be doing that anyway, so raise an ImportError instead.
+    raise ImportError('Missing image_fill cython build')
 from cython.cimports.libc.math import sqrt
 import numpy as np
 from PySide6.QtCore import QPoint, Qt
