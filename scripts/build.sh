@@ -1,3 +1,4 @@
 #!/bin/bash
 # Builds the pre-packaged IntraPaint distribution file
-pyinstaller IntraPaint.spec
+python setup.py build_ext --inplace
+pyinstaller IntraPaint-linux.spec

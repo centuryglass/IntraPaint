@@ -2,10 +2,10 @@
 
 ## 1.2.0
 
-June 15 2026
+June 17 2026
 
 ### New features:
-- The Fill tool is dramatically improved, using LAB color space thresholding to better match perceived colors and JIT compilation to increase speed.
+- The Fill tool is dramatically improved, using LAB color space thresholding to better match perceived colors and cython compilation to increase speed.
 - Added "source mode" options to the clone stamp tool to better control how it samples image content and follows the cursor.
 - Added color invert and saturation filters
 - Improve pixel-level precision when editing at high zoom levels, highlighting targeted pixels and fixing sub-pixel offset issues.
@@ -27,7 +27,6 @@ June 15 2026
 ### Performance improvements
 - Optimized the draw tool to decrease lag on very large layers.
 - Layer stack engine and rendering improvements to decrease lag in complex layer stacks
-- Optimized HSL color compositing modes using JIT compilation
 - Layer preview renders scaled and batched to prevent slowdowns
 
 ### Misc. Bugfixes:

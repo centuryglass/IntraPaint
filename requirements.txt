@@ -15,4 +15,4 @@ packaging
 ipywidgets
 protobuf
 ipython
-numba
+cython

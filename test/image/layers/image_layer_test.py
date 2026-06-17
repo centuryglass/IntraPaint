@@ -210,7 +210,7 @@ class ImageLayerTest(unittest.TestCase):
         clear_temporary('test_render_with_transform_and_bounds')
 
     def test_render_onto_base(self):
-        """"Test rendering onto a pre-existing base"""
+        """Test rendering onto a pre-existing base"""
         init_image = QImage(INIT_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         self.image_layer.image = init_image
         base_image = QImage(IMG_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
@@ -227,7 +227,7 @@ class ImageLayerTest(unittest.TestCase):
         clear_temporary('test_render_onto_base')
 
     def test_render_onto_base_with_bounds(self):
-        """"Test rendering onto a pre-existing base, with render bounds provided"""
+        """Test rendering onto a pre-existing base, with render bounds provided"""
         init_image = QImage(INIT_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         self.image_layer.image = init_image
         base_image = QImage(IMG_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
@@ -246,7 +246,7 @@ class ImageLayerTest(unittest.TestCase):
         clear_temporary('test_render_onto_base_with_bounds')
 
     def test_render_onto_base_with_transform_and_bounds(self):
-        """"Test rendering onto a pre-existing base, with render bounds provided"""
+        """Test rendering onto a pre-existing base, with render bounds provided"""
         init_image = QImage(INIT_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         self.image_layer.image = init_image
         base_image = QImage(IMG_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
@@ -283,7 +283,7 @@ class ImageLayerTest(unittest.TestCase):
         clear_temporary('test_render_onto_base_with_transform_and_bounds')
 
     def test_render_onto_base_with_transform_and_bounds_masked(self):
-        """"Test rendering onto a pre-existing base, with render bounds provided, and with a transformation that will
+        """Test rendering onto a pre-existing base, with render bounds provided, and with a transformation that will
         need to be masked internally to conform to the bounds."""
         init_image = QImage(INIT_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         self.image_layer.image = init_image

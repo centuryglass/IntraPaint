@@ -7,7 +7,7 @@
     "last_brush_color": "#ff000000",
     "new_image_background_color": "#ffffffff",
     "text_background_color": "#ffffffff",
-    "text_tool_params": "{\"text\": \"\", \"font\": \"Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\", \"text_color\": \"#ff000000\", \"bg_color\": \"#ffffffff\", \"size\": [0, 0, 100, 100], \"alignment\": 1, \"fill_background\": false, \"scale_mode\": \"none\"}",
+    "text_tool_params": "{\"text\": \"\", \"font\": \"Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0\", \"text_color\": \"#ff000000\", \"bg_color\": \"#ffffffff\", \"size\": [0, 0, 100, 100], \"alignment\": 1, \"fill_background\": false, \"scale_mode\": \"none\"}",
     "last_active_tool": "brush",
     "recent_tools": [],
     "last_nav_panel_tool": "",
@@ -174,7 +174,7 @@
     "shape_tool_fill_pattern": "",
     "shape_tool_fill_color": "#FFFFFFFF",
     "shape_tool_antialias": true,
-    "saved_main_window_pos": "",
+    "saved_main_window_pos": "0,28,800,600",
     "saved_layer_window_pos": "",
     "saved_navigation_window_pos": "",
     "guidance_scale": {
