@@ -2,7 +2,7 @@
 
 ## 1.2.0
 
-June 17 2026
+June 18 2026
 
 ### New features:
 - The Fill tool has been significantly improved, using LAB color space thresholding to better match perceived colors and cython compilation to increase speed.

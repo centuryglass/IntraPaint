@@ -42,7 +42,7 @@ class EyedropperTool(BaseTool):
         self._control_panel: Optional[ColorControlPanel] = None
         cursor_icon = self.load_cursor_icon(CURSOR_PATH_EYEDROPPER_TOOL)
         cursor_pixmap = cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE)
-        self.cursor = QCursor(cursor_pixmap, 0, cursor_pixmap.height())
+        self.cursor = QCursor(cursor_pixmap, 0, round(cursor_pixmap.height() / cursor_pixmap.devicePixelRatio()))
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

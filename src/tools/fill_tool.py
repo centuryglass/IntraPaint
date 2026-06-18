@@ -49,7 +49,7 @@ class FillTool(BaseTool):
         self._sample_merged = cache.get(Cache.SAMPLE_MERGED)
         cursor_icon = self.load_cursor_icon(CURSOR_PATH_FILL_TOOL)
         cursor_pixmap = cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE)
-        self.cursor = QCursor(cursor_pixmap, 0, cursor_pixmap.height())
+        self.cursor = QCursor(cursor_pixmap, 0, round(cursor_pixmap.height() / cursor_pixmap.devicePixelRatio()))
         cache.connect(self, Cache.LAST_BRUSH_COLOR, self._update_color)
         cache.connect(self, Cache.FILL_THRESHOLD, self._update_threshold)
         cache.connect(self, Cache.SAMPLE_MERGED, self._update_sample_merged)

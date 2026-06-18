@@ -435,10 +435,13 @@ class BrushTool(BaseTool):
         else:
             icon = self._scaled_icon_cursor if brush_cursor_size > MIN_CURSOR_SIZE else self._small_brush_icon
             scaled_cursor = icon.pixmap(brush_cursor_size, brush_cursor_size)
+            #scaled_cursor.setDevicePixelRatio(1.0)
             if brush_cursor_size > MAX_CURSOR_SIZE:
                 self.cursor = scaled_cursor
             else:
-                self.cursor = QCursor(scaled_cursor, hotX=scaled_cursor.width() // 2, hotY=scaled_cursor.height() // 2)
+                self.cursor = QCursor(scaled_cursor,
+                        hotX=round(scaled_cursor.width() / 2 / scaled_cursor.devicePixelRatio()),
+                        hotY=round(scaled_cursor.height() / 2 / scaled_cursor.devicePixelRatio()))
 
     def wheel_event(self, event: Optional[QWheelEvent]) -> bool:
         """Adjust brush size if scrolling horizontal."""
