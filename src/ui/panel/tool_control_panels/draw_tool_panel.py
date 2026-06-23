@@ -1,4 +1,5 @@
 """Control panel for the basic drawing tool."""
+from typing import Optional
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QApplication
@@ -10,9 +11,9 @@ from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
 TR_ID = 'ui.panel.tool_control_panels.draw_tool_panel'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 SELECTION_ONLY_LABEL = _tr('Draw in selection only')

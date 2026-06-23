@@ -40,9 +40,9 @@ logger = logging.getLogger(__name__)
 TR_ID = 'controller.image_generation.glid3_xl_generator'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 DEFAULT_GLID_MODEL = 'models/inpaint.pt'

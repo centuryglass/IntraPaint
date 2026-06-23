@@ -10,9 +10,9 @@ from PySide6.QtWidgets import QApplication
 TR_ID = 'ui.panel.tool_control_panels.shape_tool_panel'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 SHAPE_MODE_ELLIPSE_LABEL = _tr('Ellipse')

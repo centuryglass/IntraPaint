@@ -7,14 +7,26 @@ import atexit
 import os
 import sys
 
+# noinspection PyUnreachableCode
 if sys.version_info < (3, 11):
-    detected_version = '.'.join(str(v_num) for v_num in sys.version_info)
-    print(f'ERROR: Detected python version {detected_version}, IntraPaint only supports Python 3.11 and higher.',
+    version_str = '.'.join(map(str, sys.version_info))
+    # noinspection PyUnresolvedReferences
+    print(f'ERROR: Detected python version {version_str}, IntraPaint only supports Python 3.11 and higher.',
           file=sys.stderr)
 
 import traceback
 import logging
 from logging.handlers import RotatingFileHandler
+import subprocess
+
+from src.util.pyinstaller import is_pyinstaller_bundle
+if not is_pyinstaller_bundle():
+    try:
+        import src.util.visual.image_fill
+    except ImportError:
+        print('Building missing compiled image_fill module with cython...')
+        subprocess.run([sys.executable, 'setup.py', 'build_ext', '--inplace'])
+
 
 from PySide6.QtCore import QTranslator, QObject, QEvent
 from PySide6.QtGui import QPixmap
@@ -33,10 +45,9 @@ from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.main_window import MainWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
 from src.util.arg_parser import build_arg_parser
-from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.optional_import import check_import
-from src.util.pyinstaller import is_pyinstaller_bundle
-from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR, LOG_DIR
+from src.util.visual.geometry_utils import get_scaled_placement
+from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR, LOG_DIR, DEBUG_CURSOR_ENV_VAR
 
 DEFAULT_GLID_MODEL = f'{PROJECT_DIR}/models/inpaint.pt'
 
@@ -62,6 +73,7 @@ parser.add_argument('--edit_height', type=int, required=False, default=256,
                     help='height of the edit image in the generation frame (need to be multiple of 8)')
 parser.add_argument(TIMELAPSE_MODE_FLAG, action='store_true',
                     help='makes minor changes to UI to simplify recording smooth timelapse editing footage')
+parser.add_argument('--cursor_debug', action='store_true')
 parser.add_argument('--server_url', type=str, required=False, default='',
                     help='Image generation server URL (web mode only. If not provided and mode=web or stable, you'
                          ' will be prompted for a URL on launch.')
@@ -83,6 +95,8 @@ if args.verbose:
     stdout_handler.setLevel(logging.INFO)
     stdout_handler.setFormatter(logging.Formatter('#%(levelname)s: %(name)s:  %(message)s'))
     handlers.append(stdout_handler)  # type: ignore
+if args.cursor_debug:
+    os.environ[DEBUG_CURSOR_ENV_VAR] = 'True'
 
 logging.basicConfig(level=logging.INFO, handlers=handlers)
 print(f'Logs will be saved at {LOG_FILE_PATH}')

@@ -203,7 +203,7 @@ class SmudgeBrush(LayerBrush):
             y1 = round(y)
             dx = x1 - x0
             dy = y1 - y0
-            if dx < 2 and dy < 2:
+            if abs(dx) < 2 and abs(dy) < 2:
                 self._input_buffer.append(_SmudgePoint(x, y, size, opacity, hardness))
             else:
                 step_count = max(abs(dx), abs(dy))

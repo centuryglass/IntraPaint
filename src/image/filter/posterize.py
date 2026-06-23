@@ -1,5 +1,5 @@
 """Simplify images by reducing color count."""
-from typing import Callable
+from typing import Callable, Optional
 
 from PIL import ImageOps
 from PySide6.QtWidgets import QApplication
@@ -17,9 +17,9 @@ from src.util.parameter import Parameter, TYPE_INT
 TR_ID = 'image.filter.posterize'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 POSTERIZE_FILTER_TITLE = _tr('Posterize')

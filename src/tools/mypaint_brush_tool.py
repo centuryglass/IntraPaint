@@ -24,9 +24,9 @@ logger = logging.getLogger(__name__)
 TR_ID = 'tools.brush_tool'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 ICON_PATH_MYPAINT_BRUSH_TOOL = f'{PROJECT_DIR}/resources/icons/tools/brush_icon.svg'
@@ -50,9 +50,7 @@ class MyPaintBrushTool(BrushTool):
 
         # Load brush and size from cache
         cache = Cache()
-        brush_path = cache.get(Cache.MYPAINT_BRUSH)
-        if os.path.isfile(brush_path):
-            self.brush_path = cache.get(Cache.MYPAINT_BRUSH)
+        self.brush_path = cache.get(Cache.MYPAINT_BRUSH)
         self.brush_size = cache.get(self._size_key)
         self.brush_color = cache.get_color(Cache.LAST_BRUSH_COLOR, Qt.GlobalColor.black)
 
@@ -107,7 +105,8 @@ class MyPaintBrushTool(BrushTool):
                 if os.path.isfile(resource_path):
                     new_path = resource_path
                 else:
-                    raise RuntimeError(f'Brush file {new_path} does not exist, not even at {resource_path}')
+                    logger.warning(f'Brush file {new_path} does not exist, not even at {resource_path}')
+                    return
             brush.brush_path = new_path
         except (OSError, RuntimeError) as err:
             logger.error(f'loading brush {new_path} failed', err)

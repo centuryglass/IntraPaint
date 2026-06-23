@@ -237,7 +237,8 @@ class MenuBuilder:
                 next_menu = self._menus[full_menu_name]
             else:
                 for action in menu_iter.actions():
-                    possible_menu: Optional[QMenu] = action.menu()
+                    possible_menu = action.menu()
+                    assert possible_menu is None or isinstance(possible_menu, QMenu)
                     if _action_has_title(possible_menu, submenu_name):
                         next_menu = possible_menu
                         if full_menu_name not in self._menus:
@@ -276,6 +277,7 @@ class MenuBuilder:
             if callable(attr) and getattr(attr, IS_MENU_ACTION_ATTR, False):
                 data = getattr(attr, MENU_DATA_ATTR, None)
                 assert isinstance(data, MenuData)
+                # noinspection PyTypeChecker
                 action_definitions.append((data, attr))
         action_definitions.sort(key=lambda action: action[0].priority)
         return action_definitions

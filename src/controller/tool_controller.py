@@ -1,10 +1,11 @@
 """Manages available tools and handles tool input events."""
 import logging
+import math
 from typing import Optional, cast
 
 from PySide6.QtCore import Qt, QObject, QEvent, QRect, QPoint, Signal
 from PySide6.QtGui import QMouseEvent, QTabletEvent, QWheelEvent
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -25,7 +26,7 @@ from src.tools.shape_selection_tool import ShapeSelectionTool
 from src.tools.shape_tool import ShapeTool
 from src.tools.smudge_tool import SmudgeTool
 from src.tools.text_tool import TextTool
-from src.ui.image_viewer import ImageViewer
+from src.ui.image_viewer import ImageViewer, MIN_OUTLINE_PIXEL_SIZE
 from src.ui.modal.modal_utils import show_warning_dialog
 from src.util.optional_import import optional_import
 
@@ -37,9 +38,9 @@ logger = logging.getLogger(__name__)
 TR_ID = 'controller.tool_controller'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 BRUSH_LOAD_ERROR_TITLE = _tr('Failed to load libmypaint brush library files')
@@ -91,7 +92,8 @@ class ToolController(QObject):
         self.add_tool(eyedropper_tool)
         text_tool = TextTool(image_stack, image_viewer)
         self.add_tool(text_tool)
-        self.add_tool(ShapeTool(image_stack, image_viewer))
+        shape_tool = ShapeTool(image_stack, image_viewer)
+        self.add_tool(shape_tool)
         self.add_tool(LayerTransformTool(image_stack, image_viewer))
         self.add_tool(FreeSelectionTool(image_stack, image_viewer))
         self.add_tool(SelectionBrushTool(image_stack, image_viewer))
@@ -100,7 +102,7 @@ class ToolController(QObject):
 
         eyedropper_modifier = KeyConfig().get_modifier(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER)
         if eyedropper_modifier != Qt.KeyboardModifier.NoModifier:
-            for tool in (brush_tool, fill_tool, draw_tool):
+            for tool in (brush_tool, fill_tool, draw_tool, shape_tool, text_tool):
                 if tool is not None:
                     if isinstance(eyedropper_modifier, list):
                         for mod in eyedropper_modifier:
@@ -154,7 +156,7 @@ class ToolController(QObject):
     def register_tool_delegate(self, source_tool: BaseTool, delegate_tool: BaseTool,
                                modifiers: Qt.KeyboardModifier) -> None:
         """Registers a delegate relationship between tools. Delegates take over when certain hotkeys are held, and the
-           original tool reactivates when tho set of held keys changes.
+           original tool reactivates when the set of held keys changes.
 
         Parameters
         ----------
@@ -179,6 +181,11 @@ class ToolController(QObject):
             self._active_tool.reactivate_after_delegation()
             self.active_tool_changed.emit(self._active_tool)
         if modifiers in self._tool_modifier_delegates[self._active_tool]:
+            # Special case: if a text input widget is active, modifiers should be used for text input, not delegation.
+            focused_widget = QApplication.focusWidget()
+            if (isinstance(focused_widget, (QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox))
+                    and focused_widget.isVisible()):
+                return
             self._active_tool.is_active = False
             self._active_delegate = self._tool_modifier_delegates[self._active_tool][modifiers]
             self._active_delegate.is_active = True
@@ -228,7 +235,11 @@ class ToolController(QObject):
             self._image_viewer.set_cursor_pos(pos)
             image_size = self._image_viewer.content_size
             assert image_size is not None
-            image_coordinates = self._image_viewer.mapToScene(pos).toPoint()
+            image_coordinates_f = self._image_viewer.widget_point_to_scene(pos)
+            if self._image_viewer.scene_scale >= MIN_OUTLINE_PIXEL_SIZE:
+                image_coordinates = QPoint(math.floor(image_coordinates_f.x()), math.floor(image_coordinates_f.y()))
+            else:
+                image_coordinates = image_coordinates_f.toPoint()
             point_in_image = QRect(QPoint(0, 0), image_size).contains(image_coordinates)
             if point_in_image and not self._mouse_in_bounds:
                 self._mouse_in_bounds = True

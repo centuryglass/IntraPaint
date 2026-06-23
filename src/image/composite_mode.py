@@ -1,28 +1,27 @@
 """Image composition mode management: Handles conversion between QPainter CompositionModes, open raster composite
  operations, and equivalent display text, and provides implementations for composite modes not supported by QPainter."""
 
+from enum import StrEnum
 from typing import Optional, Callable, TypeAlias
 
 import cv2
 import numpy as np
-
-from enum import StrEnum
-
 from PySide6.QtCore import QPoint, QRect
 from PySide6.QtGui import QPainter, QImage, QTransform
 from PySide6.QtWidgets import QApplication
 
+from src.util.shared_constants import INV_255
+from src.util.visual.geometry_utils import map_rect_precise
 from src.util.visual.image_utils import image_data_as_numpy_8bit, create_transparent_image, NpUInt8Array, \
     numpy_bounds_index, image_is_fully_transparent
-from src.util.visual.geometry_utils import map_rect_precise
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'image.composite_mode'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 CompositeOp: TypeAlias = Callable[[QImage, QImage, float, Optional[QTransform],
@@ -188,7 +187,7 @@ class CompositeMode(StrEnum):
             base_bounds = base_bounds.intersected(QRect(QPoint(), base_image.size()))
         if transform is None:
             transform = QTransform()
-        if transform is not None and not base_bounds.isEmpty():
+        if not transform.isIdentity() and not base_bounds.isEmpty():
             inverse = transform.inverted()[0]
             transform_src_bounds = map_rect_precise(base_bounds, inverse).toAlignedRect()
             if not transform_src_bounds.intersects(source_image_bounds):
@@ -206,35 +205,49 @@ class CompositeMode(StrEnum):
         if base_bounds.isEmpty():
             return
 
+        # np_top and np_base are ARGB uint8 arrays for each of the composited layers, indexed to ensure both have the
+        # same bounds.  These arrays directly wrap QImage internal data, to reduce the amount of unnecessary image
+        # copying we need to do.
         np_top = numpy_bounds_index(image_data_as_numpy_8bit(source_image), source_bounds)
         np_base = numpy_bounds_index(image_data_as_numpy_8bit(base_image), base_bounds)
         assert np_top.shape == np_base.shape
-
-        # calculate final alpha:
-        alpha_top = np_top[:, :, 3] / 255.0 * opacity
-        alpha_base = np_base[:, :, 3] / 255.0
-        alpha_combined = np.clip(alpha_top + alpha_base * (1 - alpha_top), 0, 1)
-        nonzero_alpha = alpha_combined > 0
 
         # Calculate HSL values (as hls):
         top_hls = cv2.cvtColor(np_top[:, :, :3], cv2.COLOR_BGR2HLS)
         base_hls = cv2.cvtColor(np_base[:, :, :3], cv2.COLOR_BGR2HLS)
 
-        # apply blending operation, convert back to RGB:
+        # Apply blending operation, convert back to RGB:
+        # NOTE: blending operations are all very simple - write a single component from one image over another, return
+        #       whichever of the original two arrays now has the final blended data.  That could be either top_hls or
+        #       base_hls, whichever requires the least amount of copying. Altering the original doesn't really matter,
+        #       since we're only using final_hls after this point.
         final_hls = blending_op(top_hls, base_hls)
         blended_rgb = cv2.cvtColor(final_hls, cv2.COLOR_HLS2BGR)
 
-        base_empty = alpha_base == 0
+        # calculate final alpha, skip compositing in areas with full transparency:
+        alpha_top = np_top[:, :, 3] * INV_255 * opacity
+        alpha_base = np_base[:, :, 3] * INV_255
+        alpha_combined = np.clip(alpha_top + alpha_base * (1 - alpha_top), 0, 1)
+        alpha_nonzero = alpha_combined > 0
+        at = alpha_top[alpha_nonzero]
+        ab = alpha_base[alpha_nonzero]
+        ac = alpha_combined[alpha_nonzero]
 
-        # final compositing onto the base image:
+        # final compositing of RGB channels onto the base image:
         for c in range(3):
-            np_base[nonzero_alpha, c] = (blended_rgb[nonzero_alpha, c] * alpha_top[nonzero_alpha]
-                                         + np_base[nonzero_alpha, c]
-                                         * alpha_base[nonzero_alpha] * (1 - alpha_top[nonzero_alpha])
-                                         / alpha_combined[nonzero_alpha])
+            np_base[alpha_nonzero, c] = (
+                    (blended_rgb[alpha_nonzero, c] * at
+                     + np_base[alpha_nonzero, c] * ab * (1 - at)) / ac
+            )
 
-            np_base[:, :, 3] = alpha_combined * 255
-        np_base[base_empty, :] = np_top[base_empty, :]
+        # Update alpha channel:
+        np_base[:, :, 3] = (alpha_combined * 255).astype(np.uint8)
+
+        # Index areas in the base where alpha is 0 and top is not, directly copy the top layer into these areas. Note
+        # that this is in parity with Krita, but *not* with GIMP.
+        base_empty = (alpha_base == 0) & (alpha_top != 0)
+        if base_empty.any():
+            np_base[base_empty, :] = np_top[base_empty, :]
 
     @classmethod
     def color_composite_blend(cls, top_image: QImage, base_image: QImage, opacity: float = 1.0,

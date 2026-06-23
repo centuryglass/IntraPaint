@@ -3,7 +3,7 @@ import logging
 from argparse import Namespace
 from typing import Optional, cast, Any
 
-from PySide6.QtCore import Signal, QSize, QThread, QRect, QPoint
+from PySide6.QtCore import QSize, QThread, QRect, QPoint, SignalInstance
 from PySide6.QtGui import QImage, QPainter, QTransform
 from PySide6.QtWidgets import QApplication
 from requests import ReadTimeout
@@ -41,9 +41,9 @@ logger = logging.getLogger(__name__)
 TR_ID = 'controller.image_generation.sd_comfyui_generator'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 SD_COMFYUI_GENERATOR_NAME = _tr('Stable Diffusion ComfyUI API')
@@ -354,8 +354,8 @@ class SDComfyUIGenerator(SDGenerator):
 
     def load_preprocessor_preview(self, preprocessor: ControlNetPreprocessor,
                                   image: QImage, mask: Optional[QImage],
-                                  status_signal: Signal,
-                                  image_signal: Signal) -> None:
+                                  status_signal: SignalInstance,
+                                  image_signal: SignalInstance) -> None:
         """Requests a ControlNet preprocessor preview image."""
         assert self._webservice is not None
         queue_info = self._webservice.controlnet_preprocessor_preview(image, mask, preprocessor)
@@ -457,7 +457,7 @@ class SDComfyUIGenerator(SDGenerator):
         return self._control_panel
 
     def _repeated_progress_check(self, task_id: str, task_number: int, batch_num: int, num_batches: int,
-                                 external_status_signal: Optional[Signal] = None) -> AsyncTaskProgress:
+                                 external_status_signal: Optional[SignalInstance] = None) -> AsyncTaskProgress:
         """Repeatedly checks progress of an ongoing task until an ending condition is reached, returning the final
            status. Call this outside of the UI thread."""
         webservice = self._webservice
@@ -557,7 +557,7 @@ class SDComfyUIGenerator(SDGenerator):
         return restored_images
 
     def generate(self,
-                 status_signal: Signal,
+                 status_signal: SignalInstance,
                  source_image: QImage,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. are loaded from AppConfig as needed.
@@ -653,7 +653,8 @@ class SDComfyUIGenerator(SDGenerator):
         if seed is not None:
             status_signal.emit({'seed': str(seed)})
 
-    def upscale_image(self, image: QImage, new_size: QSize, status_signal: Signal, image_signal: Signal) -> None:
+    def upscale_image(self, image: QImage, new_size: QSize, status_signal: SignalInstance,
+                      image_signal: SignalInstance) -> None:
         assert self._webservice is not None
         queue_info = self._webservice.upscale(self._image_stack.qimage(), new_size.width(),
                                               new_size.height())

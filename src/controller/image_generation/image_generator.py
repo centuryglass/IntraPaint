@@ -3,7 +3,7 @@ import logging
 from typing import Optional, Any
 
 from PIL import Image, ImageFilter
-from PySide6.QtCore import QPoint, QRect, QSize, Signal, QTimer, QObject
+from PySide6.QtCore import QPoint, QRect, QSize, Signal, QTimer, QObject, SignalInstance
 from PySide6.QtGui import QImage, QPainter
 from PySide6.QtWidgets import QApplication
 
@@ -25,9 +25,9 @@ from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_i
 TR_ID = 'controller.image_generation.image_generator'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 GENERATE_ERROR_TITLE_UNEXPECTED = _tr('Inpainting failure')
@@ -55,7 +55,7 @@ class ImageGenerator(MenuBuilder):
         self._signal_object = _SignalObject()
 
     @property
-    def status_signal(self) -> Signal:
+    def status_signal(self) -> SignalInstance:
         """Used to emit additional information when anything goes wrong with an active generator."""
         return self._signal_object.status_signal
 
@@ -119,7 +119,7 @@ class ImageGenerator(MenuBuilder):
         return True
 
     def generate(self,
-                 status_signal: Signal,
+                 status_signal: SignalInstance,
                  source_image: QImage,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. should be loaded from AppConfig as needed.
@@ -127,7 +127,7 @@ class ImageGenerator(MenuBuilder):
 
         Parameters
         ----------
-        status_signal : Signal[dict]
+        status_signal : SignalInstance[dict]
             Signal to emit when status updates are available. Expected keys are 'seed' and 'progress'.
         source_image : QImage
             Image to potentially use as a basis for the created or edited image.  This will be ignored if the editing
@@ -175,10 +175,10 @@ class ImageGenerator(MenuBuilder):
             status_signal = Signal(dict)
             error_signal = Signal(Exception)
 
-            def signals(self) -> list[Signal]:
+            def signals(self) -> list[SignalInstance]:
                 return [self.status_signal, self.error_signal]
 
-        def _do_inpaint(status_signal: Signal, error_signal: Signal,
+        def _do_inpaint(status_signal: SignalInstance, error_signal: SignalInstance,
                         image=inpaint_image,
                         mask=inpaint_mask) -> None:
             try:
@@ -206,8 +206,9 @@ class ImageGenerator(MenuBuilder):
             inpaint_task.error_signal.disconnect(handle_error)
             inpaint_task.status_signal.disconnect(self._apply_status_update)
             inpaint_task.finish_signal.disconnect(_finished)
+            expected_count = Cache().get(Cache.BATCH_COUNT) * Cache().get(Cache.BATCH_SIZE)
             for idx, image in enumerate(self._generated_images):
-                if image.isNull():
+                if image.isNull() or idx >= expected_count:
                     continue
                 if cache.get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT:
                     assert composite_base is not None

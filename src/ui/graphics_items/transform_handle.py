@@ -86,7 +86,9 @@ class TransformHandle(QGraphicsObject):
         """Returns the handle's placement in the scene."""
         scene = self.scene()
         assert scene is not None
-        return self.mapToScene(self._rect.center())
+        scene_pos = self.mapToScene(self._rect.center())
+        assert isinstance(scene_pos, QPointF)
+        return scene_pos
 
     def move_rect_center(self, center: QPointF) -> None:
         """Moves the handle rectangle so that it is centered on a given point in local coordinates."""

@@ -1,9 +1,10 @@
 """
 Interact with edited image layers through the Qt6 2D graphics engine.
 """
+import math
 from typing import Optional
 
-from PySide6.QtCore import Qt, QRect, QRectF, QSize
+from PySide6.QtCore import Qt, QRect, QRectF, QSize, QPoint, QPointF
 from PySide6.QtGui import QPainter, QColor, QTransform
 from PySide6.QtWidgets import QWidget, QSizePolicy
 
@@ -16,13 +17,15 @@ from src.image.layers.transform_layer import TransformLayer
 from src.ui.graphics_items.border import Border
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.graphics_items.outline import Outline
-from src.ui.graphics_items.polygon_outline import PolygonOutline
+from src.ui.graphics_items.selection_outline import SelectionOutline
 from src.ui.widget.image_graphics_view import ImageGraphicsView
-from src.util.visual.image_utils import get_transparency_tile_pixmap
+from src.util.visual.graphics_scene_utils import get_view_bounds_of_scene_item_rect
+from src.util.visual.image_utils import get_transparency_tile_pixmap, tile_pattern_fill, TRANSPARENCY_PATTERN_TILE_DIM
 
 GENERATION_AREA_BORDER_OPACITY = 0.6
 IMAGE_BORDER_OPACITY = 0.2
 GENERATION_AREA_BORDER_COLOR = Qt.GlobalColor.black
+MIN_OUTLINE_PIXEL_SIZE = 8.0
 
 
 class ImageViewer(ImageGraphicsView):
@@ -43,8 +46,7 @@ class ImageViewer(ImageGraphicsView):
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
         self._follow_generation_area = False
         self._hidden: set[int] = set()
-        self._selection_poly_outline = PolygonOutline(self)
-        self._selection_poly_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
+        self._selection_poly_outline = SelectionOutline(self)
 
         # Generation area and border rectangle setup:
         scene = self.scene()
@@ -57,16 +59,27 @@ class ImageViewer(ImageGraphicsView):
         self._image_border.setVisible(True)
         self._image_outline.dash_pattern = [1, 0]  # solid line
         self._generation_area_outline = Outline(scene, self)
-        self._generation_area_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
 
         # "inpaint selected only" generation area outline:
         self._generation_area_selection_outline = Outline(scene, self)
         self._generation_area_selection_outline.setOpacity(GENERATION_AREA_BORDER_OPACITY)
-        self._generation_area_selection_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
         selection_layer = image_stack.selection_layer
         selection_layer.content_changed.connect(self._selection_content_change_slot)
         Cache().connect(self, Cache.INPAINT_FULL_RES, self._selection_content_change_slot)
         Cache().connect(self, Cache.INPAINT_FULL_RES_PADDING, self._selection_content_change_slot)
+
+        # pixel outline
+        self._pixel_outline = Outline(scene, self, cosmetic_line_draw=True)
+        self._pixel_outline.setVisible(False)
+        self.scale_changed.connect(self._scale_change_slot)
+
+        # animate gen area/selected content borders based on config:
+        def _update_outline_animation(is_animating: bool) -> None:
+            self._generation_area_selection_outline.animated = is_animating
+            self._generation_area_outline.animated = is_animating
+            self._pixel_outline.animated = is_animating
+        config.connect(self, AppConfig.ANIMATE_OUTLINES_AND_PREVIEWS, _update_outline_animation)
+        _update_outline_animation(config.get(AppConfig.ANIMATE_OUTLINES_AND_PREVIEWS))
 
         # active layer outline:
         self._active_layer_id = -1
@@ -125,7 +138,7 @@ class ImageViewer(ImageGraphicsView):
         self._follow_generation_area = should_follow
         if self._generation_area_outline.isVisible():
             self._generation_area_outline.animated = not should_follow and AppConfig().get(
-                AppConfig.ANIMATE_OUTLINES)
+                AppConfig.ANIMATE_OUTLINES_AND_PREVIEWS)
             self._generation_area_border.setVisible(should_follow)
             if should_follow:
                 self.zoom_to_generation_area()
@@ -136,9 +149,14 @@ class ImageViewer(ImageGraphicsView):
 
     def drawBackground(self, painter: Optional[QPainter], rect: QRectF) -> None:
         """Draw the background as a fixed size tiling image."""
-        background = self.background
-        assert painter is not None and background is not None
-        painter.drawTiledPixmap(rect, background)
+        assert painter is not None
+        painter.save()
+        painter.setTransform(QTransform())
+        content_bounds = get_view_bounds_of_scene_item_rect(self._image_outline.boundingRect(),
+                                                            self._image_outline).toAlignedRect()
+        tile_size = TRANSPARENCY_PATTERN_TILE_DIM
+        tile_pattern_fill(painter, content_bounds, tile_size, Qt.GlobalColor.lightGray, Qt.GlobalColor.darkGray)
+        painter.restore()
 
     def scroll_content(self, dx: int | float, dy: int | float) -> bool:
         """Scroll the image generation area by the given offset, returning whether it was able to move."""
@@ -146,6 +164,25 @@ class ImageViewer(ImageGraphicsView):
         self._image_stack.generation_area = generation_area.translated(int(dx), int(dy))
         self.resizeEvent(None)
         return self._image_stack.generation_area != generation_area
+
+    def _update_pixel_outline(self, cursor_pos: QPoint) -> None:
+        scene_pos = self.widget_point_to_scene(cursor_pos)
+        outline_rect = (QRectF(float(math.floor(scene_pos.x())), float(math.floor(scene_pos.y())), 1.0, 1.0)
+                        .adjusted(0.1, 0.1, -0.1, -0.1))
+        self._pixel_outline.outlined_region = outline_rect
+        self._pixel_outline.setVisible(self.scene_scale >= MIN_OUTLINE_PIXEL_SIZE)
+
+    def _scale_change_slot(self, scale: float) -> None:
+        self._pixel_outline.setVisible(scale >= MIN_OUTLINE_PIXEL_SIZE)
+
+    def set_cursor_pos(self, widget_cursor_pos: Optional[QPoint | QPointF]) -> None:
+        """Updates the last cursor position within the widget so that pixmap cursor rendering stays active."""
+        if widget_cursor_pos is None:
+            self._pixel_outline.setVisible(False)
+        else:
+            self._update_pixel_outline(widget_cursor_pos if isinstance(widget_cursor_pos, QPoint)
+                                       else widget_cursor_pos.toPoint())
+        super().set_cursor_pos(widget_cursor_pos)
 
     def _update_drawn_borders(self):
         """Make sure that the image generation area and layer borders are in the right place in the scene."""
@@ -234,8 +271,8 @@ class ImageViewer(ImageGraphicsView):
     # noinspection PyUnusedLocal
     def _layer_transform_change_slot(self, layer: Layer, transform: QTransform) -> None:
         """Apply layer transformations to outlines."""
-        assert isinstance(layer, TransformLayer)
         if layer == self._image_stack.active_layer:
+            assert isinstance(layer, TransformLayer)
             self._active_layer_outline.setTransform(layer.transform)
 
     def _add_layer_item(self, new_layer: Layer) -> None:

@@ -53,7 +53,7 @@ class ControlNetModel:
         self._sd_version = value_dict.get(MODEL_SD_VERSION_PATTERN, None)
 
         display_name = f'{self._category}:{model_name}' if self._category is not None else model_name
-        extra_info = [info_str for info_str in [self._sd_version, self._version, self._format] if info_str is not None]
+        extra_info = [str(info_str) for info_str in [self._sd_version, self._version, self._format] if info_str is not None]
         if len(extra_info) > 0:
             display_name += f' ({", ".join(extra_info)})'
         self._display_name = display_name

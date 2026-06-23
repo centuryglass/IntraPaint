@@ -11,8 +11,10 @@ from src.image.brush.filter_brush import FilterBrush
 from src.image.filter.blur import BlurFilter
 from src.image.filter.brightness_contrast import BrightnessContrastFilter
 from src.image.filter.filter import ImageFilter
+from src.image.filter.invert import InvertFilter
 from src.image.filter.posterize import PosterizeFilter
 from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
+from src.image.filter.saturation import SaturationFilter
 from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
@@ -26,9 +28,9 @@ from src.util.visual.text_drawing_utils import left_button_hint_text, right_butt
 TR_ID = 'tools.filter_tool'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 ICON_PATH_FILTER_TOOL = f'{PROJECT_DIR}/resources/icons/tools/filter_icon.svg'
@@ -49,7 +51,9 @@ class FilterTool(QtPaintBrushTool):
             BrightnessContrastFilter(image_stack),
             PosterizeFilter(image_stack),
             RGBColorBalanceFilter(image_stack),
-            SharpenFilter(image_stack)
+            SharpenFilter(image_stack),
+            SaturationFilter(image_stack),
+            InvertFilter(image_stack)
         ]
         try:
             self._filter_params = json.loads(cache.get(Cache.FILTER_TOOL_CACHED_PARAMETERS))
@@ -81,7 +85,7 @@ class FilterTool(QtPaintBrushTool):
                          antialias_key=Cache.FILTER_TOOL_ANTIALIAS, brush=brush)
         cache.connect(self, Cache.FILTER_TOOL_SELECTED_FILTER, self._filter_update_slot)
         cache.connect(self, Cache.FILTER_TOOL_CACHED_PARAMETERS, self._filter_param_update_slot)
-        self.set_scaling_icon_cursor(QIcon(CURSOR_PATH_FILTER_TOOL))
+        self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_FILTER_TOOL))
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

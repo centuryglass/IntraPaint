@@ -5,5 +5,7 @@
     <mapping directory="$PROJECT_DIR$/latent-diffusion" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/pyspacenav" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/taming-transformers" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../latent-diffusion" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../latent-diffusion/src/taming-transformers" vcs="Git" />
   </component>
 </project>

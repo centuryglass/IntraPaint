@@ -37,9 +37,9 @@ logger = logging.getLogger(__name__)
 TR_ID = 'image.layers.image_stack'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 NEW_IMAGE_LAYER_GROUP_NAME = _tr('new image')
@@ -84,7 +84,7 @@ WARNING_MESSAGE_CROP_DELETED_LAYERS = _tr('<p>Cropping the image deleted the fol
 
 RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
 
-RENDER_DELAY_MS = 5
+RENDER_DELAY_MS = 50
 SELECTION_UPDATE_DELAY_MS = 50
 
 
@@ -785,11 +785,13 @@ class ImageStack(QObject):
         @self._with_batch_content_update
         def _move_back(moving=layer, parent=layer_parent, idx=layer_index):
             if parent == moving.layer_parent:
+                assert isinstance(parent, LayerGroup)
                 parent.move_layer(moving, idx)
                 self._update_z_values()
             else:
                 is_active = layer.id == self.active_layer_id
                 self._remove_layer_internal(moving)
+                assert isinstance(parent, LayerGroup)
                 self._insert_layer_internal(moving, parent, idx)
                 if is_active:
                     self._set_active_layer_internal(moving)
@@ -1299,8 +1301,6 @@ class ImageStack(QObject):
             self._active_layer_id = self._layer_stack.id
             while self._layer_stack.count > 0:
                 self._remove_layer_internal(self._layer_stack.child_layers[0])
-            for restored_layer in old_layers:
-                self._insert_layer_internal(restored_layer, self._layer_stack, self._layer_stack.count)
             self._layer_stack.restore_state(stack_state)
             self._update_z_values()
             self._active_layer_id = active

@@ -1,4 +1,5 @@
 """Icon button used to lock or unlock an image layer."""
+from typing import Optional
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QApplication
@@ -11,9 +12,9 @@ from src.util.shared_constants import PROJECT_DIR
 TR_ID = 'ui.panel.layer.layer_lock_button'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 LOCK_TOOLTIP = _tr('Toggle layer lock')

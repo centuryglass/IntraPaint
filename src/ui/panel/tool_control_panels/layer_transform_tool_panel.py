@@ -1,7 +1,7 @@
 """Control panel for the layer transformation tool."""
 from typing import Optional
 
-from PySide6.QtCore import QRect, QPoint, QSize, QRectF, Signal
+from PySide6.QtCore import QRect, QPoint, QSize, QRectF, Signal, SignalInstance
 from PySide6.QtGui import QPaintEvent, QTransform, QColor, Qt, QPolygonF, QPainter, QPen, QKeySequence
 from PySide6.QtWidgets import QSizePolicy, QApplication, QGridLayout, QWidget, QPushButton
 
@@ -23,9 +23,9 @@ from src.util.visual.image_utils import get_transparency_tile_pixmap
 TR_ID = 'ui.panel.tool_control_panels.layer_transform_tool_panel'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 X_LABEL = _tr('X:')
@@ -67,7 +67,7 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
             return (self.isVisible() and self.isEnabled() and not image_stack.active_layer.locked
                     and not image_stack.active_layer.parent_locked)
 
-        def _init_control(default_val: float | int, min_val: float | int, max_val: float | int, signal: Signal,
+        def _init_control(default_val: float | int, min_val: float | int, max_val: float | int, signal: SignalInstance,
                           text: str, down_key: Optional[str] = None, up_key: Optional[str] = None):
             new_control = IntSliderSpinbox(parent=self) if isinstance(default_val, int) else FloatSliderSpinbox()
             new_control.set_slider_included(False)

@@ -14,16 +14,17 @@ from src.tools.base_tool import BaseTool
 from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.panel.tool_control_panels.fill_tool_panel import FillToolPanel
 from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
-from src.util.visual.image_utils import flood_fill, create_transparent_image
+from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit
+from src.util.visual.image_fill import flood_fill
 from src.util.visual.text_drawing_utils import left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.fill_tool'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 ICON_PATH_FILL_TOOL = f'{PROJECT_DIR}/resources/icons/tools/fill_icon.svg'
@@ -46,8 +47,9 @@ class FillTool(BaseTool):
         self._color = cache.get_color(Cache.LAST_BRUSH_COLOR, Qt.GlobalColor.black)
         self._threshold = cache.get(Cache.FILL_THRESHOLD)
         self._sample_merged = cache.get(Cache.SAMPLE_MERGED)
-        cursor_icon = QIcon(CURSOR_PATH_FILL_TOOL)
-        self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE), 0, CURSOR_SIZE)
+        cursor_icon = self.load_cursor_icon(CURSOR_PATH_FILL_TOOL)
+        cursor_pixmap = cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE)
+        self.cursor = QCursor(cursor_pixmap, 0, round(cursor_pixmap.height() / cursor_pixmap.devicePixelRatio()))
         cache.connect(self, Cache.LAST_BRUSH_COLOR, self._update_color)
         cache.connect(self, Cache.FILL_THRESHOLD, self._update_threshold)
         cache.connect(self, Cache.SAMPLE_MERGED, self._update_sample_merged)
@@ -99,27 +101,30 @@ class FillTool(BaseTool):
                 layer_image = fill_image
             mask = flood_fill(fill_image, layer_point, self._color, self._threshold, False)
             assert mask is not None
-            fill_pattern = Cache().get(Cache.FILL_TOOL_BRUSH_PATTERN)
-            fill_brush = QBrush()
+            fill_pattern: str = Cache().get(Cache.FILL_TOOL_BRUSH_PATTERN)
             try:
-                fill_brush.setStyle(FillStyleComboBox.get_style(fill_pattern))
+                fill_pattern_style = FillStyleComboBox.get_style(fill_pattern)
             except KeyError:
-                fill_brush.setStyle(Qt.BrushStyle.SolidPattern)
+                fill_pattern_style = Qt.BrushStyle.SolidPattern
             selection_only = Cache().get(Cache.PAINT_SELECTION_ONLY)
-            if selection_only or fill_brush.style() != Qt.BrushStyle.SolidPattern:
+            if selection_only or fill_pattern_style != Qt.BrushStyle.SolidPattern:
+                fill_brush = QBrush()
+                fill_brush.setStyle(fill_pattern_style)
                 mask_painter = QPainter(mask)
                 mask_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
                 if selection_only:
                     selection_mask = self._image_stack.get_layer_selection_mask(layer)
                     mask_painter.drawImage(0, 0, selection_mask)
                 if fill_brush.style() != Qt.BrushStyle.SolidPattern:
-                    fill_brush.setColor(self._color)
+                    fill_brush.setColor(Qt.GlobalColor.black)
                     mask_painter.fillRect(QRect(QPoint(), mask.size()), fill_brush)
                 mask_painter.end()
-            painter = QPainter(layer_image)
-            painter.drawImage(QRect(QPoint(), layer.size), mask)
 
-            painter.end()
+            np_image = image_data_as_numpy_8bit(layer_image)
+            np_mask = image_data_as_numpy_8bit(mask)
+            masked_pixels = np_mask[:, :, 3] > 0
+            alpha_mult = self._color.alpha() / 255.0
+            np_image[masked_pixels] = [self._color.blue() * alpha_mult, self._color.green() * alpha_mult, self._color.red() * alpha_mult, self._color.alpha()]
             layer.image = layer_image
             return True
         return False

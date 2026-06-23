@@ -22,9 +22,9 @@ from src.util.shared_constants import PROJECT_DIR, EDIT_MODE_TXT2IMG
 TR_ID = 'controller.image_generation.test_generator'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 TEST_GENERATOR_NAME = _tr('Test/development image generator')

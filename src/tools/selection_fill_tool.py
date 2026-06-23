@@ -13,16 +13,16 @@ from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool
 from src.ui.panel.tool_control_panels.fill_selection_panel import FillSelectionPanel
 from src.util.shared_constants import PROJECT_DIR
-from src.util.visual.image_utils import flood_fill, color_fill
+from src.util.visual.image_fill import flood_fill, color_fill
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.selection_fill_tool'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 ICON_PATH_SELECTION_FILL_TOOL = f'{PROJECT_DIR}/resources/icons/tools/selection_fill_icon.svg'
@@ -51,7 +51,7 @@ class SelectionFillTool(BaseTool):
             self._color.setAlphaF(1.0)
         _update_color(AppConfig().get(AppConfig.SELECTION_COLOR))
         AppConfig().connect(self, AppConfig.SELECTION_COLOR, _update_color)
-        cursor_icon = QIcon(CURSOR_PATH_SELECTION_FILL_TOOL)
+        cursor_icon = self.load_cursor_icon(CURSOR_PATH_SELECTION_FILL_TOOL)
         self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE))
 
     def get_input_hint(self) -> str:

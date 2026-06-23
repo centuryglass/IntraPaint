@@ -1,5 +1,9 @@
 """Provides a convenience function for miscellaneous validation."""
+import atexit
 import json
+import time
+from collections import defaultdict
+from functools import wraps
 from typing import Any, Iterable
 
 from PySide6.QtCore import QSize, QRect, QRectF, QSizeF, QMargins, QMarginsF
@@ -238,9 +242,9 @@ def all_layout_info(item: Any, include_containing_layout_data=True) -> dict[str,
                         layout_data['layout:size,row,col'] = f'{col_span}x{r_span}, {row},{col}'
                         row_stretch = 0
                         col_stretch = 0
-                        for i in range(col, col+col_span, 1):
+                        for i in range(col, col + col_span, 1):
                             col_stretch += layout.columnStretch(i)
-                        for i in range(row, row+r_span, 1):
+                        for i in range(row, row + r_span, 1):
                             row_stretch += layout.rowStretch(i)
                         s_row_full = 0
                         s_col_full = 0
@@ -289,5 +293,48 @@ def layout_debug(widget: QWidget) -> None:
                     if layout is not None:
                         _add_item(layout, data)
                         record['children'].append(data)
+
     _add_item(widget, layout_data)
     json.dump(layout_data, open('layout-debug.json', 'w', encoding='utf-8'), indent=2)
+
+
+# Execution time tracking:
+_stats: defaultdict[Any, dict[str, int | float]] = defaultdict(lambda: {
+    'count': 0,
+    'total_time': 0.0,
+    'min_time': float('inf'),
+    'max_time': 0.0,
+})
+
+
+def profile_on_exit(func):
+    """Prints profiling data for all calls to a function when the program exits."""
+    name = func.__name__
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        """Calculate execution time and save results."""
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        duration = time.perf_counter() - start
+        stats = _stats[name]
+        stats['count'] += 1
+        stats['total_time'] += duration
+        stats['min_time'] = min(stats['min_time'], duration)
+        stats['max_time'] = max(stats['max_time'], duration)
+
+        return result
+
+    return wrapper
+
+
+@atexit.register
+def print_stats():
+    """On exit print execution stats for functions tagged with profile_on_exit."""
+    for name, s in _stats.items():
+        avg = s['total_time'] / s['count'] if s['count'] else 0
+        print(f"Function: {name}")
+        print(f"    execution count: {s['count']}")
+        print(f"    avg. duration: {avg:.6f}s")
+        print(f"    shortest:  {s['min_time']:.6f}s")
+        print(f"    longest: {s['max_time']:.6f}s")

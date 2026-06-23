@@ -1,5 +1,6 @@
 """Select colors via HSV, RGBA, or HTML inputs, adapted from the Qt library's internal QColorShower found within
      QColorDialog."""
+from typing import Optional
 
 from PySide6.QtCore import Signal, QRegularExpression
 from PySide6.QtGui import QColor, Qt, QRegularExpressionValidator
@@ -13,9 +14,9 @@ from src.util.signals_blocked import signals_blocked
 TR_ID = 'ui.widget.color_picker.component_spinbox_picker'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 LABEL_HUE = _tr('Hu&e:')

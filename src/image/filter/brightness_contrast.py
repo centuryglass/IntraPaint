@@ -1,5 +1,5 @@
 """Adjust image brightness/contrast."""
-from typing import Callable
+from typing import Callable, Optional
 from PIL import ImageEnhance
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QImage
@@ -15,9 +15,9 @@ from src.util.parameter import Parameter, TYPE_FLOAT
 TR_ID = 'image.filter.brightness_contrast'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 BRIGHTNESS_CONTRAST_FILTER_TITLE = _tr('Brightness/Contrast')

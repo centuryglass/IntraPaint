@@ -11,7 +11,7 @@ from src.config.application_config import AppConfig
 from src.image.composite_mode import CompositeMode
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.cached_data import CachedData
-from src.util.visual.geometry_utils import map_rect_precise
+from src.util.visual.geometry_utils import map_rect_precise, transform_scale, rotation_angle
 from src.util.visual.image_utils import (create_transparent_image, NpAnyArray, image_data_as_numpy_8bit_readonly,
                                          image_is_fully_transparent)
 
@@ -19,9 +19,9 @@ from src.util.visual.image_utils import (create_transparent_image, NpAnyArray, i
 TR_ID = 'image.layer.layer'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 ERROR_TITLE_SHOW_LAYER_FAILED = _tr('Showing layer failed')
@@ -355,7 +355,7 @@ class Layer(QObject):
 
     def set_size(self, new_size: QSize) -> None:
         """Updates the layer's size."""
-        if self._size != QSize:
+        if self._size != new_size:
             self._size = QSize(new_size)
             self._pixmap.invalidate()
             self.size_changed.emit(self, new_size)
@@ -489,6 +489,10 @@ class Layer(QObject):
                 painter.setCompositionMode(qt_composite_mode)
                 if transform is not None:
                     painter.setTransform(transform)
+                    s_x, s_y = transform_scale(transform)
+                    angle = rotation_angle(transform)
+                    if (s_x % 1.0) != 0.0 or (s_y % 1.0) != 0.0 or (angle % 90.0) != 0.0:
+                        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
                 painter.setClipPath(clip_path)
                 painter.drawImage(source_bounds, layer_image, source_bounds)
                 painter.end()

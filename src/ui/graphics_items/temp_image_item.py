@@ -33,6 +33,7 @@ class TempImageItem(QGraphicsObject):
         self.setZValue(9999)
         scene.addItem(self)
 
+        # noinspection PyTypeChecker
         self._animation = QPropertyAnimation(self, b"_opacity")
         self._animation.setLoopCount(1)
         self._animation.setStartValue(0)
@@ -52,6 +53,7 @@ class TempImageItem(QGraphicsObject):
     def _opacity_setter(self, opacity: int) -> None:
         self._opacity_percent = opacity
 
+    # noinspection PyTypeChecker
     _opacity = Property(int, _opacity_getter, _opacity_setter)
 
     def _start_delay(self):

@@ -6,6 +6,7 @@ Supports the following:
 - Provide a tool panel widget with UI controls.
 - Override the cursor when over the image viewer.
 """
+import os
 from typing import Optional
 
 from PySide6.QtCore import QObject, Signal, QPoint, QEvent, Qt
@@ -19,7 +20,8 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.ui.modal.modal_utils import show_error_dialog
 from src.util.shared_constants import ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_LAYER_LOCKED, \
-    ERROR_MESSAGE_LAYER_GROUP_LOCKED, ERROR_MESSAGE_LAYER_HIDDEN, ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED
+    ERROR_MESSAGE_LAYER_GROUP_LOCKED, ERROR_MESSAGE_LAYER_HIDDEN, ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED, \
+    DEBUG_CURSOR_ENV_VAR
 from src.util.visual.image_utils import image_is_fully_transparent
 from src.util.visual.text_drawing_utils import left_button_hint_text, middle_button_hint_text, \
     vertical_scroll_hint_text, get_key_display_string
@@ -28,14 +30,15 @@ from src.util.visual.text_drawing_utils import left_button_hint_text, middle_but
 TR_ID = 'tools.base_tool'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 PAN_HINT = _tr('{modifier_or_modifiers}+{left_mouse_icon} or {middle_mouse_icon}, drag: pan view')
 ZOOM_HINT = _tr('{v_scroll_icon}: zoom')
 FIXED_ASPECT_HINT = _tr('{modifier_or_modifiers}: Fixed aspect ratio')
+DEBUG_CURSOR_FILE_PREFIX = 'debug_'
 
 
 # noinspection PyMethodMayBeStatic
@@ -88,7 +91,8 @@ class BaseTool(QObject):
 
     cursor_change = Signal()
 
-    def __init__(self, activation_config_key: str, label_text: str, tooltip_text: str, icon: QIcon) -> None:
+    def __init__(self, activation_config_key: str, label_text: str, tooltip_text: str, icon: QIcon,
+                 enable_selection_restrictions: bool = True) -> None:
         super().__init__()
         self._activation_config_key = activation_config_key
         self._cursor: Optional[QCursor | QPixmap] = None
@@ -98,6 +102,7 @@ class BaseTool(QObject):
         self._label_text = label_text
         self._tooltip_text = tooltip_text
         self._icon = icon
+        self._enable_selection_restrictions = enable_selection_restrictions
 
     @staticmethod
     def modifier_hint(modifier_key: str, modifier_hint_str: str) -> str:
@@ -114,6 +119,15 @@ class BaseTool(QObject):
     def fixed_aspect_hint() -> str:
         """Returns the hint for the fixed aspect ratio key, if set"""
         return f'{BaseTool.modifier_hint(KeyConfig.FIXED_ASPECT_MODIFIER, FIXED_ASPECT_HINT)}'
+
+    @staticmethod
+    def load_cursor_icon(cursor_path: str) -> QIcon:
+        """Loads a cursor file as a QCursor or QPixmap, using the debug path if the appropriate env var is set."""
+        if DEBUG_CURSOR_ENV_VAR in os.environ and os.environ[DEBUG_CURSOR_ENV_VAR]:
+            cursor_dir = os.path.dirname(cursor_path)
+            cursor_file = os.path.basename(cursor_path)
+            cursor_path = os.path.join(cursor_dir, DEBUG_CURSOR_FILE_PREFIX + cursor_file)
+        return QIcon(cursor_path)
 
     @property
     def cursor(self) -> Optional[QCursor | QPixmap]:
@@ -209,7 +223,8 @@ class BaseTool(QObject):
             error_message = ERROR_MESSAGE_LAYER_GROUP_LOCKED
         elif not layer.visible:
             error_message = ERROR_MESSAGE_LAYER_HIDDEN
-        elif image_stack is not None and Cache().get(Cache.PAINT_SELECTION_ONLY):
+        elif (image_stack is not None and Cache().get(Cache.PAINT_SELECTION_ONLY)
+              and self._enable_selection_restrictions):
             mask_image = image_stack.selection_layer.image_bits_readonly
             if image_is_fully_transparent(mask_image):
                 error_message = ERROR_MESSAGE_EMPTY_MASK

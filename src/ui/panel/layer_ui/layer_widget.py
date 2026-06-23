@@ -2,7 +2,7 @@
 
 from typing import Optional, cast, Callable
 
-from PySide6.QtCore import QSize, Qt, QRect, QPoint, QMimeData, Signal
+from PySide6.QtCore import QSize, Qt, QRect, QPoint, QMimeData, Signal, QTimer
 from PySide6.QtGui import (QPixmap, QImage, QPainter, QTransform, QResizeEvent, QPaintEvent, QColor, QMouseEvent, QDrag,
                            QAction, QPainterPath, QPen, QIcon)
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QMenu, QApplication
@@ -32,9 +32,9 @@ from src.util.visual.text_drawing_utils import find_text_size
 TR_ID = 'ui.panel.layer.image_layer_widget'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 PREVIEW_SIZE = QSize(80, 80)
@@ -66,6 +66,8 @@ MENU_OPTION_CLEAR_SELECTION = _tr('Clear selection')
 IMAGE_PATH_GROUP_FRAME = f'{PROJECT_DIR}/resources/icons/layer/group_frame.svg'
 IMAGE_PATH_BASIC_FRAME = f'{PROJECT_DIR}/resources/icons/layer/img_frame.svg'
 IMAGE_PATH_TEXT_FRAME = f'{PROJECT_DIR}/resources/icons/layer/txt_frame.svg'
+
+PREVIEW_RENDER_DELAY_MS = 500
 
 
 def _preview_size() -> QSize:
@@ -140,8 +142,15 @@ class LayerWidget(BorderedWidget):
             self._layout.addWidget(self._lock_button, stretch=10)
         self._visibility_button = LayerVisibilityButton(self._layer)
         self._layout.addWidget(self._visibility_button, stretch=10)
+
+        # Use a timer to batch preview updates:
+        self._preview_render_timer = QTimer()
+        self._preview_render_timer.setSingleShot(True)
+        self._preview_render_timer.setInterval(PREVIEW_RENDER_DELAY_MS)
+        self._preview_render_timer.timeout.connect(self._update_layer_preview_image)
+
         # Prepare initial layer image:
-        self._layer_content_change_slot()
+        self._update_layer_preview_image()
 
     def _layer_preview_frame_bounds(self) -> QRect:
         bounds = QRect(LAYER_PADDING, LAYER_PADDING, self._label.x() - LAYER_PADDING * 2,
@@ -185,14 +194,21 @@ class LayerWidget(BorderedWidget):
         painter.end()
         self.update()
 
-    # noinspection PyUnusedLocal
-    def _layer_content_change_slot(self, *args) -> None:
+    def _update_layer_preview_image(self) -> None:
+        self._preview_render_timer.stop()
         if isinstance(self._layer, TransformLayer):
             layer_image, _ = self._layer.transformed_image()
         else:
             layer_image = self._layer.image
+        min_dim = min(layer_image.width(), layer_image.height())
+        if min_dim > 1000:
+            layer_image = layer_image.scaled(layer_image.width() // 4, layer_image.height() // 4)
         self._layer_image = crop_to_content(layer_image)
         self._update_pixmap()
+
+    # noinspection PyUnusedLocal
+    def _layer_content_change_slot(self, *args) -> None:
+        self._preview_render_timer.start()
 
     def _layer_name_change_slot(self, _, name: str) -> None:
         self._label.set_text(name)

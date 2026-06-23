@@ -31,15 +31,15 @@ CURSOR_PATH_BRUSH_MIN = f'{PROJECT_DIR}/resources/cursors/min_cursor.svg'
 TR_ID = 'tools.brush_tool'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 LINE_HINT = _tr('{modifier_or_modifiers}+{left_mouse_icon}/{right_mouse_icon}: draw line')
 FIXED_ANGLE_HINT = _tr('{modifier_or_modifiers}: fixed angle')
 
-MAX_CURSOR_SIZE = 255
+MAX_CURSOR_SIZE = 128
 MIN_CURSOR_SIZE = 20
 MIN_SMALL_CURSOR_SIZE = 15
 MIN_LINE_PRESSURE = 0.5
@@ -57,7 +57,7 @@ class BrushTool(BaseTool):
     def __init__(self, activation_config_key: str,  label_text: str, tooltip_text: str, icon: QIcon,
                  image_stack: ImageStack, image_viewer: ImageViewer, brush: LayerBrush,
                  enable_selection_restrictions=True, follow_active_layer=True) -> None:
-        super().__init__(activation_config_key, label_text, tooltip_text, icon)
+        super().__init__(activation_config_key, label_text, tooltip_text, icon, enable_selection_restrictions)
         self._layer: Optional[ImageLayer] = None
         self._drawing = False
         self._cached_size: Optional[int] = None
@@ -79,9 +79,9 @@ class BrushTool(BaseTool):
         assert scene is not None
         self._preview_line = TempDashedLineItem(scene)
 
-        self._small_brush_icon = QIcon(CURSOR_PATH_BRUSH_MIN)
+        self._small_brush_icon = self.load_cursor_icon(CURSOR_PATH_BRUSH_MIN)
         self._small_brush_cursor = QCursor(self._small_brush_icon.pixmap(MIN_SMALL_CURSOR_SIZE, MIN_SMALL_CURSOR_SIZE))
-        self._default_scaled_cursor_icon = QIcon(CURSOR_PATH_BRUSH_DEFAULT)
+        self._default_scaled_cursor_icon = self.load_cursor_icon(CURSOR_PATH_BRUSH_DEFAULT)
         self._scaled_icon_cursor: Optional[QIcon] = self._default_scaled_cursor_icon
         self._scaling_cursor = True
         image_viewer.scale_changed.connect(self.update_brush_cursor)
@@ -259,6 +259,7 @@ class BrushTool(BaseTool):
             self._tablet_pressure = None
             self._tablet_x_tilt = None
             self._tablet_y_tilt = None
+        self._preview_line.setVisible(False)
         self._brush.connect_to_layer(None)
 
     # Event handlers:
@@ -270,7 +271,9 @@ class BrushTool(BaseTool):
             self._tablet_x_tilt = None
             self._tablet_y_tilt = None
         if self._layer is not None:
-            image_coordinates = self._layer.map_from_image(image_coordinates)
+            layer_coordinates = self._layer.map_from_image(image_coordinates)
+        else:
+            return
         if not self._image_stack.has_image:
             return
         if self._tablet_input == QPointingDevice.PointerType.Eraser:
@@ -288,17 +291,19 @@ class BrushTool(BaseTool):
             else:
                 closest_point = closest_point_keeping_angle(last_pos, current_pos, self._fixed_angle).toPoint()
             image_coordinates = closest_point
+            layer_coordinates = self._layer.map_from_image(image_coordinates)
         if KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER) and self._last_pos is not None:
+            last_layer_coordinates = self._layer.map_from_image(self._last_pos)
             pressure = self._last_pressure if self._tablet_pressure is None else self._tablet_pressure
             if pressure is not None:
                 pressure = max(pressure, MIN_LINE_PRESSURE)
-            self._brush.stroke_to(self._last_pos.x(), self._last_pos.y(), pressure, self._tablet_x_tilt,
-                                  self._tablet_y_tilt)
-            self._brush.stroke_to(image_coordinates.x(), image_coordinates.y(), pressure,
+            self._brush.stroke_to(last_layer_coordinates.x(), last_layer_coordinates.y(), pressure,
+                                  self._tablet_x_tilt, self._tablet_y_tilt)
+            self._brush.stroke_to(layer_coordinates.x(), layer_coordinates.y(), pressure,
                                   self._tablet_x_tilt, self._tablet_y_tilt)
             self._preview_line.setVisible(False)  # Hide it until it can update with new last_pos value
         else:
-            self._brush.stroke_to(image_coordinates.x(), image_coordinates.y(), self._tablet_pressure,
+            self._brush.stroke_to(layer_coordinates.x(), layer_coordinates.y(), self._tablet_pressure,
                                   self._tablet_x_tilt, self._tablet_y_tilt)
 
         if self._tablet_input == QPointingDevice.PointerType.Eraser:
@@ -344,7 +349,8 @@ class BrushTool(BaseTool):
 
                 line_end, angle = closest_point_at_angle_option(QPointF(self._last_pos), line_end,
                                                                 list(range(0, 360, 45)))
-            self._preview_line.set_line(QLineF(QPointF(self._last_pos), line_end))
+            half_px_offset = QPointF(0.5, 0.5)  # Draw from the center of the pixel, not the corner.
+            self._preview_line.set_line(QLineF(QPointF(self._last_pos) + half_px_offset, line_end + half_px_offset))
         if (event.buttons() == Qt.MouseButton.LeftButton or event.buttons() == Qt.MouseButton.RightButton
                 and self._drawing):
             self._stroke_to(image_coordinates)
@@ -422,16 +428,20 @@ class BrushTool(BaseTool):
         """Recalculates the brush cursor size if using a scaling cursor."""
         if not self.is_active or self._scaling_cursor is False or self._scaled_icon_cursor is None:
             return
-        brush_cursor_size = int(self.brush_size * self._image_viewer.scene_scale)
-        if brush_cursor_size <= MIN_SMALL_CURSOR_SIZE:
+        pixel_size = self._image_viewer.scene_scale
+        brush_cursor_size = int(self.brush_size * pixel_size)
+        if brush_cursor_size <= MIN_SMALL_CURSOR_SIZE or self.brush_size == 1:
             self.cursor = self._small_brush_cursor
         else:
             icon = self._scaled_icon_cursor if brush_cursor_size > MIN_CURSOR_SIZE else self._small_brush_icon
             scaled_cursor = icon.pixmap(brush_cursor_size, brush_cursor_size)
+            #scaled_cursor.setDevicePixelRatio(1.0)
             if brush_cursor_size > MAX_CURSOR_SIZE:
                 self.cursor = scaled_cursor
             else:
-                self.cursor = QCursor(scaled_cursor)
+                self.cursor = QCursor(scaled_cursor,
+                        hotX=round(scaled_cursor.width() / 2 / scaled_cursor.devicePixelRatio()),
+                        hotY=round(scaled_cursor.height() / 2 / scaled_cursor.devicePixelRatio()))
 
     def wheel_event(self, event: Optional[QWheelEvent]) -> bool:
         """Adjust brush size if scrolling horizontal."""

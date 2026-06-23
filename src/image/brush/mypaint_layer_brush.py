@@ -11,7 +11,6 @@ from src.image.brush.layer_brush import LayerBrush
 from src.image.layers.image_layer import ImageLayer
 from src.image.mypaint.mypaint_brush import MyPaintBrush
 from src.image.mypaint.mypaint_layer_surface import MyPaintLayerSurface
-from src.image.mypaint.mypaint_scene_tile import MyPaintSceneTile
 
 
 class MyPaintLayerBrush(LayerBrush):
@@ -22,7 +21,6 @@ class MyPaintLayerBrush(LayerBrush):
         super().__init__(layer)
         self._mp_surface = MyPaintLayerSurface(None)
         self._last_stroke_bounds = QRect()
-        self._last_stroke_tiles: set[MyPaintSceneTile] = set()
         self._last_eraser_value: Optional[float] = None
         super()._set_brush_color(self._mp_surface.brush.color)
         if layer is not None:
@@ -52,7 +50,6 @@ class MyPaintLayerBrush(LayerBrush):
     def start_stroke(self) -> None:
         """Signals the start of a brush stroke, to be called once whenever user input starts or resumes."""
         super().start_stroke()
-        self._last_stroke_tiles.clear()
         self._last_stroke_bounds = QRect()
         self._mp_surface.start_stroke()
 

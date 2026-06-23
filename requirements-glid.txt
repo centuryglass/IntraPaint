@@ -15,8 +15,8 @@ blobfile
 einops
 openai-clip
 setuptools~=69.0.3
-git+https://github.com/CompVis/taming-transformers.git@master
-git+https://github.com/CompVis/latent-diffusion.git@main
+#git+https://github.com/CompVis/taming-transformers.git@master
+#git+https://github.com/CompVis/latent-diffusion.git@main
 
 # Needed for hosting a GLID-3-XL server:
 Flask~=2.3.3

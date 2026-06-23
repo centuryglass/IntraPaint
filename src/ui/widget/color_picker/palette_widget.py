@@ -11,6 +11,7 @@ from src.config.application_config import AppConfig
 from src.ui.widget.color_picker.screen_color import ScreenColorWidget
 from src.undo_stack import UndoStack
 from src.util.signals_blocked import signals_blocked
+from src.util.visual.image_utils import get_transparency_tile_pixmap
 
 CELL_WIDTH = 28
 CELL_HEIGHT = 24
@@ -158,6 +159,7 @@ class _PaletteGrid(QWidget):
         opt.midLineWidth = 1
         opt.rect = bounds.adjusted(margin, margin, -margin, -margin)
         opt.palette = palette
+        # noinspection PyTypeChecker
         opt.state = QStyle.StateFlag.State_Enabled | QStyle.StateFlag.State_Sunken
         self.style().drawPrimitive(QStyle.PrimitiveElement.PE_Frame, opt, painter, self)
         margin += dfw
@@ -167,6 +169,7 @@ class _PaletteGrid(QWidget):
                 opt = QStyleOptionFocusRect()
                 opt.palette = palette
                 opt.rect = bounds
+                # noinspection PyTypeChecker
                 opt.state = QStyle.StateFlag.State_None | QStyle.StateFlag.State_KeyboardFocusChange
                 self.style().drawPrimitive(QStyle.PrimitiveElement.PE_FrameFocusRect, opt, painter, self)
         self._paint_cell_contents(painter, row, col, opt.rect.adjusted(dfw, dfw, -dfw, -dfw))
@@ -258,6 +261,7 @@ class PaletteWidget(_PaletteGrid):
         self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
         self.setAcceptDrops(True)
         self.selected.connect(self._color_selected_slot)
+        self._alpha_pixmap: Optional[QPixmap] = None
 
     def _color_selected_slot(self, row: int, col: int) -> None:
         if row < 0 or row >= self.num_rows() or col < 0 or col >= self.num_cols():
@@ -283,6 +287,10 @@ class PaletteWidget(_PaletteGrid):
         i = self.color_index(row, col)
         color = self._colors[i]
         if color.isValid():
+            if color.alpha() < 255 and not bounds.isEmpty():
+                if self._alpha_pixmap is None:
+                    self._alpha_pixmap = get_transparency_tile_pixmap(bounds.size())
+                painter.drawPixmap(bounds.topLeft(), self._alpha_pixmap)
             painter.fillRect(bounds, color)
         else:
             super()._paint_cell_contents(painter, row, col, bounds)
@@ -504,11 +512,12 @@ class CustomColorPaletteWidget(PaletteWidget):
     def add_color(self, color: QColor) -> None:
         """Adds a new custom color.  This will replace the first duplicate color encountered, or the color after the
         previous changed index if no duplicates are found."""
+        added_color_str = color.name(QColor.NameFormat.HexArgb)
         colors_traversed: set[str] = set()
         next_idx = self._last_added_idx + 1
         for i in range(self.color_count()):
             prev_color = self.get_color(i).name(QColor.NameFormat.HexArgb)
-            if prev_color in colors_traversed:
+            if prev_color in colors_traversed and prev_color != added_color_str:
                 next_idx = i
                 break
             colors_traversed.add(prev_color)

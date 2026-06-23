@@ -28,13 +28,16 @@ class Outline(QGraphicsObject):
     def __init__(self,
                  scene: QGraphicsScene,
                  view: QGraphicsView,
-                 parent: Optional[QGraphicsItem] = None):
+                 parent: Optional[QGraphicsItem] = None,
+                 cosmetic_line_draw: bool = False):
         super().__init__(parent)
         self._rect = QRectF()
         self._view = view
         self._animated = False
         self._dash_pattern = [2, 2, 4, 2, 2, 2]
         self._dash_offset = 0
+        self._cosmetic = cosmetic_line_draw
+        # noinspection PyTypeChecker
         self._anim = QPropertyAnimation(self, b"dash_offset")
         self._anim.setLoopCount(-1)
         self._anim.setStartValue(0)
@@ -50,6 +53,7 @@ class Outline(QGraphicsObject):
         """Update the animated dash offset."""
         self._dash_offset = offset
 
+    # noinspection PyTypeChecker
     dash_offset = Property(int, dash_offset_getter, dash_offset_setter)
 
     @property
@@ -65,6 +69,13 @@ class Outline(QGraphicsObject):
         for length in dash_pattern:
             pattern_length += length
         self._anim.setEndValue(pattern_length * 10)
+        self.update()
+
+    def setVisible(self, visible: bool) -> None:
+        """Ensure animation starts and stops appropriately as visibility changes."""
+        super().setVisible(visible)
+        if visible and self._animated:
+            self._anim.start()
 
     @property
     def animated(self) -> bool:
@@ -96,6 +107,8 @@ class Outline(QGraphicsObject):
         if self.scene() is None or self._view is None or self._rect.isEmpty():
             return 0.0
         view_scale = self._view.transform().m11()
+        if self._cosmetic:
+            return 6.0 / view_scale
         return max(1.0, 6.0 / view_scale)
 
     def paint(self,
@@ -116,11 +129,15 @@ class Outline(QGraphicsObject):
         mid_border = inner_border.adjusted(-line_width / 3, -line_width / 3, line_width / 3, line_width / 3)
         outer_border = mid_border.adjusted(-line_width / 4, -line_width / 4, line_width / 4, line_width / 4)
 
-        black_line_pen = QPen(outline_black, line_width / 4, Qt.PenStyle.SolidLine)
-        white_line_pen = QPen(outline_white, line_width)
-        dotted_line_pen = QPen(Qt.GlobalColor.black, line_width / 4, Qt.PenStyle.DotLine)
+        black_line_pen = QPen(outline_black, line_width / 4 if not self._cosmetic else 1, Qt.PenStyle.SolidLine)
+        white_line_pen = QPen(outline_white, line_width if not self._cosmetic else 4)
+        dotted_line_pen = QPen(Qt.GlobalColor.black, line_width / 4 if not self._cosmetic else 1, Qt.PenStyle.DotLine)
         dotted_line_pen.setDashPattern(self.dash_pattern)
         dotted_line_pen.setDashOffset(self._dash_offset / 10)
+        if self._cosmetic:
+            black_line_pen.setCosmetic(True)
+            white_line_pen.setCosmetic(True)
+            dotted_line_pen.setCosmetic(True)
 
         painter.setPen(white_line_pen)
         painter.drawRect(mid_border)

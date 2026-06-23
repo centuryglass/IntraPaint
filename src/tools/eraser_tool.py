@@ -18,9 +18,9 @@ from src.util.visual.text_drawing_utils import left_button_hint_text, right_butt
 TR_ID = 'tools.eraser_tool'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 ICON_PATH_ERASER_TOOL = f'{PROJECT_DIR}/resources/icons/tools/eraser_icon.svg'
@@ -34,6 +34,7 @@ class EraserTool(QtPaintBrushTool):
     """Draw tool variant meant for erasing only."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
+        self._control_panel: Optional[EraserToolPanel] = None
         super().__init__(KeyConfig.ERASER_TOOL_KEY, LABEL_TEXT_ERASER_TOOL, TOOLTIP_ERASER_TOOL,
                          QIcon(ICON_PATH_ERASER_TOOL), image_stack, image_viewer, size_key=Cache.ERASER_TOOL_SIZE,
                          pressure_size_key=Cache.ERASER_TOOL_PRESSURE_SIZE, opacity_key=Cache.ERASER_TOOL_OPACITY,
@@ -44,8 +45,7 @@ class EraserTool(QtPaintBrushTool):
 
         cache = Cache()
         cache.disconnect(self, Cache.LAST_BRUSH_COLOR)
-        self._control_panel: Optional[EraserToolPanel] = None
-        self.set_scaling_icon_cursor(QIcon(CURSOR_PATH_ERASER_TOOL))
+        self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_ERASER_TOOL))
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""

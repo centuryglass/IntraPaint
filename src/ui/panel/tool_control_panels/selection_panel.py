@@ -1,5 +1,7 @@
 """Base control panel for selection editing tools."""
-from PySide6.QtCore import Qt, QSize
+from typing import Optional
+
+from PySide6.QtCore import Qt, QSize, SignalInstance
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QPushButton, QHBoxLayout, QLabel, QLayout
 
@@ -14,9 +16,9 @@ from src.util.visual.text_drawing_utils import get_key_display_string
 TR_ID = 'ui.panel.tool_control_panels.selection_panel'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 FILL_BUTTON_LABEL = _tr('Select All')
@@ -83,6 +85,7 @@ class SelectionPanel(QWidget):
             else:
                 padding_label.hide()
                 padding_spinbox.hide()
+        assert isinstance(padding_checkbox.stateChanged, SignalInstance)
         padding_checkbox.stateChanged.connect(lambda state: _set_inpaint_padding_visibility(bool(state)))
 
         full_res_padding_tip = cache.get_tooltip(Cache.INPAINT_FULL_RES_PADDING)

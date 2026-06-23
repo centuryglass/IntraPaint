@@ -56,7 +56,7 @@ class HsvPicker(QWidget):
         color = color.toHsv()
         # Avoid letting value changes tweak hue and saturation when unnecessary:
         if color.toRgb() == color.fromHsv(self._color.hue(), self._color.saturation(), color.value(),
-                                          color.alpha()).toRgb():
+                                          color.alpha()).toRgb() and color.value() != self._color.value():
             color.setHsv(self._color.hsvHue(), self._color.hsvSaturation(), color.value(), color.alpha())
         self._color = color
         with signals_blocked(self):
@@ -68,14 +68,18 @@ class HsvPicker(QWidget):
     def _hs_change_slot(self, hue: int, saturation: int) -> None:
         if hue == self._color.hue() and saturation == self._color.saturation():
             return
-        self.color = QColor.fromHsv(hue, saturation, self._color.value())
+        with signals_blocked(self._value_picker):
+            self._value_picker.set_color(hue, saturation, self._value_picker.value())
+        new_color = QColor.fromHsv(hue, saturation, self._color.value())
+        if self._color.alpha() > 0:
+            new_color.setAlpha(self._color.alpha())
+        self.color = new_color
 
     def _value_change_slot(self, value: int) -> None:
         if value == self._color.value():
             return
-        hue = self._color.hue()
-        color = QColor.fromHsv(self._color.hue(), self._color.saturation(), value)
-        assert color.hue() == hue
+        color = QColor.fromHsv(self._hs_box.hue, self._hs_box.saturation, value)
+        color.setAlpha(self._color.alpha())
         self.color = color
 
     def _started_color_picking_slot(self) -> None:

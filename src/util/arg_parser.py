@@ -51,6 +51,7 @@ def build_arg_parser(include_edit_params=True, include_gen_params=True,
 
     parser.add_argument('--steps', type=int, default=0, required=False,
                         help='number of diffusion steps')
+
     if include_gen_params:
         parser.add_argument('--init_image', type=str, required=False, default=None, nargs='?',
                             help='init image to use')

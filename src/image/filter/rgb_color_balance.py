@@ -1,5 +1,5 @@
 """Adjust RGB color levels."""
-from typing import Callable
+from typing import Callable, Optional
 
 import numpy as np
 from PySide6.QtWidgets import QApplication
@@ -16,9 +16,9 @@ from src.util.parameter import Parameter, TYPE_FLOAT
 TR_ID = 'image.filter.rgb_color_balance'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 COLOR_BALANCE_TITLE = _tr('RGBA Color Balance')

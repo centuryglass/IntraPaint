@@ -878,6 +878,24 @@
         "default": "Ctrl+5",
         "saved": true
     },
+    "saturation_shortcut": {
+        "label": "Saturation",
+        "category": "Menu Shortcuts",
+        "subcategory": "Filter Menu",
+        "description": "Adjust image color saturation",
+        "type": "string",
+        "default": "Ctrl+6",
+        "saved": true
+    },
+    "invert_shortcut": {
+        "label": "Invert",
+        "category": "Menu Shortcuts",
+        "subcategory": "Filter Menu",
+        "description": "Invert image colors",
+        "type": "string",
+        "default": "Ctrl+7",
+        "saved": true
+    },
     "prompt_style_shortcut": {
         "label": "View saved prompt styles",
         "category": "Menu Shortcuts",

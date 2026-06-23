@@ -84,10 +84,26 @@
         "default": true,
         "saved": true
     },
-    "animate_outlines": {
-        "label": "Animate outlines and selections:",
+    "animate_selection_outline": {
+        "label": "Animate selected content outlines",
         "category": "Interface",
-        "description": "Enable or disable animated outlines (may require restart)",
+        "description": "Enable or disable animated selection outlines",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "animate_outlines_and_previews": {
+        "label": "Animate area outlines and preview lines",
+        "category": "Interface",
+        "description": "Enable or disable animation on the image generation area outline, selected content area outline, and line previews.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "animate_selection_fill": {
+        "label": "Animate selected content overlay:",
+        "category": "Interface",
+        "description": "Enable or disable selection overlay animation",
         "type": "bool",
         "default": true,
         "saved": true

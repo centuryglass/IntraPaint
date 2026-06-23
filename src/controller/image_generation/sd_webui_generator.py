@@ -4,7 +4,7 @@ import os
 from argparse import Namespace
 from typing import Optional, Any, cast
 
-from PySide6.QtCore import Signal, QSize, QThread
+from PySide6.QtCore import Signal, QSize, QThread, SignalInstance
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 from requests import ReadTimeout
@@ -43,9 +43,9 @@ logger = logging.getLogger(__name__)
 TR_ID = 'controller.image_generation.sd_webui_generator'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 SD_WEBUI_GENERATOR_NAME = _tr('Stable Diffusion WebUI API')
@@ -356,11 +356,15 @@ class SDWebUIGenerator(SDGenerator):
             def _update_remote_model_selection(model_name: str) -> None:
                 if not self._connected:
                     return
+                assert self._webservice is not None
+                webui_config.load_all(self._webservice)
                 for model_option in model_options:
                     if model_option['model_name'] == model_name:
                         if model_option['title'] != webui_config.get(A1111Config.SD_MODEL_CHECKPOINT):
                             remote_setting_change = {A1111Config.SD_MODEL_CHECKPOINT: model_option['title']}
                             self.update_settings(remote_setting_change)
+                            assert self._webservice is not None
+                            webui_config.load_all(self._webservice)
                         return
                 raise RuntimeError(f'Selected model "{model_name}" not found in available options.')
 
@@ -433,8 +437,8 @@ class SDWebUIGenerator(SDGenerator):
 
     def load_preprocessor_preview(self, preprocessor: ControlNetPreprocessor,
                                   image: QImage, mask: Optional[QImage],
-                                  status_signal: Signal,
-                                  image_signal: Signal) -> None:
+                                  status_signal: SignalInstance,
+                                  image_signal: SignalInstance) -> None:
         """Requests a ControlNet preprocessor preview image."""
         assert self._webservice is not None
         preview_image = self._webservice.controlnet_preprocessor_preview(image, mask, preprocessor)
@@ -495,7 +499,7 @@ class SDWebUIGenerator(SDGenerator):
         web_categories = web_config.get_categories()
         web_keys = [key for cat in web_categories for key in web_config.get_category_keys(cat)]
         app_keys = AppConfig().get_category_keys(STABLE_DIFFUSION_CONFIG_CATEGORY)
-        web_changes = {}
+        web_changes: dict[str, Any] = {}
         for key, value in changed_settings.items():
             if key in web_keys:
                 web_changes[key] = value
@@ -506,10 +510,10 @@ class SDWebUIGenerator(SDGenerator):
             class _SettingsUpdateTask(AsyncTask):
                 error_signal = Signal(Exception)
 
-                def signals(self) -> list[Signal]:
+                def signals(self) -> list[SignalInstance]:
                     return [self.error_signal]
 
-            def _update_config(error_signal: Signal) -> None:
+            def _update_config(error_signal: SignalInstance) -> None:
                 assert self._webservice is not None
                 try:
                     self._webservice.set_config(changed_settings)
@@ -520,6 +524,8 @@ class SDWebUIGenerator(SDGenerator):
 
             def _update_setting() -> None:
                 AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
+                for key, changed_value in web_changes.items():
+                    web_config.set(key, changed_value)
                 update_task.finish_signal.disconnect(_update_setting)
 
             def _handle_error(err: Exception) -> None:
@@ -554,10 +560,10 @@ class SDWebUIGenerator(SDGenerator):
             prompt_ready = Signal(str)
             error_signal = Signal(Exception)
 
-            def signals(self) -> list[Signal]:
+            def signals(self) -> list[SignalInstance]:
                 return [self.prompt_ready, self.error_signal]
 
-        def _interrogate(prompt_ready: Signal, error_signal: Signal) -> None:
+        def _interrogate(prompt_ready: SignalInstance, error_signal: SignalInstance) -> None:
             try:
                 assert self._webservice is not None
                 prompt_ready.emit(self._webservice.interrogate(image))
@@ -603,7 +609,7 @@ class SDWebUIGenerator(SDGenerator):
             self._control_panel.add_extras_tab(self._gen_extras_tab)
         return self._control_panel
 
-    def _async_progress_check(self, external_status_signal: Optional[Signal] = None):
+    def _async_progress_check(self, external_status_signal: Optional[SignalInstance] = None):
         webservice = self._webservice
         assert webservice is not None
         self._active_task_id += 1
@@ -617,7 +623,7 @@ class SDWebUIGenerator(SDGenerator):
                 self._id = task_id
                 self.should_stop = False
 
-            def signals(self) -> list[Signal]:
+            def signals(self) -> list[SignalInstance]:
                 return [external_status_signal if external_status_signal is not None else self.status_signal]
 
             def _check_progress(self, status_signal) -> None:
@@ -681,14 +687,14 @@ class SDWebUIGenerator(SDGenerator):
             self._webservice.interrupt()
 
     def generate(self,
-                 status_signal: Signal,
+                 status_signal: SignalInstance,
                  source_image: Optional[QImage] = None,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. are loaded from AppConfig as needed.
 
         Parameters
         ----------
-        status_signal : Signal[str]
+        status_signal : SignalInstance[str]
             Signal to emit when status updates are available.
         source_image : QImage
             Image to potentially use as a basis for the created or edited image.  This will be ignored if the editing
@@ -739,7 +745,8 @@ class SDWebUIGenerator(SDGenerator):
             logger.error('Unexpected error:', unexpected_err)
             raise RuntimeError(f'unexpected error: {unexpected_err}') from unexpected_err
 
-    def upscale_image(self, image: QImage, new_size: QSize, status_signal: Signal, image_signal: Signal) -> None:
+    def upscale_image(self, image: QImage, new_size: QSize, status_signal: SignalInstance,
+                      image_signal: SignalInstance) -> None:
         """Upscales an image using cached upscaling settings."""
         assert self._webservice is not None
         image_response = self._webservice.upscale(self._image_stack.qimage(), new_size.width(),

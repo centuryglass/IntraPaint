@@ -1,7 +1,7 @@
 """An image editing tool that moves the selected editing region."""
 from typing import Optional, Callable
 
-from PySide6.QtCore import Qt, QRect, QRectF, QSize, QPoint
+from PySide6.QtCore import Qt, QRect, QRectF, QSize, QPoint, SignalInstance
 from PySide6.QtGui import QCursor, QIcon, QTransform, QMouseEvent
 from PySide6.QtWidgets import QWidget, QSpinBox, QDoubleSpinBox, QApplication
 
@@ -26,9 +26,9 @@ from src.util.visual.text_drawing_utils import left_button_hint_text
 TR_ID = 'tools.layer_transform_tool'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 TRANSFORM_LABEL = _tr('Transform Layers')
@@ -133,15 +133,12 @@ class LayerTransformTool(BaseTool):
         self._transform_outline.y_pos = float(y_pos)
 
     def set_x_scale(self, x_scale: float) -> None:
-        """Sets the x-scale of the layer transformation, also changing y-scale if aspect ratio is preserved."""
+        """Sets the x-scale of the layer transformation."""
         _, prev_y_scale = self._transform_outline.transform_scale
-        if self._control_panel.preserve_aspect_ratio:
-            self._transform_outline.transform_scale = (x_scale, x_scale)
-        else:
-            self._transform_outline.transform_scale = (x_scale, prev_y_scale)
+        self._transform_outline.transform_scale = (x_scale, prev_y_scale)
 
     def set_y_scale(self, y_scale: float) -> None:
-        """Sets the y-scale of the layer transformation, also changing x-scale if aspect ratio is preserved."""
+        """Sets the y-scale of the layer transformation."""
         prev_x_scale, _ = self._transform_outline.transform_scale
         self._transform_outline.transform_scale = (prev_x_scale, y_scale)
 
@@ -281,6 +278,7 @@ class LayerTransformTool(BaseTool):
 
     @staticmethod
     def _update_control(field: QSpinBox | QDoubleSpinBox, value: float, change_handler: Callable[..., None]):
+        assert isinstance(field.valueChanged, SignalInstance)
         field.valueChanged.disconnect(change_handler)
         if field.value() != value:
             if isinstance(field, QSpinBox):

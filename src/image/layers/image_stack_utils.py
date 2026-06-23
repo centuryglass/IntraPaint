@@ -27,9 +27,9 @@ from src.util.visual.pil_image_utils import pil_image_scaling
 TR_ID = 'image.layers.image_stack_utils'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 def resize_image_stack_to_content(image_stack: ImageStack) -> None:

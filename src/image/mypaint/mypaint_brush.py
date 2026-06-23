@@ -50,6 +50,7 @@ class MyPaintBrush:
         """Load a brush from a .myb file, optionally preserving brush size."""
         logger.info(f'loading brush file {file_path}')
         file = QFile(file_path)
+        # noinspection PyTypeChecker
         if not file.open(QIODevice.OpenModeFlag.ReadOnly | QIODevice.OpenModeFlag.Text):
             raise IOError(f'Failed to open {file_path}')
         byte_array = QByteArray(file.readAll())

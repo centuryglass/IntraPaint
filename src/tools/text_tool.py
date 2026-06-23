@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PySide6.QtCore import QPoint, QPointF, QSizeF, QSize, QRect
-from PySide6.QtGui import QIcon, QMouseEvent, Qt, QTransform, QCursor
+from PySide6.QtGui import QIcon, QMouseEvent, Qt, QTransform, QCursor, QColor
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
@@ -28,9 +28,9 @@ from src.util.visual.text_drawing_utils import left_button_hint_text
 TR_ID = 'tools.text_tool'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 ICON_PATH_TEXT_TOOL = f'{PROJECT_DIR}/resources/icons/tools/text_icon.svg'
@@ -61,6 +61,7 @@ class TextTool(BaseTool):
         self._selection_handler = ClickAndDragSelection(scene)
         self._dragging = False
         self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
+        self._last_brush_color = Cache().get_color(Cache.LAST_BRUSH_COLOR, QColor(Qt.GlobalColor.black))
 
         def _use_fixed_aspect_ratio(modifiers: Qt.KeyboardModifier) -> None:
             self._placement_outline.preserve_aspect_ratio = KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER,
@@ -135,14 +136,17 @@ class TextTool(BaseTool):
     def _on_activate(self, restoring_after_delegation=False) -> None:
         """Called when the tool becomes active, implement to handle any setup that needs to be done."""
         active_layer = self._image_stack.active_layer
+        brush_color = Cache().get_color(Cache.LAST_BRUSH_COLOR, Qt.GlobalColor.black)
         if isinstance(active_layer, TextLayer):
             self._connect_text_layer(active_layer)
             if restoring_after_delegation:
                 text_rect = active_layer.text_rect
-                text_rect.text_color = Cache().get_color(Cache.LAST_BRUSH_COLOR, Qt.GlobalColor.black)
+                if brush_color != self._last_brush_color:
+                    text_rect.text_color = brush_color
                 text_rect.background_color = Cache().get_color(Cache.TEXT_BACKGROUND_COLOR, Qt.GlobalColor.white)
                 self._control_panel.text_rect = text_rect
                 active_layer.text_rect = text_rect
+        self._last_brush_color = brush_color
 
     def _on_deactivate(self) -> None:
         """Called when the tool stops being active, implement to handle any cleanup that needs to be done."""

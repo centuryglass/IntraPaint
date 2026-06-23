@@ -169,6 +169,8 @@ This tool uses the same filters that are found in the Filters menu.  See [Filter
    - **Blur filter**: Blur image content.
    - **Sharpen filter**: Strengthen edges within image content.
    - **Posterize filter**: Reduce color depth within the image.
+   - **Saturation filter**: Adjust saturation levels of image colors.
+   - **Invert filter**: Invert image pixel colors.
 2. **Filter-specific options**: These change based on the selected filter.  Hold the mouse over any control to see a description of what it does. 
 3. **Brush size slider**: Sets the exact brush width.
 4. **Brush opacity slider**: Sets the exact brush opacity, between 0.0 (fully transparent) and 1.0 (fully opaque).
@@ -222,14 +224,18 @@ Copy image content from one area to another using a brush.
 <img src="./labeled_screenshots/tools/clone_stamp.png"  alt="Screenshot of the clone stamp tool controls, with specific elements numbered."/>
 
 1. **Offset inputs**: Controls the exact offset from the cursor to the copy sampling point.
-2. **Brush size slider**: Sets the exact brush width.
-3. **Brush opacity slider**: Sets the exact brush opacity, between 0.0 (fully transparent) and 1.0 (fully opaque).
-4. **Brush hardness slider**: Sets the brush edge hardness. At 1.0 brush edges are completely solid, at 0.0 brush edges fade evenly from the center.
-5. **Tablet pen pressure controls**:  These controls are only visible after IntraPaint first detects a connected drawing tablet.  Pen pressure can be connected to any combination of size, opacity, and hardness, to scale those values down as pressure decreases.
-6. **Antialiasing checkbox**:  When checked, extra smoothing will be applied to jagged pixel edges when drawing. This is most useful when hardness is near 1.0.
-7. **"Update selection only" checkbox**:  When checked, the clone stamp tool will only make changes within [selected](#selection-tools) content.
-8. **Sampling source point marker**:  Shows the area where image content will be copied from.
-9. This example shows how image content gets copied from the sample area to the cursor as individual brush strokes.
+2. **Source mode**: Sets if and how the sampling point should move.
+   - **Fixed offset**: The image sampling point stays a fixed difference away from the cursor.
+   - **Dynamic offset**: The image sampling point follows the cursor only while drawing.
+   - **Fixed position**: The image sampling point always stays where it was placed.
+3. **Brush size slider**: Sets the exact brush width.
+4. **Brush opacity slider**: Sets the exact brush opacity, between 0.0 (fully transparent) and 1.0 (fully opaque).
+5. **Brush hardness slider**: Sets the brush edge hardness. At 1.0 brush edges are completely solid, at 0.0 brush edges fade evenly from the center.
+6. **Tablet pen pressure controls**:  These controls are only visible after IntraPaint first detects a connected drawing tablet.  Pen pressure can be connected to any combination of size, opacity, and hardness, to scale those values down as pressure decreases.
+7. **Antialiasing checkbox**:  When checked, extra smoothing will be applied to jagged pixel edges when drawing. This is most useful when hardness is near 1.0.
+8. **"Update selection only" checkbox**:  When checked, the clone stamp tool will only make changes within [selected](#selection-tools) content.
+9. **Sampling source point marker**:  Shows the area where image content will be copied from.
+10. This example shows how image content gets copied from the sample area to the cursor as individual brush strokes.
 
 ---
 ### ![Color Picker tool icon](./tool_icons/eyedropper_icon.png) Color Picker tool (C)

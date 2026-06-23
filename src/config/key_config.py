@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 TR_ID = 'config.key_config'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 DEFAULT_CONFIG_PATH = f'{DATA_DIR}/key_config.json'
@@ -222,6 +222,7 @@ class KeyConfig(Config, metaclass=Singleton):
     HELP_INDEX_SHORTCUT: str
     IMAGE_TO_LAYERS_SHORTCUT: str
     INVERT_SELECTION_SHORTCUT: str
+    INVERT_SHORTCUT: str
     LAYER_MIRROR_HORIZONTAL_SHORTCUT: str
     LAYER_MIRROR_VERTICAL_SHORTCUT: str
     LAYER_ROTATE_CCW_SHORTCUT: str
@@ -258,6 +259,7 @@ class KeyConfig(Config, metaclass=Singleton):
     RESIZE_CANVAS_SHORTCUT: str
     ROTATE_CCW_KEY: str
     ROTATE_CW_KEY: str
+    SATURATION_SHORTCUT: str
     SAVE_AS_SHORTCUT: str
     SAVE_SHORTCUT: str
     SCALE_IMAGE_SHORTCUT: str

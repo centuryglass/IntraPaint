@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 TR_ID = 'ui.input_fields.pen_style_combo_box'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 LINE_STYLE_SOLID = _tr('Solid')

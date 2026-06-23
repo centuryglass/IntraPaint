@@ -7,8 +7,8 @@ import tempfile
 import uuid
 from typing import Optional, Any, TypeAlias, Callable
 
-# noinspection PyPackageRequirements
 import cv2
+# noinspection PyPackageRequirements
 import numpy as np
 from PIL import Image
 from PySide6.QtCore import QBuffer, QRect, QSize, Qt, QPoint, QFile, QIODevice, QByteArray
@@ -36,33 +36,42 @@ def create_transparent_image(size: QSize) -> QImage:
 
 def image_is_fully_transparent(image: QImage | QPixmap | NpAnyArray) -> bool:
     """Returns whether all pixels in the image are 100% transparent."""
-    if isinstance(image, QPixmap):
-        image = image.toImage()
-    if isinstance(image, QImage):
+    if isinstance(image, (QImage, QPixmap)):
         if not image.hasAlphaChannel():
             return False
+        if isinstance(image, QPixmap):
+            image = image.toImage()
         if image.format() != QImage.Format.Format_ARGB32_Premultiplied:
             image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         image = image_data_as_numpy_8bit(image)
-    return not (image[:, :, 3] > 0).any()
+    return image[:, :, 3].max() == 0
 
 
-def image_is_fully_opaque(image: QImage) -> bool:
+def image_is_fully_opaque(image: QImage | QPixmap | NpAnyArray) -> bool:
     """Returns whether all pixels in the image are 100% opaque."""
-    if isinstance(image, QPixmap):
-        image = image.toImage()
-    if isinstance(image, QImage):
+    if isinstance(image, (QImage, QPixmap)):
         if not image.hasAlphaChannel():
             return True
+        if isinstance(image, QPixmap):
+            image = image.toImage()
         if image.format() != QImage.Format.Format_ARGB32_Premultiplied:
             image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         image = image_data_as_numpy_8bit(image)
-    return not (image[:, :, 3] < 255).any()
+    return image[:, :, 3].min() == 255
 
 
-def image_has_partial_alpha(image: QImage) -> bool:
+def image_has_partial_alpha(image: QImage | QPixmap | NpAnyArray) -> bool:
     """Returns whether the image contains pixels with any opacity other than 0 or 255"""
-    return not image_is_fully_transparent(image) and not image_is_fully_opaque(image)
+    if isinstance(image, (QImage, QPixmap)):
+        if not image.hasAlphaChannel():
+            return False
+        if isinstance(image, QPixmap):
+            image = image.toImage()
+        if image.format() != QImage.Format.Format_ARGB32_Premultiplied:
+            image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        image = image_data_as_numpy_8bit(image)
+    image_alpha = image[:, :, 3]
+    return image_alpha.max() > 0 and image_alpha.min() < 255
 
 
 def qimage_from_base64(image_str: str) -> QImage:
@@ -107,7 +116,7 @@ def image_to_base64(image: QImage | Image.Image | str, include_prefix=False) -> 
 
 
 def image_content_bounds(image: QImage | np.ndarray, search_bounds: Optional[QRect] = None,
-                         alpha_threshold=0.0) -> QRect:
+                             alpha_threshold=0.0) -> QRect:
     """Finds the smallest rectangle within an image that contains all non-empty pixels in that image.
 
     Parameters
@@ -136,30 +145,20 @@ def image_content_bounds(image: QImage | np.ndarray, search_bounds: Optional[QRe
     else:
         x_min = 0
         y_min = 0
-        y_max = np_image.shape[0]
-        x_max = np_image.shape[1]
-    content_rows = np.any(np_image[:, :, 3] > alpha_threshold, axis=1)
-    if not np.any(content_rows):
+
+    # If alpha_threshold is 0.0, we can use the alpha channel directly as a binary mask. Otherwise, create a new mask
+    # from the comparison:
+    if alpha_threshold != 0.0:
+        binary_mask = (np_image[:, :, 3] > alpha_threshold)
+    else:
+        binary_mask = np_image[:, :, 3]
+    coords = cv2.findNonZero(binary_mask)
+
+    if coords is None:
         return QRect()
-    content_columns = np.any(np_image[:, :, 3] > alpha_threshold, axis=0)
-    min_content_row = y_min + np.argmax(content_rows)
-    max_content_row = y_max - np.argmax(np.flip(content_rows)) - 1
-    min_content_column = x_min + np.argmax(content_columns)
-    max_content_column = x_max - np.argmax(np.flip(content_columns)) - 1
-    if search_bounds is None:
-        search_bounds = QRect(0, 0, np_image.shape[1], np_image.shape[0])
-    left = int(min_content_column)
-    top = int(min_content_row)
-    width = max_content_column - min_content_column + 1
-    height = max_content_row - min_content_row + 1
-    logger.debug(f'image_content_bounds: searched {search_bounds.width()}x{search_bounds.height()} region at '
-                 f'({search_bounds.x()},{search_bounds.y()}) in a {np_image.shape[1]}x{np_image.shape[0]} image, found '
-                 f'content bounds {width}x{height} at ({left},{top})')
-    if width <= 0 or height <= 0:
-        return QRect()
-    bounds = QRect(left, top, width, height)
-    assert search_bounds.contains(bounds)
-    return bounds
+
+    x, y, w, h = cv2.boundingRect(coords)
+    return QRect(x_min + x, y_min + y, w, h)
 
 
 def crop_to_content(image: QImage) -> QImage:
@@ -186,145 +185,50 @@ TRANSPARENCY_PATTERN_BACKGROUND_DIM = 640
 TRANSPARENCY_PATTERN_TILE_DIM = 16
 
 
-def tile_pattern_fill(pixmap: QPixmap,
+def tile_pattern_fill(painter: QPainter,
+                      bounds: QRect,
                       tile_size: int,
                       tile_color_1: QColor | Qt.GlobalColor,
                       tile_color_2: QColor | Qt.GlobalColor) -> None:
-    """Draws an alternating tile pattern onto a QPixmap."""
+    """Draws an alternating tile pattern onto a painter."""
     fill_pixmap_size = tile_size * 2
     fill_pixmap = QPixmap(QSize(fill_pixmap_size, fill_pixmap_size))
     fill_pixmap.fill(tile_color_1)
-    painter = QPainter(fill_pixmap)
+    tile_painter = QPainter(fill_pixmap)
     for x in range(tile_size, fill_pixmap_size + tile_size, tile_size):
         for y in range(tile_size, fill_pixmap_size + tile_size, tile_size):
             if (x % (tile_size * 2)) == (y % (tile_size * 2)):
                 continue
-            painter.fillRect(x - tile_size, y - tile_size, tile_size, tile_size, tile_color_2)
-    painter.end()
-    painter = QPainter(pixmap)
-    painter.drawTiledPixmap(0, 0, pixmap.width(), pixmap.height(), fill_pixmap)
-    painter.end()
+            tile_painter.fillRect(x - tile_size, y - tile_size, tile_size, tile_size, tile_color_2)
+    tile_painter.end()
+    painter.drawTiledPixmap(bounds, fill_pixmap)
 
 
 def get_transparency_tile_pixmap(size: Optional[QSize] = None) -> QPixmap:
     """Returns a tiling pixmap used to represent transparency."""
+    initial_size = size
+    min_tile_size = TRANSPARENCY_PATTERN_TILE_DIM * 2
     if size is None:
         size = QSize(TRANSPARENCY_PATTERN_BACKGROUND_DIM, TRANSPARENCY_PATTERN_BACKGROUND_DIM)
+        initial_size = size
+    elif size.width() < min_tile_size or size.height() < min_tile_size:
+        width = max(min_tile_size, size.width())
+        height = max(min_tile_size, size.height())
+        size = QSize(width, height)
     transparency_pixmap = QPixmap(size)
-    tile_pattern_fill(transparency_pixmap, TRANSPARENCY_PATTERN_TILE_DIM, Qt.GlobalColor.lightGray,
+    painter = QPainter(transparency_pixmap)
+    tile_pattern_fill(painter, transparency_pixmap.rect(), TRANSPARENCY_PATTERN_TILE_DIM, Qt.GlobalColor.lightGray,
                       Qt.GlobalColor.darkGray)
+    painter.end()
+    if initial_size != size:
+        return transparency_pixmap.scaled(initial_size)
     return transparency_pixmap
-
-
-def flood_fill(image: QImage, pos: QPoint, color: QColor, threshold: float, in_place: bool = False) -> Optional[QImage]:
-    """Returns a mask image marking all areas of similar color directly connected to a point in an image.
-
-     Parameters
-     ----------
-         image: QImage
-             Source image, in format Format_ARGB32_Premultiplied.
-         pos: QPoint
-             Seed point for the fill operation.
-         color: QColor
-             Color used to draw filled pixels in the final mask image.
-         threshold: float
-             Maximum color difference to ignore when determining which pixels to fill.
-         in_place: bool, default=False
-             If True, modify the image in-place and do not return a mask.
-     Returns
-     -------
-         mask: Optional[QImage]
-             Mask image marking the area to be filled, returned only if in_place=False. The mask image will be the same
-             size as the source image. filled pixels will be set to the color parameter, while unfilled pixels will be
-             fully transparent.
-     """
-    un_multiplied_image = image.convertToFormat(QImage.Format.Format_ARGB32)
-    np_image = image_data_as_numpy_8bit(un_multiplied_image)
-    seed_color = np.array(np_image[pos.y(), pos.x(), :], dtype=np_image.dtype)
-
-    h, w = np_image.shape[:2]
-    mask = np.zeros((h + 2, w + 2), dtype=np.uint8)
-
-    # Create a 4-channel difference image for comparison
-    diff_image = np.zeros_like(np_image)
-    for i in range(4):  # Include alpha channel
-        diff_image[:, :, i] = np.abs(np_image[:, :, i] - seed_color[i])
-
-    # Maximum difference across all channels
-    max_diff = np.max(diff_image, axis=2)
-
-    # Create initial mask of pixels within threshold
-    within_threshold = max_diff <= threshold
-
-    # Perform flood fill to find connected components
-    seed_mask = mask.copy()
-    flags = 4  # 4-connected
-    cv2.floodFill(
-        within_threshold.astype(np.uint8),
-        seed_mask,
-        (pos.x(), pos.y()),
-        1,
-        loDiff=0,
-        upDiff=0,
-        flags=flags
-    )
-
-    # Extract the filled region (removing the border)
-    filled_mask = seed_mask[1:-1, 1:-1] == 1
-
-    if not in_place:
-        # Create new mask image
-        result = QImage(w, h, QImage.Format.Format_ARGB32)
-        result.fill(Qt.GlobalColor.transparent)
-        mask_data = image_data_as_numpy_8bit(result)
-
-        # Set color for filled pixels
-        mask_data[filled_mask] = [
-            color.blue(),  # Note: QImage stores in BGRA format
-            color.green(),
-            color.red(),
-            color.alpha()
-        ]
-
-        return result
-    else:
-        # Modify original image directly
-        np_image[filled_mask] = [
-            color.blue(),
-            color.green(),
-            color.red(),
-            color.alpha()
-        ]
-        return None
-
-
-def color_fill(image: QImage, color: QColor, threshold: float) -> QImage:
-    """Return an image mask marking all pixels where the color value matches a given color within a threshold range."""
-    un_multiplied_image = image.convertToFormat(QImage.Format.Format_ARGB32)
-    np_image = image_data_as_numpy_8bit(un_multiplied_image)
-    color = [color.blue(), color.green(), color.red(), color.alpha()]
-    np_color = np.array(color, dtype=np_image.dtype)
-
-    # Create a 4-channel difference image for comparison
-    diff_image = np.zeros_like(np_image)
-    for i in range(4):  # Include alpha channel
-        diff_image[:, :, i] = np.abs(np_image[:, :, i] - np_color[i])
-
-    # Maximum difference across all channels
-    max_diff = np.max(diff_image, axis=2)
-
-    # Create and return mask of pixels within threshold
-    within_threshold = max_diff <= threshold
-    mask_image = create_transparent_image(image.size())
-    np_mask_image = image_data_as_numpy_8bit(mask_image)
-    np_mask_image[within_threshold, 3] = 255
-    return mask_image
 
 
 def image_data_as_numpy_8bit(image: QImage) -> NpAnyArray:
     """Returns a numpy array interface for a QImage's internal data buffer."""
     assert image.format() in (QImage.Format.Format_ARGB32_Premultiplied, QImage.Format.Format_ARGB32), \
-        f'Image must be pre-converted to ARGB32_premultiplied, format was {image.format()}'
+        f'Image must be pre-converted to ARGB32 or ARGB32_premultiplied, format was {image.format()}'
     image_ptr = image.bits()
     if image_ptr is None:
         raise ValueError('Invalid image parameter')
@@ -456,3 +360,20 @@ def numpy_source_over_composition(source: NpUInt8Array, destination: NpUInt8Arra
 
     # apply source alpha across the image:
     destination[~alpha_unchanged, 3] = source[~alpha_unchanged, 3]
+
+
+def np_composite_with_mask(source: NpUInt8Array, destination: NpUInt8Array, mask: NpUInt8Array) -> None:
+    """ Performs an image composition operation on two premultiplied ARGB images of equal size, writing
+    changes directly to the destination image, and using a mask of equal size to further restrict compositing based on
+    the mask alpha channel."""
+    alpha_mask = mask[:, :, 3] / 255.0
+
+    # Where the mask is 100% opaque, the source completely overrides the destination:
+    full_alpha = alpha_mask[:, :] == 1.0
+    destination[full_alpha, :] = source[full_alpha, :]
+
+    # Where the mask has partial alpha, fade between source and destination based on mask alpha level:
+    partial_alpha = (alpha_mask[:, :] > 0) & (~full_alpha)
+    if np.any(partial_alpha):
+        destination[partial_alpha, :] = (source[partial_alpha, :] * alpha_mask[partial_alpha, None]
+                                         + destination[partial_alpha, :] * (1 - alpha_mask[partial_alpha, None]))

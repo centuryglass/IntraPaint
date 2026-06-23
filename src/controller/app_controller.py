@@ -67,8 +67,10 @@ from src.controller.tool_controller import ToolController
 from src.hotkey_filter import HotkeyFilter
 from src.image.filter.blur import BlurFilter
 from src.image.filter.brightness_contrast import BrightnessContrastFilter
+from src.image.filter.invert import InvertFilter
 from src.image.filter.posterize import PosterizeFilter
 from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
+from src.image.filter.saturation import SaturationFilter
 from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
@@ -126,10 +128,13 @@ logger = logging.getLogger(__name__)
 TR_ID = 'controller.app_controller'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
+
+APP_NAME = 'IntraPaint'
+APP_VERSION = 'v1.2.0'
 
 TOOL_PANEL_LAYER_TAB = _tr('Layers')
 TOOL_PANEL_COLOR_TAB = _tr('Color')
@@ -171,9 +176,7 @@ NEW_IMAGE_CONFIRMATION_TITLE = _tr('Create new image?')
 NEW_IMAGE_CONFIRMATION_MESSAGE = _tr('This will discard all unsaved changes.')
 SAVE_ERROR_TITLE = _tr('Save failed')
 LOAD_ERROR_TITLE = _tr('Open failed')
-SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE = _tr('Saving as "{file_path}" failed due to an unknown error, please open a new issue'
-                                       ' on the IntraPaint GitHub page, and let me know what file format you tried '
-                                       'and any other details that might be relevant. Meanwhile, try saving in a'
+SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE = _tr('Saving as "{file_path}" failed due to an unknown error, try saving in a'
                                        ' different format or to a different disk.')
 SAVE_ERROR_MESSAGE_INVALID_EXTENSION = _tr('Saving files with the  "{extension}" extension is not supported, try again'
                                            ' with a supported image file format.')
@@ -242,6 +245,9 @@ class AppController(MenuBuilder):
     def __init__(self, args: Namespace) -> None:
         super().__init__()
         app = QApplication.instance() or QApplication(sys.argv)
+        app.setApplicationName(APP_NAME)
+        app.setApplicationDisplayName(APP_NAME)
+        app.setApplicationVersion(APP_VERSION)
         config = AppConfig()
         cache = Cache()
         cache.apply_args(args)
@@ -320,7 +326,9 @@ class AppController(MenuBuilder):
                              BrightnessContrastFilter,
                              BlurFilter,
                              SharpenFilter,
-                             PosterizeFilter):
+                             PosterizeFilter,
+                             SaturationFilter,
+                             InvertFilter):
             image_filter = filter_class(self._image_stack)
             filter_class_names.append(image_filter.get_name())
 
@@ -418,6 +426,7 @@ class AppController(MenuBuilder):
         # Add utility widgets to the tool panel:
         self._tool_panel_navigation_panel = NavigationWindow(self._image_stack, self._image_viewer,
                                                              include_zoom_controls=False, use_keybindings=False)
+        self._tool_panel_navigation_panel.mouse_navigation_enabled = False
         self._tool_panel.add_utility_widget_tab(LayerPanel(self._image_stack), TOOL_PANEL_LAYER_TAB,
                                                 QIcon(ICON_PATH_LAYER_TAB))
         self._tool_panel_color_picker = ColorControlPanel(disable_extended_layouts=True)
@@ -994,6 +1003,7 @@ class AppController(MenuBuilder):
                 # try and load metadata:
                 if image_info is not None:
                     if METADATA_COMMENT_KEY in image_info and METADATA_PARAMETER_KEY not in image_info:
+                        # noinspection PyTypeChecker
                         image_info[METADATA_PARAMETER_KEY] = image_info[METADATA_COMMENT_KEY]
                     self._metadata = image_info
                 if exif is not None:

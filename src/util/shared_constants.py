@@ -1,5 +1,6 @@
 """Assorted constants required in multiple areas."""
 import os.path
+from typing import Optional
 
 from PIL import Image
 from PySide6.QtWidgets import QApplication
@@ -9,9 +10,9 @@ from platformdirs import user_data_dir, user_log_dir
 TR_ID = 'util.shared_constants'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -25,6 +26,8 @@ for app_dir in [DATA_DIR, LOG_DIR]:
 # Numeric:
 INT_MIN = -2147483647
 INT_MAX = 2147483647
+# It's a pretty insignificant micro-optimization to replace "x / 255" with "x * INV_255", but why not?
+INV_255 = 1 / 255
 # For when zero values are best avoided due to division-by-zero errors and the like:
 MIN_NONZERO = 0.001
 # Not actually hard limits, just reasonable extremes guaranteed to be within hard limits:
@@ -95,6 +98,9 @@ UPSCALE_OPTION_NONE = _tr('None')
 
 # Argument used to disable or alter certain UI elements for better use in timelapse footage:
 TIMELAPSE_MODE_FLAG = '--timelapse_mode'
+
+# Environment variable setting whether debug cursors are loaded:
+DEBUG_CURSOR_ENV_VAR = 'INTRAPAINT_DEBUG_CURSORS'
 
 PIL_SCALING_MODES = {
     _tr('Bilinear'): Image.Resampling.BILINEAR,

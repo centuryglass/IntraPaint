@@ -3,9 +3,7 @@ from typing import Optional
 
 from PySide6.QtCore import Qt, QRectF, QPoint, QRect
 from PySide6.QtGui import QPainter, QPainterPath, QColor
-from PySide6.QtWidgets import QWidget, QGraphicsItem, QGraphicsScene, QStyleOptionGraphicsItem
-
-from src.ui.widget.image_graphics_view import ImageGraphicsView
+from PySide6.QtWidgets import QWidget, QGraphicsItem, QGraphicsScene, QStyleOptionGraphicsItem, QGraphicsView
 
 
 class Border(QGraphicsItem):
@@ -16,7 +14,7 @@ class Border(QGraphicsItem):
 
     def __init__(self,
                  scene: QGraphicsScene,
-                 view: ImageGraphicsView,
+                 view: QGraphicsView,
                  parent: Optional[QGraphicsItem] = None):
         super().__init__(parent)
         self._rect = QRectF()

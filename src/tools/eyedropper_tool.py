@@ -3,7 +3,7 @@ from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QIcon, QCursor, QColor, QMouseEvent
-from PySide6.QtWidgets import QWidget, QColorDialog, QApplication
+from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
@@ -18,9 +18,9 @@ from src.util.visual.text_drawing_utils import left_button_hint_text
 TR_ID = 'tools.eyedropper_tool'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 ICON_PATH_EYEDROPPER_TOOL = f'{PROJECT_DIR}/resources/icons/tools/eyedropper_icon.svg'
@@ -39,9 +39,10 @@ class EyedropperTool(BaseTool):
         super().__init__(KeyConfig.EYEDROPPER_TOOL_KEY, EYEDROPPER_LABEL, EYEDROPPER_TOOLTIP,
                          QIcon(ICON_PATH_EYEDROPPER_TOOL))
         self._image_stack = image_stack
-        self._control_panel: Optional[QColorDialog] = None
-        cursor_icon = QIcon(CURSOR_PATH_EYEDROPPER_TOOL)
-        self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE), 0, CURSOR_SIZE)
+        self._control_panel: Optional[ColorControlPanel] = None
+        cursor_icon = self.load_cursor_icon(CURSOR_PATH_EYEDROPPER_TOOL)
+        cursor_pixmap = cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE)
+        self.cursor = QCursor(cursor_pixmap, 0, round(cursor_pixmap.height() / cursor_pixmap.devicePixelRatio()))
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

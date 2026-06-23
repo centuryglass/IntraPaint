@@ -82,6 +82,7 @@ class UltimateUpscaleNode(ComfyNode):
     # Output indexes:
     IDX_IMAGE = 0
 
+    # noinspection PyTypeChecker
     def __init__(self,
                  core_inputs: UltimateUpscaleCoreInputs, use_upscaler=True,
                  seam_fix_settings: Optional[SeamFixInputs] = None) -> None:

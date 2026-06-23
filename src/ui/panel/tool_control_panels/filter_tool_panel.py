@@ -19,9 +19,9 @@ from src.util.shared_constants import ICON_SIZE
 TR_ID = 'ui.panel.tool_control_panels.filter_tool_panel'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 LABEL_TEXT_FILTER_TYPE = _tr('Filter:')

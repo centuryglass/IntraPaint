@@ -19,12 +19,13 @@ class AnimatedDashItem(QGraphicsObject):
 
     def __init__(self) -> None:
         super().__init__()
-        self._animated = AppConfig().get(AppConfig.ANIMATE_OUTLINES)
+        self._animated = AppConfig().get(AppConfig.ANIMATE_OUTLINES_AND_PREVIEWS)
 
         def _set_anim(should_animate: bool) -> None:
             self.animated = should_animate
-        AppConfig().connect(self, AppConfig.ANIMATE_OUTLINES, _set_anim)
+        AppConfig().connect(self, AppConfig.ANIMATE_OUTLINES_AND_PREVIEWS, _set_anim)
         self._dash_offset = 0
+        # noinspection PyTypeChecker
         self._animation = QPropertyAnimation(self, b"dash_offset")
         self._animation.setLoopCount(-1)
         self._animation.setStartValue(0)
@@ -48,6 +49,7 @@ class AnimatedDashItem(QGraphicsObject):
         self._dash_offset = offset
         self.update()
 
+    # noinspection PyTypeChecker
     dash_offset = Property(int, dash_offset_getter, dash_offset_setter)
 
     def get_pen(self) -> QPen:

@@ -5,7 +5,7 @@ from typing import Optional
 import cv2
 import numpy as np
 from PIL import Image
-from PySide6.QtCore import QRect, QPoint, QSize, Signal, QPointF
+from PySide6.QtCore import QRect, QPoint, QSize, Signal, QPointF, SignalInstance
 from PySide6.QtGui import QImage, QPolygonF, QPainter, QColor
 from PySide6.QtWidgets import QApplication
 
@@ -20,9 +20,9 @@ from src.util.visual.pil_image_utils import qimage_to_pil_image
 TR_ID = 'image.layers.selection_layer'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class SelectionLayer(ImageLayer):
 
     selection_cleared = Signal()
 
-    def __init__(self, size: QSize, generation_window_signal: Signal) -> None:
+    def __init__(self, size: QSize, generation_window_signal: SignalInstance) -> None:
         """
         Initializes a new selection layer.
         """
@@ -157,7 +157,7 @@ class SelectionLayer(ImageLayer):
             adjusted_mask = masked
         else:
             kernel_size = abs(num_pixels * 3)
-            kernel = np.ones((kernel_size, kernel_size), np.uint8)
+            kernel: NpAnyArray = np.ones((kernel_size, kernel_size), np.uint8)
             if num_pixels > 0:
                 adjusted_mask = cv2.dilate(mask_uint8, kernel, iterations=1)
             else:
@@ -183,20 +183,20 @@ class SelectionLayer(ImageLayer):
         """Gets the generation area mask content as a PIL image mask"""
         return qimage_to_pil_image(self.mask_image)
 
-    def _handle_content_change(self, image: QImage, last_image: QImage,
+    def _handle_content_change(self, image: QImage, last_bounds_content: QImage,
                                change_bounds: Optional[QRect] = None) -> None:
         """When the image updates, ensure that it meets requirements, and recalculate bounds.
 
         Parameters:
             image: QImage
                 The new image being applied, which this method may directly change.
-            last_image: QImage
+            last_bounds_content: QImage
                 Previous image state, not needed in this implementation.
             change_bounds: Optional[QRect] = None
                 If not None, this indicates the area (in local coordinates) within the image where the content has
                 changed.
         """
-        super()._handle_content_change(image, last_image, change_bounds)
+        super()._handle_content_change(image, last_bounds_content, change_bounds)
         # Enforce fixed colors, alpha thresholds:
         if image.size().isEmpty():
             return
@@ -336,8 +336,10 @@ class SelectionLayer(ImageLayer):
             right += d_right
         else:
             target_height = int(width // image_ratio)
-            height_to_add = target_height - height
-            assert height_to_add >= 0
+            if target_height < height:
+                logger.warning(f'Target height < height! old size={width}x{height}, target_height={target_height},'
+                               f' image_ratio={image_ratio}, bounds_ratio={bounds_ratio}')
+            height_to_add = max(target_height - height, 0)
             d_top = min(top - area_top, height_to_add // 2)
             height_to_add -= d_top
             d_bottom = min(area_bottom - bottom, height_to_add)

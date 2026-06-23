@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Optional, TypeAlias
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, SignalInstance
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QListWidget, QListWidgetItem, QLabel, QPushButton, \
     QVBoxLayout, QApplication
@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 TR_ID = 'ui.window.prompt_style_window'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 STYLE_TITLE = _tr('Saved Prompt Styles')
@@ -107,6 +107,7 @@ class PromptStyleWindow(QDialog):
             self._save_button: Optional[QPushButton] = QPushButton()
             self._save_button.setEnabled(False)
             self._save_button.setText(SAVE_BUTTON_LABEL)
+            assert isinstance(self._save_button.clicked, SignalInstance)
             self._save_button.clicked.connect(lambda: self.should_save_changes.emit(self._style_options))
             button_layout.addWidget(self._save_button, stretch=1)
         else:

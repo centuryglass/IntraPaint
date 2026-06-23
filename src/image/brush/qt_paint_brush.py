@@ -17,6 +17,7 @@ from src.util.visual.image_utils import create_transparent_image, image_data_as_
 
 PAINT_BUFFER_DELAY_MS = 50
 AVG_COUNT = 20
+BUFFER_BASE_MARGINS = 256
 logger = logging.getLogger(__name__)
 
 
@@ -41,6 +42,7 @@ class QtPaintBrush(LayerBrush):
         self._brush_stroke_buffer = QImage()
         self._prev_image_buffer = QImage()
         self._paint_buffer = QImage()
+        self._image_buffer_bounds = QRect()
         self._pattern_brush: Optional[QBrush] = None
         self._pressure_size = True
         self._pressure_opacity = False
@@ -111,20 +113,31 @@ class QtPaintBrush(LayerBrush):
         if last_layer is not None:
             last_layer.size_changed.disconnect(self._layer_size_change_slot)
         super().connect_to_layer(new_layer)
+        self._image_buffer_bounds = QRect()
         if new_layer is not None:
-            self._brush_stroke_buffer = create_transparent_image(new_layer.size)
-            self._paint_buffer = create_transparent_image(new_layer.size)
+            layer_size = new_layer.size
+            self._brush_stroke_buffer = QImage(layer_size, QImage.Format.Format_ARGB32_Premultiplied)
+            self._paint_buffer = QImage(layer_size, QImage.Format.Format_ARGB32_Premultiplied)
+            self._prev_image_buffer = QImage(layer_size, QImage.Format.Format_ARGB32_Premultiplied)
             new_layer.size_changed.connect(self._layer_size_change_slot)
         else:
             self._brush_stroke_buffer = QImage()
             self._paint_buffer = QImage()
+            self._prev_image_buffer = QImage()
+        if self.drawing:
+            self._cancel_stroke()
 
     def _layer_size_change_slot(self, layer: ImageLayer, size: QSize) -> None:
         if layer != self.layer:
             layer.size_changed.disconnect(self._layer_size_change_slot)
             return
-        self._brush_stroke_buffer = create_transparent_image(size)
-        self._paint_buffer = create_transparent_image(size)
+        layer_size = size
+        self._brush_stroke_buffer = QImage(layer_size, QImage.Format.Format_ARGB32_Premultiplied)
+        self._paint_buffer = QImage(layer_size, QImage.Format.Format_ARGB32_Premultiplied)
+        self._prev_image_buffer = QImage(layer_size, QImage.Format.Format_ARGB32_Premultiplied)
+        self._image_buffer_bounds = QRect()
+        if self.drawing:
+            self._cancel_stroke()
 
     def start_stroke(self) -> None:
         self._change_bounds = QRectF()
@@ -145,8 +158,14 @@ class QtPaintBrush(LayerBrush):
         self._last_sizes.clear()
         self._last_opacity.clear()
         self._last_hardness.clear()
-        if not self._brush_stroke_buffer.isNull():
-            self._brush_stroke_buffer.fill(Qt.GlobalColor.transparent)
+        self._change_bounds = QRectF()
+        self._image_buffer_bounds = QRect()
+
+    def _cancel_stroke(self) -> None:
+        """Cancels an in-progress brush stroke, ensuring we don't enter into an error state if layer changes happen
+           mid-stroke."""
+        self._input_buffer.clear()
+        self.end_stroke()
 
     @staticmethod
     def paint_segment(painter: QPainter, size: int, opacity: float, hardness: float, color: QColor, change_pt: QPointF,
@@ -179,10 +198,71 @@ class QtPaintBrush(LayerBrush):
                 painter.drawLine(last_pt, change_pt)
         painter.restore()
 
-    @staticmethod
-    def _input_event_paint_segment(painter: QPainter, input_event: 'QtPaintBrush._InputEvent') -> None:
+    def _input_event_paint_segment(self, painter: QPainter, input_event: 'QtPaintBrush._InputEvent') -> None:
         QtPaintBrush.paint_segment(painter, round(input_event.size), input_event.opacity, input_event.hardness,
                                    input_event.color, input_event.change_pt, input_event.last_pt)
+
+    def _update_image_buffer_bounds(self) -> None:
+        # To avoid excessive image copying, refresh buffer contents as change bounds adjust.
+        assert self.layer is not None
+        layer_size = self.layer.size
+        if self._change_bounds.isNull() or layer_size.isNull():
+            self._image_buffer_bounds = QRect()
+            return
+        if self._image_buffer_bounds.contains(self._change_bounds.toAlignedRect()):
+            return
+
+        layer_bounds = QRect(0, 0, layer_size.width(), layer_size.height())
+        new_buffer_bounds = self._change_bounds.adjusted(-BUFFER_BASE_MARGINS, -BUFFER_BASE_MARGINS,
+                                                         BUFFER_BASE_MARGINS, BUFFER_BASE_MARGINS
+                                                         ).intersected(layer_bounds).toAlignedRect()
+        if not self._image_buffer_bounds.isNull():
+            if self._image_buffer_bounds.contains(new_buffer_bounds):
+                return
+            new_buffer_bounds = new_buffer_bounds.united(self._image_buffer_bounds)
+        np_stroke_buffer = numpy_bounds_index(image_data_as_numpy_8bit(self._brush_stroke_buffer), new_buffer_bounds)
+        np_paint_buffer = numpy_bounds_index(image_data_as_numpy_8bit(self._paint_buffer), new_buffer_bounds)
+        np_prev_image_buffer = numpy_bounds_index(image_data_as_numpy_8bit(self._prev_image_buffer), new_buffer_bounds)
+        if not self._image_buffer_bounds.isNull():
+            # Buffers are expanding, update edge content:
+            old_buffer_local_bounds = self._image_buffer_bounds.translated(-new_buffer_bounds.topLeft())
+
+            old_bottom_local = old_buffer_local_bounds.y() + old_buffer_local_bounds.height()
+            old_right_local = old_buffer_local_bounds.x() + old_buffer_local_bounds.width()
+            top_edge = QRect(0, 0, new_buffer_bounds.width(), old_buffer_local_bounds.y())
+            bottom_edge = QRect(0, old_bottom_local,
+                                new_buffer_bounds.width(), new_buffer_bounds.height() - old_bottom_local)
+            left_right_y = top_edge.y() + top_edge.height()
+            left_right_height = bottom_edge.y() - left_right_y
+            left_edge = QRect(0, left_right_y, old_buffer_local_bounds.x(), left_right_height)
+            right_edge = QRect(old_right_local, left_right_y, new_buffer_bounds.width() - old_right_local,
+                               left_right_height)
+            for draw_buffer in (np_stroke_buffer, np_paint_buffer):
+                for edge_rect in (top_edge, bottom_edge, left_edge, right_edge):
+                    if edge_rect.isEmpty():
+                        continue
+                    buffer_edge = numpy_bounds_index(draw_buffer, edge_rect)
+                    buffer_edge[:, :, :] = 0
+            assert self.layer is not None
+            with self.layer.borrow_image(new_buffer_bounds) as layer_image:
+                np_image = image_data_as_numpy_8bit(layer_image)
+                np_image = numpy_bounds_index(np_image, new_buffer_bounds)
+                for edge_rect in (top_edge, bottom_edge, left_edge, right_edge):
+                    if edge_rect.isEmpty():
+                        continue
+                    image_edge = numpy_bounds_index(np_image, edge_rect)
+                    buffer_edge = numpy_bounds_index(np_prev_image_buffer, edge_rect)
+                    buffer_edge[:, :, :] = image_edge[:, :, :]
+        else:
+            # Initializing buffers for the first time this brush stroke:
+            for draw_buffer in (np_stroke_buffer, np_paint_buffer):
+                draw_buffer[:, :, :] = 0
+            assert self.layer is not None
+            with self.layer.borrow_image(new_buffer_bounds) as layer_image:
+                np_image = image_data_as_numpy_8bit(layer_image)
+                np_image = numpy_bounds_index(np_image, new_buffer_bounds)
+                np_prev_image_buffer[:, :, :] = np_image[:, :, :]
+        self._image_buffer_bounds = new_buffer_bounds
 
     def _draw_input_event(self,
                           input_event: 'QtPaintBrush._InputEvent',
@@ -308,8 +388,9 @@ class QtPaintBrush(LayerBrush):
             assert isinstance(layer_image, QImage)
             bounds = layer.bounds
             assert layer_image.size() == bounds.size(), (f'Size mismatch, layer bounds are {bounds} but'
-                                                               f' image is size {layer_image.size()}')
+                                                         f' image is size {layer_image.size()}')
             self._change_bounds = self._change_bounds.united(change_bounds)
+            self._update_image_buffer_bounds()
             img_painter = QPainter(layer_image)
             assert isinstance(layer_image, QImage)
             np_mask = None if self.input_mask is None else image_data_as_numpy_8bit(self.input_mask)

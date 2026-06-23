@@ -21,7 +21,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.ui.graphics_items.outline import Outline
-from src.ui.graphics_items.polygon_outline import PolygonOutline
+from src.ui.graphics_items.selection_outline import SelectionOutline
 from src.ui.graphics_items.toast_message import ToastMessageItem
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.modal.modal_utils import open_image_file, SAVE_IMAGE_MODE, show_warning_dialog
@@ -41,9 +41,9 @@ from src.util.visual.text_drawing_utils import max_font_size, get_key_display_st
 TR_ID = 'ui.generated_image_selector'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 CHANGE_ZOOM_CHECKBOX_LABEL = _tr('Zoom to changes')
@@ -141,7 +141,7 @@ class GeneratedImageSelector(QWidget):
         self._close_selector = close_selector
         self._options: list[_ImageOption] = []
         self._outlines: list[Outline] = []
-        self._selections: list[PolygonOutline] = []
+        self._selections: list[SelectionOutline] = []
         self._loading_image = QImage()
         self._zoomed_in = False
         self._zoom_to_changes = AppConfig().get(AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED)
@@ -263,8 +263,9 @@ class GeneratedImageSelector(QWidget):
             assert isinstance(scene_item_list, list)
             while len(scene_item_list) > 0:
                 scene_item = scene_item_list.pop()
-                if hasattr(scene_item, 'animated'):
-                    scene_item.animated = False
+                if isinstance(scene_item, SelectionOutline):
+                    scene_item.animated_outline = False
+                    scene_item.animated_fill = False
                 if scene_item in scene.items():
                     scene.removeItem(scene_item)
 
@@ -325,8 +326,8 @@ class GeneratedImageSelector(QWidget):
         selection_polys = (poly.intersected(selection_crop).translated(-origin.x(), -origin.y())
                            for poly in self._image_stack.selection_layer.outline)
         polys = [QPolygonF(poly) for poly in selection_polys]
-        outline = PolygonOutline(self._view, polys)
-        outline.animated = AppConfig().get(AppConfig.ANIMATE_OUTLINES)
+        outline = SelectionOutline(self._view, polys)
+        outline.show_overlay = False
         outline.setScale(self._image_stack.width / self._image_stack.generation_area.width())
         outline.setVisible(AppConfig().get(AppConfig.SHOW_SELECTIONS_IN_GENERATION_OPTIONS))
         self._selections.append(outline)
@@ -463,7 +464,7 @@ class GeneratedImageSelector(QWidget):
             if (event.button() not in (Qt.MouseButton.LeftButton, Qt.MouseButton.RightButton)
                     or AppStateTracker.app_state() == APP_STATE_LOADING):
                 return False
-            scene_pos = self._view.mapToScene(view_pos).toPoint()
+            scene_pos = self._view.widget_point_to_scene(view_pos).toPoint()
             for i, option in enumerate(self._options):
                 if option.bounds.contains(scene_pos):
                     if event.button() == Qt.MouseButton.LeftButton:
@@ -523,6 +524,8 @@ class GeneratedImageSelector(QWidget):
             show_warning_dialog(None, warning_title, warning_message, AppConfig.WARN_WHEN_LOCK_FORCES_LAYER_CREATE)
         self._image_stack.generation_area = self._generation_area
         self._image_stack.set_generation_area_content(image, layer)
+        if self._image_stack.active_layer != layer:
+            self._image_stack.active_layer = layer
 
     def _select_option_and_close(self, option_index: int) -> None:
         """Insert the selection and close this selector."""
@@ -558,9 +561,8 @@ class GeneratedImageSelector(QWidget):
         self._view.zoom_to_bounds(bounds)
         self._base_option_offset = self._view.offset
         self._base_option_scale = self._view.scene_scale
-        self._view.set_cursor_pos(None)   # Disable cursor tracking when manually adjusting option zoom/offset
-        self._view.scene_scale = self._view.scene_scale + self._option_scale_offset
         self._view.offset = self._base_option_offset + self._option_pos_offset
+        self._view.scale_without_fixed_scene_point(self._view.scene_scale + self._option_scale_offset)
         self._view.scale_changed.connect(self._scale_change_slot)
         self._view.offset_changed.connect(self._offset_change_slot)
         for i, option in enumerate(self._options):

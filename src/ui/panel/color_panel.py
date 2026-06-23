@@ -1,4 +1,4 @@
-"""Rearranges the Qt color dialog into a fixed panel widget."""
+"""Recreates the Qt color dialog as a fixed panel widget."""
 from typing import Optional
 
 from PySide6.QtCore import Qt
@@ -10,7 +10,7 @@ from src.util.visual.display_size import get_window_size
 
 
 class ColorControlPanel(TabbedColorPicker):
-    """Rearranges the Qt color dialog into a fixed panel widget."""
+    """Recreates the Qt color dialog into a fixed panel widget."""
 
     def __init__(self, config_key: Optional[str] = 'last_brush_color', disable_extended_layouts=False) -> None:
         super().__init__()

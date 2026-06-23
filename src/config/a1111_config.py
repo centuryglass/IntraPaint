@@ -1,5 +1,6 @@
 """Provides access to configurable options for the Automatic1111 or Forge Stable Diffusion WebUI."""
 import logging
+from typing import Optional
 
 from PySide6.QtWidgets import QApplication
 
@@ -16,9 +17,9 @@ logger = logging.getLogger(__name__)
 TR_ID = 'config.a1111_config'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 WEB_CONFIG_TYPE_ERROR = _tr(TR_ID, 'key "{key}" had unexpected type {value_type}, value {value}')

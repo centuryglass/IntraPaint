@@ -295,9 +295,10 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
                 assert not transform_image.isNull(), f'loading failed: {transform_image_full_path}'
                 extended_layer_data[TRANSFORM_SRC_TAG] = transform_image
                 matrix_elements = [float(elem) for elem in str(extended_layer.get(TRANSFORM_TAG)).split(',')]
+                # noinspection PyArgumentList
                 transform = QTransform(*matrix_elements)
                 extended_layer_data[TRANSFORM_TAG] = transform
-                extended_layer_data[ATTR_TAG_ALPHA_LOCKED] = extended_layer.get(ATTR_TAG_ALPHA_LOCKED)
+            extended_layer_data[ATTR_TAG_ALPHA_LOCKED] = extended_layer.get(ATTR_TAG_ALPHA_LOCKED)
             extended_data[flattened_image_path] = extended_layer_data
 
     def _parse_common_attributes(layer: Layer, element: Element) -> bool:

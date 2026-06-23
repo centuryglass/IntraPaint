@@ -1,5 +1,6 @@
 """Use the Config module's data sharing capabilities to cache temporary values."""
 from argparse import Namespace
+from typing import Optional
 
 from PySide6.QtCore import QRect, QTimer
 from PySide6.QtWidgets import QWidget, QApplication
@@ -17,9 +18,9 @@ GEOMETRY_CHECK_INTERVAL = 100
 TR_ID = 'config.cache'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 SCALING_OPTION_NONE = _tr('None')
@@ -63,7 +64,8 @@ class Cache(Config, metaclass=Singleton):
            widget geometry has remained stable for 100ms, to avoid cases where bounds are immediately overridden by
            initial placement. """
         try:
-            bounds = QRect(*(int(param) for param in self.get(key).split(',')))
+            x, y, w, h = (int(param) for param in self.get(key).split(','))
+            bounds = QRect(x, y, w, h)
             screen_bounds = get_screen_bounds(default_to_primary=False, alt_test_bounds=bounds)
             if not screen_bounds.isNull():
                 bounds = bounds.intersected(screen_bounds)
@@ -232,3 +234,8 @@ class Cache(Config, metaclass=Singleton):
     WEBUI_SUBSEED: str
     WEBUI_SUBSEED_STRENGTH: str
     WEBUI_TILING: str
+
+    # DYNAMIC PROPERTIES:
+    # Generate with `python /home/anthony/Workspace/ML/IntraPaint/./scripts/dynamic_import_typing.py ./src/config/cache.py`
+
+    CLONE_STAMP_TOOL_SOURCE_MODE: str

@@ -6,7 +6,7 @@ from copy import deepcopy
 from json import JSONDecodeError
 from typing import Optional
 
-from PySide6.QtCore import Qt, QTimer, Signal, QSize
+from PySide6.QtCore import Qt, QTimer, Signal, QSize, SignalInstance
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QCheckBox, QPushButton, QLineEdit, QComboBox, QApplication, QTabWidget, QGridLayout, \
     QLabel, QWidget
@@ -34,9 +34,9 @@ logger = logging.getLogger(__name__)
 TR_ID = 'ui.panel.controlnet_panel'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 # UI/Label text:
@@ -106,9 +106,9 @@ class TabbedControlNetPanel(QTabWidget):
             self._panels.append(panel)
             panel.request_preview.connect(self.request_preview)
 
-    def set_preview(self, preview_image: QImage) -> None:
+    def set_preview(self, preview_image: QImage, index: int = -1) -> None:
         """Shows a preprocessor preview image in the active tab."""
-        active_panel = self._panels[self.currentIndex()]
+        active_panel = self._panels[self.currentIndex() if index < 0 else index]
         active_panel.set_preprocessor_preview(preview_image)
 
     def set_orientation(self, orientation: Qt.Orientation) -> None:
@@ -263,6 +263,7 @@ class ControlNetPanel(BorderedWidget):
         for control in control_types:
             self._control_type_combobox.addItem(control)
         self._control_type_combobox.setCurrentIndex(self._control_type_combobox.findText(DEFAULT_CONTROL_TYPE))
+        assert isinstance(self._control_type_combobox.currentTextChanged, SignalInstance)
         self._control_type_combobox.currentTextChanged.connect(self._load_control_type)
 
         self._preprocessor_combobox = QComboBox(self)
@@ -335,6 +336,11 @@ class ControlNetPanel(BorderedWidget):
         if self._preview_image_widget.image == preview_image:
             return
         self._preview_image_widget.image = preview_image
+        if preview_image.isNull():
+            self._layout.removeWidget(self._preview_image_widget)
+            self._preview_image_widget.setVisible(False)
+        else:
+            self._preview_image_widget.setVisible(True)
         if not skip_layout_update:
             self._build_layout()
 
@@ -346,7 +352,7 @@ class ControlNetPanel(BorderedWidget):
 
     def _build_layout(self) -> None:
         """Builds the panel layout, or updates it when orientation changes."""
-        clear_layout(self._layout)
+        clear_layout(self._layout, hide=True)
 
         for row in range(self._layout.rowCount()):
             self._layout.setRowStretch(row, 0)
@@ -436,6 +442,7 @@ class ControlNetPanel(BorderedWidget):
         for widget, row, column, row_span, column_span in layout_items:
             if widget is not None:
                 self._layout.addWidget(widget, row, column, row_span, column_span)
+                widget.setHidden(False)
 
         self._preview_image_widget.setHidden(self._preview_image_widget.image is None
                                              or self._preview_image_widget.image.isNull())
@@ -537,6 +544,7 @@ class ControlNetPanel(BorderedWidget):
         if preprocessor.name.lower() != PREPROCESSOR_NONE.lower():
             for parameter in preprocessor.parameters:
                 parameter_widget, label = parameter.get_input_widget(True)
+                assert label is not None
                 parameter_widget.valueChanged.connect(lambda _: self._schedule_cache_update())
                 if self._px_perfect_checkbox is not None \
                         and parameter.key == webui_constants.PREPROCESSOR_RES_PARAM_KEY:

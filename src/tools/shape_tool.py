@@ -25,9 +25,9 @@ from src.util.visual.text_drawing_utils import left_button_hint_text, right_butt
 TR_ID = 'tools.shape_tool'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 ICON_PATH_SHAPE_TOOL = f'{PROJECT_DIR}/resources/icons/tools/shape_icon.svg'
@@ -35,6 +35,7 @@ ICON_PATH_SHAPE_TOOL = f'{PROJECT_DIR}/resources/icons/tools/shape_icon.svg'
 SHAPE_TOOL_LABEL = _tr('Draw Shapes')
 SHAPE_TOOL_TOOLTIP = _tr('Create rectangles, ellipses, and other polygons')
 SHAPE_TOOL_CONTROL_HINT = _tr('{left_mouse_icon}, drag: draw shape')
+PREVIEW_OPACITY = 0.7
 
 
 class ShapeTool(BaseTool):
@@ -50,6 +51,7 @@ class ShapeTool(BaseTool):
         self._image_stack = image_stack
         self._control_panel: Optional[ShapeToolPanel] = None
         self._selection_handler = ClickAndDragSelection(scene)
+        self._selection_handler.opacity = PREVIEW_OPACITY
         self._layer: Optional[ImageLayer] = None
         image_stack.active_layer_changed.connect(self._active_layer_change_slot)
         self._active_layer_change_slot(image_stack.active_layer)
@@ -108,7 +110,7 @@ class ShapeTool(BaseTool):
         self._last_color_changed = Cache.SHAPE_TOOL_FILL_COLOR
 
         def _update_last_color(color_str: str) -> None:
-            if self.is_active and QColor.isValidColor(color_str):
+            if QColor.isValidColor(color_str):
                 cache.set(self._last_color_changed, color_str)
         cache.connect(self, Cache.LAST_BRUSH_COLOR, _update_last_color)
 

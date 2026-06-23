@@ -1,7 +1,7 @@
 """Displays the image panel with zoom controls and input hints."""
 from typing import Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, SignalInstance
 from PySide6.QtGui import QResizeEvent, QAction
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QSlider, QPushButton, \
     QSizePolicy, QApplication
@@ -11,14 +11,15 @@ from src.image.layers.image_stack import ImageStack
 from src.ui.image_viewer import ImageViewer
 from src.ui.layout.draggable_divider import DraggableDivider
 from src.ui.layout.draggable_tabs.tab_box import TabBox
+from src.ui.widget.image_graphics_view import MIN_IMAGE_ZOOM, MAX_IMAGE_ZOOM
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.image_panel'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 SCALE_SLIDER_LABEL = _tr('Scale:')
@@ -129,6 +130,7 @@ class ImagePanel(QWidget):
 
             self._scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
             self._scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
+            assert isinstance(self._scale_reset_button.clicked, SignalInstance)
             self._scale_reset_button.clicked.connect(toggle_scale)
             # Zoom slider:
             self._control_layout.addWidget(QLabel(SCALE_SLIDER_LABEL))
@@ -136,12 +138,12 @@ class ImagePanel(QWidget):
             assert image_scale_slider is not None
             self._image_scale_slider = image_scale_slider
             self._control_layout.addWidget(image_scale_slider)
-            image_scale_slider.setRange(1, 4000)
+            image_scale_slider.setRange(round(MIN_IMAGE_ZOOM * 100), round(MAX_IMAGE_ZOOM * 100))
             image_scale_slider.setSingleStep(10)
             image_scale_slider.setValue(int(self._image_viewer.scene_scale * 100))
             image_scale_box = QDoubleSpinBox()
             self._control_layout.addWidget(image_scale_box)
-            image_scale_box.setRange(0.001, 40)
+            image_scale_box.setRange(MIN_IMAGE_ZOOM, MAX_IMAGE_ZOOM)
             image_scale_box.setSingleStep(0.1)
             image_scale_box.setValue(self._image_viewer.scene_scale)
             self._control_layout.addWidget(self._scale_reset_button)

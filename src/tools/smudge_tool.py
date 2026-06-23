@@ -21,9 +21,9 @@ from src.util.visual.text_drawing_utils import left_button_hint_text, right_butt
 TR_ID = 'tools.smudge_tool'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 ICON_PATH_SMUDGE_TOOL = f'{PROJECT_DIR}/resources/icons/tools/smudge_icon.svg'
@@ -40,7 +40,7 @@ class SmudgeTool(BrushTool):  # type: ignore
         brush = SmudgeBrush()
         super().__init__(KeyConfig.SMUDGE_TOOL_KEY, SMUDGE_LABEL, SMUDGE_TOOLTIP, QIcon(ICON_PATH_SMUDGE_TOOL),
                          image_stack, image_viewer, brush)
-        self.set_scaling_icon_cursor(QIcon(CURSOR_PATH_SMUDGE_TOOL))
+        self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_SMUDGE_TOOL))
         self._control_panel = SmudgeToolPanel()
         cache = Cache()
         key_filter = HotkeyFilter.instance()

@@ -121,8 +121,8 @@
         "default": 0.0,
         "range_options": {
             "min": 0.0,
-            "max": 255.0,
-            "step": 10.0
+            "max": 300.0,
+            "step": 5.0
         },
         "saved": true
     },
@@ -613,6 +613,20 @@
         "description": "Smooth out jagged edges.",
         "type": "bool",
         "default": true,
+        "saved": true
+    },
+    "clone_stamp_tool_source_mode": {
+        "label": "Source mode:",
+        "category": "Cache",
+        "subcategory": "Clone Stamp Tool",
+        "description": "Control if and when the source point tracks cursor movement.",
+        "type": "string",
+        "default": "Fixed offset",
+        "options": [
+            "Fixed offset",
+            "Dynamic offset",
+            "Fixed position"
+        ],
         "saved": true
     },
     "shape_tool_mode": {

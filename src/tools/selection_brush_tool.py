@@ -20,9 +20,9 @@ from src.util.visual.text_drawing_utils import left_button_hint_text, right_butt
 TR_ID = 'tools.selection_tool'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 LABEL_TEXT_SELECTION_TOOL = _tr('Selection Brush')
@@ -46,7 +46,7 @@ class SelectionBrushTool(BrushTool):
         self._active = False
         self._drawing = False
         self._cached_size: Optional[int] = None
-        self.set_scaling_icon_cursor(QIcon(CURSOR_PATH_SELECTION_TOOL))
+        self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_SELECTION_TOOL))
 
         # Setup brush, load size from config
         self.brush_color = QColor()

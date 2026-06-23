@@ -1,7 +1,7 @@
 """A control panel for the Stable Diffusion WebUI image generator."""
 from typing import Optional
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, SignalInstance
 from PySide6.QtWidgets import QSizePolicy, QLabel, QPushButton, \
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QComboBox
 
@@ -21,9 +21,9 @@ from src.util.shared_constants import BUTTON_TEXT_GENERATE, EDIT_MODE_INPAINT, E
 TR_ID = 'ui.panel.generators.sd_webui_panel'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 BUTTON_TEXT_INTERROGATE = _tr('Interrogate')
@@ -52,7 +52,6 @@ class StableDiffusionPanel(GeneratorPanel):
 
     interrogate_signal = Signal()
     generate_signal = Signal()
-    model_change_signal = Signal(str)
 
     def __init__(self,
                  show_interrogate_button: bool,
@@ -141,6 +140,7 @@ class StableDiffusionPanel(GeneratorPanel):
             self._interrogate_button = QPushButton()
             self._interrogate_button.setText(BUTTON_TEXT_INTERROGATE)
             self._interrogate_button.setToolTip(BUTTON_TOOLTIP_INTERROGATE)
+            assert isinstance(self._interrogate_button.clicked, SignalInstance)
             self._interrogate_button.clicked.connect(self.interrogate_signal)
         self._generate_button = QPushButton()
         self._generate_button.setText(BUTTON_TEXT_GENERATE)

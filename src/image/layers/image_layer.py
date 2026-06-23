@@ -20,9 +20,9 @@ from src.util.visual.image_utils import image_content_bounds, create_transparent
 TR_ID = 'image.layers.image_layer'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 CROP_LAYER_ERROR_TITLE = _tr('Layer cropping failed')
@@ -158,16 +158,13 @@ class ImageLayer(TransformLayer):
             change_bounds = self.bounds
         if not self.bounds.contains(change_bounds):
             raise ValueError(f'Change bounds {change_bounds} not within layer bounds {self.bounds}')
-        initial_image = self.image
+
+        initial_bounds_content = self._image.copy(change_bounds)
         try:
             yield self._image
         finally:
             self.invalidate_pixmap()
-            self._handle_content_change(self._image, initial_image, change_bounds)
-            if change_bounds is None:
-                change_bounds = self.bounds
-            initial_bounds_content = initial_image if change_bounds == self.bounds \
-                else initial_image.copy(change_bounds)
+            self._handle_content_change(self._image, initial_bounds_content, change_bounds)
             updated_content = self._image.copy(change_bounds)
 
             def _apply_change(content: QImage, bounds: QRect) -> None:
@@ -309,15 +306,17 @@ class ImageLayer(TransformLayer):
             self._alpha_locked = locked
             self.alpha_lock_changed.emit(self, locked)
 
-    def _handle_content_change(self, image: QImage, last_image: QImage, change_bounds: Optional[QRect] = None) -> None:
+    def _handle_content_change(self, image: QImage, last_bounds_content: QImage, change_bounds: Optional[QRect] = None) -> None:
         """Preserve alpha channel if alpha is locked. Child classes should override to handle changes that they need to
          make before sending update signals."""
         if not hasattr(self, 'alpha_locked'):
             return
         # Don't apply the alpha lock on undo, if it was applied initially there should be no need.
         if self.alpha_locked and not UndoStack().undo_in_progress:
-            np_source = image_data_as_numpy_8bit(last_image)
+            np_source = image_data_as_numpy_8bit(last_bounds_content)
             np_dst = image_data_as_numpy_8bit(image)
+            if change_bounds != image.rect():
+                np_dst = numpy_bounds_index(np_dst, change_bounds)
             source_intersect, dst_intersect = numpy_intersect(np_source, np_dst)
             if source_intersect is None or dst_intersect is None:
                 return

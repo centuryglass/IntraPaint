@@ -1,5 +1,5 @@
 """Various utility functions for working with QGraphicsScene and QGraphicsView."""
-from PySide6.QtCore import QPointF, QRectF
+from PySide6.QtCore import QPointF, QRectF, QPoint
 from PySide6.QtGui import QPolygonF
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsView
 
@@ -18,14 +18,18 @@ def map_scene_item_point_to_view_point(local_pt: QPointF, item: QGraphicsItem) -
     """Maps a point from scene item coordinates to view coordinates."""
     scene_pt = item.mapToScene(local_pt)
     view = get_view(item)
-    return QPointF(view.mapFromScene(scene_pt))
+    scene_point = view.mapFromScene(scene_pt)
+    assert isinstance(scene_point, QPoint)
+    return QPointF(scene_point)
 
 
 def map_view_point_to_scene_item_point(view_pt: QPointF, item: QGraphicsItem) -> QPointF:
     """Map a point in view coordinates to the same point in a scene item's local coordinates."""
     view = get_view(item)
     scene_pt = QPointF(view.mapToScene(view_pt.toPoint()))
-    return item.mapFromScene(scene_pt)
+    view_point = item.mapFromScene(scene_pt)
+    assert isinstance(view_point, QPointF)
+    return view_point
 
 
 def get_view_bounds_of_scene_item_rect(local_rect: QRectF, item: QGraphicsItem) -> QRectF:
@@ -55,5 +59,6 @@ def get_scene_bounds_of_scene_item_rect(local_rect: QRectF, item: QGraphicsItem)
     poly = QPolygonF()
     for corner in (item.mapToScene(pt) for pt in (local_rect.topLeft(), local_rect.bottomLeft(),
                                                   local_rect.topRight(), local_rect.bottomRight())):
+        assert isinstance(corner, QPointF)
         poly.append(corner)
     return poly.boundingRect()

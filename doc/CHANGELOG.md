@@ -1,5 +1,52 @@
 # Changelog and release notes
 
+## 1.2.0
+
+June 18 2026
+
+### New features:
+- The Fill tool has been significantly improved, using LAB color space thresholding to better match perceived colors and cython compilation to increase speed.
+- Added "source mode" options to the clone stamp tool to better control how it samples image content and follows the cursor.
+- Added color invert and saturation filters
+- Improve pixel-level precision when editing at high zoom levels, highlighting targeted pixels and fixing sub-pixel offset issues.
+- Increased max zoom level, automatically snappint zoom steps to integer scales
+- Improved rendering of rotated image layers, scaled layers: use antialiasing for rotation and non-integer scaling only.
+
+### Interface and appearance improvements
+- Shape tool preview overlays no longer block image content as much, display in alternate colors and fill styles when appropriate
+- Exclude ControlNet previews from A1111 inpainting image results
+- Correct tiny offset errors in cursors, make minor improvements to cursor designs
+- Fix flickering issues with extra-large cursors
+- Improve appearance of selected content overlays using subtle optional animations
+- Disable panning/zooming the navigation panel
+- Draw line previews from pixel center, not corner
+- Improved appearance of checkerboard transparent image background
+- Image zoom is now multiplicative instead of additive, improving the experience of working at high zoom levels
+- Zooming with the mouse wheel does a better job of keeping the point under the cursor fixed
+
+### Performance improvements
+- Optimized the draw tool to decrease lag on very large layers.
+- Layer stack engine and rendering improvements to decrease lag in complex layer stacks
+- Layer preview renders scaled and batched to prevent slowdowns
+
+### Misc. Bugfixes:
+- Fixed modifier bindings breaking text tool shortcuts like copy/paste
+- Missing MyPaint brushes no longer cause crashes
+- Fixed smudge brush not working correctly when cursor moves down or left
+- Undo now works reliably to undo loading a new image when previous image had multiple layers
+- Block zero-scale layer transformations more comprehensively
+- Fix issues with invisible control image widget blocking ControlNet panel interface
+- "Erase in selection only" no longer affects the selection brush itself
+- Corrected numerous color picker bugs: issues with custom colors, syncing changes between popup and panel, HSV selection alpha values
+- Fixed a bug where image cropping could cause crashes
+- Fixed a rare bug where certain actions caused crashes after locking layer alpha
+- Fixed issues with loading .ora files with layer alpha locks
+- Custom MyPaint brushes now load fully, show selected brush correctly
+
+### Dev:
+- Improved debug tools for cursor rendering and performance analysis
+- Add TIMELAPSE_MODE flag that applies settings convenient for recording timelapse footage, such as disabling animation
+
 ## 1.1.0
 
 Nov. 17 2024

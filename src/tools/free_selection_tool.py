@@ -21,9 +21,9 @@ from src.util.visual.text_drawing_utils import rich_text_key_hint, left_button_h
 TR_ID = 'tools.lasso_selection_tool'
 
 
-def _tr(*args):
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
+    return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
 ICON_PATH_FREE_SELECT_TOOL = f'{PROJECT_DIR}/resources/icons/tools/free_selection_icon.svg'
