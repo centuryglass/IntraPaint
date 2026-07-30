@@ -35,6 +35,8 @@ TEST_GENERATOR_SETUP = _tr('No setup required.')
 class TestGenerator(ImageGenerator):
     """Mock generator for testing and development."""
 
+    __test__ = False  # Prevent pytest from trying to collect this as a test class (its name matches Test*).
+
     def __init__(self, window: MainWindow, image_stack: ImageStack) -> None:
         super().__init__(window, image_stack)
         self._test_image = QImage(f'{PROJECT_DIR}/resources/icons/app_icon.png').convertToFormat(
