@@ -106,8 +106,12 @@ Run it with Python 3.13: the baseline is only valid for the version it was gener
 
 ## Git & releases
 
-- **Hard rule:** changes only reach `master` via PR, immediately before a release. The many side
-  branches (`comfyui`, `sd-windows`, `zoomMode`, `dev`, etc.) are experiments/one-offs — ignore them.
+- **Hard rule:** `integration` is the development branch. Changes only reach it via PR; direct pushes
+  are blocked. Branch from `integration` and target PRs at it.
+- **Hard rule:** `master` is only updated via a PR from `integration`, when creating a new release.
+  Never open a PR from any other branch into `master`.
+- The many other side branches (`comfyui`, `sd-windows`, `zoomMode`, `dev`, etc.) are
+  experiments/one-offs — ignore them.
 - Agents may commit and push to their working branch, open PRs, and create GitHub issues without
   asking first. A bug found during other work gets fixed in the same pass if the fix is trivial, and
   otherwise gets an issue saying what was observed, how to reproduce it, and what's ruled out.

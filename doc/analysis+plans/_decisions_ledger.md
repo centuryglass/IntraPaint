@@ -225,8 +225,10 @@ Format: `[YYYY-MM-DD] Topic — decision. (rationale / where documented)`
 - [2026-08-10] Vendored/symlinked root dirs (`latent-diffusion`, `taming-transformers`,
   `pyspacenav`, `lib`, `colabFiles`) — not app source; don't modify.
 - [2026-09-28] Git — agents may **commit, push, open PRs and create issues without asking** (per
-  maintainer). Changes reach `master` only via PR immediately before a release; side branches are
-  experiments to ignore.
+  maintainer). Side branches are experiments to ignore.
+- [2026-09-28] Branching (issue #69) — `claude_test` renamed to **`integration`**, the development
+  branch; changes reach it only via PR. `master` is updated only by a PR from `integration`, when
+  creating a release. Supersedes the earlier "changes reach `master` only via PR" rule.
 
 ## API library swap (from api_library_swap.md, OQ5)
 - [2026-08-10] **Replace `src/api` with the `intrapaint_api` standalone library — yes.** The library
