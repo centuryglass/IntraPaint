@@ -16,7 +16,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-COLOR_DIALOG_TITLE = _tr("Select Color")
+COLOR_DIALOG_TITLE = _tr('Select Color')
 
 
 class ColorDialog(QDialog):

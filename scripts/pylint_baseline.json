@@ -183,7 +183,6 @@
     "unused-argument": 2
   },
   "src/ui/modal/color_dialog.py": {
-    "inconsistent-quotes": 1,
     "invalid-name": 1
   },
   "src/ui/modal/modal_utils.py": {
