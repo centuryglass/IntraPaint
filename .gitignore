@@ -12,3 +12,8 @@ ldm
 *@neomake*.py
 api_test.py
 
+
+# Cython build output for src/util/visual/image_fill.py, which IntraPaint.py builds on launch when it's missing
+src/util/visual/image_fill.c
+src/util/visual/image_fill.*.so
+src/util/visual/image_fill.*.pyd
