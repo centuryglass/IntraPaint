@@ -3,6 +3,7 @@ import os
 import sys
 import unittest
 
+import numpy as np
 from PIL import Image
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
@@ -46,7 +47,10 @@ class TestImageUtils(unittest.TestCase):
         converted = qimage_to_pil_image(self.qimage_rgb)
         self.assertEqual(converted.tobytes(), self.pil_image_rgb.tobytes())
         converted = qimage_to_pil_image(self.qimage_argb)
-        self.assertEqual(converted.tobytes(), self.pil_image_argb.tobytes())
+        # Premultiplied alpha can't round-trip exactly, so partially transparent pixels may be off by one:
+        channel_difference = np.abs(np.asarray(converted, dtype=np.int16)
+                                    - np.asarray(self.pil_image_argb.convert('RGBA'), dtype=np.int16))
+        self.assertLessEqual(channel_difference.max(), 1)
 
     def test_qimage_from_base64(self) -> None:
         """Test loading a QImage from base64 image data"""
