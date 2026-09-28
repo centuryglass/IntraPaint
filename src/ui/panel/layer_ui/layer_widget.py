@@ -46,6 +46,8 @@ MENU_OPTION_MOVE_DOWN = _tr('Move down')
 MENU_OPTION_COPY = _tr('Copy')
 MENU_OPTION_DELETE = _tr('Delete')
 MENU_OPTION_MERGE_DOWN = _tr('Merge down')
+MENU_OPTION_MERGE_GROUP = _tr('Merge group')
+MENU_OPTION_MERGE_ALL_VISIBLE = _tr('Merge all visible')
 MENU_OPTION_FLATTEN = _tr('Flatten')
 MENU_OPTION_RENAME = _tr('Rename')
 MENU_OPTION_CLEAR_SELECTED = _tr('Clear selected')
@@ -381,6 +383,20 @@ class LayerWidget(BorderedWidget):
                     if next_layer is None or next_layer.locked or next_layer.parent_locked or not next_layer.visible \
                             or not isinstance(next_layer, TransformLayer):
                         merge_option.setEnabled(False)
+
+            if isinstance(self.layer, LayerGroup) and self.layer != self._image_stack.layer_stack:
+                merge_group_option = _add_action(MENU_OPTION_MERGE_GROUP,
+                                                 lambda: self._image_stack.merge_group(self.layer), True)
+                if self._image_stack.layer_is_flat(self.layer):
+                    merge_group_option.setEnabled(False)
+
+            merge_visible_option = _add_action(MENU_OPTION_MERGE_ALL_VISIBLE,
+                                               self._image_stack.merge_all_visible)
+            visible_top_layers = [layer for layer in self._image_stack.layer_stack.child_layers if layer.visible]
+            can_merge_visible = len(visible_top_layers) > 1 or (len(visible_top_layers) == 1
+                                                                and isinstance(visible_top_layers[0], LayerGroup)
+                                                                and visible_top_layers[0].count > 0)
+            merge_visible_option.setEnabled(can_merge_visible)
 
             flatten_action = _add_action(MENU_OPTION_FLATTEN, lambda: self._image_stack.flatten_layer(self.layer),
                                          True)

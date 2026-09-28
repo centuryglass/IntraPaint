@@ -44,10 +44,12 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 NEW_IMAGE_LAYER_GROUP_NAME = _tr('new image')
 ACTION_NAME_MERGE_LAYERS = _tr('merge layers')
+ACTION_NAME_MERGE_VISIBLE = _tr('merge visible layers')
 ACTION_NAME_LAYER_TO_IMAGE_SIZE = _tr('resize layer to image')
 ACTION_NAME_CLEAR_SELECTED = _tr('cut/clear selection')
 ACTION_NAME_RESIZE_IMAGE_CANVAS = _tr('resize image canvas')
 ACTION_NAME_CROP_LAYER_TO_SELECTION = _tr('crop layer to selection')
+MERGED_LAYER_NAME = _tr('Merged')
 
 ERROR_TITLE_RESIZE_FAILED = _tr('Resizing image canvas failed')
 ERROR_TITLE_IMAGE_SCALE_FAILED = _tr('Image scaling failed')
@@ -909,6 +911,94 @@ class ImageStack(QObject):
         replacement_layer = self._create_layer_internal(layer.name, top_render)
         replacement_layer.set_transform(QTransform.fromTranslate(layer_offset.x(), layer_offset.y()))
         self.replace_layer(layer, replacement_layer)
+
+    def merge_group(self, layer: Optional[Layer] = None) -> None:
+        """Merge a layer group into a single image layer.
+
+        Parameters
+        ----------
+            layer: Layer | None, default=None
+                The layer group to merge. If None, the active layer will be used.
+        """
+        if layer is None:
+            layer = self.active_layer
+        if not isinstance(layer, LayerGroup) or layer == self._layer_stack:
+            return
+        self.flatten_layer(layer)
+
+    def merge_all_visible(self) -> None:
+        """Merge all visible top-level layers into a single image layer.
+
+        Hidden top-level layers are preserved. The merged layer is placed at the former
+        position of the bottommost visible layer.
+        """
+        visible_layers = [layer for layer in self._layer_stack.child_layers if layer.visible]
+        if len(visible_layers) == 0:
+            return
+        if len(visible_layers) == 1 and isinstance(visible_layers[0], ImageLayer):
+            return  # Already a single image layer; nothing to merge.
+
+        locked_layers = []
+        text_layer_names = []
+        for layer in visible_layers:
+            if layer.locked:
+                locked_layers.append(layer)
+            if isinstance(layer, TextLayer):
+                text_layer_names.append(layer.name)
+            elif isinstance(layer, LayerGroup):
+                for child in layer.recursive_child_layers:
+                    if child.locked:
+                        locked_layers.append(child)
+                    if isinstance(child, TextLayer) and child.visible:
+                        text_layer_names.append(child.name)
+        if len(locked_layers) > 0:
+            if len(locked_layers) > 1:
+                layer_names = ', '.join([f'"{layer.name}"' for layer in locked_layers])
+                error_message = ERROR_MESSAGE_LOCK_CONFLICT_PLURAL.format(
+                    comma_separated_layer_names=layer_names)
+            else:
+                error_message = ERROR_MESSAGE_LOCK_CONFLICT_SINGULAR.format(
+                    layer_name=f'"{locked_layers[0].name}"')
+            show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, error_message)
+            return
+        if len(text_layer_names) > 0:
+            if not TextLayer.confirm_or_cancel_render_to_image(text_layer_names, ACTION_NAME_MERGE_VISIBLE):
+                return
+
+        bottom_layer = visible_layers[-1]
+        bottom_index = self._layer_stack.get_layer_index(bottom_layer)
+        assert bottom_index is not None
+        insert_index = sum(1 for i in range(bottom_index)
+                           if not self._layer_stack.get_layer_by_index(i).visible)
+
+        stack_bounds = self.merged_layer_bounds
+        if stack_bounds.isEmpty():
+            return
+        merged_image = self.qimage(crop_to_image=False)
+        new_layer = self._create_layer_internal(MERGED_LAYER_NAME, merged_image)
+        new_layer.set_transform(QTransform.fromTranslate(stack_bounds.x(), stack_bounds.y()))
+
+        removed_layers = list(visible_layers)
+        removed_indices = [self._layer_stack.get_layer_index(layer) for layer in removed_layers]
+        assert all(idx is not None for idx in removed_indices)
+        last_active_id = self.active_layer_id
+
+        @self._with_batch_content_update
+        def _do_merge(to_remove=removed_layers, replacement=new_layer, idx=insert_index) -> None:
+            for layer in to_remove:
+                self._remove_layer_internal(layer)
+            self._insert_layer_internal(replacement, self._layer_stack, idx)
+            self._set_active_layer_internal(replacement)
+
+        @self._with_batch_content_update
+        def _undo_merge(to_restore=removed_layers, indices=removed_indices, replacement=new_layer,
+                        active_id=last_active_id) -> None:
+            self._remove_layer_internal(replacement)
+            for layer, idx in sorted(zip(to_restore, indices), key=lambda item: cast(int, item[1])):
+                self._insert_layer_internal(layer, self._layer_stack, cast(int, idx))
+            self._set_active_layer_internal(active_id)
+
+        UndoStack().commit_action(_do_merge, _undo_merge, 'ImageStack.merge_all_visible')
 
     def merge_layer_down(self, layer: Optional[Layer] = None) -> None:
         """Merges a layer with the one beneath it on the stack.

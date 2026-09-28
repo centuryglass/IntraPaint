@@ -55,7 +55,6 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 ## Layer interface
 - Add selection layer back to layer panel
 - Layer multi-select: Topmost selected layer is active, all others only selected for the sake of bulk copy/grouping/merge/delete
-- Add "merge group" and "merge all visible" options
 
 ## Menus
 - Filters: just throw in whatever fun stuff PIL/CV2 have to offer

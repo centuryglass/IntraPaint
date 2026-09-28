@@ -764,6 +764,24 @@
         "default": "Ctrl+Shift+M",
         "saved": true
     },
+    "merge_group_shortcut": {
+        "label": "Merge group",
+        "category": "Menu Shortcuts",
+        "subcategory": "Layer Menu",
+        "description": "Merge the active layer group into a single image layer",
+        "type": "string",
+        "default": "Ctrl+Shift+Alt+G",
+        "saved": true
+    },
+    "merge_all_visible_shortcut": {
+        "label": "Merge all visible",
+        "category": "Menu Shortcuts",
+        "subcategory": "Layer Menu",
+        "description": "Merge all visible layers into a single image layer",
+        "type": "string",
+        "default": "Ctrl+Shift+Alt+M",
+        "saved": true
+    },
     "flatten_layer_shortcut": {
         "label": "Flatten layer",
         "category": "Menu Shortcuts",
