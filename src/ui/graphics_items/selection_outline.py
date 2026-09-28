@@ -21,7 +21,7 @@ class SelectionOutline(PolygonOutline):
         self._show_overlay = True
 
         def _update_fill_color(color_str: str) -> None:
-            if not QColor.isValidColor(color_str) or not self._show_overlay:
+            if not QColor(color_str).isValid() or not self._show_overlay:
                 return
             self.fill_color = QColor(color_str)
 

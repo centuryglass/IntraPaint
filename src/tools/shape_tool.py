@@ -110,7 +110,7 @@ class ShapeTool(BaseTool):
         self._last_color_changed = Cache.SHAPE_TOOL_FILL_COLOR
 
         def _update_last_color(color_str: str) -> None:
-            if QColor.isValidColor(color_str):
+            if QColor(color_str).isValid():
                 cache.set(self._last_color_changed, color_str)
         cache.connect(self, Cache.LAST_BRUSH_COLOR, _update_last_color)
 
@@ -209,7 +209,7 @@ class ShapeTool(BaseTool):
 
     def _line_color_update_slot(self, color_str: str) -> None:
         self._last_color_changed = Cache.SHAPE_TOOL_LINE_COLOR
-        if QColor.isValidColor(color_str):
+        if QColor(color_str).isValid():
             color = QColor(color_str)
             if self._pen.color() == color:
                 return
@@ -266,7 +266,7 @@ class ShapeTool(BaseTool):
 
     def _fill_color_update_slot(self, color_str: str) -> None:
         self._last_color_changed = Cache.SHAPE_TOOL_FILL_COLOR
-        if not QColor.isValidColor(color_str):
+        if not QColor(color_str).isValid():
             return
         color = QColor(color_str)
         if color == self._brush.color():

@@ -248,7 +248,7 @@ class Config:
         -------
         The configured color, or the default if the color isn't valid."""
         color_str = self.get(key)
-        if not QColor.isValidColor(color_str):
+        if not QColor(color_str).isValid():
             if isinstance(default_color, Qt.GlobalColor):
                 default_color = QColor(default_color)
             return default_color

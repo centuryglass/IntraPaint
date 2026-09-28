@@ -87,7 +87,7 @@ class BrushToolPanel(QWidget):
             color_row.addWidget(pattern_dropdown)
             if color_key is not None:
                 def _pattern_color_update(color_str: str) -> None:
-                    if QColor.isValidColor(color_str):
+                    if QColor(color_str).isValid():
                         color = QColor(color_str)
                         pattern_dropdown.set_icon_colors(color)
                 cache.connect(self, color_key, _pattern_color_update)

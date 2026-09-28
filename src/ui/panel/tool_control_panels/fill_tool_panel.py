@@ -26,7 +26,7 @@ class FillToolPanel(QWidget):
         self._layout.addRow(selection_only_checkbox)
 
         def _update_pattern_color(color_str: str) -> None:
-            if QColor.isValidColor(color_str):
+            if QColor(color_str).isValid():
                 color = QColor(color_str)
                 pattern_dropdown.set_icon_colors(color)
         cache.connect(self, Cache.LAST_BRUSH_COLOR, _update_pattern_color)
