@@ -57,7 +57,6 @@ class TestImageUtils(unittest.TestCase):
         for i in range(3):
             mask = flood_fill(self.qimage_argb, fill_points[i], fill_colors[i], thresholds[i], False)
             assert mask is not None
-            mask.save(f"mask_{i}.png")
             flood_fill(self.qimage_argb, fill_points[i], fill_colors[i], thresholds[i], True)
         save_temporary('flood_fill_test', expected_image, self.qimage_argb)
         self.assertEqual(expected_image, self.qimage_argb)

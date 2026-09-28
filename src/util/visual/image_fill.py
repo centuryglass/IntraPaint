@@ -305,7 +305,7 @@ def flood_fill(image: QImage, pos: QPoint, color: QColor, threshold: float, in_p
     # Convert image to proper format and get numpy array
     un_multiplied_image = image.convertToFormat(QImage.Format.Format_ARGB32)
     np_image = image_data_as_numpy_8bit(un_multiplied_image)
-    image_view: cython.uchar[:, :, :] = cython.declare(cython.uchar[:, :, :], np_image)
+    image_view: cython.uchar[:, :, :] = np_image
 
     # Get filled mask using our fast implementation
     filled_mask = fast_flood_fill(image_view, image.width(), image.height(), pos.x(), pos.y(), threshold)
