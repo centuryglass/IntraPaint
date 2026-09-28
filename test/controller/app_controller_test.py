@@ -4,7 +4,6 @@ import tempfile
 import unittest
 from unittest.mock import patch, MagicMock
 
-from PIL import EpsImagePlugin
 from PySide6.QtCore import QSize, QTimer
 from PySide6.QtWidgets import QApplication
 
@@ -135,10 +134,6 @@ class TestAppController(unittest.TestCase):
 
         # These may work on some systems, but require additional plugins.
         optional_formats = {'WMF', 'BUFR', 'GRIB', 'EMF', 'PNM'}
-        # PIL writes PostScript itself, but reading it back needs the external Ghostscript program.
-        read_formats = set(IMAGE_READ_FORMATS)
-        if not EpsImagePlugin.has_ghostscript():
-            read_formats -= {'EPS', 'PS'}
 
         sorted_formats = [*IMAGE_WRITE_FORMATS]
         sorted_formats.sort()
@@ -154,7 +149,7 @@ class TestAppController(unittest.TestCase):
                 self.controller.save_image_as(save_path)
                 self.assertTrue(os.path.isfile(save_path), f'{file_format} save test failed')
                 Cache().set(Cache.PROMPT, '')
-                if file_format in read_formats:
+                if file_format in IMAGE_READ_FORMATS:
                     self.controller.load_image(save_path)
                     prompt = Cache().get(Cache.PROMPT)
                     expected_metadata = file_format in IMAGE_FORMATS_SUPPORTING_METADATA

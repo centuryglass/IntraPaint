@@ -1,7 +1,7 @@
 #!/bin/bash
 # Prepares a Claude Code on the web session to run the test suite and the lint check: the system libraries headless
-# Qt needs, Ghostscript for the image format test, a Python 3.13 virtual environment with requirements-dev.txt, and
-# the compiled image_fill module. Local sessions are left alone.
+# Qt needs, a Python 3.13 virtual environment with requirements-dev.txt, and the compiled image_fill module. Local
+# sessions are left alone.
 #
 # Python 3.13 matches CI's lint job, since scripts/pylint_baseline.json is only valid for the Python version it was
 # generated with.
@@ -14,7 +14,7 @@ cd "$CLAUDE_PROJECT_DIR"
 
 # The same packages as the "Install system libraries" step in .github/workflows/ci.yml.
 SYSTEM_PACKAGES=(libegl1 libgl1 libopengl0 libxkbcommon0 libdbus-1-3 libglib2.0-0 libfontconfig1 libfreetype6 \
-                 libjson-c5 ghostscript)
+                 libjson-c5)
 missing_packages=()
 for package in "${SYSTEM_PACKAGES[@]}"; do
   # Ubuntu 24.04 renamed some libraries with a t64 suffix (libglib2.0-0 is libglib2.0-0t64). apt-get accepts the

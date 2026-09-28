@@ -1,12 +1,14 @@
 """Test image utility functions."""
+import base64
 import gc
+import io
 import os
 import sys
 import unittest
 import weakref
 
 import numpy as np
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
@@ -88,6 +90,13 @@ class TestImageUtils(unittest.TestCase):
         self.assertEqual(decoded.tobytes(), self.pil_image_rgb.tobytes())
         decoded = pil_image_from_base64(self.base64_rgba)
         self.assertEqual(decoded.tobytes(), self.pil_image_argb.tobytes())
+
+    def test_pil_image_from_base64_rejects_postscript(self) -> None:
+        """Base64 image data isn't decoded as PostScript, which Pillow would run in Ghostscript."""
+        eps_data = io.BytesIO()
+        Image.new('RGB', (8, 8)).save(eps_data, 'EPS')
+        with self.assertRaises(UnidentifiedImageError):
+            pil_image_from_base64(base64.b64encode(eps_data.getvalue()).decode())
 
     def test_image_to_base64(self) -> None:
         """Test converting various image formats to base64"""
