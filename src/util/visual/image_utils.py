@@ -225,24 +225,40 @@ def get_transparency_tile_pixmap(size: Optional[QSize] = None) -> QPixmap:
     return transparency_pixmap
 
 
-def image_data_as_numpy_8bit(image: QImage) -> NpAnyArray:
-    """Returns a numpy array interface for a QImage's internal data buffer."""
-    assert image.format() in (QImage.Format.Format_ARGB32_Premultiplied, QImage.Format.Format_ARGB32), \
-        f'Image must be pre-converted to ARGB32 or ARGB32_premultiplied, format was {image.format()}'
-    image_ptr = image.bits()
+class _QImageArrayOwner:
+    """Keeps a QImage alive for as long as a numpy array over its pixel buffer exists.
+
+    PySide's QImage.bits() and constBits() don't hold a reference to the QImage, so an array built on them alone
+    reads and writes freed memory once the QImage is garbage-collected. An array created from this object's
+    __array_interface__ holds the object as its base, and every view derived from that array holds the array.
+    """
+    __slots__ = ('_image', '__array_interface__')
+
+    def __init__(self, image: QImage, array: NpAnyArray) -> None:
+        self._image = image
+        self.__array_interface__ = array.__array_interface__
+
+
+def _numpy_8bit_view(image: QImage, image_ptr: Optional[memoryview]) -> NpAnyArray:
     if image_ptr is None:
         raise ValueError('Invalid image parameter')
-    return np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
+    array = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
+    return np.asarray(_QImageArrayOwner(image, array))
+
+
+def image_data_as_numpy_8bit(image: QImage) -> NpAnyArray:
+    """Returns a numpy array interface for a QImage's internal data buffer. The array keeps the QImage alive."""
+    assert image.format() in (QImage.Format.Format_ARGB32_Premultiplied, QImage.Format.Format_ARGB32), \
+        f'Image must be pre-converted to ARGB32 or ARGB32_premultiplied, format was {image.format()}'
+    return _numpy_8bit_view(image, image.bits())
 
 
 def image_data_as_numpy_8bit_readonly(image: QImage) -> NpAnyArray:
-    """Returns a numpy array interface for a QImage's internal data buffer."""
+    """Returns a read-only numpy array interface for a QImage's internal data buffer. The array keeps the QImage
+       alive."""
     assert image.format() == QImage.Format.Format_ARGB32_Premultiplied, \
         f'Image must be pre-converted to ARGB32_premultiplied, format was {image.format()}'
-    image_ptr = image.constBits()
-    if image_ptr is None:
-        raise ValueError('Invalid image parameter')
-    return np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
+    return _numpy_8bit_view(image, image.constBits())
 
 
 def numpy_8bit_to_qimage(np_image: NpAnyArray) -> QImage:

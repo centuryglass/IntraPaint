@@ -1,9 +1,13 @@
 # Analysis + Plans
 Claude-generated advice for possible improvements, added features, code cleanup, and other sub-projects
 
+These are preliminary recommendations from an earlier model, mostly written without running the code. Verify a
+claim before acting on it, and override a recommendation when the evidence points elsewhere. Known corrections are
+recorded in _decisions_ledger.md.
+
 Shared substrate (read these first):
 - _codebase_map.md: Orientation map — subsystems, gravitational centers, cross-cutting patterns, where to start reading per topic.
-- _decisions_ledger.md: Settled calls not to re-open (dated), so reports don't duplicate or contradict each other.
+- _decisions_ledger.md: Dated record of the reports' calls, so reports don't duplicate or contradict each other, with corrections where later work overturned one.
 - _execution_plan.md: End-to-end plan for answering the open questions — sequence, dependencies, and optional context/model tactics.
 - briefs/: Paste-ready prompts for delegating not-yet-written reports to fresh sessions/agents (e.g. briefs/api_library_swap.brief.md for OQ5).
 

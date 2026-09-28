@@ -41,11 +41,9 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 - Test coverage is pretty sparse, lots of features are completely uncovered.
 - DONE: `pytest` now runs the whole suite headlessly from the CLI (`pytest.ini` + `conftest.py` force
   the Qt offscreen platform), so IntelliJ is no longer required. A GitHub Actions workflow
-  (`.github/workflows/test.yml`) runs it on PRs to master and can be triggered manually.
-- Remaining: broaden coverage (still only ~11 test files for the whole app). The transform tool, layer
+  (`.github/workflows/ci.yml`) runs it and the lint check on every push and pull request.
+- Remaining: broaden coverage (still only 14 test files for the whole app). The transform tool, layer
   panel, and responsive-layout code — the areas with the most lurking bugs — have little or none.
-- `geometry_utils_test.py` alone takes ~4 min (brute-force transform grid) and dominates suite runtime.
-  Consider trimming its parameter space or enabling pytest-xdist if CI time becomes annoying.
 
 ## Color Picker:
 - The default QT color picker is not very good, and my modular port of it is only the tiniest bit better. Consider a full replacement.

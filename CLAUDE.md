@@ -14,10 +14,13 @@ Linux (macOS works with manual setup/compilation).
 ```
 pip install -r requirements.txt
 python IntraPaint.py            # --help for options; --mode selects the generation backend
+pip install -r requirements-dev.txt   # for development: adds pytest, pylint, pyinstaller and pur
 ```
 
 - On launch, `IntraPaint.py` auto-builds the Cython `image_fill` module if it's missing. To build it
-  manually: `python setup.py build_ext --inplace`.
+  manually: `python setup.py build_ext --inplace`. The build output is gitignored; don't commit it.
+- Dependency versions are pinned exactly. Dependabot proposes bumps for most of them; numpy,
+  setuptools and pyinstaller are bumped by hand with `pur` (`.github/dependabot.yml` explains why).
 - AI features need a running Stable Diffusion client (ComfyUI / Forge / A1111) with `--api` enabled.
   Without one, all manual editing tools still work.
 - `IntraPaint_server.py` is a separate, legacy GLID-3-XL generation server (see "Legacy" below).
@@ -53,23 +56,38 @@ Config is JSON-backed and typed, with `get()` / `set()` / `connect()` (signal on
   - `a1111_setting_definitions.json` → `A1111Config`
 - `src/config/config_from_key.py` maps a key to its owning config singleton. Each config class is a
   singleton accessed like `AppConfig().get(key)`. A missing key raises `KeyError` at runtime.
+- Singletons (the config classes, `UndoStack`) bind to the arguments of their first construction and
+  ignore them afterwards, so `AppConfig('other.json')` returns the existing instance. `conftest.py`
+  relies on this to back every test's config with temporary copies.
 
 ## Conventions
 
 - **Translate all user-facing strings.** Wrap them in the Qt translation helper — files define a
   `TR_ID` and a local `_tr()` wrapper around `QApplication.translate`. Follow the existing pattern in
-  the file you're editing; don't emit raw user-visible text.
+  the file you're editing; don't emit raw user-visible text. Pass `_tr` a single-quoted or
+  triple-double-quoted literal: `scripts/build_translations.py` only extracts `_tr('` and `_tr("""`.
 - Match the surrounding code's style, naming, and structure.
 
 ## Testing
 
-- Run the whole suite headlessly from the CLI with `pytest` (or `python -m pytest`). `conftest.py`
-  forces Qt's offscreen platform before PySide6 loads, so no display is required; `pytest.ini`
-  scopes collection to `test/`. Override with `QT_QPA_PLATFORM=xcb pytest ...` to watch a test render.
-- Tests are `unittest.TestCase` classes in `test/`, named `<name>_test.py`.
-- CI (`.github/workflows/test.yml`) runs the suite on PRs to `master` and on manual dispatch.
-- Coverage is sparse (~11 test files) — treat it as a partial safety net, not an authoritative gate.
-  The full run takes ~4 min, dominated by `geometry_utils_test.py`.
+- Run the whole suite headlessly from the CLI with `pytest` (or `python -m pytest`), after installing
+  `requirements-dev.txt` and building `image_fill` (tests import it). `pytest.ini` scopes collection
+  to `test/`. `conftest.py`:
+  - forces Qt's offscreen platform before PySide6 loads, so no display is required. Override with
+    `QT_QPA_PLATFORM=xcb pytest ...` to watch a test render.
+  - creates the config singletons from temporary copies of `test/resources/*_test.json` before
+    collection, so tests can't rewrite the committed fixtures.
+  - fails any test that opens a modal dialog or menu, which would otherwise block forever offscreen.
+    Mock the dialog, or avoid the code path.
+- Tests are `unittest.TestCase` classes in `test/`, named `<name>_test.py`. Test `setUp` methods
+  `chdir` up to a directory named `IntraPaint`, so the checkout must have that name.
+- Tests share one process, so state left in a singleton (config values, the undo stack) leaks into
+  later tests. Reset it in `setUp` the way the existing tests do. Write test output to a temporary
+  directory, never the working tree.
+- CI (`.github/workflows/ci.yml`) runs on every push and pull request: the suite on Python 3.11-3.14,
+  plus the lint check below. Its `ci` job is the single check to require for merging.
+- Coverage is sparse (14 test files) — treat it as a partial safety net, not an authoritative gate.
+  The full run takes about 90 seconds.
 
 ## Type checking
 
@@ -79,12 +97,32 @@ what's feasible. Improving typing is welcome but not a priority; don't block wor
 
 ## Lint
 
-`scripts/pylint.sh` (uses `.pylintrc`). Keep new code clean against it.
+`scripts/pylint.sh` shows the full report (uses `.pylintrc`). Keep new code clean against it.
+
+`python scripts/pylint_check.py` is CI's lint gate. The code isn't pylint-clean yet, so it fails only
+when a file gains messages beyond `scripts/pylint_baseline.json`, or when fixed messages leave the
+baseline too high. After fixing messages, rerun it with `--update-baseline` and commit the baseline.
+Run it with Python 3.13: the baseline is only valid for the version it was generated with.
 
 ## Git & releases
 
 - **Hard rule:** changes only reach `master` via PR, immediately before a release. The many side
   branches (`comfyui`, `sd-windows`, `zoomMode`, `dev`, etc.) are experiments/one-offs — ignore them.
+- Agents may commit and push to their working branch, open PRs, and create GitHub issues without
+  asking first. A bug found during other work gets fixed in the same pass if the fix is trivial, and
+  otherwise gets an issue saying what was observed, how to reproduce it, and what's ruled out.
+
+## Cloud sessions
+
+`.claude/hooks/session-start.sh` runs at the start of a Claude Code on the web session. It installs
+the system libraries CI installs, creates `.venv` with Python 3.13 and `requirements-dev.txt`, builds
+`image_fill`, and puts `.venv/bin` first on `PATH`, so `pytest` and `scripts/pylint_check.py` work
+without further setup.
+
+## Planning docs
+
+`doc/analysis+plans/` is preliminary analysis written by an earlier model. Verify its claims against
+the code before acting on them, and override its recommendations when the evidence points elsewhere.
 
 ## Legacy / don't-touch
 
