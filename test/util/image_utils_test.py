@@ -1,14 +1,18 @@
 """Test image utility functions."""
+import gc
 import os
 import sys
 import unittest
+import weakref
 
 import numpy as np
 from PIL import Image
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 
-from src.util.visual.image_utils import qimage_from_base64, BASE_64_PREFIX, image_to_base64
+from src.util.visual.image_utils import qimage_from_base64, BASE_64_PREFIX, image_to_base64, \
+    image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly
 from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_image_from_base64
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -51,6 +55,19 @@ class TestImageUtils(unittest.TestCase):
         channel_difference = np.abs(np.asarray(converted, dtype=np.int16)
                                     - np.asarray(self.pil_image_argb.convert('RGBA'), dtype=np.int16))
         self.assertLessEqual(channel_difference.max(), 1)
+
+    def test_numpy_view_keeps_image_alive(self) -> None:
+        """A numpy view of a QImage's pixels stays valid after the caller drops its QImage reference."""
+        for get_view in (image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly):
+            image = QImage(QSize(512, 512), QImage.Format.Format_ARGB32_Premultiplied)
+            image.fill(Qt.GlobalColor.red)
+            image_ref = weakref.ref(image)
+            alpha = get_view(image)[:, :, 3]
+            del image
+            gc.collect()
+            # Checked before reading the view, since reading freed memory can crash the test run:
+            self.assertIsNotNone(image_ref(), f'{get_view.__name__} let the QImage be freed')
+            self.assertEqual(alpha.max(), 255)
 
     def test_qimage_from_base64(self) -> None:
         """Test loading a QImage from base64 image data"""
