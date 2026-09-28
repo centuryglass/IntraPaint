@@ -108,6 +108,21 @@ class ImageLayerTest(unittest.TestCase):
         self.assertNotEqual(final_image, init_image)
         self.assertEqual(final_image, new_image)
 
+    def test_alpha_lock(self) -> None:
+        """Painting on an alpha-locked layer doesn't change its transparent areas."""
+        self.image_layer.set_alpha_locked(True)
+        with self.image_layer.borrow_image() as image:
+            image.fill(Qt.GlobalColor.red)
+        self.assertTrue(image_is_fully_transparent(self.image_layer.image))
+
+    def test_alpha_lock_after_empty_undo(self) -> None:
+        """Undo with nothing to undo doesn't switch off alpha lock enforcement."""
+        UndoStack().undo()
+        self.image_layer.set_alpha_locked(True)
+        with self.image_layer.borrow_image() as image:
+            image.fill(Qt.GlobalColor.red)
+        self.assertTrue(image_is_fully_transparent(self.image_layer.image))
+
     def test_borrow_image(self) -> None:
         """Test setting content with a QImage when using the borrow_image method"""
         new_image = QImage(INIT_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)

@@ -150,7 +150,7 @@ def scale_all_layers(image_stack: ImageStack, width: int, height: int,
 
     scale_transform = QTransform.fromScale(x_scale, y_scale)
     action_id = 'image_stack_utils.scale_all_layers'
-    with UndoStack().combining_actions(action_id) and image_stack.batching_content_updates():
+    with UndoStack().combining_actions(action_id), image_stack.batching_content_updates():
         for layer in image_stack.all_layers():
             if not isinstance(layer, TransformLayer):
                 continue
