@@ -6,6 +6,8 @@ updates:
   # both, so they're bumped by hand with `pur`, as is pyinstaller, since its updates change the packaged builds.
   - package-ecosystem: pip
     directory: /
+    # Development happens on integration; master only receives release PRs from it.
+    target-branch: integration
     schedule:
       interval: weekly
     allow:
@@ -26,5 +28,6 @@ updates:
 
   - package-ecosystem: github-actions
     directory: /
+    target-branch: integration
     schedule:
       interval: weekly

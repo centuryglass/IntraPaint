@@ -22,6 +22,7 @@ support is possible with manual setup and compilation.
    - [Guide to AI Inpainting](./doc/inpainting_guide.md)
 8. [FAQ](#faq)
 9. [Alternatives](#alternatives)
+10. [Contributing](#contributing)
 ---
 
 ## Getting Started with IntraPaint:
@@ -233,3 +234,23 @@ Version 0.1.0 of IntraPaint, released July 2022, was a much simpler program that
   * [Stable-Gimpfusion](https://github.com/ArtBIT/stable-gimpfusion)
   * [gimp-stable-diffusion](https://github.com/blueturtleai/gimp-stable-diffusion)
   * [Stable Boy](https://github.com/thndrbrrr/gimp-stable-boy)
+
+## Contributing:
+
+Code contributions are welcome. IntraPaint uses two long-lived branches:
+
+- **`integration`** is where development happens. All changes reach it through pull requests; direct pushes are
+  blocked.
+- **`master`** holds the latest release, and is only updated when a new version is released. Its only source is a
+  pull request from `integration`.
+
+To contribute a change:
+
+1. Create a branch from `integration` (in a fork, if you don't have write access).
+2. Make your changes. See [CLAUDE.md](./CLAUDE.md) for an overview of the architecture and the project's conventions.
+3. Install the development dependencies with `pip install -r requirements-dev.txt`, then run the tests with `pytest` and
+   the lint check with `python scripts/pylint_check.py`.
+4. Open a pull request targeting `integration`. CI runs the tests and lint check on every pull request, and must pass
+   before it can be merged.
+
+Pull requests that target `master` directly won't be accepted, unless they're release pull requests from `integration`.
