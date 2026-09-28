@@ -1,23 +1,28 @@
-# Decisions ledger — settled calls (do not re-open)
+# Decisions ledger — preliminary calls
 
-Short, dated record of decisions already made, so downstream analysis reports and delegated
-agents don't waste effort re-litigating them or contradict each other. Pair with
-`_codebase_map.md`. Add a line whenever a call is settled; if a decision is genuinely reversed,
-edit it here rather than leaving stale guidance.
+Short, dated record of the calls the analysis reports made, so downstream reports and delegated
+agents don't contradict each other. Pair with `_codebase_map.md`. The calls are preliminary: an
+earlier model made most of them without running the code, so verify one before acting on it. Add a
+line whenever a call is made; when evidence overturns one, edit it here rather than leaving stale
+guidance.
 
 Format: `[YYYY-MM-DD] Topic — decision. (rationale / where documented)`
 
 ---
 
 ## Undo system
-- [2026-08-10] Replace hand-rolled `UndoStack` with Qt's `QUndoStack` — **yes**, via a
-  compatibility **wrapper** that preserves the current public API (minimal call-site churn), not
-  a native-`QUndoCommand` migration of every call site. Full plan in `UndoStack.md`.
+- [2026-09-28] Replacing the hand-rolled `UndoStack` with Qt's `QUndoStack` — **on hold**. Its
+  known bugs are fixed in place, with tests (`test/undo_stack_test.py`). The planned wrapper keeps
+  all 32 `commit_action` call sites unchanged, and those are where the complexity lives. Also,
+  `QUndoStack.setUndoLimit()` only works on an empty stack, so the configurable limit would need
+  extra handling. (Supersedes the 2026-08-10 "yes"; plan in `UndoStack.md`.)
 - [2026-08-10] Global time-based **auto-merge** — **defer** (Phase 3). It's glitchy as-is; we
   want to support it eventually but will ship the migration without it first, relying on explicit
   `combining_actions` macros + `mergeWith` coalescing for "one drag = one undo."
-- [2026-08-10] `AppConfig.max_undo` being unwired, and `undo_in_progress` sticking `True` on an
-  empty-stack undo — confirmed **bugs**, to be fixed as part of the migration (not preserved).
+- [2026-09-28] **Fixed** in the existing `UndoStack`: `AppConfig.max_undo` now applies,
+  `undo_in_progress` no longer sticks `True` after an empty-stack undo (it disabled alpha lock),
+  an exception inside `combining_actions` no longer leaves the group open (it stopped all later
+  recording), and the three `with A and B:` sites now group their actions.
 
 ## Concurrency (from concurrency_model.md, A5)
 - [2026-08-10] **Verified fact:** `AsyncTask` finish/result handlers run on the **main thread**
@@ -138,12 +143,9 @@ Format: `[YYYY-MM-DD] Topic — decision. (rationale / where documented)`
   changes trivially: visually confirm the new `*_tested.png`, then replace the committed golden.
 - [2026-08-10] `test-wip/` is an **outline only** (class names + docstrings, zero test logic);
   existing tests are imported, not replaced.
-- [2026-08-10] (from testing_strategy.md, A1) **CI-time culprit verified:**
-  `geometry_utils_test.test_transform_parameters` is a single brute-forced sweep of ~1.1M
-  `QTransform` iterations (2×6×6×8×8×240) — it *is* the ~4-min run. **Reshape** to a coarse grid +
-  explicit adversarial table, dense fuzz behind `@pytest.mark.slow`. This is the first CI action,
-  done before adding coverage so nothing inherits the 4-min floor. (Reshape is a perf change, not a
-  coverage redesign — coverage stays ADEQUATE.)
+- [2026-09-28] **No geometry-test reshape needed.** `geometry_utils_test` takes about 24s, and the
+  whole suite about 90s, both locally and on GitHub's runners. The ~4-min figure in
+  testing_strategy.md §4.1 didn't reproduce.
 - [2026-08-10] **Build infra before breadth:** three shared pieces gate all new tests and are built
   first — `IntraPaintTestCase` base (singleton reset in `setUp`+`tearDown`), `assert_image_matches_golden`
   helper (writes `*_tested.png` on failure; the sole golden code path), and the light-combo tool
@@ -222,8 +224,8 @@ Format: `[YYYY-MM-DD] Topic — decision. (rationale / where documented)`
   broken (per CLAUDE.md).
 - [2026-08-10] Vendored/symlinked root dirs (`latent-diffusion`, `taming-transformers`,
   `pyspacenav`, `lib`, `colabFiles`) — not app source; don't modify.
-- [2026-08-10] Git — **no commits/pushes/PRs unless explicitly asked**; the maintainer inspects
-  every diff. Changes reach `master` only via PR immediately before a release; side branches are
+- [2026-09-28] Git — agents may **commit, push, open PRs and create issues without asking** (per
+  maintainer). Changes reach `master` only via PR immediately before a release; side branches are
   experiments to ignore.
 
 ## API library swap (from api_library_swap.md, OQ5)
