@@ -17,3 +17,6 @@ api_test.py
 src/util/visual/image_fill.c
 src/util/visual/image_fill.*.so
 src/util/visual/image_fill.*.pyd
+
+# Virtual environment created by .claude/hooks/session-start.sh
+.venv/

@@ -7,8 +7,9 @@ requiring zero messages. It counts pylint's messages per file and message type, 
   the result.
 Counts are compared instead of line numbers, so edits that only move code around don't matter.
 
-The baseline records CI's environment: Linux, with requirements-dev.txt installed. Messages that depend on which
-optional packages are installed are configured away in .pylintrc (see ignored-modules).
+The baseline records CI's lint environment: Linux and Python 3.13, with requirements-dev.txt installed. Run it with
+that Python version, since pylint's results differ between versions (3.11 finds 7 fewer messages). Messages that depend
+on which optional packages are installed are configured away in .pylintrc (see ignored-modules).
 
 Usage: python scripts/pylint_check.py [--update-baseline]
 """
