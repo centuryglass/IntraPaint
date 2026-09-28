@@ -23,6 +23,11 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASELINE_PATH = os.path.join(PROJECT_DIR, 'scripts', 'pylint_baseline.json')
 PYLINT_USAGE_ERROR = 32
 
+# pylint reports each of these against one of the files involved, picked by the order it reads files in, which
+# differs between filesystems. They're counted once for the whole repository instead.
+REPOSITORY_WIDE_SYMBOLS = {'duplicate-code'}
+REPOSITORY_WIDE_PATH = '(repository)'
+
 
 def run_pylint() -> list[dict]:
     """Runs pylint over src/ and returns its messages."""
@@ -34,11 +39,18 @@ def run_pylint() -> list[dict]:
     return json.loads(result.stdout)['messages']
 
 
+def message_path(message: dict) -> str:
+    """Returns the path a pylint message is counted under."""
+    if message['symbol'] in REPOSITORY_WIDE_SYMBOLS:
+        return REPOSITORY_WIDE_PATH
+    return message['path'].replace(os.sep, '/')
+
+
 def count_messages(messages: list[dict]) -> dict[str, dict[str, int]]:
     """Returns {path: {message symbol: count}}, sorted for a stable baseline file."""
     counts: dict[str, Counter] = {}
     for message in messages:
-        counts.setdefault(message['path'].replace(os.sep, '/'), Counter())[message['symbol']] += 1
+        counts.setdefault(message_path(message), Counter())[message['symbol']] += 1
     return {path: dict(sorted(counter.items())) for path, counter in sorted(counts.items())}
 
 
@@ -72,8 +84,8 @@ def main() -> None:
                 added += count - allowed
                 print(f'{path}: {count} {symbol} message(s), baseline allows {allowed}. At least one of these is new:')
                 for message in messages:
-                    if message['path'].replace(os.sep, '/') == path and message['symbol'] == symbol:
-                        print(f'    {path}:{message["line"]}:{message["column"]}: {message["message"]}')
+                    if message_path(message) == path and message['symbol'] == symbol:
+                        print(f'    {message["path"]}:{message["line"]}:{message["column"]}: {message["message"]}')
             elif count < allowed:
                 removed += allowed - count
                 print(f'{path}: {count} {symbol} message(s), baseline allows {allowed}.')
