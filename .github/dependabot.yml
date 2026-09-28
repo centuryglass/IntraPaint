@@ -1,0 +1,30 @@
+version: 2
+updates:
+  # Proposes bumps to the pinned versions in requirements.txt and requirements-dev.txt, and CI checks each one.
+  # Dependabot also reads optional-requirements.txt and requirements-glid.txt, whose GLID-3-XL constraints must stay
+  # as they are, so only dependencies that appear in neither of those are allowed here. numpy and setuptools appear in
+  # both, so they're bumped by hand with `pur`, as is pyinstaller, since its updates change the packaged builds.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    allow:
+      - dependency-name: PySide6
+      - dependency-name: opencv-python-headless
+      - dependency-name: pillow
+      - dependency-name: requests
+      - dependency-name: websocket-client
+      - dependency-name: platformdirs
+      - dependency-name: cython
+      - dependency-name: pytest
+      - dependency-name: pylint
+    groups:
+      # One PR for the routine bumps. PySide6 gets its own, since Qt changes are the likeliest to need attention.
+      python-dependencies:
+        patterns: ['*']
+        exclude-patterns: ['PySide6']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

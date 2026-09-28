@@ -1,10 +1,15 @@
-# Misc. dev tools, helpful but not required in most cases
+# Development tools, on top of the runtime requirements: `pip install -r requirements-dev.txt` sets up everything
+# needed to run the tests, the lint check, and packaged builds.
+-r requirements.txt
 
-# `pyinstaller IntraPaint.spec` creates a packaged build at dist/IntraPaint
+# `pytest` runs the whole suite headlessly (see pytest.ini and conftest.py).
+pytest==9.1.1
+
+# `python scripts/pylint_check.py` is the CI lint gate; `scripts/pylint.sh` shows the full report.
+pylint==4.0.9
+
+# `pyinstaller IntraPaint.spec` (Windows) or `pyinstaller IntraPaint-linux.spec` creates a packaged build in dist/.
 pyinstaller==6.11.0
 
-# `pur -r requirements.txt` updates version numbers automatically
+# `pur -r requirements.txt` updates the pinned version numbers in place.
 pur==7.3.2
-
-# Allows quickly running all tests in pycharm without extra configuration:
-pytest==8.3.3
