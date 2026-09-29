@@ -53,6 +53,8 @@
     "move_layer_up_shortcut": "Ctrl+Home",
     "move_layer_down_shortcut": "Ctrl+End",
     "merge_layer_down_shortcut": "Ctrl+Shift+M",
+    "merge_group_shortcut": "Ctrl+Shift+Alt+G",
+    "merge_all_visible_shortcut": "Ctrl+Shift+Alt+M",
     "layer_to_image_size_shortcut": "Ctrl+Shift+I",
     "crop_to_content_shortcut": "Ctrl+Shift+P",
     "show_layer_menu_shortcut": "F7",

@@ -63,6 +63,8 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Delete layer](#delete-layer-ctrlshiftd)
    - [Flatten layer](#flatten-layer-ctrlshiftf)
    - [Merge layer down](#merge-layer-down-ctrlshiftm)
+   - [Merge group](#merge-group-ctrlshiftaltg)
+   - [Merge all visible](#merge-all-visible-ctrlshiftaltm)
    - [Crop layer to selection](#crop-layer-to-selection-ctrlshifte)
    - [Crop layer to contents](#crop-layer-to-contents-ctrlshiftp)
 6. [Filters menu](#filters-menu)
@@ -462,6 +464,12 @@ If none of these changes are relevant for the current active layer, the "flatten
 
 ### Merge layer down (Ctrl+Shift+M)
 Attempts to merge a layer with the one beneath it.  This will only be allowed when both layers are unlocked and visible, both are within the same group, and neither layer is also a group.
+
+### Merge group (Ctrl+Shift+Alt+G)
+Merges the active layer group into a single image layer.  This is only available when a non-empty unlocked layer group is active.  The resulting image layer keeps the group's name and replaces it in the stack.
+
+### Merge all visible (Ctrl+Shift+Alt+M)
+Merges every visible top-level layer into a single new image layer named "Merged".  Hidden top-level layers are left in place.  This requires at least two visible layers, or one visible layer group with contents.  Locked layers that would be removed will block the operation.
 
 ### Crop layer to selection (Ctrl+Shift+E)
 Finds the smallest rectangle that contains all selected content within the active layer's bounds, and crops the layer to fit that rectangle.  This will fail if nothing is selected within the layer bounds.

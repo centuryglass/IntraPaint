@@ -4,6 +4,8 @@ import sys
 import unittest
 from unittest.mock import MagicMock
 
+from typing import cast
+
 from PySide6.QtCore import QSize, QRect, QPoint, Qt
 from PySide6.QtGui import QImage, QPainter
 from PySide6.QtWidgets import QApplication
@@ -11,6 +13,7 @@ from PySide6.QtWidgets import QApplication
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.selection_layer import SelectionLayer
@@ -340,4 +343,67 @@ class ImageStackTest(unittest.TestCase):
         self.assertEqual(expected_image, final_image)
         self.assertEqual(1, UndoStack().undo_count())
 
+    def test_merge_group(self) -> None:
+        """Merge group should replace a layer group with a single image layer."""
+        group = self.image_stack.create_layer_group('group')
+        top = self.image_stack.create_layer('top', layer_parent=group)
+        bottom = self.image_stack.create_layer('bottom', layer_parent=group)
+        with top.borrow_image() as image:
+            painter = QPainter(image)
+            painter.fillRect(QRect(10, 10, 40, 40), Qt.GlobalColor.red)
+            painter.end()
+        with bottom.borrow_image() as image:
+            painter = QPainter(image)
+            painter.fillRect(QRect(20, 20, 40, 40), Qt.GlobalColor.blue)
+            painter.end()
+
+        before = self.image_stack.qimage(crop_to_image=False)
+        self.image_stack.active_layer = group
+        UndoStack().clear()
+        self.image_stack.merge_group()
+        active = self.image_stack.active_layer
+        self.assertIsInstance(active, ImageLayer)
+        self.assertEqual(active.name, 'group')
+        self.assertEqual(1, self.image_stack.count)
+        self.assertEqual(before, self.image_stack.qimage(crop_to_image=False))
+
+        UndoStack().undo()
+        self.assertEqual(1, self.image_stack.count)
+        self.assertIsInstance(self.image_stack.layer_stack.child_layers[0], LayerGroup)
+        self.assertEqual(2, cast(LayerGroup, self.image_stack.layer_stack.child_layers[0]).count)
+
+    def test_merge_all_visible(self) -> None:
+        """Merge all visible should combine visible layers and preserve hidden ones."""
+        hidden = self.image_stack.create_layer('hidden')
+        visible_a = self.image_stack.create_layer('a')
+        visible_b = self.image_stack.create_layer('b')
+        hidden.set_visible(False)
+        with visible_a.borrow_image() as image:
+            painter = QPainter(image)
+            painter.fillRect(QRect(0, 0, 50, 50), Qt.GlobalColor.red)
+            painter.end()
+        with visible_b.borrow_image() as image:
+            painter = QPainter(image)
+            painter.fillRect(QRect(25, 25, 50, 50), Qt.GlobalColor.green)
+            painter.end()
+        with hidden.borrow_image() as image:
+            painter = QPainter(image)
+            painter.fillRect(QRect(100, 100, 30, 30), Qt.GlobalColor.blue)
+            painter.end()
+
+        before_visible = self.image_stack.qimage(crop_to_image=False)
+        UndoStack().clear()
+        self.image_stack.merge_all_visible()
+        self.assertEqual(2, self.image_stack.count)
+        layers = self.image_stack.layer_stack.child_layers
+        self.assertIsInstance(layers[0], ImageLayer)
+        self.assertEqual(layers[0].name, 'Merged')
+        self.assertFalse(layers[1].visible)
+        self.assertEqual(layers[1].name, 'hidden')
+        self.assertEqual(before_visible, self.image_stack.qimage(crop_to_image=False))
+
+        UndoStack().undo()
+        self.assertEqual(3, self.image_stack.count)
+        restored_names = [layer.name for layer in self.image_stack.layer_stack.child_layers]
+        self.assertEqual(['a', 'b', 'hidden'], restored_names)
 

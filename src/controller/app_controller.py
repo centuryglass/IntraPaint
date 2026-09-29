@@ -698,6 +698,7 @@ class AppController(MenuBuilder):
             self.layer_rotate_ccw,
             self.delete_layer,
             self.merge_layer_down,
+            self.merge_group,
             self.flatten_layer,
             self.layer_to_image_size,
             self.crop_layer_to_content,
@@ -720,10 +721,12 @@ class AppController(MenuBuilder):
             self.move_layer_down,
             self.move_layer_to_top,
             self.flatten_layer,
+            self.merge_group,
             self.copy_layer,
             self.delete_layer
         }
         not_flat_methods: set[Callable[..., None]] = {self.flatten_layer}
+        layer_group_only_methods: set[Callable[..., None]] = {self.merge_group}
         not_layer_group_methods: set[Callable[..., None]] = {
             self.merge_layer_down,
             self.layer_to_image_size
@@ -732,7 +735,8 @@ class AppController(MenuBuilder):
         not_text_layer_methods: set[Callable[..., None]] = {self.crop_layer_to_content}
 
         managed_menu_methods = selection_methods | unlocked_layer_methods | not_bottom_layer_methods \
-                               | not_top_layer_methods | not_layer_stack_methods | not_layer_group_methods
+                               | not_top_layer_methods | not_layer_stack_methods | not_layer_group_methods \
+                               | layer_group_only_methods
 
         active_layer = self._image_stack.active_layer
         is_top_layer = active_layer == self._image_stack.layer_stack or self._image_stack.prev_layer(active_layer) \
@@ -755,6 +759,7 @@ class AppController(MenuBuilder):
                                                    active_layer == self._image_stack.layer_stack),
                                                   (not_flat_methods, self._image_stack.layer_is_flat(active_layer)),
                                                   (not_layer_group_methods, isinstance(active_layer, LayerGroup)),
+                                                  (layer_group_only_methods, not isinstance(active_layer, LayerGroup)),
                                                   (not_text_layer_methods, isinstance(active_layer, TextLayer))):
                 if menu_method in method_set and disable_condition:
                     action.setEnabled(False)
@@ -772,6 +777,22 @@ class AppController(MenuBuilder):
                     or not isinstance(next_layer, TransformLayer) \
                     or next_layer.layer_parent != active_layer.layer_parent:
                 merge_down_action.setEnabled(False)
+
+        # "Merge group" should also be disabled for empty/flat groups:
+        merge_group_action = self.get_action_for_method(self.merge_group)
+        if merge_group_action.isEnabled() and self._image_stack.layer_is_flat(active_layer):
+            merge_group_action.setEnabled(False)
+
+        # "Merge all visible" needs at least one mergeable visible top-level layer:
+        merge_visible_action = self.get_action_for_method(self.merge_all_visible)
+        if _test_state(self.merge_all_visible):
+            visible_top_layers = [layer for layer in self._image_stack.layer_stack.child_layers if layer.visible]
+            can_merge_visible = len(visible_top_layers) > 1 or (len(visible_top_layers) == 1
+                                                                and isinstance(visible_top_layers[0], LayerGroup)
+                                                                and visible_top_layers[0].count > 0)
+            merge_visible_action.setEnabled(can_merge_visible)
+        else:
+            merge_visible_action.setEnabled(False)
 
         self._can_clear_or_cut_image = not is_locked and not selection_is_empty
         self._can_copy_image = not selection_is_empty
@@ -1472,23 +1493,33 @@ class AppController(MenuBuilder):
         """Merge the active layer with the one beneath it."""
         self._image_stack.merge_layer_down()
 
-    @menu_action(MENU_LAYERS, 'flatten_layer_shortcut', 444, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYERS, 'merge_group_shortcut', 445, valid_app_states=[APP_STATE_EDITING])
+    def merge_group(self) -> None:
+        """Merge the active layer group into a single image layer."""
+        self._image_stack.merge_group()
+
+    @menu_action(MENU_LAYERS, 'merge_all_visible_shortcut', 446, valid_app_states=[APP_STATE_EDITING])
+    def merge_all_visible(self) -> None:
+        """Merge all visible layers into a single image layer."""
+        self._image_stack.merge_all_visible()
+
+    @menu_action(MENU_LAYERS, 'flatten_layer_shortcut', 447, valid_app_states=[APP_STATE_EDITING])
     def flatten_layer(self) -> None:
         """Simplifies the active layer."""
         self._image_stack.flatten_layer()
 
-    @menu_action(MENU_LAYERS, 'layer_to_image_size_shortcut', 445,
+    @menu_action(MENU_LAYERS, 'layer_to_image_size_shortcut', 448,
                  valid_app_states=[APP_STATE_EDITING])
     def layer_to_image_size(self) -> None:
         """Crop or expand the active layer to match the image size."""
         self._image_stack.layer_to_image_size()
 
-    @menu_action(MENU_LAYERS, 'crop_layer_to_selection_shortcut', 446, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYERS, 'crop_layer_to_selection_shortcut', 449, valid_app_states=[APP_STATE_EDITING])
     def crop_layer_to_selection(self) -> None:
         """Crop the active layer to fit overlapping selection bounds."""
         crop_layer_to_selection(self._image_stack)
 
-    @menu_action(MENU_LAYERS, 'crop_to_content_shortcut', 447,
+    @menu_action(MENU_LAYERS, 'crop_to_content_shortcut', 450,
                  valid_app_states=[APP_STATE_EDITING])
     def crop_layer_to_content(self) -> None:
         """Crop the active layer to remove fully transparent border pixels."""

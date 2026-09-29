@@ -75,7 +75,7 @@ Final notes: Text layer handling is pretty important, and shouldn't be too hard.
 ## Layer interface
 - Possibly add selection layer back to layer panel
 - Layer multi-select: Topmost selected layer is active, all others only selected for the sake of bulk copy/grouping/merge/delete
-- Add "merge group" and "merge all visible" options
+## Menus
 Final notes: Multi-select might be a bit of a pain, merge options should be trivial. Displaying the selection in the layer interface is a UX question to answer later.
 
 ### Draw tool
