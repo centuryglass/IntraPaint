@@ -118,7 +118,7 @@ class QtPaintBrushTool(BrushTool):
 
         if color_key is not None:
             def _update_color(color_str: str) -> None:
-                if not QColor.isValidColor(color_str):
+                if not QColor(color_str).isValid():
                     logger.error(f'Got invalid color string {color_str}')
                     return
                 self.brush_color = QColor(color_str)

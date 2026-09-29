@@ -53,7 +53,7 @@ class ColorButton(QPushButton):
 
     def _update_color(self, color: str | QColor) -> None:
         if isinstance(color, str):
-            color = QColor(color) if QColor.isValidColor(color) else self._color
+            color = QColor(color) if QColor(color).isValid() else self._color
         if color != self._color:
             self._color = color
             self._icon = get_color_icon(color)

@@ -99,7 +99,7 @@ class ShapeToolPanel(QWidget):
         self._fill_pattern_label.setToolTip(self._fill_style_dropdown.toolTip())
 
         def _update_fill_previews(color_str) -> None:
-            if QColor.isValidColor(color_str):
+            if QColor(color_str).isValid():
                 color = QColor(color_str)
                 self._fill_style_dropdown.set_icon_colors(color)
         cache.connect(self._fill_style_dropdown, Cache.SHAPE_TOOL_FILL_COLOR, _update_fill_previews)
@@ -127,7 +127,7 @@ class ShapeToolPanel(QWidget):
         self._antialiasing_checkbox.setText(cache.get_label(Cache.SMUDGE_TOOL_ANTIALIAS))
 
         def _update_line_previews(color_str) -> None:
-            if QColor.isValidColor(color_str):
+            if QColor(color_str).isValid():
                 color = QColor(color_str)
                 self._pen_style_dropdown.set_icon_colors(color)
                 self._pen_join_style_dropdown.set_icon_colors(color)
