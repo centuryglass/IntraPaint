@@ -88,7 +88,7 @@ class LayerGroup(Layer, LayerParent):
         bounds = self.bounds
         right_edge = self.bounds.x() + self.bounds.width()
 
-        with UndoStack().combining_actions('LayerGroup.flip_horizontal') and self.all_signals_delayed():
+        with UndoStack().combining_actions('LayerGroup.flip_horizontal'), self.all_signals_delayed():
             for layer in self.recursive_child_layers:
                 if isinstance(layer, TransformLayer):
                     initial_bounds = layer.transformed_bounds
@@ -108,7 +108,7 @@ class LayerGroup(Layer, LayerParent):
                 raise ValueError(f'Attempted transformation on layer group containing locked layer {layer.name}.')
         bounds = self.bounds
         bottom_edge = self.bounds.y() + self.bounds.height()
-        with UndoStack().combining_actions('LayerGroup.flip_vertical') and self.all_signals_delayed():
+        with UndoStack().combining_actions('LayerGroup.flip_vertical'), self.all_signals_delayed():
             for layer in self.recursive_child_layers:
                 if isinstance(layer, TransformLayer):
                     initial_bounds = layer.transformed_bounds

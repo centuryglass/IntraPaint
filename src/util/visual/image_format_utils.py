@@ -1,13 +1,14 @@
 """Utility functions for saving and loading images across as many file formats as possible."""
 from typing import Optional, Any
 
-from PIL import Image, ExifTags, PngImagePlugin, TiffImagePlugin, TiffTags
+from PIL import Image, ExifTags, PngImagePlugin, TiffImagePlugin, TiffTags, UnidentifiedImageError
 from PIL.ExifTags import IFD
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImageReader, QImageWriter, QImage
 
 from src.util.visual.image_utils import logger
-from src.util.visual.pil_image_utils import qimage_to_pil_image, pil_image_to_qimage
+from src.util.visual.pil_image_utils import qimage_to_pil_image, pil_image_to_qimage, EXCLUDED_PIL_FORMATS, \
+    PIL_OPEN_FORMATS
 
 METADATA_PARAMETER_KEY = 'parameters'
 METADATA_COMMENT_KEY = 'comment'
@@ -28,19 +29,21 @@ QIMAGE_WRITE_FORMATS = {str(qba.data(), encoding='utf-8').upper() for qba in QIm
 #                'JPX', 'J2C', 'ICNS', 'ICO', 'IM', 'IIM', 'JFIF', 'JPE', 'JPG', 'JPEG', 'TIF', 'TIFF', 'MIC', 'MPG',
 #                'MPEG', 'MSP', 'PCD', 'PXR', 'PBM', 'PGM', 'PPM', 'PNM', 'PFM', 'PSD', 'QOI', 'BW', 'RGB', 'RGBA',
 #                'SGI', 'RAS', 'TGA', 'ICB', 'VDA', 'VST', 'WEBP', 'WMF', 'EMF', 'XBM', 'XPM']
-PIL_READ_FORMATS = {ex[1:].upper() for ex, f in Image.registered_extensions().items() if f in Image.OPEN}
+PIL_READ_FORMATS = {ex[1:].upper() for ex, f in Image.registered_extensions().items()
+                    if f in Image.OPEN and f not in EXCLUDED_PIL_FORMATS}
 
 # PIL can write: ['BLP', 'BMP', 'DIB', 'BUFR', 'PCX', 'DDS', 'PS', 'EPS', 'GIF', 'GRIB', 'H5', 'HDF', 'PNG', 'APNG',
 #                 'JP2', 'J2K', 'JPC', 'JPF', 'JPX', 'J2C', 'ICNS', 'ICO', 'IM', 'JFIF', 'JPE', 'JPG', 'JPEG', 'TIF',
 #                 'TIFF', 'MPO', 'MSP', 'PALM', 'PDF', 'PBM', 'PGM', 'PPM', 'PNM', 'PFM', 'BW', 'RGB', 'RGBA', 'SGI',
 #                 'TGA', 'ICB', 'VDA', 'VST', 'WEBP', 'WMF', 'EMF', 'XBM']
-PIL_WRITE_FORMATS = {ex[1:].upper() for ex, f in Image.registered_extensions().items() if f in Image.SAVE}
+PIL_WRITE_FORMATS = {ex[1:].upper() for ex, f in Image.registered_extensions().items()
+                     if f in Image.SAVE and f not in EXCLUDED_PIL_FORMATS}
 
 # Formats that are programmatically listed as valid, but fail in testing.
 INVALID_WRITE_FORMATS = {'MSP', 'JFIF', 'H5', 'HDF', 'PFM', 'APNG', 'WBMP', 'AVIFS'}
 
 # Formats that need to be renamed to work correctly:
-RENAMED_FORMATS = {'ICB': 'TGA', 'VST': 'TGA', 'VDA': 'TGA', 'EMF': 'WMF', 'JPE': 'JPEG', 'JPG': 'JPEG', 'PS': 'EPS',
+RENAMED_FORMATS = {'ICB': 'TGA', 'VST': 'TGA', 'VDA': 'TGA', 'EMF': 'WMF', 'JPE': 'JPEG', 'JPG': 'JPEG',
                    'RGB': 'SGI', 'RGBA': 'SGI', 'BW': 'SGI', 'PBM': 'PPM', 'PGM': 'PPM', 'PNM': 'PPM', 'TIF': 'TIFF'}
 
 # Formats that need to be omitted from PIL save parameters to work correctly:
@@ -76,7 +79,7 @@ IMAGE_FORMATS_WITH_FIXED_SIZE = {
 
 # File formats that need explicit conversion before save:
 PALETTE_FORMATS = {'BLP', 'PALM', 'XPM'}
-RGB_FORMATS = {'JPEG', 'JPG', 'EPS', 'MPO', 'PCX'}
+RGB_FORMATS = {'JPEG', 'JPG', 'MPO', 'PCX'}
 BINARY_FORMATS = {'XBM'}
 
 
@@ -220,8 +223,9 @@ def load_image(file_path: str) -> tuple[QImage, Optional[dict[str, Any]], Option
         raise ValueError(f'Invalid path {file_path} missing extension')
     file_format = file_path[delimiter_index + 1:].upper()
     if file_format in IMAGE_FORMATS_SUPPORTING_METADATA or file_format not in QIMAGE_READ_FORMATS:
-        assert file_format in PIL_READ_FORMATS
-        image = Image.open(file_path)
+        if file_format not in PIL_READ_FORMATS:
+            raise UnidentifiedImageError(f'Unsupported image format {file_format}')
+        image = Image.open(file_path, formats=PIL_OPEN_FORMATS)
         exif = image.getexif()
         info = None
         if hasattr(image, 'tag_v2') and file_format in ('TIF', 'TIFF'):
