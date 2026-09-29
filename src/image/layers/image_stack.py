@@ -83,6 +83,9 @@ ERROR_MESSAGE_TOP_GROUP_CHANGE = _tr('To edit the main layer group, edit its lay
 WARNING_TITLE_CROP_DELETED_LAYERS = _tr('Warning: cropping deleted layer(s)')
 WARNING_MESSAGE_CROP_DELETED_LAYERS = _tr('<p>Cropping the image deleted the following layers:</p><ul>'
                                           '{layer_names}</ul>')
+WARNING_TITLE_HIDDEN_LAYERS_LOST = _tr('Hidden layers will be deleted')
+WARNING_MESSAGE_HIDDEN_LAYERS_LOST = _tr(
+    'Merging will delete the following hidden layers within groups: {layer_names}. Continue?')
 
 RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
 
@@ -975,9 +978,8 @@ class ImageStack(QObject):
                         hidden_in_groups.append(child)
         if len(hidden_in_groups) > 0:
             hidden_names = ', '.join([f'"{layer.name}"' for layer in hidden_in_groups])
-            warning_message = _tr('Merging will delete the following hidden layers within groups: {layer_names}.'
-                                  ' Continue?').format(layer_names=hidden_names)
-            if not request_confirmation(None, _tr('Hidden layers will be deleted'), warning_message):
+            warning_message = WARNING_MESSAGE_HIDDEN_LAYERS_LOST.format(layer_names=hidden_names)
+            if not request_confirmation(None, WARNING_TITLE_HIDDEN_LAYERS_LOST, warning_message):
                 return
 
         bottom_layer = visible_layers[-1]
