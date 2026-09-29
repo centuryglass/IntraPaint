@@ -23,7 +23,7 @@ from src.image.layers.selection_layer import SelectionLayer
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.text_rect import TextRect
-from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog
+from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog, request_confirmation
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
 from src.util.cached_data import CachedData
@@ -929,8 +929,9 @@ class ImageStack(QObject):
     def merge_all_visible(self) -> None:
         """Merge all visible top-level layers into a single image layer.
 
-        Hidden top-level layers are preserved. The merged layer is placed at the former
-        position of the bottommost visible layer.
+        Hidden top-level layers are preserved. Hidden layers within visible groups are
+        deleted. The merged layer is placed at the former position of the bottommost
+        visible layer.
         """
         visible_layers = [layer for layer in self._layer_stack.child_layers if layer.visible]
         if len(visible_layers) == 0:
@@ -965,6 +966,20 @@ class ImageStack(QObject):
             if not TextLayer.confirm_or_cancel_render_to_image(text_layer_names, ACTION_NAME_MERGE_VISIBLE):
                 return
 
+        # Check for hidden layers within visible groups that would be deleted:
+        hidden_in_groups: list[Layer] = []
+        for layer in visible_layers:
+            if isinstance(layer, LayerGroup):
+                for child in layer.recursive_child_layers:
+                    if not child.visible:
+                        hidden_in_groups.append(child)
+        if len(hidden_in_groups) > 0:
+            hidden_names = ', '.join([f'"{layer.name}"' for layer in hidden_in_groups])
+            warning_message = _tr('Merging will delete the following hidden layers within groups: {layer_names}.'
+                                  ' Continue?').format(layer_names=hidden_names)
+            if not request_confirmation(None, _tr('Hidden layers will be deleted'), warning_message):
+                return
+
         bottom_layer = visible_layers[-1]
         bottom_index = self._layer_stack.get_layer_index(bottom_layer)
         assert bottom_index is not None
@@ -978,7 +993,7 @@ class ImageStack(QObject):
         new_layer = self._create_layer_internal(MERGED_LAYER_NAME, merged_image)
         new_layer.set_transform(QTransform.fromTranslate(stack_bounds.x(), stack_bounds.y()))
 
-        removed_layers = list(visible_layers)
+        removed_layers = tuple(visible_layers)
         removed_indices = [self._layer_stack.get_layer_index(layer) for layer in removed_layers]
         assert all(idx is not None for idx in removed_indices)
         last_active_id = self.active_layer_id
