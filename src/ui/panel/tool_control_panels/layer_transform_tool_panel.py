@@ -346,13 +346,13 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
 
     @property
     def layer_height(self) -> float:
-        """Accesses the layer's transformed width value."""
-        return self._width_box.value()
+        """Accesses the layer's transformed height value."""
+        return self._height_box.value()
 
     @layer_height.setter
-    def layer_height(self, width: float) -> None:
+    def layer_height(self, height: float) -> None:
         with signals_blocked(self._height_box):
-            self._height_box.setValue(width)
+            self._height_box.setValue(height)
 
     @property
     def x_scale(self) -> float:
