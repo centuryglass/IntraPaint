@@ -164,29 +164,23 @@ Format: `[YYYY-MM-DD] Topic — decision. (rationale / where documented)`
   defer; effort may shrink to adapter tests since the library ships its own client tests.
 
 ## Generation-area / context-control UX (from generation_area_ux.md, OQ6)
-- [2026-08-10] **Diagnosis:** context control is clunky because the generation **area** (image-space
-  rect) and generation **resolution** (`GENERATION_SIZE`) are two independent values whose ratio (the
-  scale factor — the whole point of the downscaling-for-detail workflow) is **never displayed** and is
-  reconciled by hand via two "match" buttons that decay after every area edit. Compounded by: three
-  overlapping size names — `EDIT_SIZE` is a **redundant bidirectional shadow** of the area size
-  (image_stack.py:119-123, 352-353) yet `MIN_/MAX_EDIT_SIZE` are what clamp the area; controls
-  **scattered** across the Gen-Area tool panel, SD panel, and selection panels (resolution +
-  inpaint-full-res each duplicated); a **non-standard handle-less gizmo** (left=teleport top-left /
-  right=resize-from-top-left-only, generation_area_tool.py:56-75); and **no preview** of the tensor
-  the backend actually receives.
-- [2026-08-10] **Direction (low-risk → structural):** P1 collapse the vocabulary to two names and
-  demote/remove `EDIT_SIZE`; P2 a live **scale badge** (area→res + Nx factor, model-band color cue,
-  aspect-mismatch flag); P3 replace the manual match buttons with an **aspect/size link toggle +
-  model-aware resolution presets**; P4 a **handled bounding-box gizmo reusing A2's outline machinery**
-  (the only OQ6 item gated on an upstream dep); P5 **promote the inpaint-full-res crop overlay to the
-  main canvas** with directly-draggable padding (retire the 1px-dot trick as the only path); P6 the
-  flagship **"model's-eye" WYSIWYG preview** driven by a **single shared crop+scale+fill function**
-  that both the preview and the real request builders call (A6 single-source-of-truth — preview and
-  actual can't diverge). Consolidate P2/P3/P5/P6 into one context surface; the SD panel references
-  shared control widgets rather than duplicating them.
-- [2026-08-10] **Scope:** model API unchanged except optional `EDIT_SIZE` removal + an additive
-  `ImageStack.generation_input(...)` helper; no backend/undo/generator-selection changes. **Feeds OQ2**
-  (the mouse scheme + triple naming are concrete editor-norm idiosyncrasies to cite, not re-derive).
+- [2026-09-30] **Design agreed with the maintainer** after a workflow interview; implementation tracked
+  in #41. Inpaint full-res is nearly always on, so the generation area acts as the outer limit and aspect
+  template, and padding (plus the 1px selection-brush trick) is the working context control. The crop
+  grows to the area's aspect ratio, so padding never distorts output. The biggest pain point is
+  switching area size and resolution together.
+- [2026-09-30] **Scope:** frame chips (full image, largest square, recent sizes, custom; a key flips
+  to the previous frame) + a resolution rule (match area / match area with a whole-number upscale to a
+  minimum side / manual); context pins on selection-brush right-click (not cleared after generating by
+  default); Shift+scroll padding; area follows the selection (minimal move by default, center, or off);
+  G tool grab-inside / center-outside dragging plus aspect-locked handles on the canvas.
+- [2026-09-30] **Constraints:** the WebUI backend crops server-side from the mask, so pins need a
+  client-side crop there (share the ComfyUI crop helpers via `SDGenerator`). The handles must not build
+  on `TransformOutline` (#11 redesigns it). Left-click must keep moving the area in the navigation panel.
+- [2026-09-30] **Deferred:** a context bar visible for every tool (panel layout complexity), an
+  out-of-bounds indicator (design unsettled), moving the area to a layer's bounds.
+- [2026-09-30] **Rejected:** automatic area growth when the selection outgrows the area (in any form),
+  and scale readouts or a "model's-eye" preview (the outlines already show what the model sees).
 
 ## Responsive layout / small displays (from responsive_layout.md, OQ1)
 - [2026-08-10] **Verified:** three *uncoordinated* responsive systems already exist — (a) draggable-
