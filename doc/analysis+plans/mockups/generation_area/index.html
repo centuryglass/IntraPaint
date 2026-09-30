@@ -1,0 +1,1005 @@
+<title>Generation Area Lab</title>
+<meta name="description" content="Interactive IntraPaint generation-area design mockups">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap">
+<style>
+/* Layout: a simulated IntraPaint window (tool column | canvas) beside a notes rail of design switches.
+   One committed dark look, matching IntraPaint's dark Qt theme. */
+:root {
+  --bg: #17181b;        /* page ground */
+  --win: #26272b;       /* app window */
+  --panel: #303136;     /* Qt panels */
+  --field: #1c1d20;     /* inputs, canvas surround */
+  --line: #45464d;
+  --fg: #e3e3e6;
+  --dim: #9c9da5;
+  --accent: #52a6e2;    /* Qt slider blue */
+  --new: #e6ad45;       /* marks controls that don't exist today */
+  --warn: #e46a5f;
+  --pin: #52d6c3;       /* context marks */
+  --font-ui: "IBM Plex Sans", "Noto Sans", "Segoe UI", system-ui, sans-serif;
+  --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font: 13px/1.4 var(--font-ui); margin: 0; }
+* { box-sizing: border-box; }
+button, input, select { font: inherit; color: inherit; }
+kbd { font: 500 11px var(--font-mono); background: var(--field); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; color: var(--fg); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.page { height: 100%; display: flex; flex-direction: column; padding-inline: 16px; padding-block: 10px; gap: 10px; }
+.top { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+.top h1 { font: 600 18px var(--font-head); letter-spacing: .02em; margin: 0; }
+.top p { margin: 0; color: var(--dim); max-width: 80ch; }
+.shell { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 12px; }
+
+/* ---------- simulated app ---------- */
+.app { background: var(--win); border: 1px solid var(--line); border-radius: 6px; display: grid; grid-template-columns: 340px minmax(0,1fr); min-height: 0; overflow: hidden; }
+.left { background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+.tools { display: flex; gap: 6px; padding: 8px; border-bottom: 1px solid var(--line); }
+.toolbtn { width: 46px; height: 42px; border: 1px solid var(--line); background: var(--field); border-radius: 4px; position: relative; cursor: pointer; display: grid; place-items: center; }
+.toolbtn svg { width: 24px; height: 24px; }
+.toolbtn[aria-pressed="true"] { border-color: var(--accent); background: #243646; }
+.toolbtn b { position: absolute; right: 2px; bottom: 0; font: 600 10px var(--font-mono); color: var(--dim); }
+.toolbtn.fake { opacity: .35; cursor: default; }
+.panel { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid var(--line); }
+.panel h3 { font: 600 12px var(--font-ui); margin: 0; color: var(--fg); }
+.panel .sub { color: var(--dim); font-size: 12px; margin: 0; }
+.sect { font-size: 12px; color: var(--dim); margin-top: 4px; }
+.row { display: grid; grid-template-columns: 22px minmax(0,1fr) 64px; align-items: center; gap: 8px; }
+.row.wide { grid-template-columns: 70px minmax(0,1fr) 64px; }
+.row label { color: var(--dim); }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+input[type=number], input[type=text], select { background: var(--field); border: 1px solid var(--line); border-radius: 3px; padding: 2px 4px; width: 100%; font-variant-numeric: tabular-nums; }
+input:disabled { color: var(--dim); }
+.btn { background: #3b3c42; border: 1px solid var(--line); border-radius: 3px; padding: 4px 8px; cursor: pointer; }
+.btn:hover { background: #45464d; }
+.btn.primary { background: #2f5876; border-color: #3d7299; }
+.btnrow { display: flex; gap: 6px; flex-wrap: wrap; }
+.btnrow .btn { flex: 1 1 auto; }
+.check { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.check input { accent-color: var(--accent); }
+.res { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 6px; align-items: center; }
+.res label { color: var(--dim); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { border: 1px solid var(--line); background: var(--field); border-radius: 12px; padding: 2px 9px; cursor: pointer; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.chip:hover { border-color: var(--dim); }
+.chip.on { border-color: var(--accent); background: #243646; }
+.chip small { color: var(--dim); }
+.chip.add { color: var(--dim); }
+.chipinput { width: 90px; border-radius: 12px; padding: 2px 8px; }
+
+.ctxbar { background: #2b2c31; }
+.nav { display: flex; flex-direction: column; flex: 1; min-height: 250px; }
+.navtabs { display: flex; gap: 2px; padding: 6px 8px 0; }
+.navtabs span { padding: 3px 10px; border: 1px solid var(--line); border-bottom: 0; border-radius: 4px 4px 0 0; color: var(--dim); font-size: 12px; }
+.navtabs span.on { background: var(--field); color: var(--fg); }
+.navbody { background: var(--field); flex: 1; display: flex; flex-direction: column; min-height: 0; border-top: 1px solid var(--line); }
+.navcanvas { flex: 1; min-height: 180px; position: relative; }
+.navcanvas canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.navmodes { display: flex; gap: 4px; padding: 6px; }
+.navmodes .btn { flex: 1; }
+.navmodes .btn[aria-pressed="true"] { background: #2f5876; border-color: #3d7299; }
+
+.viewport { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.viewwrap { flex: 1; position: relative; min-height: 0; background: #1e1f22; }
+#view { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.hint { padding: 5px 10px; background: var(--panel); border-top: 1px solid var(--line); color: var(--dim); font-size: 12px; min-height: 28px; }
+.hint b { color: var(--fg); font-weight: 500; }
+.statusbar { display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: var(--panel); border-top: 1px solid var(--line); flex-wrap: wrap; }
+.statusbar .grow { flex: 1; }
+.statusbar .zoom { color: var(--dim); font-variant-numeric: tabular-nums; }
+
+.askchip { position: absolute; display: flex; align-items: center; gap: 6px; background: #3a2b2a; border: 1px solid var(--warn); border-radius: 4px; padding: 4px 6px 4px 10px; font-size: 12px; box-shadow: 0 4px 14px #0008; white-space: nowrap; z-index: 3; }
+.askchip .btn { padding: 1px 8px; }
+.toast { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); background: #111214ee; border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px 6px 12px; display: flex; gap: 10px; align-items: center; z-index: 4; max-width: calc(100% - 32px); }
+
+/* tag controls that are new in the proposal */
+body.tagnew .nw { position: relative; }
+body.tagnew .nw::after { content: "new"; position: absolute; top: -7px; right: -4px; font: 600 9px var(--font-mono); background: var(--new); color: #221a08; border-radius: 3px; padding: 0 3px; pointer-events: none; }
+
+/* ---------- notes rail ---------- */
+.notes { overflow-y: auto; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding-right: 4px; }
+.presets { display: flex; gap: 6px; }
+.presets .btn { flex: 1; padding: 6px; }
+.presets .btn[aria-pressed="true"] { background: #2f5876; border-color: #3d7299; }
+.opt { border-top: 1px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.opt h2 { font: 600 14px var(--font-head); letter-spacing: .02em; margin: 0; text-wrap: balance; }
+.opt .why { color: var(--dim); margin: 0; font-size: 12px; }
+.opt .desc { margin: 0; font-size: 12.5px; }
+.radios { display: flex; flex-direction: column; gap: 3px; }
+.radios label { display: flex; gap: 6px; align-items: baseline; cursor: pointer; }
+.radios input { accent-color: var(--accent); }
+.try ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; }
+.legend { display: grid; grid-template-columns: 28px 1fr; gap: 4px 8px; align-items: center; font-size: 12px; color: var(--dim); }
+.legend i { display: block; height: 10px; }
+.foot { color: var(--dim); font-size: 12px; }
+
+@media (max-width: 1150px) {
+  .page { height: auto; }
+  .shell { grid-template-columns: 1fr; }
+  .app { height: 760px; }
+  .notes { overflow: visible; }
+}
+@media (max-width: 700px) {
+  .app { grid-template-columns: 1fr; height: auto; }
+  .viewwrap { height: 420px; flex: none; }
+  .left { max-height: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="page">
+  <div class="top">
+    <h1>Generation Area Lab</h1>
+    <p>A working model of IntraPaint's generation area, with each proposed change as a switch on the right. The image is 1024×768, like your current batch. Nothing is generated; <kbd>F4</kbd> only flashes the area the model would see.</p>
+  </div>
+  <div class="shell">
+    <div class="app" id="app">
+      <aside class="left">
+        <div class="tools">
+          <button class="toolbtn" id="tool-select" aria-pressed="true" title="Selection brush (S)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#e46a5f" stroke-width="2"><circle cx="12" cy="12" r="7" stroke-dasharray="3 2"/><circle cx="12" cy="12" r="2" fill="#e46a5f"/></svg><b>S</b></button>
+          <button class="toolbtn" id="tool-gen" aria-pressed="false" title="Image generation area (G)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#e3e3e6" stroke-width="1.6"><rect x="3.5" y="3.5" width="17" height="17" stroke-dasharray="3 2"/><path d="M8 12h8M12 8v8" stroke="#52a6e2"/></svg><b>G</b></button>
+          <span class="toolbtn fake" title="Other tools are not part of this mockup"><svg viewBox="0 0 24 24" fill="none" stroke="#9c9da5" stroke-width="1.6"><path d="M5 19l9-9 3 3-9 9H5z"/></svg><b>B</b></span>
+          <span class="toolbtn fake"><svg viewBox="0 0 24 24" fill="none" stroke="#9c9da5" stroke-width="1.6"><path d="M4 7h16M4 12h10M4 17h13"/></svg><b>T</b></span>
+        </div>
+        <div id="toolpanel" class="panel"></div>
+        <div id="ctxbar" class="panel ctxbar nw" hidden></div>
+        <div class="nav">
+          <div class="navtabs"><span>Layers</span><span>Color</span><span class="on">Navigation</span></div>
+          <div class="navbody">
+            <div class="navcanvas" id="navwrap"><canvas id="nav"></canvas></div>
+            <div class="navmodes" id="navmodes">
+              <button class="btn" id="nav-gen" aria-pressed="true">Move gen. area</button>
+              <button class="btn" id="nav-view" aria-pressed="false">Move view</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+      <div class="viewport">
+        <div class="viewwrap" id="viewwrap">
+          <canvas id="view"></canvas>
+          <div class="askchip" id="askchip" hidden>
+            <span>The selection is bigger than the generation area.</span>
+            <button class="btn" id="ask-grow">Grow to fit</button>
+            <button class="btn" id="ask-keep">Keep size</button>
+          </div>
+          <div class="toast" id="toast" hidden><span id="toast-text"></span><button class="btn" id="toast-undo" hidden>Undo</button></div>
+        </div>
+        <div class="hint" id="hint"></div>
+        <div class="statusbar">
+          <span class="zoom" id="zoomlabel">Zoom 1.00</span>
+          <button class="btn" id="resetview">Reset view <kbd>Z</kbd></button>
+          <span class="grow"></span>
+          <button class="btn primary" id="generate">Generate <kbd>F4</kbd></button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="notes" id="notes">
+      <div class="presets">
+        <button class="btn" id="preset-current" aria-pressed="false">Current IntraPaint</button>
+        <button class="btn" id="preset-proposed" aria-pressed="true">Proposed</button>
+      </div>
+      <label class="check"><input type="checkbox" id="opt-tagnew" checked> Label controls that are new</label>
+      <div class="legend">
+        <i style="border-top:2px dashed #fff"></i><span>Generation area (outer limit)</span>
+        <i style="border-top:3px double #fff"></i><span>Inpaint full-res crop (what the model sees)</span>
+        <i style="border-top:2px solid var(--pin)"></i><span>Context pin or box (extends the crop, never inpainted)</span>
+        <i style="border-top:2px dashed var(--warn)"></i><span>Selection + padding that doesn't fit</span>
+      </div>
+      <div id="optlist"></div>
+      <div class="opt try">
+        <h2>Try your 1024×768 routine</h2>
+        <ol>
+          <li>Click the <b>Full</b> frame chip (or press <kbd>Q</kbd>) and do a whole-image pass.</li>
+          <li>Press <kbd>Q</kbd> to flip back to the 768² square. The resolution follows the area, with no extra clicks.</li>
+          <li>With the selection brush, paint over a detail. The area follows the selection, and the crop hugs it.</li>
+          <li>Right-click a spot you want the model to see. Right-drag to add a whole region. Press <kbd>F4</kbd> and the pins clear.</li>
+          <li>Shift+scroll anywhere over the canvas or navigation panel to change padding without leaving the current tool.</li>
+          <li>Paint a selection wider than 768px to see the overflow behaviors.</li>
+        </ol>
+      </div>
+      <div class="opt">
+        <h2>Left out on purpose</h2>
+        <p class="desc">The scale badge and the "model's-eye" preview from <code>generation_area_ux.md</code> are gone. You said the outlines already show exactly what the model gets, and the numbers don't help.</p>
+        <p class="desc">Not mocked: "Move generation area to layer bounds". It's useful for assembling txt2img pieces, but rare. It could be a layer context-menu item.</p>
+      </div>
+      <p class="foot">Mouse: middle-drag or Ctrl+drag pans. The wheel zooms. Arrow keys nudge the area, and Shift+arrows move 10px.</p>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+const IMG_W = 1024, IMG_H = 768, MIN_SIDE = 512;
+const img = new Image();
+img.src = 'sample.jpg';
+
+// ---------- design options ----------
+const CURRENT = { frames: 'off', ctx: 'legacy', oneShot: false, wheelPad: false, follow: 'off', overflow: 'ask',
+  navClick: 'topleft', navMerge: false, gizmo: 'legacy', bar: 'off' };
+const PROPOSED = { frames: 'on', ctx: 'pins', oneShot: true, wheelPad: true, follow: 'minimal', overflow: 'ask',
+  navClick: 'center', navMerge: true, gizmo: 'handles', bar: 'on' };
+const SPEC = [
+  { key: 'frames', title: 'Frames and a resolution rule',
+    why: 'Your biggest pain point: "Select full image" / set 768 / "Resolution to gen. area size" is a lot of clicks for a predictable step.',
+    desc: 'Frame chips set the area size in one click: the full image, the largest square, and sizes you used recently. Q flips to the previous frame. A resolution rule replaces the two match buttons. "Match area, at least 512" follows the area size and upscales small areas by a whole-number factor.',
+    choices: [['off', 'Two match buttons (current)'], ['on', 'Frame chips + resolution rule']] },
+  { key: 'bar', title: 'Controls you need without switching tools',
+    why: 'You open the G tool mostly to reach its panel, and you use padding constantly.',
+    desc: 'A small context bar sits above the navigation panel for every tool. It holds full-res, padding, frames and follow. The G panel keeps only exact X/Y/W/H entry.',
+    choices: [['off', 'Split across tool panels (current)'], ['on', 'Context bar above navigation']] },
+  { key: 'ctx', title: 'The 1px trick, made official',
+    why: 'You use it all the time: for one-sided padding, and because one right-click on what the model should see beats a slider.',
+    desc: 'Right-click with the selection brush drops a context pin. Right-drag drags out a context box. They stretch the crop like the 1px dot does, but nothing under them gets inpainted, you can see them, and a second right-click removes a pin.',
+    choices: [['legacy', 'Right-click paints a 1px selection (current)'], ['pins', 'Right-click pins, right-drag boxes']],
+    checks: [['oneShot', 'Clear pins and boxes after each generate'], ['wheelPad', 'Shift+scroll changes padding (canvas and navigation)']] },
+  { key: 'follow', title: 'Area follows the selection',
+    why: 'You expect a simple rule to pick the right spot 99% of the time. The hard case is a selection bigger than the area.',
+    desc: 'After each stroke, the area moves to contain the selection plus padding. "Minimal move" shifts it only as far as needed, so small follow-up edits don\'t jump the frame around. It only reacts to selection changes and never undoes a manual move.',
+    choices: [['off', 'Off (current)'], ['minimal', 'Minimal move'], ['center', 'Center on the selection']] },
+  { key: 'overflow', title: 'When the selection outgrows the area', dependsOn: 'follow',
+    why: 'You said no simple rule can tell "grow" from "keep", so each option leaves the decision with you.',
+    desc: 'Grow keeps the area\'s aspect ratio, so a square stays square.',
+    choices: [['ask', 'Ask with an inline prompt (ignore it = keep)'], ['keep', 'Keep size; outline the overflow; E grows'], ['grow', 'Grow automatically; offer Undo']] },
+  { key: 'navClick', title: 'Navigation panel: left-click',
+    why: 'Your fastest way to move the area. You rarely resize there. Click-to-center "might be slightly better".',
+    desc: 'Left always moves the area. "Grab" keeps the offset when you press inside the area, so dragging never jumps.',
+    choices: [['topleft', 'Top-left corner to click (current)'], ['center', 'Center on click'], ['grab', 'Grab inside, center outside']],
+    checks: [['navMerge', 'No mode toggle: right-drag frames the view, right-click centers it']] },
+  { key: 'gizmo', title: 'G tool on the canvas',
+    why: 'Free to change, as long as left-click moves in the navigation panel. You avoid resizing on canvas because of aspect drift.',
+    desc: 'Handles: drag inside to move, or click outside to center the area there. Corners keep the aspect ratio unless you hold Shift. Edges change one side. Resizing snaps the resolution to the rule when you let go.',
+    choices: [['legacy', 'Left moves top-left, right resizes (current)'], ['handles', 'Handles with aspect lock']] },
+];
+let O = { ...PROPOSED };
+
+// ---------- app state ----------
+const S = {
+  tool: 'select',
+  area: { x: 128, y: 0, w: 768, h: 768 },
+  res: { w: 768, h: 768 },
+  rule: 'match-min',
+  fullRes: true, padding: 32, brush: 36,
+  followOn: true,
+  marks: [],            // context pins/boxes: {l,t,r,b}
+  bbox: null,           // selection bounds, inclusive {l,t,r,b}
+  lastSize: { w: 768, h: 768 },
+  prevFrame: { w: IMG_W, h: IMG_H, full: true, res: { w: IMG_W, h: IMG_H } },
+  recent: [{ w: 512, h: 512, res: { w: 512, h: 512 } }, { w: 640, h: 480, res: { w: 640, h: 480 } }],
+  view: { scale: 1, ox: 0, oy: 0 },
+  navMode: 'gen',
+  mouse: null, flash: 0, undo: null, askVisible: false,
+};
+const maskC = document.createElement('canvas');
+maskC.width = IMG_W; maskC.height = IMG_H;
+const mctx = maskC.getContext('2d');
+mctx.fillStyle = '#ff3b30';
+
+const $ = id => document.getElementById(id);
+const view = $('view'), vctx = view.getContext('2d');
+const nav = $('nav'), nctx = nav.getContext('2d');
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const dpr = () => window.devicePixelRatio || 1;
+
+// ---------- geometry ----------
+function setArea(x, y, w, h) {
+  w = clamp(Math.round(w), 8, IMG_W); h = clamp(Math.round(h), 8, IMG_H);
+  x = clamp(Math.round(x), 0, IMG_W - w); y = clamp(Math.round(y), 0, IMG_H - h);
+  S.area = { x, y, w, h };
+}
+function centerAreaOn(cx, cy) { setArea(cx - S.area.w / 2, cy - S.area.h / 2, S.area.w, S.area.h); }
+function unionBounds() {
+  let b = S.bbox ? { ...S.bbox } : null;
+  if (!b) return null;
+  for (const m of S.marks) {
+    b.l = Math.min(b.l, m.l); b.t = Math.min(b.t, m.t); b.r = Math.max(b.r, m.r); b.b = Math.max(b.b, m.b);
+  }
+  return b;
+}
+// Selection + marks + padding, clamped to the image (not the area).
+function wantedRect() {
+  const b = unionBounds(); if (!b) return null;
+  const p = S.fullRes ? S.padding : 0;
+  return { l: clamp(b.l - p, 0, IMG_W - 1), t: clamp(b.t - p, 0, IMG_H - 1), r: clamp(b.r + p, 0, IMG_W - 1), b: clamp(b.b + p, 0, IMG_H - 1) };
+}
+// Port of SelectionLayer.get_selection_gen_area(): bounds + padding, clamped to the area, grown to the area's aspect.
+function cropRect() {
+  if (!S.fullRes) return null;
+  const b = unionBounds(); if (!b) return null;
+  const a = S.area, p = S.padding;
+  const aL = a.x, aR = a.x + a.w - 1, aT = a.y, aB = a.y + a.h - 1;
+  let top = Math.max(aT, b.t - p), bottom = Math.min(aB, b.b + p), left = Math.max(aL, b.l - p), right = Math.min(aR, b.r + p);
+  if (top >= bottom || left >= right) return null;
+  const height = bottom - top, width = right - left;
+  const ir = a.w / a.h, br = width / height;
+  if (ir > br) {
+    let add = Math.floor(ir * height) - width;
+    let dl = Math.min(left - aL, Math.floor(add / 2)); add -= dl;
+    const dr = Math.min(aR - right, add); add -= dr;
+    if (add > 0) dl = Math.min(left - aL, dl + add);
+    left -= dl; right += dr;
+  } else {
+    let add = Math.max(Math.floor(width / ir) - height, 0);
+    let dt = Math.min(top - aT, Math.floor(add / 2)); add -= dt;
+    const db = Math.min(aB - bottom, add); add -= db;
+    if (add > 0) dt = Math.min(top - aT, dt + add);
+    top -= dt; bottom += db;
+  }
+  return { x: left, y: top, w: right - left + 1, h: bottom - top + 1 };
+}
+function overflowing() {
+  const w = wantedRect(); if (!w) return false;
+  return (w.r - w.l + 1) > S.area.w || (w.b - w.t + 1) > S.area.h;
+}
+
+// ---------- resolution + frames ----------
+function applyRule() {
+  const { w, h } = S.area;
+  if (S.rule === 'match') S.res = { w, h };
+  else if (S.rule === 'match-min') {
+    const k = Math.min(w, h) < MIN_SIDE ? Math.ceil(MIN_SIDE / Math.min(w, h)) : 1;
+    S.res = { w: w * k, h: h * k };
+  }
+}
+function dynamicFrames() {
+  const sq = Math.min(IMG_W, IMG_H);
+  return [{ w: IMG_W, h: IMG_H, full: true, label: 'Full' }, { w: sq, h: sq, label: 'Square' }];
+}
+const sameSize = (a, b) => a && b && a.w === b.w && a.h === b.h;
+// Call when an area size change is finished (slider release, drag end, frame click).
+function commitSize() {
+  const cur = { w: S.area.w, h: S.area.h };
+  if (sameSize(cur, S.lastSize)) return;
+  S.prevFrame = { ...S.lastSize, res: { ...S.lastResBefore || S.res } };
+  S.lastSize = cur;
+  if (!dynamicFrames().some(f => sameSize(f, cur))) {
+    S.recent = [{ ...cur, res: { ...S.res } }, ...S.recent.filter(f => !sameSize(f, cur))].slice(0, 4);
+  }
+  S.lastResBefore = { ...S.res };
+}
+function applyFrame(f) {
+  hideAsk();
+  const prevRes = { ...S.res };
+  if (f.w >= IMG_W && f.h >= IMG_H) setArea(0, 0, IMG_W, IMG_H);
+  else {
+    const want = wantedRect();
+    const cx = want ? (want.l + want.r) / 2 : S.area.x + S.area.w / 2;
+    const cy = want ? (want.t + want.b) / 2 : S.area.y + S.area.h / 2;
+    setArea(cx - f.w / 2, cy - f.h / 2, f.w, f.h);
+  }
+  if (S.rule === 'manual' && f.res) S.res = { ...f.res }; else applyRule();
+  S.lastResBefore = prevRes;
+  commitSize();
+  refresh();
+}
+function flipFrame() { if (O.frames === 'on' && S.prevFrame) applyFrame(S.prevFrame); }
+
+// ---------- follow ----------
+function afterSelectionChange() {
+  if (O.follow === 'off' || !S.followOn) { refresh(); return; }
+  const w = wantedRect(); if (!w) { refresh(); return; }
+  const ww = w.r - w.l + 1, wh = w.b - w.t + 1, a = S.area;
+  const cx = (w.l + w.r) / 2, cy = (w.t + w.b) / 2;
+  if (ww <= a.w && wh <= a.h) {
+    hideAsk();
+    if (O.follow === 'center') centerAreaOn(cx, cy);
+    else {
+      let x = a.x, y = a.y;
+      if (w.l < x) x = w.l; if (w.r > x + a.w - 1) x = w.r - a.w + 1;
+      if (w.t < y) y = w.t; if (w.b > y + a.h - 1) y = w.b - a.h + 1;
+      setArea(x, y, a.w, a.h);
+    }
+  } else {
+    centerAreaOn(cx, cy);
+    if (O.overflow === 'ask') showAsk();
+    else if (O.overflow === 'grow') growToFit(true);
+  }
+  refresh();
+}
+function growToFit(withUndo) {
+  const w = wantedRect(); if (!w) return;
+  const before = { area: { ...S.area }, res: { ...S.res } };
+  const ww = w.r - w.l + 1, wh = w.b - w.t + 1, a = S.area;
+  let s = Math.max(ww / a.w, wh / a.h);
+  s = Math.min(s, IMG_W / a.w, IMG_H / a.h);   // stay inside the image and keep the aspect ratio
+  setArea(0, 0, a.w * s, a.h * s);
+  centerAreaOn((w.l + w.r) / 2, (w.t + w.b) / 2);
+  S.lastResBefore = before.res;
+  applyRule(); commitSize(); hideAsk();
+  if (withUndo) { S.undo = before; toast(`Area grew to ${S.area.w}×${S.area.h}.`, true); }
+  refresh();
+}
+
+// ---------- view ----------
+function fitView() {
+  const r = $('viewwrap').getBoundingClientRect();
+  const s = Math.min(r.width / IMG_W, r.height / IMG_H) * 0.94;
+  S.view = { scale: s, ox: (r.width - IMG_W * s) / 2, oy: (r.height - IMG_H * s) / 2 };
+}
+const toImg = (sx, sy) => ({ x: (sx - S.view.ox) / S.view.scale, y: (sy - S.view.oy) / S.view.scale });
+const toScr = (ix, iy) => ({ x: ix * S.view.scale + S.view.ox, y: iy * S.view.scale + S.view.oy });
+function zoomAt(sx, sy, f) {
+  const p = toImg(sx, sy);
+  S.view.scale = clamp(S.view.scale * f, 0.1, 16);
+  S.view.ox = sx - p.x * S.view.scale; S.view.oy = sy - p.y * S.view.scale;
+}
+function fitViewToRect(l, t, r, b) {
+  const box = $('viewwrap').getBoundingClientRect();
+  const w = Math.max(8, r - l), h = Math.max(8, b - t);
+  const s = Math.min(box.width / w, box.height / h);
+  S.view = { scale: s, ox: box.width / 2 - (l + w / 2) * s, oy: box.height / 2 - (t + h / 2) * s };
+}
+function sizeCanvas(c) {
+  const r = c.getBoundingClientRect(), d = dpr();
+  const w = Math.round(r.width * d), h = Math.round(r.height * d);
+  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+  return r;
+}
+
+// ---------- drawing ----------
+function strokeRect(ctx, x, y, w, h, style) {
+  ctx.save();
+  if (style === 'area') {
+    ctx.lineWidth = 1; ctx.strokeStyle = '#000'; ctx.strokeRect(x + .5, y + .5, w, h);
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = '#fff'; ctx.strokeRect(x + .5, y + .5, w, h);
+    ctx.strokeRect(x - 1.5, y - 1.5, w + 4, h + 4);
+  } else if (style === 'crop') {
+    ctx.lineWidth = 1; ctx.strokeStyle = '#fff'; ctx.strokeRect(x - .5, y - .5, w + 2, h + 2);
+    ctx.strokeStyle = '#000'; ctx.strokeRect(x + .5, y + .5, w, h);
+    ctx.strokeStyle = '#fff'; ctx.strokeRect(x + 1.5, y + 1.5, w - 2, h - 2);
+  } else if (style === 'over') {
+    ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]); ctx.strokeStyle = '#e46a5f'; ctx.strokeRect(x + .5, y + .5, w, h);
+  } else if (style === 'view') {
+    ctx.lineWidth = 1; ctx.strokeStyle = '#000'; ctx.strokeRect(x - .5, y - .5, w + 2, h + 2);
+    ctx.strokeStyle = '#fff'; ctx.strokeRect(x + .5, y + .5, w, h);
+  }
+  ctx.restore();
+}
+function drawMarks(ctx, map, small) {
+  ctx.save(); ctx.strokeStyle = '#52d6c3'; ctx.fillStyle = '#52d6c3'; ctx.lineWidth = small ? 1 : 1.5;
+  for (const m of S.marks) {
+    const a = map(m.l, m.t), b = map(m.r + 1, m.b + 1);
+    if (m.r - m.l < 2 && m.b - m.t < 2) {
+      const c = map(m.l + .5, m.t + .5), r = small ? 3 : 6;
+      ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(c.x - r - 3, c.y); ctx.lineTo(c.x + r + 3, c.y); ctx.moveTo(c.x, c.y - r - 3); ctx.lineTo(c.x, c.y + r + 3); ctx.stroke();
+    } else {
+      ctx.setLineDash([4, 3]); ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y); ctx.setLineDash([]);
+      ctx.globalAlpha = .12; ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y); ctx.globalAlpha = 1;
+    }
+  }
+  ctx.restore();
+}
+function drawOverlays(ctx, map, isNav) {
+  const a = S.area, p0 = map(a.x, a.y), p1 = map(a.x + a.w, a.y + a.h);
+  const crop = cropRect();
+  if (crop) { const c0 = map(crop.x, crop.y), c1 = map(crop.x + crop.w, crop.y + crop.h); strokeRect(ctx, c0.x, c0.y, c1.x - c0.x, c1.y - c0.y, 'crop'); }
+  strokeRect(ctx, p0.x, p0.y, p1.x - p0.x, p1.y - p0.y, 'area');
+  if (overflowing() && (O.follow === 'off' || !S.followOn || O.overflow === 'keep' || S.askVisible)) {
+    const w = wantedRect(), q0 = map(w.l, w.t), q1 = map(w.r + 1, w.b + 1);
+    strokeRect(ctx, q0.x, q0.y, q1.x - q0.x, q1.y - q0.y, 'over');
+  }
+  drawMarks(ctx, map, isNav);
+  if (S.flash > 0) {
+    const r = crop || a, f0 = map(r.x, r.y), f1 = map(r.x + r.w, r.y + r.h);
+    ctx.save(); ctx.globalAlpha = S.flash * .5; ctx.fillStyle = '#fff'; ctx.fillRect(f0.x, f0.y, f1.x - f0.x, f1.y - f0.y); ctx.restore();
+  }
+}
+function handlePoints() {
+  const a = S.area, p0 = toScr(a.x, a.y), p1 = toScr(a.x + a.w, a.y + a.h), mx = (p0.x + p1.x) / 2, my = (p0.y + p1.y) / 2;
+  return { nw: [p0.x, p0.y], n: [mx, p0.y], ne: [p1.x, p0.y], e: [p1.x, my], se: [p1.x, p1.y], s: [mx, p1.y], sw: [p0.x, p1.y], w: [p0.x, my] };
+}
+function renderView() {
+  const r = sizeCanvas(view), d = dpr();
+  vctx.setTransform(d, 0, 0, d, 0, 0);
+  vctx.fillStyle = '#1e1f22'; vctx.fillRect(0, 0, r.width, r.height);
+  const v = S.view;
+  vctx.save(); vctx.translate(v.ox, v.oy); vctx.scale(v.scale, v.scale);
+  vctx.imageSmoothingEnabled = v.scale < 2;
+  if (img.complete) vctx.drawImage(img, 0, 0); else { vctx.fillStyle = '#333'; vctx.fillRect(0, 0, IMG_W, IMG_H); }
+  vctx.globalAlpha = .45; vctx.drawImage(maskC, 0, 0); vctx.globalAlpha = 1;
+  vctx.restore();
+  drawOverlays(vctx, toScr, false);
+  if (S.tool === 'gen' && O.gizmo === 'handles') {
+    vctx.save(); vctx.fillStyle = '#fff'; vctx.strokeStyle = '#000';
+    for (const [x, y] of Object.values(handlePoints())) { vctx.fillRect(x - 4, y - 4, 8, 8); vctx.strokeRect(x - 4.5, y - 4.5, 9, 9); }
+    vctx.restore();
+  }
+  if (drag && drag.kind === 'markbox') {
+    const a = toScr(drag.start.x, drag.start.y), b = toScr(drag.cur.x, drag.cur.y);
+    vctx.save(); vctx.setLineDash([4, 3]); vctx.strokeStyle = '#52d6c3'; vctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y); vctx.restore();
+  }
+  if (S.mouse && S.tool === 'select' && !(drag && drag.kind === 'pan')) {
+    vctx.save(); vctx.strokeStyle = '#fff'; vctx.lineWidth = 1;
+    vctx.beginPath(); vctx.arc(S.mouse.x, S.mouse.y, Math.max(2, S.brush / 2 * v.scale), 0, Math.PI * 2); vctx.stroke();
+    vctx.strokeStyle = '#000'; vctx.beginPath(); vctx.arc(S.mouse.x, S.mouse.y, Math.max(2, S.brush / 2 * v.scale) + 1, 0, Math.PI * 2); vctx.stroke();
+    vctx.restore();
+  }
+  $('zoomlabel').textContent = `Zoom ${v.scale.toFixed(2)}`;
+  positionAsk();
+}
+let navGeo = { s: 1, ox: 0, oy: 0 };
+const navToScr = (x, y) => ({ x: x * navGeo.s + navGeo.ox, y: y * navGeo.s + navGeo.oy });
+const navToImg = (x, y) => ({ x: (x - navGeo.ox) / navGeo.s, y: (y - navGeo.oy) / navGeo.s });
+function renderNav() {
+  const r = sizeCanvas(nav), d = dpr();
+  nctx.setTransform(d, 0, 0, d, 0, 0);
+  nctx.fillStyle = '#1c1d20'; nctx.fillRect(0, 0, r.width, r.height);
+  const s = Math.min(r.width / IMG_W, r.height / IMG_H) * 0.94;
+  navGeo = { s, ox: (r.width - IMG_W * s) / 2, oy: (r.height - IMG_H * s) / 2 };
+  nctx.save(); nctx.translate(navGeo.ox, navGeo.oy); nctx.scale(s, s);
+  if (img.complete) nctx.drawImage(img, 0, 0);
+  nctx.globalAlpha = .45; nctx.drawImage(maskC, 0, 0); nctx.globalAlpha = 1;
+  nctx.restore();
+  const box = $('viewwrap').getBoundingClientRect();
+  const v0 = toImg(0, 0), v1 = toImg(box.width, box.height);
+  const a = navToScr(clamp(v0.x, 0, IMG_W), clamp(v0.y, 0, IMG_H)), b = navToScr(clamp(v1.x, 0, IMG_W), clamp(v1.y, 0, IMG_H));
+  strokeRect(nctx, a.x, a.y, b.x - a.x, b.y - a.y, 'view');
+  drawOverlays(nctx, navToScr, true);
+  if (drag && drag.kind === 'navview') {
+    const p = navToScr(drag.start.x, drag.start.y), q = navToScr(drag.cur.x, drag.cur.y);
+    nctx.save(); nctx.strokeStyle = '#52a6e2'; nctx.strokeRect(p.x, p.y, q.x - p.x, q.y - p.y); nctx.restore();
+  }
+}
+let raf = 0;
+function render() { if (!raf) raf = requestAnimationFrame(() => { raf = 0; renderView(); renderNav(); }); }
+
+// ---------- painting + marks ----------
+function dab(x, y) {
+  const r = S.brush / 2;
+  mctx.beginPath(); mctx.arc(x, y, r, 0, Math.PI * 2); mctx.fill();
+  growBBox(x - r, y - r, x + r, y + r);
+}
+function growBBox(l, t, r, b) {
+  l = clamp(Math.floor(l), 0, IMG_W - 1); t = clamp(Math.floor(t), 0, IMG_H - 1);
+  r = clamp(Math.ceil(r), 0, IMG_W - 1); b = clamp(Math.ceil(b), 0, IMG_H - 1);
+  if (!S.bbox) S.bbox = { l, t, r, b };
+  else { S.bbox.l = Math.min(S.bbox.l, l); S.bbox.t = Math.min(S.bbox.t, t); S.bbox.r = Math.max(S.bbox.r, r); S.bbox.b = Math.max(S.bbox.b, b); }
+}
+function strokeTo(p) {
+  const last = drag.last, dx = p.x - last.x, dy = p.y - last.y, dist = Math.hypot(dx, dy);
+  const step = Math.max(1, S.brush / 4), n = Math.ceil(dist / step);
+  for (let i = 1; i <= n; i++) dab(last.x + dx * i / n, last.y + dy * i / n);
+  drag.last = p;
+}
+function clearSelection() {
+  mctx.clearRect(0, 0, IMG_W, IMG_H); S.bbox = null; S.marks = []; hideAsk(); refresh();
+}
+function toggleMarkAt(p) {
+  const tol = 8 / S.view.scale;
+  const i = S.marks.findIndex(m => m.r - m.l < 2 && Math.abs(m.l - p.x) < tol && Math.abs(m.t - p.y) < tol);
+  if (i >= 0) S.marks.splice(i, 1);
+  else { const x = clamp(Math.round(p.x), 0, IMG_W - 1), y = clamp(Math.round(p.y), 0, IMG_H - 1); S.marks.push({ l: x, t: y, r: x, b: y }); }
+}
+
+// ---------- canvas input ----------
+let drag = null;
+function localXY(e, el) { const r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+function hitHandle(sx, sy) {
+  for (const [k, [x, y]] of Object.entries(handlePoints())) if (Math.abs(sx - x) <= 7 && Math.abs(sy - y) <= 7) return k;
+  return null;
+}
+const CURSORS = { nw: 'nwse-resize', se: 'nwse-resize', ne: 'nesw-resize', sw: 'nesw-resize', n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize' };
+function insideArea(p) { const a = S.area; return p.x >= a.x && p.x < a.x + a.w && p.y >= a.y && p.y < a.y + a.h; }
+function legacyResize(p) {
+  const a = S.area;
+  let w = Math.min(IMG_W - a.x, p.x - a.x), h = Math.min(IMG_H - a.y, p.y - a.y);
+  if (w <= 0 || h <= 0) return;
+  if (drag && drag.shift) { const ar = S.res.w / S.res.h; if (w / h > ar) w = h * ar; else h = w / ar; }
+  setArea(a.x, a.y, w, h);
+}
+
+view.addEventListener('contextmenu', e => e.preventDefault());
+nav.addEventListener('contextmenu', e => e.preventDefault());
+view.addEventListener('pointerdown', e => {
+  view.setPointerCapture(e.pointerId);
+  const s = localXY(e, view), p = toImg(s.x, s.y);
+  if (e.button === 1 || (e.button === 0 && e.ctrlKey)) { drag = { kind: 'pan', sx: s.x, sy: s.y, ox: S.view.ox, oy: S.view.oy }; return; }
+  if (S.tool === 'select') {
+    if (e.button === 0) { drag = { kind: 'paint', last: p }; dab(p.x, p.y); render(); }
+    else if (e.button === 2) {
+      if (O.ctx === 'legacy') { mctx.fillRect(Math.floor(p.x), Math.floor(p.y), 1, 1); growBBox(p.x, p.y, p.x, p.y); afterSelectionChange(); }
+      else drag = { kind: 'markbox', start: p, cur: p, s0: s };
+    }
+    return;
+  }
+  // generation area tool
+  hideAsk();
+  if (O.gizmo === 'legacy') {
+    if (e.button === 0) { drag = { kind: 'gmove' }; setArea(p.x, p.y, S.area.w, S.area.h); }
+    else if (e.button === 2) { drag = { kind: 'gresize', shift: e.shiftKey }; legacyResize(p); }
+    refresh(); return;
+  }
+  if (e.button !== 0) return;
+  const h = hitHandle(s.x, s.y), a = S.area;
+  if (h) drag = { kind: 'handle', h, a0: { ...a }, ar: a.w / a.h };
+  else if (insideArea(p)) drag = { kind: 'grab', dx: p.x - a.x, dy: p.y - a.y };
+  else { centerAreaOn(p.x, p.y); drag = { kind: 'grab', dx: S.area.w / 2, dy: S.area.h / 2 }; }
+  refresh();
+});
+view.addEventListener('pointermove', e => {
+  const s = localXY(e, view), p = toImg(s.x, s.y);
+  S.mouse = s;
+  if (!drag) {
+    let c = 'crosshair';
+    if (S.tool === 'gen' && O.gizmo === 'handles') { const h = hitHandle(s.x, s.y); c = h ? CURSORS[h] : insideArea(p) ? 'move' : 'crosshair'; }
+    if (S.tool === 'select') c = 'none';
+    view.style.cursor = c; render(); return;
+  }
+  switch (drag.kind) {
+    case 'pan': S.view.ox = drag.ox + s.x - drag.sx; S.view.oy = drag.oy + s.y - drag.sy; break;
+    case 'paint': strokeTo(p); break;
+    case 'markbox': drag.cur = p; break;
+    case 'gmove': setArea(p.x, p.y, S.area.w, S.area.h); refresh(); break;
+    case 'gresize': drag.shift = e.shiftKey; legacyResize(p); refresh(); break;
+    case 'grab': setArea(p.x - drag.dx, p.y - drag.dy, S.area.w, S.area.h); refresh(); break;
+    case 'handle': handleDrag(p, e.shiftKey); refresh(); break;
+  }
+  render();
+});
+function handleDrag(p, free) {
+  const a0 = drag.a0, h = drag.h;
+  let l = a0.x, t = a0.y, r = a0.x + a0.w, b = a0.y + a0.h;
+  if (h.includes('w')) l = clamp(p.x, 0, r - 16);
+  if (h.includes('e')) r = clamp(p.x, l + 16, IMG_W);
+  if (h.includes('n')) t = clamp(p.y, 0, b - 16);
+  if (h.includes('s')) b = clamp(p.y, t + 16, IMG_H);
+  if (h.length === 2 && !free) {
+    // corner with aspect lock: scale around the opposite corner
+    let k = Math.max((r - l) / a0.w, (b - t) / a0.h);
+    const ax = h.includes('w') ? a0.x + a0.w : a0.x, ay = h.includes('n') ? a0.y + a0.h : a0.y;
+    const maxW = h.includes('w') ? ax : IMG_W - ax, maxH = h.includes('n') ? ay : IMG_H - ay;
+    k = Math.min(k, maxW / a0.w, maxH / a0.h);
+    const w = a0.w * k, hh = a0.h * k;
+    l = h.includes('w') ? ax - w : ax; r = l + w; t = h.includes('n') ? ay - hh : ay; b = t + hh;
+  }
+  setArea(l, t, r - l, b - t);
+}
+view.addEventListener('pointerup', e => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (d.kind === 'paint') afterSelectionChange();
+  else if (d.kind === 'markbox') {
+    const s = localXY(e, view);
+    if (Math.hypot(s.x - d.s0.x, s.y - d.s0.y) < 4) toggleMarkAt(d.start);
+    else S.marks.push({ l: clamp(Math.round(Math.min(d.start.x, d.cur.x)), 0, IMG_W - 1), t: clamp(Math.round(Math.min(d.start.y, d.cur.y)), 0, IMG_H - 1),
+                        r: clamp(Math.round(Math.max(d.start.x, d.cur.x)), 0, IMG_W - 1), b: clamp(Math.round(Math.max(d.start.y, d.cur.y)), 0, IMG_H - 1) });
+    afterSelectionChange();
+  } else if (d.kind === 'gresize' || d.kind === 'handle') {
+    if (O.frames === 'on') { S.lastResBefore = { ...S.res }; applyRule(); }
+    commitSize(); refresh();
+  }
+  render();
+});
+view.addEventListener('pointerleave', () => { S.mouse = null; render(); });
+function wheelPadding(e) {
+  if (!(O.wheelPad && e.shiftKey)) return false;
+  const dy = e.deltaY || e.deltaX;
+  S.padding = clamp(S.padding + (dy < 0 ? 4 : -4), 0, 512);
+  if (S.padding && !S.fullRes) S.fullRes = true;
+  refresh(); return true;
+}
+view.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (wheelPadding(e)) return;
+  const s = localXY(e, view); zoomAt(s.x, s.y, e.deltaY < 0 ? 1.15 : 1 / 1.15); render();
+}, { passive: false });
+
+// ---------- navigation panel input ----------
+function navMoveArea(p, start) {
+  const a = S.area;
+  if (start) {
+    if (O.navClick === 'grab' && insideArea(p)) drag.off = { x: p.x - a.x, y: p.y - a.y };
+    else if (O.navClick === 'topleft') drag.off = { x: 0, y: 0 };
+    else drag.off = { x: a.w / 2, y: a.h / 2 };
+  }
+  setArea(p.x - drag.off.x, p.y - drag.off.y, a.w, a.h);
+}
+nav.addEventListener('pointerdown', e => {
+  nav.setPointerCapture(e.pointerId);
+  const s = localXY(e, nav), p = navToImg(s.x, s.y);
+  hideAsk();
+  const genMode = O.navMerge || S.navMode === 'gen';
+  if (e.button === 0 && genMode) { drag = { kind: 'navarea' }; navMoveArea(p, true); }
+  else if (e.button === 0) { drag = { kind: 'navtl' }; const sc = S.view.scale; S.view.ox = -p.x * sc; S.view.oy = -p.y * sc; }
+  else if (e.button === 2 && !O.navMerge && S.navMode === 'gen') { drag = { kind: 'navresize', shift: e.shiftKey }; legacyResize(p); }
+  else if (e.button === 2) drag = { kind: 'navview', start: p, cur: p, s0: s };
+  refresh();
+});
+nav.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const s = localXY(e, nav), p = navToImg(s.x, s.y);
+  if (drag.kind === 'navarea') navMoveArea(p, false);
+  else if (drag.kind === 'navtl') { const sc = S.view.scale; S.view.ox = -p.x * sc; S.view.oy = -p.y * sc; }
+  else if (drag.kind === 'navresize') { drag.shift = e.shiftKey; legacyResize(p); }
+  else if (drag.kind === 'navview') drag.cur = p;
+  refresh();
+});
+nav.addEventListener('pointerup', e => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (d.kind === 'navview') {
+    const s = localXY(e, nav);
+    if (Math.hypot(s.x - d.s0.x, s.y - d.s0.y) < 4) {
+      const box = $('viewwrap').getBoundingClientRect();
+      S.view.ox = box.width / 2 - d.start.x * S.view.scale; S.view.oy = box.height / 2 - d.start.y * S.view.scale;
+    } else fitViewToRect(Math.min(d.start.x, d.cur.x), Math.min(d.start.y, d.cur.y), Math.max(d.start.x, d.cur.x), Math.max(d.start.y, d.cur.y));
+  } else if (d.kind === 'navresize') { if (O.frames === 'on') applyRule(); commitSize(); }
+  refresh();
+});
+nav.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (wheelPadding(e)) return;
+  const box = $('viewwrap').getBoundingClientRect(); zoomAt(box.width / 2, box.height / 2, e.deltaY < 0 ? 1.15 : 1 / 1.15); render();
+}, { passive: false });
+$('nav-gen').onclick = () => { S.navMode = 'gen'; refresh(); };
+$('nav-view').onclick = () => { S.navMode = 'view'; refresh(); };
+
+// ---------- ask chip / toast ----------
+function showAsk() { S.askVisible = true; $('askchip').hidden = false; positionAsk(); }
+function hideAsk() { S.askVisible = false; $('askchip').hidden = true; }
+function positionAsk() {
+  if (!S.askVisible) return;
+  const chip = $('askchip'), box = $('viewwrap').getBoundingClientRect(), p = toScr(S.area.x, S.area.y);
+  chip.style.left = clamp(p.x, 8, Math.max(8, box.width - chip.offsetWidth - 8)) + 'px';
+  chip.style.top = clamp(p.y - chip.offsetHeight - 8, 8, box.height - chip.offsetHeight - 8) + 'px';
+}
+$('ask-grow').onclick = () => growToFit(false);
+$('ask-keep').onclick = () => { hideAsk(); refresh(); };
+let toastTimer = 0;
+function toast(text, undo) {
+  $('toast-text').textContent = text; $('toast-undo').hidden = !undo; $('toast').hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; S.undo = null; }, 4500);
+}
+$('toast-undo').onclick = () => {
+  if (S.undo) { S.area = S.undo.area; S.res = S.undo.res; S.lastSize = { w: S.area.w, h: S.area.h }; S.undo = null; }
+  $('toast').hidden = true; refresh();
+};
+
+// ---------- generate ----------
+function generate() {
+  S.flash = 1;
+  const t0 = performance.now();
+  const step = t => { S.flash = Math.max(0, 1 - (t - t0) / 450); render(); if (S.flash > 0) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+  const cleared = O.ctx === 'pins' && O.oneShot && S.marks.length;
+  if (cleared) S.marks = [];
+  toast(cleared ? 'Generated (simulated). Context pins cleared.' : 'Generated (simulated).', false);
+  refresh();
+}
+$('generate').onclick = generate;
+$('resetview').onclick = () => { fitView(); render(); };
+
+// ---------- panels ----------
+const numRow = (lbl, k, max, cls = 'row') =>
+  `<div class="${cls}"><label for="r-${k}">${lbl}</label><input type="range" id="r-${k}" data-k="${k}" min="0" max="${max}"><input type="number" id="n-${k}" data-k="${k}" min="0" max="${max}"></div>`;
+const fullResBlock = () =>
+  `<label class="check"><input type="checkbox" id="c-fullres" data-k="fullRes"> Inpaint Full Resolution</label>${numRow('Padding:', 'pad', 512, 'row wide')}`;
+function framesBlock() {
+  const all = [...dynamicFrames(), ...S.recent];
+  const chips = all.map((f, i) => {
+    const on = sameSize(f, S.area) ? ' on' : '';
+    const label = f.label ? `${f.label} <small>${f.w === f.h ? f.w + '²' : f.w + '×' + f.h}</small>` : (f.w === f.h ? f.w + '²' : `${f.w}×${f.h}`);
+    return `<button class="chip${on}" data-frame="${i}" title="Set the area to ${f.w}×${f.h}">${label}</button>`;
+  }).join('');
+  return `<div class="sect nw">Frame <span style="float:right"><kbd>Q</kbd> previous</span></div>
+    <div class="chips" id="chips">${chips}<button class="chip add" id="chip-add" title="Add a size, like 768 or 640x480">+ size</button></div>`;
+}
+function ruleBlock() {
+  const dis = S.rule === 'manual' ? '' : ' disabled';
+  return `<div class="row wide nw"><label for="s-rule">Resolution</label>
+      <select id="s-rule" data-k="rule" style="grid-column: span 2">
+        <option value="match">Match area</option>
+        <option value="match-min">Match area, at least ${MIN_SIDE}</option>
+        <option value="manual">Manual</option></select></div>
+    <div class="res"><label for="n-rw">W:</label><input type="number" id="n-rw" data-k="rw"${dis}><label for="n-rh">H:</label><input type="number" id="n-rh" data-k="rh"${dis}></div>`;
+}
+const followCheck = () => O.follow === 'off' ? '' :
+  `<label class="check nw"><input type="checkbox" id="c-follow" data-k="followOn"> Area follows selection</label>`;
+function buildPanels() {
+  const tp = $('toolpanel'), bar = O.bar === 'on';
+  if (S.tool === 'select') {
+    tp.innerHTML = `<h3>Selection brush</h3><p class="sub">Select areas for inpainting.</p>
+      ${numRow('Size:', 'brush', 200, 'row wide')}
+      <div class="btnrow"><button class="btn" id="b-clear">Clear selection</button></div>
+      ${bar ? '' : fullResBlock()}
+      ${bar ? '' : followCheck()}`;
+  } else {
+    let body = `<h3>Set Image Generation Area</h3><p class="sub">Select an image region for AI image generation.</p>
+      <div class="sect">Image generation area:</div>
+      ${numRow('X:', 'ax', IMG_W)}${numRow('Y:', 'ay', IMG_H)}${numRow('W:', 'aw', IMG_W)}${numRow('H:', 'ah', IMG_H)}`;
+    if (O.frames === 'on') body += bar ? '' : framesBlock() + ruleBlock();
+    else body += `<div class="btnrow"><button class="btn" id="b-full">Select full image</button><button class="btn" id="b-a2r">Gen. area size to resolution</button></div>
+      <div class="sect">Image generation resolution:</div>
+      <div class="res"><label for="n-rw">W:</label><input type="number" id="n-rw" data-k="rw"><label for="n-rh">H:</label><input type="number" id="n-rh" data-k="rh"></div>
+      <div class="btnrow"><button class="btn" id="b-r2a">Resolution to gen. area size</button></div>`;
+    if (!bar) body += followCheck();
+    tp.innerHTML = body;
+  }
+  const cb = $('ctxbar');
+  cb.hidden = !bar;
+  if (bar) {
+    cb.innerHTML = `${fullResBlock()}${O.frames === 'on' ? framesBlock() + ruleBlock() : ''}${followCheck()}`;
+  }
+  $('navmodes').hidden = O.navMerge;
+  bindInputs();
+  syncFields();
+}
+function bindInputs() {
+  document.querySelectorAll('.left [data-k]').forEach(el => {
+    el.oninput = () => setKey(el.dataset.k, el.type === 'checkbox' ? el.checked : el.value, false);
+    el.onchange = () => setKey(el.dataset.k, el.type === 'checkbox' ? el.checked : el.value, true);
+  });
+  document.querySelectorAll('[data-frame]').forEach(el => {
+    el.onclick = () => applyFrame([...dynamicFrames(), ...S.recent][+el.dataset.frame]);
+  });
+  const add = $('chip-add');
+  if (add) add.onclick = () => {
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.className = 'chipinput'; inp.placeholder = '768 or 640x480'; inp.id = 'chip-input';
+    add.replaceWith(inp); inp.focus();
+    const done = ok => {
+      const m = inp.value.trim().match(/^(\d+)(?:\s*[x×*]\s*(\d+))?$/i);
+      if (ok && m) { const w = +m[1], h = +(m[2] || m[1]); applyFrame({ w: clamp(w, 8, IMG_W), h: clamp(h, 8, IMG_H) }); }
+      else buildPanels();
+    };
+    inp.onkeydown = e => { if (e.key === 'Enter') done(true); if (e.key === 'Escape') done(false); e.stopPropagation(); };
+    inp.onblur = () => done(true);
+  };
+  const on = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
+  on('b-clear', clearSelection);
+  on('b-full', () => { setArea(0, 0, IMG_W, IMG_H); commitSize(); refresh(); });
+  on('b-a2r', () => { const a = S.area; setArea(a.x, a.y, S.res.w, S.res.h); commitSize(); refresh(); });
+  on('b-r2a', () => { S.res = { w: S.area.w, h: S.area.h }; refresh(); });
+}
+function setKey(k, v, committed) {
+  const a = S.area;
+  switch (k) {
+    case 'ax': setArea(+v, a.y, a.w, a.h); break;
+    case 'ay': setArea(a.x, +v, a.w, a.h); break;
+    case 'aw': case 'ah':
+      if (!S.sizeEditRes) S.sizeEditRes = { ...S.res };
+      setArea(a.x, a.y, k === 'aw' ? +v : a.w, k === 'ah' ? +v : a.h);
+      if (O.frames === 'on') applyRule();
+      if (committed) { S.lastResBefore = S.sizeEditRes; S.sizeEditRes = null; commitSize(); }
+      break;
+    case 'rw': case 'rh': S.res = { ...S.res, [k === 'rw' ? 'w' : 'h']: clamp(+v || 8, 8, 4096) }; break;
+    case 'pad': S.padding = clamp(+v, 0, 512); break;
+    case 'brush': S.brush = clamp(+v, 1, 200); break;
+    case 'fullRes': S.fullRes = !!v; break;
+    case 'followOn': S.followOn = !!v; if (v) afterSelectionChange(); break;
+    case 'rule': S.rule = v; applyRule(); buildPanels(); break;
+  }
+  if (k !== 'rule') refresh(committed && (k === 'aw' || k === 'ah'));
+}
+function syncFields() {
+  const vals = { ax: S.area.x, ay: S.area.y, aw: S.area.w, ah: S.area.h, rw: S.res.w, rh: S.res.h, pad: S.padding, brush: S.brush };
+  document.querySelectorAll('.left [data-k]').forEach(el => {
+    const k = el.dataset.k;
+    if (el === document.activeElement && el.type === 'number') return;
+    if (k in vals) el.value = vals[k];
+    else if (k === 'fullRes') el.checked = S.fullRes;
+    else if (k === 'followOn') el.checked = S.followOn;
+    else if (k === 'rule') el.value = S.rule;
+  });
+  document.querySelectorAll('[data-frame]').forEach(el => {
+    el.classList.toggle('on', sameSize([...dynamicFrames(), ...S.recent][+el.dataset.frame], S.area));
+  });
+  $('nav-gen').setAttribute('aria-pressed', S.navMode === 'gen');
+  $('nav-view').setAttribute('aria-pressed', S.navMode === 'view');
+  updateHint();
+}
+let chipSig = '';
+function refresh(rebuild) {
+  const sig = S.recent.map(f => f.w + 'x' + f.h).join(',');
+  if (rebuild || sig !== chipSig) { chipSig = sig; buildPanels(); } else syncFields();
+  render();
+}
+function updateHint() {
+  const K = s => `<kbd>${s}</kbd>`;
+  let h;
+  if (S.tool === 'select') {
+    h = `<b>Left</b>: select · ${O.ctx === 'pins' ? '<b>Right-click</b>: add/remove context pin · <b>Right-drag</b>: context box' : '<b>Right</b>: select with 1px brush'}`;
+  } else if (O.gizmo === 'handles') {
+    h = `<b>Drag inside</b>: move · <b>Click outside</b>: center there · <b>Corner</b>: resize, aspect kept (${K('Shift')} free) · <b>Edge</b>: one side`;
+  } else {
+    h = `<b>Left</b>: move area · <b>Right</b>: resize area · ${K('Shift')}: fixed aspect ratio`;
+  }
+  const extra = [];
+  if (O.frames === 'on') extra.push(`${K('Q')} previous frame`);
+  if (O.wheelPad) extra.push(`${K('Shift')}+scroll padding`);
+  if (overflowing()) extra.push(`${K('E')} grow area to fit selection`);
+  extra.push(`${K('S')}/${K('G')} tools`);
+  $('hint').innerHTML = h + ' · ' + extra.join(' · ');
+}
+
+// ---------- tools ----------
+function setTool(t) {
+  S.tool = t;
+  $('tool-select').setAttribute('aria-pressed', t === 'select');
+  $('tool-gen').setAttribute('aria-pressed', t === 'gen');
+  buildPanels(); render();
+}
+$('tool-select').onclick = () => setTool('select');
+$('tool-gen').onclick = () => setTool('gen');
+
+document.addEventListener('keydown', e => {
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'select') { if (e.key === 'Escape') e.target.blur(); return; }
+  const mult = e.shiftKey || e.altKey ? 10 : 1;
+  const a = S.area;
+  switch (e.key) {
+    case 's': case 'S': setTool('select'); break;
+    case 'g': case 'G': setTool('gen'); break;
+    case 'q': case 'Q': flipFrame(); break;
+    case 'e': case 'E': if (overflowing()) growToFit(true); break;
+    case 'z': case 'Z': fitView(); render(); break;
+    case 'F4': generate(); break;
+    case 'Escape': hideAsk(); render(); break;
+    case 'ArrowLeft': setArea(a.x - mult, a.y, a.w, a.h); refresh(); break;
+    case 'ArrowRight': setArea(a.x + mult, a.y, a.w, a.h); refresh(); break;
+    case 'ArrowUp': setArea(a.x, a.y - mult, a.w, a.h); refresh(); break;
+    case 'ArrowDown': setArea(a.x, a.y + mult, a.w, a.h); refresh(); break;
+    default: return;
+  }
+  e.preventDefault();
+});
+
+// ---------- notes rail ----------
+function buildOptions() {
+  $('optlist').innerHTML = SPEC.map(o => {
+    const radios = o.choices.map(([v, l]) =>
+      `<label><input type="radio" name="o-${o.key}" id="o-${o.key}-${v}" value="${v}"${O[o.key] === v ? ' checked' : ''}> ${l}</label>`).join('');
+    const checks = (o.checks || []).map(([k, l]) =>
+      `<label class="check"><input type="checkbox" id="o-${k}" data-opt="${k}"${O[k] ? ' checked' : ''}> ${l}</label>`).join('');
+    const dim = o.dependsOn && O[o.dependsOn] === 'off' ? ' style="opacity:.45"' : '';
+    return `<section class="opt"${dim}><h2>${o.title}</h2><p class="why">${o.why}</p><p class="desc">${o.desc}</p>
+      <div class="radios">${radios}${checks}</div></section>`;
+  }).join('');
+  document.querySelectorAll('#optlist input[type=radio]').forEach(el => el.onchange = () => { O[el.name.slice(2)] = el.value; optsChanged(); });
+  document.querySelectorAll('#optlist input[data-opt]').forEach(el => el.onchange = () => { O[el.dataset.opt] = el.checked; optsChanged(); });
+  const isCur = Object.keys(CURRENT).every(k => O[k] === CURRENT[k]);
+  const isProp = Object.keys(PROPOSED).every(k => O[k] === PROPOSED[k]);
+  $('preset-current').setAttribute('aria-pressed', isCur);
+  $('preset-proposed').setAttribute('aria-pressed', isProp);
+}
+function optsChanged() {
+  if (O.frames === 'off') S.rule = 'manual';
+  else if (S.rule === 'manual') { S.rule = 'match-min'; applyRule(); }
+  if (O.ctx === 'legacy') S.marks = [];
+  if (O.follow === 'off') hideAsk();
+  buildOptions(); buildPanels(); render();
+}
+$('preset-current').onclick = () => { O = { ...CURRENT }; optsChanged(); };
+$('preset-proposed').onclick = () => { O = { ...PROPOSED }; optsChanged(); };
+$('opt-tagnew').onchange = e => document.body.classList.toggle('tagnew', e.target.checked);
+document.body.classList.add('tagnew');
+
+// ---------- start: a detail already selected, one context pin ----------
+function seed() {
+  const pts = [[560, 250], [585, 262], [610, 280], [622, 305], [606, 322], [580, 318], [562, 298]];
+  const saveBrush = S.brush; S.brush = 34;
+  drag = { last: { x: pts[0][0], y: pts[0][1] } }; dab(pts[0][0], pts[0][1]);
+  for (const [x, y] of pts.slice(1)) strokeTo({ x, y });
+  drag = null; S.brush = saveBrush;
+  S.marks.push({ l: 700, t: 330, r: 700, b: 330 });
+}
+new ResizeObserver(() => { if (!S.fitted) { fitView(); S.fitted = true; } render(); positionAsk(); }).observe($('viewwrap'));
+new ResizeObserver(render).observe($('navwrap'));
+img.onload = render;
+seed();
+S.lastResBefore = { ...S.res };
+buildOptions();
+buildPanels();
+fitView();
+render();
+})();
+</script>

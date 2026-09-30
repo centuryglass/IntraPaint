@@ -13,6 +13,49 @@ line-confirmed.
 
 ---
 
+## 0. Revision after a workflow interview with the maintainer (2026-09-30)
+
+The sections below were written from the docs alone. Talking through how the maintainer actually works
+changed the priorities. An interactive mockup of the resulting options is in
+`mockups/generation_area/index.html`; open it in a browser.
+
+**How the tool is really used**
+- Inpaint Full Resolution is nearly always on. The generation area acts as the outer limit and aspect
+  template, and **padding is the working zoom control**. The full-res crop grows to the area's aspect
+  ratio (`selection_layer.py:321-345`), so padding is aspect-safe; resizing the area directly is not.
+- The 1px selection-brush trick is used constantly: for asymmetric padding, and because one right-click
+  on something the model should see is faster than a slider. Padding clipped at the area edge is not a
+  problem.
+- Typical 1024×768 routine: full image with resolution matched, then a 768² area with resolution
+  matched for detail work, switching back now and then. Resolution rises above the area size only for
+  areas smaller than the model handles well. Resolution changes every few minutes.
+- The area gets moved mostly by left-clicking in the small Navigation *tab*, almost never resized there.
+  Click-to-center is probably a little better than today's top-left placement. The G tool is opened
+  mostly to reach its panel.
+- **Biggest pain point: changing resolution/aspect** (full image ↔ square) takes too many clicks for a
+  predictable step.
+- Following the selection automatically would be right ~99% of the time. The hard case is a selection
+  bigger than the area: sometimes it should grow, sometimes not, and no simple rule tells them apart.
+
+**Effect on the proposals below**
+- **Drop P2 (scale badge) and P6 (model's-eye preview).** The canvas and navigation outlines already
+  show exactly what the model sees, and numbers don't help.
+- **P3 becomes "frames + a resolution rule":** one-click area sizes (full image, largest square,
+  recently used), a key to flip to the previous frame, and a rule ("match area, at least 512") that
+  replaces the two match buttons.
+- **P5 becomes "context pins":** make the 1px trick official as right-click pins / right-drag boxes
+  that extend the crop without being inpainted, optionally cleared after each generate, plus a
+  modifier+scroll padding shortcut that works over the canvas and navigation panel.
+- **New: follow-selection**, with the overflow case left to the user (inline prompt, keep and outline
+  the overflow, or grow with undo). Growth keeps the area's aspect ratio.
+- **New: context bar**, which puts full-res, padding, frames and follow in one place for every tool, so
+  changing them doesn't mean switching to G.
+- **P4 (handles) is lower priority.** Canvas behavior may change freely, but left-click must keep
+  moving the area in the navigation panel.
+- Not yet designed: moving the area to a layer's bounds (useful but rare).
+
+---
+
 ## 1. What "context control" actually is today
 
 The set of controls that jointly decide **what pixels the backend receives and at what scale**:
