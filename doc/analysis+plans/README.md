@@ -21,12 +21,10 @@ Reports:
 - transform_tool_redesign.md: Transform tool shared-state (A2) — three state holders and a lossy origin-dependent decomposition as the hub cause the center-of-rotation and canvas↔panel sync bugs. Fix: one authoritative TransformState + presenter (sole writer) + views-emit-intents + first-class pivot + one-directional matrix projection + per-gesture undo macro.
 - backend_autoinstall.md: Push-button backend install (OQ3) — IntraPaint is client-only today. Strategy: a ComfyUI-only provisioner that detects-and-reuses existing installs first (zero download), owns a managed-instance lifecycle, and drives comfy-cli + a Windows-portable fast-path for fresh installs. Obeys the AsyncTask discipline; hands packaging to A7.
 - UndoStack.md: Feasability and strategies for replacing the hand-rolled UndoStack with Qt's QUndoStack.
-- generation_area_ux.md: Generation-area / context-control UX (OQ6) — the area↔resolution scale
-  relationship is invisible and hand-reconciled, size vocabulary is triplicated (`EDIT_SIZE` is a
-  redundant shadow), controls are scattered, the gizmo is handle-less, and there's no preview of the
-  backend's actual input. Fix: two names, a live scale badge + link/presets, one consolidated context
-  surface, a canvas-level inpaint-crop overlay, A2's handled gizmo, and a shared-code "model's-eye"
-  preview.
+- generation_area_ux.md: Generation-area controls (OQ6), design agreed with the maintainer and tracked in #41.
+  Frame chips + a resolution rule replace the match buttons, context pins replace the 1px selection-brush
+  trick, Shift+scroll sets padding, the area follows the selection, and the G tool gets grab/center
+  dragging and aspect-locked handles. Includes the implementation plan.
 - responsive_layout.md: Responsive layout / small displays (OQ1) — three uncoordinated responsive
   systems already exist (four-box draggable tabs, per-widget mode-swap, orientation flip); the real
   bug is bottom-up min-size accumulation with no global budget, so any added control can silently

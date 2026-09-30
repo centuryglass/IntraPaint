@@ -186,10 +186,10 @@ refactors touch the layout.
 
 ## 5. Interactions & boundaries
 
-- **OQ6 synergy (strong):** the generation-area / SD panels are among the biggest min-size
-  contributors, and OQ6 already proposes consolidating their scattered, duplicated controls into one
-  context surface. That consolidation *directly* relieves C1's min-size pressure — sequence OQ6's P1
-  (collapse duplicated controls) alongside R1's audit.
+- **OQ6 interaction:** the generation-area and SD panels are among the biggest min-size contributors.
+  OQ6's agreed design (#41) removes three buttons from the generation area tool panel but adds a row of
+  frame chips; check its min size under R1's audit. A context bar that would gather these controls in one
+  place is deferred, partly because of the panel-layout complexity this report describes.
 - **A1 dependency:** R7 builds on the shared test base; land that infra first.
 - **Feeds OQ2:** the fixed-point font with no auto-scaling (C5/R6), the off-screen clipping instead
   of graceful degradation (C6/R2), and the non-standard four-box draggable-tab model are concrete

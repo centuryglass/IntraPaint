@@ -1,244 +1,287 @@
-# Generation-area / context-control UX (OQ6)
+# Generation area controls (OQ6)
 
-**Question (OQ6):** One of IntraPaint's biggest strengths is fine-grained context control — managing
-exactly what parts of the image the diffusion backend sees, and at what scale. The controls for
-managing this are still clunky. Review the workflow docs and propose an improved interface.
+**Status:** design agreed with the maintainer on 2026-09-30. Implementation is tracked in
+[#41](https://github.com/centuryglass/IntraPaint/issues/41).
 
-**Substrate:** builds on `_codebase_map.md` (§4 selection layer, §5 generators) and
-`_decisions_ledger.md`. Cross-refs A6 (rendering — single-source-of-truth compositing), A2
-(transform tool — the on-canvas gizmo machinery this report reuses), OQ4 (selection layer),
-and the workflow docs `doc/inpainting_guide.md`, `doc/tool_guide.md`, `doc/controls.md`,
-`doc/menu_options.md`. Verified against source; `[inferred]` marks anything reasoned but not
-line-confirmed.
+**Goal (from `doc/TODO.md`):** get maximum flexibility out of the generation area while keeping the user
+from having to think about hitting good resolutions and matching aspect ratios. Replace the 1px
+selection-brush trick with something better.
 
 ---
 
-## 1. What "context control" actually is today
+## 1. How the generation area is used
 
-The set of controls that jointly decide **what pixels the backend receives and at what scale**:
+This section is the basis for every decision below. It comes from the maintainer's own workflow, and it
+covers what the workflow docs leave out.
 
-| Concept | Config key | Meaning | Where it's set |
-|---|---|---|---|
-| **Generation area** | (image-space `QRect`, not a config key) | The rectangle of the image the backend operates on. | Generation-Area tool (`generation_area_tool.py`), tool panel X/Y/W/H, arrow keys, "Select full image", crop-to-area menu. |
-| **Generation resolution** | `Cache.GENERATION_SIZE` ("Generation size:") | The pixel resolution actually sent to the model; output is *scaled* to the area if they differ. | Gen-Area tool panel **and** the SD generation panel (`stable_diffusion_panel.py:99`). |
-| **Editing size** | `Cache.EDIT_SIZE` ("Editing size:") | A near-duplicate of the generation-area *size*, auto-synced both ways. | Implicit — no direct control; mirrors the area. |
-| **Selection (mask)** | `SelectionLayer` | Which pixels *within* the area get changed (inpaint only). | Selection tools. |
-| **Inpaint Full Resolution** | `Cache.INPAINT_FULL_RES` | Silently re-crop to the selection bounding box + padding for higher detail. | SD panel (`stable_diffusion_panel.py:124`) and selection-tool panels (per `inpainting_guide.md`). |
-| **Full-res padding** | `Cache.INPAINT_FULL_RES_PADDING` | Pixels of context kept around the selection when full-res is on. | SD panel (`:127`); also nudged by a 1px selection-brush dot trick. |
-| **Denoising strength** | `Cache.DENOISING_STRENGTH` | How much image context vs prompt dominates. | SD panel. |
-| **Follow / zoom-to area** | view state | Whether the viewport tracks the area. | "Z" key, zoom toggle, `image_viewer.follow_generation_area`. |
+**Three rectangles decide what the model sees:**
 
-The relationship between area and resolution is the crux: `image_stack.generation_area` setter
-auto-writes `EDIT_SIZE` (`image_stack.py:352-353`), and `EDIT_SIZE` changes push back into the area
-(`image_stack.py:119-123`) — but `GENERATION_SIZE` (the resolution actually sent) is **fully
-decoupled**. The doc devotes an entire section to reconciling them by hand
-(`inpainting_guide.md` §"Selecting generation resolution", §"Generation Area control"). That manual
-reconciliation is the clunkiness.
+| Concept | Where it lives | Role in practice |
+|---|---|---|
+| Generation area | `ImageStack.generation_area` (image-space `QRect`) | Outer limit, and the aspect-ratio template for everything inside it. |
+| Inpaint full-res crop | `SelectionLayer.get_selection_gen_area()` (`selection_layer.py:280`) | What the model actually sees: the selection's bounds plus padding, clamped to the area, then grown to the area's aspect ratio (`:321-345`). |
+| Generation resolution | `Cache.GENERATION_SIZE` | The pixel size sent to the model. The crop is scaled to it. |
 
----
-
-## 2. Diagnosis — where the friction is
-
-### F1. Two independent rectangles, reconciled by hand, with invisible consequences *(root cause)*
-The generation **area** (image-space rect) and generation **resolution** (`GENERATION_SIZE`) are
-independent values whose *ratio* is a scale factor applied to the output — the single most
-consequential quantity in this workflow (the guide's downscaling-for-detail technique is entirely
-about deliberately setting resolution > area). Yet:
-- The scale factor is **never displayed**. The user computes "280→640 = 2.3× upscale" in their head.
-- Keeping them related is two **manual buttons** — "Gen. area size to resolution" and "Resolution to
-  gen. area size" (`generation_area_tool_panel.py:74-99`) — that must be re-pressed after every area
-  change. Nothing maintains the relationship live.
-- Aspect mismatch silently **non-uniformly distorts** output; the guide warns of it, the UI neither
-  flags nor prevents it.
-
-### F2. Three overlapping size concepts with inconsistent names
-"Generation area size", "Generation size / resolution" (`GENERATION_SIZE`), and "Editing size"
-(`EDIT_SIZE`) coexist. `EDIT_SIZE` is effectively a shadow of the area size (auto-synced both
-directions) yet `MIN_/MAX_EDIT_SIZE` are what actually clamp the area
-(`generation_area_tool_panel.py:236-239`). The labels disagree across surfaces: the tool panel says
-"Image generation area" + "Image generation resolution", the config calls the same things "Editing
-size" + "Generation size". A newcomer cannot tell "editing size", "generation size", and "generation
-area" apart — and two of them are the same thing.
-
-### F3. Controls for one logical operation are scattered across ≥3 surfaces
-To set up a single generation context the user touches:
-- the **Gen-Area tool panel** (geometry + resolution + match buttons),
-- the **SD generation panel** (resolution *again*, inpaint-full-res, padding, denoising),
-- the **selection-tool panels** (inpaint-full-res *again*, per the guide).
-
-Resolution and inpaint-full-res each appear in two places; visibility is further gated by hidden
-mode state (`_edit_mode_control_update`, `stable_diffusion_panel.py:155-164` shows/hides full-res +
-padding based on `EDIT_MODE`). Discovery is poor and the same value edited in two spots invites
-confusion about which is authoritative.
-
-### F4. Inpaint Full Resolution is a hidden second crop with weak canvas feedback
-Full-res silently re-crops to the selection bounding box + padding. Its only visualization is an
-inner "padding rectangle" outline that today is described mainly for the **navigation window**
-(`menu_options.md:221`, `controls.md:19`) — the main-canvas story is thin. Padding is partly adjusted
-by a genuinely hidden trick: "right-click with the selection brush to add a single pixel outside the
-selection" (`inpainting_guide.md` §"Generation Area control"). The user never sees the actual
-post-crop, post-scale pixels the model will receive.
-
-### F5. The on-canvas gizmo is non-standard and lossy
-`GenerationAreaTool` uses **left-click = teleport top-left to cursor**, **right-click = resize
-anchored to top-left only** (`generation_area_tool.py:56-75`). There are no handles; you can't drag a
-corner or resize from any edge but bottom-right; fixed-aspect requires holding a modifier and borrows
-`GENERATION_SIZE`'s ratio (`:66-71`). Every mainstream editor's marquee/crop tool has 8 handles and
-drag-move-by-interior; this deviates from that norm (an OQ2 idiosyncrasy) and makes precise framing
-awkward.
-
-### F6. No "model's-eye view"
-The highest-value affordance for this workflow — a WYSIWYG preview of the exact tensor the backend
-gets (effective crop → scaled to resolution → masked-fill applied) — does not exist. Users iterate
-blind and discover framing/scale mistakes only in the 8-image result grid. The pieces exist
-(`ImageStack.qimage_generation_area_content()` `image_stack.py:538`; `SDGenerator.get_gen_area_image`
-/ `get_gen_area_mask` `sd_generator.py:316-326`) but the full-res crop + scale + fill is applied
-downstream in the backend request builders, so there is no single function that yields "the final
-input image."
+- **Inpaint Full Resolution is nearly always on.** It's turned off only when a ControlNet unit misbehaves
+  with it, or for high-level passes where the scaling doesn't help.
+- **Padding is the working zoom control.** Because the crop grows to the area's aspect ratio, padding
+  changes never distort the output. Resizing the area directly does, which is why the area is rarely
+  resized by dragging. Padding clipped at the area's edge is not a problem; moving the area takes a
+  second.
+- **The 1px selection-brush trick is used constantly.** Right-clicking with the selection brush paints a
+  1px selection outside the real selection (`brush_tool.py:313` switches to a 1px brush on right-click),
+  which stretches the crop to include that point. It gives one-sided padding, and one right-click on
+  something the model should see is faster than a slider. Its drawback: the pixel really is selected, so
+  it gets inpainted.
+- **Typical routine (1024×768 images):** select the full image and match the resolution to it for passes
+  that need whole-image context. Then set a 768² area, match the resolution again, and keep that for
+  detail work, varying context with padding and the 1px trick. Switch back to the full image when targeted
+  edits aren't working. On small images the area stays over the whole image. On large ones the size
+  changes often, depending on context needs, speed and the model.
+- **Resolution normally equals the area size.** It goes higher only when the area is smaller than the model
+  handles well (rarely, for integer scaling). Non-square resolutions do get used. The resolution changes
+  every few minutes on average. **Changing it is the biggest pain point:** it's a predictable step that
+  takes several clicks.
+- **The area gets moved mostly from the Navigation tab** (docked in the tool panel, roughly 480×300 on a
+  1080p screen). Left-click currently puts the area's top-left corner at the click. That feels like
+  dragging, but it overshoots slightly. Resizing from there is rare. The G tool is opened mostly to reach
+  its panel. Arrow-key nudging is occasionally useful. `Z` is used only to return to the full-image view.
+- **The outlines are enough feedback.** The area and crop outlines on the canvas and in the navigation
+  panel already show exactly what the model will get. Numeric readouts wouldn't help.
+- txt2img and img2img are rare, and the area matters less there.
 
 ---
 
-## 3. Proposed interface
+## 2. Design
 
-Design principle (mirrors A6's single-source-of-truth stance): **make the invisible relationship
-between area, resolution, selection, and scale visible and directly manipulable, in one place, with
-one authoritative preview.** Ordered from lowest-risk/highest-leverage to structural.
+Five changes. An interactive mockup of the design was used to settle these; the code in section 3 is the
+reference now.
 
-### P1. Collapse the vocabulary; kill `EDIT_SIZE` as a distinct concept
-Standardize on exactly two nouns everywhere (UI, config labels, docs):
-- **Generation area** — the image-space rectangle (position + size).
-- **Generation resolution** — the output pixel size (`GENERATION_SIZE`).
+### 2.1 Frames and a resolution rule
 
-`EDIT_SIZE` is already a bidirectional shadow of the area size — demote it to an internal detail (or
-remove it, folding `MIN_/MAX_EDIT_SIZE` clamps into the area directly). Rename the "Editing size:"
-label and audit `generation_area_tool_panel.py` / `stable_diffusion_panel.py` / `doc/*` so a user
-meets only two names. *Low risk, pure clarity win; unblocks everything below by giving the redesign a
-stable vocabulary.*
+Replaces the "Select full image", "Gen. area size to resolution" and "Resolution to gen. area size" buttons
+in the generation area tool panel.
 
-### P2. A live **scale badge** wherever area & resolution are shown
-Show the derived relationship as first-class text + color:
+**Frames** are one-click area sizes, shown as a row of chips in the generation area tool panel:
+- **Full image**: the area covers the whole image.
+- **Square**: the largest square that fits (768² on a 1024×768 image).
+- **Recent sizes**: the last four area sizes that were used, excluding the two above. A size is recorded
+  when a size change is finished (a resize drag ends, W/H editing is finished, or a frame is applied).
+  Saved between sessions.
+- **Custom**: a "+" chip takes a typed size (`768` or `640x480`) and applies it.
 
-> `Area 280×280  →  Resolution 640×640   ·   2.3× upscale`
+Applying a frame changes only the area's size. The area keeps its center, clamped to the image, then
+follow-selection (2.4) places it if that's enabled and there's a selection. **Previous frame** (new
+keybinding, default `Shift+G`) switches back to the size used before the current one, so pressing it
+repeatedly flips between two frames, such as full image and square.
 
-Color-cue the badge (neutral / caution) when the scale or the target resolution is outside the
-sane band for the active model family (SD1.5 ≈512, SDXL ≈1024 — the guide already encodes these).
-Flag aspect-ratio mismatch explicitly ("non-uniform scale — output will distort"). This alone
-addresses F1's invisibility with no model changes.
+**Resolution rule** (dropdown under the frames) decides what happens to `GENERATION_SIZE` whenever the area
+size changes, by any means:
+- **Match area**: resolution = area size.
+- **Match area, at least N** (default; N is a setting, default 512): resolution = area size, scaled up by
+  the smallest whole-number factor that brings the shorter side to at least N. A whole-number factor keeps
+  scaling clean. The factor is reduced if the result would exceed `MAX_GENERATION_SIZE`.
+- **Manual**: the resolution only changes when you edit it.
 
-### P3. Replace the two "match" buttons with a **link toggle + resolution presets**
-Instead of manual "area→res" / "res→area" buttons that decay after each edit, offer:
-- an **aspect/size link toggle** — when on, editing the area updates the resolution proportionally
-  (snapped to the model's native band) and vice-versa, so the relationship is *maintained*, not
-  re-established; and
-- a small row of **model-aware resolution presets** (512², 640², 768², 1024²) so "generate this area
-  at my model's native resolution" is one click.
+The resolution W/H fields stay visible and editable, in this panel and in the Stable Diffusion panel.
+Editing either of them by hand switches the rule to Manual, so a typed value is never overwritten.
 
-Keep the explicit buttons available for power users, but the default path stops requiring them.
+Because the rule reacts to area-size changes, undoing an area change also restores the matching
+resolution. The resolution itself has no undo entry (it's a `Cache` value), which is only noticeable in
+Manual mode, where it's already the user's own value.
 
-### P4. First-class on-canvas gizmo with handles — **reuse A2's outline machinery**
-Replace the left=teleport / right=resize scheme (F5) with a proper bounding-box gizmo: 8 resize
-handles, drag-the-interior to move, corner-drag with an **aspect-lock** that can bind to the
-resolution aspect, arrow-key nudge retained. A2's transform-tool redesign is already rebuilding
-exactly this (a `TransformOutline`-style views-emit-intents gizmo over an authoritative state); the
-generation area should render through the **same** handle/outline component rather than growing a
-parallel one. Keep the current mouse scheme as a fallback for one release to avoid muscle-memory
-breakage. *(Depends on A2 landing its reusable outline; until then this is the one structural item
-with an upstream dependency.)*
+### 2.2 Context pins
 
-### P5. Make Inpaint Full Resolution visible and directly editable
-- Always draw the **effective inpaint crop** (selection bbox + padding, clamped to the area) on the
-  **main canvas** whenever full-res is on — promote the navigation-window-only outline
-  (`controls.md:19`) to a first-class canvas overlay.
-- Let padding be **dragged directly** on that inner rectangle's edges, retiring the 1px-dot trick
-  (keep the trick working, but it's no longer the only way).
-- Surface the **effective resolution** of the full-res crop in the scale badge (P2), since full-res
-  changes what actually gets sent.
+Replace the 1px trick. With the selection brush:
+- **Right-click without dragging** drops a context pin. **Right-clicking an existing pin removes it.**
+- **Right-drag** still draws a 1px selection line, as it does today.
 
-### P6. **Model's-eye-view preview** (the flagship feature)
-A small docked/toggleable preview that renders **exactly** what the backend will receive: effective
-crop (area, or full-res selection+padding) → scaled to generation resolution → masked-fill applied
-(`Cache.MASKED_CONTENT`). Prerequisite and biggest payoff: **factor the crop+scale+fill into one
-function** shared by the preview and the real request builders, so preview and actual can never
-diverge (the A6 single-source-of-truth principle applied to generation input). This turns blind
-iteration into WYSIWYG and is the direct answer to "the controls are clunky" — you see the result of
-every context control instantly.
+A pin stretches the full-res crop to include its point, exactly like the 1px dot did, but nothing under it
+gets inpainted. Pins are drawn as small crosshair markers on the canvas and in the navigation panel.
 
-### Consolidation: one "Context" surface
-P2/P3/P5/P6 want to live together. Co-locate area geometry, resolution + scale badge, link/presets,
-inpaint-full-res + padding, denoising, and the model's-eye preview into **one** context panel (the
-Gen-Area tool panel is the natural host), and have the SD generation panel *reference* rather than
-*duplicate* those controls (shared widgets from the `Cache.get_control_widget` factory already make
-this cheap — `stable_diffusion_panel.py:82`, `generation_area_tool_panel.py:87`). This resolves F3's
-scatter.
+- Pins stay until you remove them. Repeatedly inpainting the same area is common, so they are **not**
+  cleared after generating. A setting ("Clear context pins after generating", off by default) turns
+  clearing on.
+- Clearing the selection doesn't clear pins. **Selection → Clear context pins** removes all of them.
+- Pins only matter while something is selected. They count for the crop, for follow-selection and for the
+  change highlight in the generated-image selector (which already calls `get_selection_gen_area(True)`).
+- Adding and removing pins is undoable. Pins aren't saved in image files.
 
----
+### 2.3 Padding shortcut
 
-## 4. Implementation sketches
+**Shift + scroll wheel** changes Inpaint Full-Res padding from any tool, over the main canvas or the
+navigation panel. Each notch changes padding by the same amount as scrolling the padding slider, and the
+speed modifier (`Alt`) multiplies it. Scrolling padding above zero turns Inpaint Full Resolution on.
 
-Respecting conventions: config options are **data** (edit `resources/config/cache_value_definitions.json`,
-not code — CLAUDE.md); every new string wrapped in the file's `_tr()`; singletons via `Cache()` /
-`AppConfig()`.
+The modifier is a new `KeyConfig` modifier ("Padding scroll modifier", default `Shift`), so it can be moved
+if it collides with anything.
 
-**P1 — vocabulary / `EDIT_SIZE`:**
-- Edit the `edit_size` label/description in `cache_value_definitions.json`; grep `EDIT_SIZE` usages
-  (`image_stack.py:119-123, 352-353`, tool panel clamps `:236-239`) and decide: demote to internal or
-  remove. If removed, move the min/max clamp to `_get_closest_valid_generation_area`
-  (`image_stack.py:1534`). Update `doc/inpainting_guide.md`, `tool_guide.md`, `controls.md` labels.
-- Low blast radius; do it first so later UI text is stable.
+### 2.4 Area follows the selection
 
-**P2 — scale badge:** a `QLabel` (or tiny custom widget) in `GenerationAreaToolPanel`, recomputed on
-`image_stack.generation_area_bounds_changed` and `Cache.connect(..., Cache.GENERATION_SIZE, ...)`.
-Model-band thresholds can start as constants keyed off the selected model name string (the guide's
-512/640/768/1024 numbers); no backend call needed. Pure additive UI.
+After each selection change, the area moves to contain the selection's bounds plus pins and padding.
+Setting (application settings, "Generation area follows selection"):
+- **Minimal move** (default): the area moves only as far as needed, so small follow-up edits don't jump
+  it around.
+- **Center on selection**: the area centers on the selection.
+- **Off**: the area only moves when you move it.
 
-**P3 — link toggle + presets:** a checkbox + preset buttons in the panel. The link handler reuses the
-existing `_area_to_res` / `_res_to_area` bodies (`generation_area_tool_panel.py:79-99`) but fires on
-`valueChanged` instead of button clicks, guarded against signal loops (the panel already guards with
-`if value != ctrl.value()` at `:261`). Presets just call `Cache().set(Cache.GENERATION_SIZE, QSize(n,n))`.
+Rules:
+- It only runs in Inpaint mode, while the generation area is shown, when there's a selection.
+- It only reacts to selection edits. It never runs for undo/redo, and never undoes a manual move.
+- It never resizes the area. When the target is bigger than the area along one axis, the area centers
+  on the target along that axis.
+- Follow moves are ordinary generation-area changes with their own undo step.
 
-**P4 — gizmo:** blocked on A2 exposing a reusable handled-outline item. When available, swap
-`GenerationAreaTool`'s `mouse_click`/`mouse_move` (`generation_area_tool.py:77-100`) to drive the
-gizmo's intents (move / resize-from-handle / aspect-lock) and delete the top-left-anchored
-`_resize_generation_area`. Until A2 lands, ship P1/P2/P3 and leave the mouse scheme as-is.
+### 2.5 Generation area tool: grab, center and handles
 
-**P5 — inpaint crop overlay:** there is already a `_generation_area_selection_outline` and a
-padding/inpaint outline in the viewer (`image_viewer.py:112`; navigation window per
-`menu_options.md:221`). Promote/ensure it renders on the main canvas whenever
-`Cache.INPAINT_FULL_RES` is on and a selection exists; add edge-drag handling for
-`INPAINT_FULL_RES_PADDING`. Reuse `SelectionLayer.get_selection_gen_area()` for the bbox.
+**Left-click, on the canvas and in the navigation panel:**
+- Pressing inside the area grabs it: dragging moves it without the area jumping to the cursor.
+- Pressing outside the area centers the area on that point, and dragging continues from there.
 
-**P6 — preview + shared crop function:** extract a pure helper, e.g.
-`ImageStack.generation_input(mask, full_res, padding, resolution, fill_mode) -> (QImage, QImage)`,
-that produces the final (image, mask) pair; have `SDGenerator.get_gen_area_image` /
-`get_gen_area_mask` (`sd_generator.py:316-326`) **and** the new preview widget call it. The preview is
-a `QLabel`/graphics item refreshed on the relevant `Cache`/selection/area signals. This is the
-largest item and the one that most changes the feel of the workflow.
+**Handles (main canvas only):** eight handles on the area outline while the G tool is active.
+- **Corner handles keep the area's aspect ratio** by default. Holding the fixed-aspect modifier (`Shift`)
+  frees the aspect ratio. This inverts the modifier's usual meaning, because keeping the aspect ratio is
+  the safe default here; the tool's hint text states it.
+- Edge handles move one side.
+- The resolution rule applies as the size changes, and the finished size is recorded as a recent frame.
 
-**Suggested order:** P1 → P2 → P3 (quick, independent, immediately reduce friction) → P5 → P6
-(structural, shared-code) → P4 (gated on A2). P6's shared-crop refactor should be verified against a
-golden-image test (A1's `assert_image_matches_golden`) since it moves the real generation-input path.
+Right-click keeps its current behavior in both places (resize with the top-left corner fixed). Arrow-key
+nudging is unchanged. The navigation panel keeps its "Move gen. area" / "Move view" toggle.
 
 ---
 
-## 5. Scope, dependencies, non-goals
+## 3. Implementation plan
 
-- **Depends on:** A2 (for P4's reusable gizmo only — P1/P2/P3/P5/P6 are independent). Benefits from
-  A1's golden helper for P6.
-- **Feeds:** OQ2 (the left=move/right=resize scheme and the three-names confusion are concrete
-  editor-norm idiosyncrasies OQ2 should cite from here).
-- **Model API unchanged** except P1's optional `EDIT_SIZE` removal and P6's additive
-  `generation_input` helper. No change to backends, undo, or the generator selection flow.
-- **Non-goals:** ControlNet UX, prompt/preset management, the result-selection grid, and the
-  denoising/sampler controls themselves (only denoising's *placement* moves under the consolidation).
+Each step can ship alone, in this order. Put new user-visible strings through the file's `_tr()`, and
+define new options in `resources/config/*.json`.
+
+### Step 1: Resolution rule and frames
+
+- **Config:**
+  - `cache_value_definitions.json`: `generation_resolution_rule` (string options: Match area / Match area,
+    at least N / Manual; default the second, saved) and `recent_generation_area_sizes` (list of `"WxH"`
+    strings, saved).
+  - `application_config_definitions.json`: `generation_resolution_min_side` (int, default 512).
+  - `key_config_definitions.json`: `previous_generation_frame_key` (default `Shift+G`; `Shift+S` and
+    `Shift+Z` show the hotkey filter already handles Shift+letter). Don't use `Q` or `E`, which are the
+    tool-action hotkey and the eraser.
+- **Pure logic** in a new `src/util/generation_area_utils.py`, for unit testing:
+  - `resolution_for_area(area_size, rule, min_side, max_size) -> QSize`
+  - frame helpers: dynamic frames for an image size, recording a recent size, parsing `768` / `640x480`.
+- **Wiring:** one small owner object created by `AppController` (e.g.
+  `src/controller/generation_area_controller.py`). It connects to
+  `ImageStack.generation_area_bounds_changed`, applies the rule when the size changed, records recent sizes
+  on finished changes, and handles the previous-frame hotkey. Guard against feedback loops (the rule sets
+  `GENERATION_SIZE`; nothing should set the area back from it).
+- **Manual override:** the `GENERATION_SIZE` control changing from user input (not from the rule) sets the
+  rule to Manual. Suppress this while the rule itself is writing.
+- **UI:** in `generation_area_tool_panel.py`, replace the three buttons and the resolution block
+  (`:66-99`) with the frame chips, the rule dropdown and the existing resolution `SizeField`. Keep the
+  X/Y/W/H controls. Follow the panel's existing horizontal and vertical layout code (`_build_layout`).
+- **Remove** the "Gen. area size to resolution" and "Resolution to gen. area size" buttons and their
+  strings. "Select full image" becomes the Full frame chip.
+
+### Step 2: Context pins
+
+- **Model:** `SelectionLayer` owns the pins: a list of image-space points, a `context_pins_changed`
+  signal, and add/remove/clear methods recorded on `UndoStack`. `get_selection_gen_area()` unions pins
+  into the bounds before padding. Watch the layer offset: the method mixes `_bounding_box` with
+  `selection_layer.position` (see `sd_comfyui_generator.py:523`), so convert pins consistently.
+- **Tool:** in `SelectionBrushTool`, on right-button press, don't start the 1px stroke yet. If the pointer
+  moves past a small threshold (a few screen pixels), start the 1px stroke from the press point, as today.
+  If it's released first, toggle a pin (remove one within a few screen pixels of the click, otherwise
+  add one). Update the tool's hint text.
+- **Drawing:** a small crosshair graphics item per pin in `ImageViewer`, so it shows in the main view and
+  the navigation panel (`NavigationWindow` is an `ImagePanel`). Refresh `_generation_area_selection_outline`
+  on `context_pins_changed`, the same way it refreshes on selection changes (`image_viewer.py:195-210`).
+- **Menu and settings:** "Clear context pins" in the Selection menu. `clear_context_pins_after_generating`
+  (app config bool, default false), applied when a generation finishes.
+- **Backends:**
+  - ComfyUI already crops on the client with `get_selection_gen_area()`
+    (`sd_comfyui_generator.py:510-547`), so pins work there automatically.
+  - **The WebUI (A1111/Forge) backend ignores pins.** It sends `inpaint_full_res` and the padding to the
+    server (`diffusion_request_body.py:181-182`), which computes its own crop from the mask. When pins
+    change the crop, the WebUI generator has to crop on the client instead: crop the image and mask to
+    the pinned crop, send them with `inpaint_full_res` off at `GENERATION_SIZE`, then scale the results
+    back and composite them into the area. Move `_inpaint_gen_area_crop_bounds`,
+    `_scale_and_crop_gen_qimage` and `_restore_cropped_inpainting_images` from the ComfyUI generator
+    into `SDGenerator` so both backends share them. Without pins, keep the current server-side path.
+
+### Step 3: Padding shortcut
+
+- New `KeyConfig` modifier `padding_scroll_modifier` (default `Shift`).
+- Handle it in `ToolController.eventFilter`'s wheel case (`tool_controller.py:271`) before the active tool
+  sees the event, so it works for every tool and in the navigation panel's own tool controller. Accept
+  either wheel axis, because some platforms turn Shift + vertical scroll into horizontal scroll, and brush
+  tools use the horizontal axis for brush size (`brush_tool.py:446`).
+- Make sure the event is consumed before `ImageGraphicsView`'s zoom filter (`image_graphics_view.py:531`)
+  zooms as well. Check the order in which the two filters are installed.
+
+### Step 4: Follow selection
+
+- `app_config`: `generation_area_follow_selection` (string options: Minimal move / Center on selection /
+  Off; default Minimal move).
+- Placement is a pure function in `generation_area_utils.py`:
+  `follow_selection_position(area, target, mode, image_bounds) -> QPoint`, where `target` is the unclamped
+  bounds of selection + pins + padding.
+- Trigger it from the generation-area owner object from step 1. Debounce on the selection layer's content
+  and pin changes, and fire once the edit has settled, not on every stroke segment. Skip while
+  `UndoStack().undo_in_progress` is set, and skip when the target bounds didn't change.
+
+### Step 5: Generation area tool gestures and handles
+
+- `GenerationAreaTool` (`generation_area_tool.py`) gets the grab-inside / center-outside left-drag,
+  replacing the top-left placement in `_move_generation_area`. `NavigationWindow` uses the same tool
+  (`navigation_window.py:115`), so both change together.
+- Add a constructor flag for handles, on for the main tool and off for the navigation panel's instance.
+- **Handles:** build a small axis-aligned handle item for this tool, reusing `transform_handle.py`'s
+  drawing if it fits. Don't build on `TransformOutline`: #11 plans to redesign it, and it carries rotation
+  and matrix-decomposition state this tool doesn't need. Handles resize in integer image coordinates,
+  clamp to the image and `MIN/MAX_EDIT_SIZE`, and set hover cursors. The corner aspect lock uses the
+  area's aspect ratio at the start of the drag.
+- Use one `UndoStack().combining_actions(...)` per drag. `ImageStack.generation_area` already merges
+  consecutive area changes (`image_stack.py:360-368`); confirm that a whole drag undoes in one step.
+- Update the input hint text for both instances.
+
+### Tests
+
+New `unittest` files in `test/`, following the existing `setUp` patterns for config and the undo stack:
+- `resolution_for_area` for each rule, including the whole-number factor and the `MAX_GENERATION_SIZE`
+  cap.
+- Frame helpers: dynamic frames, recent-size ordering and deduplication, size parsing.
+- `get_selection_gen_area()` with pins: one-sided pins, pins outside the area (clamped), pins with an
+  empty selection (no crop).
+- `follow_selection_position` for both modes, for targets smaller and larger than the area, and at the
+  image edges.
+- Pin add/remove/clear through undo and redo.
+
+Mouse gestures and the WebUI crop path need manual testing with a running backend.
+
+### User docs to update with the implementation
+
+- `doc/tool_guide.md`: generation area tool controls and panel, selection brush right-click. The labeled
+  screenshot `doc/labeled_screenshots/tools/gen_area.png` needs replacing.
+- `doc/inpainting_guide.md`: "Generation Area control" and "Generation resolution": pins replace the 1px
+  trick; describe the resolution rule and Shift+scroll padding.
+- `doc/menu_options.md`: navigation window left-click, "Clear context pins", the new settings.
 
 ---
 
-## 6. One-line summary for the ledger
+## 4. Future work (not part of this refactor)
 
-Context control is clunky because area and resolution are two independent rectangles reconciled by
-hand with invisible scale consequences, three overlapping size names (`EDIT_SIZE` is a redundant
-shadow), controls scattered across tool/SD/selection panels, a non-standard handle-less gizmo, and no
-preview of what the model actually receives. Fix: collapse to two names, add a live scale badge +
-link/presets, consolidate into one context surface, promote the inpaint-crop overlay to the canvas
-with draggable padding, reuse A2's handled gizmo, and — the flagship — a WYSIWYG "model's-eye" preview
-driven by a single shared crop+scale+fill function so preview and actual can't diverge.
+- **Context bar:** full-res, padding, frames and follow in one bar that's visible for every tool (for
+  example above the Navigation tab), so none of them needs a tool switch. Deferred because of the
+  complexity of the existing panel layouts.
+- **Out-of-bounds indicator:** a visible warning when the selection plus padding extends past the
+  generation area. Worth doing; the visual design needs more thought.
+- **Move the area to a layer's bounds:** occasionally useful when assembling txt2img results on a larger
+  canvas.
+
+## 5. Rejected ideas
+
+Recorded so they aren't proposed again:
+- **Automatic area growth** when the selection outgrows the area, whether silent, with undo, or through an
+  inline prompt. No rule can tell when growth is wanted, and pins, padding and frames already make the
+  manual fix quick.
+- **Scale readouts and a "model's-eye" preview** of the exact model input. The outlines already show what
+  the model sees, and the numbers don't help in practice.
