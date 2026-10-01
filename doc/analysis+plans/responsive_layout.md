@@ -63,7 +63,7 @@ plus everything inheriting Qt defaults). Those minimums sum upward through the n
 demands. **Nothing anywhere asserts "the whole assembled UI fits in W×H."** The reactive modes and
 tab heuristics each try to shrink *locally*, but no authority guarantees the sum fits the screen.
 This is exactly the maintainer's report: *"too many conditions where a UI tweak still pushes minimum
-window size beyond the available space"* (TODO.md:5) — adding one control anywhere can silently blow
+window size beyond the available space"* (#13) — adding one control anywhere can silently blow
 the small-screen budget, and no test or invariant catches it.
 
 ### C2 — Two uncoordinated responsive systems with hand-tuned magic thresholds
@@ -84,12 +84,12 @@ layout engine rather than working with it.)
 
 ### C4 — Screen-size detection is trusted as a hard input, and is unreliable
 `availableGeometry()` *should* exclude taskbars/docks, but the maintainer reports it *"can't tell when
-there's an OS toolbar blocking screen real estate in many circumstances"* (TODO.md:5) — global menu
+there's an OS toolbar blocking screen real estate in many circumstances"* (#13) — global menu
 bars, autohide docks, Wayland, fractional/multi-monitor scaling all defeat it. Because the app both
 **fills** the screen on launch (app_controller.py:275-281) and **clamps** to it on every move
 (main_window.py:503-515), a wrong reading directly produces a window larger than the usable area — and
 with the C1 min-size floor unable to yield, controls get pushed off-screen instead of shrinking. The
-"weird resize glitch when moving between monitors" (TODO.md:18) is this interacting with the
+"weird resize glitch when moving between monitors" (#16) is this interacting with the
 orientation flip (c): a move fires `moveEvent`→clamp→resize→re-layout→orientation change→resize…, an
 un-debounced cascade.
 
@@ -120,7 +120,7 @@ Choose an explicit budget — the old laptop's usable resolution, e.g. **1024×6
 target with the maintainer). Then audit every `setMinimumSize`/`minimumSizeHint` (the call sites in
 §1 + Qt defaults) and cap them so the fully-assembled window's `minimumSizeHint()` is **≤ the
 budget**. Anything that genuinely can't shrink that far goes behind a scroll area (R2) or a collapse.
-This is the direct fix for TODO.md:5 and the single highest-value structural move.
+This is the direct fix for #13 and the single highest-value structural move.
 
 ### R2 — Universal scroll fallback so overflow is always survivable
 Ensure every panel / tab-box content area lives in a scroll area (extend the pattern `ToolPanel`
@@ -146,7 +146,7 @@ lines.
 - On launch, **don't auto-fill the screen** (app_controller.py:275-281); prefer remembered bounds,
   else a sane default at/near the R1 budget. A window that starts maximized-to-a-bad-reading is the
   worst case.
-- **Debounce** the move/resize→clamp→re-layout→orientation cascade (C4/TODO.md:18): react to
+- **Debounce** the move/resize→clamp→re-layout→orientation cascade (C4/#16): react to
   `QWindow.screenChanged` / `QScreen.availableGeometryChanged` signals with coalescing, instead of
   recomputing inside every `moveEvent`.
 - Treat a suspicious `availableGeometry` defensively (e.g. keep a manual "usable area" override in
@@ -158,7 +158,7 @@ express the R3 thresholds in a **DPI-normalized unit** so usable *physical* area
 classifies the display. This is the C5 fix and the deepest change; do it last.
 
 ### R7 — Make small-display support testable *(ties to A1)*
-Responsive layout has "almost none" of the test coverage (testing_strategy.md, TODO.md:46), which is
+Responsive layout has "almost none" of the test coverage (testing_strategy.md, #43), which is
 why silent regressions (C1) survive. The offscreen platform makes this cheap. Add characterization
 tests that instantiate the window across a **matrix of sizes** (including the R1 budget and just
 above/below every reactive band) and assert:

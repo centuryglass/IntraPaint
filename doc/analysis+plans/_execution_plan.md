@@ -204,7 +204,7 @@ or **A6 (rendering)** if the priority is unblocking the most Phase-2 work soones
   magic height thresholds (1200/1600, main_window.py:57-58), (b) ReactiveLayoutWidget per-widget
   px-range mode-swap, (c) ToolPanel orientation flip. Root cause = **bottom-up min-size accumulation
   with no global budget** (nothing asserts the assembled UI fits W×H, so any added control silently
-  blows the small-screen floor — TODO.md:5), compounded by uncoordinated hand-tuned thresholds,
+  blows the small-screen floor — #13), compounded by uncoordinated hand-tuned thresholds,
   reactive modes that **freeze silently on a range gap** (reactive_layout_widget.py:55-62),
   screen-size trusted as a hard input yet unreliable (availableGeometry misses OS toolbars; app both
   fills-on-launch and clamps-on-move → off-screen overflow + the monitor-move glitch), no DPI
