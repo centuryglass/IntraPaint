@@ -131,9 +131,9 @@ Run it with Python 3.13: the baseline is only valid for the version it was gener
 ## Cloud sessions
 
 `.claude/hooks/session-start.sh` refreshes the issue cache in every session (see "Tracking open work").
-At the start of a Claude Code on the web session it also installs the system libraries CI installs, creates `.venv` with Python 3.13 and `requirements-dev.txt`, builds
-`image_fill`, and puts `.venv/bin` first on `PATH`, so `pytest` and `scripts/pylint_check.py` work
-without further setup.
+At the start of a Claude Code on the web session it also installs the system libraries CI installs,
+creates `.venv` with Python 3.13 and `requirements-dev.txt`, builds `image_fill`, and puts `.venv/bin`
+first on `PATH`, so `pytest` and `scripts/pylint_check.py` work without further setup.
 
 ## Planning docs
 
