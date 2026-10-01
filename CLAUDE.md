@@ -116,12 +116,24 @@ Run it with Python 3.13: the baseline is only valid for the version it was gener
   asking first. A bug found during other work gets fixed in the same pass if the fix is trivial, and
   otherwise gets an issue saying what was observed, how to reproduce it, and what's ruled out.
 
+## Tracking open work
+
+- Open work lives only in [GitHub issues](https://github.com/centuryglass/IntraPaint/issues).
+- Open issues are usually already in context. The `SessionStart` hook (`.claude/hooks/session-start.sh`)
+  runs `scripts/issues.py`, which writes `.claude/cache/issues/` (`index.md` plus one file per issue) and
+  prints the index. The cache is generated and gitignored; never edit it or treat it as the source of
+  truth. `scripts/issues.py`'s docstring covers the fetch paths and `INTRAPAINT_ISSUES_TOKEN`.
+- When the hook produced nothing (rate-limited, no token, or an agent that doesn't run Claude Code
+  hooks), build the cache by hand before concluding no issue covers something: fetch the issue list with
+  whatever tool you have (the GitHub MCP `list_issues`, `gh issue list --json ...`), save it as JSON, run
+  `python3 scripts/issues.py --from-json <path>`, then read `.claude/cache/issues/index.md`.
+
 ## Cloud sessions
 
-`.claude/hooks/session-start.sh` runs at the start of a Claude Code on the web session. It installs
-the system libraries CI installs, creates `.venv` with Python 3.13 and `requirements-dev.txt`, builds
-`image_fill`, and puts `.venv/bin` first on `PATH`, so `pytest` and `scripts/pylint_check.py` work
-without further setup.
+`.claude/hooks/session-start.sh` refreshes the issue cache in every session (see "Tracking open work").
+At the start of a Claude Code on the web session it also installs the system libraries CI installs,
+creates `.venv` with Python 3.13 and `requirements-dev.txt`, builds `image_fill`, and puts `.venv/bin`
+first on `PATH`, so `pytest` and `scripts/pylint_check.py` work without further setup.
 
 ## Planning docs
 
