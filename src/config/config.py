@@ -10,7 +10,8 @@ Main features
 """
 import json
 import logging
-import os.path
+import os
+import tempfile
 import threading
 from inspect import signature
 from threading import Lock
@@ -639,9 +640,16 @@ class Config:
         with self._lock:
             for entry in self._entries.values():
                 entry.save_to_json_dict(converted_dict)
-            with open(self._json_path, 'w', encoding='utf-8') as file:
-                # noinspection PyTypeChecker
-                json.dump(converted_dict, file, ensure_ascii=False, indent=4)
+            fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(self._json_path) or '.')
+            try:
+                with os.fdopen(fd, 'w', encoding='utf-8') as file:
+                    # noinspection PyTypeChecker
+                    json.dump(converted_dict, file, ensure_ascii=False, indent=4)
+                os.replace(temp_path, self._json_path)
+            except Exception:
+                if os.path.exists(temp_path):
+                    os.unlink(temp_path)
+                raise
 
     def _read_from_json(self) -> None:
         if self._json_path is None:
