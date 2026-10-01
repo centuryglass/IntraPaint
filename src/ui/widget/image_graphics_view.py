@@ -133,7 +133,7 @@ class ImageGraphicsView(QGraphicsView):
         """Maps a point from scene to widget coordinates."""
         if isinstance(scene_point, QPoint):
             scene_point = scene_point.toPointF()
-        view_point = self.mapFromScene(scene_point).boundingRect().topLeft()
+        view_point = self.mapFromScene(scene_point)
         return self.viewport().mapTo(self, view_point)
 
     def widget_point_to_scene(self, widget_point: QPoint | QPointF) -> QPointF:

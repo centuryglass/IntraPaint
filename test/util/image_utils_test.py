@@ -2,9 +2,7 @@
 import base64
 import gc
 import io
-import os
 import sys
-import unittest
 import weakref
 
 import numpy as np
@@ -16,19 +14,18 @@ from PySide6.QtWidgets import QApplication
 from src.util.visual.image_utils import qimage_from_base64, BASE_64_PREFIX, image_to_base64, \
     image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly
 from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_image_from_base64
+from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
 
 TEST_ARGB_IMAGE_PATH = 'test/resources/test_images/png-with-transparency.png'
 TEST_RGB_IMAGE_PATH = 'test/resources/test_images/source.png'
 
-class TestImageUtils(unittest.TestCase):
+class TestImageUtils(IntraPaintTestCase):
     """Test image utility functions."""
 
     def setUp(self) -> None:
-        while os.path.basename(os.getcwd()) not in ('IntraPaint', ''):
-            os.chdir('..')
-        assert os.path.basename(os.getcwd()) == 'IntraPaint'
+        super().setUp()
         self.qimage_argb = QImage(TEST_ARGB_IMAGE_PATH).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         self.pil_image_argb = Image.open(TEST_ARGB_IMAGE_PATH)
         self.qimage_rgb = QImage(TEST_RGB_IMAGE_PATH).convertToFormat(QImage.Format.Format_RGB888)

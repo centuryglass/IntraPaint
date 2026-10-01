@@ -1,7 +1,6 @@
 import os
 import sys
 import tempfile
-import unittest
 from unittest.mock import patch, MagicMock
 
 from PySide6.QtCore import QSize, QTimer
@@ -17,20 +16,17 @@ from src.ui.window.main_window import MainWindow
 from src.util.arg_parser import build_arg_parser
 from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_READ_FORMATS, \
     IMAGE_WRITE_FORMATS
+from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
 
 LAYER_IMAGE = 'test/resources/test_images/layer_move_test.ora'
 
 
-class TestAppController(unittest.TestCase):
+class TestAppController(IntraPaintTestCase):
 
     def setUp(self):
-        while os.path.basename(os.getcwd()) not in ('IntraPaint', ''):
-            os.chdir('..')
-        AppConfig('test/resources/app_config_test.json')._reset()
-        KeyConfig('test/resources/key_config_test.json')._reset()
-        Cache('test/resources/cache_test.json')._reset()
+        super().setUp()
         self.mock_screen = MagicMock()
         args = ['--window_size', '800x600', '--mode', 'mock']
         self.args = build_arg_parser(include_edit_params=False).parse_args(args)

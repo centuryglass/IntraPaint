@@ -79,14 +79,29 @@ Config is JSON-backed and typed, with `get()` / `set()` / `connect()` (signal on
     collection, so tests can't rewrite the committed fixtures.
   - fails any test that opens a modal dialog or menu, which would otherwise block forever offscreen.
     Mock the dialog, or avoid the code path.
-- Tests are `unittest.TestCase` classes in `test/`, named `<name>_test.py`. Test `setUp` methods
-  `chdir` up to a directory named `IntraPaint`, so the checkout must have that name.
-- Tests share one process, so state left in a singleton (config values, the undo stack) leaks into
-  later tests. Reset it in `setUp` the way the existing tests do. Write test output to a temporary
-  directory, never the working tree.
+- Tests are `unittest.TestCase` classes in `test/`, named `<name>_test.py`. Shared infrastructure
+  (use it, don't copy its boilerplate):
+  - `test/base_test_case.py` — `IntraPaintTestCase`, the base class for every test. Its `setUp` and
+    `tearDown` reset the config singletons and the undo stack, and `setUp` changes to the project root.
+    Tests share one process, so state left in any other singleton leaks into later tests: reset it too.
+  - `assert_image_matches_golden` (same module, also a test-case method) is the only way to compare
+    against a committed golden image. On failure it writes `<golden>_tested.png` beside the golden
+    (gitignored); to update a golden, check that file by eye, then replace the golden with it. Use
+    `assert_images_equal` when the test computes the expected image itself. Both compare
+    premultiplied ARGB32.
+  - `test/tools/tool_test_case.py` — `ToolTestCase`, the harness for tool tests: an `ImageStack`,
+    an `ImagePanel` at 1:1 scale and a `ToolController`, driven with synthetic mouse events
+    (`mouse_press`/`mouse_move`/`mouse_release`/`mouse_drag`) at image coordinates. Don't build
+    `AppController` in tool tests.
+- Write test output to a temporary directory, never the working tree (failed goldens excepted).
+- Prevent flaky tests rather than quarantining them: don't wait on the event loop (`qWait`, spinning
+  `processEvents`), wall-clock time, the network or a real backend (use `--mode mock`). No retry
+  markers; the only allowed markers are `skip` (with a reason and an issue link) and
+  `xfail(strict=True)`. Don't add `pytest-xdist` until tests are proven independent of run order,
+  or a coverage-percentage gate while coverage is being built out.
 - CI (`.github/workflows/ci.yml`) runs on every push and pull request: the suite on Python 3.11-3.14,
   plus the lint check below. Its `ci` job is the single check to require for merging.
-- Coverage is sparse (14 test files) — treat it as a partial safety net, not an authoritative gate.
+- Coverage is sparse (17 test files) — treat it as a partial safety net, not an authoritative gate.
   The full run takes about 90 seconds.
 
 ## Type checking

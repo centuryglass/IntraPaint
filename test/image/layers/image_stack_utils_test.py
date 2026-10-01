@@ -8,11 +8,10 @@ from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
-from src.config.cache import Cache
-from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
 from src.undo_stack import UndoStack
+from test.base_test_case import IntraPaintTestCase
 
 IMG_SIZE = QSize(512, 512)
 GEN_AREA_SIZE = QSize(300, 300)
@@ -21,13 +20,11 @@ MAX_GEN_AREA = QSize(999, 999)
 app = QApplication.instance() or QApplication(sys.argv)
 
 
-class ImageStackUtilsTest(unittest.TestCase):
+class ImageStackUtilsTest(IntraPaintTestCase):
     """Tests the image_stack_utils module"""
 
     def setUp(self) -> None:
-        AppConfig()._reset()
-        KeyConfig()._reset()
-        Cache()._reset()
+        super().setUp()
         # Without time-based merging, only explicit grouping can combine actions in the undo history. Scaling a large
         # image takes long enough per layer that time-based merging doesn't combine the steps either.
         AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
