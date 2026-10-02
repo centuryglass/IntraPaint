@@ -160,10 +160,21 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
     can't rewrite the committed fixtures.
   - fails any test that opens a modal dialog or menu, which would otherwise block forever offscreen. Mock the dialog,
     or avoid the code path.
-- Tests are `unittest.TestCase` classes in `test/`, named `<name>_test.py`. Test `setUp` methods `chdir` up to a
-  directory named `IntraPaint`, so the checkout must have that name.
-- Tests share one process, so state left in a singleton (config values, the undo stack) leaks into later tests. Reset
-  it in `setUp` the way the existing tests do. Write test output to a temporary directory, never the working tree.
+- **Tests extend `IntraPaintTestCase`** (`test/base_test_case.py`), in files named `<name>_test.py` under `test/`. Its
+  `setUp` and `tearDown` reset the config singletons and the undo stack, and `setUp` changes to the project root.
+  Tests share one process, so a test that changes any other singleton resets it too.
+- **Golden images go through `assert_image_matches_golden`** in `test/base_test_case.py`; its module docstring covers
+  updating a golden.
+- **Tool tests extend `ToolTestCase`** (`test/tools/tool_test_case.py`), which drives tools with synthetic mouse
+  events and no `AppController`.
+- Write test output to a temporary directory, never the working tree. The one exception is the gitignored
+  `*_tested.png` a failed golden comparison writes beside its golden.
+- **Prevent flaky tests instead of quarantining them.**
+  - Tests don't wait on the event loop (`qWait`, spinning `processEvents`), wall-clock time, the network or a real
+    backend. Use `--mode mock`.
+  - No retry markers. The only allowed markers are `skip`, with a reason and an issue link, and `xfail(strict=True)`.
+  - `pytest-xdist` waits until tests are proven independent of run order, and a coverage-percentage gate waits until
+    coverage is built out.
 - CI (`.github/workflows/ci.yml`) runs on every push and pull request: the suite on Python 3.11-3.14, plus the lint
   check below. Its `ci` job is the single check to require for merging.
 - Coverage is sparse: treat it as a partial safety net, not an authoritative gate. The full run takes about 90

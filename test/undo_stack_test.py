@@ -7,15 +7,16 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.undo_stack import UndoStack
+from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
 
 
-class UndoStackTest(unittest.TestCase):
+class UndoStackTest(IntraPaintTestCase):
     """Tests the UndoStack module."""
 
     def setUp(self) -> None:
-        AppConfig()._reset()
+        super().setUp()
         # Commits are never less than zero seconds apart, so this keeps time-based merging out of every test that
         # doesn't set its own interval.
         AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
