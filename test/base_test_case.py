@@ -31,9 +31,8 @@ TEST_IMAGE_DIR = os.path.join(TEST_RESOURCE_DIR, 'test_images')
 
 TESTED_IMAGE_SUFFIX = '_tested.png'
 
-# Image comparisons use one fixed format, so a difference in format alone can't fail a test. It's the premultiplied
-# format IntraPaint renders in: comparing as ARGB32 would unpremultiply each image, and that rounds visually identical
-# pixels to different values. Existing goldens only match after premultiplying.
+# Image comparisons convert both images to this format, so a format difference alone can't fail a test. Switching it to
+# ARGB32 breaks existing goldens: unpremultiplying rounds visually identical pixels to different values.
 COMPARISON_FORMAT = QImage.Format.Format_ARGB32_Premultiplied
 
 
@@ -74,7 +73,7 @@ def _describe_difference(actual: QImage, expected: QImage) -> str:
 
 
 def assert_image_matches_golden(actual: QImage, golden_path: str, msg: Optional[str] = None) -> None:
-    """Asserts that an image exactly matches a committed golden image.
+    """Asserts that an image has the same pixels as a committed golden image.
 
     Both images are converted to COMPARISON_FORMAT before comparing. On failure, the tested image is saved next to the
     golden as `<golden name>_tested.png` so it can be checked by eye and committed as the new golden if it's correct.
@@ -110,7 +109,7 @@ def assert_image_matches_golden(actual: QImage, golden_path: str, msg: Optional[
 
 
 def assert_images_equal(actual: QImage, expected: QImage, msg: Optional[str] = None) -> None:
-    """Asserts that two images have exactly the same pixels, comparing them in COMPARISON_FORMAT.
+    """Asserts that two images have the same pixels, comparing them in COMPARISON_FORMAT.
 
     Use this when the test computes the expected image itself, and assert_image_matches_golden when it's committed.
     On failure, both images are saved to a new temporary directory, named in the failure message.
@@ -149,9 +148,9 @@ class IntraPaintTestCase(unittest.TestCase):
         super().tearDown()
 
     def assert_image_matches_golden(self, actual: QImage, golden_path: str, msg: Optional[str] = None) -> None:
-        """Asserts that an image exactly matches a committed golden image. See the module-level function."""
+        """Asserts that an image has the same pixels as a committed golden image. See assert_image_matches_golden."""
         assert_image_matches_golden(actual, golden_path, msg)
 
     def assert_images_equal(self, actual: QImage, expected: QImage, msg: Optional[str] = None) -> None:
-        """Asserts that two images have exactly the same pixels. See the module-level function."""
+        """Asserts that two images have the same pixels. See assert_images_equal."""
         assert_images_equal(actual, expected, msg)

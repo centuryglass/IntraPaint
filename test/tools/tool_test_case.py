@@ -36,9 +36,8 @@ class ToolTestCase(IntraPaintTestCase):
         self.image_stack = ImageStack(self.IMAGE_SIZE, self.IMAGE_SIZE, self.IMAGE_SIZE, self.IMAGE_SIZE)
         self.image_panel = ImagePanel(self.image_stack, include_zoom_controls=False, use_keybindings=False)
         self.image_viewer = self.image_panel.image_viewer
-        # With the default frame, the viewport is offset from the viewer, and ToolController maps mouse presses and
-        # mouse moves one frame width apart (see the GitHub issue on ToolController event coordinates). A frameless
-        # viewer keeps both on the same pixel.
+        # A frameless viewer keeps mouse presses and moves on the same pixel. With a frame, ToolController maps them
+        # one frame width apart (#76).
         self.image_viewer.setFrameShape(QFrame.Shape.NoFrame)
         self.image_panel.resize(self.IMAGE_SIZE.width() + VIEW_MARGIN * 2, self.IMAGE_SIZE.height() + VIEW_MARGIN * 2)
         self.image_panel.show()

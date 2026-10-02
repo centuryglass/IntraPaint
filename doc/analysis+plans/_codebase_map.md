@@ -124,7 +124,7 @@ has a WIP standalone API library at ../sd-api-standalone intended to replace src
 - **Native/build**: Cython `util/visual/image_fill` (auto-built on launch or
   `setup.py build_ext --inplace`); libmypaint native libs per-platform; PyInstaller specs
   (`IntraPaint-linux.spec`, `IntraPaint.spec`); `scripts/build.sh`.
-- **Docs**: workflow/usage docs under `doc/`; task backlog in `doc/TODO.md`; these analysis
+- **Docs**: workflow/usage docs under `doc/`; task backlog in GitHub issues; these analysis
   reports in `doc/analysis+plans/`.
 
 ## 7. Known rough edges relevant across reports (from TODO.md + observed)
