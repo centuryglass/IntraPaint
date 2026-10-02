@@ -1,6 +1,6 @@
 #!/bin/bash
 # Starts every Claude Code session by refreshing the GitHub issue cache and printing its index as session context (see
-# CLAUDE.md, "Tracking open work").
+# AGENTS.md, "Tracking open work").
 #
 # A Claude Code on the web session is also prepared to run the test suite and the lint check: the system libraries
 # headless Qt needs, a Python 3.13 virtual environment with requirements-dev.txt, and the compiled image_fill module.

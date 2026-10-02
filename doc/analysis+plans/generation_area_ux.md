@@ -3,7 +3,7 @@
 **Status:** design agreed with the maintainer on 2026-09-30. Implementation is tracked in
 [#41](https://github.com/centuryglass/IntraPaint/issues/41).
 
-**Goal (from `doc/TODO.md`):** get maximum flexibility out of the generation area while keeping the user
+**Goal (from the former `doc/TODO.md`, now #41):** get maximum flexibility out of the generation area while keeping the user
 from having to think about hitting good resolutions and matching aspect ratios. Replace the 1px
 selection-brush trick with something better.
 

@@ -1,6 +1,6 @@
 """Compile this repository's GitHub issues into a local cache an agent can read with ordinary file tools.
 
-Open work lives in GitHub issues (CLAUDE.md, "Tracking open work"). The cache is generated and gitignored: one
+Open work lives in GitHub issues (AGENTS.md, "Tracking open work"). The cache is generated and gitignored: one
 `index.md` to scan, plus one markdown file per issue, rebuilt from scratch on every run. It is always a copy, never the
 source of truth.
 

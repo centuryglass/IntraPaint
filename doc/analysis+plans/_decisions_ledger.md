@@ -192,11 +192,11 @@ Format: `[YYYY-MM-DD] Topic — decision. (rationale / where documented)`
 - [2026-08-10] **Root cause = bottom-up min-size accumulation with no global budget.** Every panel
   declares its own min-size; they sum upward and nothing asserts the assembled UI fits a target W×H,
   so any added control can silently push the small-screen minimum past the available space
-  (TODO.md:5). Secondary faults: uncoordinated hand-tuned thresholds; reactive modes **freeze
+  (#13). Secondary faults: uncoordinated hand-tuned thresholds; reactive modes **freeze
   silently on a range gap** (reactive_layout_widget.py:55-62 logs + keeps last mode); screen size
   trusted as a hard sizing input yet unreliable (`availableGeometry` misses OS toolbars — the app
   both fills-on-launch, app_controller.py:275-281, *and* clamps-on-move, main_window.py:503-515 →
-  off-screen overflow + the monitor-move glitch TODO.md:18); no DPI awareness (fixed 10pt font);
+  off-screen overflow + the monitor-move glitch #16); no DPI awareness (fixed 10pt font);
   overflow clips instead of scrolling.
 - [2026-08-10] **Direction:** replace bottom-up accumulation with a **top-down space budget** and make
   *"usable at target-minimum size N"* an **enforced, testable invariant**. Phased (low→structural):
