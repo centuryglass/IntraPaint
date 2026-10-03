@@ -1,0 +1,188 @@
+[
+  {
+    "body": {
+      "overwrite": "1",
+      "subfolder": "IntraPaint",
+      "type": "input"
+    },
+    "body_format": "multipart/form-data",
+    "endpoint": "/upload/image",
+    "files": {
+      "image": [
+        "src_image.png",
+        "<image 600x400 Format_ARGB32 08e9ccbe7255b87b>",
+        "image/png"
+      ]
+    },
+    "method": "POST",
+    "timeout": 90
+  },
+  {
+    "body": {
+      "client_id": "<client id>",
+      "prompt": {
+        "10": {
+          "class_type": "ControlNetLoader",
+          "inputs": {
+            "control_net_name": "control_v11f1e_sd15_tile_fp16.safetensors"
+          }
+        },
+        "11": {
+          "class_type": "UltimateSDUpscale",
+          "inputs": {
+            "cfg": 6.5,
+            "denoise": 0.25,
+            "force_uniform_tiles": false,
+            "image": [
+              "8",
+              0
+            ],
+            "mask_blur": 8,
+            "mode_type": "Linear",
+            "model": [
+              "3",
+              0
+            ],
+            "negative": [
+              "9",
+              1
+            ],
+            "positive": [
+              "9",
+              0
+            ],
+            "sampler_name": "euler_ancestral",
+            "scheduler": "karras",
+            "seam_fix_denoise": 0.0,
+            "seam_fix_mask_blur": 8,
+            "seam_fix_mode": "None",
+            "seam_fix_padding": 16,
+            "seam_fix_width": 64,
+            "seed": 1234,
+            "steps": 15,
+            "tile_height": 512,
+            "tile_padding": 32,
+            "tile_width": 512,
+            "tiled_decode": true,
+            "upscale_by": 2.0,
+            "upscale_model": [
+              "12",
+              0
+            ],
+            "vae": [
+              "4",
+              2
+            ]
+          }
+        },
+        "12": {
+          "class_type": "UpscaleModelLoader",
+          "inputs": {
+            "model_name": "4x-UltraSharp.pth"
+          }
+        },
+        "13": {
+          "class_type": "SaveImage",
+          "inputs": {
+            "filename_prefix": "",
+            "images": [
+              "11",
+              0
+            ]
+          }
+        },
+        "3": {
+          "class_type": "LoraLoader",
+          "inputs": {
+            "clip": [
+              "4",
+              1
+            ],
+            "lora_name": "detail_lora.safetensors",
+            "model": [
+              "4",
+              0
+            ],
+            "strength_clip": 0.8,
+            "strength_model": 0.8
+          }
+        },
+        "4": {
+          "class_type": "CheckpointLoaderSimple",
+          "inputs": {
+            "ckpt_name": "dreamshaper_8.safetensors"
+          }
+        },
+        "5": {
+          "class_type": "CLIPTextEncode",
+          "inputs": {
+            "clip": [
+              "3",
+              1
+            ],
+            "text": "a lighthouse on a cliff "
+          }
+        },
+        "6": {
+          "class_type": "CLIPTextEncode",
+          "inputs": {
+            "clip": [
+              "3",
+              1
+            ],
+            "text": "blurry"
+          }
+        },
+        "7": {
+          "class_type": "TilePreprocessor",
+          "inputs": {
+            "image": [
+              "8",
+              0
+            ],
+            "pyrUp_iters": 3,
+            "resolution": 512
+          }
+        },
+        "8": {
+          "class_type": "LoadImage",
+          "inputs": {
+            "image": "IntraPaint/src_image.png",
+            "upload": "image"
+          }
+        },
+        "9": {
+          "class_type": "ControlNetApplyAdvanced",
+          "inputs": {
+            "control_net": [
+              "10",
+              0
+            ],
+            "end_percent": 1.0,
+            "image": [
+              "7",
+              0
+            ],
+            "negative": [
+              "6",
+              0
+            ],
+            "positive": [
+              "5",
+              0
+            ],
+            "start_percent": 0.0,
+            "strength": 1.0,
+            "vae": [
+              "4",
+              2
+            ]
+          }
+        }
+      }
+    },
+    "endpoint": "/prompt",
+    "method": "POST",
+    "timeout": 30
+  }
+]

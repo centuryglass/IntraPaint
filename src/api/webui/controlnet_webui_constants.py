@@ -90,7 +90,7 @@ RESIZE_MODE_DEFAULT = RESIZE_MODE_OPTIONS[1]
 
 CONTROL_WEIGHT_KEY = 'weight'
 START_STEP_KEY = 'guidance_start'
-END_STEP_KEY = 'guidance_start'
+END_STEP_KEY = 'guidance_end'
 
 # Generic keys used for setting preprocessor-specific values.
 FIRST_GENERIC_PARAMETER_KEY = 'threshold_a'

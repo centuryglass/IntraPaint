@@ -1,4 +1,5 @@
 """Tests the shared test infrastructure in test/base_test_case.py."""
+import json
 import os
 import shutil
 import tempfile
@@ -10,7 +11,7 @@ from PySide6.QtGui import QColor, QImage
 from src.config.application_config import AppConfig
 from src.undo_stack import UndoStack
 from test.base_test_case import (IntraPaintTestCase, PROJECT_ROOT, assert_image_matches_golden, assert_images_equal,
-                                 tested_image_path)
+                                 assert_json_matches_snapshot, tested_image_path)
 
 IMAGE_SIZE = QSize(8, 4)
 
@@ -74,6 +75,47 @@ class GoldenImageTest(unittest.TestCase):
         _solid_image(Qt.GlobalColor.red).save(self.golden_path)
         with self.assertRaisesRegex(AssertionError, r'^after undo: image does not match'):
             assert_image_matches_golden(_solid_image(Qt.GlobalColor.blue), self.golden_path, 'after undo')
+
+
+class JsonSnapshotTest(unittest.TestCase):
+    """Tests assert_json_matches_snapshot."""
+
+    def setUp(self) -> None:
+        temp_dir = tempfile.mkdtemp(prefix='intrapaint-snapshot-test-')
+        self.addCleanup(shutil.rmtree, temp_dir)
+        self.snapshot_path = os.path.join(temp_dir, 'snapshot.json')
+        self.tested_path = os.path.join(temp_dir, 'snapshot_tested.json')
+
+    def _write_snapshot(self, data: object, path: str = '') -> None:
+        with open(path or self.snapshot_path, 'w', encoding='utf-8') as snapshot_file:
+            snapshot_file.write(json.dumps(data, indent=2, sort_keys=True) + '\n')
+
+    def test_match_ignores_key_order(self) -> None:
+        """Data matches a snapshot written in the committed format, whatever its key order."""
+        self._write_snapshot({'a': 1, 'b': [1, 2]})
+        assert_json_matches_snapshot({'b': [1, 2], 'a': 1}, self.snapshot_path)
+        self.assertFalse(os.path.exists(self.tested_path))
+
+    def test_mismatch_writes_tested_data(self) -> None:
+        """A mismatch fails with a diff, and saves the tested data next to the snapshot."""
+        self._write_snapshot({'steps': 20})
+        with self.assertRaisesRegex(AssertionError, r'(?s)-  "steps": 20.*\+  "steps": 30'):
+            assert_json_matches_snapshot({'steps': 30}, self.snapshot_path)
+        with open(self.tested_path, encoding='utf-8') as tested_file:
+            self.assertEqual(json.load(tested_file), {'steps': 30})
+
+    def test_missing_snapshot_writes_tested_data(self) -> None:
+        """A missing snapshot fails, saving the tested data so it can become the snapshot."""
+        with self.assertRaisesRegex(AssertionError, 'is missing'):
+            assert_json_matches_snapshot([1], self.snapshot_path)
+        self.assertTrue(os.path.isfile(self.tested_path))
+
+    def test_match_removes_stale_tested_data(self) -> None:
+        """Passing removes tested data left by an earlier failure."""
+        self._write_snapshot([1])
+        self._write_snapshot([2], self.tested_path)
+        assert_json_matches_snapshot([1], self.snapshot_path)
+        self.assertFalse(os.path.exists(self.tested_path))
 
 
 class ImagesEqualTest(unittest.TestCase):

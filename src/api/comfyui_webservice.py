@@ -617,9 +617,10 @@ class ComfyUiWebservice(WebService):
                                                             tile_size, use_ultimate_upscaler,
                                                             upscale_model, controlnet_tile_preprocessor,
                                                             controlnet_tile_model)
+            # Loading cached settings sets the regular generation steps and denoising strength, so it must come first:
+            self._build_diffusion_body(None, workflow_builder)
             workflow_builder.denoising_strength = cache.get(Cache.SD_UPSCALING_DENOISING_STRENGTH)
             workflow_builder.steps = cache.get(Cache.SD_UPSCALING_STEP_COUNT)
-            self._build_diffusion_body(None, workflow_builder)
             workflow_node_graph = workflow_builder.build_workflow()
 
         else:  # Basic upscaling workflow:
