@@ -71,7 +71,7 @@ class ColorButton(QPushButton):
                 config = get_config_from_key(self._config_key)
                 config.set(self._config_key, selection.name(QColor.NameFormat.HexArgb))
             else:
-                self._color = selection
+                self._update_color(selection)
 
     @property
     def color(self) -> QColor:

@@ -5,7 +5,7 @@ from typing import Sequence, TypeVar
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, QSize, Qt
 from PySide6.QtGui import QMouseEvent
-from PySide6.QtWidgets import QApplication, QFrame
+from PySide6.QtWidgets import QApplication
 
 from src.controller.tool_controller import ToolController
 from src.image.layers.image_stack import ImageStack
@@ -36,9 +36,6 @@ class ToolTestCase(IntraPaintTestCase):
         self.image_stack = ImageStack(self.IMAGE_SIZE, self.IMAGE_SIZE, self.IMAGE_SIZE, self.IMAGE_SIZE)
         self.image_panel = ImagePanel(self.image_stack, include_zoom_controls=False, use_keybindings=False)
         self.image_viewer = self.image_panel.image_viewer
-        # A frameless viewer keeps mouse presses and moves on the same pixel. With a frame, ToolController maps them
-        # one frame width apart (#76).
-        self.image_viewer.setFrameShape(QFrame.Shape.NoFrame)
         self.image_panel.resize(self.IMAGE_SIZE.width() + VIEW_MARGIN * 2, self.IMAGE_SIZE.height() + VIEW_MARGIN * 2)
         self.image_panel.show()
         self.image_viewer.scene_scale = 1.0

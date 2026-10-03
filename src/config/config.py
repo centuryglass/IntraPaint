@@ -376,10 +376,11 @@ class Config:
             return
         # Schedule save to JSON file:
         if save_change:
+            write_now = False
             with self._lock:
                 if not self._save_timer.isActive():
                     if threading.current_thread() is not threading.main_thread():
-                        self._write_to_json()  # Timers can't be started from other threads.
+                        write_now = True  # Timers can't be started from other threads.
                     else:
                         def write_change() -> None:
                             """Copy changes to the file and disconnect the timer."""
@@ -388,6 +389,8 @@ class Config:
 
                         self._save_timer.timeout.connect(write_change)
                         self._save_timer.start(10)
+            if write_now:
+                self._write_to_json()  # Takes `self._lock` itself, so it must run after the block above releases it.
         # Pass change to connected callback functions:
         callbacks = [*self._connected[key].items()]  # <- So callbacks can disconnect or replace themselves
         for source, callback in callbacks:

@@ -1,7 +1,7 @@
 name: ci
 
-# Runs the test suite and the lint check on every push and pull request, so every commit's state is known before
-# it's merged anywhere. workflow_dispatch also allows running it by hand from the Actions tab.
+# Runs the test suite, the lint check and the packaged-build launch test on every push and pull request, so every
+# commit's state is known before it's merged anywhere. workflow_dispatch also allows running it by hand from the Actions tab.
 on:
   push:
   pull_request:
@@ -84,17 +84,87 @@ jobs:
       - name: pylint (no new messages)
         run: python scripts/pylint_check.py
 
+  # Builds the release bundles with PyInstaller and launch-tests them, since a bundle can break where a source run
+  # works (see scripts/smoke_test_bundle.py). The uploaded artifacts are the release candidates.
+  bundle:
+    name: bundle (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux
+            # A Linux bundle needs at least the glibc of the machine that built it. 22.04's is just above the
+            # PySide6 wheel's own minimum, so building there keeps the bundle running on older distros.
+            os: ubuntu-22.04
+            spec: IntraPaint-linux.spec
+            executable: dist/IntraPaint
+            artifact: IntraPaint-linux
+          - name: windows
+            os: windows-latest
+            spec: IntraPaint.spec
+            executable: dist/IntraPaint.exe
+            artifact: IntraPaint-windows
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v5
+        with:
+          # Bundles ship one Python. Keep it within requirements-dev.txt's pyinstaller support.
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: requirements*.txt
+
+      - name: Install system libraries
+        if: runner.os == 'Linux'
+        # The same libraries the test job installs: the launch test runs Qt offscreen, and the bundle loads
+        # lib/libmypaint.so against the system's libjson-c.so.5.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 libgl1 libopengl0 libxkbcommon0 libdbus-1-3 \
+            libglib2.0-0 libfontconfig1 libfreetype6 libjson-c5
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Build Cython extension
+        # PyInstaller collects whichever image_fill is present, and the uncompiled .py fails at startup.
+        run: |
+          python setup.py build_ext --inplace
+          python -c "import src.util.visual.image_fill as m; assert not m.__file__.endswith('.py'), m.__file__"
+
+      - name: Build bundle
+        run: pyinstaller --noconfirm ${{ matrix.spec }}
+
+      - name: Launch test
+        run: python scripts/smoke_test_bundle.py ${{ matrix.executable }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.executable }}
+          if-no-files-found: error
+          retention-days: 14
+
   # A single check to require for merging, so branch protection doesn't need updating whenever the matrix or the
   # set of jobs changes.
   ci:
     name: ci
     if: always()
-    needs: [test, lint]
+    needs: [test, lint, bundle]
     runs-on: ubuntu-latest
     steps:
       - name: All checks passed
-        if: needs.test.result != 'success' || needs.lint.result != 'success'
+        if: needs.test.result != 'success' || needs.lint.result != 'success' || needs.bundle.result != 'success'
         run: |
           echo "test result: ${{ needs.test.result }}"
           echo "lint result: ${{ needs.lint.result }}"
+          echo "bundle result: ${{ needs.bundle.result }}"
           exit 1

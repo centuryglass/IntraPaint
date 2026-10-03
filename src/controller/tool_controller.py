@@ -16,11 +16,9 @@ from src.tools.clone_stamp_tool import CloneStampTool
 from src.tools.draw_tool import DrawTool
 from src.tools.eraser_tool import EraserTool
 from src.tools.eyedropper_tool import EyedropperTool
-from src.tools.fill_tool import FillTool
 from src.tools.filter_tool import FilterTool
 from src.tools.free_selection_tool import FreeSelectionTool
 from src.tools.layer_transform_tool import LayerTransformTool
-from src.tools.selection_fill_tool import SelectionFillTool
 from src.tools.selection_brush_tool import SelectionBrushTool
 from src.tools.shape_selection_tool import ShapeSelectionTool
 from src.tools.shape_tool import ShapeTool
@@ -30,7 +28,13 @@ from src.ui.image_viewer import ImageViewer, MIN_OUTLINE_PIXEL_SIZE
 from src.ui.modal.modal_utils import show_warning_dialog
 from src.util.optional_import import optional_import
 
+# PyInstaller can't see optional imports: each module below must be listed in the `hiddenimports` of IntraPaint.spec
+# and IntraPaint-linux.spec, or bundles ship without it.
 MyPaintBrushTool = optional_import('src.tools.mypaint_brush_tool', attr_name='MyPaintBrushTool')
+# Both fill tools import the compiled `src.util.visual.image_fill` module, which is missing when the Cython build
+# failed. They are None in that case, and every use in ToolController must handle that.
+FillTool = optional_import('src.tools.fill_tool', attr_name='FillTool')
+SelectionFillTool = optional_import('src.tools.selection_fill_tool', attr_name='SelectionFillTool')
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +49,10 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 BRUSH_LOAD_ERROR_TITLE = _tr('Failed to load libmypaint brush library files')
 BRUSH_LOAD_ERROR_MESSAGE = _tr('The brush tool will not be available unless this is fixed.')
+FILL_TOOLS_UNAVAILABLE_LOG = (
+    'The fill and selection fill tools are unavailable because the compiled image_fill module could not be loaded. '
+    'Install a C compiler, then run `python setup.py build_ext --inplace` from the IntraPaint directory and restart '
+    'IntraPaint.')
 
 
 class ToolController(QObject):
@@ -83,8 +91,9 @@ class ToolController(QObject):
         draw_tool = DrawTool(image_stack, image_viewer)
         self.add_tool(draw_tool)
         self.add_tool(EraserTool(image_stack, image_viewer))
-        fill_tool = FillTool(image_stack)
-        self.add_tool(fill_tool)
+        fill_tool = FillTool(image_stack) if FillTool is not None else None
+        if fill_tool is not None:
+            self.add_tool(fill_tool)
         self.add_tool(FilterTool(image_stack, image_viewer))
         self.add_tool(SmudgeTool(image_stack, image_viewer))
         self.add_tool(CloneStampTool(image_stack, image_viewer))
@@ -98,7 +107,10 @@ class ToolController(QObject):
         self.add_tool(FreeSelectionTool(image_stack, image_viewer))
         self.add_tool(SelectionBrushTool(image_stack, image_viewer))
         self.add_tool(ShapeSelectionTool(image_stack, image_viewer))
-        self.add_tool(SelectionFillTool(image_stack))
+        if SelectionFillTool is not None:
+            self.add_tool(SelectionFillTool(image_stack))
+        if FillTool is None or SelectionFillTool is None:
+            logger.warning(FILL_TOOLS_UNAVAILABLE_LOG)
 
         eyedropper_modifier = KeyConfig().get_modifier(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER)
         if eyedropper_modifier != Qt.KeyboardModifier.NoModifier:

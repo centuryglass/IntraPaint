@@ -180,10 +180,9 @@ def image_stack_color_at_point(image_stack: ImageStack, image_point: QPoint) -> 
     if image_bounds.contains(image_point):
         return image_stack.qimage(True).pixelColor(image_point)
     content_bounds = image_stack.merged_layer_bounds
-    adjusted_point = image_point - content_bounds.topLeft()
-    if not content_bounds.contains(adjusted_point):
+    if not content_bounds.contains(image_point):
         return QColor(0, 0, 0)
-    return image_stack.qimage(False).pixelColor(adjusted_point)
+    return image_stack.qimage(False).pixelColor(image_point - content_bounds.topLeft())
 
 
 def top_layer_at_point(image_stack: ImageStack, image_coordinates: QPoint) -> Optional[ImageLayer | TextLayer]:

@@ -268,6 +268,7 @@ class AppController(MenuBuilder):
         self.menu_window = self._window
         self._image_viewer = self._window.image_panel.image_viewer
         self._window.generate_signal.connect(self.start_and_manage_inpainting)
+        self._window.confirm_close = self._confirm_quit
         if args.window_size is not None:
             width, height = (int(dim) for dim in args.window_size.split('x'))
             self._window.setGeometry(0, 0, width, height)
@@ -1143,8 +1144,14 @@ class AppController(MenuBuilder):
     @menu_action(MENU_FILE, 'quit_shortcut', 6)
     def quit(self, skip_confirmation: bool = False) -> None:
         """Quit the application after getting confirmation from the user."""
-        if skip_confirmation or request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE):
-            self._window.close()
+        if skip_confirmation:
+            self._window.close_without_confirmation()
+        else:
+            self._window.close()  # MainWindow.closeEvent asks through _confirm_quit.
+
+    def _confirm_quit(self) -> bool:
+        """Asks the user to confirm closing the main window, returning whether to proceed."""
+        return request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE)
 
     # Edit menu:
 

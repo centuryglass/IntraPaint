@@ -440,20 +440,22 @@ class ImageGraphicsView(QGraphicsView):
         """Custom mousePress handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
         assert event is not None
-        self.set_cursor_pos(event.pos())
+        self.set_cursor_pos(self._view_event(event).position())
         super().mousePressEvent(event)
         if event.buttons() == Qt.MouseButton.MiddleButton or (event.buttons() == Qt.MouseButton.LeftButton
                                                               and KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER,
                                                                                           True)):
             if self._mouse_navigation_enabled:
                 self._widget_drag_point = event.pos()
-        return False if get_result else None
+        # A press accepted by a scene item belongs to that item, so filters only see presses the scene ignored.
+        handled = False if event.isAccepted() else self._forward_to_event_filters(event)
+        return handled if get_result else None
 
     def mouseMoveEvent(self, event: Optional[QMouseEvent], get_result=False) -> Optional[bool]:
         """Custom mouseMove handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
         assert event is not None
-        self.set_cursor_pos(event.pos())
+        self.set_cursor_pos(self._view_event(event).position())
         super().mouseMoveEvent(event)
         if self._mouse_navigation_enabled and self._widget_drag_point is not None and event is not None:
             if (event.buttons() == Qt.MouseButton.MiddleButton or
@@ -470,21 +472,40 @@ class ImageGraphicsView(QGraphicsView):
                 self._widget_drag_point = mouse_pt
             else:
                 self._widget_drag_point = None
-        for event_filter in self._event_filters:
-            if event_filter.eventFilter(self, event):
-                return True if get_result else None
-        return False if get_result else None
+        handled = self._forward_to_event_filters(event)
+        return handled if get_result else None
 
     def mouseReleaseEvent(self, event: Optional[QMouseEvent], get_result=False) -> Optional[bool]:
         """Custom mouseRelease handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
         assert event is not None
-        self.set_cursor_pos(event.pos())
+        self.set_cursor_pos(self._view_event(event).position())
         super().mouseReleaseEvent(event)
+        handled = self._forward_to_event_filters(event)
+        return handled if get_result else None
+
+    def _view_event(self, viewport_event: QMouseEvent) -> QMouseEvent:
+        """Returns a copy of a mouse event the viewport received, positioned in this view's coordinates."""
+        viewport = self.viewport()
+        assert viewport is not None
+        view_pos = viewport_event.position() + QPointF(viewport.pos())
+        return QMouseEvent(viewport_event.type(), view_pos, viewport_event.scenePosition(),
+                           viewport_event.globalPosition(), viewport_event.button(), viewport_event.buttons(),
+                           viewport_event.modifiers(), viewport_event.pointingDevice())
+
+    def _forward_to_event_filters(self, viewport_event: QMouseEvent) -> bool:
+        """Passes a viewport mouse event to the filters in installEventFilter's list, in view coordinates, and returns
+           whether one handled it.
+
+        The event is accepted afterward so it doesn't also propagate to this view, where Qt would pass it to the same
+        filters a second time.
+        """
+        view_event = self._view_event(viewport_event)
+        viewport_event.accept()
         for event_filter in self._event_filters:
-            if event_filter.eventFilter(self, event):
-                return True if get_result else None
-        return False if get_result else None
+            if event_filter.eventFilter(self, view_event):
+                return True
+        return False
 
     def _zoom_step(self, adjusted_multiplier: float, integer_scaling: bool = True):
         last_scale = self.scene_scale
