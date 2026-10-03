@@ -1,0 +1,23 @@
+[
+  {
+    "body": {
+      "alwayson_scripts": {},
+      "batch_size": 2,
+      "cfg_scale": 6.5,
+      "height": 512,
+      "n_iter": 2,
+      "negative_prompt": "blurry",
+      "prompt": "a lighthouse on a cliff <lora:detail_lora:0.8>",
+      "restore_faces": false,
+      "sampler_name": "Euler a",
+      "save_images": false,
+      "seed": 1234,
+      "send_images": true,
+      "steps": 20,
+      "tiling": false,
+      "width": 512
+    },
+    "endpoint": "/sdapi/v1/txt2img",
+    "method": "POST"
+  }
+]

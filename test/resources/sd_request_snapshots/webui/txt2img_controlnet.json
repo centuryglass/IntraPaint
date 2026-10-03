@@ -1,0 +1,45 @@
+[
+  {
+    "body": {
+      "alwayson_scripts": {
+        "controlNet": {
+          "args": [
+            {
+              "control_mode": "Balanced",
+              "enabled": true,
+              "guidance_end": 0.9,
+              "guidance_start": 0.1,
+              "image": "<image 512x512 Format_ARGB32 fa12b31036e7664a>",
+              "low_vram": false,
+              "model": "control_v11p_sd15_canny [d14c016b]",
+              "module": "canny",
+              "pixel_perfect": true,
+              "processor_res": 512,
+              "resize_mode": "Crop and Resize",
+              "threshold_a": 100,
+              "threshold_b": 200,
+              "use_preview_as_input": false,
+              "weight": 0.75
+            }
+          ]
+        }
+      },
+      "batch_size": 2,
+      "cfg_scale": 6.5,
+      "height": 512,
+      "n_iter": 2,
+      "negative_prompt": "blurry",
+      "prompt": "a lighthouse on a cliff <lora:detail_lora:0.8>",
+      "restore_faces": false,
+      "sampler_name": "Euler a",
+      "save_images": false,
+      "seed": 1234,
+      "send_images": true,
+      "steps": 20,
+      "tiling": false,
+      "width": 512
+    },
+    "endpoint": "/sdapi/v1/txt2img",
+    "method": "POST"
+  }
+]

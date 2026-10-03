@@ -163,15 +163,19 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
 - **Tests extend `IntraPaintTestCase`** (`test/base_test_case.py`), in files named `<name>_test.py` under `test/`. Its
   `setUp` and `tearDown` reset the config singletons and the undo stack, and `setUp` changes to the project root.
   Tests share one process, so a test that changes any other singleton resets it too.
-- **Golden images go through `assert_image_matches_golden`** in `test/base_test_case.py`; its module docstring covers
-  updating a golden.
+- **Golden images go through `assert_image_matches_golden`**, and JSON snapshots through
+  `assert_json_matches_snapshot`, both in `test/base_test_case.py`. Its module docstring covers updating either.
+- **Stable Diffusion requests are pinned by snapshots.** `test/controller/image_generation/` compares what the WebUI
+  and ComfyUI generators send with `test/resources/sd_request_snapshots/`, so a change under `src/api/` or to those
+  generators can fail it. A PR that changes a snapshot explains the diff.
 - **Tool tests extend `ToolTestCase`** (`test/tools/tool_test_case.py`), which drives tools with synthetic mouse
   events and no `AppController`.
 - Write test output to a temporary directory, never the working tree. The one exception is the gitignored
-  `*_tested.png` a failed golden comparison writes beside its golden.
+  `*_tested.png` or `*_tested.json` a failed golden or snapshot comparison writes beside the committed file.
 - **Prevent flaky tests instead of quarantining them.**
   - Tests don't wait on the event loop (`qWait`, spinning `processEvents`), wall-clock time, the network or a real
-    backend. Use `--mode mock`.
+    backend. Use `--mode mock`, or `FakeSdBackend` (`test/controller/image_generation/fake_sd_backend.py`) to drive
+    a Stable Diffusion generator offline.
   - No retry markers. The only allowed markers are `skip`, with a reason and an issue link, and `xfail(strict=True)`.
   - `pytest-xdist` waits until tests are proven independent of run order, and a coverage-percentage gate waits until
     coverage is built out.

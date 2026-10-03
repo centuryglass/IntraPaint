@@ -137,6 +137,23 @@ class ImageGenerator(MenuBuilder):
         """
         raise NotImplementedError()
 
+    def get_generation_inputs(self) -> tuple[QImage, Optional[QImage]]:
+        """Returns the image and inpainting mask that image generation passes to `generate`.
+
+        Both are taken from the generation area and scaled to the generation size. The mask is None outside of
+        inpainting mode.
+        """
+        generation_size = Cache().get(Cache.GENERATION_SIZE)
+        image = self._image_stack.qimage_generation_area_content().copy()
+        if image.size() != generation_size:
+            image = pil_image_scaling(image, generation_size)
+        if Cache().get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT:
+            return image, None
+        mask = self._image_stack.selection_layer.mask_image
+        if mask.size() != generation_size:
+            mask = pil_image_scaling(mask, generation_size)
+        return image, mask
+
     def start_and_manage_image_generation(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
         if self._generating:
@@ -147,19 +164,8 @@ class ImageGenerator(MenuBuilder):
         self._generated_images.clear()
         self._generating = True
 
-        source_selection = self._image_stack.qimage_generation_area_content()
-        inpaint_image = source_selection.copy()
-
-        # If necessary, scale image and mask to match the image generation size.
-        generation_size = cache.get(Cache.GENERATION_SIZE)
-        if inpaint_image.size() != generation_size:
-            inpaint_image = pil_image_scaling(inpaint_image, generation_size)
-
-        if cache.get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT:
-            inpaint_mask = self._image_stack.selection_layer.mask_image
-            if inpaint_mask.size() != generation_size:
-                inpaint_mask = pil_image_scaling(inpaint_mask, generation_size)
-
+        inpaint_image, inpaint_mask = self.get_generation_inputs()
+        if inpaint_mask is not None:
             blurred_mask = qimage_to_pil_image(inpaint_mask).filter(ImageFilter.GaussianBlur())
             blurred_alpha_mask = pil_image_to_qimage(blurred_mask)
             composite_base = inpaint_image.copy()
@@ -168,7 +174,6 @@ class ImageGenerator(MenuBuilder):
             base_painter.drawImage(QPoint(), blurred_alpha_mask)
             base_painter.end()
         else:
-            inpaint_mask = None
             composite_base = None
 
         class _AsyncInpaintTask(AsyncTask):

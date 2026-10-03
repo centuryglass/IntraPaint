@@ -1,0 +1,56 @@
+[
+  {
+    "body": {
+      "alwayson_scripts": {
+        "controlNet": {
+          "args": [
+            {
+              "control_mode": "Balanced",
+              "enabled": true,
+              "guidance_end": 0.9,
+              "guidance_start": 0.1,
+              "image": null,
+              "low_vram": false,
+              "model": "control_v11p_sd15_canny [d14c016b]",
+              "module": "canny",
+              "pixel_perfect": true,
+              "processor_res": 512,
+              "resize_mode": "Crop and Resize",
+              "threshold_a": 100,
+              "threshold_b": 200,
+              "use_preview_as_input": false,
+              "weight": 0.75
+            }
+          ]
+        }
+      },
+      "batch_size": 2,
+      "cfg_scale": 6.5,
+      "denoising_strength": 0.6,
+      "height": 512,
+      "include_init_images": false,
+      "init_images": [
+        "<image 512x512 Format_ARGB32 fa12b31036e7664a>"
+      ],
+      "inpaint_full_res": false,
+      "inpaint_full_res_padding": 32,
+      "inpainting_fill": 0,
+      "inpainting_mask_invert": 0,
+      "mask": "<image 512x512 Format_Grayscale8 0b7bbadeea7174b0>",
+      "mask_blur": 4,
+      "n_iter": 2,
+      "negative_prompt": "blurry",
+      "prompt": "a lighthouse on a cliff <lora:detail_lora:0.8>",
+      "restore_faces": false,
+      "sampler_name": "Euler a",
+      "save_images": false,
+      "seed": 1234,
+      "send_images": true,
+      "steps": 20,
+      "tiling": false,
+      "width": 512
+    },
+    "endpoint": "/sdapi/v1/img2img",
+    "method": "POST"
+  }
+]

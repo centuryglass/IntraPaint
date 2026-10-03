@@ -4,16 +4,20 @@
 - `assert_image_matches_golden` compares a rendered image to a committed golden image. It's the one code path for
   golden images.
 - `assert_images_equal` compares two images the test produced, saving both to a temporary directory on failure.
+- `assert_json_matches_snapshot` compares JSON-compatible data to a committed JSON snapshot.
 
-Both assertions are also available as IntraPaintTestCase methods.
+All three assertions are also available as IntraPaintTestCase methods.
 
-Updating a golden image: run the failing test, check the `*_tested.png` it wrote next to the golden by eye, then
-replace the committed golden with it. A test that passes deletes any `*_tested.png` left over from an earlier failure.
+Updating a golden image or snapshot: run the failing test, check the `*_tested.png` or `*_tested.json` it wrote next
+to the committed file, then replace the committed file with it. A test that passes deletes any `*_tested` file left
+over from an earlier failure.
 """
+import difflib
+import json
 import os
 import tempfile
 import unittest
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 from PySide6.QtGui import QImage
@@ -30,6 +34,7 @@ TEST_RESOURCE_DIR = os.path.join(PROJECT_ROOT, 'test', 'resources')
 TEST_IMAGE_DIR = os.path.join(TEST_RESOURCE_DIR, 'test_images')
 
 TESTED_IMAGE_SUFFIX = '_tested.png'
+TESTED_SNAPSHOT_SUFFIX = '_tested.json'
 
 # Image comparisons convert both images to this format, so a format difference alone can't fail a test. Switching it to
 # ARGB32 breaks existing goldens: unpremultiplying rounds visually identical pixels to different values.
@@ -127,6 +132,50 @@ def assert_images_equal(actual: QImage, expected: QImage, msg: Optional[str] = N
     raise AssertionError(problem if msg is None else f'{msg}: {problem}')
 
 
+def _snapshot_text(data: Any) -> str:
+    return json.dumps(data, indent=2, sort_keys=True) + '\n'
+
+
+def assert_json_matches_snapshot(actual: Any, snapshot_path: str, msg: Optional[str] = None) -> None:
+    """Asserts that JSON-compatible data matches a committed JSON snapshot file.
+
+    Data is compared as text, serialized with sorted keys and two-space indents, which is also the committed format.
+    On failure, the actual data is saved next to the snapshot as `<snapshot name>_tested.json`, and the failure
+    message includes a diff. That includes a missing snapshot, so a new snapshot can be created by running its test
+    once.
+
+    Parameters
+    ----------
+        actual: Any
+            The data the test produced. It must be serializable with json.dumps.
+        snapshot_path: str
+            Path to the committed snapshot, absolute or relative to the project root.
+        msg: Optional[str]
+            Extra context to include in the failure message.
+    """
+    if not os.path.isabs(snapshot_path):
+        snapshot_path = os.path.join(PROJECT_ROOT, snapshot_path)
+    tested_path = os.path.splitext(snapshot_path)[0] + TESTED_SNAPSHOT_SUFFIX
+    actual_text = _snapshot_text(actual)
+    if os.path.isfile(snapshot_path):
+        with open(snapshot_path, encoding='utf-8') as snapshot_file:
+            expected_text = snapshot_file.read()
+        if actual_text == expected_text:
+            if os.path.isfile(tested_path):
+                os.remove(tested_path)
+            return
+        diff = ''.join(difflib.unified_diff(expected_text.splitlines(keepends=True),
+                                            actual_text.splitlines(keepends=True), snapshot_path, tested_path))
+        problem = f'data does not match snapshot {snapshot_path}:\n{diff}'
+    else:
+        problem = f'snapshot {snapshot_path} is missing'
+        os.makedirs(os.path.dirname(snapshot_path), exist_ok=True)
+    with open(tested_path, 'w', encoding='utf-8') as tested_file:
+        tested_file.write(actual_text)
+    message = f'{problem}\nCheck {tested_path}, and replace the snapshot with it if it is correct.'
+    raise AssertionError(message if msg is None else f'{msg}: {message}')
+
+
 class IntraPaintTestCase(unittest.TestCase):
     """Base class for IntraPaint tests, keeping tests independent of the order they run in.
 
@@ -154,3 +203,7 @@ class IntraPaintTestCase(unittest.TestCase):
     def assert_images_equal(self, actual: QImage, expected: QImage, msg: Optional[str] = None) -> None:
         """Asserts that two images have the same pixels. See assert_images_equal."""
         assert_images_equal(actual, expected, msg)
+
+    def assert_json_matches_snapshot(self, actual: Any, snapshot_path: str, msg: Optional[str] = None) -> None:
+        """Asserts that JSON-compatible data matches a committed snapshot. See assert_json_matches_snapshot."""
+        assert_json_matches_snapshot(actual, snapshot_path, msg)
