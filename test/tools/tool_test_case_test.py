@@ -2,9 +2,9 @@
 import unittest
 from typing import Optional
 
-import pytest
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QIcon, QMouseEvent
+from PySide6.QtWidgets import QFrame
 
 from src.config.key_config import KeyConfig
 from src.tools.base_tool import BaseTool
@@ -57,7 +57,7 @@ class ToolTestCaseTest(ToolTestCase):
         """A drag reaches the tool as a click, moves and a release, each at its image pixel."""
         left = Qt.MouseButton.LeftButton
         self.mouse_drag([QPoint(10, 20), QPoint(11, 22), QPoint(300, 400)])
-        self.assertEqual(self.tool.calls[:4], [('click', (10, 20), left), ('move', (11, 22), left),
+        self.assertEqual(self.tool.calls, [('click', (10, 20), left), ('move', (11, 22), left),
                                                ('move', (300, 400), left),
                                                ('release', (300, 400), Qt.MouseButton.NoButton)])
 
@@ -68,12 +68,22 @@ class ToolTestCaseTest(ToolTestCase):
         self.mouse_move(QPoint(6, 6), right)
         self.assertEqual(self.tool.calls, [('click', (5, 5), right), ('move', (6, 6), right)])
 
-    @pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/76: ToolController '
-                                           'delivers each mouse release to the tool twice')
     def test_release_delivered_once(self) -> None:
         """Each mouse release reaches the tool once."""
         self.mouse_drag([QPoint(10, 10)])
         self.assertEqual([name for name, _, _ in self.tool.calls], ['click', 'release'])
+
+    def test_framed_viewer(self) -> None:
+        """With a frame around the viewport, a press, move and release at one point all reach the same pixel once."""
+        self.image_viewer.setFrameShape(QFrame.Shape.Box)
+        self.image_viewer.setLineWidth(3)
+        self.image_viewer.scene_scale = 1.0
+        point = QPoint(100, 100)
+        self.mouse_press(point)
+        self.mouse_move(point)
+        self.mouse_release(point)
+        self.assertEqual([(name, pos) for name, pos, _ in self.tool.calls],
+                         [('click', (100, 100)), ('move', (100, 100)), ('release', (100, 100))])
 
 
 if __name__ == '__main__':
