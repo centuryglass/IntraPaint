@@ -107,6 +107,20 @@ _FILE_NAME_UNSAFE_CHARS = re.compile(r'[^\w .-]')
 _MAX_FILE_NAME_LENGTH = 50
 
 
+def _archive_path(*parts: str) -> str:
+    """Joins path components into an in-archive path.
+
+    The ORA spec requires '/' separators in zip entry names and in the `src` attributes that refer to them, on every
+    platform. Use os.path.join only for paths on the real filesystem.
+    """
+    return '/'.join(parts)
+
+
+def _normalize_archive_path(path: str) -> str:
+    """Converts a `src` value to '/' separators, since files saved on Windows by older versions use '\\'."""
+    return path.replace('\\', '/')
+
+
 def _layer_file_stem(layer: Layer) -> str:
     """Returns a file name base for a layer's image files, unique per layer and safe for any layer name.
 
@@ -149,7 +163,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
             layer_data[ATTR_TAG_SELECTED] = BOOLEAN_TRUE_STR
         layer_data[ATTR_TAG_OPACITY] = layer.opacity
         layer_data[ATTR_TAG_VISIBILITY] = ATTR_VISIBLE if layer.get_visible() else ATTR_HIDDEN
-        image_path = os.path.join(DATA_DIRECTORY_NAME, f'{_layer_file_stem(layer)}.png')
+        image_path = _archive_path(DATA_DIRECTORY_NAME, f'{_layer_file_stem(layer)}.png')
         flattened_image, offset_transform = layer.transformed_image()
         layer_data[ATTR_TAG_X_POS] = round(offset_transform.dx())
         layer_data[ATTR_TAG_Y_POS] = round(offset_transform.dy())
@@ -164,8 +178,8 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
                 extended_layer_data[ATTR_TAG_ALPHA_LOCKED] = BOOLEAN_TRUE_STR
             if layer_transform != offset_transform:
                 layer_transform_str = _get_transform_str(layer_transform)
-                layer_untransformed_path = os.path.join(DATA_DIRECTORY_NAME,
-                                                        f'{_layer_file_stem(layer)}-untransformed.png')
+                layer_untransformed_path = _archive_path(DATA_DIRECTORY_NAME,
+                                                         f'{_layer_file_stem(layer)}-untransformed.png')
                 full_untransformed_path = os.path.join(tmpdir, layer_untransformed_path)
                 assert layer.image.save(full_untransformed_path), f'failed to write to {full_untransformed_path}'
                 extended_layer_data[TRANSFORM_SRC_TAG] = layer_untransformed_path
@@ -265,7 +279,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
         thumbnail = merged_image.scaled(thumbnail_size)
         tmp_thumbnail_path = os.path.join(tmpdir, THUMBNAIL_FILE_NAME)
         thumbnail.save(tmp_thumbnail_path)
-        zip_file.write(tmp_thumbnail_path, os.path.join(THUMBNAIL_DIRECTORY_NAME, THUMBNAIL_FILE_NAME))
+        zip_file.write(tmp_thumbnail_path, _archive_path(THUMBNAIL_DIRECTORY_NAME, THUMBNAIL_FILE_NAME))
 
         zip_file.write(os.path.join(tmpdir, XML_FILE_NAME), XML_FILE_NAME)
         zip_file.write(os.path.join(tmpdir, EXTENDED_DATA_XML_FILE_NAME), EXTENDED_DATA_XML_FILE_NAME)
@@ -302,8 +316,10 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
             extended_layer_data = {}
             flattened_image_path = extended_layer.get(LAYER_TAG_SRC)
             assert flattened_image_path is not None
+            flattened_image_path = _normalize_archive_path(flattened_image_path)
             transform_image_path = extended_layer.get(TRANSFORM_SRC_TAG)
             if transform_image_path is not None:
+                transform_image_path = _normalize_archive_path(transform_image_path)
                 transform_image_full_path = os.path.join(tmpdir, transform_image_path)
                 assert os.path.isfile(transform_image_full_path), f'missing file: {transform_image_full_path}'
                 transform_image = QImage(transform_image_full_path)
@@ -345,6 +361,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
         assert element.tag == LAYER_ELEMENT
         base_image_path = element.get(LAYER_TAG_SRC)
         assert base_image_path is not None
+        base_image_path = _normalize_archive_path(base_image_path)
         layer_image = QImage()
         layer_transform = QTransform()
         alpha_locked = None

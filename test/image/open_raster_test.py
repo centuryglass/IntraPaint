@@ -1,9 +1,12 @@
 """Tests .ora saving and loading, including layer names that are awkward as file names."""
+import ntpath
 import os
 import sys
 import tempfile
 import zipfile
 from typing import Optional
+from unittest.mock import patch
+from xml.etree.ElementTree import fromstring
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QColor, QImage, QTransform
@@ -13,7 +16,8 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
-from src.image.open_raster import save_ora_image, read_ora_image, DATA_DIRECTORY_NAME
+from src.image.open_raster import (save_ora_image, read_ora_image, DATA_DIRECTORY_NAME, THUMBNAIL_DIRECTORY_NAME,
+                                   XML_FILE_NAME, EXTENDED_DATA_XML_FILE_NAME, LAYER_TAG_SRC, TRANSFORM_SRC_TAG)
 from test.base_test_case import IntraPaintTestCase
 
 IMG_SIZE = QSize(16, 16)
@@ -45,6 +49,19 @@ AWKWARD_NAMES = [
 
 # The same name for every layer in one stack, including a layer nested in a group:
 DUPLICATE_NAME = 'same'
+
+_real_join = os.path.join
+
+
+def _windows_archive_join(first: str, *rest: str) -> str:
+    """Joins like Windows when building a path that starts at an archive directory, and like the host otherwise.
+
+    Real filesystem paths start at the temporary directory, so they still resolve.
+    """
+    if first in (DATA_DIRECTORY_NAME, THUMBNAIL_DIRECTORY_NAME):
+        return ntpath.join(first, *rest)
+    return _real_join(first, *rest)
+
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -175,3 +192,53 @@ class OpenRasterTest(IntraPaintTestCase):
         self._assert_round_trip_matches()
         for expected, actual in zip(self.image_stack.image_layers, self.loaded_stack.image_layers):
             self.assertEqual(expected.transform, actual.transform, f'transform of layer "{expected.name}"')
+
+    def test_archive_paths_use_forward_slashes(self) -> None:
+        """Every src in stack.xml and the extended XML is a '/'-separated entry in the archive."""
+        for i, name in enumerate(AWKWARD_NAMES):
+            layer = self._add_image_layer(name)
+            if i % 2 == 0:
+                layer.transform = QTransform.fromScale(0.5, 0.5)
+        group = self.image_stack.create_layer_group('group')
+        self._add_image_layer('nested', group)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            ora_path = os.path.join(temp_dir, 'src_paths.ora')
+            # Simulates Windows path joining for archive-relative paths:
+            with patch('os.path.join', side_effect=_windows_archive_join):
+                save_ora_image(self.image_stack, ora_path, METADATA)
+            with zipfile.ZipFile(ora_path) as zip_file:
+                entries = set(zip_file.namelist())
+                stack_xml = fromstring(zip_file.read(XML_FILE_NAME))
+                extended_xml = fromstring(zip_file.read(EXTENDED_DATA_XML_FILE_NAME))
+        layer_sources = [element.get(LAYER_TAG_SRC) for element in stack_xml.iter('layer')]
+        self.assertEqual(len(self.image_stack.image_layers), len(layer_sources))
+        transform_sources = [element.get(TRANSFORM_SRC_TAG) for element in extended_xml.iter('layer')
+                             if element.get(TRANSFORM_SRC_TAG) is not None]
+        self.assertEqual(len(AWKWARD_NAMES) // 2 + len(AWKWARD_NAMES) % 2, len(transform_sources))
+        extended_sources = [element.get(LAYER_TAG_SRC) for element in extended_xml.iter('layer')]
+        for source in [*layer_sources, *transform_sources, *extended_sources]:
+            self.assertIsNotNone(source)
+            self.assertNotIn('\\', str(source))
+            self.assertIn(source, entries)
+        self.assertIn(f'{THUMBNAIL_DIRECTORY_NAME}/thumbnail.png', entries)
+        self.assertFalse([entry for entry in entries if '\\' in entry])
+
+    def test_load_backslash_src_paths(self) -> None:
+        """Files saved on Windows by earlier versions, with '\\' in src attributes, still load."""
+        layer = self._add_image_layer('legacy')
+        layer.transform = QTransform.fromScale(0.5, 0.5)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            ora_path = os.path.join(temp_dir, 'legacy.ora')
+            legacy_path = os.path.join(temp_dir, 'legacy_windows.ora')
+            save_ora_image(self.image_stack, ora_path, METADATA)
+            with zipfile.ZipFile(ora_path) as source, zipfile.ZipFile(legacy_path, 'w') as legacy:
+                for entry in source.namelist():
+                    content = source.read(entry)
+                    if entry in (XML_FILE_NAME, EXTENDED_DATA_XML_FILE_NAME):
+                        content = content.replace(f'{DATA_DIRECTORY_NAME}/'.encode(),
+                                                  f'{DATA_DIRECTORY_NAME}\\'.encode())
+                        self.assertIn(b'\\', content)
+                    legacy.writestr(entry, content)
+            read_ora_image(self.loaded_stack, legacy_path)
+        self._assert_layers_match(self.image_stack.layer_stack, self.loaded_stack.layer_stack)
+        self.assertEqual(layer.transform, self.loaded_stack.image_layers[0].transform)
