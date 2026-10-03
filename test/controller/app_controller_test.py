@@ -117,6 +117,45 @@ class TestAppController(IntraPaintTestCase):
         self.controller.start_app()
         self.assertFalse(self.controller.menu_window.isVisible())
 
+    @patch('src.ui.window.main_window.QApplication.exit')
+    @patch('src.controller.app_controller.request_confirmation', return_value=True)
+    def test_quit_confirmed_asks_once(self, mock_confirm, mock_exit):
+        self.controller.quit()
+        mock_confirm.assert_called_once()
+        mock_exit.assert_called_once()
+
+    @patch('src.ui.window.main_window.QApplication.exit')
+    @patch('src.controller.app_controller.request_confirmation', return_value=False)
+    def test_quit_cancelled_keeps_window_open(self, mock_confirm, mock_exit):
+        self.controller._window.show()
+        self.controller.quit()
+        mock_confirm.assert_called_once()
+        mock_exit.assert_not_called()
+        self.assertTrue(self.controller._window.isVisible())
+
+    @patch('src.ui.window.main_window.QApplication.exit')
+    @patch('src.controller.app_controller.request_confirmation', return_value=True)
+    def test_quit_skip_confirmation_does_not_ask(self, mock_confirm, mock_exit):
+        self.controller.quit(skip_confirmation=True)
+        mock_confirm.assert_not_called()
+        mock_exit.assert_called_once()
+
+    @patch('src.ui.window.main_window.QApplication.exit')
+    @patch('src.controller.app_controller.request_confirmation', return_value=True)
+    def test_window_close_confirmed_asks_once(self, mock_confirm, mock_exit):
+        self.controller._window.close()
+        mock_confirm.assert_called_once()
+        mock_exit.assert_called_once()
+
+    @patch('src.ui.window.main_window.QApplication.exit')
+    @patch('src.controller.app_controller.request_confirmation', return_value=False)
+    def test_window_close_cancelled_keeps_window_open(self, mock_confirm, mock_exit):
+        self.controller._window.show()
+        self.assertFalse(self.controller._window.close())
+        mock_confirm.assert_called_once()
+        mock_exit.assert_not_called()
+        self.assertTrue(self.controller._window.isVisible())
+
     def test_image_save_and_load(self):
         AppConfig()._reset()
         AppConfig().set(AppConfig.WARN_BEFORE_RGB_SAVE, False)
