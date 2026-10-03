@@ -1,6 +1,6 @@
 """
 Selects between the default MyPaint brushes found in resources/brushes. This widget can only be used if a compatible
-brushlib/libmypaint QT library is available, currently only true for x86_64 Linux.
+brushlib/libmypaint QT library is available, bundled for x86_64 Linux and Windows.
 """
 import logging
 import os

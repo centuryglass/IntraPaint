@@ -264,8 +264,9 @@ acting on them, and override its recommendations when the evidence points elsewh
 - **`src/glid_3_xl/`** and the GLID-3-XL generators/server are legacy. Assume they won't be touched unless something
   there is actively broken.
 - The project root contains a few vendored/symlinked library directories (e.g. `latent-diffusion`,
-  `taming-transformers`, `pyspacenav`, `lib`, `colabFiles`) that are not part of the app's own source; don't treat
-  them as code to modify.
+  `taming-transformers`, `pyspacenav`, `colabFiles`) that are not part of the app's own source; don't treat them as
+  code to modify. `lib/` is different: it holds the checked-in libmypaint binaries the app bundles
+  (`doc/analysis+plans/packaging.md`, "Native piece: libmypaint").
 
 ## Packaging
 

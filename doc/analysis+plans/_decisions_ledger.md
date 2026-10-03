@@ -250,6 +250,44 @@ Format: `[YYYY-MM-DD] Topic — decision. (rationale / where documented)`
   in-progress paths (ComfyUI node pydantic migration, tiled/ultimate upscaling) before IntraPaint
   deletes those `src/api` equivalents.
 
+## Packaging (from packaging.md, A7)
+- [2026-10-03] Targets - Windows and Linux x86_64 supported; Linux aarch64 and macOS arm64/x86_64 CI-built and
+  published as untested; macOS ships as a zipped one-folder `.app`, unsigned and not notarized. (No Mac for
+  testing, #65; packaging.md 3.2, 3.8)
+- [2026-10-03] Build - one `IntraPaint.spec` branching on `sys.platform`; a `build.yml` workflow with an offscreen
+  `--mode none` launch smoke test, whose Linux x86_64 job joins the `ci` gate; PyInstaller bumped by hand. (Verified
+  bundle crash with 6.11.0, #84; packaging.md 3.3, 3.6)
+- [2026-10-03] libmypaint - pin 1.6.1 on every platform, committed under `lib/<platform-tag>/` with
+  `lib/MANIFEST.md`; the bundled library loads before the system one; setting count probed, not keyed on `os.name`.
+  (#85; packaging.md 3.4)
+- [2026-10-03] image_fill - no prebuilt binaries for source installs; fix #7 (lazy import, fill tools degrade).
+  (packaging.md 3.5)
+- [2026-10-03] Backend install location - `DATA_DIR/backends/comfyui/` behind an AppConfig key, never under
+  `PROJECT_DIR` (a one-file bundle's temp folder); provisioner subprocesses never use `sys.executable`. (Answers
+  backend_autoinstall.md section 8; packaging.md 3.7)
+
+## Color (from color_subsystem.md, A8)
+- [2026-10-03] Model - FG/BG stay `#aarrggbb` Cache strings: FG keeps `last_brush_color` (relabeled, no migration),
+  BG is a new `background_color`, plus `recent_colors`; operations in `src/controller/color_controller.py`, writes
+  through a new `Config.set_color`. Does not wait on #29. (color_subsystem.md 4.1)
+- [2026-10-03] Picker - OKHSV hue ring + square with RGB/HSV/OKLCH sliders and palette/recent tabs; color math in
+  `src/util/visual/color_math.py` (numpy, no new dependency; ported MIT OKHSV code needs maintainer OK, M5). Raw
+  OKLCH rejected: 33% of the plane at hue 30 is in sRGB gamut (measured). (4.3)
+- [2026-10-03] Color space - keep 8-bit sRGB with gamma-space blending (QPainter and bundled libmypaint both blend
+  non-linearly, verified); convert non-sRGB embedded profiles on load with Pillow's ImageCms (#83). (1.6, 4.6)
+- [2026-10-03] Swap/reset keys - Shift+X / Shift+D; X and D stay the text and draw tools unless the maintainer
+  decides otherwise (M1). (4.7)
+
+## Editor conventions (from editor_norms.md, OQ2)
+- [2026-10-03] A norm is what Photoshop, GIMP and Krita agree on; where it would slow the inpainting loop it ships
+  as an extra binding or option, not a changed default. (editor_norms.md, "Constraint")
+- [2026-10-03] Tool letters stay; keymap presets wait for demand. Painting stays unclipped by the selection by
+  default. Selection tools keep Add as the default mode and gain Shift/Alt add/subtract outside the selection
+  brush. (2.8-2.10)
+- [2026-10-03] Adopt: unsaved-change tracking and close prompt (#80), pre-save flatten warning, system clipboard,
+  Ctrl+Shift+S, Ctrl+=/Ctrl+-/fit/100% zoom, Space pan, recent files, drag-drop open, key-capture field. (2.1-2.7,
+  2.12)
+
 ## Direction hints (not yet firm decisions — treat as leanings)
 - ComfyUI-default / A1111-downgrade — **now confirmed** (see API library swap above); this hint is
   superseded.

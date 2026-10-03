@@ -25,7 +25,8 @@ if not is_pyinstaller_bundle():
         import src.util.visual.image_fill
     except ImportError:
         print('Building missing compiled image_fill module with cython...')
-        subprocess.run([sys.executable, 'setup.py', 'build_ext', '--inplace'])
+        subprocess.run([sys.executable, 'setup.py', 'build_ext', '--inplace'],
+                       cwd=os.path.dirname(os.path.abspath(__file__)))
 
 
 from PySide6.QtCore import QTranslator, QObject, QEvent

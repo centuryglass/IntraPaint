@@ -206,7 +206,7 @@ These are third-party resources that I've found useful, I did not create or cont
 
 On systems other than 64-bit Linux and Windows, the brush tool may not work, because you will need a system-specific
 build of the libmypaint brush engine library.  If pre-packaged libmypaint versions can't be used, IntraPaint will try
-to load libmypaint libraries from another directory, configurable in IntraPaint's settings under the "system" category.
+to load libmypaint libraries from another directory, configurable in IntraPaint's settings under the "Files" category.
 If you need help locating libmypaint files for a particular system, open a GitHub issue, and I'll try to help.
 
 #### Q: Where are the ControlNet options?
