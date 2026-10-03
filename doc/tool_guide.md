@@ -31,7 +31,7 @@ This guide covers the editing tools found within the "Tools" panel. and the extr
 All tools share the same set of basic controls for adjusting the image viewport.
 - **Middle-click and drag, or Ctrl + left-click and drag**: Pan image content.
 - **Mouse scroll wheel, Page Up, or Page Down**: Zoom in or zoom out.
-- **"Z" key**: Zoom in on the image generation area, or reset the zoom level.
+- **Shift+Z**: Zoom in on the image generation area, or reset the zoom level.
 - **Hold Alt**: Speed up key or mouse wheel inputs.
 - **Escape, while any input has keyboard focus**: Return keyboard focus to the image.
 
@@ -307,7 +307,7 @@ Draws geometric shapes within the image.
 
 #### Basic controls
 - **Left-click and drag**: Draw a shape into the image.
-- **Hold Ctrl**: Restricts new shapes to a 1:1 aspect ratio.
+- **Hold Shift**: Restricts new shapes to a 1:1 aspect ratio.
 
 #### User interface
 <img src="./labeled_screenshots/tools/shape.png"  alt="Screenshot of the shape tool controls, with specific elements numbered.">
@@ -418,7 +418,7 @@ Select or deselect rectangular or elliptical regions in the image.
 - **Left-click and drag**: select a region within the image.
 - **Right-click and drag**: deselect a region within the image.
 - **"Q" key**: Toggle between rectangle and ellipse selection.
-- **Hold Ctrl**: Restricts new selections to a 1:1 aspect ratio.
+- **Hold Shift**: Restricts new selections to a 1:1 aspect ratio.
 
 #### User interface
 <img src="./labeled_screenshots/tools/shape_select.png"  alt="Screenshot of the shape selection tool controls, with specific elements numbered."/>
