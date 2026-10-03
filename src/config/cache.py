@@ -155,6 +155,7 @@ class Cache(Config, metaclass=Singleton):
     FILTER_TOOL_PRESSURE_OPACITY: str
     FILTER_TOOL_PRESSURE_SIZE: str
     FILTER_TOOL_SELECTED_FILTER: str
+    GENERATION_RESOLUTION_RULE: str
     GENERATION_SIZE: str
     GENERATION_TAB_BAR: str
     GENERATOR_SCALING_MODES: str
@@ -178,6 +179,7 @@ class Cache(Config, metaclass=Singleton):
     PAINT_SELECTION_ONLY: str
     PAINT_TOOL_BRUSH_SIZE: str
     PROMPT: str
+    RECENT_GENERATION_AREA_SIZES: str
     RECENT_TOOLS: str
     SAMPLE_MERGED: str
     SAMPLING_METHOD: str

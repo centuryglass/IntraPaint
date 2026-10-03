@@ -176,7 +176,11 @@ class Config:
 
     # noinspection PyProtectedMember
     def _reset(self) -> None:
-        """Discard all changes and connections, and reload from JSON. For testing use only."""
+        """Discard all changes and connections, and reload from JSON. For testing use only.
+
+        Option lists shrink to the default value alone, so a test that sets another option calls
+        `restore_default_options` first.
+        """
         with self._lock:
             self._connected = {}
             for key, entry in self._entries.items():

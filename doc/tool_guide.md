@@ -467,7 +467,14 @@ Controls the area of the image in use for AI image generation. AI generators are
 2. **Y-coordinate slider**: Sets the position of the generation area's top edge within the image.
 3. **Width slider**: Sets the generation area's width, measured in pixels.
 4. **Height slider**: Sets the generation area's height, measured in pixels.
-5. **"Select full image" button**: Move and resize the image generation area so that it covers the entire image.
-6. **"Gen. area size to resolution" button**: Resizes the image generation area, so that its size exactly matches the AI image generation resolution.
+5. **Area size buttons**: Resize the generation area in one click, keeping its center where it is.
+   - **"Full image"**: Covers the entire image.
+   - **"Square"**: The largest square that fits in the image.
+   - **Recent sizes**: Up to four generation area sizes you've used recently, labeled with their size.
+   - **"+ size" field**: Type a size such as `768` (a square) or `640x480`, then press Enter.
+   - **Shift+G**: Switches back to the size used before the current one. Press it again to switch back.
+6. **"Resolution rule" dropdown**: Controls how the AI image generation resolution changes when the generation area is resized.
+   - **"Match area"**: The resolution always equals the generation area size.
+   - **"Match area, upscale small areas"** (default): Like "Match area", but small areas are scaled up by a whole-number factor until their shorter side reaches the minimum set in the settings ("Minimum upscaled resolution side", 512 by default). The factor is reduced if the result would be larger than the maximum generation size.
+   - **"Manual"**: The resolution only changes when you edit it. Editing the resolution by hand selects this rule.
 7. **"Image generation resolution" inputs**: Sets the resolution used for AI image generation.
-8. **"Resolution to gen. area size" button**: Update the AI image generation resolution so that it matches the size of the generation area.

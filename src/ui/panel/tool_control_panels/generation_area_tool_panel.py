@@ -3,13 +3,15 @@ from typing import cast, Optional
 
 from PySide6.QtCore import Qt, QRect, QSize
 from PySide6.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, QHBoxLayout, QLabel, QSlider, QSpinBox, \
-    QSizePolicy
+    QSizePolicy, QLineEdit
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.controller.generation_area_controller import apply_generation_area_frame, record_generation_area_size
 from src.image.layers.image_stack import ImageStack
 from src.ui.input_fields.size_field import SizeField
 from src.ui.layout.divider import Divider
+from src.util.generation_area_utils import full_image_frame, square_frame, recent_frames, parse_size, size_to_str
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panel.generation_area_tool_panel'
@@ -31,19 +33,25 @@ GENERATION_AREA_WIDTH_TOOLTIP = _tr('Set the width of the image generation area.
 GENERATION_AREA_HEIGHT_TOOLTIP = _tr('Set the top edge position of the image generation area.')
 GEN_RESOLUTION_LABEL = _tr('Image generation resolution:')
 
-BUTTON_LABEL_FILL_IMAGE = _tr('Select full image')
-BUTTON_LABEL_AREA_TO_RES = _tr('Gen. area size to resolution')
-BUTTON_LABEL_RES_TO_AREA = _tr('Resolution to gen. area size')
+FRAMES_LABEL = _tr('Area size:')
+FRAME_LABEL_FULL_IMAGE = _tr('Full image')
+FRAME_LABEL_SQUARE = _tr('Square')
+FRAME_TOOLTIP_FULL_IMAGE = _tr('Resize the generation area to cover the entire image.')
+FRAME_TOOLTIP_SQUARE = _tr('Resize the generation area to the largest square that fits in the image.')
+FRAME_TOOLTIP_RECENT = _tr('Resize the generation area to a recently used size.')
+CUSTOM_FRAME_PLACEHOLDER = _tr('+ size')
+CUSTOM_FRAME_TOOLTIP = _tr('Type a size like 768 or 640x480 and press Enter to resize the generation area.')
 
-BUTTON_TOOLTIP_FILL_IMAGE = _tr('Send the entire image during image generation.')
-BUTTON_TOOLTIP_AREA_TO_RES = _tr('Set the generation area size to the image generation resolution')
-BUTTON_TOOLTIP_RES_TO_AREA = _tr('Set the image generation resolution to the current generation area size.')
+RECENT_FRAME_COUNT = 4
+FRAME_COLUMNS_HORIZONTAL = 7
+FRAME_COLUMNS_VERTICAL = 3
 
 
 class GenerationAreaToolPanel(QWidget):
     """Control panel for the GenerationAreaTool."""
     def __init__(self, image_stack: ImageStack):
         super().__init__()
+        self._image_stack = image_stack
         self._layout = QGridLayout(self)
         self._orientation = Qt.Orientation.Horizontal
 
@@ -61,43 +69,93 @@ class GenerationAreaToolPanel(QWidget):
         self._w_label, self._w_slider, self._w_spinbox = _extract_widgets(2)
         self._h_label, self._h_slider, self._h_spinbox = _extract_widgets(3)
 
-        def select_full_image() -> None:
-            """Expand the image generation area to fit the entire image."""
-            image_stack.generation_area = image_stack.bounds
+        def _record_area_size() -> None:
+            record_generation_area_size(image_stack.generation_area.size())
+        for spinbox in (self._w_spinbox, self._h_spinbox):
+            cast(QSpinBox, spinbox).editingFinished.connect(_record_area_size)
+        for slider in (self._w_slider, self._h_slider):
+            cast(QSlider, slider).sliderReleased.connect(_record_area_size)
 
-        self._select_layer_button = QPushButton()
-        self._select_layer_button.setText(BUTTON_LABEL_FILL_IMAGE)
-        self._select_layer_button.setToolTip(BUTTON_TOOLTIP_FILL_IMAGE)
-        self._select_layer_button.clicked.connect(select_full_image)
-        self._select_layer_button.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
+        self._frames_label = QLabel(FRAMES_LABEL)
+        self._frames_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self._frame_container = QWidget()
+        self._frame_layout = QGridLayout(self._frame_container)
+        self._frame_layout.setContentsMargins(0, 0, 0, 0)
+        self._frame_layout.setSpacing(2)
 
-        self._match_resolution_button = QPushButton()
-        self._match_resolution_button.setText(BUTTON_LABEL_AREA_TO_RES)
-        self._match_resolution_button.setToolTip(BUTTON_TOOLTIP_AREA_TO_RES)
-        self._match_resolution_button.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
+        def _frame_button(tooltip: str) -> QPushButton:
+            button = QPushButton()
+            button.setToolTip(tooltip)
+            button.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
+            return button
 
-        def _area_to_res() -> None:
-            gen_area = image_stack.generation_area
-            gen_area.setSize(Cache().get(Cache.GENERATION_SIZE))
-            image_stack.generation_area = gen_area
-        self._match_resolution_button.clicked.connect(_area_to_res)
+        self._full_image_button = _frame_button(FRAME_TOOLTIP_FULL_IMAGE)
+        self._full_image_button.setText(FRAME_LABEL_FULL_IMAGE)
+        self._full_image_button.clicked.connect(lambda: self._apply_frame(
+            full_image_frame(image_stack.size, image_stack.max_generation_area_size)))
+        self._square_button = _frame_button(FRAME_TOOLTIP_SQUARE)
+        self._square_button.setText(FRAME_LABEL_SQUARE)
+        self._square_button.clicked.connect(lambda: self._apply_frame(
+            square_frame(image_stack.size, image_stack.max_generation_area_size)))
+        self._recent_frame_buttons: list[QPushButton] = []
+        self._recent_frame_sizes: list[QSize] = []
+        for i in range(RECENT_FRAME_COUNT):
+            recent_button = _frame_button(FRAME_TOOLTIP_RECENT)
+            recent_button.clicked.connect(lambda _checked=False, idx=i:
+                                          self._apply_frame(self._recent_frame_sizes[idx]))
+            self._recent_frame_buttons.append(recent_button)
+        self._custom_frame_input = QLineEdit()
+        self._custom_frame_input.setPlaceholderText(CUSTOM_FRAME_PLACEHOLDER)
+        self._custom_frame_input.setToolTip(CUSTOM_FRAME_TOOLTIP)
+        self._custom_frame_input.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
+        self._custom_frame_input.returnPressed.connect(self._apply_custom_frame)
+
+        self._update_recent_frames()
+        Cache().connect(self, Cache.RECENT_GENERATION_AREA_SIZES, self._update_recent_frames)
+        image_stack.size_changed.connect(self._update_recent_frames)
+
+        self._rule_label = QLabel(Cache().get_label(Cache.GENERATION_RESOLUTION_RULE))
+        self._rule_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self._rule_dropdown = Cache().get_control_widget(Cache.GENERATION_RESOLUTION_RULE)
+        self._rule_dropdown.setToolTip(Cache().get_tooltip(Cache.GENERATION_RESOLUTION_RULE))
 
         self._gen_size_label = QLabel(GEN_RESOLUTION_LABEL)
         self._gen_size_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self._gen_size_control = cast(SizeField, Cache().get_control_widget(Cache.GENERATION_SIZE))
         self._gen_size_control.layout().setAlignment(Qt.AlignmentFlag.AlignTop)
         self._gen_size_control.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-
-        self._match_area_button = QPushButton()
-        self._match_area_button.setText(BUTTON_LABEL_RES_TO_AREA)
-        self._match_area_button.setToolTip(BUTTON_TOOLTIP_RES_TO_AREA)
-        self._match_area_button.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
-
-        def _res_to_area() -> None:
-            area_size = image_stack.generation_area.size()
-            Cache().set(Cache.GENERATION_SIZE, area_size)
-        self._match_area_button.clicked.connect(_res_to_area)
         self._build_layout()
+
+    def _apply_frame(self, size: QSize) -> None:
+        apply_generation_area_frame(self._image_stack, size)
+
+    def _apply_custom_frame(self) -> None:
+        size = parse_size(self._custom_frame_input.text())
+        if size is None:
+            return
+        self._custom_frame_input.clear()
+        self._apply_frame(size)
+
+    def _update_recent_frames(self) -> None:
+        """Shows the recent frame buttons that have a size to offer, labeled with that size."""
+        self._recent_frame_sizes = recent_frames(Cache().get(Cache.RECENT_GENERATION_AREA_SIZES),
+                                                 self._image_stack.size,
+                                                 self._image_stack.max_generation_area_size,
+                                                 RECENT_FRAME_COUNT)
+        for i, button in enumerate(self._recent_frame_buttons):
+            if i < len(self._recent_frame_sizes):
+                button.setText(size_to_str(self._recent_frame_sizes[i]))
+                button.setVisible(True)
+            else:
+                button.setVisible(False)
+
+    def _build_frame_layout(self, columns: int) -> None:
+        while self._frame_layout.count() > 0:
+            self._frame_layout.takeAt(0)
+        frame_widgets: list[QWidget] = [self._full_image_button, self._square_button, *self._recent_frame_buttons,
+                                        self._custom_frame_input]
+        for i, frame_widget in enumerate(frame_widgets):
+            self._frame_layout.addWidget(frame_widget, i // columns, i % columns)
 
     def _build_layout(self) -> None:
         while self._layout.count() > 0:
@@ -137,14 +195,16 @@ class GenerationAreaToolPanel(QWidget):
             _add(self._h_label, 3, 6)
             _add(self._h_slider, 3, 7, 1, 4)
             _add(self._h_spinbox, 3, 11)
-            _add(self._select_layer_button, 4, 0, 1, 12)
-            _add(self._match_resolution_button, 5, 0, 1, 12)
+            _add(self._frames_label, 4, 0, 1, 12)
+            self._build_frame_layout(FRAME_COLUMNS_HORIZONTAL)
+            _add(self._frame_container, 5, 0, 1, 12)
 
             _add(Divider(Qt.Orientation.Horizontal), 6, 0, 1, 12)
-            _add(self._gen_size_label, 7, 0, 1, 12)
+            _add(self._rule_label, 7, 0, 1, 3)
+            _add(self._rule_dropdown, 7, 3, 1, 9)
+            _add(self._gen_size_label, 8, 0, 1, 12)
             self._gen_size_control.orientation = Qt.Orientation.Horizontal
-            _add(self._gen_size_control, 8, 0, 1, 12)
-            _add(self._match_area_button, 9, 0, 1, 12)
+            _add(self._gen_size_control, 9, 0, 1, 12)
         else:
             self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
             _add(Divider(Qt.Orientation.Horizontal), 0, 0, 1, 6)
@@ -163,13 +223,15 @@ class GenerationAreaToolPanel(QWidget):
             _add(self._h_label, 5, 0)
             _add(self._h_slider, 5, 1, 1, 4)
             _add(self._h_spinbox, 5, 5)
-            _add(self._select_layer_button, 6, 0, 1, 3)
-            _add(self._match_resolution_button, 6, 3, 1, 3)
-            _add(Divider(Qt.Orientation.Horizontal), 7, 0, 1, 6)
-            _add(self._gen_size_label, 8, 0, 1, 6)
+            _add(self._frames_label, 6, 0, 1, 6)
+            self._build_frame_layout(FRAME_COLUMNS_VERTICAL)
+            _add(self._frame_container, 7, 0, 1, 6)
+            _add(Divider(Qt.Orientation.Horizontal), 8, 0, 1, 6)
+            _add(self._rule_label, 9, 0, 1, 6)
+            _add(self._rule_dropdown, 10, 0, 1, 6)
+            _add(self._gen_size_label, 11, 0, 1, 6)
             self._gen_size_control.orientation = Qt.Orientation.Horizontal
-            _add(self._gen_size_control, 9, 0, 2, 6)
-            _add(self._match_area_button, 11, 0, 1, 6)
+            _add(self._gen_size_control, 12, 0, 2, 6)
 
     def set_orientation(self, orientation: Qt.Orientation) -> None:
         """Update the panel orientation."""

@@ -78,6 +78,7 @@ class AppConfig(Config, metaclass=Singleton):
     CLIP_MODEL_NAME: str
     DEFAULT_IMAGE_SIZE: str
     FONT_POINT_SIZE: str
+    GENERATION_RESOLUTION_MIN_SIDE: str
     GLID_MODEL_PATH: str
     GLID_VAE_MODEL_PATH: str
     INTERROGATE_MODEL: str

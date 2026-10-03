@@ -314,6 +314,15 @@
         "default": "G",
         "saved": true
     },
+    "previous_generation_frame_key": {
+        "label": "Previous generation area size:",
+        "category": "Keybindings",
+        "subcategory": "Navigation",
+        "description": "Switch the generation area back to the size used before the current one. Pressing it again switches back.",
+        "type": "string",
+        "default": "Shift+G",
+        "saved": true
+    },
     "brush_tool_key": {
         "label": "Switch to the brush tool:",
         "category": "Keybindings",

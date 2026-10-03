@@ -55,6 +55,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.controller.generation_area_controller import GenerationAreaController
 from src.controller.image_generation.glid3_webservice_generator import Glid3WebserviceGenerator, DEFAULT_GLID_URL
 from src.controller.image_generation.glid3_xl_generator import Glid3XLGenerator
 from src.controller.image_generation.image_generator import ImageGenerator
@@ -257,6 +258,7 @@ class AppController(MenuBuilder):
         # Initialize edited image data structures:
         self._image_stack = ImageStack(config.get(AppConfig.DEFAULT_IMAGE_SIZE), cache.get(Cache.EDIT_SIZE),
                                        config.get(AppConfig.MIN_EDIT_SIZE), config.get(AppConfig.MAX_EDIT_SIZE))
+        self._generation_area_controller = GenerationAreaController(self._image_stack)
 
         self._metadata: Optional[dict[str, Any]] = None
         self._exif: Optional[Image.Exif] = None

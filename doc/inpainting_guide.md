@@ -46,6 +46,11 @@ will be scaled accordingly. This may result in quality loss or detail artifacts,
 a generation resolution that's larger than the generation area.  In IntraPaint, you can set this within the 
 Image Generation tab, or at the bottom of the Generation Area tool panel.
 
+By default, the resolution follows the generation area: resizing the area sets the resolution to the same size, and
+areas with a shorter side under 512 pixels are scaled up by a whole number (a 256x256 area generates at 512x512). The
+"Resolution rule" dropdown in the Generation Area tool panel changes this, and editing the resolution by hand switches
+the rule to "Manual" so your value isn't overwritten.
+
 ### "Inpaint Full Resolution" Checkbox
 When enabled, the image generator uses a reduced portion of the generation area, focusing only on the selected
 inpainting areas. This gives higher detail at the cost of overall image awareness. This option is only valid when 
