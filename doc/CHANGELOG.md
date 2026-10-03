@@ -1,5 +1,43 @@
 # Changelog and release notes
 
+## [1.3.0](https://github.com/centuryglass/IntraPaint/compare/v1.2.0...v1.3.0) (2026-10-03)
+
+
+### Features
+
+* **generation:** add generation area frames and a resolution rule ([a777d4f](https://github.com/centuryglass/IntraPaint/commit/a777d4ffd1ffda664e751f58a1bc47fe213690f4))
+* **generation:** add generation area frames and a resolution rule ([cde5d0b](https://github.com/centuryglass/IntraPaint/commit/cde5d0b074980aa9cc77699965c79ed2d46ff5bb))
+
+
+### Bug Fixes
+
+* **build:** bundle the fill tools, which PyInstaller missed as optional imports ([b350284](https://github.com/centuryglass/IntraPaint/commit/b35028452384b64e89f99f9fa27e901c6c5287ba))
+* **build:** include the fill tools in packaged bundles ([7e20d82](https://github.com/centuryglass/IntraPaint/commit/7e20d82e82ef14e52f150b70b58bb3192309dbae))
+* **color:** stop File &gt; New clobbering brush color, fix off-canvas color sampling, guard shape tool color sync ([20b3174](https://github.com/centuryglass/IntraPaint/commit/20b3174c23644b7eeb5b65d88dbc21a90bc21aeb))
+* **color:** stop File &gt; New overwriting brush color, fix off-canvas color sampling, guard shape tool color sync ([1a07555](https://github.com/centuryglass/IntraPaint/commit/1a0755572119dfd72abd25e0952cbc3bf40f7e08))
+* **config:** don't hold the config lock while saving from a worker thread ([f696240](https://github.com/centuryglass/IntraPaint/commit/f6962408caa0d346400d6af94d2c11fdd543e5c6))
+* **config:** stop Config.set deadlocking when a worker thread saves ([706add1](https://github.com/centuryglass/IntraPaint/commit/706add1f4f9bac37f81137be02a8bc8c3af2abcd))
+* **config:** write config JSON atomically so crashes can't wipe settings ([e054e65](https://github.com/centuryglass/IntraPaint/commit/e054e6506c69ebeba7c109155c326511dcddf6f4))
+* **config:** write config JSON atomically via temp file + os.replace ([b88e380](https://github.com/centuryglass/IntraPaint/commit/b88e380f8a250b36986debf2cf26cbbdd52c537f)), closes [#30](https://github.com/centuryglass/IntraPaint/issues/30)
+* **generation:** construct KeyConfig before reading its key attribute ([9712252](https://github.com/centuryglass/IntraPaint/commit/97122520b4248899f8e417980e9e93e8503efdcc))
+* **generation:** stop frame resizes and huge typed sizes from erroring ([c0e74fc](https://github.com/centuryglass/IntraPaint/commit/c0e74fcf7bab8be48d02f5fcdae30f0f05fec260))
+* **ora:** keep awkward layer names from breaking .ora saves ([3ee197c](https://github.com/centuryglass/IntraPaint/commit/3ee197c1ff5a4990b60c25628ad836042f9afabc))
+* **ora:** saving no longer fails on layer names with path separators, and src paths use '/' on Windows ([d08816e](https://github.com/centuryglass/IntraPaint/commit/d08816e1dd7656aa002db7dcad67f97b005b4272))
+* **ora:** write '/'-separated archive paths on every platform ([c288f0a](https://github.com/centuryglass/IntraPaint/commit/c288f0a18383ddb068b3f87c74e84a2a7a346018))
+* replace deprecated QColor.isValidColor calls ([017b805](https://github.com/centuryglass/IntraPaint/commit/017b805944da893a4182cf98041f545eb13e03db))
+* replace deprecated QColor.isValidColor calls ([a965ec7](https://github.com/centuryglass/IntraPaint/commit/a965ec72b92d7bab4d13a4631f7eb6a2cf4fcdfe))
+* start without the fill tools when the image_fill build is missing ([7b794e7](https://github.com/centuryglass/IntraPaint/commit/7b794e73ca1d43732f79df256bba86d3623cb39b))
+* start without the fill tools when the image_fill build is missing ([3e23772](https://github.com/centuryglass/IntraPaint/commit/3e23772cc286b0f936824bf01154dd8b0d0702c4))
+* **tools:** deliver each canvas mouse event to the tool once, and add transform tool tests ([9a05cb2](https://github.com/centuryglass/IntraPaint/commit/9a05cb2b08630c833b6b2e69ae41c27d8e45c1e8))
+* **tools:** deliver each canvas mouse event to the tool once, in view coordinates ([1a2637b](https://github.com/centuryglass/IntraPaint/commit/1a2637ba75b01d1aa7a7997db2f49e861d7d94fa)), closes [#76](https://github.com/centuryglass/IntraPaint/issues/76)
+* **tools:** scale and rotate layers about the transformation origin ([5a8c93a](https://github.com/centuryglass/IntraPaint/commit/5a8c93abe332de4a427af7c1e05a6ce44b906a72))
+* **tools:** scale and rotate layers about the transformation origin ([9445a71](https://github.com/centuryglass/IntraPaint/commit/9445a719adfd847599a6c374d958d1d572ea784c))
+* **ui:** ask before closing the main window ([7254763](https://github.com/centuryglass/IntraPaint/commit/72547632fcac6434da11bd04cee1e0828731d8b7))
+* **ui:** ask before closing the main window ([78aa600](https://github.com/centuryglass/IntraPaint/commit/78aa600c217814b44d4aa841ae87aad38c8060fa))
+* **ui:** correct layer_height getter returning width box value ([8b1481e](https://github.com/centuryglass/IntraPaint/commit/8b1481e1de16eb8c615a65cd49450a8f64ae5229))
+* **ui:** use _height_box for layer_height getter and fix setter parameter name ([e5eab85](https://github.com/centuryglass/IntraPaint/commit/e5eab854ac17994442eab25ce69f5f84862e3a79)), closes [#12](https://github.com/centuryglass/IntraPaint/issues/12)
+* use os.makedirs(exist_ok=True) to fix TOCTOU race in _adjust_defaults ([#97](https://github.com/centuryglass/IntraPaint/issues/97)) ([e573298](https://github.com/centuryglass/IntraPaint/commit/e573298abc208f9d0d03c3241e2b3f4cd0de9bd1))
+
 ## 1.2.0
 
 June 18 2026
