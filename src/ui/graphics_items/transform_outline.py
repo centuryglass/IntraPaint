@@ -112,6 +112,8 @@ class TransformOutline(QGraphicsObject):
 
     def _set_transform_by_parameters(self, dx: float, dy: float, sx: float, sy: float, angle: float,
                                      precalculated_matrix: Optional[QTransform] = None):
+        """Applies transform parameters taken about transformation_origin, the frame extract_transform_parameters
+           uses in setTransform."""
         scale_changed = sx != self._x_scale or sy != self._y_scale
         angle_changed = angle != self._degrees
         self._x_offset = dx
@@ -122,7 +124,7 @@ class TransformOutline(QGraphicsObject):
         x0 = self.x_pos
         y0 = self.y_pos
         if precalculated_matrix is None:
-            precalculated_matrix = combine_transform_parameters(dx, dy, sx, sy, angle)
+            precalculated_matrix = combine_transform_parameters(dx, dy, sx, sy, angle, self.transformation_origin)
         super().setTransform(precalculated_matrix, False)
 
         x1 = self.x_pos
