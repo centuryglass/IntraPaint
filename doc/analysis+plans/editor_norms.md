@@ -245,7 +245,15 @@ it discoverable: show a small "Clipped to selection" badge near the cursor hint 
 
 ### 2.11 Colors (N12)
 
-_Pending `color_subsystem.md` (A8)._
+`color_subsystem.md` section 3 lists eight color departures, D1 to D8: no foreground/background pair, no swap/reset
+keys, a port of Qt's generic picker, inconsistent color alpha, a one-pixel eyedropper, bucket fill that replaces
+instead of compositing, tool-private shape colors, and no color management. Its section 4 design and P0-P6 plan
+cover all eight; this report adds nothing to them.
+
+The key collision belongs here, since it crosses the tool keymap in 2.8: the conventional swap and reset keys are X
+and D, and IntraPaint binds them to the text and draw tools. The color report recommends `Shift+X` / `Shift+D` and
+leaves the tool keys alone (its M1). This report agrees, for the reason in 2.8: a moved tool key costs the maintainer
+on every use. A future "Photoshop-like" keymap preset is the place to give X and D their conventional meaning.
 
 ### 2.12 Keybinding entry (N13)
 
