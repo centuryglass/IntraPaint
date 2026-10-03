@@ -20,11 +20,6 @@ LAYER_OFFSET = QPoint(100, 150)
 # Tolerance in pixels for positions computed through matrix decomposition:
 POSITION_TOLERANCE = 0.01
 
-# TransformOutline rebuilds its matrix around the local origin when only scale or rotation changes, so the
-# transformation origin handle has no effect on those changes:
-IGNORES_ORIGIN = pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/11: scale '
-                                                       'and rotation ignore the transformation origin')
-
 
 class LayerTransformToolTest(ToolTestCase):
     """Tests the transform tool's canvas outline, control panel and layer transform staying in agreement."""
@@ -143,14 +138,12 @@ class LayerTransformToolTest(ToolTestCase):
         self.assertEqual(self.outline.transform(), self.layer.transform)
         self.assert_panel_matches_outline()
 
-    @IGNORES_ORIGIN
     def test_panel_scale_keeps_center(self) -> None:
         """Setting a scale in the panel scales about the transformation origin, which starts at the layer center."""
         center = self._scene_point_of(QPointF(LAYER_WIDTH / 2, LAYER_HEIGHT / 2))
         self.panel._x_scale_box.setValue(2.0)
         self.assert_points_equal(self._scene_point_of(QPointF(LAYER_WIDTH / 2, LAYER_HEIGHT / 2)), center)
 
-    @IGNORES_ORIGIN
     def test_panel_rotation_keeps_center(self) -> None:
         """Setting a rotation in the panel rotates about the transformation origin, which starts at the layer
            center."""
@@ -179,7 +172,6 @@ class LayerTransformToolTest(ToolTestCase):
         for actual, expected in zip(self._scene_corners(), corners):
             self.assert_points_equal(actual, expected)
 
-    @IGNORES_ORIGIN
     def test_rotation_about_moved_origin(self) -> None:
         """After the origin handle moves, a panel rotation keeps the new origin's scene position fixed."""
         start = self._handle_image_point(ORIGIN_HANDLE_ID)
@@ -189,7 +181,6 @@ class LayerTransformToolTest(ToolTestCase):
         self.panel._rotate_box.setValue(45.0)
         self.assert_points_equal(self._scene_point_of(origin), origin_in_scene)
 
-    @IGNORES_ORIGIN
     def test_corner_drag_rotates_about_origin(self) -> None:
         """In rotate mode, dragging a corner rotates the layer about the transformation origin."""
         self.outline._mode = TRANSFORM_MODE_ROTATE
