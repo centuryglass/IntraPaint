@@ -10,7 +10,7 @@
     "files": {
       "image": [
         "src_image.png",
-        "<image 512x512 Format_ARGB32 2c9ac1fe8802bea1>",
+        "<image 512x512 Format_ARGB32 992656d7742bd9e6>",
         "image/png"
       ]
     },
@@ -28,7 +28,7 @@
     "files": {
       "image": [
         "mask_src_image.png",
-        "<image 512x512 Format_ARGB32 87533a103383e7ef>",
+        "<image 512x512 Format_ARGB32 31ef92364b3a54b9>",
         "image/png"
       ]
     },

@@ -8,13 +8,13 @@
       "height": 512,
       "include_init_images": false,
       "init_images": [
-        "<image 512x512 Format_ARGB32 fa12b31036e7664a>"
+        "<image 512x512 Format_ARGB32 72947f38b2e91f8d>"
       ],
       "inpaint_full_res": false,
       "inpaint_full_res_padding": 32,
       "inpainting_fill": 0,
       "inpainting_mask_invert": 0,
-      "mask": "<image 512x512 Format_Grayscale8 0b7bbadeea7174b0>",
+      "mask": "<image 512x512 Format_Grayscale8 2b6439ed4342ec3f>",
       "mask_blur": 4,
       "n_iter": 2,
       "negative_prompt": "blurry",

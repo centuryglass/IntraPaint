@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 from unittest import mock
 
+import numpy as np
 from PySide6.QtCore import QBuffer, QByteArray
 from PySide6.QtGui import QImage
 
@@ -147,16 +148,21 @@ def image_to_base64_png(image: QImage) -> str:
 def describe_image(image: QImage) -> str:
     """Returns a placeholder naming an image's size, format and a hash of its pixels.
 
-    The hash covers decoded pixels, so it's unaffected by PNG encoder settings.
+    The hash covers the alpha channel and the color of fully opaque pixels, read from the decoded image, so PNG
+    encoder settings don't affect it. Color under partial alpha is left out: it passes through premultiplied
+    conversions whose rounding depends on the CPU features Qt selects at runtime, so it varies between machines.
     """
     if image.isNull():
         return '<invalid image>'
-    line_length = image.width() * image.depth() // 8
-    bits = image.constBits()
+    argb_image = image.convertToFormat(QImage.Format.Format_ARGB32)
+    line_bytes = np.frombuffer(argb_image.constBits(), dtype=np.uint8).reshape((argb_image.height(),
+                                                                              argb_image.bytesPerLine()))
+    pixels = line_bytes[:, :argb_image.width() * 4].reshape((argb_image.height(), argb_image.width(), 4))
+    alpha = pixels[:, :, 3]
+    opaque_colors = np.where((alpha == 255)[:, :, np.newaxis], pixels[:, :, :3], 0)
     pixel_hash = hashlib.sha256()
-    for y in range(image.height()):
-        start = y * image.bytesPerLine()
-        pixel_hash.update(bytes(bits[start:start + line_length]))
+    pixel_hash.update(np.ascontiguousarray(alpha).tobytes())
+    pixel_hash.update(np.ascontiguousarray(opaque_colors).tobytes())
     return f'<image {image.width()}x{image.height()} {image.format().name} {pixel_hash.hexdigest()[:16]}>'
 
 

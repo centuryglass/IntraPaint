@@ -24,7 +24,7 @@
       "height": 800,
       "include_init_images": false,
       "init_images": [
-        "<image 600x400 Format_ARGB32 769da6bb554e42a5>"
+        "<image 600x400 Format_ARGB32 08e9ccbe7255b87b>"
       ],
       "n_iter": 1,
       "negative_prompt": "blurry",

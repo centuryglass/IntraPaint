@@ -1,7 +1,7 @@
 [
   {
     "body": {
-      "image": "<image 600x400 Format_ARGB32 769da6bb554e42a5>",
+      "image": "<image 600x400 Format_ARGB32 08e9ccbe7255b87b>",
       "resize_mode": 1,
       "upscaler_1": "R-ESRGAN 4x+",
       "upscaling_resize_h": 800,

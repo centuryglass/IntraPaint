@@ -9,7 +9,7 @@
               "enabled": true,
               "guidance_end": 0.9,
               "guidance_start": 0.1,
-              "image": "<image 512x512 Format_ARGB32 fa12b31036e7664a>",
+              "image": "<image 512x512 Format_ARGB32 72947f38b2e91f8d>",
               "low_vram": false,
               "model": "control_v11p_sd15_canny [d14c016b]",
               "module": "canny",
