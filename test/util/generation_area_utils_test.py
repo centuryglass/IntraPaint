@@ -3,7 +3,7 @@ from PySide6.QtCore import QSize
 
 from src.util.generation_area_utils import resolution_for_area, RESOLUTION_RULE_MATCH_AREA, \
     RESOLUTION_RULE_MATCH_AREA_UPSCALED, RESOLUTION_RULE_MANUAL, full_image_frame, square_frame, parse_size, \
-    updated_recent_sizes, recent_frames, previous_frame, MAX_RECENT_SIZES
+    updated_recent_sizes, recent_frames, previous_frame, MAX_RECENT_SIZES, MAX_PARSED_SIDE
 from test.base_test_case import IntraPaintTestCase
 
 MAX_GEN_SIZE = QSize(2048, 2048)
@@ -67,6 +67,7 @@ class FrameHelperTest(IntraPaintTestCase):
         self.assertEqual(parse_size('640x480'), QSize(640, 480))
         self.assertEqual(parse_size(' 640 X 480 '), QSize(640, 480))
         self.assertEqual(parse_size('640*480'), QSize(640, 480))
+        self.assertEqual(parse_size('99999999999999999x480'), QSize(MAX_PARSED_SIDE, 480))
         for invalid in ('', 'x', '0', '640x0', '-5', '640x480x2', 'abc', '1.5'):
             self.assertIsNone(parse_size(invalid), invalid)
 

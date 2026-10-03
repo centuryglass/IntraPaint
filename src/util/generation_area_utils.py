@@ -21,6 +21,10 @@ MAX_RECENT_SIZES = 8
 
 _SIZE_PATTERN = re.compile(r'^\s*(\d+)\s*(?:[x×*,]\s*(\d+))?\s*$', re.IGNORECASE)
 
+# Largest side parse_size returns. Larger typed values are clamped to it, so QSize and QRect arithmetic on the result
+# can't overflow a C int. ImageStack then clamps the area to the image and the area size limits.
+MAX_PARSED_SIDE = 1 << 20
+
 
 def resolution_for_area(area_size: QSize, rule: str, min_side: int, max_size: QSize) -> Optional[QSize]:
     """Returns the generation resolution a resolution rule picks for an area size, or None under the manual rule.
@@ -55,7 +59,10 @@ def square_frame(image_size: QSize, max_area_size: QSize) -> QSize:
 
 
 def parse_size(text: str) -> Optional[QSize]:
-    """Parses a typed frame size, `768` for a square or `640x480`, returning None if the text isn't a positive size."""
+    """Parses a typed frame size, `768` for a square or `640x480`, returning None if the text isn't a positive size.
+
+    Sides larger than MAX_PARSED_SIDE are clamped to it.
+    """
     match = _SIZE_PATTERN.match(text)
     if match is None:
         return None
@@ -63,7 +70,7 @@ def parse_size(text: str) -> Optional[QSize]:
     height = width if match.group(2) is None else int(match.group(2))
     if width <= 0 or height <= 0:
         return None
-    return QSize(width, height)
+    return QSize(min(width, MAX_PARSED_SIDE), min(height, MAX_PARSED_SIDE))
 
 
 def size_to_str(size: QSize) -> str:

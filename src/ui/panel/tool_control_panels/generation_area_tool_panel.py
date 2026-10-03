@@ -1,7 +1,7 @@
 """Control panel for the GenerationAreaTool."""
 from typing import cast, Optional
 
-from PySide6.QtCore import Qt, QRect, QSize
+from PySide6.QtCore import Qt, QRect, QSize, QSignalBlocker
 from PySide6.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, QHBoxLayout, QLabel, QSlider, QSpinBox, \
     QSizePolicy, QLineEdit
 
@@ -313,16 +313,20 @@ def get_generation_area_control_boxes(image_stack: ImageStack,
         control_sets.append(sliders)
 
     def set_coordinates(new_area: QRect):
-        """Use image generation area bounds and the ImageStack size to set all values and dynamic ranges."""
+        """Use image generation area bounds and the ImageStack size to set all values and dynamic ranges.
+
+        Control signals stay blocked while syncing. Otherwise Qt clamping a value to the old range emits valueChanged,
+        and the handler sets the generation area again while ImageStack still holds the undo stack lock.
+        """
         for x_widget, y_widget, w_widget, h_widget in control_sets:
             for ctrl, value, maximum in ((x_widget, new_area.x(), image_stack.width - new_area.width()),
                                          (y_widget, new_area.y(), image_stack.height - new_area.height()),
                                          (w_widget, new_area.width(), min(max_edit_size.width(), image_stack.width)),
                                          (h_widget, new_area.height(),
                                           min(max_edit_size.height(), image_stack.height))):
-                if value != ctrl.value():
+                with QSignalBlocker(ctrl):
+                    ctrl.setMaximum(maximum)
                     ctrl.setValue(value)
-                ctrl.setMaximum(maximum)
 
     set_coordinates(image_stack.generation_area)
     image_stack.generation_area_bounds_changed.connect(set_coordinates)
