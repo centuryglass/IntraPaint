@@ -8,6 +8,7 @@ https://invent.kde.org/documentation/openraster-org/-/blob/master/openraster-sta
 """
 import logging
 import os.path
+import re
 import shutil
 import tempfile
 import zipfile
@@ -101,6 +102,20 @@ ATTR_TAG_ALPHA_LOCKED = 'alpha-locked'  # str, optional
 # parameters.
 METADATA_TAG = 'metadata'
 
+# Layer names become part of the layer's in-archive file name, so characters outside this set are replaced:
+_FILE_NAME_UNSAFE_CHARS = re.compile(r'[^\w .-]')
+_MAX_FILE_NAME_LENGTH = 50
+
+
+def _layer_file_stem(layer: Layer) -> str:
+    """Returns a file name base for a layer's image files, unique per layer and safe for any layer name.
+
+    The layer's real name is stored in stack.xml. This name only has to be a single valid path component: path
+    separators and '..' in a layer name would otherwise write outside the data directory or into a missing one.
+    """
+    safe_name = _FILE_NAME_UNSAFE_CHARS.sub('_', layer.name)[:_MAX_FILE_NAME_LENGTH]
+    return f'{safe_name}_{layer.id}'
+
 
 def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> None:
     """Save image layers in an editable state using the Open Raster specification."""
@@ -134,7 +149,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
             layer_data[ATTR_TAG_SELECTED] = BOOLEAN_TRUE_STR
         layer_data[ATTR_TAG_OPACITY] = layer.opacity
         layer_data[ATTR_TAG_VISIBILITY] = ATTR_VISIBLE if layer.get_visible() else ATTR_HIDDEN
-        image_path = os.path.join(DATA_DIRECTORY_NAME, f'{layer.name}_{layer.id}.png')
+        image_path = os.path.join(DATA_DIRECTORY_NAME, f'{_layer_file_stem(layer)}.png')
         flattened_image, offset_transform = layer.transformed_image()
         layer_data[ATTR_TAG_X_POS] = round(offset_transform.dx())
         layer_data[ATTR_TAG_Y_POS] = round(offset_transform.dy())
@@ -150,7 +165,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
             if layer_transform != offset_transform:
                 layer_transform_str = _get_transform_str(layer_transform)
                 layer_untransformed_path = os.path.join(DATA_DIRECTORY_NAME,
-                                                        f'{layer.name}_{layer.id}-untransformed.png')
+                                                        f'{_layer_file_stem(layer)}-untransformed.png')
                 full_untransformed_path = os.path.join(tmpdir, layer_untransformed_path)
                 assert layer.image.save(full_untransformed_path), f'failed to write to {full_untransformed_path}'
                 extended_layer_data[TRANSFORM_SRC_TAG] = layer_untransformed_path
