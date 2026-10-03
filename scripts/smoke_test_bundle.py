@@ -1,6 +1,6 @@
 """Launch test for a packaged IntraPaint build: fail unless the bundle starts and reaches the editing state.
 
-CI's build workflow (.github/workflows/build.yml) runs this on each PyInstaller bundle, because a bundle can fail where
+CI's bundle job (.github/workflows/ci.yml) runs this on each PyInstaller bundle, because a bundle can fail where
 a source run works: a module PyInstaller didn't collect, or startup code that only runs in a bundle. Two checks:
 1. `--help` exits cleanly. IntraPaint.py imports most of the app before parsing arguments, so this covers imports.
 2. A `--mode none` launch logs the change to the editing state within the timeout, without failing to load an optional
