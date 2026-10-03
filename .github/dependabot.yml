@@ -8,6 +8,9 @@ updates:
     directory: /
     # Development happens on integration; master only receives release PRs from it.
     target-branch: integration
+    # Conventional Commits prefixes, which the changelog (release-please-config.json) reads from squash-merge titles.
+    commit-message:
+      prefix: build(deps)
     schedule:
       interval: weekly
     allow:
@@ -29,5 +32,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     target-branch: integration
+    commit-message:
+      prefix: ci(deps)
     schedule:
       interval: weekly

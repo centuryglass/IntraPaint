@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "include-component-in-tag": false,
+      "changelog-path": "doc/CHANGELOG.md",
+      "draft": true,
+      "force-tag-creation": true,
+      "extra-files": ["src/controller/app_controller.py"]
+    }
+  }
+}
