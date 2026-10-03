@@ -81,7 +81,7 @@ class NewImageModal(QDialog):
         self._color_dropdown = QComboBox()
         self._color_row_layout.addWidget(self._color_dropdown)
 
-        self._color_button = ColorButton(parent=self)
+        self._color_button = ColorButton(config_key=None, parent=self)
         self._color_button.color = self._color
         self._color_button.setText(BUTTON_TEXT_PICK_CUSTOM_COLOR)
         self._color_button.setVisible(False)
