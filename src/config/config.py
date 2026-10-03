@@ -77,7 +77,9 @@ class Config:
             default values. Any expected keys not found in the file will be added with default values. Any unexpected
             values will be removed. If not provided, the Config object won't allow file IO.
         child_class: class
-            Child class where definition keys should be written as properties when first initialized.
+            Child class where definition keys should be written as properties when first initialized. Reading one of
+            those properties before the first construction raises `AttributeError`. `conftest.py` constructs every
+            config up front, so tests don't catch this.
         """
         self._entries: dict[str, ConfigEntry] = {}
         self._connected: dict[str, dict[Any, Callable[..., None]]] = {}
@@ -176,7 +178,11 @@ class Config:
 
     # noinspection PyProtectedMember
     def _reset(self) -> None:
-        """Discard all changes and connections, and reload from JSON. For testing use only."""
+        """Discard all changes and connections, and reload from JSON. For testing use only.
+
+        Option lists shrink to the default value alone, so a test that sets another option calls
+        `restore_default_options` first.
+        """
         with self._lock:
             self._connected = {}
             for key, entry in self._entries.items():

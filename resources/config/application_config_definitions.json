@@ -202,6 +202,20 @@
         "default": "256x256",
         "saved": true
     },
+    "generation_resolution_min_side": {
+        "label": "Minimum upscaled resolution side:",
+        "category": "Editing",
+        "subcategory": "Size",
+        "description": "With the 'Match area, upscale small areas' resolution rule, generation areas with a shorter side below this size are scaled up by a whole-number factor until the shorter side reaches it.",
+        "type": "int",
+        "default": 512,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 8192,
+            "step": 1
+        }
+    },
     "brush_favorites": {
         "label": "Favorite MyPaint brushes:",
         "category": "Editing",

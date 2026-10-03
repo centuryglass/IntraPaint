@@ -15,6 +15,28 @@
         "default": "512x512",
         "saved": true
     },
+    "generation_resolution_rule": {
+        "label": "Resolution rule:",
+        "category": "Cache",
+        "description": "How the generation resolution follows generation area size changes. 'Match area' sets the resolution to the area size. 'Match area, upscale small areas' also scales small areas up by a whole-number factor until the shorter side reaches the minimum set in settings. 'Manual' leaves the resolution alone. Editing the resolution by hand selects 'Manual'.",
+        "type": "string",
+        "default": "Match area, upscale small areas",
+        "options": [
+            "Match area",
+            "Match area, upscale small areas",
+            "Manual"
+        ],
+        "saved": true
+    },
+    "recent_generation_area_sizes": {
+        "label": "Recent generation area sizes:",
+        "category": "Cache",
+        "description": "Generation area sizes used most recently, newest first, as \"WxH\" strings",
+        "type": "list",
+        "default": [],
+        "saved": true,
+        "translate": false
+    },
     "tool_tab_bar": {
         "label": "Tool tab bar:",
         "category": "Cache",

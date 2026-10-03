@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.controller.generation_area_controller import record_generation_area_size
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
@@ -100,7 +101,9 @@ class GenerationAreaTool(BaseTool):
         return False
 
     def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """If resizing, finish on mouse_release."""
+        """If resizing, finish on mouse_release and record the new size."""
+        if self._resizing:
+            record_generation_area_size(self._image_stack.generation_area.size())
         self._resizing = False
         return False
 

@@ -252,6 +252,7 @@ class KeyConfig(Config, metaclass=Singleton):
     PAN_VIEW_MODIFIER: str
     PASTE_SHORTCUT: str
     POSTERIZE_SHORTCUT: str
+    PREVIOUS_GENERATION_FRAME_KEY: str
     PROMPT_STYLE_SHORTCUT: str
     QUIT_SHORTCUT: str
     REDO_SHORTCUT: str
