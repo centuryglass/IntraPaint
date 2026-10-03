@@ -1,0 +1,51 @@
+name: release-please
+
+# Keeps a release pull request open against integration, collecting the Conventional Commits titles of merged pull
+# requests into doc/CHANGELOG.md and bumping the version (release-please-config.json). Merging it tags the release and
+# creates a draft GitHub release, then opens the integration -> master pull request. The release workflow attaches the
+# bundles and publishes the draft once that pull request merges and CI passes on master.
+#
+# Pull requests opened with GITHUB_TOKEN don't trigger workflows, so CI and release-source have to be started by hand
+# on both pull requests this opens.
+on:
+  push:
+    branches: [integration]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: release-please
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - id: release
+        uses: googleapis/release-please-action@v5
+        with:
+          target-branch: integration
+
+      - name: Open release pull request into master
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag_name }}
+          RELEASE_URL: ${{ steps.release.outputs.html_url }}
+        run: |
+          open_prs=$(gh pr list --repo "$GITHUB_REPOSITORY" --base master --head integration --state open \
+            --json number --jq length)
+          if [ "$open_prs" != "0" ]; then
+            echo "An integration -> master pull request is already open."
+            exit 0
+          fi
+          gh pr create --repo "$GITHUB_REPOSITORY" --base master --head integration \
+            --title "chore: release $TAG" \
+            --body "Releases $TAG. Merge with a merge commit, not a squash, so master keeps integration's history.
+
+          Merging publishes the draft release ($RELEASE_URL) with the bundles CI builds on master. Edit the draft's notes before merging if they need it."

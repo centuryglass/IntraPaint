@@ -255,3 +255,8 @@ To contribute a change:
    before it can be merged.
 
 Pull requests that target `master` directly won't be accepted, unless they're release pull requests from `integration`.
+
+Releases are managed by [release-please](https://github.com/googleapis/release-please). It keeps a release pull request
+open against `integration` that collects merged pull request titles into [doc/CHANGELOG.md](./doc/CHANGELOG.md).
+Merging it opens the release pull request from `integration` into `master`, and merging that one publishes the release
+with its Windows and Linux builds.

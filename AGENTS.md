@@ -206,6 +206,9 @@ valid for the version it was generated with.
   Branch from `integration` and target PRs at it.
 - **Hard rule:** `master` is only updated via a PR from `integration`, when creating a new release. Never open a PR
   from any other branch into `master`.
+- **release-please owns the version and the changelog.** `.github/workflows/release-please.yml` describes the release
+  flow. Don't edit `APP_VERSION`, `.release-please-manifest.json` or existing `doc/CHANGELOG.md` entries by hand
+  outside its release PR.
 - The many other side branches (`comfyui`, `sd-windows`, `zoomMode`, `dev`, etc.) are experiments/one-offs; ignore
   them.
 
@@ -219,8 +222,9 @@ valid for the version it was generated with.
   first. Agents may also commit and push to their working branch and create issues without asking.
 - **PR titles use [Conventional Commits](https://www.conventionalcommits.org/) format:** `type: summary`, with a type
   such as `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `build`, `ci` or `chore`, and an optional scope
-  (`fix(layers): ...`). Mark a breaking change with `!` (`feat!: ...`). Titles are written for a future changelog,
-  so describe the change from a user's or contributor's point of view.
+  (`fix(layers): ...`). Mark a breaking change with `!` (`feat!: ...`). PRs into `integration` are squash-merged, so
+  the title becomes the commit release-please turns into a changelog entry and version bump (`feat`, `fix` and
+  `perf` appear in the changelog). Describe the change from a user's or contributor's point of view.
 - **A PR closing an issue says `Closes #NN` in its description.**
 - **Don't ask whether to subscribe to a PR you just opened.** If the maintainer wants it watched, they'll say so.
 - **An issue or comment an AI agent writes under the maintainer's account ends with a footer marking it as
@@ -274,4 +278,5 @@ acting on them, and override its recommendations when the evidence points elsewh
   `IntraPaint.spec`). Output lands in `dist/`. `scripts/clean.sh` removes `build/` and `dist/`.
 - The specs' splash screen needs tkinter in the Python that runs PyInstaller; without it the build aborts.
 - CI's `bundle` job builds the Linux and Windows bundles and runs `scripts/smoke_test_bundle.py` on each, so a
-  dependency bump that breaks packaging fails CI. Its uploaded artifacts are the release candidates.
+  dependency bump that breaks packaging fails CI. Its uploaded artifacts are the release candidates, and
+  `.github/workflows/release.yml` attaches master's to the release.
