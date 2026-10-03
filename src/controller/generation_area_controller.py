@@ -58,7 +58,7 @@ class GenerationAreaController(QObject):
         hotkey_filter = HotkeyFilter.instance()
         hotkey_filter.remove_keybinding(PREVIOUS_FRAME_BINDING_ID)
         hotkey_filter.register_config_keybinding(PREVIOUS_FRAME_BINDING_ID, self._previous_frame_hotkey,
-                                                 KeyConfig.PREVIOUS_GENERATION_FRAME_KEY)
+                                                 KeyConfig().PREVIOUS_GENERATION_FRAME_KEY)
         self.apply_resolution_rule()
 
     def apply_resolution_rule(self) -> None:
