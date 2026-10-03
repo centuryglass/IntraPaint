@@ -175,8 +175,8 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
   - No retry markers. The only allowed markers are `skip`, with a reason and an issue link, and `xfail(strict=True)`.
   - `pytest-xdist` waits until tests are proven independent of run order, and a coverage-percentage gate waits until
     coverage is built out.
-- CI (`.github/workflows/ci.yml`) runs on every push and pull request: the suite on Python 3.11-3.14, plus the lint
-  check below. Its `ci` job is the single check to require for merging.
+- CI (`.github/workflows/ci.yml`) runs on every push and pull request: the suite on Python 3.11-3.14, the lint check
+  below, and the `bundle` job (see "Packaging"). Its `ci` job is the single check to require for merging.
 - Coverage is sparse: treat it as a partial safety net, not an authoritative gate. The full run takes about 90
   seconds.
 
@@ -272,3 +272,6 @@ acting on them, and override its recommendations when the evidence points elsewh
 
 - `scripts/build.sh` → builds the Cython extension then runs `pyinstaller IntraPaint-linux.spec` (Windows uses
   `IntraPaint.spec`). Output lands in `dist/`. `scripts/clean.sh` removes `build/` and `dist/`.
+- The specs' splash screen needs tkinter in the Python that runs PyInstaller; without it the build aborts.
+- CI's `bundle` job builds the Linux and Windows bundles and runs `scripts/smoke_test_bundle.py` on each, so a
+  dependency bump that breaks packaging fails CI. Its uploaded artifacts are the release candidates.

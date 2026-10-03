@@ -9,8 +9,9 @@ pytest==9.1.1
 pylint==4.0.9
 
 # `pyinstaller IntraPaint.spec` (Windows) or `pyinstaller IntraPaint-linux.spec` creates a packaged build in dist/.
-# 6.11.0 doesn't support Python 3.14. Newer versions do, but moving to one needs a packaged build tested first.
-pyinstaller==6.11.0; python_version < "3.14"
+# The specs' splash screen needs tkinter in the building Python. CI's `bundle` job builds and launch-tests both specs,
+# so check it passes after a bump.
+pyinstaller==6.22.3
 
 # `pur -r requirements.txt` updates the pinned version numbers in place.
 pur==7.3.2
