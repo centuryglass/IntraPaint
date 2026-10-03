@@ -54,8 +54,7 @@ class AppConfig(Config, metaclass=Singleton):
             current_path = self.get(config_key)
             if current_path == '':
                 dir_path = os.path.join(DATA_DIR, dir_name)
-                if not os.path.isfile(dir_path) and not os.path.exists(dir_path):
-                    os.mkdir(dir_path)
+                os.makedirs(dir_path, exist_ok=True)
                 if os.path.isdir(dir_path):
                     self.set(config_key, dir_path)
 
