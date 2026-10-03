@@ -31,4 +31,18 @@ Reports:
   break small screens. Fix: a top-down space budget + a testable "usable at target-min N" invariant;
   phased P1 reactive gap-fallback + size-sweep test → P2 enforce the budget → P3 scroll fallback +
   screen-detection hardening → P4 unify the systems + DPI awareness.
+- packaging.md: Cross-platform packaging and native deps (A7). The hand-run Linux/Windows build has drifted: with
+  today's pins the Linux bundle crashes on numpy import (verified; PyInstaller 6.22.3 works, #84). Strategy: a CI
+  build with a launch smoke test (#8) first; one spec branching on sys.platform with libmypaint as `binaries` from
+  `lib/<platform-tag>/`; libmypaint 1.6.1 obtained once per platform and committed with a manifest; fix #7 rather
+  than ship a prebuilt image_fill; macOS and ARM Linux as CI-built, untested, unsigned artifacts.
+- color_subsystem.md: Color subsystem (A8). One shared paint color plus four tool-private ones, a QColorDialog port,
+  inconsistent alpha, no ICC handling. Design: FG stays on `last_brush_color`, new `background_color` and
+  `recent_colors`, swap/reset on Shift+X/Shift+D, an OKHSV ring+square picker in numpy (no new dependency), and
+  FG/BG eyedropper picks. Phased P0 (bug fixes, #81) to P6 (ICC conversion on import). Section 3 (D1-D8) lists the
+  convention departures.
+- editor_norms.md: Editor convention departures (OQ2), synthesized from OQ1, OQ6, A8 and OQ7. 17 departures with a
+  verdict each: fix the window-close data loss (#80), warn before flattening on save, adopt system clipboard,
+  Ctrl+Shift+S, norm zoom and Space-pan bindings, recent files, drag-drop, selection add/subtract modifiers and a
+  key-capture field; keep tool letters and unclipped painting. Maintainer tensions are marked per item.
 - testing_strategy.md: Long-term testing strategy (A1/OQ8) — coverage priorities (ratifies the test-wip tiers, promotes undo/transform/selection safety-nets to the front), the shared base-fixture + golden-helper + tool-harness infra to build first, the golden re-bless workflow, a prevent-by-construction flaky-Qt policy, and CI economics (the one geometry test is the ~4-min hog; reshape it before adding coverage).

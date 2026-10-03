@@ -34,9 +34,9 @@ IDs: `OQ#` = lines in `open_questions.txt`; `A#` = suggested additions (adopt as
 | OQ6 | Generation-area / context-control UX | **DONE** | — (reads doc/) | here | Opus | generation_area_ux.md |
 | OQ1 | Responsive layout / small displays | **DONE** | — | here | Opus | responsive_layout.md |
 | A3 | Non-destructive layer persistence | **DONE** | — | cold | Opus | nondestructive_layers.md |
-| A7 | Cross-platform packaging & native deps | todo | — | cold | **Sonnet** | packaging.md |
-| A8 | Color management subsystem | todo | — | cold | **Sonnet** | color_subsystem.md |
-| OQ2 | Editor-norm idiosyncrasies (synthesis) | todo | OQ1, OQ6, A8, OQ7 | cold | Opus | editor_norms.md |
+| A7 | Cross-platform packaging & native deps | **DONE** | — | cold | Opus | packaging.md |
+| A8 | Color management subsystem | **DONE** | — | cold | Opus | color_subsystem.md |
+| OQ2 | Editor-norm idiosyncrasies (synthesis) | **DONE** | OQ1, OQ6, A8, OQ7 | cold | Opus | editor_norms.md |
 
 \* OQ5 leans on the external `../sd-api-standalone` repo more than on this session's context, so a
 cold session + brief + repo access is fine; warm isn't needed.
@@ -215,3 +215,12 @@ or **A6 (rendering)** if the priority is unblocking the most Phase-2 work soones
   two systems + DPI-normalized thresholds/auto font. Strong synergy with OQ6 (gen-area panels are top
   min-size hogs) and A1 (R7 test harness). Feeds OQ2. Remaining Phase 3: A3, A7, A8; Phase 4: OQ2.
 </content>
+- 2026-10-03: A7, A8 and OQ2 complete (#67); all planned reports are done. A7 (packaging.md): built and
+  launched the Linux bundle; with current pins it crashes on numpy import under PyInstaller 6.11.0 and works with
+  6.22.3 (#84). Strategy: CI build with a launch smoke test (#8) -> startup robustness (#7) -> one spec plus
+  `lib/<platform-tag>/` -> libmypaint 1.6.1 everywhere (#65, #85) -> aarch64 and macOS as untested artifacts.
+  A8 (color_subsystem.md): FG/BG on existing Cache keys plus `background_color`, an OKHSV ring+square picker with
+  no new dependency, eyedropper FG/BG picks, P0-P6 plan delivering #58 and #57; bugs #81-#83; decisions M1-M5.
+  OQ2 (editor_norms.md): 17 departures with verdicts; fix first the window-close data loss (#80), pre-save
+  flatten warning, Ctrl+Shift+S, zoom/Space-pan bindings, recent files and drag-drop; keep tool letters and
+  unclipped painting; maintainer tensions marked per item.
