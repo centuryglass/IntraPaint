@@ -14,7 +14,7 @@ from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_DESELECT
 from src.ui.panel.tool_control_panels.draw_tool_panel import DrawToolPanel
 from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
-from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
+from src.util.visual.text_drawing_utils import left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.draw_tool'
@@ -29,7 +29,7 @@ ICON_PATH_DRAW_TOOL = f'{PROJECT_DIR}/resources/icons/tools/pen_icon.svg'
 CURSOR_PATH_DRAW_TOOL = f'{PROJECT_DIR}/resources/cursors/draw_cursor.svg'
 LABEL_TEXT_DRAW_TOOL = _tr('Draw')
 TOOLTIP_DRAW_TOOL = _tr('Draw into the image')
-CONTROL_HINT_DRAW_TOOL = _tr('{left_mouse_icon}: draw - {right_mouse_icon}: 1px draw')
+CONTROL_HINT_DRAW_TOOL = _tr('{left_mouse_icon}: draw')
 
 
 class DrawTool(QtPaintBrushTool):
@@ -49,7 +49,6 @@ class DrawTool(QtPaintBrushTool):
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
         control_hint_draw_tool = CONTROL_HINT_DRAW_TOOL.format(left_mouse_icon=left_button_hint_text(),
-                                                               right_mouse_icon=right_button_hint_text(),
                                                                modifier_or_modifiers='{modifier_or_modifiers}')
         eyedropper_hint = BaseTool.modifier_hint(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER, COLOR_PICK_HINT)
         if len(eyedropper_hint) > 0:

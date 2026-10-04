@@ -1,4 +1,4 @@
-"""Tests the selection brush's right button: a click toggles a context pin, and a drag draws a 1px selection."""
+"""Tests the selection brush's right button, which toggles context pins."""
 from PySide6.QtCore import QPoint, Qt
 
 from src.config.application_config import AppConfig
@@ -40,16 +40,24 @@ class SelectionBrushToolTest(ToolTestCase):
         self.assertEqual(self.selection_layer.context_pins, [QPoint(100, 100)])
         self.assertTrue(self.selection_layer.is_empty())
 
-    def test_right_drag_selects_1px_line_from_press_point(self) -> None:
-        """A right-drag past the threshold draws a 1px line starting at the press point, and adds no pin."""
-        self.tool.brush_size = 10
+    def test_right_drag_does_nothing(self) -> None:
+        """A right-drag past the threshold neither selects nor adds a pin, and records nothing."""
         self.mouse_drag([QPoint(100, 100), QPoint(110, 100), QPoint(130, 100)], RIGHT)
         self.assertEqual(self.selection_layer.context_pins, [])
-        image = self.selection_layer.image
-        self.assertGreater(image.pixelColor(100, 100).alpha(), 0)
-        self.assertGreater(image.pixelColor(120, 100).alpha(), 0)
-        self.assertEqual(image.pixelColor(120, 102).alpha(), 0)
-        self.assertEqual(self.tool.brush_size, 10)
+        self.assertTrue(self.selection_layer.is_empty())
+        self.assertEqual(UndoStack().undo_count(), 0)
+
+    def test_right_click_on_marker_head_removes_pin(self) -> None:
+        """Right-clicking the drawn marker's head, well above the pinned pixel, removes the pin."""
+        self.selection_layer.set_context_pins([QPoint(100, 100)])
+        self.mouse_drag([QPoint(100, 80)], RIGHT)
+        self.assertEqual(self.selection_layer.context_pins, [])
+
+    def test_right_click_beside_marker_adds_pin(self) -> None:
+        """Right-clicking outside every drawn marker adds another pin."""
+        self.selection_layer.set_context_pins([QPoint(100, 100)])
+        self.mouse_drag([QPoint(130, 100)], RIGHT)
+        self.assertEqual(self.selection_layer.context_pins, [QPoint(100, 100), QPoint(130, 100)])
 
     def test_left_click_selects(self) -> None:
         """The left button selects as before and adds no pin."""

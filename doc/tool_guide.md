@@ -49,7 +49,6 @@ Draw, paint, blur, smudge, or erase within the image using the [MyPaint](https:/
 
 #### Basic controls
 - **Left-click**: Draw within the image.
-- **Right-click**: Draw with one-pixel brush width.
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size. **Hold shift** to change size faster.
@@ -79,7 +78,6 @@ A basic brush tool with easily adjustable properties.
 
 #### Basic controls
 - **Left-click**: Draw within the image.
-- **Right-click**: Draw with one-pixel brush width.
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size.
@@ -107,7 +105,6 @@ Erase image content.
 
 #### Basic controls
 - **Left-click**: Erase within the image.
-- **Right-click**: Erase with one-pixel brush width.
 - **Hold shift and left-click**: Erase a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the eraser to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the eraser size.
@@ -152,7 +149,6 @@ This tool uses the same filters that are found in the Filters menu.  See [Filter
 
 #### Basic controls
 - **Left-click**: Draw within the image.
-- **Right-click**: Draw with one-pixel brush width.
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size.
@@ -186,7 +182,6 @@ Smudge image content to adjust the placement of image elements and smooth away u
 
 #### Basic controls
 - **Left-click and drag**: Smudge image content.
-- **Right-click and drag**: Smudge with one-pixel brush width.
 - **Hold shift and left-click**: Smudge a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the cursor to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the cursor size.
@@ -380,7 +375,7 @@ Select areas by outlining them.
 
 1. **Select/Deselect toggle**: Switch between selecting image content and deselecting content.
 2. **Clear button**: Remove all selections.
-3. **Select All button**: Select all image content.
+3. **Select All button**: Select all image content. In inpainting mode, a **Clear Context Pins** button follows it, removing every [context pin](#-selection-brush-tool-s).
 4. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
 5. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
 6. An in-progress selection.
@@ -393,7 +388,6 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 #### Basic controls
 - **Left-click**: Select content within the image.
 - **Right-click**: Add a context pin, or remove the pin under the cursor. A pin stretches the "Inpaint Full Resolution" crop to include its spot, without selecting it for inpainting. Pins stay until you remove them or use [Clear context pins](./menu_options.md#clear-context-pins-ctrlaltp).
-- **Right-click and drag**: Select content with one-pixel brush width.
 - **Hold shift and left-click**: Select a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size. **Hold shift** to change size faster.
@@ -406,7 +400,7 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 1. **Brush size slider**: Change the size of the selection brush.
 2. **Select/Deselect toggle**: Switch between selecting image content and deselecting content.
 3. **Clear button**: Remove all selections.
-4. **Select All button**: Select all image content.
+4. **Select All button**: Select all image content. In inpainting mode, a **Clear Context Pins** button follows it, removing every [context pin](#-selection-brush-tool-s).
 5. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
 6. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
 7. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
@@ -426,7 +420,7 @@ Select or deselect rectangular or elliptical regions in the image.
 
 1. **Rectangle/ellipse toggle: Switch between selecting/deselecting rectangular and elliptical regions.
 2. **Clear button**: Remove all selections.
-3. **Select All button**: Select all image content.
+3. **Select All button**: Select all image content. In inpainting mode, a **Clear Context Pins** button follows it, removing every [context pin](#-selection-brush-tool-s).
 4. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
 5. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
 6. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.

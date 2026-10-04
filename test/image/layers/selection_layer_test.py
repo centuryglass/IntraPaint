@@ -108,13 +108,6 @@ class SelectionLayerContextPinTest(IntraPaintTestCase):
         self.assertEqual(UndoStack().undo_count(), 1)
         self.assertEqual(self.pins_changed.call_count, 1)
 
-    def test_context_pin_near(self) -> None:
-        """context_pin_near finds the closest pin within range of a point, measured from pixel centers."""
-        self.selection_layer.set_context_pins([QPoint(10, 10), QPoint(14, 10)])
-        self.assertEqual(self.selection_layer.context_pin_near(QPoint(11, 10), 3.0), QPoint(10, 10))
-        self.assertEqual(self.selection_layer.context_pin_near(QPoint(14, 11), 3.0), QPoint(14, 10))
-        self.assertIsNone(self.selection_layer.context_pin_near(QPoint(30, 30), 3.0))
-
     def test_select_none_keeps_pins(self) -> None:
         """Clearing the selection leaves pins in place."""
         self._select(SELECTION_BOUNDS)

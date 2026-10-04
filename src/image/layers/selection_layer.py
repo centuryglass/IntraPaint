@@ -154,20 +154,6 @@ class SelectionLayer(ImageLayer):
         """Removes all context pins."""
         self.set_context_pins([], save_to_undo_history)
 
-    def context_pin_near(self, point: QPoint | QPointF, max_distance: float) -> Optional[QPoint]:
-        """Returns the context pin closest to an image coordinate, or None if none is within max_distance."""
-        closest: Optional[QPoint] = None
-        closest_distance = float(max_distance)
-        point_f = QPointF(point)
-        for pin in self._context_pins:
-            # Pins mark whole pixels, so measure from the pixel center.
-            offset = QPointF(pin) + QPointF(0.5, 0.5) - point_f
-            distance = (offset.x() ** 2 + offset.y() ** 2) ** 0.5
-            if distance <= closest_distance:
-                closest = QPoint(pin)
-                closest_distance = distance
-        return closest
-
     def _apply_context_pins(self, pins: list[QPoint]) -> None:
         self._context_pins = [QPoint(pin) for pin in pins]
         self.context_pins_changed.emit(self.context_pins)

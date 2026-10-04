@@ -15,7 +15,7 @@ from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
 from src.ui.panel.tool_control_panels.smudge_tool_panel import SmudgeToolPanel
 from src.util.math_utils import clamp
 from src.util.shared_constants import PROJECT_DIR
-from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
+from src.util.visual.text_drawing_utils import left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.smudge_tool'
@@ -30,7 +30,7 @@ ICON_PATH_SMUDGE_TOOL = f'{PROJECT_DIR}/resources/icons/tools/smudge_icon.svg'
 CURSOR_PATH_SMUDGE_TOOL = f'{PROJECT_DIR}/resources/cursors/smudge_cursor.svg'
 SMUDGE_LABEL = _tr('Smudge')
 SMUDGE_TOOLTIP = _tr('Smudge image content')
-SMUDGE_CONTROL_HINT = _tr('{left_mouse_icon}: smudge - {right_mouse_icon}: 1px smudge')
+SMUDGE_CONTROL_HINT = _tr('{left_mouse_icon}: smudge')
 
 
 class SmudgeTool(BrushTool):  # type: ignore
@@ -117,8 +117,7 @@ class SmudgeTool(BrushTool):  # type: ignore
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        brush_hint = SMUDGE_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
-                                                right_mouse_icon=right_button_hint_text())
+        brush_hint = SMUDGE_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
         return f'{brush_hint}<br/>{BrushTool.brush_control_hints()}<br/>{BrushTool.get_input_hint(self)}'
 
     def get_control_panel(self) -> Optional[QWidget]:

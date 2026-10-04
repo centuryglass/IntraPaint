@@ -12,7 +12,7 @@ from src.tools.qt_paint_brush_tool import QtPaintBrushTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.eraser_tool_panel import EraserToolPanel
 from src.util.shared_constants import PROJECT_DIR
-from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
+from src.util.visual.text_drawing_utils import left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.eraser_tool'
@@ -27,7 +27,7 @@ ICON_PATH_ERASER_TOOL = f'{PROJECT_DIR}/resources/icons/tools/eraser_icon.svg'
 CURSOR_PATH_ERASER_TOOL = f'{PROJECT_DIR}/resources/cursors/eraser_cursor.svg'
 LABEL_TEXT_ERASER_TOOL = _tr('Erase')
 TOOLTIP_ERASER_TOOL = _tr('Erase image layer content')
-CONTROL_HINT_DRAW_TOOL = _tr('{left_mouse_icon}: erase - {right_mouse_icon}: 1px erase')
+CONTROL_HINT_DRAW_TOOL = _tr('{left_mouse_icon}: erase')
 
 
 class EraserTool(QtPaintBrushTool):
@@ -56,7 +56,6 @@ class EraserTool(QtPaintBrushTool):
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
         control_hint_draw_tool = CONTROL_HINT_DRAW_TOOL.format(left_mouse_icon=left_button_hint_text(),
-                                                               right_mouse_icon=right_button_hint_text(),
                                                                modifier_or_modifiers='{modifier_or_modifiers}')
         return (f'{control_hint_draw_tool}<br/>{BrushTool.brush_control_hints()}'
                 f'<br/>{BrushTool.get_input_hint(self)}')

@@ -94,10 +94,14 @@ Manual mode, where it's already the user's own value.
 
 Replace the 1px trick. With the selection brush:
 - **Right-click without dragging** drops a context pin. **Right-clicking an existing pin removes it.**
-- **Right-drag** still draws a 1px selection line, as it does today.
+- **Right-drag** does nothing. The 1px right-button stroke is removed from every brush tool, since pins
+  replace its only use.
 
 A pin stretches the full-res crop to include its point, exactly like the 1px dot did, but nothing under it
-gets inpainted. Pins are drawn as small crosshair markers on the canvas and in the navigation panel.
+gets inpainted. Pins are drawn as push-pin markers (`resources/icons/context_pin.svg`) on the canvas and in
+the navigation panel. In inpainting mode, the selection tool panels show a "Clear Context Pins" button
+beside "Clear" and "Select All"; the three share one row when it fits their full text, and stack
+otherwise.
 
 - Pins stay until you remove them. Repeatedly inpainting the same area is common, so they are **not**
   cleared after generating. A setting ("Clear context pins after generating", off by default) turns
@@ -187,11 +191,10 @@ define new options in `resources/config/*.json`.
   signal, and add/remove/clear methods recorded on `UndoStack`. `get_selection_gen_area()` unions pins
   into the bounds before padding. Watch the layer offset: the method mixes `_bounding_box` with
   `selection_layer.position` (see `sd_comfyui_generator.py:523`), so convert pins consistently.
-- **Tool:** in `SelectionBrushTool`, on right-button press, don't start the 1px stroke yet. If the pointer
-  moves past a small threshold (a few screen pixels), start the 1px stroke from the press point, as today.
-  If it's released first, toggle a pin (remove one within a few screen pixels of the click, otherwise
-  add one). Update the tool's hint text.
-- **Drawing:** a small crosshair graphics item per pin in `ImageViewer`, so it shows in the main view and
+- **Tool:** in `SelectionBrushTool`, a right-click released within a few screen pixels of the press
+  toggles a pin: it removes the pin whose drawn marker is under the click, otherwise adds one. A longer
+  right-drag does nothing. Update the tool's hint text.
+- **Drawing:** a push-pin graphics item per pin in `ImageViewer`, so it shows in the main view and
   the navigation panel (`NavigationWindow` is an `ImagePanel`). Refresh `_generation_area_selection_outline`
   on `context_pins_changed`, the same way it refreshes on selection changes (`image_viewer.py:195-210`).
 - **Menu and settings:** "Clear context pins" in the Selection menu. `clear_context_pins_after_generating`

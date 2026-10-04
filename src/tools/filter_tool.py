@@ -22,7 +22,7 @@ from src.tools.qt_paint_brush_tool import QtPaintBrushTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.filter_tool_panel import FilterToolPanel
 from src.util.shared_constants import PROJECT_DIR
-from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
+from src.util.visual.text_drawing_utils import left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.filter_tool'
@@ -37,7 +37,7 @@ ICON_PATH_FILTER_TOOL = f'{PROJECT_DIR}/resources/icons/tools/filter_icon.svg'
 CURSOR_PATH_FILTER_TOOL = f'{PROJECT_DIR}/resources/cursors/filter_cursor.svg'
 FILTER_LABEL = _tr('Filter Brush')
 FILTER_TOOLTIP = _tr('Draw to apply an image filter')
-FILTER_CONTROL_HINT = _tr('{left_mouse_icon}: filter - {right_mouse_icon}: 1px filter')
+FILTER_CONTROL_HINT = _tr('{left_mouse_icon}: filter')
 
 
 class FilterTool(QtPaintBrushTool):
@@ -89,8 +89,7 @@ class FilterTool(QtPaintBrushTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        brush_hint = FILTER_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
-                                                right_mouse_icon=right_button_hint_text())
+        brush_hint = FILTER_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
         return f'{brush_hint}<br/>{BrushTool.brush_control_hints()}<br/>{BrushTool.get_input_hint(self)}'
 
     # noinspection PyMethodMayBeStatic

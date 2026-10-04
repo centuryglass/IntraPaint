@@ -106,6 +106,7 @@ class ImageViewer(ImageGraphicsView):
         self._add_layer_item(image_stack.selection_layer)
         self._add_layer_item(image_stack.layer_stack)
         self._image_generation_area_change_slot(image_stack.generation_area)
+        self._context_pins_change_slot(selection_layer.context_pins)
         self.resizeEvent(None)
 
     def set_generation_area_visible(self, visible: bool) -> None:
