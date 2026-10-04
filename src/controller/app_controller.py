@@ -1393,6 +1393,11 @@ class AppController(MenuBuilder):
         """Contract the selection by a given pixel count, 1 by default."""
         self._image_stack.selection_layer.grow_or_shrink_selection(-num_pixels)
 
+    @menu_action(MENU_SELECTION, 'clear_context_pins_shortcut', 306, valid_app_states=[APP_STATE_EDITING])
+    def clear_context_pins(self) -> None:
+        """Removes all context pins."""
+        self._image_stack.selection_layer.clear_context_pins()
+
     # Layer menu:
     @menu_action(MENU_LAYERS, 'show_layer_menu_shortcut', 399)
     def show_layer_panel(self) -> None:

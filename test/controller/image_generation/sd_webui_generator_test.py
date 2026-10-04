@@ -15,7 +15,7 @@ from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT
 from test.controller.image_generation.fake_sd_backend import image_to_base64_png
 from test.controller.image_generation.sd_generator_test_case import SdGeneratorTestCase, TEST_SEED, \
-    UPSCALE_SIZE, solid_image
+    UPSCALE_SIZE, solid_image, CONTEXT_PIN, GENERATION_SIZE
 
 Endpoints = A1111Webservice.Endpoints
 
@@ -98,6 +98,18 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         Cache().set(Cache.INPAINT_FULL_RES, True)
         self._generate_and_check('inpaint_full_res')
+
+    def test_inpaint_full_res_context_pin(self) -> None:
+        """With a pin stretching the crop, the image and mask are cropped locally and sent with full-res off."""
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
+        Cache().set(Cache.INPAINT_FULL_RES, True)
+        self.image_stack.selection_layer.add_context_pin(CONTEXT_PIN)
+        self._generate_and_check('inpaint_full_res_context_pin')
+        body = self.backend.posts()[0].arguments['body']
+        self.assertFalse(body['inpaint_full_res'])
+        self.assertNotIn('inpaint_full_res_padding', body)
+        for image in self.generated_images.values():
+            self.assertEqual(image.size(), GENERATION_SIZE)
 
     def test_inpaint_controlnet_reusing_generation_area(self) -> None:
         """A ControlNet unit reusing the generation area sends no image of its own when inpainting."""

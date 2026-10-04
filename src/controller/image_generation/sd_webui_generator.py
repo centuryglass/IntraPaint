@@ -4,7 +4,7 @@ import os
 from argparse import Namespace
 from typing import Optional, Any, cast
 
-from PySide6.QtCore import Signal, QSize, QThread, SignalInstance
+from PySide6.QtCore import Signal, QSize, QThread, SignalInstance, QRect
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 from requests import ReadTimeout
@@ -14,6 +14,7 @@ from src.api.controlnet.controlnet_constants import ControlTypeDef
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.api.webservice import WebService
+from src.api.webui.diffusion_request_body import DiffusionRequestBody
 from src.config.a1111_config import A1111Config
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -711,7 +712,23 @@ class SDWebUIGenerator(SDGenerator):
         elif self._image_stack.selection_layer.generation_area_is_empty():
             raise RuntimeError(GENERATE_ERROR_MESSAGE_EMPTY_MASK)
 
-            # Check progress before starting:
+        # The WebUI computes its own inpaint full-res crop from the mask alone, so it can't see context pins. When pins
+        # change the crop, crop on the client and send the crop with inpaint_full_res off.
+        request_body: Optional[DiffusionRequestBody] = None
+        original_source_image: Optional[QImage] = None
+        crop_bounds: Optional[QRect] = None
+        if edit_mode == EDIT_MODE_INPAINT and source_image is not None and mask_image is not None \
+                and self._context_pins_change_inpaint_crop():
+            crop_bounds = self._inpaint_gen_area_crop_bounds()
+            original_source_image = source_image
+            source_image = self._scale_and_crop_gen_qimage(source_image)
+            mask_image = self._scale_and_crop_gen_qimage(mask_image)
+            request_body = DiffusionRequestBody()
+            request_body.load_data(source_image, mask_image)
+            request_body.inpaint_full_res = False
+            request_body.inpaint_full_res_padding = None
+
+        # Check progress before starting:
         assert self._webservice is not None
         try:
             init_data = self._webservice.progress_check()
@@ -722,8 +739,11 @@ class SDWebUIGenerator(SDGenerator):
                 image_response = self._webservice.txt2img(control_image=source_image)
             else:
                 assert source_image is not None
-                image_response = self._webservice.img2img(source_image, mask=mask_image)
+                image_response = self._webservice.img2img(source_image, mask=mask_image, request_body=request_body)
             image_data = image_response['images']
+            if crop_bounds is not None:
+                assert original_source_image is not None
+                image_data = self._restore_cropped_inpainting_images(original_source_image, crop_bounds, image_data)
             info = image_response['info']
             for i, response_image in enumerate(image_data):
                 self._cache_generated_image(response_image, i)

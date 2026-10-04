@@ -9,7 +9,7 @@ import sys
 from argparse import Namespace
 from typing import Any, Optional
 
-from PySide6.QtCore import QRect, QSize, Qt
+from PySide6.QtCore import QPoint, QRect, QSize, Qt
 from PySide6.QtGui import QImage, QPainter, QColor
 from PySide6.QtWidgets import QApplication
 
@@ -33,6 +33,8 @@ FAKE_SERVER_URL = 'http://sd.invalid:7860'
 GENERATION_AREA = QRect(150, 50, 300, 300)
 GENERATION_SIZE = QSize(512, 512)
 SELECTION_BOUNDS = QRect(250, 150, 80, 60)
+# Below and right of the selection, inside the generation area, so it stretches the inpaint full-res crop:
+CONTEXT_PIN = QPoint(420, 320)
 UPSCALE_SIZE = QSize(1200, 800)
 
 LORA_NAME = 'detail_lora'

@@ -445,6 +445,8 @@ class ImageStack(QObject):
             def _resize(bounds=canvas_image_bounds, translate=transform):
                 self.size = bounds.size()
                 self.selection_layer.set_transform(self.selection_layer.transform * translate)
+                moved_pins = [translate.map(pin) for pin in self.selection_layer.context_pins]
+                self.selection_layer.set_context_pins([pin for pin in moved_pins if bounds.contains(pin)], False)
                 deleted_layer_names = []
                 mapped_bounds = self.selection_layer.map_rect_from_image(bounds)
                 self.selection_layer.adjust_local_bounds(mapped_bounds, False)
@@ -1382,6 +1384,7 @@ class ImageStack(QObject):
         @self._with_batch_content_update
         def _load(loaded=layer_stack, size=new_size, next_active_id=new_active_id):
             self.selection_layer.clear(False)
+            self.selection_layer.clear_context_pins(False)
             self.selection_layer.adjust_local_bounds(QRect(QPoint(), size), False)
             self.selection_layer.set_transform(QTransform())
             assert self.selection_layer.transformed_bounds.size() == new_size
@@ -1439,6 +1442,7 @@ class ImageStack(QObject):
         @self._with_batch_content_update
         def _load(loaded=new_layer, gen_rect=new_gen_area, size=new_size):
             self.selection_layer.clear(False)
+            self.selection_layer.clear_context_pins(False)
             self.selection_layer.adjust_local_bounds(QRect(QPoint(), size), False)
             self.selection_layer.set_transform(QTransform())
             assert self.selection_layer.transformed_bounds.size() == new_size

@@ -194,6 +194,7 @@ class KeyConfig(Config, metaclass=Singleton):
     BRUSH_SIZE_DECREASE: str
     BRUSH_SIZE_INCREASE: str
     BRUSH_TOOL_KEY: str
+    CLEAR_CONTEXT_PINS_SHORTCUT: str
     CLEAR_SHORTCUT: str
     CLONE_STAMP_TOOL_KEY: str
     COLOR_BALANCE_SHORTCUT: str

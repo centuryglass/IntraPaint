@@ -322,6 +322,14 @@
         },
         "saved": true
     },
+    "clear_context_pins_after_generating": {
+        "label": "Clear context pins after generating",
+        "category": "Stable Diffusion",
+        "description": "Remove all context pins when a generated image is applied to the image.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
     "glid_model_path": {
         "label": "GLID-3-XL model path:",
         "category": "GLID-3-XL",

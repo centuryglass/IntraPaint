@@ -18,7 +18,7 @@ from src.controller.image_generation.sd_comfyui_generator import SDComfyUIGenera
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT
 from test.controller.image_generation.fake_sd_backend import FakeResponse, image_to_png_bytes
 from test.controller.image_generation.sd_generator_test_case import SdGeneratorTestCase, TEST_SEED, UPSCALE_SIZE, \
-    solid_image
+    solid_image, CONTEXT_PIN
 
 CANNY_PREPROCESSOR = 'CannyEdgePreprocessor'
 TILE_PREPROCESSOR = 'TilePreprocessor'
@@ -181,6 +181,13 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         Cache().set(Cache.INPAINT_FULL_RES, True)
         self._generate_and_check('inpaint_full_res')
+
+    def test_inpaint_full_res_context_pin(self) -> None:
+        """A context pin stretches the uploaded full-res crop past the selection bounds."""
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
+        Cache().set(Cache.INPAINT_FULL_RES, True)
+        self.image_stack.selection_layer.add_context_pin(CONTEXT_PIN)
+        self._generate_and_check('inpaint_full_res_context_pin')
 
     def test_inpaint_controlnet_reusing_generation_area(self) -> None:
         """A ControlNet unit reusing the generation area uses the uploaded inpainting image."""

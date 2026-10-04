@@ -674,6 +674,15 @@
         "default": "Ctrl+-",
         "saved": true
     },
+    "clear_context_pins_shortcut": {
+        "label": "Clear context pins",
+        "category": "Menu Shortcuts",
+        "subcategory": "Selection Menu",
+        "description": "Remove all context pins",
+        "type": "string",
+        "default": "Ctrl+Alt+P",
+        "saved": true
+    },
     "show_layer_menu_shortcut": {
         "label": "Show layer window",
         "category": "Menu Shortcuts",

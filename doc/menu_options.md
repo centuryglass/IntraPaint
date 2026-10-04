@@ -42,6 +42,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Select layer content](#select-layer-content-ctrlshifta)
    - [Expand selection](#expand-selection-ctrl)
    - [Shrink selection](#shrink-selection-ctrl-)
+   - [Clear context pins](#clear-context-pins-ctrlaltp)
 5. [Layers menu](#layers-menu)
    - [Show layer window](#show-layer-window-f7)
       * [Layer window](#layer-window)
@@ -347,6 +348,9 @@ Expands all selected areas in all directions by one pixel.
 
 ### Shrink selection (Ctrl+-)
 Shrinks all selected areas by one pixel.
+
+### Clear context pins (Ctrl+Alt+P)
+Removes every context pin. Context pins are added and removed by right-clicking with the [selection brush](./tool_guide.md#-selection-brush-tool-s), and stretch the "Inpaint Full Resolution" crop without being inpainted. Clearing the selection leaves them in place. To remove pins automatically whenever you apply a generated image, enable **"Clear context pins after generating"** in [settings](#settings-f9) under the **"Stable Diffusion"** category.
 
 ---
 

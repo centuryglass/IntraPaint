@@ -7,6 +7,7 @@ from PySide6.QtCore import QPoint, QRect, QSize, Signal, QTimer, QObject, Signal
 from PySide6.QtGui import QImage, QPainter
 from PySide6.QtWidgets import QApplication
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
@@ -252,6 +253,8 @@ class ImageGenerator(MenuBuilder):
                 painter.end()
             layer = self._image_stack.active_layer
             self._image_stack.set_generation_area_content(image, layer)
+            if AppConfig().get(AppConfig.CLEAR_CONTEXT_PINS_AFTER_GENERATING):
+                self._image_stack.selection_layer.clear_context_pins()
             AppStateTracker.set_app_state(APP_STATE_EDITING)
 
     def _load_generated_image_for_selection(self, index: int) -> None:

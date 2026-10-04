@@ -5,8 +5,8 @@ from argparse import Namespace
 from json import JSONDecodeError
 from typing import Optional, cast, Any
 
-from PySide6.QtCore import Signal, QSize, SignalInstance
-from PySide6.QtGui import QImage, QIcon
+from PySide6.QtCore import Signal, QSize, SignalInstance, QRect, QPoint
+from PySide6.QtGui import QImage, QIcon, QPainter, QTransform
 from PySide6.QtWidgets import QInputDialog, QApplication
 
 from src.api.a1111_webservice import AuthError
@@ -31,9 +31,11 @@ from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_S
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
 from src.util.parameter import TYPE_LIST, TYPE_STR, TYPE_FLOAT, TYPE_DICT
-from src.util.shared_constants import PROJECT_DIR, \
+from src.util.shared_constants import PROJECT_DIR, EDIT_MODE_INPAINT, \
     URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, \
     URL_REQUEST_TITLE, PIL_SCALING_MODES, UPSCALED_LAYER_NAME, UPSCALE_ERROR_TITLE, UPSCALE_OPTION_NONE
+from src.util.visual.geometry_utils import map_rect_precise
+from src.util.visual.pil_image_utils import pil_image_scaling
 
 logger = logging.getLogger(__name__)
 
@@ -324,6 +326,72 @@ class SDGenerator(ImageGenerator):
         if init_mask is not None:
             return init_mask
         return self._image_stack.selection_layer.mask_image
+
+    def _inpaint_gen_area_crop_bounds(self, scale_to_generation_size=True) -> QRect:
+        """Returns the inpaint full-res crop within the generation area, or the whole area when nothing is cropped.
+
+        The crop is relative to the generation area's top left, scaled to Cache.GENERATION_SIZE when
+        scale_to_generation_size is true.
+        """
+        cache = Cache()
+        edit_mode = cache.get(Cache.EDIT_MODE)
+        gen_area = self._image_stack.generation_area
+        if scale_to_generation_size:
+            image_size = cache.get(Cache.GENERATION_SIZE)
+        else:
+            image_size = gen_area.size()
+        if edit_mode != EDIT_MODE_INPAINT or not cache.get(Cache.INPAINT_FULL_RES):
+            return QRect(QPoint(), image_size)
+
+        selection_layer = self._image_stack.selection_layer
+        selection_gen_area = selection_layer.get_selection_gen_area()
+        if selection_gen_area is None or selection_gen_area.size() == gen_area.size():
+            return QRect(QPoint(), image_size)
+        bounds = selection_gen_area.translated(-gen_area.topLeft())
+        if scale_to_generation_size and image_size != gen_area.size():
+            transform = QTransform.fromScale(image_size.width()/gen_area.width(), image_size.height()/gen_area.height())
+            bounds = map_rect_precise(bounds, transform).toAlignedRect()
+        return bounds
+
+    def _scale_and_crop_gen_qimage(self, image: QImage) -> QImage:
+        """Crops a generation area image (at area size or generation size) to the inpaint crop, then scales it to
+        Cache.GENERATION_SIZE."""
+        gen_area = self._image_stack.generation_area
+        crop_bounds = self._inpaint_gen_area_crop_bounds(gen_area.size() != image.size())
+        if crop_bounds.size() != image.size():
+            image = image.copy(crop_bounds)
+        gen_size = Cache().get(Cache.GENERATION_SIZE)
+        if image.size() != gen_size:
+            return pil_image_scaling(image, gen_size)
+        return image
+
+    def _restore_cropped_inpainting_images(self, initial_image: QImage, crop_bounds: QRect,
+                                           cropped_images: list[QImage]) -> list[QImage]:
+        """Scales generated crops back to crop_bounds and draws each into a copy of initial_image."""
+        assert QRect(QPoint(), initial_image.size()).contains(crop_bounds), (f'{crop_bounds} not in '
+                                                                             f'{initial_image.size()}')
+        gen_area = self._image_stack.generation_area
+        if gen_area.size() == crop_bounds.size():
+            return cropped_images
+        restored_images: list[QImage] = []
+        for cropped_image in cropped_images:
+            if cropped_image.size() != crop_bounds.size():
+                cropped_image = pil_image_scaling(cropped_image, crop_bounds.size())
+            final_image = initial_image.copy()
+            painter = QPainter(final_image)
+            painter.drawImage(crop_bounds, cropped_image)
+            painter.end()
+            restored_images.append(final_image)
+        return restored_images
+
+    def _context_pins_change_inpaint_crop(self) -> bool:
+        """Returns whether context pins change the inpaint full-res crop of the current inpainting settings."""
+        cache = Cache()
+        if cache.get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT or not cache.get(Cache.INPAINT_FULL_RES):
+            return False
+        selection_layer = self._image_stack.selection_layer
+        return selection_layer.get_selection_gen_area() \
+            != selection_layer.get_selection_gen_area(include_context_pins=False)
 
     def connect_to_url(self, url: str) -> bool:
         """Attempt to connect to a specific URL, returning whether the connection succeeded."""

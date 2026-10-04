@@ -15,6 +15,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.graphics_items.border import Border
+from src.ui.graphics_items.context_pin_item import ContextPinItem
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.selection_outline import SelectionOutline
@@ -65,6 +66,8 @@ class ImageViewer(ImageGraphicsView):
         self._generation_area_selection_outline.setOpacity(GENERATION_AREA_BORDER_OPACITY)
         selection_layer = image_stack.selection_layer
         selection_layer.content_changed.connect(self._selection_content_change_slot)
+        self._context_pin_items: list[ContextPinItem] = []
+        selection_layer.context_pins_changed.connect(self._context_pins_change_slot)
         Cache().connect(self, Cache.INPAINT_FULL_RES, self._selection_content_change_slot)
         Cache().connect(self, Cache.INPAINT_FULL_RES_PADDING, self._selection_content_change_slot)
 
@@ -247,6 +250,20 @@ class ImageViewer(ImageGraphicsView):
             self._generation_area_selection_outline.setVisible(False)
         self._selection_poly_outline.setZValue(2)
         self._selection_poly_outline.load_polygons(selection_layer.outline)
+
+    def _context_pins_change_slot(self, _pins: list[QPoint]) -> None:
+        """Replace the pin markers, and sync the 'inpaint masked only' bounds that pins stretch."""
+        scene = self.scene()
+        assert scene is not None
+        for pin_item in self._context_pin_items:
+            scene.removeItem(pin_item)
+        self._context_pin_items.clear()
+        for pin in self._image_stack.selection_layer.context_pins:
+            pin_item = ContextPinItem(pin)
+            pin_item.setZValue(self._generation_area_outline.zValue() + 1)
+            scene.addItem(pin_item)
+            self._context_pin_items.append(pin_item)
+        self._selection_content_change_slot()
 
     def _image_size_changed_slot(self, new_size: QSize) -> None:
         """Update bounds and background when the image size changes."""
