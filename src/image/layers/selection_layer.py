@@ -142,6 +142,20 @@ class SelectionLayer(ImageLayer):
                                   lambda: self._apply_context_pins(last_pins),
                                   'SelectionLayer.set_context_pins')
 
+    def record_context_pin_change(self, previous_pins: list[QPoint]) -> None:
+        """Adds one undo step from previous_pins to the current pins, which are already applied.
+
+        Used after a series of `set_context_pins(..., False)` calls, such as a pin drag, so the whole series undoes
+        at once. Does nothing if the pins match previous_pins.
+        """
+        current_pins = self.context_pins
+        if current_pins == previous_pins:
+            return
+        last_pins = [QPoint(pin) for pin in previous_pins]
+        UndoStack().commit_action(lambda: self._apply_context_pins(current_pins),
+                                  lambda: self._apply_context_pins(last_pins),
+                                  'SelectionLayer.set_context_pins', skip_initial_call=True)
+
     def add_context_pin(self, pin: QPoint) -> None:
         """Adds a context pin at an image coordinate, as an undoable action."""
         self.set_context_pins([*self._context_pins, pin])

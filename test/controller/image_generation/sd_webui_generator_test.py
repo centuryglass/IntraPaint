@@ -4,6 +4,7 @@ See sd_generator_test_case.py for how the snapshots work.
 """
 import json
 from typing import Any
+from unittest.mock import MagicMock
 
 from PySide6.QtCore import QSize, Qt
 
@@ -116,6 +117,27 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         self._set_canny_controlnet_unit()
         self._generate_and_check('inpaint_controlnet')
+
+    def test_connect_enables_inpaint_options(self) -> None:
+        """Connecting enables the inpainting crop and padding controls, and disconnecting disables them again."""
+        generator = self.generator
+        assert isinstance(generator, SDWebUIGenerator)
+        # Stub the backend queries, which have their own request snapshots, to test the shared connection logic:
+        stubbed_results: dict[str, Any] = {'is_available': True, 'get_diffusion_sampler_names': [],
+                                           'get_upscale_method_names': [], 'get_diffusion_model_names': [],
+                                           'get_lora_model_info': [], 'cache_generator_specific_data': None,
+                                           'get_controlnet_models': [], 'get_controlnet_preprocessors': [],
+                                           'get_controlnet_types': {}, 'get_controlnet_unit_cache_keys': [],
+                                           'ultimate_upscale_script_available': False, 'clear_menus': None}
+        for name, result in stubbed_results.items():
+            setattr(generator, name, lambda *_args, value=result: value)
+        generator._window = MagicMock()  # pylint: disable=protected-access
+        Cache().set(Cache.INPAINT_OPTIONS_AVAILABLE, False)
+
+        self.assertTrue(generator.configure_or_connect())
+        self.assertTrue(Cache().get(Cache.INPAINT_OPTIONS_AVAILABLE))
+        generator.disconnect_or_disable()
+        self.assertFalse(Cache().get(Cache.INPAINT_OPTIONS_AVAILABLE))
 
     def test_upscale_basic(self) -> None:
         """Upscaling without Stable Diffusion sends the whole image to the extras endpoint."""

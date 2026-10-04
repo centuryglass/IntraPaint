@@ -5,7 +5,7 @@ import math
 from typing import Optional
 
 from PySide6.QtCore import Qt, QRect, QRectF, QSize, QPoint, QPointF
-from PySide6.QtGui import QPainter, QColor, QTransform
+from PySide6.QtGui import QPainter, QColor, QTransform, QResizeEvent
 from PySide6.QtWidgets import QWidget, QSizePolicy
 
 from src.config.application_config import AppConfig
@@ -15,7 +15,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.graphics_items.border import Border
-from src.ui.graphics_items.context_pin_item import ContextPinItem
+from src.ui.graphics_items.context_pin_item import ContextPinItem, marker_size_for_view, DEFAULT_MARKER_SIZE
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.selection_outline import SelectionOutline
@@ -67,6 +67,7 @@ class ImageViewer(ImageGraphicsView):
         selection_layer = image_stack.selection_layer
         selection_layer.content_changed.connect(self._selection_content_change_slot)
         self._context_pin_items: list[ContextPinItem] = []
+        self._context_pin_marker_size = DEFAULT_MARKER_SIZE
         selection_layer.context_pins_changed.connect(self._context_pins_change_slot)
         Cache().connect(self, Cache.INPAINT_FULL_RES, self._selection_content_change_slot)
         Cache().connect(self, Cache.INPAINT_FULL_RES_PADDING, self._selection_content_change_slot)
@@ -260,11 +261,25 @@ class ImageViewer(ImageGraphicsView):
             scene.removeItem(pin_item)
         self._context_pin_items.clear()
         for pin in self._image_stack.selection_layer.context_pins:
-            pin_item = ContextPinItem(pin)
+            pin_item = ContextPinItem(pin, self._context_pin_marker_size)
             pin_item.setZValue(self._generation_area_outline.zValue() + 1)
             scene.addItem(pin_item)
             self._context_pin_items.append(pin_item)
         self._selection_content_change_slot()
+
+    @property
+    def context_pin_marker_size(self) -> int:
+        """Returns the screen size of this view's context pin markers, which scales with the view size."""
+        return self._context_pin_marker_size
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+        """Rescale context pin markers to match the new view size."""
+        super().resizeEvent(event)
+        if not hasattr(self, '_context_pin_items'):
+            return  # Called by ImageGraphicsView before ImageViewer finishes initializing.
+        self._context_pin_marker_size = marker_size_for_view(self.size())
+        for pin_item in self._context_pin_items:
+            pin_item.marker_size = self._context_pin_marker_size
 
     def _image_size_changed_slot(self, new_size: QSize) -> None:
         """Update bounds and background when the image size changes."""

@@ -93,9 +93,9 @@ Manual mode, where it's already the user's own value.
 ### 2.2 Context pins
 
 Replace the 1px trick. With the selection brush:
-- **Right-click without dragging** drops a context pin. **Right-clicking an existing pin removes it.**
-- **Right-drag** does nothing. The 1px right-button stroke is removed from every brush tool, since pins
-  replace its only use.
+- **Right-click** drops a context pin. **Right-clicking an existing pin removes it.**
+- **Right-drag** drags a new pin into place, or moves an existing one. The 1px right-button stroke is
+  removed from every brush tool, since pins replace its only use.
 
 A pin stretches the full-res crop to include its point, exactly like the 1px dot did, but nothing under it
 gets inpainted. Pins are drawn as push-pin markers (`resources/icons/context_pin.svg`) on the canvas and in
@@ -191,9 +191,10 @@ define new options in `resources/config/*.json`.
   signal, and add/remove/clear methods recorded on `UndoStack`. `get_selection_gen_area()` unions pins
   into the bounds before padding. Watch the layer offset: the method mixes `_bounding_box` with
   `selection_layer.position` (see `sd_comfyui_generator.py:523`), so convert pins consistently.
-- **Tool:** in `SelectionBrushTool`, a right-click released within a few screen pixels of the press
-  toggles a pin: it removes the pin whose drawn marker is under the click, otherwise adds one. A longer
-  right-drag does nothing. Update the tool's hint text.
+- **Tool:** in `SelectionBrushTool`, a right-button press on a pin's drawn marker grabs that pin;
+  anywhere else it adds a pin and grabs it. The grabbed pin follows the pointer, and disappears while
+  it's outside the image. Releasing outside the image deletes it, and releasing a grabbed existing pin
+  within a few screen pixels of the press deletes it too. The whole drag is one undo step.
 - **Drawing:** a push-pin graphics item per pin in `ImageViewer`, so it shows in the main view and
   the navigation panel (`NavigationWindow` is an `ImagePanel`). Refresh `_generation_area_selection_outline`
   on `context_pins_changed`, the same way it refreshes on selection changes (`image_viewer.py:195-210`).

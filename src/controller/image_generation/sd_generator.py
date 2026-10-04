@@ -516,6 +516,9 @@ class SDGenerator(ImageGenerator):
                     upscale_tile_control_unit.preprocessor = tile_preprocessors[0]
                     cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS, upscale_tile_control_unit.serialize())
 
+            # Enable inpainting cropping and padding:
+            cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, True)
+
             assert self._window is not None
             self._window.cancel_generation.connect(self.cancel_generation)
             self._connected = True

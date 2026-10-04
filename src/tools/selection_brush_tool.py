@@ -1,4 +1,6 @@
 """Selects image content for image generation or editing."""
+from dataclasses import dataclass
+from enum import Enum
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QPointF
@@ -29,15 +31,39 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 LABEL_TEXT_SELECTION_TOOL = _tr('Selection Brush')
 TOOLTIP_SELECTION_TOOL = _tr('Draw to select areas for editing or inpainting.')
-CONTROL_HINT_SELECTION_TOOL = _tr('{left_mouse_icon}: select - {right_mouse_icon}: add/remove context pin')
+CONTROL_HINT_SELECTION_TOOL = _tr('{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin')
 
 ICON_PATH_SELECTION_TOOL = f'{PROJECT_DIR}/resources/icons/tools/selection_icon.svg'
 CURSOR_PATH_SELECTION_TOOL = f'{PROJECT_DIR}/resources/cursors/selection_cursor.svg'
 
-# Screen distance a right-button press can move and still toggle a context pin on release:
+# Screen distance a right-button drag must move before releasing it keeps a grabbed pin instead of removing it:
 PIN_DRAG_THRESHOLD_PX = 4
 # Extra screen distance around a drawn pin marker where a right-click still removes that pin:
 PIN_HIT_MARGIN_PX = 2
+
+
+class PinDragState(Enum):
+    """What a right-button drag with the selection brush is moving."""
+    DRAGGING_EXISTING = 'existing'
+    DRAGGING_NEW = 'new'
+
+
+@dataclass
+class _PinDrag:
+    """An in-progress right-button context pin drag."""
+    state: PinDragState
+    initial_pins: list[QPoint]  # All pins before the drag, used for its undo step.
+    initial_pin: QPoint  # The grabbed pin, or the pin the drag added.
+    grab_offset: QPoint  # Offset from the pointer's pixel to the dragged pin's pixel.
+    press_position: QPointF  # Press position in viewer widget coordinates.
+    pin: Optional[QPoint] = None  # Current dragged pin position, or None while it's outside the image.
+    moved: bool = False  # Whether the pointer has moved PIN_DRAG_THRESHOLD_PX from the press position.
+
+    def other_pins(self) -> list[QPoint]:
+        """Returns the pins from before the drag, minus the grabbed pin."""
+        if self.state == PinDragState.DRAGGING_EXISTING:
+            return [pin for pin in self.initial_pins if pin != self.initial_pin]
+        return list(self.initial_pins)
 
 
 class SelectionBrushTool(BrushTool):
@@ -52,7 +78,7 @@ class SelectionBrushTool(BrushTool):
         self._control_panel.tool_mode_changed.connect(self._tool_toggle_slot)
         self._active = False
         self._drawing = False
-        self._pin_press: Optional[tuple[QPoint, QPointF]] = None
+        self._pin_drag: Optional[_PinDrag] = None
         self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_SELECTION_TOOL))
 
         # Setup brush, load size from config
@@ -93,37 +119,81 @@ class SelectionBrushTool(BrushTool):
         Cache().set(Cache.SELECTION_BRUSH_SIZE, max(1, new_size))
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Starts a selection stroke on left-click, or a possible context pin toggle on right-click."""
-        self._pin_press = None
+        """Starts a selection stroke on left-click, or a context pin drag on right-click.
+
+        Right-clicking a pin's marker grabs that pin. Right-clicking anywhere else adds a pin there and grabs it.
+        """
         if event is None or event.buttons() != Qt.MouseButton.RightButton:
             return super().mouse_click(event, image_coordinates)
+        if self._pin_drag is not None:
+            self._finish_pin_drag(False)
         if not self._image_stack.has_image or KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True):
             return False
-        self._pin_press = (QPoint(image_coordinates), QPointF(event.position()))
+        selection_layer = self._image_stack.selection_layer
+        press_position = QPointF(event.position())
+        grabbed_pin = self._context_pin_at(press_position)
+        if grabbed_pin is not None:
+            self._pin_drag = _PinDrag(PinDragState.DRAGGING_EXISTING, selection_layer.context_pins, grabbed_pin,
+                                      grabbed_pin - image_coordinates, press_position)
+        elif self._image_stack.bounds.contains(image_coordinates):
+            self._pin_drag = _PinDrag(PinDragState.DRAGGING_NEW, selection_layer.context_pins, image_coordinates,
+                                      QPoint(), press_position)
+        else:
+            return False
+        self._update_dragged_pin(image_coordinates)
         return True
 
     def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Cancels a pending context pin toggle once the pointer moves too far from the right-click."""
-        if self._pin_press is not None and event is not None:
-            offset = event.position() - self._pin_press[1]
-            if max(abs(offset.x()), abs(offset.y())) >= PIN_DRAG_THRESHOLD_PX:
-                self._pin_press = None
-            return True
-        return super().mouse_move(event, image_coordinates)
+        """Moves a dragged context pin with the pointer, hiding it while it's outside the image."""
+        if self._pin_drag is None or event is None:
+            return super().mouse_move(event, image_coordinates)
+        if not event.buttons() & Qt.MouseButton.RightButton:
+            # The release was missed, such as when it happened outside the window, so finish the drag here:
+            self._finish_pin_drag(self._image_stack.bounds.contains(image_coordinates + self._pin_drag.grab_offset))
+            return super().mouse_move(event, image_coordinates)
+        offset = event.position() - self._pin_drag.press_position
+        if max(abs(offset.x()), abs(offset.y())) >= PIN_DRAG_THRESHOLD_PX:
+            self._pin_drag.moved = True
+        self._update_dragged_pin(image_coordinates)
+        return True
 
     def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Toggles a context pin when a right-click is released without moving."""
-        if self._pin_press is not None:
-            press_point, press_position = self._pin_press
-            self._pin_press = None
-            self._toggle_context_pin(press_point, press_position)
-            return True
-        return super().mouse_release(event, image_coordinates)
+        """Drops a dragged context pin, or removes a grabbed pin that was clicked without moving."""
+        if self._pin_drag is None:
+            return super().mouse_release(event, image_coordinates)
+        self._update_dragged_pin(image_coordinates)
+        self._finish_pin_drag(True)
+        return True
+
+    def _update_dragged_pin(self, image_coordinates: QPoint) -> None:
+        """Moves the dragged pin to follow the pointer, or removes it while the pointer is outside the image."""
+        assert self._pin_drag is not None
+        pin_drag = self._pin_drag
+        position = image_coordinates + pin_drag.grab_offset
+        pin_drag.pin = position if self._image_stack.bounds.contains(position) else None
+        other_pins = pin_drag.other_pins()
+        self._image_stack.selection_layer.set_context_pins(
+            other_pins if pin_drag.pin is None else [*other_pins, pin_drag.pin], False)
+
+    def _finish_pin_drag(self, keep_dropped_pin: bool) -> None:
+        """Ends a pin drag, recording its whole change as one undo step.
+
+        The dragged pin is removed if keep_dropped_pin is false, if it was outside the image, or if an existing pin
+        was clicked without moving.
+        """
+        assert self._pin_drag is not None
+        pin_drag = self._pin_drag
+        self._pin_drag = None
+        selection_layer = self._image_stack.selection_layer
+        clicked_existing = pin_drag.state == PinDragState.DRAGGING_EXISTING and not pin_drag.moved
+        if not keep_dropped_pin or clicked_existing or pin_drag.pin is None:
+            selection_layer.set_context_pins(pin_drag.other_pins(), False)
+        selection_layer.record_context_pin_change(pin_drag.initial_pins)
 
     def _context_pin_at(self, widget_point: QPointF) -> Optional[QPoint]:
         """Returns the context pin whose drawn marker is under a point in the image viewer, preferring the closest."""
-        marker_bounds = marker_screen_bounds().adjusted(-PIN_HIT_MARGIN_PX, -PIN_HIT_MARGIN_PX,
-                                                        PIN_HIT_MARGIN_PX, PIN_HIT_MARGIN_PX)
+        marker_bounds = marker_screen_bounds(self._image_viewer.context_pin_marker_size).adjusted(
+            -PIN_HIT_MARGIN_PX, -PIN_HIT_MARGIN_PX, PIN_HIT_MARGIN_PX, PIN_HIT_MARGIN_PX)
         closest: Optional[QPoint] = None
         closest_distance = 0.0
         for pin in self._image_stack.selection_layer.context_pins:
@@ -136,15 +206,7 @@ class SelectionBrushTool(BrushTool):
                 closest_distance = distance
         return closest
 
-    def _toggle_context_pin(self, image_point: QPoint, widget_point: QPointF) -> None:
-        """Removes the context pin drawn under a click, or adds a pin at the clicked pixel."""
-        selection_layer = self._image_stack.selection_layer
-        clicked_pin = self._context_pin_at(widget_point)
-        if clicked_pin is not None:
-            selection_layer.remove_context_pin(clicked_pin)
-        elif self._image_stack.bounds.contains(image_point):
-            selection_layer.add_context_pin(image_point)
-
     def _on_deactivate(self) -> None:
-        self._pin_press = None
+        if self._pin_drag is not None:
+            self._finish_pin_drag(True)
         super()._on_deactivate()
