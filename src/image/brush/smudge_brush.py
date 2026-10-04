@@ -239,7 +239,7 @@ class SmudgeBrush(LayerBrush):
                 step_count = max(abs(dx), abs(dy))
                 x_step = dx / step_count
                 y_step = dy / step_count
-                for i in range(1, step_count):
+                for i in range(1, step_count + 1):
                     self._input_buffer.append(_SmudgePoint(round(x0 + x_step * i), round(y0 + y_step * i), size,
                                                            opacity, hardness))
         self._last_point = QPointF(x, y)
