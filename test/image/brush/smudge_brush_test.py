@@ -75,10 +75,12 @@ class SmudgeBrushTest(IntraPaintTestCase):
         return self.layer.image
 
     def test_default_settings_horizontal_stroke(self) -> None:
+        """A hard, half-opacity, antialiased brush on a horizontal stroke."""
         image = self.stroke(line_points(QPoint(20, 40), QPoint(170, 40), 10))
         self.assert_image_matches_golden(image, f'{GOLDEN_DIR}/horizontal_default.png')
 
     def test_soft_aliased_diagonal_stroke(self) -> None:
+        """A soft, fully opaque brush without antialiasing on a diagonal stroke."""
         self.brush.brush_size = 30
         self.brush.opacity = 1.0
         self.brush.hardness = 0.25
@@ -87,6 +89,7 @@ class SmudgeBrushTest(IntraPaintTestCase):
         self.assert_image_matches_golden(image, f'{GOLDEN_DIR}/diagonal_soft_aliased.png')
 
     def test_single_pixel_steps(self) -> None:
+        """Input points one pixel apart, which skip interpolation."""
         self.brush.brush_size = 16
         self.brush.opacity = 0.8
         self.brush.hardness = 0.6
@@ -97,6 +100,7 @@ class SmudgeBrushTest(IntraPaintTestCase):
         self.assert_image_matches_golden(image, f'{GOLDEN_DIR}/single_pixel_steps.png')
 
     def test_pressure_controls_size_opacity_and_hardness(self) -> None:
+        """Rising pressure scales size, opacity and hardness along the stroke."""
         self.brush.brush_size = 40
         self.brush.opacity = 1.0
         self.brush.hardness = 1.0
@@ -108,6 +112,7 @@ class SmudgeBrushTest(IntraPaintTestCase):
         self.assert_image_matches_golden(image, f'{GOLDEN_DIR}/pressure.png')
 
     def test_input_mask_restricts_changes(self) -> None:
+        """Changes stay inside the input mask."""
         initial_image = self.layer.image
         mask = create_transparent_image(LAYER_SIZE)
         selected = QRect(40, 20, 80, 50)
@@ -124,6 +129,7 @@ class SmudgeBrushTest(IntraPaintTestCase):
         self.assertFalse(np.any(changed), 'smudge changed pixels outside the input mask')
 
     def test_stroke_crossing_layer_edges(self) -> None:
+        """A stroke that leaves the layer and comes back, sampling partly outside it."""
         self.brush.brush_size = 36
         self.brush.opacity = 0.9
         points = (line_points(QPoint(60, 64), QPoint(-20, 64), 5)
@@ -166,10 +172,12 @@ class SmudgeBrushTest(IntraPaintTestCase):
         self.assert_images_equal(self.layer.image, expected_image)
 
     def test_click_without_movement_changes_nothing(self) -> None:
+        """A single point samples the layer but draws nothing."""
         image = self.stroke([(50, 50)])
         self.assert_images_equal(image, smudge_test_pattern())
 
     def test_undo_restores_layer(self) -> None:
+        """A stroke is one undo step, and undoing it restores the layer."""
         UndoStack().clear()
         image = self.stroke(line_points(QPoint(20, 40), QPoint(170, 40), 10))
         self.assertNotEqual(image, smudge_test_pattern())

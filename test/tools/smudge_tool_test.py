@@ -22,6 +22,7 @@ class SmudgeToolTest(ToolTestCase):
         self.activate_tool(self.smudge_tool)
 
     def test_cache_settings_reach_brush(self) -> None:
+        """Smudge settings in the cache are applied to the brush."""
         cache = Cache()
         cache.set(Cache.SMUDGE_TOOL_BRUSH_SIZE, 33)
         cache.set(Cache.SMUDGE_TOOL_OPACITY, 0.35)
@@ -34,6 +35,7 @@ class SmudgeToolTest(ToolTestCase):
         self.assertFalse(brush.antialiasing)
 
     def test_drag_smudges_layer_as_one_undo_step(self) -> None:
+        """A mouse drag smudges the active layer, and undoing it restores the layer."""
         Cache().set(Cache.SMUDGE_TOOL_BRUSH_SIZE, 40)
         initial_image = self.layer.image
         UndoStack().clear()
