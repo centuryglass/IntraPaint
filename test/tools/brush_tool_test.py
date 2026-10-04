@@ -1,6 +1,6 @@
 import unittest
 
-from PySide6.QtCore import QPoint
+from PySide6.QtCore import QPoint, Qt
 
 from src.tools.mypaint_brush_tool import MyPaintBrushTool
 from src.undo_stack import UndoStack
@@ -92,6 +92,19 @@ class BrushToolTest(ToolTestCase):
         self.assertIsNone(self.brush_tool._layer)
         self.image_stack.active_layer = layer2
         self.assertEqual(layer2, self.brush_tool._layer)
+
+    def test_right_drag_does_not_draw(self) -> None:
+        """The right mouse button doesn't draw, and leaves the brush size unchanged."""
+        layer = self.image_stack.create_layer()
+        self.image_stack.active_layer = layer
+        self.activate_tool(self.brush_tool)
+        self.brush_tool.brush_size = 20
+        initial_image = layer.image
+        UndoStack().clear()
+        self.mouse_drag([QPoint(50, 50), QPoint(100, 100), QPoint(150, 150)], Qt.MouseButton.RightButton)
+        self.assertEqual(layer.image, initial_image)
+        self.assertEqual(UndoStack().undo_count(), 0)
+        self.assertEqual(self.brush_tool.brush_size, 20)
 
 
 if __name__ == '__main__':

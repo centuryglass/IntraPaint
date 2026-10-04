@@ -74,6 +74,7 @@ class AppConfig(Config, metaclass=Singleton):
     ANIMATE_SELECTION_OUTLINE: str
     BERT_MODEL_PATH: str
     BRUSH_FAVORITES: str
+    CLEAR_CONTEXT_PINS_AFTER_GENERATING: str
     CLIP_MODEL_NAME: str
     DEFAULT_IMAGE_SIZE: str
     FONT_POINT_SIZE: str

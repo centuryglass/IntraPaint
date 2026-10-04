@@ -1,6 +1,6 @@
 """A layer used to mark masked regions for inpainting."""
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 import cv2
 import numpy as np
@@ -11,7 +11,8 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.image.layers.image_layer import ImageLayer
+from src.image.layers.image_layer import ImageLayer, ImageLayerState
+from src.undo_stack import UndoStack
 from src.util.visual.image_utils import (image_content_bounds, NpAnyArray, image_data_as_numpy_8bit,
                                          image_is_fully_transparent)
 from src.util.visual.pil_image_utils import qimage_to_pil_image
@@ -48,9 +49,14 @@ class SelectionLayer(ImageLayer):
     - The selection layer cannot be deleted or moved.
     - The selection layer can't be set as the active layer.
     - Contents are not saved.
+
+    The layer also holds context pins: image-space points that stretch the inpainting crop from
+    `get_selection_gen_area` without being inpainted themselves. Pins are part of the saved layer state, so undoing a
+    layer state change restores them, but they are never written to image files.
     """
 
     selection_cleared = Signal()
+    context_pins_changed = Signal(list)
 
     def __init__(self, size: QSize, generation_window_signal: SignalInstance) -> None:
         """
@@ -58,6 +64,7 @@ class SelectionLayer(ImageLayer):
         """
         self._outline_polygons: list[QPolygonF] = []
         self._generation_area = QRect()
+        self._context_pins: list[QPoint] = []
         super().__init__(size, SELECTION_LAYER_NAME)
         self._bounding_box: Optional[QRect] = None
         self._content_bounds: Optional[QRect] = None
@@ -113,6 +120,69 @@ class SelectionLayer(ImageLayer):
             self._bounding_box = None
         else:
             self._bounding_box = bounds
+
+    @property
+    def context_pins(self) -> list[QPoint]:
+        """Returns a copy of the context pin list, in image coordinates."""
+        return [QPoint(pin) for pin in self._context_pins]
+
+    def set_context_pins(self, pins: list[QPoint], save_to_undo_history: bool = True) -> None:
+        """Replaces all context pins, dropping duplicates."""
+        new_pins: list[QPoint] = []
+        for pin in pins:
+            if pin not in new_pins:
+                new_pins.append(QPoint(pin))
+        if new_pins == self._context_pins:
+            return
+        if not save_to_undo_history:
+            self._apply_context_pins(new_pins)
+            return
+        last_pins = self.context_pins
+        UndoStack().commit_action(lambda: self._apply_context_pins(new_pins),
+                                  lambda: self._apply_context_pins(last_pins),
+                                  'SelectionLayer.set_context_pins')
+
+    def record_context_pin_change(self, previous_pins: list[QPoint]) -> None:
+        """Adds one undo step from previous_pins to the current pins, which are already applied.
+
+        Used after a series of `set_context_pins(..., False)` calls, such as a pin drag, so the whole series undoes
+        at once. Does nothing if the pins match previous_pins.
+        """
+        current_pins = self.context_pins
+        if current_pins == previous_pins:
+            return
+        last_pins = [QPoint(pin) for pin in previous_pins]
+        UndoStack().commit_action(lambda: self._apply_context_pins(current_pins),
+                                  lambda: self._apply_context_pins(last_pins),
+                                  'SelectionLayer.set_context_pins', skip_initial_call=True)
+
+    def add_context_pin(self, pin: QPoint) -> None:
+        """Adds a context pin at an image coordinate, as an undoable action."""
+        self.set_context_pins([*self._context_pins, pin])
+
+    def remove_context_pin(self, pin: QPoint) -> None:
+        """Removes the context pin at an image coordinate, as an undoable action."""
+        self.set_context_pins([existing for existing in self._context_pins if existing != pin])
+
+    def clear_context_pins(self, save_to_undo_history: bool = True) -> None:
+        """Removes all context pins."""
+        self.set_context_pins([], save_to_undo_history)
+
+    def _apply_context_pins(self, pins: list[QPoint]) -> None:
+        self._context_pins = [QPoint(pin) for pin in pins]
+        self.context_pins_changed.emit(self.context_pins)
+
+    def save_state(self) -> 'SelectionLayerState':
+        """Export the current layer state, including context pins."""
+        image_state = super().save_state()
+        assert isinstance(image_state, ImageLayerState)
+        return SelectionLayerState(image_state, self.context_pins)
+
+    def restore_state(self, saved_state: Any) -> None:
+        """Restore the layer state and context pins from a previous saved state."""
+        assert isinstance(saved_state, SelectionLayerState)
+        super().restore_state(saved_state.image_state)
+        self.set_context_pins(saved_state.context_pins, False)
 
     def generation_area_is_empty(self) -> bool:
         """Returns whether the current selection mask is empty."""
@@ -277,17 +347,20 @@ class SelectionLayer(ImageLayer):
                 bounds = bounds.intersected(polygon_bounds)
         return bounds
 
-    def get_selection_gen_area(self, ignore_config: bool = False) -> Optional[QRect]:
-        """Returns the smallest QRect within the generation area containing all masked areas, plus padding.
+    def get_selection_gen_area(self, ignore_config: bool = False, include_context_pins: bool = True) -> Optional[QRect]:
+        """Returns the smallest QRect within the generation area containing all masked areas and pins, plus padding.
 
         Used for showing the actual area visible to the image model when the Config.INPAINT_FULL_RES config option is
         set to true. The padding amount is set by the Config.INPAINT_FULL_RES_PADDING config option, measured in
-        pixels.
+        pixels. Context pins only count while some of the generation area is selected, and pins outside the generation
+        area stretch the bounds to its edge. The returned rectangle uses image coordinates.
 
         Parameters
         ----------
         ignore_config : bool
             If true, return the masked area bounds even when Config.INPAINT_FULL_RES is disabled in config.
+        include_context_pins : bool
+            If false, return the bounds the selection would have without any context pins.
         Returns
         -------
         QRect or None
@@ -302,6 +375,12 @@ class SelectionLayer(ImageLayer):
         bottom: int = self._bounding_box.bottom()
         left: int = self._bounding_box.left()
         right: int = self._bounding_box.right()
+        if include_context_pins:
+            for pin in self._context_pins:
+                top = min(top, pin.y())
+                bottom = max(bottom, pin.y())
+                left = min(left, pin.x())
+                right = max(right, pin.x())
         if top >= bottom:
             return None  # mask was empty
 
@@ -356,3 +435,11 @@ class SelectionLayer(ImageLayer):
     def position(self) -> QPoint:
         """Returns the mask layer's position relative to image bounds."""
         return self.transformed_bounds.topLeft()
+
+
+class SelectionLayerState:
+    """Preserves a copy of the selection layer's state, including its context pins."""
+
+    def __init__(self, image_state: ImageLayerState, context_pins: list[QPoint]) -> None:
+        self.image_state = image_state
+        self.context_pins = context_pins

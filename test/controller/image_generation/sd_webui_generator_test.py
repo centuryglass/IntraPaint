@@ -4,6 +4,7 @@ See sd_generator_test_case.py for how the snapshots work.
 """
 import json
 from typing import Any
+from unittest.mock import MagicMock
 
 from PySide6.QtCore import QSize, Qt
 
@@ -15,7 +16,7 @@ from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT
 from test.controller.image_generation.fake_sd_backend import image_to_base64_png
 from test.controller.image_generation.sd_generator_test_case import SdGeneratorTestCase, TEST_SEED, \
-    UPSCALE_SIZE, solid_image
+    UPSCALE_SIZE, solid_image, CONTEXT_PIN, GENERATION_SIZE
 
 Endpoints = A1111Webservice.Endpoints
 
@@ -99,11 +100,44 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         Cache().set(Cache.INPAINT_FULL_RES, True)
         self._generate_and_check('inpaint_full_res')
 
+    def test_inpaint_full_res_context_pin(self) -> None:
+        """With a pin stretching the crop, the image and mask are cropped locally and sent with full-res off."""
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
+        Cache().set(Cache.INPAINT_FULL_RES, True)
+        self.image_stack.selection_layer.add_context_pin(CONTEXT_PIN)
+        self._generate_and_check('inpaint_full_res_context_pin')
+        body = self.backend.posts()[0].arguments['body']
+        self.assertFalse(body['inpaint_full_res'])
+        self.assertNotIn('inpaint_full_res_padding', body)
+        for image in self.generated_images.values():
+            self.assertEqual(image.size(), GENERATION_SIZE)
+
     def test_inpaint_controlnet_reusing_generation_area(self) -> None:
         """A ControlNet unit reusing the generation area sends no image of its own when inpainting."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         self._set_canny_controlnet_unit()
         self._generate_and_check('inpaint_controlnet')
+
+    def test_connect_enables_inpaint_options(self) -> None:
+        """Connecting enables the inpainting crop and padding controls, and disconnecting disables them again."""
+        generator = self.generator
+        assert isinstance(generator, SDWebUIGenerator)
+        # Stub the backend queries, which have their own request snapshots, to test the shared connection logic:
+        stubbed_results: dict[str, Any] = {'is_available': True, 'get_diffusion_sampler_names': [],
+                                           'get_upscale_method_names': [], 'get_diffusion_model_names': [],
+                                           'get_lora_model_info': [], 'cache_generator_specific_data': None,
+                                           'get_controlnet_models': [], 'get_controlnet_preprocessors': [],
+                                           'get_controlnet_types': {}, 'get_controlnet_unit_cache_keys': [],
+                                           'ultimate_upscale_script_available': False, 'clear_menus': None}
+        for name, result in stubbed_results.items():
+            setattr(generator, name, lambda *_args, value=result: value)
+        generator._window = MagicMock()  # pylint: disable=protected-access
+        Cache().set(Cache.INPAINT_OPTIONS_AVAILABLE, False)
+
+        self.assertTrue(generator.configure_or_connect())
+        self.assertTrue(Cache().get(Cache.INPAINT_OPTIONS_AVAILABLE))
+        generator.disconnect_or_disable()
+        self.assertFalse(Cache().get(Cache.INPAINT_OPTIONS_AVAILABLE))
 
     def test_upscale_basic(self) -> None:
         """Upscaling without Stable Diffusion sends the whole image to the extras endpoint."""

@@ -163,6 +163,10 @@ def scale_all_layers(image_stack: ImageStack, width: int, height: int,
                 layer.image = pil_image_scaling(image, new_size, image_scale_mode)
             else:
                 layer.transform = layer.transform * scale_transform
+        selection_layer = image_stack.selection_layer
+        selection_layer.set_context_pins([QPoint(min(int(pin.x() * x_scale), width - 1),
+                                                 min(int(pin.y() * y_scale), height - 1))
+                                          for pin in selection_layer.context_pins])
         new_size = QSize(width, height)
 
         def _final_size_update(size=new_size) -> None:
