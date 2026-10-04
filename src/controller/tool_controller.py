@@ -245,7 +245,7 @@ class ToolController(QObject):
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]):
         """Allow the active tool to intercept and handle events."""
         assert event is not None
-        # The image viewer installs its own zoom filter first, so this filter sees wheel events before it does.
+        # ImageGraphicsView.wheelEvent passes wheel events here before its zoom handling sees them.
         if event.type() == QEvent.Type.Wheel and self._scroll_padding(cast(QWheelEvent, event)):
             return True
         if self._active_tool is None:

@@ -72,11 +72,13 @@ class PaddingScrollTest(ToolTestCase):
 
     def _send_wheel(self, angle_delta: QPoint,
                     modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.ShiftModifier) -> None:
-        """Sends a synthetic wheel event over the center of the image viewer."""
-        center = QPointF(self.image_viewer.width() / 2, self.image_viewer.height() / 2)
-        event = QWheelEvent(center, self.image_viewer.mapToGlobal(center), QPoint(), angle_delta,
+        """Sends a synthetic wheel event to the center of the image viewer's viewport, where real wheel input
+           arrives."""
+        viewport = self.image_viewer.viewport()
+        center = QPointF(viewport.width() / 2, viewport.height() / 2)
+        event = QWheelEvent(center, viewport.mapToGlobal(center), QPoint(), angle_delta,
                             Qt.MouseButton.NoButton, modifiers, Qt.ScrollPhase.NoScrollPhase, False)
-        QApplication.sendEvent(self.image_viewer, event)
+        QApplication.sendEvent(viewport, event)
 
     def test_scroll_changes_padding_without_zooming(self) -> None:
         """A notch with the modifier held changes padding by the slider's wheel step, and the view doesn't zoom."""

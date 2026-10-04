@@ -484,6 +484,22 @@ class ImageGraphicsView(QGraphicsView):
         handled = self._forward_to_event_filters(event)
         return handled if get_result else None
 
+    def wheelEvent(self, event: Optional[QWheelEvent]) -> None:  # pylint: disable=invalid-name  # Qt override
+        """Offers wheel events to the other filters in installEventFilter's list before the scroll area forwards them
+           to its scroll bars.
+
+        This view filters its scroll bars' events, so its zoom handling in eventFilter runs when a wheel event reaches
+        a scroll bar. A scroll bar that accepts the event stops it from reaching this view's filters, so they would
+        never see it otherwise. An event no filter handles here can reach them a second time through normal
+        propagation.
+        """
+        assert event is not None
+        for event_filter in self._event_filters:
+            if event_filter is not self and event_filter.eventFilter(self, event):
+                event.accept()
+                return
+        super().wheelEvent(event)
+
     def _view_event(self, viewport_event: QMouseEvent) -> QMouseEvent:
         """Returns a copy of a mouse event the viewport received, positioned in this view's coordinates."""
         viewport = self.viewport()
