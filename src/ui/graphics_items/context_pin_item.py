@@ -15,7 +15,7 @@ MARKER_PATH = f'{PROJECT_DIR}/resources/icons/context_pin.svg'
 DEFAULT_MARKER_SIZE = 32
 MARKER_REFERENCE_VIEW_SIDE = 900  # A view with this shorter side draws markers at DEFAULT_MARKER_SIZE.
 MIN_MARKER_SIZE = 20
-MAX_MARKER_SIZE = 64
+MAX_MARKER_SIZE = 48
 
 # The SVG's viewBox is MARKER_VIEWBOX_SIZE units square, and its needle tip at MARKER_ANCHOR marks the pinned pixel.
 # Changing the SVG's geometry means updating MARKER_ANCHOR and MARKER_VIEWBOX_BOUNDS to match.
