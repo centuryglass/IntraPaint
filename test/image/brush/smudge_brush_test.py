@@ -3,6 +3,7 @@ from typing import Optional, Sequence
 from unittest.mock import patch
 
 import numpy as np
+import pytest
 from PySide6.QtCore import QPoint, QRect, QSize, Qt
 from PySide6.QtGui import QImage
 
@@ -14,6 +15,11 @@ from test.base_test_case import IntraPaintTestCase
 
 GOLDEN_DIR = 'test/resources/test_images/smudge'
 LAYER_SIZE = QSize(192, 128)
+
+# Unpremultiplied color for the single-color opacity gradient tests:
+GRADIENT_COLOR = (200, 80, 30)
+# Largest per-channel color error that 8-bit premultiplied storage alone causes at alpha >= 64:
+GRADIENT_COLOR_TOLERANCE = 4
 
 # Stroke points as (x, y) or (x, y, pressure):
 StrokePoint = tuple[float, float] | tuple[float, float, float]
@@ -33,6 +39,24 @@ def smudge_test_pattern(size: QSize = LAYER_SIZE) -> QImage:
     alpha[(x >= width * 5 // 8) & (x < width * 3 // 4)] = 0
     alpha[(y >= height * 3 // 4) & (y < height * 7 // 8)] = 128
     np_image[:, :, 3] = alpha
+    return image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+
+
+def opacity_gradient_image(size: QSize = LAYER_SIZE, color: Optional[tuple[int, int, int]] = None) -> QImage:
+    """Returns an ARGB32_Premultiplied image whose opacity rises from 0 at the left edge to 255 at the right edge.
+       With no color, red and green vary along y and blue is a checkerboard. With a color, every pixel has that color
+       before premultiplying."""
+    width, height = size.width(), size.height()
+    y, x = np.mgrid[0:height, 0:width]
+    image = QImage(size, QImage.Format.Format_ARGB32)
+    np_image = image_data_as_numpy_8bit(image)
+    if color is None:
+        np_image[:, :, 2] = (y * 255) // (height - 1)  # red
+        np_image[:, :, 1] = 255 - (y * 255) // (height - 1)  # green
+        np_image[:, :, 0] = ((x // 8 + y // 8) % 2) * 255  # blue
+    else:
+        np_image[:, :, 2], np_image[:, :, 1], np_image[:, :, 0] = color
+    np_image[:, :, 3] = (x * 255) // (width - 1)
     return image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
 
 
@@ -170,6 +194,53 @@ class SmudgeBrushTest(IntraPaintTestCase):
             self.brush.end_stroke()
         self.assertEqual(len(self.brush._input_buffer), 0)
         self.assert_images_equal(self.layer.image, expected_image)
+
+    def assert_valid_premultiplied(self, image: QImage) -> None:
+        """Asserts that no color channel exceeds alpha, which no valid premultiplied pixel can do."""
+        np_image = image_data_as_numpy_8bit(image)
+        invalid = np_image[:, :, :3].max(axis=2) > np_image[:, :, 3]
+        self.assertFalse(np.any(invalid), f'{np.count_nonzero(invalid)} pixels have color above alpha')
+
+    def gradient_strokes(self) -> QImage:
+        """Smudges from opaque into transparent, from transparent into opaque, then diagonally across the
+           gradient, and returns the layer image."""
+        self.stroke(line_points(QPoint(180, 30), QPoint(10, 30), 7))
+        self.stroke(line_points(QPoint(10, 64), QPoint(180, 64), 7))
+        return self.stroke(line_points(QPoint(20, 120), QPoint(170, 95), 7))
+
+    def test_strokes_across_opacity_gradient(self) -> None:
+        """Strokes across an opacity gradient in both directions with a soft brush."""
+        self.layer = ImageLayer(opacity_gradient_image(), 'opacity gradient layer')
+        self.brush.connect_to_layer(self.layer)
+        self.brush.brush_size = 30
+        self.brush.opacity = 0.8
+        self.brush.hardness = 0.4
+        image = self.gradient_strokes()
+        self.assert_valid_premultiplied(image)
+        self.assert_image_matches_golden(image, f'{GOLDEN_DIR}/opacity_gradient.png')
+
+    @pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/110: 8-bit '
+                                          'compositing shifts color picked up from nearly transparent pixels')
+    def test_smudge_keeps_color_on_opacity_gradient(self) -> None:
+        """Smudging a single color with varying opacity changes opacity but not color."""
+        self.layer = ImageLayer(opacity_gradient_image(color=GRADIENT_COLOR), 'single color gradient layer')
+        self.brush.connect_to_layer(self.layer)
+        self.brush.brush_size = 40
+        image = self.gradient_strokes()
+        self.assert_valid_premultiplied(image)
+        np_image = image_data_as_numpy_8bit(image.convertToFormat(QImage.Format.Format_ARGB32)).astype(int)
+        visible = np_image[:, :, 3] >= 64
+        expected_bgr = np.array(GRADIENT_COLOR[::-1])
+        color_error = np.abs(np_image[:, :, :3] - expected_bgr).max(axis=2)[visible].max()
+        self.assertLessEqual(color_error, GRADIENT_COLOR_TOLERANCE)
+
+    def test_stroke_inside_transparent_area_changes_nothing(self) -> None:
+        """Smudging within fully transparent pixels leaves them transparent."""
+        self.brush.brush_size = 10
+        self.brush.opacity = 1.0
+        band_center = LAYER_SIZE.width() * 11 // 16  # Center of smudge_test_pattern's transparent band
+        image = self.stroke(line_points(QPoint(band_center, 10), QPoint(band_center, 80), 5))
+        self.assert_images_equal(image, smudge_test_pattern())
 
     def test_click_without_movement_changes_nothing(self) -> None:
         """A single point samples the layer but draws nothing."""
