@@ -175,6 +175,8 @@ def load_libmypaint(default_library_path: Optional[str]) -> CDLL:
     # Brush functions:
     lib.mypaint_brush_new.restype = c_void_p
     lib.mypaint_brush_new.argtypes = []
+    lib.mypaint_brush_unref.restype = None
+    lib.mypaint_brush_unref.argtypes = [c_void_p]  # (brush)
     lib.mypaint_brush_from_defaults.restype = None
     lib.mypaint_brush_from_defaults.argtypes = [c_void_p]
     lib.mypaint_brush_from_string.restype = int
