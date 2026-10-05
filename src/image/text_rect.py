@@ -21,7 +21,7 @@ class TextRectKeys:
     ALIGNMENT = 'alignment'
     FILL_BG = 'fill_background'
     AUTO_SCALE_MODE = 'scale_mode'
-    ALL = [FONT, TEXT, SIZE, TEXT_COLOR, BG_COLOR, ALIGNMENT, FILL_BG]
+    ALL = [FONT, TEXT, SIZE, TEXT_COLOR, BG_COLOR, ALIGNMENT, FILL_BG, AUTO_SCALE_MODE]
 
 
 SCALE_MODE_NONE = 'none'
