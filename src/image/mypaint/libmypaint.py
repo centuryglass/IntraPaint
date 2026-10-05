@@ -183,6 +183,9 @@ def load_libmypaint(default_library_path: Optional[str]) -> CDLL:
     lib.mypaint_brush_reset.argtypes = [c_void_p]  # (brush)
     lib.mypaint_brush_new_stroke.restype = None
     lib.mypaint_brush_new_stroke.argtypes = [c_void_p]  # (brush)
+    # These argtypes are the libmypaint 2.x form. The bundled 1.x libraries take only the first eight arguments and
+    # ignore the rest, including is_linear. The library version is not detected, so a system libmypaint found by
+    # find_library may use either form.
     lib.mypaint_brush_stroke_to.restype = c_int
     lib.mypaint_brush_stroke_to.argtypes = [c_void_p, surface_ptr,  # brush, surface,
                                             c_float, c_float,  # x, y

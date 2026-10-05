@@ -167,7 +167,10 @@ class UndoStack(metaclass=Singleton):
         """Combines all actions added with commit_action until the context is exited.
 
         If the block raises, the actions it already committed still go into the history as one entry, and the group
-        closes so that later actions are recorded normally."""
+        closes so that later actions are recorded normally.
+
+        Combine with other context managers as `with A, B:` or nested `with` blocks. `with A and B:` enters only B, so
+        the actions are silently left ungrouped."""
         if self._access_lock.locked():
             raise RuntimeError(f'Concurrent undo history changes detected! Attempted: {action_type}, '
                                f'in-progress: {self._in_progress_change}')

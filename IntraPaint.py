@@ -20,6 +20,7 @@ from logging.handlers import RotatingFileHandler
 import subprocess
 
 from src.util.pyinstaller import is_pyinstaller_bundle
+# In a bundle sys.executable is the IntraPaint binary, not Python, so the build subprocess below must stay gated.
 if not is_pyinstaller_bundle():
     try:
         import src.util.visual.image_fill
