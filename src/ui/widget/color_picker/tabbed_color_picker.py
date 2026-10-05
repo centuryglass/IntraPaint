@@ -1,7 +1,7 @@
 """A Qt color picker widget with multiple layouts, heavily based on QColorDialog."""
 from typing import Optional
 
-from PySide6.QtCore import QSize, QPoint
+from PySide6.QtCore import QSize, QPoint, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
     QTabWidget, QBoxLayout, QSizePolicy, QPushButton, QLabel, QApplication
@@ -11,6 +11,7 @@ from src.ui.widget.color_picker.component_spinbox_picker import ComponentSpinbox
 from src.ui.widget.color_picker.hsv_picker import HsvPicker
 from src.ui.widget.color_picker.palette_widget import StandardColorPaletteWidget, CustomColorPaletteWidget
 from src.ui.widget.color_picker.screen_color import ScreenColorWidget
+from src.ui.widget.color_picker.wheel_picker import WheelPicker
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.widget.color_picker'
@@ -23,6 +24,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 BASIC_PALETTE_TITLE = _tr('&Basic colors')
 CUSTOM_PALETTE_TITLE = _tr('&Custom colors')
+WHEEL_TAB_TITLE = _tr('&Wheel')
 SPECTRUM_TAB_TITLE = _tr('&Spectrum')
 # noinspection SpellCheckingInspection
 PALETTE_TAB_TITLE = _tr('Pa&lette')
@@ -43,7 +45,13 @@ MODE_1X1 = '1x1'
 
 
 class TabbedColorPicker(ScreenColorWidget):
-    """A Qt color picker widget with multiple layouts, heavily based on QColorDialog."""
+    """A Qt color picker widget with multiple layouts, heavily based on QColorDialog.
+
+    `color_selected` fires on every change. `color_committed` fires only when the wheel picker finishes a choice; the
+    other panels don't emit it.
+    """
+
+    color_committed = Signal(QColor)
 
     def __init__(self, always_show_pick_color_button=True) -> None:
         super().__init__()
@@ -113,6 +121,11 @@ class TabbedColorPicker(ScreenColorWidget):
         self.stopped_color_picking.connect(_clear_label)
         self._custom_palette_layout.addWidget(self._screen_preview_label)
 
+        self._wheel_panel = WheelPicker(self)
+        self._wheel_panel.setSizePolicy(self._size_policy)
+        self._wheel_panel.color_changed.connect(self.set_current_color)
+        self._wheel_panel.color_committed.connect(self.color_committed)
+
         # Divide color control into spectrum and component panels:
         self._spectrum_panel = QWidget(self)
         self._spectrum_panel.setSizePolicy(self._size_policy)
@@ -138,6 +151,11 @@ class TabbedColorPicker(ScreenColorWidget):
         self._tab_panel.setVisible(False)
         self.set_default_mode()
 
+    @property
+    def wheel_picker(self) -> WheelPicker:
+        """The OKHSV ring + square panel."""
+        return self._wheel_panel
+
     def selected_color(self) -> QColor:
         """Gets the current selected color."""
         return QColor(self._color)
@@ -162,6 +180,7 @@ class TabbedColorPicker(ScreenColorWidget):
         self._custom_palette.select_color_if_present(color)
         self._hsv_picker.color = color
         self._component_picker.color = color
+        self._wheel_panel.set_color(color)
 
         self._basic_palette.color_selected.connect(self.set_current_color)
         self._custom_palette.color_selected.connect(self.set_current_color)
@@ -170,7 +189,7 @@ class TabbedColorPicker(ScreenColorWidget):
         self.color_selected.emit(color)
 
     def panel_size(self) -> QSize:
-        """Returns the expected size of one of the four color control panels."""
+        """Returns the expected size of one of the color control panels."""
         panel_width = 0
         panel_height = 0
         for panel in self._panels():
@@ -187,6 +206,7 @@ class TabbedColorPicker(ScreenColorWidget):
         self._clear_layouts()
         self._main_layout = QHBoxLayout()
         self._outer_layout.insertLayout(1, self._main_layout)
+        self._main_layout.addWidget(self._wheel_panel)
         palette_layout = QVBoxLayout()
         palette_layout.addWidget(self._basic_palette_panel)
         palette_layout.addWidget(self._custom_palette_panel)
@@ -229,14 +249,15 @@ class TabbedColorPicker(ScreenColorWidget):
         self._use_two_tab_layout(QHBoxLayout)
 
     def set_four_tab_mode(self) -> None:
-        """Put each of the four quadrants of the dialog in its own tab."""
+        """Put each color control panel in its own tab."""
         if self._mode == MODE_1X1:
             return
         self._mode = MODE_1X1
         self._clear_layouts()
         self._basic_palette_preview.setVisible(True)
         self._custom_palette_preview.setVisible(True)
-        tab_names = (SPECTRUM_TAB_TITLE, COMPONENT_TAB_TITLE, BASIC_PALETTE_TITLE, CUSTOM_PALETTE_TITLE)
+        tab_names = (WHEEL_TAB_TITLE, SPECTRUM_TAB_TITLE, COMPONENT_TAB_TITLE, BASIC_PALETTE_TITLE,
+                     CUSTOM_PALETTE_TITLE)
         for title, tab in zip(tab_names, self._panels()):
             if self._always_show_pick_color_button and title != BASIC_PALETTE_TITLE:
                 widget = QWidget(self)
@@ -321,6 +342,7 @@ class TabbedColorPicker(ScreenColorWidget):
             if pick_color_label is not None and pick_color_button is not None:
                 component_layout.addWidget(pick_color_label)
                 component_layout.addWidget(pick_color_button)
+        self._tab_panel.addTab(self._wheel_panel, WHEEL_TAB_TITLE)
         self._tab_panel.addTab(component_widget, COMPONENT_TAB_TITLE)
         palette_tab = QWidget(self)
         palette_tab.setSizePolicy(self._size_policy)
@@ -336,8 +358,9 @@ class TabbedColorPicker(ScreenColorWidget):
     def keyPressEvent(self, a0) -> None:
         """Override to prevent closing with escape."""
 
-    def _panels(self) -> tuple[QWidget, QWidget, QWidget, QWidget]:
-        return self._spectrum_panel, self._component_panel, self._basic_palette_panel, self._custom_palette_panel
+    def _panels(self) -> tuple[QWidget, QWidget, QWidget, QWidget, QWidget]:
+        return (self._wheel_panel, self._spectrum_panel, self._component_panel, self._basic_palette_panel,
+                self._custom_palette_panel)
 
     def _clear_layouts(self) -> None:
         for panel in self._panels():

@@ -157,9 +157,6 @@
   "src/ui/image_viewer.py": {
     "unused-argument": 5
   },
-  "src/ui/input_fields/big_int_spinbox.py": {
-    "invalid-name": 1
-  },
   "src/ui/input_fields/combo_box.py": {
     "invalid-name": 2,
     "unused-argument": 1
@@ -169,9 +166,6 @@
   },
   "src/ui/input_fields/pressure_curve_input.py": {
     "unused-argument": 2
-  },
-  "src/ui/input_fields/slider_spinbox.py": {
-    "invalid-name": 1
   },
   "src/ui/layout/draggable_tabs/tab.py": {
     "unused-argument": 1
@@ -233,14 +227,14 @@
     "unused-argument": 5
   },
   "src/ui/widget/image_graphics_view.py": {
-    "invalid-name": 2,
+    "invalid-name": 1,
     "unused-argument": 1
   },
   "src/ui/widget/image_widget.py": {
     "unused-argument": 1
   },
   "src/ui/widget/key_hint_label.py": {
-    "invalid-name": 2
+    "invalid-name": 1
   },
   "src/ui/widget/label.py": {
     "unused-argument": 1

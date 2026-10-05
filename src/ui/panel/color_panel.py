@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QResizeEvent, QShowEvent
 
 from src.config.config_from_key import get_config_from_key
+from src.controller import color_controller
 from src.ui.widget.color_picker.tabbed_color_picker import TabbedColorPicker
 from src.util.visual.display_size import get_window_size
 
@@ -25,6 +26,7 @@ class ColorControlPanel(TabbedColorPicker):
             self.set_current_color(initial_color)
             config.connect(self, config_key, self._apply_config_color)
             self.color_selected.connect(self._update_config_color)
+            self.color_committed.connect(color_controller.commit_color)
 
     def _apply_config_color(self, color_str: str) -> None:
         self.set_current_color(QColor(color_str))
