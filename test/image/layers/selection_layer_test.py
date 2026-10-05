@@ -142,3 +142,41 @@ class SelectionLayerContextPinTest(IntraPaintTestCase):
         self.assertEqual(self.selection_layer.context_pins, [])
         UndoStack().undo()
         self.assertEqual(self.selection_layer.context_pins, [QPoint(10, 10)])
+
+
+class SelectionLayerContentBoundsTest(IntraPaintTestCase):
+    """Tests SelectionLayer.get_content_bounds across the whole image."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.image_stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(1024, 1024))
+        self.image_stack.generation_area = GENERATION_AREA
+        self.selection_layer = self.image_stack.selection_layer
+
+    def _select(self, bounds: QRect, color: Qt.GlobalColor = Qt.GlobalColor.black) -> None:
+        with self.selection_layer.borrow_image() as mask_image:
+            painter = QPainter(mask_image)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+            painter.fillRect(bounds, color)
+            painter.end()
+
+    def test_empty_selection(self) -> None:
+        """Nothing selected gives an empty rect."""
+        self.assertTrue(self.selection_layer.get_content_bounds().isEmpty())
+
+    def test_single_region(self) -> None:
+        """One region gives its exact pixel bounds."""
+        self._select(SELECTION_BOUNDS)
+        self.assertEqual(self.selection_layer.get_content_bounds(), SELECTION_BOUNDS)
+
+    def test_separate_regions_are_united(self) -> None:
+        """Two disjoint regions give the rect covering both, including regions outside the generation area."""
+        self._select(QRect(10, 10, 20, 20))
+        self._select(QRect(400, 450, 20, 20))
+        self.assertEqual(self.selection_layer.get_content_bounds(), QRect(QPoint(10, 10), QPoint(419, 469)))
+
+    def test_region_with_hole(self) -> None:
+        """A selection with a hole gives the outer bounds, not the hole's."""
+        self._select(QRect(100, 100, 100, 100))
+        self._select(QRect(130, 130, 40, 40), Qt.GlobalColor.transparent)
+        self.assertEqual(self.selection_layer.get_content_bounds(), QRect(100, 100, 100, 100))
