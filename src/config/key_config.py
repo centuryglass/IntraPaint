@@ -117,6 +117,8 @@ class KeyConfig(Config, metaclass=Singleton):
                 return True
             return False
 
+        # Bindings whose key contains one of these also claim speed_modifier+key. New default bindings must avoid
+        # those combinations, or validation reports a conflict.
         speed_modifier_strings = ('zoom_in', 'zoom_out', 'pan', 'move', 'brush_size')
         speed_modifier = self.get(KeyConfig.SPEED_MODIFIER)
         if speed_modifier != '' and not _is_modifier(speed_modifier):

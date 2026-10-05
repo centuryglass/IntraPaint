@@ -15,6 +15,8 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
+# In the one-file PyInstaller bundle, PROJECT_DIR is the temporary extraction folder deleted on exit. Read bundled
+# resources from it, never write there.
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 APP_ICON_PATH = f'{PROJECT_DIR}/resources/icons/app_icon.png'
 DATA_DIR = user_data_dir('IntraPaint', 'centuryglass')

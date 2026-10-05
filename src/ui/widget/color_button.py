@@ -59,6 +59,7 @@ class ColorButton(QPushButton):
             self._icon = get_color_icon(color)
             self.setIcon(QIcon(self._icon))
             if self._config_key is not None:
+                # A config string in another format or case than HexArgb starts a second notification round here.
                 config = get_config_from_key(self._config_key)
                 config.set(self._config_key, color.name(QColor.NameFormat.HexArgb))
             self.update()

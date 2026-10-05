@@ -341,6 +341,8 @@ class Config:
             inner_key: Optional[str] = None) -> None:
         """Updates a saved value.
 
+        Connected callbacks stop running for this change once one of them changes the value again.
+
         Parameters
         ----------
         key : str
@@ -408,6 +410,7 @@ class Config:
                     self.disconnect(source, key)
                 else:
                     raise err
+            # A callback that set the value again already notified every callback of the newer value.
             if self.get(key, inner_key) != value:
                 break
 
@@ -423,7 +426,7 @@ class Config:
         ----------
         connected_object: object
             An object to associate with this connection. Only one connection can be made between a given key and
-            connected_object.
+            connected_object: a second connect with the same object and key replaces the first.
         key: str
             A key tracked by this config file.
         on_change_fn: function(new_value), function(new_value, inner_key)

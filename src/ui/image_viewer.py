@@ -105,6 +105,9 @@ class ImageViewer(ImageGraphicsView):
         # Manually trigger signal handlers to set up the initial state:
         self._image_size_changed_slot(self.content_size)
         self._add_layer_item(image_stack.selection_layer)
+        # The scene shows only the composited root group, never per-layer items. Per-layer items would blend against
+        # the viewport instead of their isolated groups, and modes with no qt_composite_mode() would render as Normal,
+        # so the screen would diverge from saved output.
         self._add_layer_item(image_stack.layer_stack)
         self._image_generation_area_change_slot(image_stack.generation_area)
         self._context_pins_change_slot(selection_layer.context_pins)
@@ -219,6 +222,8 @@ class ImageViewer(ImageGraphicsView):
 
     # noinspection PyUnusedLocal
     def _active_layer_change_slot(self, new_active_layer: Layer, *args) -> None:
+        # Every connect made for the new active layer needs a matching disconnect for the old one, including the
+        # TransformLayer-only transform_changed connection.
         active_id = None if new_active_layer is None else new_active_layer.id
         if active_id != self._active_layer_id:
             last_active = self._image_stack.get_layer_by_id(self._active_layer_id)

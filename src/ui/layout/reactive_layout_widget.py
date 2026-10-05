@@ -47,7 +47,11 @@ class ReactiveLayoutWidget(QWidget):
         self._default_mode = _LayoutMode('default', self, setup, None, None)
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
-        """Apply visibility rules and switch layout modes if necessary."""
+        """Apply visibility rules and switch layout modes if necessary.
+
+        When no mode range matches and there is no default mode, the last mode stays active and only an error is
+        logged. Callers need gap-free mode ranges or a default mode.
+        """
         new_mode = None
         for mode in self._layout_modes:
             if mode.in_range():
