@@ -13,12 +13,18 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.selection_layer import SelectionLayer
 from src.util.math_utils import clamp
 from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit, numpy_bounds_index, \
-    NpUInt8Array
+    NpUInt8Array, NpAnyArray
 
 PAINT_BUFFER_DELAY_MS = 50
 AVG_COUNT = 20
 BUFFER_BASE_MARGINS = 256
 logger = logging.getLogger(__name__)
+
+
+def _argb_pixels(np_image: NpUInt8Array) -> NpAnyArray:
+    """Returns a 2D uint32 view of an ARGB image array, one element per pixel, so whole pixels can be copied with 2D
+       masks."""
+    return np_image.view(np.uint32)[:, :, 0]
 
 
 class QtPaintBrush(LayerBrush):
@@ -327,31 +333,24 @@ class QtPaintBrush(LayerBrush):
         new_input_painter.setRenderHint(QPainter.RenderHint.Antialiasing, self._antialiasing)
         self._input_event_paint_segment(new_input_painter, input_event)
 
-        # find changed pixels.  If a mask is set, remove all changes not covered by the mask.
+        # Find the pixels this segment changes. Pixels outside the input mask are never changed.
         changes = np_paint_buf[:, :, 3] > 0
-        masked = None if np_mask is None else np_mask[:, :, 3] > 0
-        if masked is not None:
-            np_paint_buf[changes & ~masked, :] = 0
-            changes = changes & masked
+        if np_mask is not None:
+            changes &= np_mask[:, :, 3] > 0
         if not np.any(changes):
             return
 
-        # If opacity or hardness is less than 1, handle the overlapping regions:
+        # If opacity or hardness is less than 1, segments in the same stroke don't build up opacity where they
+        # overlap: each pixel keeps whichever segment drew it with the highest alpha. Where this segment wins, the
+        # layer pixel is reset to its state before the stroke, so the segment replaces earlier ones.
         if (input_event.color.alphaF() * input_event.opacity) < 1.0 or input_event.hardness < 1.0:
-            # For all pixels where np_paint_buf and np_stroke_buf buf overlap, find out which has the highest alpha:
-            paint_buf_overrides = changes & (np_paint_buf[:, :, 3] >= np_stroke_buf[:, :, 3])
-            stroke_buf_overrides = changes & (np_stroke_buf[:, :, 3] > np_paint_buf[:, :, 3])
+            changes &= np_paint_buf[:, :, 3] >= np_stroke_buf[:, :, 3]
+            np.copyto(_argb_pixels(np_image), _argb_pixels(np_prev_image), where=changes)
 
-            # If paint_buf has higher alpha, clear that pixel in stroke_buf, and reset it to np_prev_image in np_image.
-            np_stroke_buf[paint_buf_overrides, :] = 0
-            np_image[paint_buf_overrides, :] = np_prev_image[paint_buf_overrides, :]
-
-            # If stroke_buf has higher alpha, clear that pixel in paint_buf.
-            np_paint_buf[stroke_buf_overrides, :] = 0
-            changes = changes & ~stroke_buf_overrides
-
-        # Add the last paint operation to stroke buffer:
-        np_stroke_buf[changes, :] = np_paint_buf[changes, :]
+        # Clear unchanged pixels from the paint buffer, and add the changes to the stroke buffer:
+        paint_pixels = _argb_pixels(np_paint_buf)
+        np.copyto(paint_pixels, 0, where=~changes)
+        np.copyto(_argb_pixels(np_stroke_buf), paint_pixels, where=changes)
 
         if self._pattern_brush is not None:
             # Apply the pattern to the brush stroke segment:
