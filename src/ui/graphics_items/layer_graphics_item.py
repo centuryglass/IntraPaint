@@ -35,6 +35,7 @@ class LayerGraphicsItem(PixmapItem):
         if not isinstance(self._layer, SelectionLayer):
             self.setOpacity(layer.opacity)
         else:
+            # The selection bitmap is never displayed. The visible selection is SelectionOutline.
             self.setOpacity(0)
         if isinstance(layer, TransformLayer):
             self.setTransform(layer.transform)

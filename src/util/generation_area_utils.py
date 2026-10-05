@@ -1,19 +1,26 @@
-"""Pure helpers for generation area frames and the generation resolution rule.
+"""Pure helpers for generation area frames, the generation resolution rule and follow-selection placement.
 
 Frames are one-click generation area sizes. The resolution rule decides the generation resolution whenever the
-generation area size changes. `src/controller/generation_area_controller.py` applies both to the live image and config.
+generation area size changes. Follow-selection placement moves the area to contain the selection after selection edits.
+`src/controller/generation_area_controller.py` applies all three to the live image and config.
 """
 import math
 import re
 from typing import Optional
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, QRect, QPoint
 from PySide6.QtWidgets import QApplication
 
 # Values of Cache.GENERATION_RESOLUTION_RULE. They must match the options in cache_value_definitions.json.
 RESOLUTION_RULE_MATCH_AREA = QApplication.translate('cache_value', 'Match area')
 RESOLUTION_RULE_MATCH_AREA_UPSCALED = QApplication.translate('cache_value', 'Match area, upscale small areas')
 RESOLUTION_RULE_MANUAL = QApplication.translate('cache_value', 'Manual')
+
+# Values of AppConfig.GENERATION_AREA_FOLLOW_SELECTION. They must match the options in
+# application_config_definitions.json.
+FOLLOW_SELECTION_MINIMAL = QApplication.translate('application_config', 'Minimal move')
+FOLLOW_SELECTION_CENTER = QApplication.translate('application_config', 'Center on selection')
+FOLLOW_SELECTION_OFF = QApplication.translate('application_config', 'Off')
 
 # Number of entries kept in Cache.RECENT_GENERATION_AREA_SIZES. It's larger than the number of recent frames shown, so
 # filtering out the full image and square frames still leaves enough to show.
@@ -119,3 +126,48 @@ def previous_frame(recent: list[str], current_size: QSize) -> Optional[QSize]:
         if size != current_size:
             return size
     return None
+
+
+def follow_selection_target(selection_bounds: Optional[QRect], context_pins: list[QPoint],
+                            padding: int) -> Optional[QRect]:
+    """Returns the bounds the generation area follows: the selection and its context pins, grown by `padding`.
+
+    Returns None when nothing is selected, since pins only count alongside a selection. The result isn't clamped to
+    the image.
+    """
+    if selection_bounds is None or selection_bounds.isEmpty():
+        return None
+    target = QRect(selection_bounds)
+    for pin in context_pins:
+        target = target.united(QRect(pin, QSize(1, 1)))
+    return target.adjusted(-padding, -padding, padding, padding)
+
+
+def _follow_axis(area_start: int, area_length: int, target_start: int, target_length: int, center: bool,
+                 image_start: int, image_length: int) -> int:
+    """Returns the new area start along one axis for follow_selection_position."""
+    if center or target_length >= area_length:
+        start = target_start + (target_length - area_length) // 2
+    else:
+        start = min(area_start, target_start)
+        start = max(start, target_start + target_length - area_length)
+    return max(image_start, min(start, image_start + image_length - area_length))
+
+
+def follow_selection_position(area: QRect, target: QRect, mode: str, image_bounds: QRect) -> QPoint:
+    """Returns where the generation area's top left corner goes to follow a target from follow_selection_target.
+
+    The minimal mode moves the area only as far as it takes to contain the target, and the center mode centers the
+    area on it. Along an axis where the target is at least as long as the area, both modes center the area on the
+    target. The area keeps its size, and the result keeps it inside `image_bounds` when it fits there.
+    """
+    if mode == FOLLOW_SELECTION_OFF:
+        return area.topLeft()
+    if mode not in (FOLLOW_SELECTION_MINIMAL, FOLLOW_SELECTION_CENTER):
+        raise ValueError(f'Unknown follow selection mode "{mode}"')
+    center = mode == FOLLOW_SELECTION_CENTER
+    x = _follow_axis(area.x(), area.width(), target.x(), target.width(), center, image_bounds.x(),
+                     image_bounds.width())
+    y = _follow_axis(area.y(), area.height(), target.y(), target.height(), center, image_bounds.y(),
+                     image_bounds.height())
+    return QPoint(x, y)

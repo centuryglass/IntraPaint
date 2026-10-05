@@ -99,6 +99,7 @@ class Cache(Config, metaclass=Singleton):
     # DYNAMIC PROPERTIES:
     # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/cache.py`
 
+    BACKGROUND_COLOR: str
     BATCH_COUNT: str
     BATCH_SIZE: str
     CANVAS_RESIZE_CROP_LAYERS: str
@@ -179,6 +180,7 @@ class Cache(Config, metaclass=Singleton):
     PAINT_SELECTION_ONLY: str
     PAINT_TOOL_BRUSH_SIZE: str
     PROMPT: str
+    RECENT_COLORS: str
     RECENT_GENERATION_AREA_SIZES: str
     RECENT_TOOLS: str
     SAMPLE_MERGED: str

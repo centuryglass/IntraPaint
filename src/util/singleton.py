@@ -6,6 +6,9 @@ class Singleton(type):
     _instances: dict[type, type] = {}
 
     def __call__(cls, *args, **kwargs):
+        """Returns the class's only instance, creating it on the first call.
+
+        Arguments are used only on the first call; later calls ignore them and return the existing instance."""
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]

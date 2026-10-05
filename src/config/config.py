@@ -261,6 +261,14 @@ class Config:
             return default_color
         return QColor(color_str)
 
+    def set_color(self, key: str, color: QColor | Qt.GlobalColor, save_change: bool = True) -> None:
+        """Saves a color value to config as a lowercase `#aarrggbb` string, the one form color keys use.
+
+        Mixing cases for the same color makes `set` see a change and notify every listener again, so all color writes
+        go through this method.
+        """
+        self.set(key, QColor(color).name(QColor.NameFormat.HexArgb), save_change)
+
     def get_control_widget(self, key: str, connect_to_config: bool = True, multi_line=False) -> DynamicFieldWidget:
         """Returns a QWidget capable of adjusting the chosen config value. Unless connect_to_config is false, changes
         will immediately propagate to the underlying config file."""
@@ -341,6 +349,8 @@ class Config:
             inner_key: Optional[str] = None) -> None:
         """Updates a saved value.
 
+        Connected callbacks stop running for this change once one of them changes the value again.
+
         Parameters
         ----------
         key : str
@@ -408,6 +418,7 @@ class Config:
                     self.disconnect(source, key)
                 else:
                     raise err
+            # A callback that set the value again already notified every callback of the newer value.
             if self.get(key, inner_key) != value:
                 break
 
@@ -423,7 +434,7 @@ class Config:
         ----------
         connected_object: object
             An object to associate with this connection. Only one connection can be made between a given key and
-            connected_object.
+            connected_object: a second connect with the same object and key replaces the first.
         key: str
             A key tracked by this config file.
         on_change_fn: function(new_value), function(new_value, inner_key)

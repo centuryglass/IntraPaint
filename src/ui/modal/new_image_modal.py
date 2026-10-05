@@ -138,7 +138,7 @@ class NewImageModal(QDialog):
     def _confirm(self) -> None:
         self._create = True
         color = self._get_color_from_dropdown()
-        Cache().set(Cache.NEW_IMAGE_BACKGROUND_COLOR, color.name(QColor.NameFormat.HexArgb))
+        Cache().set_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, color)
         self._color_button.disconnect_config()
         self.hide()
 

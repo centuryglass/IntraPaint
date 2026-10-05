@@ -9,7 +9,11 @@ ThreadAction: TypeAlias = Callable[..., None]
 
 
 class AsyncTask(QObject):
-    """Run an async task in another thread."""
+    """Run an async task in another thread.
+
+    Construct it on the main thread. Closures connected to its signals run on the main thread only because the
+    AsyncTask object lives there.
+    """
     finish_signal = Signal()
 
     def __init__(self, action: ThreadAction, set_loading_state: bool = False) -> None:
