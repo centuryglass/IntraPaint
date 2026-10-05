@@ -8,6 +8,8 @@ from PySide6.QtGui import QMouseEvent, QTabletEvent, QWheelEvent
 from PySide6.QtWidgets import QApplication, QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox
 
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
+from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
@@ -26,6 +28,7 @@ from src.tools.smudge_tool import SmudgeTool
 from src.tools.text_tool import TextTool
 from src.ui.image_viewer import ImageViewer, MIN_OUTLINE_PIXEL_SIZE
 from src.ui.modal.modal_utils import show_warning_dialog
+from src.util.math_utils import clamp
 from src.util.optional_import import optional_import
 
 # PyInstaller can't see optional imports: each module below must be listed in the `hiddenimports` of IntraPaint.spec
@@ -49,6 +52,9 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 BRUSH_LOAD_ERROR_TITLE = _tr('Failed to load libmypaint brush library files')
 BRUSH_LOAD_ERROR_MESSAGE = _tr('The brush tool will not be available unless this is fixed.')
+# QWheelEvent.angleDelta() units in one notch of a standard mouse wheel:
+WHEEL_NOTCH_DELTA = 120
+
 FILL_TOOLS_UNAVAILABLE_LOG = (
     'The fill and selection fill tools are unavailable because the compiled image_fill module could not be loaded. '
     'Install a C compiler, then run `python setup.py build_ext --inplace` from the IntraPaint directory and restart '
@@ -73,6 +79,8 @@ class ToolController(QObject):
         self._tool_modifier_delegates: dict[BaseTool, dict[Qt.KeyboardModifier, BaseTool]] = {}
         self._mouse_in_bounds = False
         self._all_tools: list[BaseTool] = []
+        # Wheel delta short of a full notch, carried between padding scroll events:
+        self._padding_scroll_remainder = 0
         image_viewer.setMouseTracking(True)
         image_viewer.installEventFilter(self)
         HotkeyFilter.instance().modifiers_changed.connect(self._handle_modifier_delegation)
@@ -237,6 +245,9 @@ class ToolController(QObject):
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]):
         """Allow the active tool to intercept and handle events."""
         assert event is not None
+        # ImageGraphicsView.wheelEvent passes wheel events here before its zoom handling sees them.
+        if event.type() == QEvent.Type.Wheel and self._scroll_padding(cast(QWheelEvent, event)):
+            return True
         if self._active_tool is None:
             return super().eventFilter(source, event)
         active_tool = self._active_delegate if self._active_delegate is not None else self._active_tool
@@ -283,6 +294,37 @@ class ToolController(QObject):
             case QEvent.Type.Wheel:
                 event_handled = active_tool.wheel_event(cast(QWheelEvent, event))
         return True if event_handled else super().eventFilter(source, event)
+
+    def _scroll_padding(self, event: QWheelEvent) -> bool:
+        """Changes inpaint full-res padding while the padding scroll modifier is held, returning whether the event was
+           consumed.
+
+        Each notch moves padding as far as scrolling the padding slider does, multiplied while the speed modifier is
+        held. Either wheel axis counts, because some platforms turn modifier + vertical scroll into horizontal scroll.
+        Raising padding above zero turns Inpaint Full Resolution on.
+        """
+        if not KeyConfig.modifier_held(KeyConfig.PADDING_SCROLL_MODIFIER, held_modifiers=event.modifiers()):
+            self._padding_scroll_remainder = 0
+            return False
+        delta = event.angleDelta().y() if event.angleDelta().y() != 0 else event.angleDelta().x()
+        if (delta < 0) != (self._padding_scroll_remainder < 0):
+            self._padding_scroll_remainder = 0
+        self._padding_scroll_remainder += delta
+        notches = int(self._padding_scroll_remainder / WHEEL_NOTCH_DELTA)
+        if notches == 0:
+            return True
+        self._padding_scroll_remainder -= notches * WHEEL_NOTCH_DELTA
+        cache = Cache()
+        step = cache.get(Cache.INPAINT_FULL_RES_PADDING, RangeKey.STEP) * QApplication.wheelScrollLines()
+        if KeyConfig.modifier_held(KeyConfig.SPEED_MODIFIER, held_modifiers=event.modifiers()):
+            step *= AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
+        padding = clamp(cache.get(Cache.INPAINT_FULL_RES_PADDING) + notches * step,
+                        cache.get(Cache.INPAINT_FULL_RES_PADDING, RangeKey.MIN),
+                        cache.get(Cache.INPAINT_FULL_RES_PADDING, RangeKey.MAX))
+        cache.set(Cache.INPAINT_FULL_RES_PADDING, int(padding))
+        if padding > 0:
+            cache.set(Cache.INPAINT_FULL_RES, True)
+        return True
 
     def add_tool(self, new_tool: BaseTool) -> None:
         """Adds a new tool to the list of available tools."""

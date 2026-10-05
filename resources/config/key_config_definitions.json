@@ -53,6 +53,15 @@
         "default": "Ctrl",
         "saved": true
     },
+    "padding_scroll_modifier": {
+        "label": "Padding Scroll Modifier:",
+        "category": "Keybindings",
+        "subcategory": "Modifiers",
+        "description": "When held, the scroll wheel changes Inpaint Full Resolution padding over the image or the navigation panel, with any tool.",
+        "type": "string",
+        "default": "Shift",
+        "saved": true
+    },
     "zoom_in": {
         "label": "Zoom in:",
         "category": "Keybindings",

@@ -246,6 +246,7 @@ class KeyConfig(Config, metaclass=Singleton):
     NEW_IMAGE_SHORTCUT: str
     NEW_LAYER_GROUP_SHORTCUT: str
     NEW_LAYER_SHORTCUT: str
+    PADDING_SCROLL_MODIFIER: str
     PAN_DOWN: str
     PAN_LEFT: str
     PAN_RIGHT: str
