@@ -60,7 +60,7 @@ class ColorButton(QPushButton):
             self.setIcon(QIcon(self._icon))
             if self._config_key is not None:
                 config = get_config_from_key(self._config_key)
-                config.set(self._config_key, color.name(QColor.NameFormat.HexArgb))
+                config.set_color(self._config_key, color)
             self.update()
 
     def select_color(self) -> None:
@@ -69,7 +69,7 @@ class ColorButton(QPushButton):
         if selection is not None and selection != self._color:
             if self._config_key is not None:
                 config = get_config_from_key(self._config_key)
-                config.set(self._config_key, selection.name(QColor.NameFormat.HexArgb))
+                config.set_color(self._config_key, selection)
             else:
                 self._update_color(selection)
 

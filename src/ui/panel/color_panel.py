@@ -62,4 +62,4 @@ class ColorControlPanel(TabbedColorPicker):
     def _update_config_color(self, color: QColor) -> None:
         if self._config_key is not None:
             config = get_config_from_key(self._config_key)
-            config.set(self._config_key, color.name(QColor.NameFormat.HexArgb))
+            config.set_color(self._config_key, color)
