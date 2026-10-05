@@ -176,6 +176,9 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
   - Tests don't wait on the event loop (`qWait`, spinning `processEvents`), wall-clock time, the network or a real
     backend. Use `--mode mock`, or `FakeSdBackend` (`test/controller/image_generation/fake_sd_backend.py`) to drive
     a Stable Diffusion generator offline.
+  - Layer groups and `ImageStack` render on timers, so a cached composite or the view can be stale. Call
+    `ImageStack.flush_render()` before reading them. `test/render_assertions.py` compares region renders, full
+    renders and what the view displays.
   - No retry markers. The only allowed markers are `skip`, with a reason and an issue link, and `xfail(strict=True)`.
   - `pytest-xdist` waits until tests are proven independent of run order, and a coverage-percentage gate waits until
     coverage is built out.
