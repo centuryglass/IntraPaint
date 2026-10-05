@@ -7,7 +7,7 @@ from PySide6.QtCore import QRect, QSize
 from PySide6.QtGui import QImage
 
 from src.image.layers.image_layer import ImageLayer
-from src.image.mypaint.libmypaint import TilePixelBuffer
+from src.image.mypaint.libmypaint import TilePixelBuffer, c_uint16_p
 from src.image.mypaint.numpy_image_utils import pixel_data_as_numpy_16bit, numpy_8bit_to_16bit, numpy_16bit_to_8bit
 from src.util.visual.image_utils import (NpAnyArray, image_data_as_numpy_8bit, numpy_intersect, numpy_bounds_index,
                                          NpUInt8Array)
@@ -26,6 +26,7 @@ class MyPaintLayerTile:
         self._base_bounds = QRect()
         self._bounds = QRect()
         self._pixels: TilePixelBuffer = tile_buffer  # type: ignore
+        self._buffer_pointer = c_uint16_p(tile_buffer)
         self._mask: Optional[NpUInt8Array] = None
         if clear_buffer:
             self.clear()
@@ -130,6 +131,11 @@ class MyPaintLayerTile:
     def pixel_buffer(self) -> TilePixelBuffer:  # type: ignore
         """Access the tile's libmypaint pixel buffer."""
         return self._pixels
+
+    @property
+    def buffer_pointer(self) -> c_uint16_p:  # type: ignore
+        """Returns a pointer to the tile's pixel buffer, for passing to libmypaint."""
+        return self._buffer_pointer
 
     def clear(self) -> None:
         """Clear all image data."""

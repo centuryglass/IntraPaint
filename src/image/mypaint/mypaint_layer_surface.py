@@ -1,8 +1,7 @@
-"""Connects a libmypaint image surface to  """
+"""Connects a libmypaint tiled surface to an ImageLayer."""
 import logging
 import math
-from ctypes import sizeof, pointer, byref, c_float, c_double, c_int, c_void_p
-from time import time
+from ctypes import sizeof, pointer, byref, c_float, c_double, c_int
 from typing import Any, Optional
 
 from PySide6.QtCore import QObject, QSize, QRect, QTimer
@@ -12,13 +11,18 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.mypaint.libmypaint import libmypaint, MyPaintTiledSurface, MyPaintTileRequestStartFunction, \
     MyPaintTileRequestEndFunction, MyPaintSurfaceDestroyFunction, \
     TilePixelBuffer, TILE_DIM, \
-    RectangleBuffer, MyPaintRectangles, RECTANGLE_BUF_SIZE, c_uint16_p
+    RectangleBuffer, MyPaintRectangles, RECTANGLE_BUF_SIZE
 from src.image.mypaint.mypaint_brush import MyPaintBrush
 from src.image.mypaint.mypaint_layer_tile import MyPaintLayerTile
 from src.util.visual.image_utils import numpy_bounds_index, image_data_as_numpy_8bit_readonly
 
 logger = logging.getLogger(__name__)
 TILE_UPDATE_TIMER_MS = 100
+
+# Time between input events passed to libmypaint, which drives its speed inputs and dabs_per_second. It is fixed, so
+# output doesn't depend on input timing. libmypaint still prints "Time is running backwards!" during some strokes: the
+# negative step comes from its own dab interpolation, not from this value.
+STROKE_DTIME_SECONDS = 0.1
 
 
 class MyPaintLayerSurface(QObject):
@@ -32,7 +36,7 @@ class MyPaintLayerSurface(QObject):
         self._surface_data.tile_size = sizeof(TilePixelBuffer)
         self._brush = MyPaintBrush()
         self._color = QColor(0, 0, 0)
-        self._tiles: dict[str, MyPaintLayerTile] = {}
+        self._tiles: dict[int, MyPaintLayerTile] = {}  # Keyed by tile index, x + y * tiles_width
         self._tile_buffer: Any = None
         self._mask_image: Optional[QImage] = None
 
@@ -59,7 +63,6 @@ class MyPaintLayerSurface(QObject):
         self._roi = pointer(self._rectangle_buf)
         self._rectangle_buf.rectangles = self._rectangles
         self._rectangle_buf.num_rectangles = RECTANGLE_BUF_SIZE
-        self._dtime_start = time()
 
         # Initialize surface data, starting with empty functions:
         def empty_update_function(_unused, _unused2) -> None:
@@ -72,29 +75,33 @@ class MyPaintLayerSurface(QObject):
         self._surface_data.tile_request_start = MyPaintTileRequestStartFunction(empty_update_function)
         self._surface_data.tile_request_end = MyPaintTileRequestEndFunction(empty_update_function)
 
-        def on_tile_request_start(_, request: c_void_p) -> None:
-            """Locate or create the required tile and pass it back to libmypaint when a tile operation starts."""
-            tx = request[0].tx  # type: ignore
-            ty = request[0].ty  # type: ignore
-            if tx >= self._tiles_width or ty >= self._tiles_height or tx < 0 or ty < 0:
-                tile = self._null_tile
+        # libmypaint calls these once per tile per dab for brushes that sample color, so they stay minimal.
+        def on_tile_request_start(_, request: Any) -> None:
+            """Pass libmypaint the requested tile's buffer, creating the tile if needed."""
+            tile_request = request.contents
+            tx = tile_request.tx
+            ty = tile_request.ty
+            if 0 <= tx < self._tiles_width and 0 <= ty < self._tiles_height:
+                tile = self._tiles.get(tx + ty * self._tiles_width)
+                if tile is None:
+                    tile = self.get_tile_from_idx(tx, ty)
+                tile_request.buffer = tile.buffer_pointer
             else:
-                tile = self.get_tile_from_idx(tx, ty, True)
-            request[0].buffer = c_uint16_p(tile.pixel_buffer)  # type: ignore
+                tile_request.buffer = self._null_tile.buffer_pointer
 
-        def on_tile_request_end(_, request: c_void_p) -> None:
-            """Write tile data back to the layer when a tile painting operation finishes."""
-            tx = request[0].tx  # type: ignore
-            ty = request[0].ty  # type: ignore
-            tile = self.get_tile_from_idx(tx, ty)
-            if tile is not None:
+        def on_tile_request_end(_, request: Any) -> None:
+            """Mark a tile that libmypaint may have changed, to be written back to the layer."""
+            tile_request = request.contents
+            if tile_request.readonly:
+                return
+            tx = tile_request.tx
+            ty = tile_request.ty
+            if 0 <= tx < self._tiles_width and 0 <= ty < self._tiles_height:
+                tile = self._tiles[tx + ty * self._tiles_width]
                 self._pending_changed_tiles.add(tile)
                 self._stroke_tiles.add(tile)
                 if not self._pending_tile_timer.isActive():
                     self._pending_tile_timer.start()
-            else:
-                tile = self._null_tile
-            request[0].buffer = c_uint16_p(tile.pixel_buffer)  # type: ignore
 
         self._on_start = MyPaintTileRequestStartFunction(on_tile_request_start)
         self._on_end = MyPaintTileRequestEndFunction(on_tile_request_end)
@@ -218,17 +225,16 @@ class MyPaintLayerSurface(QObject):
             self.brush.set_value(MyPaintBrush.LOCK_ALPHA, 1.0)
         libmypaint.mypaint_brush_reset(self.brush.brush_ptr)
         libmypaint.mypaint_brush_new_stroke(self.brush.brush_ptr)
-        self._dtime_start = time()
 
     def stroke_to(self, x: float, y: float, pressure: float, x_tilt: float, y_tilt: float):
         """Continue a brush stroke, providing tablet inputs."""
         if not self._should_allow_stroke():
             return
-        dtime = 0.1  # time() - self._dtime_start
         libmypaint.mypaint_surface_begin_atomic(byref(self._surface_data))
         libmypaint.mypaint_brush_stroke_to(self.brush.brush_ptr, byref(self._surface_data),
                                            c_float(x), c_float(y), c_float(pressure), c_float(x_tilt), c_float(y_tilt),
-                                           c_double(dtime), c_float(1.0), c_float(0.0), c_float(0.0), c_int(1))
+                                           c_double(STROKE_DTIME_SECONDS), c_float(1.0), c_float(0.0), c_float(0.0),
+                                           c_int(1))
         libmypaint.mypaint_surface_end_atomic(byref(self._surface_data), self._roi)
 
     def end_stroke(self) -> None:
@@ -265,17 +271,15 @@ class MyPaintLayerSurface(QObject):
         assert self._layer is not None
         if x < 0 or x >= self._tiles_width or y < 0 or y >= self._tiles_height:
             return self._null_tile
-        point = f'{x},{y}'
-        if point in self._tiles:
-            tile = self._tiles[point]
-        else:
-            buffer_idx = x + y * self._tiles_width
+        buffer_idx = x + y * self._tiles_width
+        tile = self._tiles.get(buffer_idx)
+        if tile is None:
             pixel_buffer = self._tile_buffer[buffer_idx]
             tile_bounds = QRect(x * TILE_DIM, y * TILE_DIM, TILE_DIM, TILE_DIM)
             tile = MyPaintLayerTile(pixel_buffer, self._layer, tile_bounds, clear_buffer_if_new)
             if self._mask_image is not None:
                 tile.mask = numpy_bounds_index(image_data_as_numpy_8bit_readonly(self._mask_image), tile.bounds)
-            self._tiles[point] = tile
+            self._tiles[buffer_idx] = tile
         return tile
 
     def reset_surface(self, size: QSize) -> None:
