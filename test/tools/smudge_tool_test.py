@@ -4,7 +4,7 @@ from PySide6.QtCore import QPoint
 from src.config.cache import Cache
 from src.tools.smudge_tool import SmudgeTool
 from src.undo_stack import UndoStack
-from test.image.brush.smudge_brush_test import smudge_test_pattern
+from test.image.brush.brush_test_case import brush_test_pattern
 from test.tools.tool_test_case import ToolTestCase
 
 SMUDGE_TOOL_IMAGE_PATH = 'test/resources/test_images/smudge/smudge_tool_drag.png'
@@ -17,7 +17,7 @@ class SmudgeToolTest(ToolTestCase):
         super().setUp()
         self.smudge_tool = SmudgeTool(self.image_stack, self.image_viewer)
         self.tool_controller.add_tool(self.smudge_tool)
-        self.layer = self.image_stack.create_layer(image_data=smudge_test_pattern(self.IMAGE_SIZE))
+        self.layer = self.image_stack.create_layer(image_data=brush_test_pattern(self.IMAGE_SIZE))
         self.image_stack.active_layer = self.layer
         self.activate_tool(self.smudge_tool)
 

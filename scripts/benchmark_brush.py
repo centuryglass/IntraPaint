@@ -33,7 +33,7 @@ from src.config.application_config import AppConfig
 from src.image.brush.smudge_brush import SmudgeBrush
 from src.image.layers.image_layer import ImageLayer
 from src.undo_stack import UndoStack
-from test.image.brush.smudge_brush_test import smudge_test_pattern, line_points
+from test.image.brush.brush_test_case import brush_test_pattern, line_points
 
 LAYER_SIZE = QSize(2400, 1200)
 # Time between input events. Each case's point spacing over this interval sets the drag speed.
@@ -90,7 +90,7 @@ def main() -> None:
         config_path = os.path.join(config_dir, 'app_config.json')
         shutil.copyfile(os.path.join(PROJECT_ROOT, 'test', 'resources', 'app_config_test.json'), config_path)
         AppConfig(config_path)
-        layer = ImageLayer(smudge_test_pattern(LAYER_SIZE), 'benchmark layer')
+        layer = ImageLayer(brush_test_pattern(LAYER_SIZE), 'benchmark layer')
         print(f'{"case":<28}{"draw ms":>10}{"per point us":>14}{"worst call ms":>15}')
         for description, size, hardness, antialiasing, start, end, spacing in CASES:
             runs = [run_case(layer, size, hardness, antialiasing, start, end, spacing) for _ in range(args.repeats)]
