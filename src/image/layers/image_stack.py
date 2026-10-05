@@ -344,6 +344,14 @@ class ImageStack(QObject):
         Updates the bounds of the image generation area within the image. If `bounds_rect` exceeds the maximum  size
         or doesn't fit fully within the image bounds, the closest valid region will be selected.
         """
+        self.set_generation_area(bounds_rect)
+
+    def set_generation_area(self, bounds_rect: QRect, merge_with_last: bool = True) -> None:
+        """Updates the bounds of the image generation area, adjusted to fit like the `generation_area` setter.
+
+        With `merge_with_last`, a change directly after another generation area change joins its undo step. Pass
+        False to start a new undo step.
+        """
         assert isinstance(bounds_rect, QRect)
         bounds_rect = self._get_closest_valid_generation_area(bounds_rect)
         if bounds_rect != self._generation_area:
@@ -360,7 +368,7 @@ class ImageStack(QObject):
             action_type = 'ImageStack.generation_area'
             prev_action: Optional[_UndoAction | _UndoGroup]
             with UndoStack().last_action(action_type) as prev_action:
-                if isinstance(prev_action, _UndoAction) and prev_action.type == action_type \
+                if merge_with_last and isinstance(prev_action, _UndoAction) and prev_action.type == action_type \
                         and prev_action.action_data is not None:
                     last_bounds = prev_action.action_data['prev_bounds']
                     prev_action.redo = lambda: update_fn(bounds_rect)

@@ -1,10 +1,12 @@
-"""Tests for the generation area frame and resolution rule helpers."""
-from PySide6.QtCore import QSize, QRect, QPoint
+"""Tests for the generation area frame, resolution rule, follow-selection and handle resizing helpers."""
+from PySide6.QtCore import QSize, QRect, QPoint, QPointF
 
 from src.util.generation_area_utils import resolution_for_area, RESOLUTION_RULE_MATCH_AREA, \
     RESOLUTION_RULE_MATCH_AREA_UPSCALED, RESOLUTION_RULE_MANUAL, full_image_frame, square_frame, parse_size, \
     updated_recent_sizes, recent_frames, previous_frame, MAX_RECENT_SIZES, MAX_PARSED_SIDE, follow_selection_target, \
-    follow_selection_position, FOLLOW_SELECTION_MINIMAL, FOLLOW_SELECTION_CENTER, FOLLOW_SELECTION_OFF
+    follow_selection_position, FOLLOW_SELECTION_MINIMAL, FOLLOW_SELECTION_CENTER, FOLLOW_SELECTION_OFF, \
+    area_handle_positions, resize_area_from_handle, HANDLE_TOP_LEFT, HANDLE_TOP, HANDLE_TOP_RIGHT, HANDLE_RIGHT, \
+    HANDLE_BOTTOM_RIGHT, HANDLE_BOTTOM, HANDLE_BOTTOM_LEFT, HANDLE_LEFT
 from test.base_test_case import IntraPaintTestCase
 
 MAX_GEN_SIZE = QSize(2048, 2048)
@@ -176,3 +178,73 @@ class FollowSelectionPositionTest(IntraPaintTestCase):
         """An unrecognized mode is an error, not a silent no-op."""
         with self.assertRaises(ValueError):
             follow_selection_position(FOLLOW_AREA, QRect(0, 0, 10, 10), 'Sideways', IMAGE_BOUNDS)
+
+
+RESIZE_AREA = QRect(200, 100, 400, 200)
+RESIZE_IMAGE_BOUNDS = QRect(QPoint(), IMAGE_SIZE)
+RESIZE_MIN_SIZE = QSize(8, 8)
+
+
+def _resize(handle: str, point: QPoint, keep_aspect: bool = False, max_size: QSize = MAX_AREA_SIZE) -> QRect:
+    return resize_area_from_handle(RESIZE_AREA, handle, point, keep_aspect, RESIZE_IMAGE_BOUNDS, RESIZE_MIN_SIZE,
+                                   max_size)
+
+
+class AreaHandlePositionsTest(IntraPaintTestCase):
+    """Tests area_handle_positions."""
+
+    def test_handles_sit_on_the_outline(self) -> None:
+        """Corners sit on the area's outer corners, and edge handles on the middle of each side."""
+        positions = area_handle_positions(RESIZE_AREA)
+        self.assertEqual(positions[HANDLE_TOP_LEFT], QPointF(200, 100))
+        self.assertEqual(positions[HANDLE_TOP], QPointF(400, 100))
+        self.assertEqual(positions[HANDLE_TOP_RIGHT], QPointF(600, 100))
+        self.assertEqual(positions[HANDLE_RIGHT], QPointF(600, 200))
+        self.assertEqual(positions[HANDLE_BOTTOM_RIGHT], QPointF(600, 300))
+        self.assertEqual(positions[HANDLE_BOTTOM], QPointF(400, 300))
+        self.assertEqual(positions[HANDLE_BOTTOM_LEFT], QPointF(200, 300))
+        self.assertEqual(positions[HANDLE_LEFT], QPointF(200, 200))
+
+
+class ResizeAreaFromHandleTest(IntraPaintTestCase):
+    """Tests resize_area_from_handle."""
+
+    def test_edge_handles_move_one_side(self) -> None:
+        """Each edge handle moves only its own side, ignoring the other axis and keep_aspect."""
+        self.assertEqual(_resize(HANDLE_RIGHT, QPoint(700, 999), True), QRect(200, 100, 500, 200))
+        self.assertEqual(_resize(HANDLE_LEFT, QPoint(250, 0)), QRect(250, 100, 350, 200))
+        self.assertEqual(_resize(HANDLE_TOP, QPoint(0, 50)), QRect(200, 50, 400, 250))
+        self.assertEqual(_resize(HANDLE_BOTTOM, QPoint(0, 250)), QRect(200, 100, 400, 150))
+
+    def test_free_corner_follows_point(self) -> None:
+        """Without keep_aspect, a corner handle moves both of its sides to the point."""
+        self.assertEqual(_resize(HANDLE_BOTTOM_RIGHT, QPoint(700, 500)), QRect(200, 100, 500, 400))
+        self.assertEqual(_resize(HANDLE_TOP_LEFT, QPoint(100, 50)), QRect(100, 50, 500, 250))
+
+    def test_corner_keeps_aspect(self) -> None:
+        """With keep_aspect, a corner handle keeps the starting aspect ratio and the opposite corner fixed."""
+        self.assertEqual(_resize(HANDLE_BOTTOM_RIGHT, QPoint(1000, 500), True), QRect(200, 100, 800, 400))
+        self.assertEqual(_resize(HANDLE_TOP_LEFT, QPoint(400, 200), True), QRect(400, 200, 200, 100))
+        self.assertEqual(_resize(HANDLE_BOTTOM_LEFT, QPoint(0, 400), True), QRect(0, 100, 600, 300))
+        self.assertEqual(_resize(HANDLE_TOP_RIGHT, QPoint(800, 0), True), QRect(200, 0, 600, 300))
+
+    def test_stays_in_image(self) -> None:
+        """Moved sides stop at the image edges, and an aspect-locked corner stops where either side would leave."""
+        self.assertEqual(_resize(HANDLE_BOTTOM_RIGHT, QPoint(5000, 5000)), QRect(200, 100, 824, 668))
+        self.assertEqual(_resize(HANDLE_TOP_LEFT, QPoint(-500, -500)), QRect(0, 0, 600, 300))
+        self.assertEqual(_resize(HANDLE_BOTTOM_RIGHT, QPoint(5000, 5000), True), QRect(200, 100, 824, 412))
+
+    def test_size_limits(self) -> None:
+        """The size stays between the minimum and maximum, and dragging past the fixed side stops at the minimum."""
+        self.assertEqual(_resize(HANDLE_RIGHT, QPoint(0, 0)), QRect(200, 100, 8, 200))
+        self.assertEqual(_resize(HANDLE_TOP, QPoint(0, 900)), QRect(200, 292, 400, 8))
+        self.assertEqual(_resize(HANDLE_BOTTOM_RIGHT, QPoint(900, 700), max_size=QSize(500, 300)),
+                         QRect(200, 100, 500, 300))
+        self.assertEqual(_resize(HANDLE_BOTTOM_RIGHT, QPoint(900, 700), True, QSize(500, 500)),
+                         QRect(200, 100, 500, 250))
+        self.assertEqual(_resize(HANDLE_BOTTOM_RIGHT, QPoint(0, 0), True), QRect(200, 100, 16, 8))
+
+    def test_unknown_handle_raises(self) -> None:
+        """An unrecognized handle id is an error."""
+        with self.assertRaises(ValueError):
+            _resize('middle', QPoint(0, 0))

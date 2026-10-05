@@ -178,7 +178,7 @@ Opens a window where you can edit IntraPaint's saved settings. Hold your mouse o
 <img src="./labeled_screenshots/settings.png" alt="Screenshot of the settings window, with specific elements numbered."/>
 
 1. **"Interface" tab**:  Contains various settings related to IntraPaint's appearance and the ways it displays data.
-2. **"Editing" tab**:  Contains settings related to undo/redo behavior and image sizes.
+2. **"Editing" tab**:  Contains settings related to undo/redo behavior and image sizes, and **"Generation area follows selection"**, which controls [how the generation area follows selection edits](./tool_guide.md#following-the-selection).
 3. **"Drawing tablet settings" tab**:  Provides controls you can use to adjust the sensitivity of a pressure-sensitive drawing tablet.
 4. **"Alerts" tab**:  Enable or disable various warnings that IntraPaint will occasionally show you.  If a popup window has a "don't show this again" or "remember my choice" option, picking that option will change one of the entries in this category.
 5. **"Files" tab**:  Sets the directories IntraPaint will search for extra fonts, MyPaint brush files, or (if necessary) MyPaint library files.  This section also shows you where settings are saved as files, although those values can't be changed.
@@ -207,10 +207,12 @@ Additional controls vary depending on which option is active: "Move gen. area" o
 - **Left-click**: Move the main window viewport so that its upper-left corner is at the clicked spot.
 - **Right-click and drag**: Draw a rectangle that covers where the main window viewport should be.  When the mouse button is released, the viewport will update to match the window.
 
-When **"Move gen. area"** is active, mouse controls match the image generation area tool:
+When **"Move gen. area"** is active, mouse controls match the [image generation area tool](./tool_guide.md#-image-generation-area-tool-g), without its resize handles:
  
-- **Left-click**: Move the image generation area, without changing its size.
+- **Left-click and drag inside the area**: Move the image generation area, keeping the spot you grabbed under the pointer.
+- **Left-click and drag outside the area**: Center the image generation area on the clicked spot, then keep moving it while you drag.
 - **Right-click**: Resize the image generation area, without changing its position.
+- **Shift + scroll wheel**: Change the "Inpaint Full Resolution" padding.
 
 #### Navigation window
 <img src="./labeled_screenshots/navigation.png" alt="Screenshot of the navigation window, with specific elements numbered."/>

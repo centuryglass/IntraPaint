@@ -451,10 +451,16 @@ Select content based on connected regions and color similarity.
 Controls the area of the image in use for AI image generation. AI generators are restricted to certain resolutions, but this tool lets you use them with images of any size.  When you click "Generate", the AI generator will only act on the area selected by this tool, and only content within this area will influence generated imagery.  See the [inpainting guide](./inpainting_guide.md) for more details.
 
 ### Basic controls
-- **Left-click**: Move the image generation area, without changing its size.
-- **Right-click**: Resize the image generation area, without changing its position.
+- **Left-click and drag inside the area**: Move the image generation area, keeping the spot you grabbed under the pointer.
+- **Left-click and drag outside the area**: Center the image generation area on the clicked spot, then keep moving it while you drag.
+- **Left-click and drag a handle**: Resize the image generation area. While this tool is active, the area's outline has eight square handles. Corner handles keep the area's aspect ratio, and edge handles move one side.
+- **Hold Shift while dragging a corner handle**: Resize freely, without keeping the aspect ratio. This is the reverse of Shift's usual meaning, because keeping the aspect ratio is the safer default here.
+- **Right-click**: Resize the image generation area, without changing its position.  Hold Shift to keep the generation resolution's aspect ratio.
 - **Arrow keys**: Move the image generation area.
 - **Hold Alt**: Increase speed when moving the image generation area using keyboard keys.
+- **Shift + scroll wheel**: Change the "Inpaint Full Resolution" padding. This works with any tool, over the image or the navigation window.
+
+Each drag is one undo step. Resizing applies the resolution rule as the size changes, and adds the finished size to the recent area sizes.
 
 ### Following the selection
 In inpainting mode, the generation area moves after you change the selection or its context pins, so that it contains them along with the "Inpaint Full Resolution" padding. It moves only as far as needed, never changes size, and centers on a selection too large to fit. Undo and redo never move it, and moving it by hand isn't overridden until the selection changes again. Change this with **"Generation area follows selection"** in [settings](./menu_options.md#settings-f9) under the **"Editing"** category: **"Minimal move"** (default), **"Center on selection"**, or **"Off"**.

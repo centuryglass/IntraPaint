@@ -62,6 +62,11 @@ control the padding size with this option, though it will be cropped if it excee
 this option are located beneath the "Inpaint Full Resolution" checkbox.  When active, the padding rectangle will be 
 drawn within the generation area around selected content.
 
+To change padding without opening the selection tool controls, hold Shift and use the scroll wheel over the image or
+the navigation window. This works with any tool, and raising the padding above zero turns "Inpaint Full Resolution" on.
+Hold Alt as well to change it faster. The modifier key is the "Padding Scroll Modifier" option in the
+[settings](./menu_options.md#settings-f9) "Keybindings" tab.
+
 ---
 
 # AI Model selection
