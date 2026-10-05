@@ -39,6 +39,7 @@ class MyPaintLayerSurface(QObject):
         self._pending_changed_tiles: set[MyPaintLayerTile] = set()
         self._writing_tiles = False
         self._stroke_tiles: set[MyPaintLayerTile] = set()
+        self._saved_lock_alpha: Optional[float] = None
         self._pending_tile_timer = QTimer()
         self._pending_tile_timer.timeout.connect(self.apply_pending_tile_updates)
         self._pending_tile_timer.setSingleShot(True)
@@ -209,6 +210,12 @@ class MyPaintLayerSurface(QObject):
         """Start a brush stroke."""
         if not self._should_allow_stroke():
             return
+        assert self._layer is not None
+        if self._layer.alpha_locked and self._saved_lock_alpha is None:
+            # libmypaint's lock_alpha keeps the 15-bit buffer's alpha equal to the layer's, so blending brushes
+            # can't pick up paint the lock hides.
+            self._saved_lock_alpha = self.brush.get_value(MyPaintBrush.LOCK_ALPHA)
+            self.brush.set_value(MyPaintBrush.LOCK_ALPHA, 1.0)
         libmypaint.mypaint_brush_reset(self.brush.brush_ptr)
         libmypaint.mypaint_brush_new_stroke(self.brush.brush_ptr)
         self._dtime_start = time()
@@ -235,6 +242,9 @@ class MyPaintLayerSurface(QObject):
         for tile in self._stroke_tiles:
             tile.load_pixels_from_layer()
         self._stroke_tiles.clear()
+        if self._saved_lock_alpha is not None:
+            self.brush.set_value(MyPaintBrush.LOCK_ALPHA, self._saved_lock_alpha)
+            self._saved_lock_alpha = None
 
     def basic_stroke_to(self, x: float, y: float) -> None:
         """Continue a brush stroke, without tablet inputs."""

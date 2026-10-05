@@ -83,15 +83,8 @@ class MyPaintLayerTile:
             _, np_mask = numpy_intersect(np_image, self._mask)
         else:
             np_mask = None
-        change_mask = None
-        if self._layer.alpha_locked:
-            change_mask = np_image[:, :, 3] > 0
-            np_image = np_image[:, :, :3]
-            np_pixels = np_pixels[:, :, :3]
         if np_mask is not None:
-            selection_mask = np_mask[..., 3] > 0
-            change_mask = selection_mask if change_mask is None else selection_mask & change_mask
-        if change_mask is not None:
+            change_mask = np_mask[..., 3] > 0
             np_image[change_mask] = np_pixels[change_mask]
         else:
             np.copyto(np_image, np_pixels)

@@ -2,12 +2,12 @@
 
 The test layer is 3x2 MyPaint tiles, so most strokes cross tile boundaries.
 """
-import pytest
 from PySide6.QtCore import QPoint, QRect
 from PySide6.QtGui import QColor, QImage
 
 from src.image.brush.mypaint_layer_brush import MyPaintLayerBrush
 from src.image.layers.image_layer import ImageLayer
+from src.image.mypaint.mypaint_brush import MyPaintBrush
 from src.image.mypaint.libmypaint import TILE_DIM
 from src.util.visual.image_utils import create_transparent_image
 from test.image.brush.brush_test_case import BrushTestCase, LAYER_SIZE, StrokePoint, brush_test_pattern, \
@@ -157,7 +157,6 @@ class MyPaintLayerBrushTest(BrushTestCase):
         self.assert_changes_inside(image, initial_image, selected)
         self.assert_stroke_matches_golden(image, 'blend_input_mask')
 
-    @pytest.mark.xfail(strict=True, reason='tiles copy color painted at MyPaint\'s alpha onto the locked alpha')
     def test_alpha_locked_layer(self) -> None:
         """On an alpha-locked layer, color changes but alpha doesn't."""
         initial_image = self.layer.image
@@ -166,6 +165,24 @@ class MyPaintLayerBrushTest(BrushTestCase):
         self.assert_images_equal(image.convertToFormat(QImage.Format.Format_Alpha8),
                                  initial_image.convertToFormat(QImage.Format.Format_Alpha8))
         self.assert_stroke_matches_golden(image, 'bulk_alpha_locked')
+
+    def test_blending_brush_on_alpha_locked_layer(self) -> None:
+        """A blending brush on an alpha-locked layer doesn't pick up color painted over transparent pixels."""
+        initial_image = self.layer.image
+        self.layer.alpha_locked = True
+        self.brush.brush_path = BLEND_BRUSH
+        self.brush.brush_size = 30
+        image = self.stroke(zigzag_points())
+        self.assert_images_equal(image.convertToFormat(QImage.Format.Format_Alpha8),
+                                 initial_image.convertToFormat(QImage.Format.Format_Alpha8))
+        self.assert_stroke_matches_golden(image, 'blend_alpha_locked')
+
+    def test_alpha_lock_setting_restored_after_stroke(self) -> None:
+        """Drawing on an alpha-locked layer leaves the brush's own lock_alpha setting unchanged."""
+        lock_alpha = self.brush.brush.get_value(MyPaintBrush.LOCK_ALPHA)
+        self.layer.alpha_locked = True
+        self.stroke(zigzag_points())
+        self.assertEqual(self.brush.brush.get_value(MyPaintBrush.LOCK_ALPHA), lock_alpha)
 
     def assert_mid_stroke_writes_match_one_write(self, brush_path: str) -> None:
         """Asserts that writing changed tiles back to the layer after every input point gives the same result as
