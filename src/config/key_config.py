@@ -285,6 +285,7 @@ class KeyConfig(Config, metaclass=Singleton):
     SMUDGE_TOOL_KEY: str
     SPEED_MODIFIER: str
     TEXT_TOOL_KEY: str
+    TOGGLE_RULERS_SHORTCUT: str
     TOOL_ACTION_HOTKEY: str
     TRANSFORM_TOOL_KEY: str
     UNDO_SHORTCUT: str

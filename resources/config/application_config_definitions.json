@@ -84,6 +84,24 @@
         "default": true,
         "saved": true
     },
+    "show_rulers": {
+        "label": "Show rulers:",
+        "category": "Interface",
+        "subcategory": "Layout",
+        "description": "Show rulers with image pixel coordinates above and to the left of the image.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "show_ruler_highlights": {
+        "label": "Highlight generation area and selection on rulers:",
+        "category": "Interface",
+        "subcategory": "Layout",
+        "description": "Shade the image generation area and the selection's bounds on the rulers.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
     "animate_selection_outline": {
         "label": "Animate selected content outlines",
         "category": "Interface",

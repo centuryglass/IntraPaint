@@ -26,6 +26,8 @@
         "value": 4
     },
     "show_tool_control_hints": true,
+    "show_rulers": true,
+    "show_ruler_highlights": true,
     "animate_selection_outline": false,
     "animate_outlines_and_previews": true,
     "animate_selection_fill": true,

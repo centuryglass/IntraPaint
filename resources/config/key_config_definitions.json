@@ -557,6 +557,15 @@
         "default": "Ctrl+Alt+W",
         "saved": true
     },
+    "toggle_rulers_shortcut": {
+        "label": "Show/hide rulers",
+        "category": "Menu Shortcuts",
+        "subcategory": "Image Menu",
+        "description": "Show or hide the rulers beside the image.",
+        "type": "string",
+        "default": "Ctrl+Alt+Shift+R",
+        "saved": true
+    },
     "resize_canvas_shortcut": {
         "label": "Resize canvas",
         "category": "Menu Shortcuts",

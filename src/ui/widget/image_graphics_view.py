@@ -26,6 +26,10 @@ class ImageGraphicsView(QGraphicsView):
 
     scale_changed = Signal(float)
     offset_changed = Signal(QPoint)
+    # Emitted after any change to the scene-to-widget mapping, including resizes, which emit neither signal above.
+    view_changed = Signal()
+    # Emitted with the cursor's widget position whenever set_cursor_pos runs, or None when the cursor leaves.
+    cursor_moved = Signal(object)
 
     def __init__(self, parent: Optional[QWidget] = None, use_keybindings=True) -> None:
         super().__init__(parent)
@@ -217,6 +221,7 @@ class ImageGraphicsView(QGraphicsView):
         self._last_widget_cursor_pos = widget_cursor_pos
         scene_cursor_pos = None if widget_cursor_pos is None else self.widget_point_to_scene(widget_cursor_pos)
         self._last_scene_cursor_pos = scene_cursor_pos
+        self.cursor_moved.emit(widget_cursor_pos)
         if self._cursor_pixmap_item is not None and self._cursor_pixmap_item.scene() is not None:
             self._cursor_pixmap_item.setVisible(widget_cursor_pos is not None)
             if scene_cursor_pos is None:
@@ -407,6 +412,7 @@ class ImageGraphicsView(QGraphicsView):
                           * QTransform.fromScale(adjusted_scale, adjusted_scale))
         if scale_changed:
             self.scale_changed.emit(adjusted_scale)
+        self.view_changed.emit()
         self.update()
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
@@ -583,7 +589,13 @@ class ImageGraphicsView(QGraphicsView):
     def leaveEvent(self, event: Optional[QEvent]):
         """Clear the pixmap mouse cursor on leave."""
         self._last_widget_cursor_pos = None
+        self.cursor_moved.emit(None)
         super().leaveEvent(event)
+
+    def scrollContentsBy(self, dx: int, dy: int) -> None:  # pylint: disable=invalid-name  # Qt override
+        """Report scrolling as a view change, since centering on a point scrolls without a transform update."""
+        super().scrollContentsBy(dx, dy)
+        self.view_changed.emit()
 
     def scroll_content(self, unused_dx: int | float, unused_dy: int | float) -> bool:
         """Scroll content by the given offset, returning whether content was able to move."""
