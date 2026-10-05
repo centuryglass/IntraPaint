@@ -88,8 +88,11 @@ class TransformOutline(QGraphicsObject):
         self.transformation_origin = self.rect().center()
         self._update_handles()
 
-    def reset(self, new_initial_bounds: QRectF) -> None:
-        """Reset the outline with a new initial rectangle, sending no signals."""
+    def reset(self, new_initial_bounds: QRectF, keep_relative_origin: bool = False) -> None:
+        """Reset the outline with a new initial rectangle, sending no signals.
+
+        The transformation origin moves to the new rectangle's center, unless keep_relative_origin is set, in which
+        case it keeps its position relative to the rectangle's bounds."""
         with signals_blocked(self):
             self._rect = QRectF(new_initial_bounds.normalized())
             self._x_offset = 0.0
@@ -98,7 +101,9 @@ class TransformOutline(QGraphicsObject):
             self._y_scale = 0.0
             self._degrees = 0.0
             self._preserve_aspect_ratio = False
-            self.transformation_origin = self.rect().center()
+            if not keep_relative_origin:
+                self._relative_origin = QPointF(0.5, 0.5)
+            self.transformation_origin = self._origin_from_relative()
             self._update_handles()
 
     @property
@@ -283,6 +288,9 @@ class TransformOutline(QGraphicsObject):
         bounds = self.rect()
         pos.setX(clamp(pos.x(), bounds.x(), bounds.right()))
         pos.setY(clamp(pos.y(), bounds.y(), bounds.bottom()))
+        if bounds.width() != 0 and bounds.height() != 0:
+            self._relative_origin = QPointF((pos.x() - bounds.x()) / bounds.width(),
+                                            (pos.y() - bounds.y()) / bounds.height())
         if pos != self._origin:
             if ORIGIN_HANDLE_ID in self._handles:
                 origin_handle = self._handles[ORIGIN_HANDLE_ID]
@@ -453,17 +461,20 @@ class TransformOutline(QGraphicsObject):
                 scale.translate(-origin.x(), -origin.y())
                 self.setTransform(scale)
         elif self._mode == TRANSFORM_MODE_ROTATE:
-            # Rotate the rectangle so that the dragged corner is as close as possible to corner_pos:
+            # Rotate the rectangle so that the dragged corner is as close as possible to corner_pos. Angles are
+            # measured in the scene: scaling and flipping change local angles, but rotation is applied after them.
             corners = {
                 TL_HANDLE_ID: initial_rect.topLeft(),
                 TR_HANDLE_ID: initial_rect.topRight(),
                 BL_HANDLE_ID: initial_rect.bottomLeft(),
                 BR_HANDLE_ID: initial_rect.bottomRight()
             }
-            corner_start = corners[corner_id]
-            origin = self.transformation_origin
+            corner_start = self.mapToScene(corners[corner_id])
+            origin = self.mapToScene(self.transformation_origin)
+            target = self.mapToScene(corner_pos)
+            assert isinstance(corner_start, QPointF) and isinstance(origin, QPointF) and isinstance(target, QPointF)
             init_vector = corner_start - origin
-            target_vector = corner_pos - origin
+            target_vector = target - origin
             init_angle = math.degrees(math.atan2(init_vector.y(), init_vector.x()))
             final_angle = math.degrees(math.atan2(target_vector.y(), target_vector.x()))
             angle_offset = final_angle - init_angle
@@ -509,9 +520,14 @@ class TransformOutline(QGraphicsObject):
         rect.setWidth(avoiding_zero(rect.width()))
         rect.setHeight(avoiding_zero(rect.height()))
         self._rect = QRectF(rect)
-        self._origin = QPointF(rect.x() + rect.width() * self._relative_origin.x(),
-                               rect.y() + rect.height() * self._relative_origin.y())
+        self._origin = self._origin_from_relative()
         self._update_handles()
+
+    def _origin_from_relative(self) -> QPointF:
+        """Returns the point within the rectangle at the transformation origin's relative position."""
+        rect = self._rect
+        return QPointF(rect.x() + rect.width() * self._relative_origin.x(),
+                       rect.y() + rect.height() * self._relative_origin.y())
 
     def _corner_points_in_scene(self) -> list[QPointF]:
         bounds = self.rect()
@@ -528,10 +544,8 @@ class TransformOutline(QGraphicsObject):
         for handle_id, point in ((TL_HANDLE_ID, bounds.topLeft()), (TR_HANDLE_ID, bounds.topRight()),
                                  (BL_HANDLE_ID, bounds.bottomLeft()), (BR_HANDLE_ID, bounds.bottomRight())):
             self._handles[handle_id].move_rect_center(point)
-        origin_x = bounds.x() + bounds.width() * self._relative_origin.x()
-        origin_y = bounds.y() + bounds.height() * self._relative_origin.y()
         if ORIGIN_HANDLE_ID in self._handles:
-            self._handles[ORIGIN_HANDLE_ID].move_rect_center(QPointF(origin_x, origin_y))
+            self._handles[ORIGIN_HANDLE_ID].move_rect_center(self._origin_from_relative())
 
 
 class _Handle(TransformHandle):

@@ -1,4 +1,5 @@
 """Tests the layer transform tool through mouse input on the canvas and edits in its control panel."""
+import math
 import unittest
 
 import pytest
@@ -190,6 +191,40 @@ class LayerTransformToolTest(ToolTestCase):
         self.assertNotAlmostEqual(self.outline.rotation_angle, 0.0, places=2)
         self.assert_points_equal(self._scene_point_of(QPointF(LAYER_WIDTH / 2, LAYER_HEIGHT / 2)), center)
 
+    def test_corner_drag_rotation_follows_cursor(self) -> None:
+        """In rotate mode, the dragged corner ends up in the cursor's direction from the origin, including on
+           unevenly scaled and flipped layers."""
+        for label, transform in (('scaled', QTransform.fromTranslate(300, 300).scale(3.0, 0.5)),
+                                 ('flipped', QTransform.fromTranslate(300, 300).scale(-1.0, 1.0))):
+            with self.subTest(label):
+                self.layer.set_transform(transform)
+                self.outline._mode = TRANSFORM_MODE_ROTATE
+                center = self._scene_point_of(QPointF(LAYER_WIDTH / 2, LAYER_HEIGHT / 2))
+                start = self._handle_image_point(BR_HANDLE_ID)
+                target = QPoint(round(center.x()), round(center.y()) + 150)
+                self.mouse_drag([start, target])
+                corner = self._scene_point_of(QPointF(LAYER_WIDTH, LAYER_HEIGHT))
+                corner_angle = math.degrees(math.atan2(corner.y() - center.y(), corner.x() - center.x()))
+                target_angle = math.degrees(math.atan2(target.y() - center.y(), target.x() - center.x()))
+                self.assertAlmostEqual(corner_angle, target_angle, delta=0.5)
+
+    def test_layer_size_change_keeps_origin(self) -> None:
+        """When the active layer changes size, the transformation origin keeps its position relative to the layer
+           bounds, and its handle stays on it."""
+        start = self._handle_image_point(ORIGIN_HANDLE_ID)
+        self.mouse_drag([start, start + QPoint(-50, -25)])
+        origin = self.outline.transformation_origin
+        relative_origin = QPointF(origin.x() / LAYER_WIDTH, origin.y() / LAYER_HEIGHT)
+        self.assertNotEqual(relative_origin, QPointF(0.5, 0.5))
+        bigger_image = QImage(LAYER_WIDTH * 2, LAYER_HEIGHT * 2, QImage.Format.Format_ARGB32_Premultiplied)
+        bigger_image.fill(Qt.GlobalColor.red)
+        self.layer.image = bigger_image
+        self.assert_points_equal(self.outline.transformation_origin,
+                                 QPointF(relative_origin.x() * LAYER_WIDTH * 2,
+                                         relative_origin.y() * LAYER_HEIGHT * 2))
+        handle = self.outline._handles[ORIGIN_HANDLE_ID]
+        self.assert_points_equal(handle.rect().center(), self.outline.transformation_origin)
+
     def test_external_transform_change(self) -> None:
         """A transform change made outside the tool, such as an undo or a menu action, updates the outline and
            panel."""
@@ -220,6 +255,7 @@ class LayerTransformToolTest(ToolTestCase):
         self.mouse_drag([QPoint(420, 420)])
         self.assertEqual(self.image_stack.active_layer, other)
         self.assertEqual(self.outline.rect(), QRectF(0, 0, 50, 50))
+        self.assertEqual(self.outline.transformation_origin, QPointF(25, 25))
 
 
 if __name__ == '__main__':
