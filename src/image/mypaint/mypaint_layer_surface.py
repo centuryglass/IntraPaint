@@ -37,6 +37,8 @@ class MyPaintLayerSurface(QObject):
         self._mask_image: Optional[QImage] = None
 
         self._pending_changed_tiles: set[MyPaintLayerTile] = set()
+        self._writing_tiles = False
+        self._stroke_tiles: set[MyPaintLayerTile] = set()
         self._pending_tile_timer = QTimer()
         self._pending_tile_timer.timeout.connect(self.apply_pending_tile_updates)
         self._pending_tile_timer.setSingleShot(True)
@@ -86,6 +88,7 @@ class MyPaintLayerSurface(QObject):
             tile = self.get_tile_from_idx(tx, ty)
             if tile is not None:
                 self._pending_changed_tiles.add(tile)
+                self._stroke_tiles.add(tile)
                 if not self._pending_tile_timer.isActive():
                     self._pending_tile_timer.start()
             else:
@@ -105,20 +108,19 @@ class MyPaintLayerSurface(QObject):
             self._pending_tile_timer.stop()
         if len(self._pending_changed_tiles) == 0 or self._layer is None:
             return
-        if len(self._pending_changed_tiles) == 1:
-            self._pending_changed_tiles.pop().write_pixels_to_layer()
-            return
         change_bounds = QRect()
         for tile in self._pending_changed_tiles:
             if change_bounds.isNull():
                 change_bounds = tile.bounds
             else:
                 change_bounds = change_bounds.united(tile.bounds)
-        self._disconnect_layer_signals()
-        with self._layer.borrow_image(change_bounds) as layer_image:
-            for tile in self._pending_changed_tiles:
-                tile.write_pixels_to_layer_image(layer_image)
-        self._connect_layer_signals()
+        self._writing_tiles = True
+        try:
+            with self._layer.borrow_image(change_bounds) as layer_image:
+                for tile in self._pending_changed_tiles:
+                    tile.write_pixels_to_layer_image(layer_image)
+        finally:
+            self._writing_tiles = False
         self._pending_changed_tiles.clear()
 
     @property
@@ -223,9 +225,16 @@ class MyPaintLayerSurface(QObject):
         libmypaint.mypaint_surface_end_atomic(byref(self._surface_data), self._roi)
 
     def end_stroke(self) -> None:
-        """Copy over changes immediately when a brush stroke ends."""
+        """Copy over changes immediately when a brush stroke ends, then reload the stroke's tiles from the layer.
+
+        Reloading starts the next stroke from the layer's content, discarding paint the input mask hid and the
+        precision lost writing to the 8-bit layer.
+        """
         if self._should_allow_stroke():
             self.apply_pending_tile_updates()
+        for tile in self._stroke_tiles:
+            tile.load_pixels_from_layer()
+        self._stroke_tiles.clear()
 
     def basic_stroke_to(self, x: float, y: float) -> None:
         """Continue a brush stroke, without tablet inputs."""
@@ -238,6 +247,8 @@ class MyPaintLayerSurface(QObject):
         for tile in self._tiles.values():
             tile.set_layer(None)
         self._tiles.clear()
+        self._pending_changed_tiles.clear()
+        self._stroke_tiles.clear()
 
     def get_tile_from_idx(self, x: int, y: int, clear_buffer_if_new: bool = True) -> MyPaintLayerTile:
         """Returns the tile at the given tile coordinates."""
@@ -274,17 +285,23 @@ class MyPaintLayerSurface(QObject):
     def _connect_layer_signals(self) -> None:
         if self._layer is not None:
             self._layer.size_changed.connect(self._layer_size_change_slot)
+            self._layer.content_changed.connect(self._layer_content_change_slot)
 
     def _disconnect_layer_signals(self) -> None:
         if self._layer is not None:
             self._layer.size_changed.disconnect(self._layer_size_change_slot)
+            self._layer.content_changed.disconnect(self._layer_content_change_slot)
 
     def _layer_size_change_slot(self, layer: ImageLayer, size: QSize) -> None:
         assert layer == self._layer
         self.reset_surface(size)
 
     def _layer_content_change_slot(self, layer: ImageLayer, change_bounds: QRect) -> None:
+        """Reloads tiles that other edits changed. Tiles keep their own writes unrounded: reloading them would round
+           the 15-bit buffer to 8 bits, so the stroke would depend on when apply_pending_tile_updates ran."""
         assert layer == self._layer
+        if self._writing_tiles:
+            return
         for tile in self._tiles.values():
             if tile.bounds.intersects(change_bounds):
                 tile.load_pixels_from_layer()

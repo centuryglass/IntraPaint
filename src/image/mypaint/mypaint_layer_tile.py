@@ -96,25 +96,15 @@ class MyPaintLayerTile:
         else:
             np.copyto(np_image, np_pixels)
 
-    def write_pixels_to_layer(self) -> None:
-        """Write image data from the MyPaint pixel buffer into the connected image layer."""
-        if self._layer is None or self._bounds.isEmpty() or self._layer.locked or self._layer.parent_locked:
-            return
-        self._layer.content_changed.disconnect(self._layer_content_changed_slot)
-        with self._layer.borrow_image(self._bounds) as layer_image:
-            self.write_pixels_to_layer_image(layer_image)
-        self._layer.content_changed.connect(self._layer_content_changed_slot)
-
     def connect_layer_signals(self) -> None:
-        """Connect to layer change signals to automatically update lock state and image content."""
+        """Connect to layer lock changes, to reload image content when the layer is unlocked. The surface reloads
+           tiles when layer content changes, see MyPaintLayerSurface._layer_content_change_slot."""
         if self._layer is not None:
-            self._layer.content_changed.connect(self._layer_content_changed_slot)
             self._layer.lock_changed.connect(self._layer_lock_change_slot)
 
     def disconnect_layer_signals(self) -> None:
-        """disconnect layer change signals to stop the tile from updating when the layer changes."""
+        """Disconnect layer lock changes."""
         if self._layer is not None:
-            self._layer.content_changed.disconnect(self._layer_content_changed_slot)
             self._layer.lock_changed.disconnect(self._layer_lock_change_slot)
 
     @property
@@ -151,11 +141,6 @@ class MyPaintLayerTile:
     def clear(self) -> None:
         """Clear all image data."""
         memset(self._pixels, 0, sizeof(self._pixels))
-
-    def _layer_content_changed_slot(self, layer: ImageLayer, bounds: QRect) -> None:
-        assert layer == self._layer
-        if bounds.intersects(self._bounds):
-            self.load_pixels_from_layer()
 
     def _layer_lock_change_slot(self, layer: ImageLayer, locked: bool) -> None:
         """Reset the pixel buffer on unlock"""

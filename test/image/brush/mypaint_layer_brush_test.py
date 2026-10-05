@@ -20,7 +20,6 @@ BLEND_BRUSH = f'{BRUSH_DIR}/classic/blend+paint.myb'
 ERASER_BRUSH = f'{BRUSH_DIR}/classic/ink_eraser.myb'
 TEXTURED_BRUSH = f'{BRUSH_DIR}/classic/charcoal.myb'
 BRUSH_COLOR = QColor(30, 90, 200)
-RELOAD_ROUNDING = 'writing tiles to the layer reloads them, rounding the 15-bit buffer to 8 bits'
 
 
 def zigzag_points() -> list[StrokePoint]:
@@ -186,12 +185,10 @@ class MyPaintLayerBrushTest(BrushTestCase):
         self.brush.end_stroke()
         self.assert_images_equal(self.layer.image, expected_image)
 
-    @pytest.mark.xfail(strict=True, reason=RELOAD_ROUNDING)
     def test_mid_stroke_tile_writes_match_one_write_at_end(self) -> None:
         """Writing changed tiles partway through a stroke doesn't change a simple brush's result."""
         self.assert_mid_stroke_writes_match_one_write(BULK_BRUSH)
 
-    @pytest.mark.xfail(strict=True, reason=RELOAD_ROUNDING)
     def test_blending_mid_stroke_tile_writes_match_one_write_at_end(self) -> None:
         """Writing changed tiles partway through a stroke doesn't change what a blending brush picks up."""
         self.assert_mid_stroke_writes_match_one_write(BLEND_BRUSH)
