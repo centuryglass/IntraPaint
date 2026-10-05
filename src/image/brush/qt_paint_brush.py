@@ -2,6 +2,7 @@
 Performs drawing operations on an image layer using basic Qt drawing operations.
 """
 import logging
+import time
 from typing import Optional
 
 import numpy as np
@@ -16,9 +17,28 @@ from src.util.visual.image_utils import create_transparent_image, image_data_as_
     NpUInt8Array, NpAnyArray
 
 PAINT_BUFFER_DELAY_MS = 50
+
+# Longest a mid-stroke draw should block the event loop. Events left over are drawn on the next event loop pass, so
+# the window can repaint and take input during a long stroke.
+MAX_DRAW_SECONDS = 0.025
+INITIAL_EVENTS_PER_DRAW = 8
+
+# Number of recent input events whose size, opacity and hardness are averaged, smoothing out abrupt pressure changes:
 AVG_COUNT = 20
 BUFFER_BASE_MARGINS = 256
 logger = logging.getLogger(__name__)
+
+
+def _rolling_average(recent_values: list[float], new_value: float) -> float:
+    """Adds a value to a list of the last AVG_COUNT values, and returns their average."""
+    recent_values.append(new_value)
+    if len(recent_values) > AVG_COUNT:
+        del recent_values[0]
+    value_sum = 0.0
+    # sum() uses compensated float summation, which would change brush output:
+    for value in recent_values:
+        value_sum += value
+    return value_sum / len(recent_values)
 
 
 def _argb_pixels(np_image: NpUInt8Array) -> NpAnyArray:
@@ -41,9 +61,9 @@ class QtPaintBrush(LayerBrush):
         self._change_bounds = QRectF()
         self._input_buffer: list[QtPaintBrush._InputEvent] = []
         self._buffer_timer = QTimer()
-        self._buffer_timer.setInterval(PAINT_BUFFER_DELAY_MS)
         self._buffer_timer.setSingleShot(True)
         self._buffer_timer.timeout.connect(self._draw_buffered_events)
+        self._events_per_draw = INITIAL_EVENTS_PER_DRAW
         self._brush_stroke_buffer = QImage()
         self._prev_image_buffer = QImage()
         self._paint_buffer = QImage()
@@ -373,16 +393,41 @@ class QtPaintBrush(LayerBrush):
         layer_painter.drawImage(bounds, segment_image, bounds)
 
     def _draw_buffered_events(self) -> None:
+        """Draws buffered input events to the layer.
+
+        Mid-stroke, this draws about MAX_DRAW_SECONDS worth of events and schedules the rest for the next event loop
+        pass. Once the stroke has ended, it draws every buffered event.
+        """
         self._buffer_timer.stop()
-        if len(self._input_buffer) == 0:
-            return
         layer = self.layer
-        if layer is None:
+        if len(self._input_buffer) == 0 or layer is None:
             return
+        if self.drawing:
+            event_count = min(len(self._input_buffer), self._events_per_draw)
+        else:
+            event_count = len(self._input_buffer)
+        start_time = time.perf_counter()
+        self._draw_events(layer, self._input_buffer[:event_count])
+        del self._input_buffer[:event_count]
+        if self.drawing:
+            elapsed = max(time.perf_counter() - start_time, 1e-6)
+            self._events_per_draw = max(1, int(event_count * MAX_DRAW_SECONDS / elapsed))
+            if len(self._input_buffer) > 0:
+                self._buffer_timer.start(0)
+
+    def _draw_events(self, layer: ImageLayer, events: list['QtPaintBrush._InputEvent']) -> None:
+        """Smooths size, opacity and hardness over recent events, then draws a sequence of events to the layer,
+           continuing the current stroke."""
+        for event in events:
+            event.size = _rolling_average(self._last_sizes, event.size)
+            event.opacity = _rolling_average(self._last_opacity, event.opacity)
+            event.hardness = _rolling_average(self._last_hardness, event.hardness)
         change_bounds = QRect()
-        for event in self._input_buffer:
+        for event in events:
             change_bounds = change_bounds.united(event.change_bounds)
         change_bounds = change_bounds.intersected(layer.bounds)
+        if change_bounds.isEmpty():
+            return
         new_input_painter = QPainter(self._paint_buffer)
         with layer.borrow_image(change_bounds) as layer_image:
             assert isinstance(layer_image, QImage)
@@ -392,37 +437,14 @@ class QtPaintBrush(LayerBrush):
             self._change_bounds = self._change_bounds.united(change_bounds)
             self._update_image_buffer_bounds()
             img_painter = QPainter(layer_image)
-            assert isinstance(layer_image, QImage)
             np_mask = None if self.input_mask is None else image_data_as_numpy_8bit(self.input_mask)
             np_paint_buf = image_data_as_numpy_8bit(self._paint_buffer)
             np_stroke_buf = image_data_as_numpy_8bit(self._brush_stroke_buffer)
             np_image = image_data_as_numpy_8bit(layer_image)
             np_prev_image = image_data_as_numpy_8bit(self._prev_image_buffer)
-            for event in self._input_buffer:
-                def _update_rolling_avg_list(values: list[float], new_value: float) -> None:
-                    values.append(new_value)
-                    while len(values) > AVG_COUNT:
-                        values.pop(0)
-
-                _update_rolling_avg_list(self._last_sizes, event.size)
-                _update_rolling_avg_list(self._last_opacity, event.opacity)
-                _update_rolling_avg_list(self._last_hardness, event.hardness)
-
-                def _float_avg(values: list[float], default_value: float) -> float:
-                    if len(values) == 0:
-                        return default_value
-                    value_sum = 0.0
-                    for value in values:
-                        value_sum += value
-                    a = value_sum / len(values)
-                    return a
-
-                event.size = _float_avg(self._last_sizes, event.size)
-                event.opacity = _float_avg(self._last_opacity, event.opacity)
-                event.hardness = _float_avg(self._last_hardness, event.hardness)
+            for event in events:
                 self._draw_input_event(event, new_input_painter, np_paint_buf, np_stroke_buf, np_mask, np_image,
                                        np_prev_image, img_painter)
-            self._input_buffer.clear()
             img_painter.end()
         new_input_painter.end()
 
@@ -437,7 +459,7 @@ class QtPaintBrush(LayerBrush):
         self._last_point = QPointF(x, y)
         self._input_buffer.append(input_event)
         if not self._buffer_timer.isActive():
-            self._buffer_timer.start()
+            self._buffer_timer.start(PAINT_BUFFER_DELAY_MS)
 
     class _InputEvent:
         """Delayed drawing input event, buffered to decrease input lag."""

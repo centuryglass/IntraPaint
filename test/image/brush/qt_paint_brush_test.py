@@ -1,4 +1,6 @@
 """Tests QtPaintBrush output against golden images, and checks properties that must hold for any stroke."""
+from unittest.mock import patch
+
 from PySide6.QtCore import QPoint, QRect, Qt
 from PySide6.QtGui import QColor, QBrush, QImage
 
@@ -140,9 +142,11 @@ class QtPaintBrushTest(BrushTestCase):
         self.assert_stroke_matches_golden(image, 'crossing_edges')
 
     def test_stroke_entirely_outside_layer_changes_nothing(self) -> None:
-        """A stroke that never touches the layer leaves it unchanged."""
+        """A stroke that never touches the layer leaves it unchanged, and adds no undo step."""
+        UndoStack().clear()
         image = self.stroke(line_points(QPoint(-100, -50), QPoint(-30, -40), 10))
         self.assert_images_equal(image, brush_test_pattern())
+        self.assertEqual(UndoStack().undo_count(), 0)
 
     def test_click_draws_one_point(self) -> None:
         """A single input point draws a dot."""
@@ -189,6 +193,30 @@ class QtPaintBrushTest(BrushTestCase):
         self.assert_images_equal(self.layer.image, brush_test_pattern())
         flushed_image = self.stroke(points, flush_after_each_point=True)
         self.assert_images_equal(flushed_image, buffered_image)
+
+    def test_mid_stroke_draw_defers_events_past_time_limit(self) -> None:
+        """A mid-stroke draw that runs past MAX_DRAW_SECONDS leaves the remaining events buffered and schedules
+           another draw, and the finished stroke matches one drawn all at once."""
+        # pylint: disable=protected-access
+        self.brush.hardness = 0.5
+        points = zigzag_points()
+        expected_image = self.stroke(points)
+        UndoStack().undo()
+        with patch('src.image.brush.qt_paint_brush.MAX_DRAW_SECONDS', 0.0):
+            self.brush.start_stroke()
+            for x, y, *_ in points:
+                self.brush.stroke_to(x, y, None, None, None)
+            buffered_count = len(self.brush._input_buffer)
+            self.brush._draw_buffered_events()
+            remaining_count = len(self.brush._input_buffer)
+            self.assertGreater(remaining_count, 0)
+            self.assertLess(remaining_count, buffered_count)
+            self.assertTrue(self.brush._buffer_timer.isActive())
+            self.brush._draw_buffered_events()
+            self.assertEqual(len(self.brush._input_buffer), remaining_count - 1)
+            self.brush.end_stroke()
+        self.assertEqual(len(self.brush._input_buffer), 0)
+        self.assert_images_equal(self.layer.image, expected_image)
 
     def test_undo_restores_layer(self) -> None:
         """Undoing a stroke restores the layer."""

@@ -87,6 +87,7 @@ BENCHMARKS = {
         Case('soft, size 40', 40, 0.4, True, QPoint(100, 400), QPoint(1500, 400), 8),
         Case('soft, size 150', 150, 0.4, True, QPoint(100, 400), QPoint(1500, 400), 8),
         Case('soft, size 150, diagonal', 150, 0.4, True, QPoint(100, 100), QPoint(1500, 700), 8),
+        Case('soft, size 300', 300, 0.4, True, QPoint(100, 400), QPoint(1500, 400), 8),
     ]),
 }
 
