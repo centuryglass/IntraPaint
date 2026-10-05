@@ -1,7 +1,9 @@
 """Tests for GenerationAreaController and the frame functions beside it."""
 import sys
+from unittest.mock import patch
 
-from PySide6.QtCore import QSize, QRect
+from PySide6.QtCore import QSize, QRect, QPoint, Qt
+from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
@@ -11,7 +13,8 @@ from src.controller.generation_area_controller import GenerationAreaController, 
 from src.image.layers.image_stack import ImageStack
 from src.undo_stack import UndoStack
 from src.util.generation_area_utils import RESOLUTION_RULE_MATCH_AREA, RESOLUTION_RULE_MATCH_AREA_UPSCALED, \
-    RESOLUTION_RULE_MANUAL
+    RESOLUTION_RULE_MANUAL, FOLLOW_SELECTION_MINIMAL, FOLLOW_SELECTION_CENTER, FOLLOW_SELECTION_OFF
+from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -109,3 +112,160 @@ class GenerationAreaControllerTest(IntraPaintTestCase):
         record_generation_area_size(QSize(768, 768))
         record_generation_area_size(QSize(512, 512))
         self.assertEqual(Cache().get(Cache.RECENT_GENERATION_AREA_SIZES), ['512x512', '768x768'])
+
+
+FOLLOW_AREA = QRect(100, 100, 200, 200)
+
+
+class FollowSelectionTest(IntraPaintTestCase):
+    """Tests moving the generation area to follow selection edits."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        config = AppConfig()
+        config.set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
+        config.restore_default_options(AppConfig.GENERATION_AREA_FOLLOW_SELECTION)
+        config.set(AppConfig.GENERATION_AREA_FOLLOW_SELECTION, FOLLOW_SELECTION_MINIMAL)
+        cache = Cache()
+        cache.restore_default_options(Cache.EDIT_MODE)
+        cache.set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
+        cache.set(Cache.INPAINT_FULL_RES, True)
+        cache.set(Cache.INPAINT_FULL_RES_PADDING, 0)
+        self.image_stack = ImageStack(IMAGE_SIZE, FOLLOW_AREA.size(), QSize(8, 8), QSize(10240, 10240))
+        self.image_stack.generation_area = FOLLOW_AREA
+        self.selection_layer = self.image_stack.selection_layer
+        self.controller = GenerationAreaController(self.image_stack)
+        self.controller.generation_area_visible = True
+        self.controller.follow_selection()
+        UndoStack().clear()
+
+    def _select(self, bounds: QRect) -> None:
+        with self.selection_layer.borrow_image() as mask_image:
+            painter = QPainter(mask_image)
+            painter.fillRect(bounds, Qt.GlobalColor.black)
+            painter.end()
+
+    def _settle(self) -> None:
+        """Runs the pending follow the way its timer would, without waiting on the event loop.
+
+        A follow move changes the area, which schedules one more check, and that check must leave the area alone.
+        """
+        self.assertTrue(self.controller.follow_pending)
+        self.controller.follow_selection()
+        if self.controller.follow_pending:
+            area = self.image_stack.generation_area
+            self.controller.follow_selection()
+            self.assertEqual(self.image_stack.generation_area, area)
+        self.assertFalse(self.controller.follow_pending)
+
+    def test_selection_edit_moves_area_minimally(self) -> None:
+        """Once a selection edit settles, the area moves just far enough to contain it."""
+        self._select(QRect(400, 150, 20, 20))
+        self.assertEqual(self.image_stack.generation_area, FOLLOW_AREA)
+        self._settle()
+        self.assertEqual(self.image_stack.generation_area, QRect(220, 100, 200, 200))
+
+    def test_center_mode_and_padding(self) -> None:
+        """The center mode centers on the selection plus padding, and padding counts in the minimal mode."""
+        Cache().set(Cache.INPAINT_FULL_RES_PADDING, 10)
+        self._select(QRect(400, 150, 20, 20))
+        self._settle()
+        self.assertEqual(self.image_stack.generation_area, QRect(230, 100, 200, 200))
+        AppConfig().set(AppConfig.GENERATION_AREA_FOLLOW_SELECTION, FOLLOW_SELECTION_CENTER)
+        self._select(QRect(500, 200, 10, 20))
+        self._settle()
+        self.assertEqual(self.image_stack.generation_area, QRect(355, 85, 200, 200))
+
+    def test_padding_ignored_without_full_res(self) -> None:
+        """Padding only extends the target while Inpaint Full Resolution is on."""
+        cache = Cache()
+        cache.set(Cache.INPAINT_FULL_RES_PADDING, 10)
+        cache.set(Cache.INPAINT_FULL_RES, False)
+        self._select(QRect(400, 150, 20, 20))
+        self._settle()
+        self.assertEqual(self.image_stack.generation_area, QRect(220, 100, 200, 200))
+
+    def test_context_pin_moves_area(self) -> None:
+        """Pin changes are followed like selection edits, but only alongside a selection."""
+        self.selection_layer.add_context_pin(QPoint(500, 120))
+        self._settle()
+        self.assertEqual(self.image_stack.generation_area, FOLLOW_AREA)
+        self.selection_layer.clear_context_pins()
+        self._settle()
+        self._select(QRect(150, 150, 20, 20))
+        self._settle()
+        self.assertEqual(self.image_stack.generation_area, FOLLOW_AREA)
+        self.selection_layer.add_context_pin(QPoint(320, 120))
+        self._settle()
+        self.assertEqual(self.image_stack.generation_area, QRect(121, 100, 200, 200))
+
+    def test_follow_move_is_its_own_undo_step(self) -> None:
+        """Undo first reverts the follow move, then the selection edit."""
+        self._select(QRect(400, 150, 20, 20))
+        self._settle()
+        UndoStack().undo()
+        self.assertEqual(self.image_stack.generation_area, FOLLOW_AREA)
+        self.assertEqual(self.selection_layer.get_selection_bounds(), QRect(400, 150, 20, 20))
+        UndoStack().undo()
+        self.assertIsNone(self.selection_layer.get_selection_bounds())
+
+    def test_undo_and_redo_never_move_area(self) -> None:
+        """Selection changes made by undo or redo don't move the area."""
+        self._select(QRect(400, 150, 20, 20))
+        self._settle()
+        UndoStack().undo()
+        self._settle()
+        UndoStack().undo()
+        self._settle()
+        self.assertEqual(self.image_stack.generation_area, FOLLOW_AREA)
+        UndoStack().redo()
+        self._settle()
+        self.assertEqual(self.image_stack.generation_area, FOLLOW_AREA)
+        self.assertEqual(self.selection_layer.get_selection_bounds(), QRect(400, 150, 20, 20))
+
+    def test_manual_move_is_kept(self) -> None:
+        """Moving the area by hand, even after a padding change, doesn't make it follow again."""
+        self._select(QRect(400, 150, 20, 20))
+        self._settle()
+        Cache().set(Cache.INPAINT_FULL_RES_PADDING, 50)
+        self.image_stack.generation_area = QRect(600, 400, 200, 200)
+        self._settle()
+        self.assertEqual(self.image_stack.generation_area, QRect(600, 400, 200, 200))
+
+    def test_inactive_conditions_skip_follow(self) -> None:
+        """The area stays put when follow is off, outside inpainting mode or while the area is hidden.
+
+        Edits made then aren't followed later either, when an unrelated area move restarts the follow check.
+        """
+        def _disable_off() -> None:
+            AppConfig().set(AppConfig.GENERATION_AREA_FOLLOW_SELECTION, FOLLOW_SELECTION_OFF)
+
+        def _disable_mode() -> None:
+            Cache().set(Cache.EDIT_MODE, EDIT_MODE_TXT2IMG)
+
+        def _disable_hidden() -> None:
+            self.controller.generation_area_visible = False
+
+        for selection_x, disable in ((400, _disable_off), (450, _disable_mode), (500, _disable_hidden)):
+            disable()
+            self._select(QRect(selection_x, 150, 20, 20))
+            self._settle()
+            self.assertEqual(self.image_stack.generation_area, FOLLOW_AREA, disable.__name__)
+            AppConfig().set(AppConfig.GENERATION_AREA_FOLLOW_SELECTION, FOLLOW_SELECTION_MINIMAL)
+            Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
+            self.controller.generation_area_visible = True
+            self.image_stack.generation_area = FOLLOW_AREA.translated(0, 10)
+            self._settle()
+            self.assertEqual(self.image_stack.generation_area, FOLLOW_AREA.translated(0, 10), disable.__name__)
+            self.image_stack.generation_area = FOLLOW_AREA
+            self._settle()
+
+    def test_waits_while_mouse_button_held(self) -> None:
+        """A follow that comes due mid-stroke waits for the mouse button's release."""
+        self._select(QRect(400, 150, 20, 20))
+        with patch('src.controller.generation_area_controller.QApplication.mouseButtons',
+                   return_value=Qt.MouseButton.LeftButton):
+            self.controller.follow_selection()
+        self.assertEqual(self.image_stack.generation_area, FOLLOW_AREA)
+        self._settle()
+        self.assertEqual(self.image_stack.generation_area, QRect(220, 100, 200, 200))

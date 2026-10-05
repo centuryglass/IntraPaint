@@ -1,4 +1,4 @@
-"""Tests SelectionLayer context pins: crop bounds, undo history, and how image size changes carry them."""
+"""Tests SelectionLayer bounds and context pins: crop bounds, undo history, and how image size changes carry them."""
 import sys
 from unittest.mock import MagicMock
 
@@ -42,6 +42,13 @@ class SelectionLayerContextPinTest(IntraPaintTestCase):
             painter = QPainter(mask_image)
             painter.fillRect(bounds, Qt.GlobalColor.black)
             painter.end()
+
+    def test_selection_bounds_cover_whole_image(self) -> None:
+        """get_selection_bounds includes selected pixels outside the generation area, and is None when empty."""
+        self.assertIsNone(self.selection_layer.get_selection_bounds())
+        self._select(SELECTION_BOUNDS)
+        self._select(QRect(400, 20, 10, 10))
+        self.assertEqual(self.selection_layer.get_selection_bounds(), QRect(QPoint(150, 20), QPoint(409, 169)))
 
     def test_no_pins_crops_to_selection(self) -> None:
         """Without pins, a square selection inside a square area crops to the selection."""

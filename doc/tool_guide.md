@@ -456,6 +456,9 @@ Controls the area of the image in use for AI image generation. AI generators are
 - **Arrow keys**: Move the image generation area.
 - **Hold Alt**: Increase speed when moving the image generation area using keyboard keys.
 
+### Following the selection
+In inpainting mode, the generation area moves after you change the selection or its context pins, so that it contains them along with the "Inpaint Full Resolution" padding. It moves only as far as needed, never changes size, and centers on a selection too large to fit. Undo and redo never move it, and moving it by hand isn't overridden until the selection changes again. Change this with **"Generation area follows selection"** in [settings](./menu_options.md#settings-f9) under the **"Editing"** category: **"Minimal move"** (default), **"Center on selection"**, or **"Off"**.
+
 ### User interface
 <img src="./labeled_screenshots/tools/gen_area.png" alt="Screenshot of the generation area tool controls, with specific elements numbered."/>
 

@@ -216,6 +216,20 @@
             "step": 1
         }
     },
+    "generation_area_follow_selection": {
+        "label": "Generation area follows selection:",
+        "category": "Editing",
+        "subcategory": "Size",
+        "description": "In inpainting mode, how the generation area moves after the selection or context pins change. 'Minimal move' moves it only as far as needed to contain the selection, its context pins and padding. 'Center on selection' centers it on them. 'Off' leaves it in place. The area is never resized, and undo and redo never move it.",
+        "type": "string",
+        "default": "Minimal move",
+        "options": [
+            "Minimal move",
+            "Center on selection",
+            "Off"
+        ],
+        "saved": true
+    },
     "brush_favorites": {
         "label": "Favorite MyPaint brushes:",
         "category": "Editing",

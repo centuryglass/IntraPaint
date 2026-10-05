@@ -158,6 +158,20 @@ class UndoStackTest(IntraPaintTestCase):
         self.assertEqual(states_during_undo, [True])
         self.assertFalse(self.undo_stack.undo_in_progress)
 
+    def test_redo_in_progress(self) -> None:
+        """redo_in_progress is True only while a redo action runs, and undo_in_progress stays False then."""
+        states_during_redo = []
+
+        def _apply() -> None:
+            states_during_redo.append((self.undo_stack.undo_in_progress, self.undo_stack.redo_in_progress))
+
+        self.undo_stack.commit_action(_apply, lambda: None, 'test.redo_state')
+        self.undo_stack.undo()
+        states_during_redo.clear()
+        self.undo_stack.redo()
+        self.assertEqual(states_during_redo, [(False, True)])
+        self.assertFalse(self.undo_stack.redo_in_progress)
+
     def test_undo_with_empty_history_is_not_in_progress(self) -> None:
         """Undo with nothing to undo leaves undo_in_progress False."""
         self.undo_stack.undo()

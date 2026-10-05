@@ -622,6 +622,7 @@ class AppController(MenuBuilder):
         image_panels = (self._window.image_panel, self._tool_panel_navigation_panel, self._window.navigation_window)
         for image_panel in image_panels:
             image_panel.set_image_generation_controls_visible(show_image_gen_controls)
+        self._generation_area_controller.generation_area_visible = show_image_gen_controls
         generate_action = self.get_action_for_method(self.start_and_manage_inpainting)
         generate_action.setEnabled(self._generator is not None and not isinstance(self._generator, NullGenerator))
         self._update_enabled_actions()
