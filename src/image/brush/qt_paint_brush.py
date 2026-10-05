@@ -25,8 +25,7 @@ class QtPaintBrush(LayerBrush):
     """Draws content to an image layer using basic Qt drawing operations."""
 
     def __init__(self, layer: Optional[ImageLayer] = None) -> None:
-        """Initialize a MyPaint surface, and connect to the image layer."""
-        super().__init__(layer)
+        """Initializes stroke buffers and settings, then connects to the image layer if one is given."""
         self._opacity = 1.0
         self._hardness = 1.0
         self._last_point: Optional[QPoint] = None
@@ -48,6 +47,8 @@ class QtPaintBrush(LayerBrush):
         self._pressure_opacity = False
         self._pressure_hardness = False
         self._antialiasing = False
+        # LayerBrush.__init__ calls connect_to_layer, which replaces the buffers above, so it must run last.
+        super().__init__(layer)
 
     @property
     def opacity(self) -> float:
