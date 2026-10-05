@@ -153,7 +153,7 @@ class TextRect:
 
     @text_alignment.setter
     def text_alignment(self, new_alignment: Qt.AlignmentFlag) -> None:
-        assert new_alignment.is_integer()
+        assert isinstance(new_alignment, int)
         self._text_alignment = new_alignment
 
     @property
