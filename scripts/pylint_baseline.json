@@ -72,8 +72,7 @@
     "unused-variable": 2
   },
   "src/image/brush/qt_paint_brush.py": {
-    "unused-argument": 1,
-    "unused-import": 1
+    "unused-argument": 1
   },
   "src/image/filter/filter.py": {
     "unused-argument": 1

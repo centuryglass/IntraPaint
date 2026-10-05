@@ -1,44 +1,71 @@
 """
 Performs drawing operations on an image layer using basic Qt drawing operations.
+
+A stroke is drawn one segment at a time, from the previous input point to the next. Below full opacity or hardness,
+segments in the same stroke don't build up opacity where they overlap: each pixel keeps whichever segment drew it
+with the highest alpha. Stroke buffers track that alpha, and the layer content from before the stroke, so a segment
+can replace an earlier one. Input is buffered and drawn in batches from a timer.
+
+QtPaintBrush is also the engine behind the eraser, filter, clone stamp and selection brush tools. A change to it can
+change their output too.
 """
 import logging
 from typing import Optional
 
 import numpy as np
-from PySide6.QtCore import Qt, QPoint, QPointF, QRectF, QTimer, QRect, QSize
+from PySide6.QtCore import Qt, QPointF, QRectF, QTimer, QRect, QSize
 from PySide6.QtGui import QPainter, QPen, QImage, QColor, QBrush
 
-from src.image.brush.layer_brush import LayerBrush
+from src.image.brush.layer_brush import LayerBrush, draw_buffered_input
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.selection_layer import SelectionLayer
 from src.util.math_utils import clamp
-from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit, numpy_bounds_index, \
-    NpUInt8Array
+from src.util.visual.image_utils import image_data_as_numpy_8bit, numpy_bounds_index, NpUInt8Array, NpAnyArray
 
 PAINT_BUFFER_DELAY_MS = 50
+INITIAL_EVENTS_PER_DRAW = 8
+
+# Number of recent input events whose size, opacity and hardness are averaged, smoothing out abrupt pressure changes:
 AVG_COUNT = 20
 BUFFER_BASE_MARGINS = 256
 logger = logging.getLogger(__name__)
+
+
+def _rolling_average(recent_values: list[float], new_value: float) -> float:
+    """Adds a value to a list of the last AVG_COUNT values, and returns their average."""
+    recent_values.append(new_value)
+    if len(recent_values) > AVG_COUNT:
+        del recent_values[0]
+    value_sum = 0.0
+    # sum() uses compensated float summation, which would change brush output:
+    for value in recent_values:
+        value_sum += value
+    return value_sum / len(recent_values)
+
+
+def _argb_pixels(np_image: NpUInt8Array) -> NpAnyArray:
+    """Returns a 2D uint32 view of an ARGB image array, one element per pixel, so whole pixels can be copied with 2D
+       masks."""
+    return np_image.view(np.uint32)[:, :, 0]
 
 
 class QtPaintBrush(LayerBrush):
     """Draws content to an image layer using basic Qt drawing operations."""
 
     def __init__(self, layer: Optional[ImageLayer] = None) -> None:
-        """Initialize a MyPaint surface, and connect to the image layer."""
-        super().__init__(layer)
+        """Initializes stroke buffers and settings, then connects to the image layer if one is given."""
         self._opacity = 1.0
         self._hardness = 1.0
-        self._last_point: Optional[QPoint] = None
+        self._last_point: Optional[QPointF] = None
         self._last_sizes: list[float] = []
         self._last_opacity: list[float] = []
         self._last_hardness: list[float] = []
         self._change_bounds = QRectF()
         self._input_buffer: list[QtPaintBrush._InputEvent] = []
         self._buffer_timer = QTimer()
-        self._buffer_timer.setInterval(PAINT_BUFFER_DELAY_MS)
         self._buffer_timer.setSingleShot(True)
         self._buffer_timer.timeout.connect(self._draw_buffered_events)
+        self._events_per_draw = INITIAL_EVENTS_PER_DRAW
         self._brush_stroke_buffer = QImage()
         self._prev_image_buffer = QImage()
         self._paint_buffer = QImage()
@@ -48,10 +75,12 @@ class QtPaintBrush(LayerBrush):
         self._pressure_opacity = False
         self._pressure_hardness = False
         self._antialiasing = False
+        # LayerBrush.__init__ calls connect_to_layer, which replaces the buffers above, so it must run last.
+        super().__init__(layer)
 
     @property
     def opacity(self) -> float:
-        """Access the brush hardness fraction."""
+        """Access the brush opacity fraction."""
         return self._opacity
 
     @opacity.setter
@@ -113,33 +142,35 @@ class QtPaintBrush(LayerBrush):
         if last_layer is not None:
             last_layer.size_changed.disconnect(self._layer_size_change_slot)
         super().connect_to_layer(new_layer)
-        self._image_buffer_bounds = QRect()
         if new_layer is not None:
-            layer_size = new_layer.size
-            self._brush_stroke_buffer = QImage(layer_size, QImage.Format.Format_ARGB32_Premultiplied)
-            self._paint_buffer = QImage(layer_size, QImage.Format.Format_ARGB32_Premultiplied)
-            self._prev_image_buffer = QImage(layer_size, QImage.Format.Format_ARGB32_Premultiplied)
+            self._create_buffers(new_layer.size)
             new_layer.size_changed.connect(self._layer_size_change_slot)
         else:
-            self._brush_stroke_buffer = QImage()
-            self._paint_buffer = QImage()
-            self._prev_image_buffer = QImage()
+            self._create_buffers(None)
         if self.drawing:
             self._cancel_stroke()
+
+    def _create_buffers(self, layer_size: Optional[QSize]) -> None:
+        """Replaces the stroke buffers with uninitialized images of the layer's size, or null images with no layer."""
+        def _new_buffer() -> QImage:
+            if layer_size is None:
+                return QImage()
+            return QImage(layer_size, QImage.Format.Format_ARGB32_Premultiplied)
+        self._brush_stroke_buffer = _new_buffer()
+        self._paint_buffer = _new_buffer()
+        self._prev_image_buffer = _new_buffer()
+        self._image_buffer_bounds = QRect()
 
     def _layer_size_change_slot(self, layer: ImageLayer, size: QSize) -> None:
         if layer != self.layer:
             layer.size_changed.disconnect(self._layer_size_change_slot)
             return
-        layer_size = size
-        self._brush_stroke_buffer = QImage(layer_size, QImage.Format.Format_ARGB32_Premultiplied)
-        self._paint_buffer = QImage(layer_size, QImage.Format.Format_ARGB32_Premultiplied)
-        self._prev_image_buffer = QImage(layer_size, QImage.Format.Format_ARGB32_Premultiplied)
-        self._image_buffer_bounds = QRect()
+        self._create_buffers(size)
         if self.drawing:
             self._cancel_stroke()
 
     def start_stroke(self) -> None:
+        """Clears tracked stroke data, and saves a copy of the layer image to restore pixels from mid-stroke."""
         self._change_bounds = QRectF()
         self._last_point = None
         self._last_sizes.clear()
@@ -202,8 +233,15 @@ class QtPaintBrush(LayerBrush):
         QtPaintBrush.paint_segment(painter, round(input_event.size), input_event.opacity, input_event.hardness,
                                    input_event.color, input_event.change_pt, input_event.last_pt)
 
-    def _update_image_buffer_bounds(self) -> None:
-        # To avoid excessive image copying, refresh buffer contents as change bounds adjust.
+    def _update_image_buffer_bounds(self, layer_image: QImage) -> None:
+        """Grows the region of the stroke buffers in use to cover the stroke's change bounds, clearing the stroke and
+           paint buffers and copying the layer image into the previous image buffer within the added region.
+
+        Parameters:
+        -----------
+        layer_image: QImage
+            The layer image, already borrowed by the caller. Borrowing it again here would add an undo step.
+        """
         assert self.layer is not None
         layer_size = self.layer.size
         if self._change_bounds.isNull() or layer_size.isNull():
@@ -223,6 +261,7 @@ class QtPaintBrush(LayerBrush):
         np_stroke_buffer = numpy_bounds_index(image_data_as_numpy_8bit(self._brush_stroke_buffer), new_buffer_bounds)
         np_paint_buffer = numpy_bounds_index(image_data_as_numpy_8bit(self._paint_buffer), new_buffer_bounds)
         np_prev_image_buffer = numpy_bounds_index(image_data_as_numpy_8bit(self._prev_image_buffer), new_buffer_bounds)
+        np_image = numpy_bounds_index(image_data_as_numpy_8bit(layer_image), new_buffer_bounds)
         if not self._image_buffer_bounds.isNull():
             # Buffers are expanding, update edge content:
             old_buffer_local_bounds = self._image_buffer_bounds.translated(-new_buffer_bounds.topLeft())
@@ -243,25 +282,17 @@ class QtPaintBrush(LayerBrush):
                         continue
                     buffer_edge = numpy_bounds_index(draw_buffer, edge_rect)
                     buffer_edge[:, :, :] = 0
-            assert self.layer is not None
-            with self.layer.borrow_image(new_buffer_bounds) as layer_image:
-                np_image = image_data_as_numpy_8bit(layer_image)
-                np_image = numpy_bounds_index(np_image, new_buffer_bounds)
-                for edge_rect in (top_edge, bottom_edge, left_edge, right_edge):
-                    if edge_rect.isEmpty():
-                        continue
-                    image_edge = numpy_bounds_index(np_image, edge_rect)
-                    buffer_edge = numpy_bounds_index(np_prev_image_buffer, edge_rect)
-                    buffer_edge[:, :, :] = image_edge[:, :, :]
+            for edge_rect in (top_edge, bottom_edge, left_edge, right_edge):
+                if edge_rect.isEmpty():
+                    continue
+                image_edge = numpy_bounds_index(np_image, edge_rect)
+                buffer_edge = numpy_bounds_index(np_prev_image_buffer, edge_rect)
+                buffer_edge[:, :, :] = image_edge[:, :, :]
         else:
             # Initializing buffers for the first time this brush stroke:
             for draw_buffer in (np_stroke_buffer, np_paint_buffer):
                 draw_buffer[:, :, :] = 0
-            assert self.layer is not None
-            with self.layer.borrow_image(new_buffer_bounds) as layer_image:
-                np_image = image_data_as_numpy_8bit(layer_image)
-                np_image = numpy_bounds_index(np_image, new_buffer_bounds)
-                np_prev_image_buffer[:, :, :] = np_image[:, :, :]
+            np_prev_image_buffer[:, :, :] = np_image[:, :, :]
         self._image_buffer_bounds = new_buffer_bounds
 
     def _draw_input_event(self,
@@ -279,7 +310,7 @@ class QtPaintBrush(LayerBrush):
 
         Parameters:
         -----------
-        input_event: 'QtPaintBrush._InputEvent:
+        input_event: QtPaintBrush._InputEvent:
             The segment or point to draw, along with associated drawing data.
         new_input_painter: QPainter:
             Painter used to draw the segment onto the paint buffer.
@@ -326,31 +357,23 @@ class QtPaintBrush(LayerBrush):
         new_input_painter.setRenderHint(QPainter.RenderHint.Antialiasing, self._antialiasing)
         self._input_event_paint_segment(new_input_painter, input_event)
 
-        # find changed pixels.  If a mask is set, remove all changes not covered by the mask.
+        # Find the pixels this segment changes. Pixels outside the input mask are never changed.
         changes = np_paint_buf[:, :, 3] > 0
-        masked = None if np_mask is None else np_mask[:, :, 3] > 0
-        if masked is not None:
-            np_paint_buf[changes & ~masked, :] = 0
-            changes = changes & masked
+        if np_mask is not None:
+            changes &= np_mask[:, :, 3] > 0
         if not np.any(changes):
             return
 
-        # If opacity or hardness is less than 1, handle the overlapping regions:
+        # Below full opacity or hardness, keep this segment only where it has the highest alpha in the stroke so far,
+        # as the module docstring describes. Where it wins, reset the layer pixel to its state before the stroke.
         if (input_event.color.alphaF() * input_event.opacity) < 1.0 or input_event.hardness < 1.0:
-            # For all pixels where np_paint_buf and np_stroke_buf buf overlap, find out which has the highest alpha:
-            paint_buf_overrides = changes & (np_paint_buf[:, :, 3] >= np_stroke_buf[:, :, 3])
-            stroke_buf_overrides = changes & (np_stroke_buf[:, :, 3] > np_paint_buf[:, :, 3])
+            changes &= np_paint_buf[:, :, 3] >= np_stroke_buf[:, :, 3]
+            np.copyto(_argb_pixels(np_image), _argb_pixels(np_prev_image), where=changes)
 
-            # If paint_buf has higher alpha, clear that pixel in stroke_buf, and reset it to np_prev_image in np_image.
-            np_stroke_buf[paint_buf_overrides, :] = 0
-            np_image[paint_buf_overrides, :] = np_prev_image[paint_buf_overrides, :]
-
-            # If stroke_buf has higher alpha, clear that pixel in paint_buf.
-            np_paint_buf[stroke_buf_overrides, :] = 0
-            changes = changes & ~stroke_buf_overrides
-
-        # Add the last paint operation to stroke buffer:
-        np_stroke_buf[changes, :] = np_paint_buf[changes, :]
+        # Clear unchanged pixels from the paint buffer, and add the changes to the stroke buffer:
+        paint_pixels = _argb_pixels(np_paint_buf)
+        np.copyto(paint_pixels, 0, where=~changes)
+        np.copyto(_argb_pixels(np_stroke_buf), paint_pixels, where=changes)
 
         if self._pattern_brush is not None:
             # Apply the pattern to the brush stroke segment:
@@ -373,16 +396,28 @@ class QtPaintBrush(LayerBrush):
         layer_painter.drawImage(bounds, segment_image, bounds)
 
     def _draw_buffered_events(self) -> None:
+        """Draws buffered input events to the layer, within the time limit draw_buffered_input sets mid-stroke."""
         self._buffer_timer.stop()
-        if len(self._input_buffer) == 0:
-            return
         layer = self.layer
-        if layer is None:
+        if len(self._input_buffer) == 0 or layer is None:
             return
+        self._events_per_draw = draw_buffered_input(self._input_buffer, self._events_per_draw, not self.drawing,
+                                                    lambda events: self._draw_events(layer, events),
+                                                    self._buffer_timer)
+
+    def _draw_events(self, layer: ImageLayer, events: list['QtPaintBrush._InputEvent']) -> None:
+        """Smooths size, opacity and hardness over recent events, then draws a sequence of events to the layer,
+           continuing the current stroke."""
+        for event in events:
+            event.size = _rolling_average(self._last_sizes, event.size)
+            event.opacity = _rolling_average(self._last_opacity, event.opacity)
+            event.hardness = _rolling_average(self._last_hardness, event.hardness)
         change_bounds = QRect()
-        for event in self._input_buffer:
+        for event in events:
             change_bounds = change_bounds.united(event.change_bounds)
         change_bounds = change_bounds.intersected(layer.bounds)
+        if change_bounds.isEmpty():
+            return
         new_input_painter = QPainter(self._paint_buffer)
         with layer.borrow_image(change_bounds) as layer_image:
             assert isinstance(layer_image, QImage)
@@ -390,39 +425,16 @@ class QtPaintBrush(LayerBrush):
             assert layer_image.size() == bounds.size(), (f'Size mismatch, layer bounds are {bounds} but'
                                                          f' image is size {layer_image.size()}')
             self._change_bounds = self._change_bounds.united(change_bounds)
-            self._update_image_buffer_bounds()
+            self._update_image_buffer_bounds(layer_image)
             img_painter = QPainter(layer_image)
-            assert isinstance(layer_image, QImage)
             np_mask = None if self.input_mask is None else image_data_as_numpy_8bit(self.input_mask)
             np_paint_buf = image_data_as_numpy_8bit(self._paint_buffer)
             np_stroke_buf = image_data_as_numpy_8bit(self._brush_stroke_buffer)
             np_image = image_data_as_numpy_8bit(layer_image)
             np_prev_image = image_data_as_numpy_8bit(self._prev_image_buffer)
-            for event in self._input_buffer:
-                def _update_rolling_avg_list(values: list[float], new_value: float) -> None:
-                    values.append(new_value)
-                    while len(values) > AVG_COUNT:
-                        values.pop(0)
-
-                _update_rolling_avg_list(self._last_sizes, event.size)
-                _update_rolling_avg_list(self._last_opacity, event.opacity)
-                _update_rolling_avg_list(self._last_hardness, event.hardness)
-
-                def _float_avg(values: list[float], default_value: float) -> float:
-                    if len(values) == 0:
-                        return default_value
-                    value_sum = 0.0
-                    for value in values:
-                        value_sum += value
-                    a = value_sum / len(values)
-                    return a
-
-                event.size = _float_avg(self._last_sizes, event.size)
-                event.opacity = _float_avg(self._last_opacity, event.opacity)
-                event.hardness = _float_avg(self._last_hardness, event.hardness)
+            for event in events:
                 self._draw_input_event(event, new_input_painter, np_paint_buf, np_stroke_buf, np_mask, np_image,
                                        np_prev_image, img_painter)
-            self._input_buffer.clear()
             img_painter.end()
         new_input_painter.end()
 
@@ -437,7 +449,7 @@ class QtPaintBrush(LayerBrush):
         self._last_point = QPointF(x, y)
         self._input_buffer.append(input_event)
         if not self._buffer_timer.isActive():
-            self._buffer_timer.start()
+            self._buffer_timer.start(PAINT_BUFFER_DELAY_MS)
 
     class _InputEvent:
         """Delayed drawing input event, buffered to decrease input lag."""

@@ -1,6 +1,8 @@
 """Interface for performing drawing operations on an image layer."""
-from typing import Optional
+import time
+from typing import Optional, TypeVar, Callable
 
+from PySide6.QtCore import QTimer
 from PySide6.QtGui import QColor, QImage
 
 from src.image.layers.image_layer import ImageLayer
@@ -9,6 +11,31 @@ from src.util.shared_constants import (ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_L
                                        ERROR_MESSAGE_LAYER_LOCKED, ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED,
                                        ERROR_MESSAGE_LAYER_GROUP_LOCKED)
 from src.util.visual.image_utils import image_is_fully_transparent
+
+# Longest a mid-stroke draw should block the event loop. Input left over is drawn on the next event loop pass, so the
+# window can repaint and take input during a long stroke.
+MAX_DRAW_SECONDS = 0.025
+
+InputT = TypeVar('InputT')
+
+
+def draw_buffered_input(input_buffer: list[InputT], count_per_draw: int, stroke_ended: bool,
+                        draw: Callable[[list[InputT]], None], buffer_timer: QTimer) -> int:
+    """Draws input from the front of a brush's input buffer and removes it, returning the count to draw next time.
+
+    Mid-stroke, this draws `count_per_draw` items, sets the returned count so a draw takes about MAX_DRAW_SECONDS, and
+    restarts `buffer_timer` with no delay if input remains. Once the stroke has ended, it draws all buffered input.
+    """
+    count = len(input_buffer) if stroke_ended else min(len(input_buffer), count_per_draw)
+    start_time = time.perf_counter()
+    draw(input_buffer[:count])
+    del input_buffer[:count]
+    if stroke_ended:
+        return count_per_draw
+    elapsed = max(time.perf_counter() - start_time, 1e-6)
+    if len(input_buffer) > 0:
+        buffer_timer.start(0)
+    return max(1, int(count * MAX_DRAW_SECONDS / elapsed))
 
 
 class LayerBrush:
