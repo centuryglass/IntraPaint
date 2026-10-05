@@ -5,23 +5,18 @@ A smudge stroke is a chain of one-pixel steps. Each step samples the layer under
 over the layer at the next step, so every step depends on the one before it. Input is buffered and drawn in batches
 from a timer, so the cost of a stroke is the number of steps times the cost of those two compositing operations.
 """
-import time
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QPointF, QTimer, QRect
 from PySide6.QtGui import QPainter, QImage, QColor
 
-from src.image.brush.layer_brush import LayerBrush
+from src.image.brush.layer_brush import LayerBrush, draw_buffered_input
 from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.layers.image_layer import ImageLayer
 from src.util.math_utils import clamp
 from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit
 
 PAINT_BUFFER_DELAY_MS = 50
-
-# Longest a mid-stroke draw should block the event loop. Points left over are drawn on the next event loop pass, so
-# the window can repaint and take input during a long stroke.
-MAX_DRAW_SECONDS = 0.025
 INITIAL_POINTS_PER_DRAW = 64
 
 
@@ -162,27 +157,13 @@ class SmudgeBrush(LayerBrush):
         return smudge_mask
 
     def _draw_buffered_events(self) -> None:
-        """Draws buffered smudge points to the layer.
-
-        Mid-stroke, this draws about MAX_DRAW_SECONDS worth of points and schedules the rest for the next event loop
-        pass. Once the stroke has ended, it draws every buffered point.
-        """
+        """Draws buffered smudge points to the layer, within the time limit draw_buffered_input sets mid-stroke."""
         self._buffer_timer.stop()
         layer = self.layer
         if len(self._input_buffer) == 0 or layer is None:
             return
-        if self.drawing:
-            point_count = min(len(self._input_buffer), self._points_per_draw)
-        else:
-            point_count = len(self._input_buffer)
-        start_time = time.perf_counter()
-        self._draw_points(layer, self._input_buffer[:point_count])
-        del self._input_buffer[:point_count]
-        if self.drawing:
-            elapsed = max(time.perf_counter() - start_time, 1e-6)
-            self._points_per_draw = max(1, int(point_count * MAX_DRAW_SECONDS / elapsed))
-            if len(self._input_buffer) > 0:
-                self._buffer_timer.start(0)
+        self._points_per_draw = draw_buffered_input(self._input_buffer, self._points_per_draw, not self.drawing,
+                                                    lambda points: self._draw_points(layer, points), self._buffer_timer)
 
     def _draw_points(self, layer: ImageLayer, points: list['_SmudgePoint']) -> None:
         """Draws a sequence of smudge points to the layer, continuing from the last point drawn."""

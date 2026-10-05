@@ -110,7 +110,7 @@ class SmudgeBrushTest(BrushTestCase):
         points = line_points(QPoint(10, 64), QPoint(180, 64), 85)
         expected_image = self.stroke(points)
         UndoStack().undo()
-        with patch('src.image.brush.smudge_brush.MAX_DRAW_SECONDS', 0.0):
+        with patch('src.image.brush.layer_brush.MAX_DRAW_SECONDS', 0.0):
             self.brush.start_stroke()
             for x, y, *_ in points:
                 self.brush.stroke_to(x, y, None, None, None)

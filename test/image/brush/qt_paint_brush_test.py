@@ -202,7 +202,7 @@ class QtPaintBrushTest(BrushTestCase):
         points = zigzag_points()
         expected_image = self.stroke(points)
         UndoStack().undo()
-        with patch('src.image.brush.qt_paint_brush.MAX_DRAW_SECONDS', 0.0):
+        with patch('src.image.brush.layer_brush.MAX_DRAW_SECONDS', 0.0):
             self.brush.start_stroke()
             for x, y, *_ in points:
                 self.brush.stroke_to(x, y, None, None, None)
