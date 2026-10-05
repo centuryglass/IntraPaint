@@ -335,6 +335,20 @@ class SelectionLayer(ImageLayer):
                 polygon.append(QPointF(round(point[0][0] / 3) + x_offset, round(point[0][1] / 3) + y_offset))
             self._outline_polygons.append(polygon)
 
+    def get_selection_bounds(self) -> Optional[QRect]:
+        """Returns the bounds of all selected pixels in image coordinates, inside or outside the generation area.
+
+        Returns None if nothing is selected.
+        """
+        image = self.get_qimage()
+        if image.size().isEmpty():
+            return None
+        bounds = image_content_bounds(image)
+        if bounds.isEmpty():
+            return None
+        pos = self.position
+        return bounds.translated(pos.x(), pos.y())
+
     def get_content_bounds(self) -> QRect:
         """Returns the smallest rectangle containing every selected pixel, in image coordinates.
 

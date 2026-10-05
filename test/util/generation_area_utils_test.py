@@ -1,9 +1,10 @@
 """Tests for the generation area frame and resolution rule helpers."""
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, QRect, QPoint
 
 from src.util.generation_area_utils import resolution_for_area, RESOLUTION_RULE_MATCH_AREA, \
     RESOLUTION_RULE_MATCH_AREA_UPSCALED, RESOLUTION_RULE_MANUAL, full_image_frame, square_frame, parse_size, \
-    updated_recent_sizes, recent_frames, previous_frame, MAX_RECENT_SIZES, MAX_PARSED_SIDE
+    updated_recent_sizes, recent_frames, previous_frame, MAX_RECENT_SIZES, MAX_PARSED_SIDE, follow_selection_target, \
+    follow_selection_position, FOLLOW_SELECTION_MINIMAL, FOLLOW_SELECTION_CENTER, FOLLOW_SELECTION_OFF
 from test.base_test_case import IntraPaintTestCase
 
 MAX_GEN_SIZE = QSize(2048, 2048)
@@ -101,3 +102,77 @@ class FrameHelperTest(IntraPaintTestCase):
         self.assertEqual(previous_frame(recent, QSize(512, 512)), QSize(768, 768))
         self.assertIsNone(previous_frame(['768x768'], QSize(768, 768)))
         self.assertIsNone(previous_frame([], QSize(768, 768)))
+
+
+IMAGE_BOUNDS = QRect(QPoint(), IMAGE_SIZE)
+FOLLOW_AREA = QRect(100, 100, 200, 200)
+
+
+class FollowSelectionTargetTest(IntraPaintTestCase):
+    """Tests follow_selection_target."""
+
+    def test_no_selection_returns_none(self) -> None:
+        """Without a selection there's nothing to follow, even with pins."""
+        self.assertIsNone(follow_selection_target(None, [QPoint(5, 5)], 10))
+        self.assertIsNone(follow_selection_target(QRect(), [QPoint(5, 5)], 10))
+
+    def test_pins_and_padding_extend_selection(self) -> None:
+        """Pins stretch the selection bounds to include their pixel, then padding grows every side."""
+        target = follow_selection_target(QRect(50, 50, 10, 10), [QPoint(80, 55), QPoint(55, 40)], 5)
+        self.assertEqual(target, QRect(QPoint(45, 35), QPoint(85, 64)))
+
+    def test_target_is_not_clamped(self) -> None:
+        """Padding can take the target past the image edge."""
+        self.assertEqual(follow_selection_target(QRect(0, 0, 10, 10), [], 4), QRect(-4, -4, 18, 18))
+
+
+class FollowSelectionPositionTest(IntraPaintTestCase):
+    """Tests follow_selection_position in each mode."""
+
+    def test_off_keeps_position(self) -> None:
+        """The off mode never moves the area."""
+        position = follow_selection_position(FOLLOW_AREA, QRect(600, 500, 20, 20), FOLLOW_SELECTION_OFF, IMAGE_BOUNDS)
+        self.assertEqual(position, FOLLOW_AREA.topLeft())
+
+    def test_minimal_keeps_contained_target(self) -> None:
+        """A target already inside the area doesn't move it."""
+        position = follow_selection_position(FOLLOW_AREA, QRect(150, 150, 20, 20), FOLLOW_SELECTION_MINIMAL,
+                                             IMAGE_BOUNDS)
+        self.assertEqual(position, FOLLOW_AREA.topLeft())
+
+    def test_minimal_moves_only_as_far_as_needed(self) -> None:
+        """The area moves until the target touches its edge, on each axis separately."""
+        position = follow_selection_position(FOLLOW_AREA, QRect(350, 50, 20, 20), FOLLOW_SELECTION_MINIMAL,
+                                             IMAGE_BOUNDS)
+        self.assertEqual(position, QPoint(170, 50))
+        position = follow_selection_position(FOLLOW_AREA, QRect(60, 200, 20, 20), FOLLOW_SELECTION_MINIMAL,
+                                             IMAGE_BOUNDS)
+        self.assertEqual(position, QPoint(60, 100))
+
+    def test_center_centers_on_target(self) -> None:
+        """The center mode centers the area on the target, even when the target is already inside."""
+        position = follow_selection_position(FOLLOW_AREA, QRect(150, 150, 20, 20), FOLLOW_SELECTION_CENTER,
+                                             IMAGE_BOUNDS)
+        self.assertEqual(position, QPoint(60, 60))
+
+    def test_larger_target_centers_along_that_axis(self) -> None:
+        """Along an axis where the target is at least as long as the area, both modes center on it."""
+        target = QRect(300, 150, 400, 20)
+        for mode in (FOLLOW_SELECTION_MINIMAL, FOLLOW_SELECTION_CENTER):
+            position = follow_selection_position(FOLLOW_AREA, target, mode, IMAGE_BOUNDS)
+            self.assertEqual(position.x(), 400, mode)
+        self.assertEqual(follow_selection_position(FOLLOW_AREA, target, FOLLOW_SELECTION_MINIMAL, IMAGE_BOUNDS).y(),
+                         100)
+
+    def test_result_stays_in_image(self) -> None:
+        """Targets at or past the image edges leave the area inside the image."""
+        for mode in (FOLLOW_SELECTION_MINIMAL, FOLLOW_SELECTION_CENTER):
+            self.assertEqual(follow_selection_position(FOLLOW_AREA, QRect(-10, -10, 30, 30), mode, IMAGE_BOUNDS),
+                             QPoint(0, 0), mode)
+            self.assertEqual(follow_selection_position(FOLLOW_AREA, QRect(1000, 750, 40, 40), mode, IMAGE_BOUNDS),
+                             QPoint(824, 568), mode)
+
+    def test_unknown_mode_raises(self) -> None:
+        """An unrecognized mode is an error, not a silent no-op."""
+        with self.assertRaises(ValueError):
+            follow_selection_position(FOLLOW_AREA, QRect(0, 0, 10, 10), 'Sideways', IMAGE_BOUNDS)
