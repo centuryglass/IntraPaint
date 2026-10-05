@@ -607,6 +607,17 @@ class LayerGroup(Layer, LayerParent):
                         > self.content_change_timestamp:
                     self._trigger_render()
 
+    def flush_render(self) -> None:
+        """Runs any scheduled render now, so the cached image, the pixmap and content_changed listeners are current.
+
+        Child groups flush first, since a child group's render schedules its parent's.
+        """
+        for layer in self._layers:
+            if isinstance(layer, LayerGroup):
+                layer.flush_render()
+        if self._render_timer.isActive():
+            self._start_render()
+
     def _trigger_render(self) -> None:
         if not self._render_timer.isActive():
             self._render_timer.start()
