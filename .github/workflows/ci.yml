@@ -42,7 +42,7 @@ jobs:
 
       - name: Install system libraries
         # PySide6's offscreen plugin still needs EGL/GL, xkbcommon, glib, dbus and fontconfig present.
-        # The bundled Linux libmypaint.so (lib/libmypaint.so) links against libjson-c.so.5.
+        # The bundled Linux libmypaint (lib/linux-x86_64/libmypaint.so) links against libjson-c.so.5.
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
@@ -121,8 +121,8 @@ jobs:
 
       - name: Install system libraries
         if: runner.os == 'Linux'
-        # The same libraries the test job installs: the launch test runs Qt offscreen, and the bundle loads
-        # lib/libmypaint.so against the system's libjson-c.so.5.
+        # The same libraries the test job installs: the launch test runs Qt offscreen, and PyInstaller copies
+        # libmypaint's libjson-c.so.5 into the bundle from the system.
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
