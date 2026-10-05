@@ -261,6 +261,14 @@ class Config:
             return default_color
         return QColor(color_str)
 
+    def set_color(self, key: str, color: QColor | Qt.GlobalColor, save_change: bool = True) -> None:
+        """Saves a color value to config as a lowercase `#aarrggbb` string, the one form color keys use.
+
+        Mixing cases for the same color makes `set` see a change and notify every listener again, so all color writes
+        go through this method.
+        """
+        self.set(key, QColor(color).name(QColor.NameFormat.HexArgb), save_change)
+
     def get_control_widget(self, key: str, connect_to_config: bool = True, multi_line=False) -> DynamicFieldWidget:
         """Returns a QWidget capable of adjusting the chosen config value. Unless connect_to_config is false, changes
         will immediately propagate to the underlying config file."""

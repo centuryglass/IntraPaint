@@ -50,11 +50,12 @@ from PIL import Image, UnidentifiedImageError, ExifTags
 from PIL.ExifTags import IFD
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage, Qt, QIcon
-from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
+from PySide6.QtWidgets import QApplication, QMessageBox, QWidget, QVBoxLayout
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.controller import color_controller
 from src.controller.generation_area_controller import GenerationAreaController
 from src.controller.image_generation.glid3_webservice_generator import Glid3WebserviceGenerator, DEFAULT_GLID_URL
 from src.controller.image_generation.glid3_xl_generator import Glid3XLGenerator
@@ -97,6 +98,7 @@ from src.ui.panel.color_panel import ColorControlPanel
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
+from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.tool_tab import ToolTab
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
 from src.ui.window.main_window import MainWindow, TabBoxID
@@ -434,7 +436,12 @@ class AppController(MenuBuilder):
                                                 QIcon(ICON_PATH_LAYER_TAB))
         self._tool_panel_color_picker = ColorControlPanel(disable_extended_layouts=True)
         self._tool_panel_color_picker.set_four_tab_mode()
-        self._tool_panel.add_utility_widget_tab(self._tool_panel_color_picker, TOOL_PANEL_COLOR_TAB,
+        color_tab = QWidget()
+        color_tab_layout = QVBoxLayout(color_tab)
+        color_tab_layout.setContentsMargins(0, 0, 0, 0)
+        color_tab_layout.addWidget(ColorPairWidget(color_tab))
+        color_tab_layout.addWidget(self._tool_panel_color_picker, stretch=1)
+        self._tool_panel.add_utility_widget_tab(color_tab, TOOL_PANEL_COLOR_TAB,
                                                 QIcon(ICON_PATH_COLOR_TAB))
         self._tool_panel.add_utility_widget_tab(self._tool_panel_navigation_panel, TOOL_PANEL_NAV_TAB,
                                                 QIcon(ICON_PATH_NAVIGATION_TAB))
@@ -1222,7 +1229,17 @@ class AppController(MenuBuilder):
         else:
             self._image_stack.clear_selected()
 
-    @menu_action(MENU_EDIT, 'settings_shortcut', 106)
+    @menu_action(MENU_EDIT, 'swap_colors_shortcut', 106)
+    def swap_colors(self) -> None:
+        """Swap the foreground and background colors."""
+        color_controller.swap()
+
+    @menu_action(MENU_EDIT, 'reset_colors_shortcut', 107)
+    def reset_colors(self) -> None:
+        """Set the foreground color to black and the background color to white."""
+        color_controller.reset()
+
+    @menu_action(MENU_EDIT, 'settings_shortcut', 108)
     def show_settings(self) -> None:
         """Show the settings window."""
         if self._settings_modal is None:

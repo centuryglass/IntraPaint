@@ -10,6 +10,7 @@ from src.config.key_config import KeyConfig
 from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.ui.widget.color_button import ColorButton
+from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.ui.widget.pen_pressure_panel import PenPressurePanel
 from src.util.layout import extract_layout_item, synchronize_row_widths
@@ -77,7 +78,9 @@ class BrushToolPanel(QWidget):
 
         self._align_rows()
         color_row = QHBoxLayout()
-        if color_key is not None:
+        if color_key == Cache.LAST_BRUSH_COLOR:
+            color_row.addWidget(ColorPairWidget(self))
+        elif color_key is not None:
             color_button = ColorButton(config_key=color_key, parent=self)
             color_row.addWidget(color_button)
         if pattern_key is not None:

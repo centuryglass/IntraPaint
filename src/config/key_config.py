@@ -236,6 +236,8 @@ class KeyConfig(Config, metaclass=Singleton):
     LOAD_LAYERS_SHORTCUT: str
     LOAD_SHORTCUT: str
     LORA_SHORTCUT: str
+    MERGE_ALL_VISIBLE_SHORTCUT: str
+    MERGE_GROUP_SHORTCUT: str
     MERGE_LAYER_DOWN_SHORTCUT: str
     MOVE_DOWN: str
     MOVE_LAYER_DOWN_SHORTCUT: str
@@ -261,6 +263,7 @@ class KeyConfig(Config, metaclass=Singleton):
     QUIT_SHORTCUT: str
     REDO_SHORTCUT: str
     RELOAD_SHORTCUT: str
+    RESET_COLORS_SHORTCUT: str
     RESIZE_CANVAS_SHORTCUT: str
     ROTATE_CCW_KEY: str
     ROTATE_CW_KEY: str
@@ -286,6 +289,7 @@ class KeyConfig(Config, metaclass=Singleton):
     SHRINK_SELECTION_SHORTCUT: str
     SMUDGE_TOOL_KEY: str
     SPEED_MODIFIER: str
+    SWAP_COLORS_SHORTCUT: str
     TEXT_TOOL_KEY: str
     TOOL_ACTION_HOTKEY: str
     TRANSFORM_TOOL_KEY: str

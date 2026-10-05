@@ -9,7 +9,7 @@ from src.config.key_config import KeyConfig
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.layout.divider import Divider
 from src.ui.panel.mypaint_brush_panel import MypaintBrushPanel
-from src.ui.widget.color_button import ColorButton
+from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.key_hint_label import KeyHintLabel
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -49,8 +49,7 @@ class MyPaintBrushToolPanel(QWidget):
 
         second_row = QHBoxLayout()
         self._layout.addLayout(second_row)
-        color_picker_button = ColorButton(parent=self)
-        second_row.addWidget(color_picker_button)
+        second_row.addWidget(ColorPairWidget(self))
 
         selection_only_checkbox = Cache().get_control_widget(Cache.PAINT_SELECTION_ONLY)
         selection_only_checkbox.setText(SELECTION_ONLY_LABEL)
