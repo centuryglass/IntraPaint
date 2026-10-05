@@ -1,4 +1,4 @@
-"""Tests .ora saving and loading, including layer names that are awkward as file names."""
+"""Tests .ora saving and loading, including layer names that are awkward as file names and text layers."""
 import ntpath
 import os
 import sys
@@ -6,9 +6,9 @@ import tempfile
 import zipfile
 from typing import Optional
 from unittest.mock import patch
-from xml.etree.ElementTree import fromstring
+from xml.etree.ElementTree import fromstring, tostring
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QPointF, QSize, Qt
 from PySide6.QtGui import QColor, QImage, QTransform
 from PySide6.QtWidgets import QApplication
 
@@ -16,8 +16,12 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
+from src.image.layers.text_layer import TextLayer
+from src.image.layers.transform_layer import TransformLayer
 from src.image.open_raster import (save_ora_image, read_ora_image, DATA_DIRECTORY_NAME, THUMBNAIL_DIRECTORY_NAME,
-                                   XML_FILE_NAME, EXTENDED_DATA_XML_FILE_NAME, LAYER_TAG_SRC, TRANSFORM_SRC_TAG)
+                                   XML_FILE_NAME, EXTENDED_DATA_XML_FILE_NAME, LAYER_TAG_SRC, TRANSFORM_SRC_TAG,
+                                   TEXT_DATA_TAG)
+from src.image.text_rect import TextRect
 from test.base_test_case import IntraPaintTestCase
 
 IMG_SIZE = QSize(16, 16)
@@ -111,8 +115,16 @@ class OpenRasterTest(IntraPaintTestCase):
             for expected_child, actual_child in zip(expected.child_layers, actual.child_layers):
                 self._assert_layers_match(expected_child, actual_child)
         else:
-            assert isinstance(expected, ImageLayer) and isinstance(actual, ImageLayer)
+            assert isinstance(expected, TransformLayer) and isinstance(actual, TransformLayer)
             self.assert_images_equal(actual.image, expected.image, f'pixels of layer "{expected.name}"')
+            self.assertEqual(expected.transform, actual.transform, f'transform of layer "{expected.name}"')
+            self.assertEqual(expected.opacity, actual.opacity, f'opacity of layer "{expected.name}"')
+            self.assertEqual(expected.visible, actual.visible, f'visibility of layer "{expected.name}"')
+            if isinstance(expected, TextLayer):
+                assert isinstance(actual, TextLayer)
+                # TextRect equality compares QFont identity, so compare serialized data instead:
+                self.assertEqual(expected.text_rect.serialize(), actual.text_rect.serialize(),
+                                 f'text data of layer "{expected.name}"')
 
     def _assert_round_trip_matches(self) -> None:
         metadata = self._round_trip()
@@ -242,3 +254,115 @@ class OpenRasterTest(IntraPaintTestCase):
             read_ora_image(self.loaded_stack, legacy_path)
         self._assert_layers_match(self.image_stack.layer_stack, self.loaded_stack.layer_stack)
         self.assertEqual(layer.transform, self.loaded_stack.image_layers[0].transform)
+
+    def _add_text_layer(self, text: str, parent: Optional[LayerGroup] = None) -> TextLayer:
+        text_rect = TextRect()
+        text_rect.text = text
+        text_rect.size = QSize(12, 10)
+        text_rect.text_color = QColor(Qt.GlobalColor.red)
+        text_rect.background_color = QColor(0, 0, 255, 128)
+        text_rect.fill_background = True
+        text_rect.text_alignment = Qt.AlignmentFlag.AlignRight
+        return self.image_stack.create_text_layer(text_rect, parent,
+                                                  parent.count if parent is not None else
+                                                  self.image_stack.layer_stack.count)
+
+    def _save_with_edited_extended_data(self, edit_text_data) -> None:
+        """Saves the image stack, rewrites each text-data value with edit_text_data, and loads the result.
+
+        edit_text_data takes the saved value and returns the replacement, or None to remove it.
+        """
+        with tempfile.TemporaryDirectory() as temp_dir:
+            ora_path = os.path.join(temp_dir, 'text.ora')
+            edited_path = os.path.join(temp_dir, 'edited.ora')
+            save_ora_image(self.image_stack, ora_path, METADATA)
+            with zipfile.ZipFile(ora_path) as source, zipfile.ZipFile(edited_path, 'w') as edited:
+                for entry in source.namelist():
+                    content = source.read(entry)
+                    if entry == EXTENDED_DATA_XML_FILE_NAME:
+                        extended_xml = fromstring(content)
+                        for element in extended_xml.iter('layer'):
+                            text_data = element.get(TEXT_DATA_TAG)
+                            if text_data is None:
+                                continue
+                            new_data = edit_text_data(text_data)
+                            if new_data is None:
+                                del element.attrib[TEXT_DATA_TAG]
+                            else:
+                                element.set(TEXT_DATA_TAG, new_data)
+                        content = tostring(extended_xml)
+                    edited.writestr(entry, content)
+            read_ora_image(self.loaded_stack, edited_path)
+
+    def _assert_loaded_as_rendered_images(self) -> None:
+        """Asserts that each saved text layer loaded as an image layer showing the rendered text."""
+        self.assertEqual([], self.loaded_stack.text_layers)
+        self.assertEqual(len(self.image_stack.layers), len(self.loaded_stack.layers))
+        for expected, actual in zip(self.image_stack.layers, self.loaded_stack.layers):
+            if isinstance(expected, TextLayer):
+                assert isinstance(actual, ImageLayer)
+                self.assertEqual(expected.name, actual.name)
+                self.assertEqual(expected.transform, actual.transform)
+                self.assert_images_equal(actual.image, expected.image, f'pixels of layer "{expected.name}"')
+
+    def test_text_layers_round_trip(self) -> None:
+        """Text layers load as editable text layers with their text data, transform and layer attributes."""
+        self._add_image_layer('background')
+        self._add_text_layer('top level')
+        group = self.image_stack.create_layer_group('group')
+        nested = self._add_text_layer('nested', group)
+        nested.offset = QPointF(3, 4)
+        nested.set_opacity(0.5)
+        hidden = self._add_text_layer('hidden')
+        hidden.set_visible(False)
+        rotated = self._add_text_layer('rotated')
+        rotated.transform = QTransform.fromTranslate(5, 2).rotate(30)
+        self._assert_round_trip_matches()
+        self.assertEqual(4, len(self.loaded_stack.text_layers))
+
+    def test_text_layer_archive_has_rendered_image(self) -> None:
+        """A text layer's stack.xml entry points at its rendered pixels, so other editors can show it."""
+        layer = self._add_text_layer('rendered')
+        layer.offset = QPointF(2, 3)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            ora_path = os.path.join(temp_dir, 'rendered.ora')
+            save_ora_image(self.image_stack, ora_path, METADATA)
+            with zipfile.ZipFile(ora_path) as zip_file:
+                stack_xml = fromstring(zip_file.read(XML_FILE_NAME))
+                layer_elements = list(stack_xml.iter('layer'))
+                self.assertEqual(1, len(layer_elements))
+                self.assertEqual('2', layer_elements[0].get('x'))
+                self.assertEqual('3', layer_elements[0].get('y'))
+                saved_image = QImage.fromData(zip_file.read(str(layer_elements[0].get(LAYER_TAG_SRC))))
+        self.assert_images_equal(saved_image, layer.image, 'rendered text layer image')
+
+    def test_text_layer_without_text_data_loads_as_image(self) -> None:
+        """A text layer saved without text data, as earlier versions did, loads as an image of the rendered text."""
+        self._add_text_layer('plain')
+        rotated = self._add_text_layer('rotated')
+        rotated.transform = QTransform.fromScale(2, 1)
+        self._save_with_edited_extended_data(lambda _: None)
+        self._assert_loaded_as_rendered_images()
+
+    def test_invalid_text_data_loads_as_image(self) -> None:
+        """Text data that can't be parsed falls back to an image of the rendered text."""
+        for label, edit in (('not json', lambda _: '{not json'),
+                            ('not an object', lambda _: '[]'),
+                            ('missing key', lambda data: data.replace('"font"', '"unknown"'))):
+            with self.subTest(label):
+                self.setUp()
+                self._add_text_layer(label)
+                self._save_with_edited_extended_data(edit)
+                self._assert_loaded_as_rendered_images()
+
+    def test_unsupported_layer_type_is_not_flattened(self) -> None:
+        """Saving a layer type the .ora writer doesn't know fails instead of saving it as plain pixels."""
+
+        class _OtherLayer(TransformLayer):
+            def get_qimage(self) -> QImage:
+                return _solid_image(QColor(Qt.GlobalColor.green))
+
+        self.image_stack.layer_stack.insert_layer(_OtherLayer('other'), 0)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with self.assertRaises(TypeError):
+                save_ora_image(self.image_stack, os.path.join(temp_dir, 'unsupported.ora'), METADATA)

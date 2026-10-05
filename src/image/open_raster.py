@@ -24,6 +24,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.text_layer import TextLayer
+from src.image.text_rect import TextRect
 from src.util.visual.geometry_utils import get_scaled_placement
 
 logger = logging.getLogger(__name__)
@@ -96,6 +97,12 @@ LAYER_TAG_SRC = 'src'  # str
 TRANSFORM_TAG = 'transformation'
 TRANSFORM_SRC_TAG = 'src_untransformed'
 ATTR_TAG_ALPHA_LOCKED = 'alpha-locked'  # str, optional
+
+# Text layer support:
+# A text layer's extended data entry holds its `TextRect.serialize()` JSON under this tag. Its stack.xml entry and
+# PNG are written as for any image layer, so other editors see the rendered text. Without this tag, or if its data
+# can't be parsed, the layer loads as an image layer.
+TEXT_DATA_TAG = 'text-data'
 
 # Metadata support:
 # The top-level 'metadata' tag can be used to store arbitrary additional string-encoded data, usually image generation
@@ -172,9 +179,12 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
 
         # Store untransformed images and transformations in a separate extended data section:
         layer_transform = layer.transform
-        if layer_transform != offset_transform or (isinstance(layer, ImageLayer) and layer.alpha_locked):
+        is_alpha_locked = isinstance(layer, ImageLayer) and layer.alpha_locked
+        if layer_transform != offset_transform or is_alpha_locked or isinstance(layer, TextLayer):
             extended_layer_data: dict[str, str] = {}
-            if isinstance(layer, ImageLayer) and layer.alpha_locked:
+            if isinstance(layer, TextLayer):
+                extended_layer_data[TEXT_DATA_TAG] = layer.text_rect.serialize()
+            if is_alpha_locked:
                 extended_layer_data[ATTR_TAG_ALPHA_LOCKED] = BOOLEAN_TRUE_STR
             if layer_transform != offset_transform:
                 layer_transform_str = _get_transform_str(layer_transform)
@@ -207,9 +217,11 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
         for child_layer in layer.child_layers:
             if isinstance(child_layer, LayerGroup):
                 stack_data[DICT_NESTED_CONTENT_NAME].append(encode_layer_group(child_layer))
-            else:
-                assert isinstance(child_layer, (ImageLayer, TextLayer))
+            elif isinstance(child_layer, (ImageLayer, TextLayer)):
                 stack_data[DICT_NESTED_CONTENT_NAME].append(encode_image_layer(child_layer))
+            else:
+                # Saving another layer type as an image layer would lose its data without warning.
+                raise TypeError(f'Saving {type(child_layer).__name__} layers to .ora is not supported')
         return stack_data
 
     image_name = os.path.basename(file_path)
@@ -252,7 +264,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
     for image_file_path, layer_extended_data in extended_data.items():
         extended_layer = Element(LAYER_ELEMENT)
         extended_layer.set(LAYER_TAG_SRC, image_file_path)
-        for extension_tag in [TRANSFORM_TAG, TRANSFORM_SRC_TAG, ATTR_TAG_ALPHA_LOCKED]:
+        for extension_tag in [TRANSFORM_TAG, TRANSFORM_SRC_TAG, ATTR_TAG_ALPHA_LOCKED, TEXT_DATA_TAG]:
             if extension_tag in layer_extended_data:
                 extended_layer.set(extension_tag, layer_extended_data[extension_tag])
         extended_xml_root.append(extended_layer)
@@ -330,6 +342,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
                 transform = QTransform(*matrix_elements)
                 extended_layer_data[TRANSFORM_TAG] = transform
             extended_layer_data[ATTR_TAG_ALPHA_LOCKED] = extended_layer.get(ATTR_TAG_ALPHA_LOCKED)
+            extended_layer_data[TEXT_DATA_TAG] = extended_layer.get(TEXT_DATA_TAG)
             extended_data[flattened_image_path] = extended_layer_data
 
     def _parse_common_attributes(layer: Layer, element: Element) -> bool:
@@ -356,8 +369,18 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
                 logger.error(f'Unrecognised layer composite mode {composite_op} ignored')
         return element.get(ATTR_TAG_SELECTED) == BOOLEAN_TRUE_STR
 
-    def parse_image_element(element: Element) -> tuple[ImageLayer, bool]:
-        """Load an image layer from its saved XML definition, return whether this layer is selected."""
+    def _parse_text_data(text_data: Optional[str], layer_name: Optional[str]) -> Optional[TextRect]:
+        """Returns the TextRect for a text layer's saved text data, or None if it is missing or can't be parsed."""
+        if text_data is None:
+            return None
+        try:
+            return TextRect.deserialize(text_data)
+        except (ValueError, KeyError, TypeError, AssertionError) as err:
+            logger.error(f'Invalid text data for layer "{layer_name}", loading it as an image layer: {err}')
+            return None
+
+    def parse_image_element(element: Element) -> tuple[ImageLayer | TextLayer, bool]:
+        """Load an image or text layer from its saved XML definition, return whether this layer is selected."""
         assert element.tag == LAYER_ELEMENT
         base_image_path = element.get(LAYER_TAG_SRC)
         assert base_image_path is not None
@@ -365,6 +388,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
         layer_image = QImage()
         layer_transform = QTransform()
         alpha_locked = None
+        text_rect: Optional[TextRect] = None
         if base_image_path in extended_data:
             extended_layer_load_data = extended_data[base_image_path]
             if TRANSFORM_SRC_TAG in extended_layer_load_data:
@@ -372,11 +396,16 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
                 layer_transform = extended_layer_load_data[TRANSFORM_TAG]
             if ATTR_TAG_ALPHA_LOCKED in extended_layer_load_data:
                 alpha_locked = extended_layer_load_data[ATTR_TAG_ALPHA_LOCKED]
-        if layer_image.isNull():
-            layer_image = QImage(os.path.join(tmpdir, base_image_path))
-        layer = ImageLayer(layer_image, '')
+            text_rect = _parse_text_data(extended_layer_load_data.get(TEXT_DATA_TAG), element.get(ATTR_TAG_NAME))
+        layer: ImageLayer | TextLayer
+        if text_rect is not None:
+            layer = TextLayer(text_rect)
+        else:
+            if layer_image.isNull():
+                layer_image = QImage(os.path.join(tmpdir, base_image_path))
+            layer = ImageLayer(layer_image, '')
         is_active = _parse_common_attributes(layer, element)
-        if alpha_locked == BOOLEAN_TRUE_STR:
+        if isinstance(layer, ImageLayer) and alpha_locked == BOOLEAN_TRUE_STR:
             layer.set_alpha_locked(True)
         if not layer_transform.isIdentity():
             layer.set_transform(layer_transform)
