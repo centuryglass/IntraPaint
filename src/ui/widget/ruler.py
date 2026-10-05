@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QWidget, QSizePolicy
 
 from src.config.application_config import AppConfig
 from src.ui.widget.image_graphics_view import ImageGraphicsView
+from src.util.visual.contrast_color import with_min_contrast
 
 # Major tick steps are a base from this list times a power of ten.
 TICK_STEP_BASES = (1, 2, 5)
@@ -26,7 +27,11 @@ MAJOR_TICK_LENGTH = 1.0
 MID_TICK_LENGTH = 0.5
 MINOR_TICK_LENGTH = 0.25
 
-HIGHLIGHT_ALPHA = 90
+# Highlight bars are this fraction of the label font's height thick, and at least MIN_HIGHLIGHT_BAR_THICKNESS pixels.
+HIGHLIGHT_BAR_SCALE = 0.4
+MIN_HIGHLIGHT_BAR_THICKNESS = 4
+# Highlight colors are adjusted to at least this WCAG contrast ratio against the ruler background.
+MIN_HIGHLIGHT_CONTRAST = 4.5
 # The cursor marker's arrow reaches this fraction of the ruler's thickness in from the edge next to the view, and is
 # as wide as it is deep.
 CURSOR_ARROW_DEPTH = 0.6
@@ -74,16 +79,22 @@ class RulerTick(NamedTuple):
 
 
 class RulerHighlight(NamedTuple):
-    """A span of image coordinates to shade on a ruler, from `start` up to but not including `end`."""
+    """A span of image coordinates to mark on a ruler, from `start` up to but not including `end`.
+
+    `lane` picks the highlight bar's row, counting out from the edge next to the view, and must be less than the
+    ruler's `highlight_lanes`. `color` is drawn opaque, with its lightness adjusted to contrast with the ruler.
+    """
     start: float
     end: float
     color: QColor
+    lane: int
 
 
 class Ruler(QWidget):
     """Labels one axis of an ImageGraphicsView's image coordinates, marking the cursor and any highlighted spans.
 
-    Label size comes from AppConfig.RULER_FONT_SIZE, and the ruler's thickness follows it.
+    Thickness is the label height, set by AppConfig.RULER_FONT_SIZE, plus a strip of highlight bar lanes along the
+    edge next to the view. Ticks start above that strip, so highlights never cover them.
     """
 
     thickness_changed = Signal(int)
@@ -96,6 +107,8 @@ class Ruler(QWidget):
         self._cursor_position: Optional[float] = None
         self._label_font = QFont(self.font())
         self._thickness = 0
+        self._highlight_lanes = 0
+        self._bar_thickness = MIN_HIGHLIGHT_BAR_THICKNESS
         if orientation == Qt.Orientation.Horizontal:
             self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         else:
@@ -108,7 +121,13 @@ class Ruler(QWidget):
     def _set_font_size(self, point_size: int) -> None:
         """Applies a new label font size, resizing the ruler to fit it."""
         self._label_font.setPointSize(point_size)
-        self._thickness = QFontMetrics(self._label_font).height() + LABEL_PADDING * 2
+        self._update_thickness()
+
+    def _update_thickness(self) -> None:
+        """Resizes the ruler to fit its labels and highlight lanes."""
+        font_height = QFontMetrics(self._label_font).height()
+        self._bar_thickness = max(MIN_HIGHLIGHT_BAR_THICKNESS, round(font_height * HIGHLIGHT_BAR_SCALE))
+        self._thickness = font_height + LABEL_PADDING * 2 + self._highlight_strip_thickness
         if self._orientation == Qt.Orientation.Horizontal:
             self.setFixedHeight(self._thickness)
         else:
@@ -125,6 +144,33 @@ class Ruler(QWidget):
     def thickness(self) -> int:
         """Returns the ruler's fixed size across its axis."""
         return self._thickness
+
+    @property
+    def highlight_lanes(self) -> int:
+        """Returns the number of highlight bar rows reserved along the edge next to the view."""
+        return self._highlight_lanes
+
+    @highlight_lanes.setter
+    def highlight_lanes(self, lanes: int) -> None:
+        """Reserves room for a number of highlight bar rows, resizing the ruler."""
+        if lanes != self._highlight_lanes:
+            self._highlight_lanes = lanes
+            self._update_thickness()
+
+    @property
+    def _highlight_strip_thickness(self) -> int:
+        """Returns the space reserved for highlight bars, including the gap above them."""
+        return 0 if self._highlight_lanes == 0 else self._highlight_lanes * self._bar_thickness + 1
+
+    @property
+    def _tick_base(self) -> int:
+        """Returns the distance from the edge next to the view to where ticks start."""
+        return 1 + self._highlight_strip_thickness
+
+    def highlight_color(self, highlight: RulerHighlight) -> QColor:
+        """Returns the opaque color a highlight's bar is drawn with, adjusted to contrast with the background."""
+        background = self.palette().color(QPalette.ColorRole.Button)
+        return with_min_contrast(highlight.color, background, MIN_HIGHLIGHT_CONTRAST)
 
     @property
     def length(self) -> int:
@@ -233,40 +279,59 @@ class Ruler(QWidget):
         return QPolygonF([QPointF(edge, position), QPointF(edge - depth, position - half_width),
                           QPointF(edge - depth, position + half_width)])
 
-    def _span_rect(self, start: float, end: float, length: float = 1.0) -> QRect:
-        """Returns the rectangle covering [start, end] along the ruler, reaching `length` of the thickness in from the
-        edge next to the view."""
+    def _span_rect(self, start: float, end: float, inset: int = 0, depth: Optional[int] = None) -> QRect:
+        """Returns the rectangle covering [start, end] along the ruler, starting `inset` pixels in from the edge next
+        to the view and reaching `depth` pixels further, or to the far edge if `depth` is None."""
         start_px = int(math.floor(start))
         end_px = int(math.ceil(end))
-        depth = max(1, round(self.thickness * length))
+        if depth is None:
+            depth = self.thickness - inset
+        far_edge = self.thickness - inset - depth
         if self._orientation == Qt.Orientation.Horizontal:
-            return QRect(start_px, self.thickness - depth, end_px - start_px, depth)
-        return QRect(self.thickness - depth, start_px, depth, end_px - start_px)
+            return QRect(start_px, far_edge, end_px - start_px, depth)
+        return QRect(far_edge, start_px, depth, end_px - start_px)
+
+    def _draw_highlights(self, painter: QPainter, cap_color: QColor) -> None:
+        """Draws each highlight as a bar in its lane, then end caps across every lane so span edges show at any color.
+
+        Caps go on after every bar, so a bar in another lane can't cover them.
+        """
+        spans: list[tuple[int, int]] = []
+        for highlight in self._highlights:
+            if highlight.lane >= self._highlight_lanes:
+                continue
+            start = round(self.image_to_ruler(highlight.start))
+            end = round(self.image_to_ruler(highlight.end))
+            inset = 1 + highlight.lane * self._bar_thickness
+            painter.fillRect(self._span_rect(start, end, inset, self._bar_thickness), self.highlight_color(highlight))
+            spans.append((start, end))
+        strip_depth = self._highlight_lanes * self._bar_thickness
+        for start, end in spans:
+            for cap_position in (start, end - 1):
+                painter.fillRect(self._span_rect(cap_position, cap_position + 1, 1, strip_depth), cap_color)
 
     def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
         """Draws the background, highlighted spans, ticks, labels and cursor marker."""
         palette = self.palette()
         painter = QPainter(self)
         painter.fillRect(self.rect(), palette.color(QPalette.ColorRole.Button))
-        for highlight in self._highlights:
-            color = QColor(highlight.color)
-            color.setAlpha(HIGHLIGHT_ALPHA)
-            painter.fillRect(self._span_rect(self.image_to_ruler(highlight.start),
-                                             self.image_to_ruler(highlight.end)), color)
-
         text_color = palette.color(QPalette.ColorRole.ButtonText)
+        self._draw_highlights(painter, text_color)
+
         painter.setPen(text_color)
         painter.setFont(self._label_font)
         ascent = QFontMetrics(self._label_font).ascent()
         for tick in self.ticks():
             position = round(tick.position)
-            depth = round(self.thickness * tick.length)
+            tick_space = self.thickness - self._tick_base
+            depth = round(tick_space * tick.length)
+            base = self.thickness - self._tick_base
             if self._orientation == Qt.Orientation.Horizontal:
-                painter.drawLine(position, self.thickness - depth, position, self.thickness)
+                painter.drawLine(position, base - depth, position, base)
                 if tick.label is not None:
                     painter.drawText(position + LABEL_PADDING, LABEL_PADDING + ascent, tick.label)
             else:
-                painter.drawLine(self.thickness - depth, position, self.thickness, position)
+                painter.drawLine(base - depth, position, base, position)
                 if tick.label is not None:
                     # Rotated labels read bottom to top, placed just below their tick:
                     label_width = painter.fontMetrics().horizontalAdvance(tick.label)

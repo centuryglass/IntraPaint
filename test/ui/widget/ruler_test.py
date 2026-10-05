@@ -2,13 +2,16 @@
 import sys
 
 from PySide6.QtCore import QPoint, QPointF, QRect, QSize
-from PySide6.QtGui import QColor, QPainter
+from PySide6.QtGui import QColor, QPainter, QPalette
 from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.image.layers.image_stack import ImageStack
 from src.ui.panel.image_panel import ImagePanel
-from src.ui.widget.ruler import major_tick_step, minor_tick_step, tick_values, Ruler, MAJOR_TICK_LENGTH
+from src.ui.panel.image_panel import GENERATION_AREA_RULER_LANE, SELECTION_RULER_LANE, RULER_HIGHLIGHT_LANES
+from src.ui.widget.ruler import major_tick_step, minor_tick_step, tick_values, Ruler, MAJOR_TICK_LENGTH, \
+    MIN_HIGHLIGHT_CONTRAST
+from src.util.visual.contrast_color import contrast_ratio
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -199,3 +202,37 @@ class ImagePanelRulerTest(IntraPaintTestCase):
         corner = self.panel._ruler_corner  # pylint: disable=protected-access
         assert corner is not None
         self.assertEqual(corner.maximumSize(), QSize(self.vertical.thickness, self.horizontal.thickness))
+
+    def test_highlight_lanes(self) -> None:
+        """The generation area and the selection get separate lanes, so their bars never overlap."""
+        selection_layer = self.image_stack.selection_layer
+        image = selection_layer.image
+        painter = QPainter(image)
+        painter.fillRect(QRect(300, 200, 120, 90), QColor(255, 0, 0))
+        painter.end()
+        selection_layer.image = image
+        for ruler in (self.horizontal, self.vertical):
+            self.assertEqual(ruler.highlight_lanes, RULER_HIGHLIGHT_LANES)
+            self.assertEqual(sorted(h.lane for h in ruler.highlights),
+                             sorted([GENERATION_AREA_RULER_LANE, SELECTION_RULER_LANE]))
+
+    def test_highlight_setting_frees_lane_space(self) -> None:
+        """Turning off highlights removes their lanes, making the rulers thinner, and turning it on restores them."""
+        thickness_with_lanes = self.horizontal.thickness
+        AppConfig().set(AppConfig.SHOW_RULER_HIGHLIGHTS, False)
+        self.assertEqual(self.horizontal.highlight_lanes, 0)
+        self.assertLess(self.horizontal.thickness, thickness_with_lanes)
+        self.assertEqual(self.vertical.thickness, self.horizontal.thickness)
+        AppConfig().set(AppConfig.SHOW_RULER_HIGHLIGHTS, True)
+        self.assertEqual(self.horizontal.thickness, thickness_with_lanes)
+
+    def test_highlight_color_contrasts_with_dark_ruler(self) -> None:
+        """A dark highlight color is lightened to stand out on a dark ruler background."""
+        palette = QPalette(self.horizontal.palette())
+        background = QColor('#1b1e20')
+        palette.setColor(QPalette.ColorRole.Button, background)
+        self.horizontal.setPalette(palette)
+        AppConfig().set(AppConfig.RULER_GENERATION_AREA_COLOR, '#995f5555')
+        highlight = self.horizontal.highlights[0]
+        self.assertGreaterEqual(contrast_ratio(self.horizontal.highlight_color(highlight), background),
+                                MIN_HIGHLIGHT_CONTRAST)

@@ -34,6 +34,11 @@ MENU_ACTION_HIDE_HINTS = _tr('Hide tool control hints')
 MENU_ACTION_HIDE_RULERS = _tr('Hide rulers')
 MENU_ACTION_RULER_HIGHLIGHTS = _tr('Highlight generation area and selection')
 
+# Ruler highlight lanes, counting out from the image:
+GENERATION_AREA_RULER_LANE = 0
+SELECTION_RULER_LANE = 1
+RULER_HIGHLIGHT_LANES = 2
+
 MIN_WIDTH_SHOWING_SCALE_SLIDER = 600
 MIN_WIDTH_SHOWING_HINT_TEXT = 900
 MAIN_CONTENT_STRETCH = 100
@@ -270,12 +275,15 @@ class ImagePanel(QWidget):
             return
         horizontal: list[RulerHighlight] = []
         vertical: list[RulerHighlight] = []
-        if AppConfig().get(AppConfig.SHOW_RULER_HIGHLIGHTS):
+        show_highlights = AppConfig().get(AppConfig.SHOW_RULER_HIGHLIGHTS)
+        for ruler in (self._horizontal_ruler, self._vertical_ruler):
+            ruler.highlight_lanes = RULER_HIGHLIGHT_LANES if show_highlights else 0
+        if show_highlights:
             if self._showing_image_gen_controls:
                 area = self._image_stack.generation_area
                 color = AppConfig().get_color(AppConfig.RULER_GENERATION_AREA_COLOR, Qt.GlobalColor.blue)
-                horizontal.append(RulerHighlight(area.x(), area.x() + area.width(), color))
-                vertical.append(RulerHighlight(area.y(), area.y() + area.height(), color))
+                horizontal.append(RulerHighlight(area.x(), area.x() + area.width(), color, GENERATION_AREA_RULER_LANE))
+                vertical.append(RulerHighlight(area.y(), area.y() + area.height(), color, GENERATION_AREA_RULER_LANE))
             selection_layer = self._image_stack.selection_layer
             outline = selection_layer.outline
             if selection_layer.visible and len(outline) > 0:
@@ -283,8 +291,8 @@ class ImagePanel(QWidget):
                 for polygon in outline[1:]:
                     bounds = bounds.united(polygon.boundingRect())
                 color = AppConfig().get_color(AppConfig.SELECTION_COLOR, Qt.GlobalColor.red)
-                horizontal.append(RulerHighlight(bounds.left(), bounds.right(), color))
-                vertical.append(RulerHighlight(bounds.top(), bounds.bottom(), color))
+                horizontal.append(RulerHighlight(bounds.left(), bounds.right(), color, SELECTION_RULER_LANE))
+                vertical.append(RulerHighlight(bounds.top(), bounds.bottom(), color, SELECTION_RULER_LANE))
         self._horizontal_ruler.set_highlights(horizontal)
         self._vertical_ruler.set_highlights(vertical)
 

@@ -97,7 +97,7 @@
         "label": "Highlight generation area and selection on rulers:",
         "category": "Interface",
         "subcategory": "Layout",
-        "description": "Shade the image generation area and the selection's bounds on the rulers.",
+        "description": "Mark the image generation area and the selection's bounds with bars along the rulers.",
         "type": "bool",
         "default": true,
         "saved": true
@@ -106,7 +106,7 @@
         "label": "Ruler generation area color:",
         "category": "Interface",
         "subcategory": "Layout",
-        "description": "Color used to shade the image generation area on the rulers. The selection's bounds use the selection overlay color. Rulers use a fixed transparency, so alpha is ignored.",
+        "description": "Color of the image generation area's bar on the rulers. The selection's bar uses the selection overlay color. Both are drawn opaque, lightened or darkened as needed to stand out against the ruler.",
         "type": "string",
         "default": "#3daee9",
         "saved": true
