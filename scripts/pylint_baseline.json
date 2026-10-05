@@ -1,6 +1,6 @@
 {
   "(repository)": {
-    "duplicate-code": 74
+    "duplicate-code": 71
   },
   "src/api/comfyui/comfyui_types.py": {
     "fixme": 1
@@ -106,8 +106,6 @@
     "invalid-name": 1
   },
   "src/image/mypaint/mypaint_brush.py": {
-    "consider-using-with": 2,
-    "fixme": 1,
     "line-too-long": 1
   },
   "src/image/mypaint/numpy_image_utils.py": {

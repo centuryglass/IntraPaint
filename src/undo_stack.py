@@ -65,6 +65,7 @@ class UndoStack(metaclass=Singleton):
         self._open_group: Optional[_UndoGroup] = None
         self._in_progress_change = 'none'
         self._undo_in_progress = False
+        self._redo_in_progress = False
 
         class _SignalManager(QObject):
             undo_count_changed = Signal(int)
@@ -75,6 +76,11 @@ class UndoStack(metaclass=Singleton):
     def undo_in_progress(self) -> bool:
         """Returns whether an undo action is currently in progress."""
         return self._undo_in_progress
+
+    @property
+    def redo_in_progress(self) -> bool:
+        """Returns whether a redo action is currently in progress."""
+        return self._redo_in_progress
 
     @property
     def undo_count_changed(self) -> SignalInstance:
@@ -167,7 +173,10 @@ class UndoStack(metaclass=Singleton):
         """Combines all actions added with commit_action until the context is exited.
 
         If the block raises, the actions it already committed still go into the history as one entry, and the group
-        closes so that later actions are recorded normally."""
+        closes so that later actions are recorded normally.
+
+        Combine with other context managers as `with A, B:` or nested `with` blocks. `with A and B:` enters only B, so
+        the actions are silently left ungrouped."""
         if self._access_lock.locked():
             raise RuntimeError(f'Concurrent undo history changes detected! Attempted: {action_type}, '
                                f'in-progress: {self._in_progress_change}')
@@ -214,9 +223,13 @@ class UndoStack(metaclass=Singleton):
             last_action_object = self._redo_stack.pop()
             logger.info(f'REDO ACTION:{last_action_object.type}, UNDO_COUNT={len(self._undo_stack)},'
                         f' REDO_COUNT={len(self._redo_stack)}')
-            last_action_object.redo()
-            self.redo_count_changed.emit(len(self._redo_stack))
-            self._add_to_stack(last_action_object, self._undo_stack)
+            self._redo_in_progress = True
+            try:
+                last_action_object.redo()
+                self.redo_count_changed.emit(len(self._redo_stack))
+                self._add_to_stack(last_action_object, self._undo_stack)
+            finally:
+                self._redo_in_progress = False
 
     def clear(self) -> None:
         """Clears the entire undo/redo history."""

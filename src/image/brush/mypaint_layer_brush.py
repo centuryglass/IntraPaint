@@ -18,8 +18,8 @@ class MyPaintLayerBrush(LayerBrush):
 
     def __init__(self, layer: Optional[ImageLayer] = None) -> None:
         """Initialize a MyPaint surface, and connect to the image layer."""
-        super().__init__(layer)
         self._mp_surface = MyPaintLayerSurface(None)
+        super().__init__(None)
         self._last_stroke_bounds = QRect()
         self._last_eraser_value: Optional[float] = None
         super()._set_brush_color(self._mp_surface.brush.color)

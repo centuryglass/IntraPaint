@@ -1,15 +1,12 @@
 """Python wrapper for libmypaint brush data."""
 import logging
-import os
-import sys
 from ctypes import c_void_p, c_float, c_char_p, c_int
-from multiprocessing import Process, Pipe
-from typing import Optional, Any
+from typing import Optional
 
 from PySide6.QtCore import Qt, QByteArray, QFile, QIODevice
 from PySide6.QtGui import QColor
 
-from src.image.mypaint.libmypaint import libmypaint, load_libmypaint, DEFAULT_LIBRARY_PATH
+from src.image.mypaint.libmypaint import libmypaint
 
 logger = logging.getLogger(__name__)
 
@@ -187,48 +184,21 @@ class BrushSetting:
         self.default_value = getattr(setting[0], 'def')
 
 
-def _get_max_setting_index() -> int:
-    """Gets the number of libMyPaint brush settings values to dynamically register with the class.
+def _get_setting_count() -> int:
+    """Returns the number of brush settings in the loaded libmypaint, reading only the setting names it knows.
 
-    Normal behavior is to return the expected default, but this can cause problems with otherwise compatible earlier
-    versions of libMyPaint that use fewer settings. If DYNAMIC_MYPAINT_BRUSH_SETTINGS is a defined environment variable,
-    the settings count will instead be found by checking increasing values in a child process until it fails the
-    'index < count' assertion and terminates.
+    libmypaint aborts on an out-of-range setting id, so the count comes from the highest id that
+    mypaint_brush_setting_from_cname finds for a name declared on MyPaintBrush. A newer library's extra settings are
+    left out.
     """
-    if 'DYNAMIC_MYPAINT_BRUSH_SETTINGS' not in os.environ:
-        if os.name == 'nt':
-            return 56  # TODO: Find or build libmypaint 1.6 for Windows.
-        return 64
-
-    def read_settings(connection: Any) -> None:
-        """Send back valid settings IDs through a connection after validating each with libmypaint."""
-        devnull = os.open(os.devnull, os.O_WRONLY)
-        sys.stdout = open(devnull, 'w', encoding='utf-8')
-        sys.stderr = open(devnull, 'w', encoding='utf-8')
-        lib = load_libmypaint(DEFAULT_LIBRARY_PATH)
-        for test_setting_id in range(999):  # 999 is an arbitrary finite limit.
-            lib.mypaint_brush_setting_info(test_setting_id)
-            connection.send(test_setting_id)
-
-    # All the tricks for suppressing stdout/stderr in a loaded library involve weird hacks that are not really worth
-    # messing with, but it's best to let anyone reading through the output know that the assertion error isn't a
-    # problem.
-    print('Checking available MyPaint brush settings, the following assertion failure is not an error:')
-    parent_connection, child_connection = Pipe()
-    process = Process(target=read_settings, args=(child_connection,))
-    max_setting = 0
-    process.start()
-    process.join()
-    while parent_connection.poll():
-        max_setting = max(max_setting, parent_connection.recv())
-    return max_setting
+    setting_names = [name.lower() for name in MyPaintBrush.__annotations__ if name.isupper()]
+    return 1 + max(libmypaint.mypaint_brush_setting_from_cname(name.encode('utf-8')) for name in setting_names)
 
 
 def _load_brush_settings():
     """Dynamically load settings into the brush class when the module first loads."""
-    max_setting = _get_max_setting_index()
     settings = []
-    for setting_id in range(max_setting):
+    for setting_id in range(_get_setting_count()):
         setting = BrushSetting(setting_id)
         attr_name = setting.cname.upper()
         if not hasattr(MyPaintBrush, attr_name):

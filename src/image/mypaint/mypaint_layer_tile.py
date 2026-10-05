@@ -7,7 +7,7 @@ from PySide6.QtCore import QRect, QSize
 from PySide6.QtGui import QImage
 
 from src.image.layers.image_layer import ImageLayer
-from src.image.mypaint.libmypaint import TilePixelBuffer
+from src.image.mypaint.libmypaint import TilePixelBuffer, c_uint16_p
 from src.image.mypaint.numpy_image_utils import pixel_data_as_numpy_16bit, numpy_8bit_to_16bit, numpy_16bit_to_8bit
 from src.util.visual.image_utils import (NpAnyArray, image_data_as_numpy_8bit, numpy_intersect, numpy_bounds_index,
                                          NpUInt8Array)
@@ -26,6 +26,7 @@ class MyPaintLayerTile:
         self._base_bounds = QRect()
         self._bounds = QRect()
         self._pixels: TilePixelBuffer = tile_buffer  # type: ignore
+        self._buffer_pointer = c_uint16_p(tile_buffer)
         self._mask: Optional[NpUInt8Array] = None
         if clear_buffer:
             self.clear()
@@ -83,38 +84,21 @@ class MyPaintLayerTile:
             _, np_mask = numpy_intersect(np_image, self._mask)
         else:
             np_mask = None
-        change_mask = None
-        if self._layer.alpha_locked:
-            change_mask = np_image[:, :, 3] > 0
-            np_image = np_image[:, :, :3]
-            np_pixels = np_pixels[:, :, :3]
         if np_mask is not None:
-            selection_mask = np_mask[..., 3] > 0
-            change_mask = selection_mask if change_mask is None else selection_mask & change_mask
-        if change_mask is not None:
+            change_mask = np_mask[..., 3] > 0
             np_image[change_mask] = np_pixels[change_mask]
         else:
             np.copyto(np_image, np_pixels)
 
-    def write_pixels_to_layer(self) -> None:
-        """Write image data from the MyPaint pixel buffer into the connected image layer."""
-        if self._layer is None or self._bounds.isEmpty() or self._layer.locked or self._layer.parent_locked:
-            return
-        self._layer.content_changed.disconnect(self._layer_content_changed_slot)
-        with self._layer.borrow_image(self._bounds) as layer_image:
-            self.write_pixels_to_layer_image(layer_image)
-        self._layer.content_changed.connect(self._layer_content_changed_slot)
-
     def connect_layer_signals(self) -> None:
-        """Connect to layer change signals to automatically update lock state and image content."""
+        """Connect to layer lock changes, to reload image content when the layer is unlocked. The surface reloads
+           tiles when layer content changes, see MyPaintLayerSurface._layer_content_change_slot."""
         if self._layer is not None:
-            self._layer.content_changed.connect(self._layer_content_changed_slot)
             self._layer.lock_changed.connect(self._layer_lock_change_slot)
 
     def disconnect_layer_signals(self) -> None:
-        """disconnect layer change signals to stop the tile from updating when the layer changes."""
+        """Disconnect layer lock changes."""
         if self._layer is not None:
-            self._layer.content_changed.disconnect(self._layer_content_changed_slot)
             self._layer.lock_changed.disconnect(self._layer_lock_change_slot)
 
     @property
@@ -148,14 +132,14 @@ class MyPaintLayerTile:
         """Access the tile's libmypaint pixel buffer."""
         return self._pixels
 
+    @property
+    def buffer_pointer(self) -> c_uint16_p:  # type: ignore
+        """Returns a pointer to the tile's pixel buffer, for passing to libmypaint."""
+        return self._buffer_pointer
+
     def clear(self) -> None:
         """Clear all image data."""
         memset(self._pixels, 0, sizeof(self._pixels))
-
-    def _layer_content_changed_slot(self, layer: ImageLayer, bounds: QRect) -> None:
-        assert layer == self._layer
-        if bounds.intersects(self._bounds):
-            self.load_pixels_from_layer()
 
     def _layer_lock_change_slot(self, layer: ImageLayer, locked: bool) -> None:
         """Reset the pixel buffer on unlock"""

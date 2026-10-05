@@ -74,12 +74,29 @@
         "translate": false
     },
     "last_brush_color": {
-        "label": "Color",
+        "label": "Foreground color",
         "category": "Cache",
-        "description": "Last brush color",
+        "description": "Foreground color, used to paint with the brush, draw, fill and text tools. The key keeps its older name so existing cache files still load.",
         "type": "string",
         "default": "#ff000000",
         "saved": true
+    },
+    "background_color": {
+        "label": "Background color",
+        "category": "Cache",
+        "description": "Background color, swapped with the foreground color by the swap colors shortcut.",
+        "type": "string",
+        "default": "#ffffffff",
+        "saved": true
+    },
+    "recent_colors": {
+        "label": "Recent colors:",
+        "category": "Cache",
+        "description": "Colors chosen most recently, newest first, as \"#aarrggbb\" strings",
+        "type": "list",
+        "default": [],
+        "saved": true,
+        "translate": false
     },
     "new_image_background_color": {
         "label": "New image background color:",

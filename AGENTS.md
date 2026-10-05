@@ -176,6 +176,9 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
   - Tests don't wait on the event loop (`qWait`, spinning `processEvents`), wall-clock time, the network or a real
     backend. Use `--mode mock`, or `FakeSdBackend` (`test/controller/image_generation/fake_sd_backend.py`) to drive
     a Stable Diffusion generator offline.
+  - Layer groups and `ImageStack` render on timers, so a cached composite or the view can be stale. Call
+    `ImageStack.flush_render()` before reading them. `test/render_assertions.py` compares region renders, full
+    renders and what the view displays.
   - No retry markers. The only allowed markers are `skip`, with a reason and an issue link, and `xfail(strict=True)`.
   - `pytest-xdist` waits until tests are proven independent of run order, and a coverage-percentage gate waits until
     coverage is built out.
@@ -235,7 +238,7 @@ valid for the version it was generated with.
   AI-generated**, e.g. `_Drafted with AI assistance._`, so it doesn't read as the maintainer arguing with themselves.
   Keep it tool-agnostic ("AI assistance", never a product name), since the maintainer uses more than one agent.
 - **An issue links a repo document by permalink, not by branch path.** Use a blob url pinned to a commit sha, with the
-  section's heading anchor (`.../blob/<sha>/doc/analysis+plans/config_system.md#...`), so the link still shows what
+  section's heading anchor (`.../blob/<sha>/doc/<file>.md#<heading>`), so the link still shows what
   the issue was written against after the doc is edited, renamed or deleted. Code references by symbol name stay as
   they are.
 
@@ -262,19 +265,14 @@ of a Claude Code on the web session it also installs the system libraries CI ins
 3.13 and `requirements-dev.txt`, builds `image_fill`, and puts `.venv/bin` first on `PATH`, so `pytest` and
 `scripts/pylint_check.py` work without further setup.
 
-## Planning docs
-
-`doc/analysis+plans/` is preliminary analysis written by an earlier model. Verify its claims against the code before
-acting on them, and override its recommendations when the evidence points elsewhere.
-
 ## Legacy / don't-touch
 
 - **`src/glid_3_xl/`** and the GLID-3-XL generators/server are legacy. Assume they won't be touched unless something
   there is actively broken.
 - The project root contains a few vendored/symlinked library directories (e.g. `latent-diffusion`,
   `taming-transformers`, `pyspacenav`, `colabFiles`) that are not part of the app's own source; don't treat them as
-  code to modify. `lib/` is different: it holds the checked-in libmypaint binaries the app bundles
-  (`doc/analysis+plans/packaging.md`, "Native piece: libmypaint").
+  code to modify. `lib/` is different: it holds the checked-in libmypaint binaries the app loads and bundles
+  (`lib/README.md`).
 
 ## Packaging
 

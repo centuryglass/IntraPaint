@@ -539,6 +539,24 @@
         "default": "Delete",
         "saved": true
     },
+    "swap_colors_shortcut": {
+        "label": "Swap colors",
+        "category": "Menu Shortcuts",
+        "subcategory": "Edit Menu",
+        "description": "Swap the foreground and background colors.",
+        "type": "string",
+        "default": "Shift+X",
+        "saved": true
+    },
+    "reset_colors_shortcut": {
+        "label": "Reset colors",
+        "category": "Menu Shortcuts",
+        "subcategory": "Edit Menu",
+        "description": "Set the foreground color to black and the background color to white.",
+        "type": "string",
+        "default": "Shift+D",
+        "saved": true
+    },
     "settings_shortcut": {
         "label": "Settings",
         "category": "Menu Shortcuts",

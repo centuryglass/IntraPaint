@@ -1474,6 +1474,14 @@ class ImageStack(QObject):
 
         UndoStack().commit_action(_load, _undo_load, 'ImageStack.set_image')
 
+    def flush_render(self) -> None:
+        """Runs every scheduled layer group render and content_changed emission now, without waiting on the event
+           loop."""
+        self._layer_stack.flush_render()
+        if self._render_timer.isActive():
+            self._render_timer.stop()
+            self._invalidate_cache()
+
     # INTERNAL:
 
     def _invalidate_cache(self) -> None:
