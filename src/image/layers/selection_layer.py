@@ -67,7 +67,6 @@ class SelectionLayer(ImageLayer):
         self._context_pins: list[QPoint] = []
         super().__init__(size, SELECTION_LAYER_NAME)
         self._bounding_box: Optional[QRect] = None
-        self._content_bounds: Optional[QRect] = None
         self._selection_color = QColor()
 
         def _update_color(color_str: str) -> None:
@@ -337,15 +336,14 @@ class SelectionLayer(ImageLayer):
             self._outline_polygons.append(polygon)
 
     def get_content_bounds(self) -> QRect:
-        """Returns a rectangle containing all selected content within the image."""
-        bounds = QRect()
-        for polygon in self._outline_polygons:
-            polygon_bounds = polygon.boundingRect().toAlignedRect()
-            if bounds.isNull():
-                bounds = polygon_bounds
-            else:
-                bounds = bounds.intersected(polygon_bounds)
-        return bounds
+        """Returns the smallest rectangle containing every selected pixel, in image coordinates.
+
+        The result covers the whole layer, not just the generation area. It is an empty QRect when nothing is selected.
+        """
+        bounds = image_content_bounds(self.get_qimage())
+        if bounds.isEmpty():
+            return QRect()
+        return bounds.translated(self.position)
 
     def get_selection_gen_area(self, ignore_config: bool = False, include_context_pins: bool = True) -> Optional[QRect]:
         """Returns the smallest QRect within the generation area containing all masked areas and pins, plus padding.
