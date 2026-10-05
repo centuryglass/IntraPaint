@@ -1,4 +1,4 @@
-"""Benchmark for the smudge, draw and MyPaint brushes: times long, fast strokes on a large layer.
+"""Benchmark for the smudge, draw, eraser and MyPaint brushes: times long, fast strokes on a large layer.
 
 The test suite never measures wall-clock time, so brush performance is checked here instead. Each case draws one
 stroke whose input points are far apart, as a fast mouse drag produces. Input arrives every INPUT_INTERVAL_SECONDS,
@@ -6,13 +6,13 @@ and the Qt event loop runs in between, so the brush's buffer timer fires as it w
 brush's buffer timer is its surface's timer for writing changed tiles to the layer. The report covers:
 - draw ms: time spent in brush calls (stroke_to, the buffer timer's slot and end_stroke) for the whole stroke.
 - per unit us: draw time divided by the stroke's work units. A smudge stroke's unit is one one-pixel smudge step, and
-  a draw or MyPaint stroke's unit is one input event.
+  a draw, eraser or MyPaint stroke's unit is one input event.
 - worst call: the longest single brush call. Qt can't repaint the window or take input while one runs, so this is the
   lag a user sees.
 
 Run it before and after a change to a brush, on the same machine, and compare.
 
-Usage: python scripts/benchmark_brush.py [--brush {smudge,draw,mypaint,all}] [--repeats N]
+Usage: python scripts/benchmark_brush.py [--brush {smudge,draw,eraser,mypaint,all}] [--repeats N]
 """
 import argparse
 import os
@@ -79,6 +79,12 @@ def _create_draw_brush(layer: ImageLayer) -> LayerBrush:
     return brush
 
 
+def _create_eraser_brush(layer: ImageLayer) -> LayerBrush:
+    brush = QtPaintBrush(layer)
+    brush.eraser = True
+    return brush
+
+
 def _create_mypaint_brush(layer: ImageLayer) -> LayerBrush:
     brush = MyPaintLayerBrush(layer)
     brush.brush_color = QColor(30, 90, 200)
@@ -130,6 +136,11 @@ BENCHMARKS = {
         Case('soft, size 150', 150, 0.4, True, QPoint(100, 400), QPoint(1500, 400), 8),
         Case('soft, size 150, diagonal', 150, 0.4, True, QPoint(100, 100), QPoint(1500, 700), 8),
         Case('soft, size 300', 300, 0.4, True, QPoint(100, 400), QPoint(1500, 400), 8),
+    ]),
+    'eraser': BrushBenchmark(QSize(1600, 800), _create_eraser_brush, _configure_qt_brush(0.8), _qt_buffer_timer,
+                             _event_count, [
+        Case('hard, size 40', 40, 1.0, False, QPoint(100, 400), QPoint(1500, 400), 8),
+        Case('soft, size 150', 150, 0.4, True, QPoint(100, 400), QPoint(1500, 400), 8),
     ]),
     'mypaint': BrushBenchmark(QSize(1600, 800), _create_mypaint_brush, _configure_mypaint_brush, _mypaint_buffer_timer,
                               _event_count, [
