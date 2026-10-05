@@ -180,3 +180,22 @@ class ImagePanelRulerTest(IntraPaintTestCase):
         AppConfig().set(AppConfig.SHOW_RULERS, True)
         self.assertTrue(self.horizontal.isVisible())
         self.assertTrue(self.vertical.isVisible())
+
+    def test_generation_area_color_setting(self) -> None:
+        """The generation area highlight uses its configured color, and follows changes to it."""
+        AppConfig().set(AppConfig.RULER_GENERATION_AREA_COLOR, '#00ff00')
+        self.assertEqual([h.color for h in self.horizontal.highlights], [QColor('#00ff00')])
+        AppConfig().set(AppConfig.RULER_GENERATION_AREA_COLOR, '#ff00ff')
+        self.assertEqual([h.color for h in self.vertical.highlights], [QColor('#ff00ff')])
+
+    def test_font_size_setting(self) -> None:
+        """A larger ruler font makes both rulers and the corner between them thicker."""
+        initial_thickness = self.horizontal.thickness
+        AppConfig().set(AppConfig.RULER_FONT_SIZE, AppConfig().get(AppConfig.RULER_FONT_SIZE) * 3)
+        self.assertGreater(self.horizontal.thickness, initial_thickness)
+        self.assertEqual(self.vertical.thickness, self.horizontal.thickness)
+        self.assertEqual(self.horizontal.maximumHeight(), self.horizontal.thickness)
+        self.assertEqual(self.vertical.maximumWidth(), self.vertical.thickness)
+        corner = self.panel._ruler_corner  # pylint: disable=protected-access
+        assert corner is not None
+        self.assertEqual(corner.maximumSize(), QSize(self.vertical.thickness, self.horizontal.thickness))

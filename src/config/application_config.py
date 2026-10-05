@@ -94,6 +94,8 @@ class AppConfig(Config, metaclass=Singleton):
     OPENGL_ACCELERATION: str
     PIL_DOWNSCALE_MODE: str
     PIL_UPSCALE_MODE: str
+    RULER_FONT_SIZE: str
+    RULER_GENERATION_AREA_COLOR: str
     SAVED_COLORS: str
     SELECTION_COLOR: str
     SELECTION_SCREEN_ZOOMS_TO_CHANGED: str

@@ -211,7 +211,12 @@ class ImagePanel(QWidget):
         self._horizontal_ruler = Ruler(self._image_viewer, Qt.Orientation.Horizontal, grid_widget)
         self._vertical_ruler = Ruler(self._image_viewer, Qt.Orientation.Vertical, grid_widget)
         self._ruler_corner = QWidget(grid_widget)
-        self._ruler_corner.setFixedSize(self._vertical_ruler.width(), self._horizontal_ruler.height())
+        self._ruler_corner.setFixedSize(self._vertical_ruler.thickness, self._horizontal_ruler.thickness)
+
+        def _resize_corner(thickness: int) -> None:
+            assert self._ruler_corner is not None
+            self._ruler_corner.setFixedSize(thickness, thickness)
+        self._horizontal_ruler.thickness_changed.connect(_resize_corner)
         self._ruler_corner.setBackgroundRole(QPalette.ColorRole.Button)
         self._ruler_corner.setAutoFillBackground(True)
         grid.addWidget(self._ruler_corner, 0, 0)
@@ -240,6 +245,7 @@ class ImagePanel(QWidget):
         AppConfig().connect(self, AppConfig.SHOW_RULER_HIGHLIGHTS, _update_highlight_action)
         AppConfig().connect(self, AppConfig.SHOW_RULERS, self._update_ruler_visibility)
         AppConfig().connect(self, AppConfig.SELECTION_COLOR, self._update_ruler_highlights)
+        AppConfig().connect(self, AppConfig.RULER_GENERATION_AREA_COLOR, self._update_ruler_highlights)
         self._image_stack.generation_area_bounds_changed.connect(self._update_ruler_highlights)
         selection_layer = self._image_stack.selection_layer
         selection_layer.content_changed.connect(self._update_ruler_highlights)
@@ -267,7 +273,7 @@ class ImagePanel(QWidget):
         if AppConfig().get(AppConfig.SHOW_RULER_HIGHLIGHTS):
             if self._showing_image_gen_controls:
                 area = self._image_stack.generation_area
-                color = self.palette().color(QPalette.ColorRole.Highlight)
+                color = AppConfig().get_color(AppConfig.RULER_GENERATION_AREA_COLOR, Qt.GlobalColor.blue)
                 horizontal.append(RulerHighlight(area.x(), area.x() + area.width(), color))
                 vertical.append(RulerHighlight(area.y(), area.y() + area.height(), color))
             selection_layer = self._image_stack.selection_layer

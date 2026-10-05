@@ -7,10 +7,11 @@ translation only, with no rotation or shear.
 import math
 from typing import NamedTuple, Optional
 
-from PySide6.QtCore import Qt, QPoint, QPointF, QRect, QSize
-from PySide6.QtGui import QPainter, QColor, QPaintEvent, QPalette, QFont, QFontMetrics
+from PySide6.QtCore import Qt, QPoint, QPointF, QRect, QSize, Signal
+from PySide6.QtGui import QPainter, QColor, QPaintEvent, QPalette, QFont, QFontMetrics, QPolygonF
 from PySide6.QtWidgets import QWidget, QSizePolicy
 
+from src.config.application_config import AppConfig
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 
 # Major tick steps are a base from this list times a power of ten.
@@ -19,7 +20,6 @@ TICK_STEP_BASES = (1, 2, 5)
 MINOR_TICK_DIVISIONS = (10, 5, 4, 2)
 MIN_MINOR_TICK_SPACING = 5.0
 LABEL_PADDING = 3
-LABEL_FONT_SCALE = 0.8
 
 # Tick lengths, as fractions of the ruler's thickness:
 MAJOR_TICK_LENGTH = 1.0
@@ -27,7 +27,9 @@ MID_TICK_LENGTH = 0.5
 MINOR_TICK_LENGTH = 0.25
 
 HIGHLIGHT_ALPHA = 90
-CURSOR_MARKER_UPDATE_MARGIN = 2
+# The cursor marker's arrow reaches this fraction of the ruler's thickness in from the edge next to the view, and is
+# as wide as it is deep.
+CURSOR_ARROW_DEPTH = 0.6
 
 
 def major_tick_step(scale: float, min_spacing: float) -> int:
@@ -79,7 +81,12 @@ class RulerHighlight(NamedTuple):
 
 
 class Ruler(QWidget):
-    """Labels one axis of an ImageGraphicsView's image coordinates, marking the cursor and any highlighted spans."""
+    """Labels one axis of an ImageGraphicsView's image coordinates, marking the cursor and any highlighted spans.
+
+    Label size comes from AppConfig.RULER_FONT_SIZE, and the ruler's thickness follows it.
+    """
+
+    thickness_changed = Signal(int)
 
     def __init__(self, view: ImageGraphicsView, orientation: Qt.Orientation, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -88,16 +95,26 @@ class Ruler(QWidget):
         self._highlights: list[RulerHighlight] = []
         self._cursor_position: Optional[float] = None
         self._label_font = QFont(self.font())
-        self._label_font.setPointSizeF(max(self.font().pointSizeF() * LABEL_FONT_SCALE, 1.0))
-        thickness = QFontMetrics(self._label_font).height() + LABEL_PADDING * 2
+        self._thickness = 0
         if orientation == Qt.Orientation.Horizontal:
-            self.setFixedHeight(thickness)
             self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         else:
-            self.setFixedWidth(thickness)
             self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
+        AppConfig().connect(self, AppConfig.RULER_FONT_SIZE, self._set_font_size)
+        self._set_font_size(AppConfig().get(AppConfig.RULER_FONT_SIZE))
         view.view_changed.connect(self.update)
         view.cursor_moved.connect(self._cursor_moved_slot)
+
+    def _set_font_size(self, point_size: int) -> None:
+        """Applies a new label font size, resizing the ruler to fit it."""
+        self._label_font.setPointSize(point_size)
+        self._thickness = QFontMetrics(self._label_font).height() + LABEL_PADDING * 2
+        if self._orientation == Qt.Orientation.Horizontal:
+            self.setFixedHeight(self._thickness)
+        else:
+            self.setFixedWidth(self._thickness)
+        self.update()
+        self.thickness_changed.emit(self._thickness)
 
     @property
     def orientation(self) -> Qt.Orientation:
@@ -107,7 +124,7 @@ class Ruler(QWidget):
     @property
     def thickness(self) -> int:
         """Returns the ruler's fixed size across its axis."""
-        return self.height() if self._orientation == Qt.Orientation.Horizontal else self.width()
+        return self._thickness
 
     @property
     def length(self) -> int:
@@ -122,8 +139,8 @@ class Ruler(QWidget):
     def sizeHint(self) -> QSize:
         """Returns the fixed thickness across the axis, with no preferred length."""
         if self._orientation == Qt.Orientation.Horizontal:
-            return QSize(0, self.height())
-        return QSize(self.width(), 0)
+            return QSize(0, self._thickness)
+        return QSize(self._thickness, 0)
 
     @property
     def highlights(self) -> list[RulerHighlight]:
@@ -199,11 +216,22 @@ class Ruler(QWidget):
             new_position = ruler_pos.x() if self._orientation == Qt.Orientation.Horizontal else ruler_pos.y()
         if new_position == self._cursor_position:
             return
+        margin = self._thickness * CURSOR_ARROW_DEPTH / 2 + 2
         for position in (self._cursor_position, new_position):
             if position is not None:
-                self.update(self._span_rect(position - CURSOR_MARKER_UPDATE_MARGIN,
-                                            position + CURSOR_MARKER_UPDATE_MARGIN))
+                self.update(self._span_rect(position - margin, position + margin))
         self._cursor_position = new_position
+
+    def _cursor_arrow(self, position: float) -> QPolygonF:
+        """Returns the cursor marker's arrow, pointing at the view from the ruler's inner edge."""
+        depth = self._thickness * CURSOR_ARROW_DEPTH
+        half_width = depth / 2
+        edge = float(self._thickness)
+        if self._orientation == Qt.Orientation.Horizontal:
+            return QPolygonF([QPointF(position, edge), QPointF(position - half_width, edge - depth),
+                              QPointF(position + half_width, edge - depth)])
+        return QPolygonF([QPointF(edge, position), QPointF(edge - depth, position - half_width),
+                          QPointF(edge - depth, position + half_width)])
 
     def _span_rect(self, start: float, end: float, length: float = 1.0) -> QRect:
         """Returns the rectangle covering [start, end] along the ruler, reaching `length` of the thickness in from the
@@ -249,12 +277,18 @@ class Ruler(QWidget):
                     painter.restore()
 
         if self._cursor_position is not None:
-            painter.setPen(palette.color(QPalette.ColorRole.Highlight))
             position = round(self._cursor_position)
+            painter.setPen(text_color)
             if self._orientation == Qt.Orientation.Horizontal:
                 painter.drawLine(position, 0, position, self.thickness)
             else:
                 painter.drawLine(0, position, self.thickness, position)
+            painter.save()
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+            painter.setPen(palette.color(QPalette.ColorRole.Button))
+            painter.setBrush(text_color)
+            painter.drawPolygon(self._cursor_arrow(position + 0.5))
+            painter.restore()
 
         painter.setPen(palette.color(QPalette.ColorRole.Mid))
         if self._orientation == Qt.Orientation.Horizontal:
