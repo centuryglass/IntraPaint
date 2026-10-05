@@ -189,7 +189,7 @@ class MainWindow(QMainWindow):
         self._top_divider = DraggableDivider()
         self._layout.addWidget(self._top_divider)
 
-        self._image_panel = ImagePanel(image_stack, True)
+        self._image_panel = ImagePanel(image_stack, True, include_rulers=True)
         self._image_panel.setContentsMargins(1, 1, 1, 1)
         self._layout.addWidget(self._image_panel, stretch=VERTICAL_STRETCH_SUM)
 

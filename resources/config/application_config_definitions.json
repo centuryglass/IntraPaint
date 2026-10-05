@@ -84,6 +84,47 @@
         "default": true,
         "saved": true
     },
+    "show_rulers": {
+        "label": "Show rulers:",
+        "category": "Interface",
+        "subcategory": "Layout",
+        "description": "Show rulers with image pixel coordinates above and to the left of the image.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "show_ruler_highlights": {
+        "label": "Highlight generation area and selection on rulers:",
+        "category": "Interface",
+        "subcategory": "Layout",
+        "description": "Mark the image generation area and the selection's bounds with bars along the rulers.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "ruler_generation_area_color": {
+        "label": "Ruler generation area color:",
+        "category": "Interface",
+        "subcategory": "Layout",
+        "description": "Color of the image generation area's bar on the rulers. The selection's bar uses the selection overlay color. Both are drawn opaque, lightened or darkened as needed to stand out against the ruler.",
+        "type": "string",
+        "default": "#3daee9",
+        "saved": true
+    },
+    "ruler_font_size": {
+        "label": "Ruler font size:",
+        "category": "Interface",
+        "subcategory": "Layout",
+        "description": "Font point size for ruler labels. The rulers' thickness scales with it.",
+        "type": "int",
+        "default": 8,
+        "saved": true,
+        "range_options": {
+            "min": 4,
+            "max": 72,
+            "step": 1
+        }
+    },
     "animate_selection_outline": {
         "label": "Animate selected content outlines",
         "category": "Interface",

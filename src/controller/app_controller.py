@@ -1252,6 +1252,11 @@ class AppController(MenuBuilder):
 
     # Image menu:
 
+    @menu_action(MENU_IMAGE, 'toggle_rulers_shortcut', 198)
+    def toggle_rulers(self) -> None:
+        """Show or hide the rulers beside the image."""
+        AppConfig().set(AppConfig.SHOW_RULERS, not AppConfig().get(AppConfig.SHOW_RULERS))
+
     @menu_action(MENU_IMAGE, 'navigation_window_shortcut', 199)
     def show_navigation_window(self) -> None:
         """Show the image preview window."""
