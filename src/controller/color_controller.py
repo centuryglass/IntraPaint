@@ -101,6 +101,21 @@ def save_color(color: QColor) -> None:
     _set_saved_colors([*colors, color])
 
 
+def insert_saved_color(color: QColor, index: int) -> None:
+    """Puts a color into the saved colors before an index into `saved_colors()`, moving it there if it is already
+    saved."""
+    colors = saved_colors()
+    color_str = color.name(QColor.NameFormat.HexArgb)
+    for saved_index, saved in enumerate(colors):
+        if saved.name(QColor.NameFormat.HexArgb) == color_str:
+            del colors[saved_index]
+            if saved_index < index:
+                index -= 1
+            break
+    colors.insert(max(0, min(index, len(colors))), QColor(color))
+    _set_saved_colors(colors)
+
+
 def remove_saved_color(index: int) -> None:
     """Removes the saved color at an index into `saved_colors()`."""
     colors = saved_colors()

@@ -1,8 +1,9 @@
 """Saved and recent color swatches for the color picker.
 
 `SavedColorsPanel` shows `AppConfig.SAVED_COLORS` with a button that saves the current color, and a context menu that
-removes one. `RecentColorsRow` shows `Cache.RECENT_COLORS`. Both follow their config key, so every picker shows the
-same lists. A swatch click emits `color_clicked`, which the picker treats as a committed choice.
+removes one. A color dragged onto its grid is saved at the drop point, which also reorders saved colors.
+`RecentColorsRow` shows `Cache.RECENT_COLORS`. Both follow their config key, so every picker shows the same lists.
+A swatch click emits `color_clicked`, which the picker treats as a committed choice.
 """
 from typing import Optional
 
@@ -25,11 +26,13 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 SAVED_COLORS_LABEL = _tr('Saved colors:')
-SAVED_COLORS_TOOLTIP = _tr('Click a color to use it. Right-click a color to remove it.')
+SAVED_COLORS_TOOLTIP = _tr('Click a color to use it. Drag colors here to save them, or drag to reorder them. '
+                           'Right-click a color to remove it.')
 SAVE_BUTTON_LABEL = _tr('Save c&urrent color')
 REMOVE_ACTION_LABEL = _tr('Remove')
 RECENT_COLORS_LABEL = _tr('Recent colors:')
-RECENT_COLORS_TOOLTIP = _tr('Colors you chose most recently, newest first. Click a color to use it again.')
+RECENT_COLORS_TOOLTIP = _tr('Colors you chose most recently, newest first. Click a color to use it again, or drag it '
+                            'to the saved colors.')
 
 
 class SavedColorsPanel(QWidget):
@@ -43,8 +46,9 @@ class SavedColorsPanel(QWidget):
         layout = QVBoxLayout(self)
         label = QLabel(SAVED_COLORS_LABEL)
         layout.addWidget(label)
-        self._grid = ColorSwatchGrid()
+        self._grid = ColorSwatchGrid(accept_drops=True)
         self._grid.setToolTip(SAVED_COLORS_TOOLTIP)
+        self._grid.color_dropped.connect(color_controller.insert_saved_color)
         self._grid.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self._grid.customContextMenuRequested.connect(self._show_context_menu)
         self._grid.color_clicked.connect(self.color_clicked)

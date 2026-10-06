@@ -99,6 +99,17 @@ class ColorControllerTest(IntraPaintTestCase):
         color_controller.remove_saved_color(5)
         self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), ['#ff112233', '#ff778899'])
 
+    def test_insert_saved_color_adds_or_moves(self) -> None:
+        """insert_saved_color inserts a new color before an index, and moves a saved color there instead of
+        duplicating it."""
+        AppConfig().set(AppConfig.SAVED_COLORS, ['#ff000001', '#ff000002', '#ff000003'])
+        color_controller.insert_saved_color(QColor('#ff000009'), 1)
+        self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), ['#ff000001', '#ff000009', '#ff000002', '#ff000003'])
+        color_controller.insert_saved_color(QColor('#ff000001'), 3)
+        self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), ['#ff000009', '#ff000002', '#ff000001', '#ff000003'])
+        color_controller.insert_saved_color(QColor('#ff000003'), 0)
+        self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), ['#ff000003', '#ff000009', '#ff000002', '#ff000001'])
+
 
 class SwapColorsDrawTest(ToolTestCase):
     """Tests that the draw tool paints with the foreground color after a swap."""

@@ -493,10 +493,13 @@ class CustomColorPaletteWidget(PaletteWidget):
                 break
 
     def _update_config_color_slot(self, idx: int, color: QColor) -> None:
-        colors = config_colors(self.num_rows() * self.num_cols())
+        slot_count = self.num_rows() * self.num_cols()
+        colors = config_colors(slot_count)
         colors[idx] = color
+        # Saved colors past this grid's slots are kept unchanged.
+        overflow = AppConfig().get(AppConfig.SAVED_COLORS)[slot_count:]
         AppConfig().set(AppConfig.SAVED_COLORS, [col.name(QColor.NameFormat.HexArgb) if col.isValid() else ''
-                                              for col in colors])
+                                              for col in colors] + overflow)
         for i in range(self.num_cols() * 2):
             # QColorDialog is indexed by column instead of row.  This is intentional, it makes it less of a hassle
             # to keep them synchronized when CustomColorPaletteWidget adds extra rows. We do still need to recalculate
@@ -505,10 +508,12 @@ class CustomColorPaletteWidget(PaletteWidget):
             idx = row + col * self._num_rows
             QColorDialog.setCustomColor(idx, colors[i])
 
-    def _update_on_color_change(self, color_list_str: str) -> None:
-        color_list = [QColor(color_str) for color_str in color_list_str]
-        for i, color in enumerate(color_list):
-            self.set_color(i, color)
+    def _update_on_color_change(self, color_list_str: list[str]) -> None:
+        """Shows saved colors that changed elsewhere, without undo actions or `color_changed`, so the change doesn't
+        echo back into the config. Colors past the grid's slots are not shown."""
+        for i in range(self.color_count()):
+            self._colors[i] = QColor(color_list_str[i]) if i < len(color_list_str) else QColor()
+        self.update()
 
     def add_color(self, color: QColor) -> None:
         """Adds a new custom color.  This will replace the first duplicate color encountered, or the color after the

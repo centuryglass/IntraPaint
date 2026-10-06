@@ -2,13 +2,17 @@
 
 Swatches wrap to the widget's width, and the height follows through `heightForWidth`, so the grid works in narrow and
 wide panels alike. Colors with alpha show over a checkerboard. The swatch matching `set_current_color` gets a
-highlighted border. A left click emits `color_clicked`; callers treat it as a finished choice.
+highlighted border. A left click emits `color_clicked` on release; callers treat it as a finished choice.
+
+Dragging a swatch carries its color as `QMimeData` color data, which other color widgets accept. With
+`accept_drops` set, a dropped color emits `color_dropped` with the insertion index under the drop point.
 """
 from typing import Optional
 
-from PySide6.QtCore import Qt, QRect, QSize, Signal, QPoint, QEvent
-from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPaintEvent, QPen, QPalette, QHelpEvent
-from PySide6.QtWidgets import QWidget, QSizePolicy, QToolTip
+from PySide6.QtCore import Qt, QRect, QSize, Signal, QPoint, QEvent, QMimeData
+from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPaintEvent, QPen, QPalette, QHelpEvent, QDrag, QPixmap, \
+    QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent
+from PySide6.QtWidgets import QWidget, QSizePolicy, QToolTip, QApplication
 
 from src.util.visual.image_utils import tile_pattern_fill
 
@@ -28,11 +32,17 @@ class ColorSwatchGrid(QWidget):
     """A wrapping grid of clickable color swatches."""
 
     color_clicked = Signal(QColor)
+    # Emits the dropped color and the index it should be inserted before.
+    color_dropped = Signal(QColor, int)
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: Optional[QWidget] = None, accept_drops: bool = False) -> None:
         super().__init__(parent)
         self._colors: list[QColor] = []
         self._current_key = ''
+        self._press_index = -1
+        self._press_pos = QPoint()
+        self._drop_index = -1
+        self.setAcceptDrops(accept_drops)
         policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         policy.setHeightForWidth(True)
         self.setSizePolicy(policy)
@@ -96,15 +106,87 @@ class ColorSwatchGrid(QWidget):
                 return index
         return -1
 
+    def insertion_index_at(self, point: QPoint) -> int:
+        """Returns the index a color dropped at a point is inserted before: the nearest gap between swatches."""
+        step = SWATCH_SIZE + SWATCH_SPACING
+        columns = self.columns()
+        row = max(0, point.y()) // step
+        column = min(max(0, round(point.x() / step)), columns)
+        return min(row * columns + column, len(self._colors))
+
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
-        """A left click on a swatch emits `color_clicked`."""
+        """Remembers the pressed swatch, which a release clicks and a move drags."""
         assert event is not None
         if event.button() != Qt.MouseButton.LeftButton:
             super().mousePressEvent(event)
             return
-        index = self.index_at(event.position().toPoint())
-        if index >= 0:
+        self._press_pos = event.position().toPoint()
+        self._press_index = self.index_at(self._press_pos)
+
+    def mouseMoveEvent(self, event: Optional[QMouseEvent]) -> None:
+        """Starts dragging the pressed swatch's color once the mouse moves far enough."""
+        assert event is not None
+        if self._press_index < 0 or not event.buttons() & Qt.MouseButton.LeftButton:
+            return
+        if (event.position().toPoint() - self._press_pos).manhattanLength() < QApplication.startDragDistance():
+            return
+        color = QColor(self._colors[self._press_index])
+        self._press_index = -1
+        mime_data = QMimeData()
+        mime_data.setColorData(color)
+        pixmap = QPixmap(SWATCH_SIZE, SWATCH_SIZE)
+        pixmap.fill(color)
+        drag = QDrag(self)
+        drag.setMimeData(mime_data)
+        drag.setPixmap(pixmap)
+        drag.exec(Qt.DropAction.CopyAction | Qt.DropAction.MoveAction, Qt.DropAction.CopyAction)
+
+    def mouseReleaseEvent(self, event: Optional[QMouseEvent]) -> None:
+        """Releasing on the pressed swatch, without dragging it, emits `color_clicked`."""
+        assert event is not None
+        if event.button() != Qt.MouseButton.LeftButton:
+            super().mouseReleaseEvent(event)
+            return
+        index = self._press_index
+        self._press_index = -1
+        if index >= 0 and self.index_at(event.position().toPoint()) == index:
             self.color_clicked.emit(QColor(self._colors[index]))
+
+    def dragEnterEvent(self, event: Optional[QDragEnterEvent]) -> None:
+        """Accepts drags that carry a color."""
+        assert event is not None
+        if event.mimeData().hasColor():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event: Optional[QDragMoveEvent]) -> None:
+        """Marks the gap the color would be inserted into."""
+        assert event is not None
+        if not event.mimeData().hasColor():
+            event.ignore()
+            return
+        self._drop_index = self.insertion_index_at(event.position().toPoint())
+        event.acceptProposedAction()
+        self.update()
+
+    def dragLeaveEvent(self, event: Optional[QDragLeaveEvent]) -> None:
+        """Clears the insertion mark."""
+        self._drop_index = -1
+        self.update()
+        super().dragLeaveEvent(event)
+
+    def dropEvent(self, event: Optional[QDropEvent]) -> None:
+        """Emits `color_dropped` with the dropped color and its insertion index."""
+        assert event is not None
+        self._drop_index = -1
+        self.update()
+        color = QColor(event.mimeData().colorData())
+        if not color.isValid():
+            event.ignore()
+            return
+        event.acceptProposedAction()
+        self.color_dropped.emit(color, self.insertion_index_at(event.position().toPoint()))
 
     def event(self, event: Optional[QEvent]) -> bool:
         """Shows the hovered swatch's hex value as its tooltip."""
@@ -137,4 +219,19 @@ class ColorSwatchGrid(QWidget):
             else:
                 painter.setPen(QPen(border_color, 1))
                 painter.drawRect(bounds.adjusted(0, 0, -1, -1))
+        if self._drop_index >= 0:
+            self._draw_insertion_mark(painter, highlight_color)
         painter.end()
+
+    def _draw_insertion_mark(self, painter: QPainter, color: QColor) -> None:
+        """Draws a bar in the gap before the swatch at `_drop_index`, or after the last swatch."""
+        if self._drop_index < len(self._colors):
+            bounds = self.swatch_rect(self._drop_index)
+            x = bounds.left() - SWATCH_SPACING // 2 - 1
+        elif self._colors:
+            bounds = self.swatch_rect(len(self._colors) - 1)
+            x = bounds.right() + SWATCH_SPACING // 2
+        else:
+            bounds = self.swatch_rect(0)
+            x = bounds.left()
+        painter.fillRect(QRect(x, bounds.top(), 2, bounds.height()), color)
