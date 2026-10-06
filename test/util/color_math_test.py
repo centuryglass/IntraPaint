@@ -2,7 +2,7 @@
 import numpy as np
 
 from src.util.visual.color_math import srgb_to_linear, linear_to_srgb, srgb_to_oklab, oklab_to_srgb, \
-    srgb_to_oklch, oklch_to_srgb, srgb_to_okhsv, okhsv_to_srgb, is_in_srgb_gamut
+    srgb_to_oklch, oklch_to_srgb, srgb_to_okhsv, okhsv_to_srgb, okhsv_plane_to_srgb, is_in_srgb_gamut
 from test.base_test_case import IntraPaintTestCase
 
 ONE_8BIT_STEP = 1.0 / 255.0
@@ -120,6 +120,17 @@ class TestColorMath(IntraPaintTestCase):
         plane = okhsv_to_srgb(hsv.reshape(12, 25, 3))
         self.assertEqual(plane.shape, (12, 25, 3))
         np.testing.assert_allclose(plane.reshape(-1, 3), as_array, atol=1e-12)
+
+    def test_okhsv_plane_matches_per_pixel_conversion(self) -> None:
+        """okhsv_plane_to_srgb gives the same colors as okhsv_to_srgb on the same grid, rows by value."""
+        saturations = np.linspace(0.0, 1.0, 17)
+        values = np.linspace(1.0, 0.0, 9)
+        for hue in (0.0, 29.0, 142.0, 264.0, 359.5):
+            plane = okhsv_plane_to_srgb(hue, saturations, values)
+            self.assertEqual(plane.shape, (9, 17, 3))
+            saturation_grid, value_grid = np.meshgrid(saturations, values)
+            hsv = np.stack((np.full_like(saturation_grid, hue), saturation_grid, value_grid), axis=-1)
+            np.testing.assert_allclose(plane, okhsv_to_srgb(hsv), atol=1e-12, err_msg=str(hue))
 
     def test_rejects_wrong_channel_count(self) -> None:
         """Arrays without three channels on the last axis raise ValueError."""

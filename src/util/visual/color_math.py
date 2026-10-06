@@ -227,7 +227,26 @@ def okhsv_to_srgb(hsv: Any) -> ColorArray:
     to about 0.007 below 0 near the blue cusp (hue 264). Clipping removes that, so every result is a valid color, at
     the cost of an off-by-two 8-bit round trip for those colors.
     """
-    hue, saturation, value = _channels(_as_color_array(hsv))
+    return _okhsv_channels_to_srgb(*_channels(_as_color_array(hsv)))
+
+
+def okhsv_plane_to_srgb(hue: float, saturations: Any, values: Any) -> ColorArray:
+    """Returns the sRGB colors of one OKHSV hue over a grid, with shape (len(values), len(saturations), 3).
+
+    Row i holds values[i] and column j holds saturations[j]. The result matches `okhsv_to_srgb` per pixel, but computes
+    the hue's gamut cusp once and the gamut scale once per column, so rendering a square is several times faster.
+    """
+    saturation_row = np.asarray(saturations, dtype=np.float64)[np.newaxis, :]
+    value_column = np.asarray(values, dtype=np.float64)[:, np.newaxis]
+    return _okhsv_channels_to_srgb(np.asarray(hue, dtype=np.float64), saturation_row, value_column)
+
+
+def _okhsv_channels_to_srgb(hue: ColorArray, saturation: ColorArray, value: ColorArray) -> ColorArray:
+    """Implements `okhsv_to_srgb` on separate channel arrays, which may have any broadcast-compatible shapes.
+
+    The cusp depends only on hue and the gamut scale only on hue and saturation, so `okhsv_plane_to_srgb` passes a
+    scalar hue and a single saturation row to compute each of them once.
+    """
     hue_radians = np.radians(hue)
     a = np.cos(hue_radians)
     b = np.sin(hue_radians)
@@ -239,18 +258,17 @@ def okhsv_to_srgb(hsv: Any) -> ColorArray:
         denominator = _OKHSV_S0 + t_max - t_max * k * saturation
         lightness_v = 1.0 - saturation * _OKHSV_S0 / denominator
         chroma_v = saturation * t_max * _OKHSV_S0 / denominator
-        lightness = value * lightness_v
-        chroma = value * chroma_v
 
         # Compensate for the toe and the curved top of the real gamut.
         lightness_vt = _toe_inv(lightness_v)
         chroma_vt = chroma_v * lightness_vt / lightness_v
+        scale = _gamut_scale(lightness_vt, chroma_vt, a, b)
+
+        lightness = value * lightness_v
+        chroma = value * chroma_v
         new_lightness = _toe_inv(lightness)
         chroma = chroma * new_lightness / lightness
-        lightness = new_lightness
-
-        scale = _gamut_scale(lightness_vt, chroma_vt, a, b)
-        lightness = lightness * scale
+        lightness = new_lightness * scale
         chroma = chroma * scale
 
     black = value <= 0.0
