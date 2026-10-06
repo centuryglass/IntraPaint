@@ -51,9 +51,7 @@ class OkhsvRingSquare(QWidget):
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        size_policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        size_policy.setHeightForWidth(True)
-        self.setSizePolicy(size_policy)
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred))
         self._hue = 0.0
         self._saturation = 0.0
         self._value = 0.0
@@ -71,16 +69,13 @@ class OkhsvRingSquare(QWidget):
         return QSize(DEFAULT_SIZE, DEFAULT_SIZE)
 
     def minimumSizeHint(self) -> QSize:
-        """Small enough for a narrow side panel."""
+        """Small enough for a narrow side panel.
+
+        The ring and square fit the smaller of the widget's width and height, centered. The widget doesn't report
+        height-for-width: in a scroll area that would make the color panel as tall as it is wide, so the panel's
+        layout choice would never see the space it has.
+        """
         return QSize(MIN_SIZE, MIN_SIZE)
-
-    def hasHeightForWidth(self) -> bool:
-        """The widget draws a square."""
-        return True
-
-    def heightForWidth(self, width: int) -> int:
-        """The widget draws a square."""
-        return width
 
     def outer_radius(self) -> float:
         """Returns the ring's outer radius."""

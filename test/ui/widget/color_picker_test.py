@@ -1,6 +1,7 @@
 """Tests TabbedColorPicker's shared color, its layouts, ColorControlPanel's layout choice, and ColorDialog."""
 from PySide6.QtCore import QPoint, QPointF, QSize, Qt
 from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QScrollArea
 from PySide6 import QtTest
 
 from src.config.application_config import AppConfig
@@ -270,6 +271,45 @@ class ColorControlPanelTest(IntraPaintTestCase):
         self.panel.resize(1400, 300)
         self.panel.set_orientation(Qt.Orientation.Horizontal)
         self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.BOTTOM_WIDE)
+
+    def test_narrow_bottom_panel_falls_back_to_compact(self) -> None:
+        """A bottom dock too narrow for the bottom layouts uses the compact side layout."""
+        self.panel.resize(400, 360)
+        self.panel.set_orientation(Qt.Orientation.Horizontal)
+        self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.SIDE_COMPACT)
+        self.panel.resize(560, 360)
+        self.panel.set_orientation(Qt.Orientation.Horizontal)
+        self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.BOTTOM_MEDIUM)
+
+    def test_minimum_size_allows_shrinking_from_any_layout(self) -> None:
+        """The panel's minimum size stays the compact one, so a wide layout never stops its dock from shrinking."""
+        self.panel.resize(300, 600)
+        self.panel.set_orientation(Qt.Orientation.Vertical)
+        compact_minimum = self.panel.minimumSizeHint()
+        self.panel.resize(1400, 300)
+        self.panel.set_orientation(Qt.Orientation.Horizontal)
+        self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.BOTTOM_WIDE)
+        self.assertEqual(self.panel.minimumSizeHint().width(), compact_minimum.width())
+        self.assertLessEqual(self.panel.minimumSizeHint().height(), compact_minimum.height())
+
+    def test_scroll_area_uses_visible_size(self) -> None:
+        """In a scroll area the panel fills the visible area and picks the layout for it, without scrolling."""
+        cases = ((Qt.Orientation.Vertical, QSize(680, 420), ColorPickerLayout.SIDE_COMPACT),
+                 (Qt.Orientation.Horizontal, QSize(400, 360), ColorPickerLayout.SIDE_COMPACT),
+                 (Qt.Orientation.Horizontal, QSize(700, 200), ColorPickerLayout.BOTTOM_SHORT))
+        area = QScrollArea()
+        area.setWidgetResizable(True)
+        area.setWidget(self.panel)
+        area.show()
+        try:
+            for orientation, size, expected in cases:
+                with self.subTest(orientation=orientation, size=size):
+                    self.panel.set_orientation(orientation)
+                    area.resize(size)
+                    self.assertEqual(self.panel.picker_layout(), expected)
+                    self.assertEqual(self.panel.size(), area.viewport().size())
+        finally:
+            area.hide()
 
     def test_screen_pick_sets_and_records_foreground(self) -> None:
         """A picked screen color becomes the foreground and a recent color."""

@@ -38,8 +38,10 @@ ALPHA_TAB_TITLE = _tr('&Alpha and hex')
 # Largest ring in the compact side layout, so the tabs leave room for the rows below them.
 COMPACT_RING_MAX_SIZE = 180
 DIALOG_RING_MIN_SIZE = 260
-# Largest share of the picker's width the ring takes in row layouts.
+# Largest share of the picker's width the ring takes in row layouts, and of its height in the tall column layout.
 ROW_RING_MAX_WIDTH_FRACTION = 0.4
+TALL_RING_MAX_HEIGHT_FRACTION = 0.45
+QWIDGETSIZE_MAX = 16777215
 SPACING = 4
 
 
@@ -216,32 +218,44 @@ class TabbedColorPicker(ScreenColorWidget):
         self._fit_ring()
 
     def resizeEvent(self, event) -> None:
-        """Sizes the ring in row layouts, where its width follows the available height."""
+        """Sizes the ring to the new picker size."""
         super().resizeEvent(event)
         self._fit_ring()
 
     def _fit_ring(self) -> None:
+        """Sizes the ring from the picker's size where the layout doesn't: its width in rows, its height in a column.
+
+        Neither size depends on the ring's own position in the layout, so a scroll area can't grow the picker through
+        it.
+        """
         ring = self._ring_square
+        margins = self._outer_layout.contentsMargins()
+        available_width = self.width() - margins.left() - margins.right()
+        available_height = self.height() - margins.top() - margins.bottom()
+        min_side = ring.minimumSizeHint().height()
+        width = None
+        height = None
         if self._picker_layout in ROW_LAYOUTS:
-            margins = self._outer_layout.contentsMargins()
-            available_height = self.height() - margins.top() - margins.bottom()
-            side = min(available_height, int(self.width() * ROW_RING_MAX_WIDTH_FRACTION))
-            side = max(side, ring.minimumSizeHint().height())
-            if ring.minimumWidth() != side or ring.maximumWidth() != side:
-                ring.setFixedWidth(side)
-                if self._layout_container is not None and self._layout_container.layout() is not None:
-                    self._layout_container.layout().activate()
-            return
-        ring.setMinimumWidth(0)
-        ring.setMaximumWidth(16777215)
-        if self._picker_layout == ColorPickerLayout.SIDE_COMPACT:
-            ring.setMaximumHeight(COMPACT_RING_MAX_SIZE)
+            width = max(min(available_height, int(available_width * ROW_RING_MAX_WIDTH_FRACTION)), min_side)
+        elif self._picker_layout == ColorPickerLayout.SIDE_TALL:
+            height = max(min(available_width, int(available_height * TALL_RING_MAX_HEIGHT_FRACTION)), min_side)
+        changed = False
+        if width is not None:
+            changed = ring.minimumWidth() != width or ring.maximumWidth() != width
+            ring.setFixedWidth(width)
         else:
-            ring.setMaximumHeight(16777215)
-        if self._picker_layout == ColorPickerLayout.DIALOG:
-            ring.setMinimumSize(DIALOG_RING_MIN_SIZE, DIALOG_RING_MIN_SIZE)
+            ring.setMinimumWidth(DIALOG_RING_MIN_SIZE if self._picker_layout == ColorPickerLayout.DIALOG else 0)
+            ring.setMaximumWidth(QWIDGETSIZE_MAX)
+        if height is not None:
+            changed = changed or ring.minimumHeight() != height or ring.maximumHeight() != height
+            ring.setFixedHeight(height)
         else:
-            ring.setMinimumSize(0, 0)
+            ring.setMinimumHeight(DIALOG_RING_MIN_SIZE if self._picker_layout == ColorPickerLayout.DIALOG else 0)
+            max_height = COMPACT_RING_MAX_SIZE if self._picker_layout == ColorPickerLayout.SIDE_COMPACT \
+                else QWIDGETSIZE_MAX
+            ring.setMaximumHeight(max_height)
+        if changed and self._layout_container is not None and self._layout_container.layout() is not None:
+            self._layout_container.layout().activate()
 
     def _clear_layout(self) -> None:
         for part in self._parts():
