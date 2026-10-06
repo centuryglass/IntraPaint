@@ -1,14 +1,16 @@
-"""Pure helpers for generation area frames, the generation resolution rule and follow-selection placement.
+"""Pure helpers for generation area frames, the generation resolution rule, follow-selection placement and handle
+   resizing.
 
 Frames are one-click generation area sizes. The resolution rule decides the generation resolution whenever the
 generation area size changes. Follow-selection placement moves the area to contain the selection after selection edits.
-`src/controller/generation_area_controller.py` applies all three to the live image and config.
+`src/controller/generation_area_controller.py` applies those three to the live image and config. Handle resizing is
+the geometry behind `GenerationAreaTool`'s resize handles.
 """
 import math
 import re
 from typing import Optional
 
-from PySide6.QtCore import QSize, QRect, QPoint
+from PySide6.QtCore import QSize, QRect, QPoint, QPointF
 from PySide6.QtWidgets import QApplication
 
 # Values of Cache.GENERATION_RESOLUTION_RULE. They must match the options in cache_value_definitions.json.
@@ -171,3 +173,102 @@ def follow_selection_position(area: QRect, target: QRect, mode: str, image_bound
     y = _follow_axis(area.y(), area.height(), target.y(), target.height(), center, image_bounds.y(),
                      image_bounds.height())
     return QPoint(x, y)
+
+
+# Resize handle ids, for area_handle_positions and resize_area_from_handle:
+HANDLE_TOP_LEFT = 'top_left'
+HANDLE_TOP = 'top'
+HANDLE_TOP_RIGHT = 'top_right'
+HANDLE_RIGHT = 'right'
+HANDLE_BOTTOM_RIGHT = 'bottom_right'
+HANDLE_BOTTOM = 'bottom'
+HANDLE_BOTTOM_LEFT = 'bottom_left'
+HANDLE_LEFT = 'left'
+CORNER_HANDLES = (HANDLE_TOP_LEFT, HANDLE_TOP_RIGHT, HANDLE_BOTTOM_RIGHT, HANDLE_BOTTOM_LEFT)
+EDGE_HANDLES = (HANDLE_TOP, HANDLE_RIGHT, HANDLE_BOTTOM, HANDLE_LEFT)
+_LEFT_SIDE_HANDLES = (HANDLE_TOP_LEFT, HANDLE_LEFT, HANDLE_BOTTOM_LEFT)
+_RIGHT_SIDE_HANDLES = (HANDLE_TOP_RIGHT, HANDLE_RIGHT, HANDLE_BOTTOM_RIGHT)
+_TOP_SIDE_HANDLES = (HANDLE_TOP_LEFT, HANDLE_TOP, HANDLE_TOP_RIGHT)
+_BOTTOM_SIDE_HANDLES = (HANDLE_BOTTOM_LEFT, HANDLE_BOTTOM, HANDLE_BOTTOM_RIGHT)
+
+
+def area_handle_positions(area: QRect) -> dict[str, QPointF]:
+    """Returns each resize handle's position on the area's outline, in image coordinates."""
+    left = float(area.x())
+    top = float(area.y())
+    right = float(area.x() + area.width())
+    bottom = float(area.y() + area.height())
+    center_x = left + area.width() / 2
+    center_y = top + area.height() / 2
+    return {
+        HANDLE_TOP_LEFT: QPointF(left, top),
+        HANDLE_TOP: QPointF(center_x, top),
+        HANDLE_TOP_RIGHT: QPointF(right, top),
+        HANDLE_RIGHT: QPointF(right, center_y),
+        HANDLE_BOTTOM_RIGHT: QPointF(right, bottom),
+        HANDLE_BOTTOM: QPointF(center_x, bottom),
+        HANDLE_BOTTOM_LEFT: QPointF(left, bottom),
+        HANDLE_LEFT: QPointF(left, center_y)
+    }
+
+
+def _clamp(value: float, min_value: float, max_value: float) -> float:
+    """Clamps a value, with max_value winning when the range is empty."""
+    return min(max(value, min_value), max_value)
+
+
+def resize_area_from_handle(start_area: QRect, handle: str, point: QPoint, keep_aspect: bool, image_bounds: QRect,
+                            min_size: QSize, max_size: QSize) -> QRect:
+    """Returns the generation area after dragging one of its resize handles to `point`.
+
+    The sides the handle doesn't touch stay fixed. Each moved side follows `point`, keeping the area within
+    `image_bounds` and between `min_size` and `max_size`. With `keep_aspect`, a corner handle keeps `start_area`'s
+    aspect ratio, sizing the area to the projection of `point` onto the diagonal through the fixed corner. Edge handles
+    ignore `keep_aspect`.
+    """
+    if handle not in CORNER_HANDLES and handle not in EDGE_HANDLES:
+        raise ValueError(f'Unknown handle "{handle}"')
+    left = start_area.x()
+    top = start_area.y()
+    right = start_area.x() + start_area.width()
+    bottom = start_area.y() + start_area.height()
+    image_right = image_bounds.x() + image_bounds.width()
+    image_bottom = image_bounds.y() + image_bounds.height()
+    moves_x = handle in _LEFT_SIDE_HANDLES or handle in _RIGHT_SIDE_HANDLES
+    moves_y = handle in _TOP_SIDE_HANDLES or handle in _BOTTOM_SIDE_HANDLES
+
+    if handle in _LEFT_SIDE_HANDLES:
+        desired_width = right - point.x()
+        max_width = min(max_size.width(), right - image_bounds.x())
+    else:
+        desired_width = point.x() - left
+        max_width = min(max_size.width(), image_right - left)
+    if handle in _TOP_SIDE_HANDLES:
+        desired_height = bottom - point.y()
+        max_height = min(max_size.height(), bottom - image_bounds.y())
+    else:
+        desired_height = point.y() - top
+        max_height = min(max_size.height(), image_bottom - top)
+    if not moves_x:
+        desired_width = start_area.width()
+        max_width = start_area.width()
+    if not moves_y:
+        desired_height = start_area.height()
+        max_height = start_area.height()
+    min_width = min_size.width() if moves_x else start_area.width()
+    min_height = min_size.height() if moves_y else start_area.height()
+
+    if keep_aspect and handle in CORNER_HANDLES and not start_area.isEmpty():
+        base_width = start_area.width()
+        base_height = start_area.height()
+        scale = (desired_width * base_width + desired_height * base_height) / (base_width ** 2 + base_height ** 2)
+        scale = _clamp(scale, max(min_width / base_width, min_height / base_height),
+                       min(max_width / base_width, max_height / base_height))
+        desired_width = round(base_width * scale)
+        desired_height = round(base_height * scale)
+    width = round(_clamp(desired_width, min_width, max_width))
+    height = round(_clamp(desired_height, min_height, max_height))
+
+    x = right - width if handle in _LEFT_SIDE_HANDLES else left
+    y = bottom - height if handle in _TOP_SIDE_HANDLES else top
+    return QRect(x, y, width, height)
