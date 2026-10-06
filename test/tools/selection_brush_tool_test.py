@@ -129,6 +129,7 @@ SELECTION_BRUSH_GOLDEN_DIR = 'test/resources/test_images/selection_brush'
 SELECTED_ARGB = 0xffff0000  # Every selected pixel, with the test config's SELECTION_COLOR.
 STROKE_BRUSH_SIZE = 16
 SOFT_HARDNESS = 0.3
+SOFT_OPACITY = 0.4
 
 # A curving stroke through the middle of the stroke test image:
 CURVE_POINTS = [QPoint(20 + i * 6, 64 + round(36 * math.sin(i / 3))) for i in range(21)]
@@ -243,11 +244,17 @@ class SelectionBrushStrokeTest(ToolTestCase):
         self.assertEqual(self.selection_layer.outline, [])
         self.assertIsNone(self.selection_layer.get_selection_bounds())
 
-    def test_soft_stroke_selects_full_width(self) -> None:
-        """A soft brush selects every pixel its faded edge touches, fully."""
+    def _soften_brush(self) -> None:
+        """Sets every brush option that would leave partial alpha in a stroke on an image layer."""
         self.brush.hardness = SOFT_HARDNESS
+        self.brush.opacity = SOFT_OPACITY
+        self.brush.antialiasing = True
+
+    def test_soft_brush_options_select_like_hard_brush(self) -> None:
+        """Hardness, opacity and antialiasing don't affect a select stroke, since the selection layer is one-bit."""
+        self._soften_brush()
         self.mouse_drag(CURVE_POINTS)
-        self.assert_selection_state('soft_select')
+        self.assert_selection_state('hard_select')
         self.assertEqual(UndoStack().undo_count(), 1)
 
     def test_hard_stroke_deselects(self) -> None:
@@ -258,13 +265,13 @@ class SelectionBrushStrokeTest(ToolTestCase):
         self.assert_selection_state('hard_deselect')
         self.assert_one_undo_step(initial_image)
 
-    def test_soft_stroke_deselects_core_only(self) -> None:
-        """In deselect mode, a soft brush only clears pixels it erases fully, leaving its faded edge selected."""
+    def test_soft_brush_options_deselect_like_hard_brush(self) -> None:
+        """Hardness, opacity and antialiasing don't affect a deselect stroke, since the selection layer is one-bit."""
         self._select_all()
         self._set_deselect_mode()
-        self.brush.hardness = SOFT_HARDNESS
+        self._soften_brush()
         self.mouse_drag(CURVE_POINTS)
-        self.assert_selection_state('soft_deselect')
+        self.assert_selection_state('hard_deselect')
         self.assertEqual(UndoStack().undo_count(), 1)
 
     def test_stroke_leaving_image_selects(self) -> None:
