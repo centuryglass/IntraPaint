@@ -7,13 +7,15 @@ saturation and value, so dragging value to black or saturation to gray doesn't l
 Dragging emits `color_changed`; releasing the mouse emits `color_committed`, which callers use to record a finished
 choice (see `src.controller.color_controller`).
 """
+import functools
 import math
 from enum import Enum
 from typing import Optional
 
 import numpy as np
 from PySide6.QtCore import Qt, QPointF, QRectF, QSize, Signal
-from PySide6.QtGui import QColor, QImage, QMouseEvent, QPainter, QPaintEvent, QPen
+from PySide6.QtGui import QColor, QImage, QMouseEvent, QPainter, QPaintEvent, QPen, QPixmap, QConicalGradient, \
+    QPainterPath
 from PySide6.QtWidgets import QWidget, QSizePolicy
 
 from src.util.visual import color_math
@@ -29,8 +31,10 @@ MIN_RING_WIDTH = 10.0
 # Space between the ring and the square's corners, in pixels.
 SQUARE_GAP = 4.0
 
-# Precomputed ring colors per hue step.
-RING_HUE_STEPS = 720
+# Gradient stops around the ring. Qt interpolates between them in sRGB, which is indistinguishable at this count.
+RING_HUE_STEPS = 360
+# The square renders at most this many pixels per side and scales up beyond it, since its colors change smoothly.
+MAX_SQUARE_RENDER_SIZE = 256
 
 SV_MARKER_RADIUS = 5.0
 
@@ -59,8 +63,8 @@ class OkhsvRingSquare(QWidget):
         self._drag_target: Optional[_DragTarget] = None
         self._square_image: Optional[QImage] = None
         self._square_image_key: Optional[tuple[float, int]] = None
-        self._ring_image: Optional[QImage] = None
-        self._ring_image_key: Optional[tuple[int, int]] = None
+        self._ring_pixmap: Optional[QPixmap] = None
+        self._ring_pixmap_key: Optional[tuple[int, int, float]] = None
 
     # Size and geometry:
 
@@ -206,7 +210,8 @@ class OkhsvRingSquare(QWidget):
     # Rendering:
 
     def _get_square_image(self) -> QImage:
-        side = max(int(round(self.square_bounds().width())), 1)
+        """Returns the square's colors for the current hue, at most MAX_SQUARE_RENDER_SIZE pixels per side."""
+        side = min(max(int(round(self.square_bounds().width())), 1), MAX_SQUARE_RENDER_SIZE)
         key = (self._hue, side)
         if self._square_image is None or self._square_image_key != key:
             steps = np.linspace(0.0, 1.0, side)
@@ -215,37 +220,57 @@ class OkhsvRingSquare(QWidget):
             self._square_image_key = key
         return self._square_image
 
-    def _get_ring_image(self) -> QImage:
-        key = (self.width(), self.height())
-        if self._ring_image is None or self._ring_image_key != key:
-            hue_colors = color_math.okhsv_to_srgb(np.stack((np.linspace(0.0, 360.0, RING_HUE_STEPS, endpoint=False),
-                                                            np.ones(RING_HUE_STEPS),
-                                                            np.ones(RING_HUE_STEPS)), axis=-1))
+    def _get_ring_pixmap(self) -> QPixmap:
+        """Returns the ring drawn at the widget's size and the screen's pixel ratio, cached until either changes."""
+        pixel_ratio = self.devicePixelRatioF()
+        key = (self.width(), self.height(), pixel_ratio)
+        if self._ring_pixmap is None or self._ring_pixmap_key != key:
+            pixmap = QPixmap(max(int(math.ceil(self.width() * pixel_ratio)), 1),
+                             max(int(math.ceil(self.height() * pixel_ratio)), 1))
+            pixmap.setDevicePixelRatio(pixel_ratio)
+            pixmap.fill(Qt.GlobalColor.transparent)
             center = self.center()
-            y, x = np.mgrid[0:self.height(), 0:self.width()] + 0.5
-            dx = x - center.x()
-            dy = center.y() - y
-            distance = np.hypot(dx, dy)
-            hue_index = np.round(np.degrees(np.arctan2(dy, dx)) % 360.0 * RING_HUE_STEPS / 360.0).astype(int)
-            rgb = hue_colors[hue_index % RING_HUE_STEPS]
-            coverage = np.clip(np.minimum(self.outer_radius() - distance, distance - self.inner_radius()) + 0.5,
-                               0.0, 1.0)
-            self._ring_image = _rgb_to_qimage(rgb, coverage)
-            self._ring_image_key = key
-        return self._ring_image
+            ring = QPainterPath()
+            ring.addEllipse(center, self.outer_radius(), self.outer_radius())
+            ring.addEllipse(center, self.inner_radius(), self.inner_radius())
+            painter = QPainter(pixmap)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            painter.fillPath(ring, _ring_gradient(center))
+            painter.end()
+            self._ring_pixmap = pixmap
+            self._ring_pixmap_key = key
+        return self._ring_pixmap
 
     def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
         """Draws the ring, the square, and markers on the selected hue, saturation and value."""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
-        painter.drawImage(0, 0, self._get_ring_image())
+        painter.drawPixmap(0, 0, self._get_ring_pixmap())
         painter.drawImage(self.square_bounds(), self._get_square_image())
 
         ring_marker_radius = (self.outer_radius() - self.inner_radius()) * 0.35
         _draw_marker(painter, self.point_for_hue(self._hue), ring_marker_radius)
         _draw_marker(painter, self.point_for_saturation_value(self._saturation, self._value), SV_MARKER_RADIUS)
         painter.end()
+
+
+@functools.cache
+def _ring_hue_rgb() -> tuple[tuple[float, float, float], ...]:
+    """Returns the sRGB colors of RING_HUE_STEPS evenly spaced OKHSV hues at full saturation and value."""
+    hues = np.linspace(0.0, 360.0, RING_HUE_STEPS, endpoint=False)
+    rgb = color_math.okhsv_to_srgb(np.stack((hues, np.ones(RING_HUE_STEPS), np.ones(RING_HUE_STEPS)), axis=-1))
+    return tuple((float(red), float(green), float(blue)) for red, green, blue in rgb)
+
+
+def _ring_gradient(center: QPointF) -> QConicalGradient:
+    """Returns a gradient through the full-saturation, full-value OKHSV hues, counterclockwise from the right."""
+    hue_rgb = _ring_hue_rgb()
+    gradient = QConicalGradient(center, 0.0)
+    for index, rgb in enumerate(hue_rgb):
+        gradient.setColorAt(index / RING_HUE_STEPS, QColor.fromRgbF(*rgb))
+    gradient.setColorAt(1.0, QColor.fromRgbF(*hue_rgb[0]))
+    return gradient
 
 
 def _rgb_to_qimage(rgb: np.ndarray, alpha: np.ndarray) -> QImage:

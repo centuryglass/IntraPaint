@@ -242,8 +242,9 @@ Selects the color used by the brush, draw, and fill tools.  **Left-click** any s
 The same color picker panel appears in the tool panel's color tab. It arranges itself to fit the space it has: in a narrow
 panel its parts sit in tabs, and in a tall or wide panel they are all shown at once.
 
-- **Header**: the foreground and background colors (click either to open a color dialog, or use the corner controls to
-  swap or reset them), the current color's hex code, and a **pick screen color** button. While picking a screen color,
+- **Header**: the foreground and background colors, the current color's hex code, and a **pick screen color** button.
+  Click either color to open a color dialog, or use the corner controls to swap or reset them. Drag either color onto
+  the saved colors to save it, or drop any swatch onto either color to use it there. While picking a screen color,
   left-click to select the color under the cursor, or press Escape to cancel.
 - **Wheel**: drag around the outer ring to change hue, and inside the square to change saturation (left to right) and
   brightness (bottom to top). The ring and square use the OKHSV color model, so equal steps look about equally

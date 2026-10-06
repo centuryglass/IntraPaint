@@ -5,7 +5,7 @@ from PySide6.QtGui import QColor
 from src.config.cache import Cache
 from src.ui.panel.color_panel import ColorControlPanel
 from src.ui.widget.color_picker.alpha_hex_row import parse_hex_color, format_hex_color
-from src.ui.widget.color_picker.okhsv_ring_square import OkhsvRingSquare
+from src.ui.widget.color_picker.okhsv_ring_square import OkhsvRingSquare, MAX_SQUARE_RENDER_SIZE
 from src.util.visual import color_math
 from test.base_test_case import IntraPaintTestCase
 from test.ui.widget.color_picker_test_utils import press as _press, move as _move, release as _release, \
@@ -114,6 +114,28 @@ class OkhsvRingSquareTest(IntraPaintTestCase):
         self.widget.set_okhsv(140.0, 1.0, 1.0)
         image = self.widget.grab().toImage()
         for saturation, value in ((0.0, 1.0), (0.85, 0.85), (0.5, 0.2), (0.2, 0.6)):
+            pixel = image.pixelColor(self.widget.point_for_saturation_value(saturation, value).toPoint())
+            expected = color_math.okhsv_to_srgb((140.0, saturation, value)) * 255
+            for channel, expected_channel in zip((pixel.red(), pixel.green(), pixel.blue()), expected):
+                self.assertAlmostEqual(channel, expected_channel, delta=6)
+
+
+    def test_renders_okhsv_hues_on_ring(self) -> None:
+        """The ring shows each hue's full-saturation, full-value OKHSV color where a press selects that hue."""
+        image = self.widget.grab().toImage()
+        for hue in (0.0, 45.0, 120.0, 200.0, 300.0):
+            pixel = image.pixelColor(self.widget.point_for_hue(hue).toPoint())
+            expected = color_math.okhsv_to_srgb((hue, 1.0, 1.0)) * 255
+            for channel, expected_channel in zip((pixel.red(), pixel.green(), pixel.blue()), expected):
+                self.assertAlmostEqual(channel, expected_channel, delta=8, msg=f'hue {hue}')
+
+    def test_large_square_renders_at_capped_resolution(self) -> None:
+        """A large square scales up a capped render, still matching the selected hue's colors."""
+        self.widget.resize(1200, 1200)
+        self.widget.set_okhsv(140.0, 1.0, 1.0)
+        image = self.widget.grab().toImage()
+        self.assertLessEqual(self.widget._get_square_image().width(), MAX_SQUARE_RENDER_SIZE)
+        for saturation, value in ((0.0, 1.0), (0.85, 0.85), (0.5, 0.2)):
             pixel = image.pixelColor(self.widget.point_for_saturation_value(saturation, value).toPoint())
             expected = color_math.okhsv_to_srgb((140.0, saturation, value)) * 255
             for channel, expected_channel in zip((pixel.red(), pixel.green(), pixel.blue()), expected):

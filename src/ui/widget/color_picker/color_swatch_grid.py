@@ -9,11 +9,12 @@ Dragging a swatch carries its color as `QMimeData` color data, which other color
 """
 from typing import Optional
 
-from PySide6.QtCore import Qt, QRect, QSize, Signal, QPoint, QEvent, QMimeData
-from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPaintEvent, QPen, QPalette, QHelpEvent, QDrag, QPixmap, \
+from PySide6.QtCore import Qt, QRect, QSize, Signal, QPoint, QEvent
+from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPaintEvent, QPen, QPalette, QHelpEvent, \
     QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent
 from PySide6.QtWidgets import QWidget, QSizePolicy, QToolTip, QApplication
 
+from src.ui.widget.color_picker.color_drag import start_color_drag, accept_color_drag_enter
 from src.util.visual.image_utils import tile_pattern_fill
 
 SWATCH_SIZE = 20
@@ -132,14 +133,7 @@ class ColorSwatchGrid(QWidget):
             return
         color = QColor(self._colors[self._press_index])
         self._press_index = -1
-        mime_data = QMimeData()
-        mime_data.setColorData(color)
-        pixmap = QPixmap(SWATCH_SIZE, SWATCH_SIZE)
-        pixmap.fill(color)
-        drag = QDrag(self)
-        drag.setMimeData(mime_data)
-        drag.setPixmap(pixmap)
-        drag.exec(Qt.DropAction.CopyAction | Qt.DropAction.MoveAction, Qt.DropAction.CopyAction)
+        start_color_drag(self, color, Qt.DropAction.CopyAction | Qt.DropAction.MoveAction)
 
     def mouseReleaseEvent(self, event: Optional[QMouseEvent]) -> None:
         """Releasing on the pressed swatch, without dragging it, emits `color_clicked`."""
@@ -155,10 +149,7 @@ class ColorSwatchGrid(QWidget):
     def dragEnterEvent(self, event: Optional[QDragEnterEvent]) -> None:
         """Accepts drags that carry a color."""
         assert event is not None
-        if event.mimeData().hasColor():
-            event.acceptProposedAction()
-        else:
-            event.ignore()
+        accept_color_drag_enter(event)
 
     def dragMoveEvent(self, event: Optional[QDragMoveEvent]) -> None:
         """Marks the gap the color would be inserted into."""
