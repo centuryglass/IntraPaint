@@ -130,7 +130,8 @@ class FilterBrushTest(BrushTestCase):
         self.filter_stroke_matches_golden(RGBColorBalanceFilter(self.image_stack), [1.0, 0.75, 0.5, 0.5],
                                           'rgb_color_balance_alpha')
 
-    @pytest.mark.xfail(strict=True, reason='RGBColorBalanceFilter writes unpremultiplied color to translucent pixels')
+    @pytest.mark.xfail(strict=True, reason='RGBColorBalanceFilter writes unpremultiplied color to translucent pixels: '
+                                           'https://github.com/centuryglass/IntraPaint/issues/160')
     def test_rgb_color_balance_keeps_translucent_pixels_valid(self) -> None:
         """Color balance with every factor at 1.0 leaves valid premultiplied pixels where the layer is translucent."""
         self.use_filter(RGBColorBalanceFilter(self.image_stack), [1.0, 1.0, 1.0, 1.0])
@@ -179,7 +180,8 @@ class FilterBrushTest(BrushTestCase):
         image = self.stroke(zigzag_points())
         self.assert_stroke_matches_golden(image, 'brightness_contrast_opacity_gradient')
 
-    @pytest.mark.xfail(strict=True, reason='PIL filters average the color of transparent pixels as black')
+    @pytest.mark.xfail(strict=True, reason='PIL filters average the color of transparent pixels as black: '
+                                           'https://github.com/centuryglass/IntraPaint/issues/161')
     def test_blur_next_to_transparency_keeps_color(self) -> None:
         """Blurring opaque white into transparent pixels lowers alpha without darkening the color."""
         initial_image = create_transparent_image(LAYER_SIZE)
