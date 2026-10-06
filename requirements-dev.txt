@@ -5,6 +5,9 @@
 # `pytest` runs the whole suite headlessly (see pytest.ini and conftest.py).
 pytest==9.1.1
 
+# `coverage run -m pytest` then `coverage report` or `coverage html` measures what the suite covers (see .coveragerc).
+coverage==7.16.2
+
 # `python scripts/pylint_check.py` is the CI lint gate; `scripts/pylint.sh` shows the full report.
 pylint==4.0.9
 

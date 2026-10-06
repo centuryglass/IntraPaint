@@ -27,3 +27,7 @@ src/util/visual/image_fill.*.pyd
 # Written next to a golden image when a test fails to match it (see test/base_test_case.py)
 *_tested.png
 *_tested.json
+
+# Written by `coverage run` and `coverage html` (see .coveragerc)
+.coverage
+htmlcov/

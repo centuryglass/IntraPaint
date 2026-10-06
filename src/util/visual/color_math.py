@@ -57,6 +57,11 @@ _TOE_K3 = (1.0 + _TOE_K1) / (1.0 + _TOE_K2)
 # cusp.
 _HALLEY_STEPS = 2
 
+# Bisection steps in oklch_to_srgb_in_gamut, which leave the chroma within 0.4 / 2^20 of the gamut edge.
+_GAMUT_SEARCH_STEPS = 20
+# Channel error oklch_to_srgb_in_gamut accepts before clipping, so matrix round-trip error doesn't reduce chroma.
+_GAMUT_SEARCH_TOLERANCE = 2e-5
+
 _LINEAR_SRGB_TO_LMS = np.array([[0.4122214708, 0.5363325363, 0.0514459929],
                                 [0.2119034982, 0.6806995451, 0.1073969566],
                                 [0.0883024619, 0.2817188376, 0.6299787005]])
@@ -149,6 +154,30 @@ def is_in_srgb_gamut(rgb: Any, tolerance: float = 1e-4) -> NDArray[np.bool_]:
     """Returns whether each sRGB or linear sRGB color has every channel within 0.0-1.0, give or take `tolerance`."""
     rgb = _as_color_array(rgb)
     return np.all((rgb >= -tolerance) & (rgb <= 1.0 + tolerance), axis=-1)
+
+
+def oklch_to_srgb_in_gamut(lch: Any) -> ColorArray:
+    """Converts OKLCH to sRGB, reducing chroma until the color fits the sRGB gamut.
+
+    Lightness and hue stay fixed, so an out-of-gamut color becomes the most saturated sRGB color with the same
+    lightness and hue. Lightness outside 0.0-1.0 clips to black or white.
+    """
+    lightness, chroma, hue = _channels(_as_color_array(lch))
+    lightness = np.clip(lightness, 0.0, 1.0)
+    chroma = np.maximum(chroma, 0.0)
+    rgb = oklch_to_srgb(np.stack((lightness, chroma, hue), axis=-1))
+    in_gamut = is_in_srgb_gamut(rgb, _GAMUT_SEARCH_TOLERANCE)
+    if np.all(in_gamut):
+        return np.clip(rgb, 0.0, 1.0)
+    low = np.zeros_like(chroma)
+    high = chroma
+    for _ in range(_GAMUT_SEARCH_STEPS):
+        middle = (low + high) / 2
+        fits = is_in_srgb_gamut(oklch_to_srgb(np.stack((lightness, middle, hue), axis=-1)), _GAMUT_SEARCH_TOLERANCE)
+        low = np.where(fits, middle, low)
+        high = np.where(fits, high, middle)
+    mapped = oklch_to_srgb(np.stack((lightness, low, hue), axis=-1))
+    return np.clip(np.where(in_gamut[..., np.newaxis], rgb, mapped), 0.0, 1.0)
 
 
 def _toe(x: ColorArray) -> ColorArray:

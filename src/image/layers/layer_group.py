@@ -622,11 +622,15 @@ class LayerGroup(Layer, LayerParent):
         if not self._render_timer.isActive():
             self._render_timer.start()
 
+    def signal_content_changed(self, change_bounds: QRect) -> None:
+        """Invalidates the cached image and pixmap, then sends the content change signal."""
+        self._image_cache.invalidate()
+        self.invalidate_pixmap()
+        super().signal_content_changed(change_bounds)
+
     def _start_render(self) -> None:
         self._render_timer.stop()
         bounds = self._get_local_bounds()  # Ensure size is correct
-        self._image_cache.invalidate()
-        self.invalidate_pixmap()
         self.signal_content_changed(bounds)
 
 

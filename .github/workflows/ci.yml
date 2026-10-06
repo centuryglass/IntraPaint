@@ -30,6 +30,7 @@ jobs:
       # Belt-and-suspenders: conftest.py also sets this, but making it explicit keeps the job's intent
       # (run Qt with no display) obvious and independent of the test harness.
       QT_QPA_PLATFORM: offscreen
+      COVERAGE_PYTHON: '3.13'
     steps:
       - uses: actions/checkout@v7
 
@@ -60,7 +61,40 @@ jobs:
         run: python setup.py build_ext --inplace
 
       - name: Run tests
+        if: matrix.python-version != env.COVERAGE_PYTHON
         run: python -m pytest
+
+      # One matrix leg measures coverage (settings in .coveragerc), since tracing slows the suite. The report goes to
+      # the run's summary page and an artifact. Nothing fails on the percentage yet.
+      - name: Run tests with coverage
+        if: matrix.python-version == env.COVERAGE_PYTHON
+        run: coverage run -m pytest
+
+      - name: Coverage report
+        if: matrix.python-version == env.COVERAGE_PYTHON
+        run: |
+          coverage report
+          coverage html
+          {
+            echo "## Coverage"
+            echo
+            coverage report --format=total | sed 's/$/% of src\/ (lines and branches)/'
+            echo
+            echo "<details><summary>Per-file coverage</summary>"
+            echo
+            coverage report --format=markdown
+            echo
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        if: matrix.python-version == env.COVERAGE_PYTHON
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: htmlcov/
+          if-no-files-found: error
+          retention-days: 14
 
   lint:
     name: lint

@@ -1,15 +1,18 @@
 """An alpha slider and a hex color field.
 
 The hex field accepts `#RGB`, `#RRGGBB` and `#AARRGGBB`, with or without the `#`. It shows `#rrggbb` for opaque colors
-and `#aarrggbb` otherwise. Dragging the slider emits `color_changed`; releasing it, any other slider change, and a
-valid hex entry also emit `color_committed`.
+and `#aarrggbb` otherwise. The slider's track fades the current color over a checkerboard. Dragging the slider emits
+`color_changed`; releasing it, an arrow key on it, and a valid hex entry also emit `color_committed`.
 """
 import re
 from typing import Optional
 
+import numpy as np
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QSlider, QLineEdit, QLabel, QApplication
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QLabel, QApplication
+
+from src.ui.widget.color_picker.gradient_slider import GradientSlider
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.widget.color_picker.alpha_hex_row'
@@ -26,6 +29,7 @@ HEX_TOOLTIP = _tr('Hex color: #RGB, #RRGGBB, or #AARRGGBB with alpha first')
 
 HEX_PATTERN = re.compile(r'^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$')
 HEX_FIELD_CHARS = 10
+ALPHA_GRADIENT_SAMPLES = 32
 
 
 def parse_hex_color(text: str) -> Optional[QColor]:
@@ -57,13 +61,12 @@ class AlphaHexRow(QWidget):
 
         self._alpha_label = QLabel(ALPHA_LABEL)
         layout.addWidget(self._alpha_label)
-        self._alpha_slider = QSlider(Qt.Orientation.Horizontal)
-        self._alpha_slider.setRange(0, 255)
-        self._alpha_slider.setValue(255)
+        self._alpha_slider = GradientSlider(0, 255, checkerboard=True, step=1)
+        self._alpha_slider.set_value(255)
         self._alpha_slider.setToolTip(ALPHA_TOOLTIP)
         self._alpha_label.setBuddy(self._alpha_slider)
-        self._alpha_slider.valueChanged.connect(self._alpha_slider_changed)
-        self._alpha_slider.sliderReleased.connect(lambda: self.color_committed.emit(self.color()))
+        self._alpha_slider.value_changed.connect(self._alpha_slider_changed)
+        self._alpha_slider.value_committed.connect(lambda _: self.color_committed.emit(self.color()))
         layout.addWidget(self._alpha_slider, stretch=1)
 
         self._hex_field = QLineEdit()
@@ -73,9 +76,10 @@ class AlphaHexRow(QWidget):
         self._hex_field.editingFinished.connect(self._hex_field_edited)
         layout.addWidget(self._hex_field)
         self._update_hex_field()
+        self._update_alpha_gradient()
 
     @property
-    def alpha_slider(self) -> QSlider:
+    def alpha_slider(self) -> GradientSlider:
         """The alpha slider."""
         return self._alpha_slider
 
@@ -91,22 +95,26 @@ class AlphaHexRow(QWidget):
     def set_color(self, color: QColor) -> None:
         """Displays a color without emitting signals."""
         self._color = QColor(color)
-        self._alpha_slider.blockSignals(True)
-        self._alpha_slider.setValue(color.alpha())
-        self._alpha_slider.blockSignals(False)
+        self._alpha_slider.set_value(color.alpha())
         self._update_hex_field()
+        self._update_alpha_gradient()
 
     def _update_hex_field(self) -> None:
         self._hex_field.setText(format_hex_color(self._color))
 
-    def _alpha_slider_changed(self, alpha: int) -> None:
+    def _update_alpha_gradient(self) -> None:
+        rgba = np.empty((ALPHA_GRADIENT_SAMPLES, 4))
+        rgba[:, :3] = (self._color.redF(), self._color.greenF(), self._color.blueF())
+        rgba[:, 3] = np.linspace(0.0, 1.0, ALPHA_GRADIENT_SAMPLES)
+        self._alpha_slider.set_gradient(rgba)
+
+    def _alpha_slider_changed(self, value: float) -> None:
+        alpha = int(round(value))
         if alpha == self._color.alpha():
             return
         self._color.setAlpha(alpha)
         self._update_hex_field()
         self.color_changed.emit(self.color())
-        if not self._alpha_slider.isSliderDown():
-            self.color_committed.emit(self.color())
 
     def _hex_field_edited(self) -> None:
         color = parse_hex_color(self._hex_field.text())

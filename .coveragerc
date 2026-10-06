@@ -1,0 +1,12 @@
+# Coverage settings for `coverage run -m pytest`, which CI's test job runs to report coverage (see
+# .github/workflows/ci.yml). Nothing fails on the percentage yet.
+[run]
+source = src
+branch = True
+omit =
+    # Legacy GLID-3-XL code (AGENTS.md, "Legacy / don't-touch"), which the suite doesn't exercise.
+    src/glid_3_xl/*
+
+[report]
+skip_empty = True
+sort = Cover

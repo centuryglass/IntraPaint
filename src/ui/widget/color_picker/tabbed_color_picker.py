@@ -11,6 +11,7 @@ from src.ui.widget.color_picker.component_spinbox_picker import ComponentSpinbox
 from src.ui.widget.color_picker.hsv_picker import HsvPicker
 from src.ui.widget.color_picker.palette_widget import StandardColorPaletteWidget, CustomColorPaletteWidget
 from src.ui.widget.color_picker.screen_color import ScreenColorWidget
+from src.ui.widget.color_picker.slider_picker import SliderPicker
 from src.ui.widget.color_picker.wheel_picker import WheelPicker
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -25,6 +26,8 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 BASIC_PALETTE_TITLE = _tr('&Basic colors')
 CUSTOM_PALETTE_TITLE = _tr('&Custom colors')
 WHEEL_TAB_TITLE = _tr('&Wheel')
+# noinspection SpellCheckingInspection
+SLIDERS_TAB_TITLE = _tr('Sl&iders')
 SPECTRUM_TAB_TITLE = _tr('&Spectrum')
 # noinspection SpellCheckingInspection
 PALETTE_TAB_TITLE = _tr('Pa&lette')
@@ -47,8 +50,8 @@ MODE_1X1 = '1x1'
 class TabbedColorPicker(ScreenColorWidget):
     """A Qt color picker widget with multiple layouts, heavily based on QColorDialog.
 
-    `color_selected` fires on every change. `color_committed` fires only when the wheel picker finishes a choice; the
-    other panels don't emit it.
+    `color_selected` fires on every change. `color_committed` fires only when the wheel or slider panel finishes a
+    choice; the other panels don't emit it.
     """
 
     color_committed = Signal(QColor)
@@ -126,6 +129,11 @@ class TabbedColorPicker(ScreenColorWidget):
         self._wheel_panel.color_changed.connect(self.set_current_color)
         self._wheel_panel.color_committed.connect(self.color_committed)
 
+        self._slider_panel = SliderPicker(self)
+        self._slider_panel.setSizePolicy(self._size_policy)
+        self._slider_panel.color_changed.connect(self.set_current_color)
+        self._slider_panel.color_committed.connect(self.color_committed)
+
         # Divide color control into spectrum and component panels:
         self._spectrum_panel = QWidget(self)
         self._spectrum_panel.setSizePolicy(self._size_policy)
@@ -156,6 +164,11 @@ class TabbedColorPicker(ScreenColorWidget):
         """The OKHSV ring + square panel."""
         return self._wheel_panel
 
+    @property
+    def slider_picker(self) -> SliderPicker:
+        """The RGB / HSV / OKLCH slider panel."""
+        return self._slider_panel
+
     def selected_color(self) -> QColor:
         """Gets the current selected color."""
         return QColor(self._color)
@@ -181,6 +194,7 @@ class TabbedColorPicker(ScreenColorWidget):
         self._hsv_picker.color = color
         self._component_picker.color = color
         self._wheel_panel.set_color(color)
+        self._slider_panel.set_color(color)
 
         self._basic_palette.color_selected.connect(self.set_current_color)
         self._custom_palette.color_selected.connect(self.set_current_color)
@@ -206,7 +220,10 @@ class TabbedColorPicker(ScreenColorWidget):
         self._clear_layouts()
         self._main_layout = QHBoxLayout()
         self._outer_layout.insertLayout(1, self._main_layout)
-        self._main_layout.addWidget(self._wheel_panel)
+        wheel_layout = QVBoxLayout()
+        wheel_layout.addWidget(self._wheel_panel)
+        wheel_layout.addWidget(self._slider_panel)
+        self._main_layout.addLayout(wheel_layout)
         palette_layout = QVBoxLayout()
         palette_layout.addWidget(self._basic_palette_panel)
         palette_layout.addWidget(self._custom_palette_panel)
@@ -256,8 +273,8 @@ class TabbedColorPicker(ScreenColorWidget):
         self._clear_layouts()
         self._basic_palette_preview.setVisible(True)
         self._custom_palette_preview.setVisible(True)
-        tab_names = (WHEEL_TAB_TITLE, SPECTRUM_TAB_TITLE, COMPONENT_TAB_TITLE, BASIC_PALETTE_TITLE,
-                     CUSTOM_PALETTE_TITLE)
+        tab_names = (WHEEL_TAB_TITLE, SLIDERS_TAB_TITLE, SPECTRUM_TAB_TITLE, COMPONENT_TAB_TITLE,
+                     BASIC_PALETTE_TITLE, CUSTOM_PALETTE_TITLE)
         for title, tab in zip(tab_names, self._panels()):
             if self._always_show_pick_color_button and title != BASIC_PALETTE_TITLE:
                 widget = QWidget(self)
@@ -343,6 +360,7 @@ class TabbedColorPicker(ScreenColorWidget):
                 component_layout.addWidget(pick_color_label)
                 component_layout.addWidget(pick_color_button)
         self._tab_panel.addTab(self._wheel_panel, WHEEL_TAB_TITLE)
+        self._tab_panel.addTab(self._slider_panel, SLIDERS_TAB_TITLE)
         self._tab_panel.addTab(component_widget, COMPONENT_TAB_TITLE)
         palette_tab = QWidget(self)
         palette_tab.setSizePolicy(self._size_policy)
@@ -358,9 +376,9 @@ class TabbedColorPicker(ScreenColorWidget):
     def keyPressEvent(self, a0) -> None:
         """Override to prevent closing with escape."""
 
-    def _panels(self) -> tuple[QWidget, QWidget, QWidget, QWidget, QWidget]:
-        return (self._wheel_panel, self._spectrum_panel, self._component_panel, self._basic_palette_panel,
-                self._custom_palette_panel)
+    def _panels(self) -> tuple[QWidget, QWidget, QWidget, QWidget, QWidget, QWidget]:
+        return (self._wheel_panel, self._slider_panel, self._spectrum_panel, self._component_panel,
+                self._basic_palette_panel, self._custom_palette_panel)
 
     def _clear_layouts(self) -> None:
         for panel in self._panels():

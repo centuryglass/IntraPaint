@@ -55,8 +55,9 @@ def assert_valid_index(index: Any, list_value: list[Any], allow_end: bool = Fals
     """
     assert isinstance(index, int)
     assert isinstance(list_value, list)
-    if not 0 <= index < (len(list_value) + 1 if allow_end else len(list_value)):
-        raise ValueError(f'index {index} is invalid, expected (0 <= index < {len(list_value)})')
+    index_limit = len(list_value) + 1 if allow_end else len(list_value)
+    if not 0 <= index < index_limit:
+        raise ValueError(f'index {index} is invalid, expected (0 <= index < {index_limit})')
 
 
 def debug_widget_bounds(widget: QWidget, color: QColor) -> None:
