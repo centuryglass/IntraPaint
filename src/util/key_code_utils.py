@@ -14,7 +14,7 @@ def get_key_code(key_string: str) -> Qt.Key:
     key = QKeySequence(key_string)
     # noinspection PyUnresolvedReferences
     if key.count() != 1 or key[0] == Qt.Key.Key_unknown:
-        raise ValueError(f'Expected a single key string, got "{str}" (key count={key.count()})')
+        raise ValueError(f'Expected a single key string, got "{key_string}" (key count={key.count()})')
     # noinspection PyUnresolvedReferences
     return key[0].key()
 

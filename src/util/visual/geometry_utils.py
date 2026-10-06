@@ -83,11 +83,11 @@ def align_inner_bounds(outer_bounds: QRect | QRectF, inner_bounds: QRect | QRect
     if alignment & Qt.AlignmentFlag.AlignHCenter == Qt.AlignmentFlag.AlignHCenter:
         x += (outer_bounds.width() - inner_bounds.width() - left_margin - right_margin) / 2
     elif alignment & Qt.AlignmentFlag.AlignRight == Qt.AlignmentFlag.AlignRight:
-        x = outer_bounds.width() - inner_bounds.width() - right_margin
+        x = outer_bounds.x() + outer_bounds.width() - inner_bounds.width() - right_margin
     if alignment & Qt.AlignmentFlag.AlignVCenter == Qt.AlignmentFlag.AlignVCenter:
         y += (outer_bounds.height() - inner_bounds.height() - top_margin - bottom_margin) / 2
     elif alignment & Qt.AlignmentFlag.AlignBottom == Qt.AlignmentFlag.AlignBottom:
-        y = outer_bounds.height() - inner_bounds.height() - bottom_margin
+        y = outer_bounds.y() + outer_bounds.height() - inner_bounds.height() - bottom_margin
     if isinstance(inner_bounds, QRect):
         x = int(round(x))
         y = int(round(y))
