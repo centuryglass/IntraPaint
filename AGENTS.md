@@ -184,8 +184,9 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
     coverage is built out.
 - CI (`.github/workflows/ci.yml`) runs on every push and pull request: the suite on Python 3.11-3.14, the lint check
   below, and the `bundle` job (see "Packaging"). Its `ci` job is the single check to require for merging.
-- Coverage is sparse: treat it as a partial safety net, not an authoritative gate. The full run takes about 90
-  seconds.
+- Coverage is sparse: treat it as a partial safety net, not an authoritative gate. `coverage run -m pytest` then
+  `coverage report` measures it locally; CI's Python 3.13 test leg posts the report to the run summary. The full run
+  takes about 90 seconds.
 
 ## Type checking
 
