@@ -84,20 +84,36 @@ class GradientSliderTest(IntraPaintTestCase):
         self.assertEqual(self.slider.value(), 100.0)
         self.assertEqual(self.changed.values, [])
 
-    def test_renders_gradient_and_blanks_transparent_samples(self) -> None:
-        """The track shows the gradient's colors, and transparent samples show the flat track background."""
+    def test_renders_gradient_and_hatches_transparent_samples(self) -> None:
+        """The track shows the gradient's colors, transparent samples show hatching, and an edge line marks the
+        boundary."""
         rgba = np.zeros((4, 4))
         rgba[:2] = (1.0, 0.0, 0.0, 1.0)
         self.slider.set_gradient(rgba)
-        self.slider.set_value(100)
+        self.slider.set_value(0)
         image = self.slider.grab().toImage()
         track = self.slider.track_bounds()
         y = int(track.center().y())
-        left = image.pixelColor(int(track.left() + 3), y)
+        left = image.pixelColor(int(track.left() + 8), y)
         self.assertEqual((left.red(), left.green(), left.blue()), (255, 0, 0))
-        right = image.pixelColor(int(track.left() + track.width() * 0.8), y)
-        background = self.slider.palette().color(QPalette.ColorRole.Mid)
-        self.assertEqual(right.rgb(), background.rgb())
+        palette = self.slider.palette()
+        hatch_colors = {palette.color(QPalette.ColorRole.Mid).rgb(), palette.color(QPalette.ColorRole.Dark).rgb()}
+        start = int(track.left() + track.width() * 0.7)
+        hatched = {image.pixelColor(x, y).rgb() for x in range(start, start + 16)}
+        self.assertEqual(hatched, hatch_colors)
+        edge_x = int(track.left() + track.width() / 2)
+        self.assertEqual(image.pixelColor(edge_x, y).rgb(), palette.color(QPalette.ColorRole.WindowText).rgb())
+
+    def test_has_color_at(self) -> None:
+        """Values over transparent samples have no color; checkerboard sliders have color everywhere."""
+        rgba = np.zeros((4, 4))
+        rgba[:2, 3] = 1.0
+        self.slider.set_gradient(rgba)
+        self.assertTrue(self.slider.has_color_at(10))
+        self.assertFalse(self.slider.has_color_at(90))
+        checkered = GradientSlider(0.0, 100.0, checkerboard=True)
+        checkered.set_gradient(rgba)
+        self.assertTrue(checkered.has_color_at(90))
 
 
 class ColorSliderBlockTest(IntraPaintTestCase):

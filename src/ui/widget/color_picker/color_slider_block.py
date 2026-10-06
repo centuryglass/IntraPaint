@@ -36,7 +36,7 @@ MODE_OKLCH = 'OKLCH'
 MODES = (MODE_RGB, MODE_HSV, MODE_OKLCH)
 
 MODE_TOOLTIP = _tr('Color model for the sliders')
-OUT_OF_GAMUT_TOOLTIP = _tr('Gray parts of the track are colors sRGB cannot show.')
+OUT_OF_GAMUT_TOOLTIP = _tr('Hatched parts of the track are colors sRGB cannot show.')
 MODE_LABELS = {
     MODE_RGB: _tr('RGB'),
     MODE_HSV: _tr('HSV'),
