@@ -22,6 +22,7 @@ updates:
       - dependency-name: platformdirs
       - dependency-name: cython
       - dependency-name: pytest
+      - dependency-name: coverage
       - dependency-name: pylint
     groups:
       # One PR for the routine bumps. PySide6 gets its own, since Qt changes are the likeliest to need attention.
