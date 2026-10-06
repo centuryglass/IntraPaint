@@ -205,6 +205,25 @@ class OpenRasterTest(IntraPaintTestCase):
         for expected, actual in zip(self.image_stack.image_layers, self.loaded_stack.image_layers):
             self.assertEqual(expected.transform, actual.transform, f'transform of layer "{expected.name}"')
 
+    def test_layer_transforms_round_trip(self) -> None:
+        """Image layer transforms load with every matrix element intact, including flips, rotation, fractional
+        offsets and shear."""
+        transforms = {
+            'flip horizontal': QTransform(-1.0, 0.0, 0.0, 1.0, 100.0, 0.0),
+            'flip vertical': QTransform(1.0, 0.0, 0.0, -1.0, 0.0, 50.0),
+            'rotate': QTransform.fromTranslate(-50.0, -25.0) * QTransform().rotate(33.3)
+            * QTransform.fromTranslate(80.0, 40.0),
+            'fractional offset': QTransform.fromTranslate(10.125, -3.7),
+            'flip, scale and rotate': QTransform.fromScale(-0.4, 1.7) * QTransform().rotate(250.0)
+            * QTransform.fromTranslate(64.5, 200.25),
+            'shear': QTransform(1.0, 0.3, 0.0, 1.0, 50.0, 50.0),
+        }
+        for name, transform in transforms.items():
+            self._add_image_layer(name).transform = transform
+        self._assert_round_trip_matches()
+        loaded = {layer.name: layer.transform for layer in self.loaded_stack.image_layers}
+        self.assertEqual(transforms, loaded)
+
     def test_archive_paths_use_forward_slashes(self) -> None:
         """Every src in stack.xml and the extended XML is a '/'-separated entry in the archive."""
         for i, name in enumerate(AWKWARD_NAMES):

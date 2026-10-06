@@ -1,7 +1,7 @@
 """Interface for layers that have a persistent transformation."""
 from typing import Optional, Callable
 
-from PySide6.QtCore import QObject, Signal, QRect, QPoint, QPointF
+from PySide6.QtCore import QObject, Signal, QRect, QPoint, QPointF, QRectF
 from PySide6.QtGui import QPainter, QImage, QTransform
 
 from src.image.layers.layer import Layer
@@ -89,15 +89,13 @@ class TransformLayer(Layer):
         return map_rect_precise(layer_rect, self.transform).toAlignedRect()
 
     def rotate(self, degrees: int) -> None:
-        """Rotate the layer by an arbitrary degree count, on top of any previous transformations."""
-        center = QPointF(self.bounds.center())
+        """Rotate the layer clockwise on the canvas about its center, on top of any previous transformations."""
+        center = QRectF(self.bounds).center()
         x_off, y_off, x_scale, y_scale, base_angle = extract_transform_parameters(self.transform, center)
-        angle_offset = degrees if x_scale > 0 and y_scale > 0 else -degrees
-        self.transform = combine_transform_parameters(x_off, y_off, x_scale, y_scale, base_angle + angle_offset, center)
+        self.transform = combine_transform_parameters(x_off, y_off, x_scale, y_scale, base_angle + degrees, center)
 
     def _flip(self, horizontal: bool = True) -> None:
-        # center = self._transform.map(QPolygonF(QRectF(self.bounds))).boundingRect().center()
-        center = QPointF(self.bounds.center())
+        center = QRectF(self.bounds).center()
         x_off, y_off, x_scale, y_scale, angle = extract_transform_parameters(self.transform, center)
         if horizontal:
             x_scale *= -1
