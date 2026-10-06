@@ -2,6 +2,7 @@
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QColor
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller import color_controller
 from src.controller.color_controller import MAX_RECENT_COLORS
@@ -79,6 +80,35 @@ class ColorControllerTest(IntraPaintTestCase):
         self.assertEqual(color_controller.recent_colors(), [QColor('#ff222222')])
         color_controller.commit_color(QColor('#ff111111'))
         self.assertEqual(Cache().get(Cache.RECENT_COLORS), ['#ff111111', '#ff222222'])
+
+    def test_save_color_appends_without_duplicates(self) -> None:
+        """save_color adds new colors to the end in canonical form and ignores a color already saved."""
+        AppConfig().set(AppConfig.SAVED_COLORS, [])
+        color_controller.save_color(QColor('#FF112233'))
+        color_controller.save_color(QColor('#80445566'))
+        color_controller.save_color(QColor('#ff112233'))
+        self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), ['#ff112233', '#80445566'])
+
+    def test_remove_saved_color(self) -> None:
+        """remove_saved_color drops one color by index, along with blank and invalid entries."""
+        AppConfig().set(AppConfig.SAVED_COLORS, ['#ff112233', '', 'not a color', '#80445566', '#ff778899'])
+        self.assertEqual([color.name(QColor.NameFormat.HexArgb) for color in color_controller.saved_colors()],
+                         ['#ff112233', '#80445566', '#ff778899'])
+        color_controller.remove_saved_color(1)
+        self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), ['#ff112233', '#ff778899'])
+        color_controller.remove_saved_color(5)
+        self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), ['#ff112233', '#ff778899'])
+
+    def test_insert_saved_color_adds_or_moves(self) -> None:
+        """insert_saved_color inserts a new color before an index, and moves a saved color there instead of
+        duplicating it."""
+        AppConfig().set(AppConfig.SAVED_COLORS, ['#ff000001', '#ff000002', '#ff000003'])
+        color_controller.insert_saved_color(QColor('#ff000009'), 1)
+        self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), ['#ff000001', '#ff000009', '#ff000002', '#ff000003'])
+        color_controller.insert_saved_color(QColor('#ff000001'), 3)
+        self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), ['#ff000009', '#ff000002', '#ff000001', '#ff000003'])
+        color_controller.insert_saved_color(QColor('#ff000003'), 0)
+        self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), ['#ff000003', '#ff000009', '#ff000002', '#ff000001'])
 
 
 class SwapColorsDrawTest(ToolTestCase):
