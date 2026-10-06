@@ -114,11 +114,15 @@ class ColorSliderBlock(QWidget):
     color_changed = Signal(QColor)
     color_committed = Signal(QColor)
 
-    def __init__(self, parent: Optional[QWidget] = None, save_mode: bool = True) -> None:
-        """Creates the block, reading and saving its mode in `Cache.COLOR_SLIDER_MODE` if `save_mode` is true."""
+    def __init__(self, parent: Optional[QWidget] = None, save_mode: bool = True, secondary: bool = False) -> None:
+        """Creates the block, reading and saving its mode in the Cache if `save_mode` is true.
+
+        The mode lives in `Cache.COLOR_SLIDER_MODE`, or in `Cache.COLOR_SLIDER_MODE_SECONDARY` for a `secondary` block.
+        """
         super().__init__(parent)
         # Cache key attributes exist only once the Cache singleton is constructed, so this can't be a default argument.
-        self._mode_key: Optional[str] = Cache.COLOR_SLIDER_MODE if save_mode else None
+        mode_key = Cache.COLOR_SLIDER_MODE_SECONDARY if secondary else Cache.COLOR_SLIDER_MODE
+        self._mode_key: Optional[str] = mode_key if save_mode else None
         mode = Cache().get(self._mode_key) if self._mode_key is not None else MODE_RGB
         self._mode = mode if mode in MODES else MODE_RGB
         self._color = QColor(Qt.GlobalColor.black)

@@ -237,27 +237,27 @@ Copy image content from one area to another using a brush.
 
 Selects the color used by the brush, draw, and fill tools.  **Left-click** any spot within the image to copy the color at that spot.
 
-#### User interface: Color component tab
-<img src="./labeled_screenshots/tools/color-1.png"  alt="Screenshot of the first panel of color picker tool controls, with specific elements numbered."/>
+#### User interface: Color picker panel
 
-Depending on tool panel size, this tab's top and bottom halves might be split into two panels: **Spectrum** and **Color Component**.
+The same color picker panel appears in the tool panel's color tab. It arranges itself to fit the space it has: in a narrow
+panel its parts sit in tabs, and in a tall or wide panel they are all shown at once.
 
-#### User interface: Palette tab
-<img src="./labeled_screenshots/tools/color-2.png"  alt="Screenshot of the first panel of color picker tool controls, with specific elements numbered." />
+- **Header**: the foreground and background colors (click either to open a color dialog, or use the corner controls to
+  swap or reset them), the current color's hex code, and a **pick screen color** button. While picking a screen color,
+  left-click to select the color under the cursor, or press Escape to cancel.
+- **Wheel**: drag around the outer ring to change hue, and inside the square to change saturation (left to right) and
+  brightness (bottom to top). The ring and square use the OKHSV color model, so equal steps look about equally
+  different.
+- **Sliders**: three sliders with number fields. The dropdown switches them between RGB, HSV and OKLCH. Each track
+  shows the colors that slider would produce. On OKLCH tracks, hatched sections are colors the screen can't show.
+  Wide panels show a second slider block with its own dropdown.
+- **Palettes**: your saved colors. **Save current color** adds the current color. Click a saved color to use it,
+  drag colors in to save or reorder them, and right-click one to remove it.
+- **Alpha and hex**: the alpha slider sets opacity. The hex field accepts `#RGB`, `#RRGGBB` and `#AARRGGBB`.
+- **Recent colors**: the colors you chose most recently, newest first. Click one to use it again.
 
-Depending on tool panel size, this tab's top and bottom halves might be split into two panels: **Basic colors** and **Custom Colors**.
-
-1. **Color control tabs**: switch between different sets of color controls.
-2. **Current color**: The currently selected color.  When the custom palette grid is visible, this can be dragged into any of the custom color squares.
-3. **"Pick Screen Color" button**:  Enters a mode where you can select a color from anywhere on the screen, not just within the image. When active, left-click to select a color, or press escape to cancel.
-4. **Color hue/saturation field**:  Click any spot here to set current color hue and saturation values.
-5. **Color value slider**: Sets the current selected colors value/lightness.
-6. **HSV fields**: Directly view and update the selected color's hue, saturation, and value measurements.
-7. **Color channel fields**: Directly view and update individual color channel strengths for the current color.
-8. **HTML color code**: View and update the selected color's ARGB hexadecimal color code.
-9. **Basic color palette**: Click any of these pre-selected color options to change the active color.  These can also be dragged to any square in the "Custom colors" section to update that saved color.
-10. **Custom color palette**: Saves a set of customized user-selected colors. These will be preserved even when you close and re-open IntraPaint.
-11. **"Add to Custom Colors" button**: Replaces one of the custom colors with the current selected color, starting with the first duplicate color in the grid.  If there are no duplicate colors in the grid, it will start by replacing the first color, and move through the list each time the button is pressed.
+Dragging the wheel or a slider changes the color right away. A color is added to recent colors when you release the
+mouse, enter a hex code, click a swatch or pick a screen color.
 
 ---
 ### ![Text tool icon](./tool_icons/text_icon.png) Text tool (X)

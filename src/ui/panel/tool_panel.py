@@ -105,6 +105,8 @@ class ToolPanel(QWidget):
     def add_utility_widget_tab(self, widget: QWidget, tab_name: str, icon: Optional[QIcon] = None) -> None:
         """Adds a tabbed utility widget to the tabs at the end of the panel."""
         self._utility_tab_panels.append(widget)
+        if hasattr(widget, 'set_orientation'):
+            widget.set_orientation(self._orientation)
         if icon is not None:
             self._utility_tab_panel.addTab(widget, icon, tab_name)
         else:

@@ -1,6 +1,6 @@
 {
   "(repository)": {
-    "duplicate-code": 71
+    "duplicate-code": 69
   },
   "src/api/comfyui/comfyui_types.py": {
     "fixme": 1
@@ -179,9 +179,6 @@
   "src/ui/modal/modal_utils.py": {
     "inconsistent-quotes": 1
   },
-  "src/ui/panel/color_panel.py": {
-    "unused-argument": 2
-  },
   "src/ui/panel/image_panel.py": {
     "unused-argument": 1
   },
@@ -218,13 +215,6 @@
   },
   "src/ui/widget/color_button.py": {
     "unused-import": 1
-  },
-  "src/ui/widget/color_picker/color_show_label.py": {
-    "unused-argument": 2
-  },
-  "src/ui/widget/color_picker/palette_widget.py": {
-    "consider-swap-variables": 1,
-    "unused-argument": 5
   },
   "src/ui/widget/image_graphics_view.py": {
     "invalid-name": 1,

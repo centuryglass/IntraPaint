@@ -1,19 +1,23 @@
-"""A Qt color picker widget with multiple layouts, heavily based on QColorDialog."""
+"""The color picker: a header, an OKHSV ring + square, gradient sliders, saved and recent colors, and alpha + hex.
+
+`ColorPickerLayout` arranges the parts, in tabs where space is short. Every part edits one color. `color_selected` fires
+on every change, and `color_committed` only on a finished choice: a mouse release, a swatch click, a hex entry or a
+screen pick. Callers record committed colors as recent colors (see `src.controller.color_controller`).
+"""
+from enum import Enum
 from typing import Optional
 
-from PySide6.QtCore import QSize, QPoint, Signal
-from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
-    QTabWidget, QBoxLayout, QSizePolicy, QPushButton, QLabel, QApplication
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QColor, QIcon
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QApplication
 
-from src.ui.widget.color_picker.color_show_label import PaletteColorShowLabel
-from src.ui.widget.color_picker.component_spinbox_picker import ComponentSpinboxPicker
-from src.ui.widget.color_picker.hsv_picker import HsvPicker
-from src.ui.widget.color_picker.palette_widget import StandardColorPaletteWidget, CustomColorPaletteWidget
+from src.ui.widget.color_picker import tab_icons
+from src.ui.widget.color_picker.alpha_hex_row import AlphaHexRow
+from src.ui.widget.color_picker.color_picker_header import ColorPickerHeader
+from src.ui.widget.color_picker.color_slider_block import ColorSliderBlock
+from src.ui.widget.color_picker.okhsv_ring_square import OkhsvRingSquare
 from src.ui.widget.color_picker.saved_colors_panel import SavedColorsPanel, RecentColorsRow
 from src.ui.widget.color_picker.screen_color import ScreenColorWidget
-from src.ui.widget.color_picker.slider_picker import SliderPicker
-from src.ui.widget.color_picker.wheel_picker import WheelPicker
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.widget.color_picker'
@@ -24,161 +28,110 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-BASIC_PALETTE_TITLE = _tr('&Basic colors')
-CUSTOM_PALETTE_TITLE = _tr('&Custom colors')
 WHEEL_TAB_TITLE = _tr('&Wheel')
 # noinspection SpellCheckingInspection
 SLIDERS_TAB_TITLE = _tr('Sl&iders')
-SAVED_TAB_TITLE = _tr('Sav&ed')
-SPECTRUM_TAB_TITLE = _tr('&Spectrum')
 # noinspection SpellCheckingInspection
-PALETTE_TAB_TITLE = _tr('Pa&lette')
-# noinspection SpellCheckingInspection
-COMPONENT_TAB_TITLE = _tr('C&olor Component')
+PALETTES_TAB_TITLE = _tr('Pa&lettes')
+ALPHA_TAB_TITLE = _tr('&Alpha and hex')
 
-BUTTON_LABEL_PICK_SCREEN_COLOR = _tr('&Pick Screen Color')
-BUTTON_LABEL_ADD_CUSTOM_COLOR = _tr('&Add to Custom Colors')
+# Largest ring in the compact side layout, so the tabs leave room for the rows below them.
+COMPACT_RING_MAX_SIZE = 180
+DIALOG_RING_MIN_SIZE = 260
+# Largest share of the picker's width the ring takes in row layouts.
+ROW_RING_MAX_WIDTH_FRACTION = 0.4
+SPACING = 4
 
-LABEL_TEXT_PICK_SCREEN_COLOR_INFO = _tr('Cursor at {x},{y}\nPress ESC to cancel')
 
-MODE_2X2 = '2x2'
-MODE_4X1 = '4x1'
-MODE_1X4 = '1x4'
-MODE_2X1 = '2x1'
-MODE_1X2 = '1x2'
-MODE_1X1 = '1x1'
+class ColorPickerLayout(Enum):
+    """Arrangements of the color picker's parts."""
+    # Header, then Wheel / Sliders / Palettes tabs, then alpha + hex and recent colors.
+    SIDE = 'side'
+    # SIDE with icon-only tabs, a smaller ring and no recent colors.
+    SIDE_COMPACT = 'side_compact'
+    # One column with no tabs: header, ring, alpha + hex, sliders, saved colors, recent colors.
+    SIDE_TALL = 'side_tall'
+    # Four columns with no tabs: header + alpha + hex + recent colors, ring, two slider blocks, saved colors.
+    BOTTOM_WIDE = 'bottom_wide'
+    # Header + recent colors column, ring, then Sliders / Palettes tabs with alpha + hex below.
+    BOTTOM_MEDIUM = 'bottom_medium'
+    # Header column, ring, then icon-only Sliders / Palettes / Alpha and hex tabs.
+    BOTTOM_SHORT = 'bottom_short'
+    # Header, ring beside Sliders / Palettes tabs, then alpha + hex and recent colors.
+    DIALOG = 'dialog'
+
+
+# Layouts that sit in a row, where the ring's width follows the available height.
+ROW_LAYOUTS = (ColorPickerLayout.BOTTOM_WIDE, ColorPickerLayout.BOTTOM_MEDIUM, ColorPickerLayout.BOTTOM_SHORT)
 
 
 class TabbedColorPicker(ScreenColorWidget):
-    """A Qt color picker widget with multiple layouts, heavily based on QColorDialog.
+    """The color picker: a header, an OKHSV ring + square, gradient sliders, saved and recent colors, and alpha + hex.
 
-    `color_selected` fires on every change. `color_committed` fires only when the wheel or slider panel finishes a
-    choice, or a saved or recent swatch is clicked; the other panels don't emit it.
+    `swatch_widget` goes at the start of the header: the panel passes its color pair, the dialog its color comparison.
     """
 
     color_committed = Signal(QColor)
 
-    def __init__(self, always_show_pick_color_button=True) -> None:
+    def __init__(self, swatch_widget: Optional[QWidget] = None,
+                 picker_layout: ColorPickerLayout = ColorPickerLayout.SIDE) -> None:
         super().__init__()
-        self._color = QColor()
-        self._size_policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        self.setSizePolicy(self._size_policy)
+        self._color = QColor(Qt.GlobalColor.black)
         self._outer_layout = QVBoxLayout(self)
-        self._main_layout: Optional[QBoxLayout] = None
-        self._mode = ''
-        self._always_show_pick_color_button = always_show_pick_color_button
+        self._outer_layout.setContentsMargins(1, 1, 1, 1)
+        self._layout_container: Optional[QWidget] = None
+        self._tabs: Optional[QTabWidget] = None
+        self._current_tab_title: Optional[str] = None
+        self._picker_layout: Optional[ColorPickerLayout] = None
 
-        self._basic_palette_panel = QWidget(self)
-        self._basic_palette_panel.setSizePolicy(self._size_policy)
-        self._basic_palette_layout = QVBoxLayout(self._basic_palette_panel)
-        self._basic_palette_label = QLabel(BASIC_PALETTE_TITLE)
-        self._basic_palette_layout.addWidget(self._basic_palette_label)
+        self._header = ColorPickerHeader(swatch_widget, self)
+        self._header.pick_button.clicked.connect(self._start_screen_picking)
+        self.color_previewed.connect(self._header.show_picking_preview)
+        self.stopped_color_picking.connect(self._header.clear_picking_preview)
+        self.screen_color_picked.connect(self._choose_color)
 
-        self._basic_palette = StandardColorPaletteWidget()
-        self._basic_palette_label.setBuddy(self._basic_palette_label)
-        self._basic_palette_layout.addWidget(self._basic_palette)
-        self._basic_palette.connect_screen_color_picker(self)
-        self._basic_palette.color_selected.connect(self.set_current_color)
-
-        self._basic_palette_preview = PaletteColorShowLabel()
-        self._basic_palette_layout.addWidget(self._basic_palette_preview)
-        self._basic_palette_preview.color_dropped.connect(self.set_current_color)
-
-        self._pick_color_button = QPushButton()
-        self._pick_color_button.setText(BUTTON_LABEL_PICK_SCREEN_COLOR)
-        self._pick_color_button.clicked.connect(self.start_screen_color_picking)
-        self._basic_palette_layout.addWidget(self._pick_color_button)
-
-        self._custom_palette_panel = QWidget(self)
-        self._custom_palette_panel.setSizePolicy(self._size_policy)
-        self._custom_palette_layout = QVBoxLayout(self._custom_palette_panel)
-        self._custom_palette_label = QLabel(CUSTOM_PALETTE_TITLE)
-        self._custom_palette_layout.addWidget(self._custom_palette_label)
-
-        self._custom_palette = CustomColorPaletteWidget()
-        self._custom_palette_label.setBuddy(self._custom_palette)
-        self._custom_palette.connect_screen_color_picker(self)
-        self._custom_palette.color_selected.connect(self.set_current_color)
-        self._custom_palette_layout.addWidget(self._custom_palette)
-
-        self._custom_palette_preview = PaletteColorShowLabel()
-        self._custom_palette_layout.addWidget(self._custom_palette_preview)
-        self._custom_palette_preview.color_dropped.connect(self.set_current_color)
-
-        self._add_custom_color_button = QPushButton()
-        self._add_custom_color_button.setText(BUTTON_LABEL_ADD_CUSTOM_COLOR)
-        self._add_custom_color_button.clicked.connect(lambda: self._custom_palette.add_color(self._color))
-        self._custom_palette_layout.addWidget(self._add_custom_color_button)
-
-        self._screen_preview_label = QLabel()
-        self._screen_preview_label.setText('')
-        self._screen_preview_label.setVisible(False)
-
-        def _set_label_pos(pos: QPoint, _) -> None:
-            self._screen_preview_label.setVisible(True)
-            self._screen_preview_label.setText(LABEL_TEXT_PICK_SCREEN_COLOR_INFO.format(x=pos.x(), y=pos.y()))
-
-        def _clear_label() -> None:
-            self._screen_preview_label.setText('')
-            self._screen_preview_label.setVisible(False)
-
-        self.color_previewed.connect(_set_label_pos)
-        self.stopped_color_picking.connect(_clear_label)
-        self._custom_palette_layout.addWidget(self._screen_preview_label)
-
-        self._wheel_panel = WheelPicker(self)
-        self._wheel_panel.setSizePolicy(self._size_policy)
-        self._wheel_panel.color_changed.connect(self.set_current_color)
-        self._wheel_panel.color_committed.connect(self.color_committed)
-
-        self._slider_panel = SliderPicker(self)
-        self._slider_panel.setSizePolicy(self._size_policy)
-        self._slider_panel.color_changed.connect(self.set_current_color)
-        self._slider_panel.color_committed.connect(self.color_committed)
+        self._ring_square = OkhsvRingSquare(self)
+        self._slider_block = ColorSliderBlock(self)
+        self._secondary_slider_block = ColorSliderBlock(self, secondary=True)
+        self._alpha_hex_row = AlphaHexRow(self)
+        for part in (self._ring_square, self._slider_block, self._secondary_slider_block, self._alpha_hex_row):
+            part.color_changed.connect(self.set_current_color)
+            part.color_committed.connect(self._commit)
 
         self._saved_panel = SavedColorsPanel(self)
-        self._saved_panel.setSizePolicy(self._size_policy)
         self._saved_panel.color_clicked.connect(self._choose_color)
-
         self._recent_row = RecentColorsRow(self)
         self._recent_row.color_clicked.connect(self._choose_color)
 
-        # Divide color control into spectrum and component panels:
-        self._spectrum_panel = QWidget(self)
-        self._spectrum_panel.setSizePolicy(self._size_policy)
-        self._spectrum_panel_layout = QVBoxLayout(self._spectrum_panel)
-        self._hsv_picker = HsvPicker()
-        self._hsv_picker.color_selected.connect(self.set_current_color)
-        self._hsv_picker.connect_screen_color_picker(self)
-        self._spectrum_panel_layout.addWidget(self._hsv_picker)
+        self._update_parts()
+        self.set_picker_layout(picker_layout)
 
-        self._component_panel = QWidget(self)
-        self._component_panel.setSizePolicy(self._size_policy)
-        self._component_panel_layout = QVBoxLayout(self._component_panel)
-        self._component_picker = ComponentSpinboxPicker()
-        self._component_picker.color_selected.connect(self.set_current_color)
-        self._component_picker.connect_screen_color_picker(self)
-        self._component_panel_layout.addWidget(self._component_picker)
-
-        self._tab_panel = QTabWidget()
-        self._tab_panel.setSizePolicy(self._size_policy)
-        self._outer_layout.insertWidget(0, self._tab_panel)
-        # Layout modes insert their main layout at index 1, above the recent colors.
-        self._outer_layout.addWidget(self._recent_row)
-        self._outer_layout.addStretch(10)
-        self._tab_panel.setEnabled(False)
-        self._tab_panel.setVisible(False)
-        self.set_default_mode()
+    # Parts:
 
     @property
-    def wheel_picker(self) -> WheelPicker:
-        """The OKHSV ring + square panel."""
-        return self._wheel_panel
+    def header(self) -> ColorPickerHeader:
+        """The swatch widget, hex value and screen color pick button."""
+        return self._header
 
     @property
-    def slider_picker(self) -> SliderPicker:
-        """The RGB / HSV / OKLCH slider panel."""
-        return self._slider_panel
+    def ring_square(self) -> OkhsvRingSquare:
+        """The OKHSV hue ring and saturation/value square."""
+        return self._ring_square
+
+    @property
+    def slider_block(self) -> ColorSliderBlock:
+        """The component sliders shown in every layout."""
+        return self._slider_block
+
+    @property
+    def secondary_slider_block(self) -> ColorSliderBlock:
+        """The second slider block, shown only in the wide layout."""
+        return self._secondary_slider_block
+
+    @property
+    def alpha_hex_row(self) -> AlphaHexRow:
+        """The alpha slider and hex field."""
+        return self._alpha_hex_row
 
     @property
     def saved_colors_panel(self) -> SavedColorsPanel:
@@ -187,236 +140,240 @@ class TabbedColorPicker(ScreenColorWidget):
 
     @property
     def recent_colors_row(self) -> RecentColorsRow:
-        """The recent colors row, shown below the panels in every layout."""
+        """The recent colors row."""
         return self._recent_row
 
-    def _choose_color(self, color: QColor) -> None:
-        """Selects and commits a color."""
-        self.set_current_color(color)
-        self.color_committed.emit(QColor(color))
+    @property
+    def tab_widget(self) -> Optional[QTabWidget]:
+        """The current layout's tabs, or None if it has none."""
+        return self._tabs
+
+    # Color:
 
     def selected_color(self) -> QColor:
         """Gets the current selected color."""
         return QColor(self._color)
 
     def set_current_color(self, color: QColor) -> None:
-        """Sets the current selected color."""
+        """Sets the current selected color, shows it in every part, and emits `color_selected`."""
+        color = QColor(color).toRgb()
         if color == self._color:
             return
-        # Avoid letting value changes tweak hue and saturation when unnecessary:
-        if color.toRgb() == color.fromHsv(self._color.hue(), self._color.saturation(), color.value(),
-                                          color.alpha()).toRgb():
-            color.setHsv(self._color.hsvHue(), self._color.hsvSaturation(), color.value(), color.alpha())
         self._color = color
-        self._basic_palette.color_selected.disconnect(self.set_current_color)
-        self._custom_palette.color_selected.disconnect(self.set_current_color)
-        self._hsv_picker.color_selected.disconnect(self.set_current_color)
-        self._component_picker.color_selected.disconnect(self.set_current_color)
+        self._update_parts()
+        self.color_selected.emit(QColor(color))
 
-        self._basic_palette_preview.color = color
-        self._custom_palette_preview.color = color
-        self._basic_palette.select_color_if_present(color)
-        self._custom_palette.select_color_if_present(color)
-        self._hsv_picker.color = color
-        self._component_picker.color = color
-        self._wheel_panel.set_color(color)
-        self._slider_panel.set_color(color)
-        self._saved_panel.set_color(color)
-        self._recent_row.set_color(color)
+    def _update_parts(self) -> None:
+        for part in (self._ring_square, self._slider_block, self._secondary_slider_block, self._alpha_hex_row,
+                     self._header, self._saved_panel, self._recent_row):
+            part.set_color(self._color)
 
-        self._basic_palette.color_selected.connect(self.set_current_color)
-        self._custom_palette.color_selected.connect(self.set_current_color)
-        self._hsv_picker.color_selected.connect(self.set_current_color)
-        self._component_picker.color_selected.connect(self.set_current_color)
-        self.color_selected.emit(color)
+    def _commit(self, color: QColor) -> None:
+        self.set_current_color(color)
+        self.color_committed.emit(QColor(color))
 
-    def panel_size(self) -> QSize:
-        """Returns the expected size of one of the color control panels."""
-        panel_width = 0
-        panel_height = 0
-        for panel in self._panels():
-            panel_size = panel.sizeHint()
-            panel_width = max(panel_width, panel_size.width())
-            panel_height = max(panel_height, panel_size.height())
-        return QSize(panel_width, panel_height)
+    def _choose_color(self, color: QColor) -> None:
+        """Selects and commits a color."""
+        self._commit(color)
 
-    def set_default_mode(self) -> None:
-        """Restores the default 2x2 QColorDialog layout."""
-        if self._mode == MODE_2X2:
-            return
-        self._mode = MODE_2X2
-        self._clear_layouts()
-        self._main_layout = QHBoxLayout()
-        self._outer_layout.insertLayout(1, self._main_layout)
-        wheel_layout = QVBoxLayout()
-        wheel_layout.addWidget(self._wheel_panel)
-        wheel_layout.addWidget(self._slider_panel)
-        self._main_layout.addLayout(wheel_layout)
-        palette_layout = QVBoxLayout()
-        palette_layout.addWidget(self._basic_palette_panel)
-        palette_layout.addWidget(self._custom_palette_panel)
-        palette_layout.addWidget(self._saved_panel)
-        self._main_layout.addLayout(palette_layout)
-        component_layout = QVBoxLayout()
-        component_layout.addWidget(self._spectrum_panel)
-        component_layout.addWidget(self._component_panel)
-        self._main_layout.addLayout(component_layout)
-        for panel in self._panels():
-            panel.show()
-        self._basic_palette_preview.setHidden(True)
-        self._custom_palette_preview.setHidden(True)
-
-    def set_horizontal_mode(self) -> None:
-        """Displays the color picker in a wide 4x1 layout"""
-        if self._mode == MODE_4X1:
-            return
-        self._mode = MODE_4X1
-        self._use_linear_layout(QHBoxLayout)
-
-    def set_vertical_mode(self) -> None:
-        """Displays the color picker in a tall 1x4 layout"""
-        if self._mode == MODE_1X4:
-            return
-        self._mode = MODE_1X4
-        self._use_linear_layout(QVBoxLayout)
-
-    def set_vertical_two_tab_mode(self) -> None:
-        """Splits the dialog in half vertically, using two tabs."""
-        if self._mode == MODE_1X2:
-            return
-        self._mode = MODE_1X2
-        self._use_two_tab_layout(QVBoxLayout)
-
-    def set_horizontal_two_tab_mode(self) -> None:
-        """Splits the dialog in half vertically, using two tabs."""
-        if self._mode == MODE_2X1:
-            return
-        self._mode = MODE_2X1
-        self._use_two_tab_layout(QHBoxLayout)
-
-    def set_four_tab_mode(self) -> None:
-        """Put each color control panel in its own tab."""
-        if self._mode == MODE_1X1:
-            return
-        self._mode = MODE_1X1
-        self._clear_layouts()
-        self._basic_palette_preview.setVisible(True)
-        self._custom_palette_preview.setVisible(True)
-        tab_names = (WHEEL_TAB_TITLE, SLIDERS_TAB_TITLE, SPECTRUM_TAB_TITLE, COMPONENT_TAB_TITLE,
-                     BASIC_PALETTE_TITLE, CUSTOM_PALETTE_TITLE, SAVED_TAB_TITLE)
-        for title, tab in zip(tab_names, self._panels()):
-            if self._always_show_pick_color_button and title not in (BASIC_PALETTE_TITLE, SAVED_TAB_TITLE):
-                widget = QWidget(self)
-                layout = QVBoxLayout(widget)
-                layout.setContentsMargins(1, 1, 1, 1)
-                layout.setSpacing(1)
-                layout.addWidget(tab)
-                pick_button, pick_label = self._new_pick_screen_color_button()
-                if title != CUSTOM_PALETTE_TITLE:
-                    layout.addWidget(pick_label)
-                layout.addWidget(pick_button)
-                tab = widget
-            self._tab_panel.addTab(tab, title)
-        self._tab_panel.show()
-        self._tab_panel.setEnabled(True)
-
-    def _new_pick_screen_color_button(self) -> tuple[QPushButton, QLabel]:
-        """Make a new 'pick screen color' button"""
-        pick_color_button = QPushButton()
-        pick_color_button.setText(BUTTON_LABEL_PICK_SCREEN_COLOR)
-        pick_color_button.clicked.connect(self.start_screen_color_picking)
-
-        screen_preview_label = QLabel()
-        screen_preview_label.setText('')
-        screen_preview_label.setVisible(False)
-
-        def _set_label_pos(pos: QPoint, _) -> None:
-            screen_preview_label.setVisible(True)
-            screen_preview_label.setText(LABEL_TEXT_PICK_SCREEN_COLOR_INFO.format(x=pos.x(), y=pos.y()))
-
-        self.color_previewed.connect(_set_label_pos)
-
-        def _clear_label() -> None:
-            screen_preview_label.setText('')
-            screen_preview_label.setVisible(False)
-
-        self.stopped_color_picking.connect(_clear_label)
-        return pick_color_button, screen_preview_label
-
-    def _use_linear_layout(self, layout_class) -> None:
-        self._clear_layouts()
-        self._main_layout = layout_class()
-        self._basic_palette_preview.setHidden(True)
-        self._custom_palette_preview.setHidden(True)
-        self._outer_layout.insertLayout(1, self._main_layout)
-        for panel in self._panels():
-            assert self._main_layout is not None
-            self._main_layout.addWidget(panel)
-            panel.show()
-
-    def _use_two_tab_layout(self, layout_class) -> None:
-        self._clear_layouts()
-        if self._always_show_pick_color_button:
-            pick_color_button, pick_color_label = self._new_pick_screen_color_button()
-        else:
-            pick_color_button = None
-            pick_color_label = None
-        component_widget = QWidget(self)
-        component_widget.setSizePolicy(self._size_policy)
-        component_layout = layout_class(component_widget)
-        component_layout.setSpacing(0)
-        component_layout.setContentsMargins(1, 1, 1, 1)
-        self._basic_palette_preview.setVisible(False)
-        self._custom_palette_preview.setVisible(True)
-        if layout_class == QHBoxLayout and pick_color_button is not None and pick_color_label is not None:
-            left_panel_layout = QVBoxLayout()
-            left_panel_layout.setSpacing(0)
-            left_panel_layout.setContentsMargins(1, 1, 1, 1)
-            left_panel_layout.addWidget(self._spectrum_panel)
-            left_panel_layout.addWidget(pick_color_label)
-            component_layout.addLayout(left_panel_layout)
-
-            right_panel_layout = QVBoxLayout()
-            right_panel_layout.setSpacing(0)
-            right_panel_layout.setContentsMargins(1, 1, 1, 1)
-            right_panel_layout.addWidget(self._component_panel)
-            right_panel_layout.addWidget(pick_color_button)
-            component_layout.addLayout(right_panel_layout)
-        else:
-            component_layout.addWidget(self._spectrum_panel)
-            component_layout.addWidget(self._component_panel)
-            if pick_color_label is not None and pick_color_button is not None:
-                component_layout.addWidget(pick_color_label)
-                component_layout.addWidget(pick_color_button)
-        self._tab_panel.addTab(self._wheel_panel, WHEEL_TAB_TITLE)
-        self._tab_panel.addTab(self._slider_panel, SLIDERS_TAB_TITLE)
-        self._tab_panel.addTab(component_widget, COMPONENT_TAB_TITLE)
-        self._tab_panel.addTab(self._saved_panel, SAVED_TAB_TITLE)
-        palette_tab = QWidget(self)
-        palette_tab.setSizePolicy(self._size_policy)
-        palette_layout = layout_class(palette_tab)
-        palette_layout.addWidget(self._basic_palette_panel)
-        palette_layout.addWidget(self._custom_palette_panel)
-        self._tab_panel.addTab(palette_tab, PALETTE_TAB_TITLE)
-        self._tab_panel.show()
-        for panel in self._panels():
-            panel.show()
-        self._tab_panel.setEnabled(True)
+    def _start_screen_picking(self) -> None:
+        if not self.color_picking_active:
+            self.start_screen_color_picking()
 
     def keyPressEvent(self, a0) -> None:
         """Override to prevent closing with escape."""
 
-    def _panels(self) -> tuple[QWidget, ...]:
-        return (self._wheel_panel, self._slider_panel, self._spectrum_panel, self._component_panel,
-                self._basic_palette_panel, self._custom_palette_panel, self._saved_panel)
+    # Layout:
 
-    def _clear_layouts(self) -> None:
-        for panel in self._panels():
-            panel.setParent(self)
+    def picker_layout(self) -> Optional[ColorPickerLayout]:
+        """Returns the current arrangement."""
+        return self._picker_layout
 
-        while self._tab_panel.count() > 0:
-            self._tab_panel.removeTab(0)
-        self._tab_panel.hide()
-        if self._main_layout is not None:
-            self._outer_layout.removeItem(self._main_layout)
-            self._main_layout = None
+    def set_picker_layout(self, picker_layout: ColorPickerLayout) -> None:
+        """Rearranges the parts, keeping the selected tab if the new layout has it."""
+        if picker_layout == self._picker_layout:
+            return
+        self._picker_layout = picker_layout
+        if self._tabs is not None:
+            self._current_tab_title = self._tabs.tabToolTip(self._tabs.currentIndex())
+        self._clear_layout()
+        container = QWidget(self)
+        builders = {
+            ColorPickerLayout.SIDE: self._build_side_layout,
+            ColorPickerLayout.SIDE_COMPACT: lambda c: self._build_side_layout(c, compact=True),
+            ColorPickerLayout.SIDE_TALL: self._build_side_tall_layout,
+            ColorPickerLayout.BOTTOM_WIDE: self._build_bottom_wide_layout,
+            ColorPickerLayout.BOTTOM_MEDIUM: self._build_bottom_medium_layout,
+            ColorPickerLayout.BOTTOM_SHORT: self._build_bottom_short_layout,
+            ColorPickerLayout.DIALOG: self._build_dialog_layout,
+        }
+        placed = builders[picker_layout](container)
+        for part in placed:
+            part.show()
+        self._outer_layout.addWidget(container)
+        container.show()
+        self._layout_container = container
+        self._fit_ring()
+
+    def resizeEvent(self, event) -> None:
+        """Sizes the ring in row layouts, where its width follows the available height."""
+        super().resizeEvent(event)
+        self._fit_ring()
+
+    def _fit_ring(self) -> None:
+        ring = self._ring_square
+        if self._picker_layout in ROW_LAYOUTS:
+            margins = self._outer_layout.contentsMargins()
+            available_height = self.height() - margins.top() - margins.bottom()
+            side = min(available_height, int(self.width() * ROW_RING_MAX_WIDTH_FRACTION))
+            side = max(side, ring.minimumSizeHint().height())
+            if ring.minimumWidth() != side or ring.maximumWidth() != side:
+                ring.setFixedWidth(side)
+                if self._layout_container is not None and self._layout_container.layout() is not None:
+                    self._layout_container.layout().activate()
+            return
+        ring.setMinimumWidth(0)
+        ring.setMaximumWidth(16777215)
+        if self._picker_layout == ColorPickerLayout.SIDE_COMPACT:
+            ring.setMaximumHeight(COMPACT_RING_MAX_SIZE)
+        else:
+            ring.setMaximumHeight(16777215)
+        if self._picker_layout == ColorPickerLayout.DIALOG:
+            ring.setMinimumSize(DIALOG_RING_MIN_SIZE, DIALOG_RING_MIN_SIZE)
+        else:
+            ring.setMinimumSize(0, 0)
+
+    def _clear_layout(self) -> None:
+        for part in self._parts():
+            part.hide()
+            part.setParent(self)
+        self._tabs = None
+        if self._layout_container is not None:
+            self._outer_layout.removeWidget(self._layout_container)
+            self._layout_container.hide()
+            self._layout_container.deleteLater()
+            self._layout_container = None
+
+    def _parts(self) -> tuple[QWidget, ...]:
+        return (self._header, self._ring_square, self._slider_block, self._secondary_slider_block,
+                self._alpha_hex_row, self._saved_panel, self._recent_row)
+
+    def _new_tabs(self, parent: QWidget, pages: list[tuple[str, QIcon, QWidget]], icon_only: bool) -> QTabWidget:
+        """Creates the layout's tab widget, selecting the tab that was open in the last layout if it has one."""
+        tabs = QTabWidget(parent)
+        for title, icon, page in pages:
+            plain_title = title.replace('&', '')
+            index = tabs.addTab(page, icon, '' if icon_only else title)
+            tabs.setTabToolTip(index, plain_title)
+            if plain_title == self._current_tab_title:
+                tabs.setCurrentIndex(index)
+        self._tabs = tabs
+        return tabs
+
+    @staticmethod
+    def _page(parent: QWidget, *widgets: QWidget, stretch: bool = True) -> QWidget:
+        """Wraps widgets in a tab page, stacked at the top."""
+        page = QWidget(parent)
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(SPACING, SPACING, SPACING, SPACING)
+        for widget in widgets:
+            layout.addWidget(widget)
+        if stretch:
+            layout.addStretch(1)
+        return page
+
+    @staticmethod
+    def _column(*widgets: QWidget, stretch: bool = True) -> QVBoxLayout:
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        for widget in widgets:
+            layout.addWidget(widget)
+        if stretch:
+            layout.addStretch(1)
+        return layout
+
+    def _build_side_layout(self, container: QWidget, compact: bool = False) -> list[QWidget]:
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self._header.set_vertical(False)
+        layout.addWidget(self._header)
+        tabs = self._new_tabs(container, [
+            (WHEEL_TAB_TITLE, tab_icons.wheel_icon(), self._page(container, self._ring_square, stretch=False)),
+            (SLIDERS_TAB_TITLE, tab_icons.sliders_icon(), self._page(container, self._slider_block)),
+            (PALETTES_TAB_TITLE, tab_icons.palettes_icon(), self._page(container, self._saved_panel))
+        ], icon_only=compact)
+        layout.addWidget(tabs, stretch=1)
+        layout.addWidget(self._alpha_hex_row)
+        placed: list[QWidget] = [self._header, self._ring_square, self._slider_block, self._saved_panel,
+                                 self._alpha_hex_row]
+        if not compact:
+            layout.addWidget(self._recent_row)
+            placed.append(self._recent_row)
+        return placed
+
+    def _build_side_tall_layout(self, container: QWidget) -> list[QWidget]:
+        self._header.set_vertical(False)
+        parts = (self._header, self._ring_square, self._alpha_hex_row, self._slider_block, self._saved_panel,
+                 self._recent_row)
+        container.setLayout(self._column(*parts))
+        return list(parts)
+
+    def _build_bottom_wide_layout(self, container: QWidget) -> list[QWidget]:
+        self._header.set_vertical(False)
+        layout = QHBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addLayout(self._column(self._header, self._alpha_hex_row, self._recent_row), stretch=1)
+        layout.addWidget(self._ring_square)
+        layout.addLayout(self._column(self._slider_block, self._secondary_slider_block), stretch=2)
+        layout.addLayout(self._column(self._saved_panel), stretch=1)
+        return [self._header, self._alpha_hex_row, self._recent_row, self._ring_square, self._slider_block,
+                self._secondary_slider_block, self._saved_panel]
+
+    def _build_bottom_medium_layout(self, container: QWidget) -> list[QWidget]:
+        self._header.set_vertical(True)
+        layout = QHBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addLayout(self._column(self._header, self._recent_row))
+        layout.addWidget(self._ring_square)
+        tabs = self._new_tabs(container, [
+            (SLIDERS_TAB_TITLE, tab_icons.sliders_icon(), self._page(container, self._slider_block)),
+            (PALETTES_TAB_TITLE, tab_icons.palettes_icon(), self._page(container, self._saved_panel))
+        ], icon_only=False)
+        right_column = QVBoxLayout()
+        right_column.addWidget(tabs, stretch=1)
+        right_column.addWidget(self._alpha_hex_row)
+        layout.addLayout(right_column, stretch=1)
+        return [self._header, self._recent_row, self._ring_square, self._slider_block, self._saved_panel,
+                self._alpha_hex_row]
+
+    def _build_bottom_short_layout(self, container: QWidget) -> list[QWidget]:
+        self._header.set_vertical(True)
+        layout = QHBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addLayout(self._column(self._header))
+        layout.addWidget(self._ring_square)
+        tabs = self._new_tabs(container, [
+            (SLIDERS_TAB_TITLE, tab_icons.sliders_icon(), self._page(container, self._slider_block)),
+            (PALETTES_TAB_TITLE, tab_icons.palettes_icon(), self._page(container, self._saved_panel)),
+            (ALPHA_TAB_TITLE, tab_icons.alpha_icon(), self._page(container, self._alpha_hex_row))
+        ], icon_only=True)
+        layout.addWidget(tabs, stretch=1)
+        return [self._header, self._ring_square, self._slider_block, self._saved_panel, self._alpha_hex_row]
+
+    def _build_dialog_layout(self, container: QWidget) -> list[QWidget]:
+        self._header.set_vertical(False)
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self._header)
+        row = QHBoxLayout()
+        row.addWidget(self._ring_square, stretch=1)
+        tabs = self._new_tabs(container, [
+            (SLIDERS_TAB_TITLE, tab_icons.sliders_icon(), self._page(container, self._slider_block)),
+            (PALETTES_TAB_TITLE, tab_icons.palettes_icon(), self._page(container, self._saved_panel))
+        ], icon_only=False)
+        row.addWidget(tabs, stretch=1)
+        layout.addLayout(row, stretch=1)
+        layout.addWidget(self._alpha_hex_row)
+        layout.addWidget(self._recent_row)
+        return [self._header, self._ring_square, self._slider_block, self._saved_panel, self._alpha_hex_row,
+                self._recent_row]
