@@ -41,8 +41,8 @@ HSL_MODES = tuple(mode for mode in CompositeMode if mode.qt_composite_mode() is 
 
 ISSUE_132 = ('https://github.com/centuryglass/IntraPaint/issues/132: a non-isolated group composites the content '
              'beneath it over itself, and should render as isolated below full opacity or outside Normal mode')
-STALE_GROUP_CACHE = ('no issue filed yet: a group\'s cached image and pixmap keep its old opacity after a change to '
-                     'the group\'s own opacity')
+STALE_GROUP_CACHE = ('https://github.com/centuryglass/IntraPaint/issues/166: a group\'s cached image and pixmap keep '
+                     'its old opacity after a change to the group\'s own opacity')
 ISSUE_151 = ('https://github.com/centuryglass/IntraPaint/issues/151: HSL blend modes change base pixels outside the '
              'layer')
 
