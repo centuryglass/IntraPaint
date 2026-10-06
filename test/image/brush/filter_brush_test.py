@@ -26,6 +26,9 @@ from test.image.brush.qt_paint_brush_test import zigzag_points
 
 GOLDEN_DIR = 'test/resources/test_images/filter_brush'
 
+# Largest per-channel difference accepted where PIL filters translucent pixels; see assert_stroke_matches_golden.
+PIL_TRANSLUCENT_TOLERANCE = 8
+
 
 def opaque_test_pattern() -> QImage:
     """Returns brush_test_pattern with every pixel made opaque, transparent pixels becoming black."""
@@ -58,10 +61,24 @@ class FilterBrushTest(BrushTestCase):
         if parameter_values is not None:
             self.brush.parameter_values = parameter_values
 
-    def assert_stroke_matches_golden(self, image: QImage, golden_name: str) -> None:
-        """Checks that a stroke left only valid premultiplied pixels, then compares it with its golden image."""
+    def assert_stroke_matches_golden(self, image: QImage, golden_name: str, tolerance: int = 0) -> None:
+        """Checks that a stroke left only valid premultiplied pixels, then compares it with its golden image.
+
+        A nonzero tolerance accepts premultiplied channels that differ from the golden by up to that much. PIL-based
+        filters on translucent pixels round differently between machines (local runs and CI disagree by a few
+        levels), so only those strokes need it.
+        """
         self.assert_valid_premultiplied(image)
-        self.assert_image_matches_golden(image, f'{GOLDEN_DIR}/{golden_name}.png')
+        golden_path = f'{GOLDEN_DIR}/{golden_name}.png'
+        if tolerance > 0:
+            golden = QImage(golden_path).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+            actual = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+            if not golden.isNull() and golden.size() == actual.size():
+                difference = np.abs(image_data_as_numpy_8bit(actual).astype(np.int16)
+                                    - image_data_as_numpy_8bit(golden).astype(np.int16))
+                if int(difference.max()) <= tolerance:
+                    return
+        self.assert_image_matches_golden(image, golden_path)
 
     def filter_stroke_matches_golden(self, image_filter: ImageFilter, parameter_values: list[Any] | None,
                                      golden_name: str) -> None:
@@ -90,7 +107,8 @@ class FilterBrushTest(BrushTestCase):
     def test_sharpen_strong(self) -> None:
         """Sharpen at a high factor, across an opacity gradient."""
         self.use_layer(opacity_gradient_image())
-        self.filter_stroke_matches_golden(SharpenFilter(self.image_stack), [6.0], 'sharpen_strong')
+        self.use_filter(SharpenFilter(self.image_stack), [6.0])
+        self.assert_stroke_matches_golden(self.stroke(zigzag_points()), 'sharpen_strong', PIL_TRANSLUCENT_TOLERANCE)
 
     def test_brightness_contrast(self) -> None:
         """Brighter, with reduced contrast."""
@@ -178,7 +196,7 @@ class FilterBrushTest(BrushTestCase):
         self.configure_opacity_gradient()
         self.use_filter(BrightnessContrastFilter(self.image_stack), [1.8, 1.5])
         image = self.stroke(zigzag_points())
-        self.assert_stroke_matches_golden(image, 'brightness_contrast_opacity_gradient')
+        self.assert_stroke_matches_golden(image, 'brightness_contrast_opacity_gradient', PIL_TRANSLUCENT_TOLERANCE)
 
     @pytest.mark.xfail(strict=True, reason='PIL filters average the color of transparent pixels as black: '
                                            'https://github.com/centuryglass/IntraPaint/issues/161')
