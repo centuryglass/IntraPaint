@@ -401,10 +401,14 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 1. **Brush size slider**: Change the size of the selection brush.
 2. **Select/Deselect toggle**: Switch between selecting image content and deselecting content.
 3. **Clear button**: Remove all selections.
-4. **Select All button**: Select all image content. In inpainting mode, a **Clear Context Pins** button follows it, removing every [context pin](#-selection-brush-tool-s).
-5. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
-6. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
-7. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
+4. **Select All button**: Select all image content.
+5. **Clear Context Pins button**: Only visible in inpainting mode.  Removes every [context pin](#-selection-brush-tool-s).
+6. Selected content, under the selection brush cursor. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
+7. A context pin. The cropped bounds stretch to include it, but the pinned spot isn't selected for inpainting.
+
+When the Stable Diffusion AI image generator is active, the panel also shows these controls:
+- **"Inpaint Full Resolution" checkbox**: When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
+- **"Inpaint Full Resolution padding" slider**: Only visible when "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
 
 ---
 ### ![Rectangle/Ellipse Selection tool icon](./tool_icons/shape_selection_icon.png) Rectangle/ellipse selection (R)
@@ -476,10 +480,11 @@ In inpainting mode, the generation area moves after you change the selection or 
    - **"Full image"**: Covers the entire image.
    - **"Square"**: The largest square that fits in the image.
    - **Recent sizes**: Up to four generation area sizes you've used recently, labeled with their size.
-   - **"+ size" field**: Type a size such as `768` (a square) or `640x480`, then press Enter.
    - **Shift+G**: Switches back to the size used before the current one. Press it again to switch back.
-6. **"Resolution rule" dropdown**: Controls how the AI image generation resolution changes when the generation area is resized.
+6. **"+ size" field**: Type a size such as `768` (a square) or `640x480`, then press Enter to resize the area.
+7. **"Resolution rule" dropdown**: Controls how the AI image generation resolution changes when the generation area is resized.
    - **"Match area"**: The resolution always equals the generation area size.
    - **"Match area, upscale small areas"** (default): Like "Match area", but small areas are scaled up by a whole-number factor until their shorter side reaches the minimum set in the settings ("Minimum upscaled resolution side", 512 by default). The factor is reduced if the result would be larger than the maximum generation size.
    - **"Manual"**: The resolution only changes when you edit it. Editing the resolution by hand selects this rule.
-7. **"Image generation resolution" inputs**: Sets the resolution used for AI image generation.
+8. **"Image generation resolution" inputs**: Sets the resolution used for AI image generation.
+9. **Image generation area**: The dotted outline shows the generation area. While this tool is active, drag the square handles on the outline to resize it. Corner handles keep the aspect ratio unless you hold Shift, and edge handles move one side.
