@@ -325,7 +325,7 @@
     "saved_colors": {
         "label": "Saved colors:",
         "category": "Editing",
-        "description": "List of saved custom color values, used in the color picker tool's custom palette section.",
+        "description": "Colors saved in the color picker's Palettes tab, at most 64.",
         "type": "list",
         "default": [],
         "saved": true

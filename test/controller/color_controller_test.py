@@ -5,7 +5,7 @@ from PySide6.QtGui import QColor
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller import color_controller
-from src.controller.color_controller import MAX_RECENT_COLORS
+from src.controller.color_controller import MAX_RECENT_COLORS, MAX_SAVED_COLORS
 from src.tools.draw_tool import DrawTool
 from test.base_test_case import IntraPaintTestCase
 from test.tools.tool_test_case import ToolTestCase
@@ -109,6 +109,51 @@ class ColorControllerTest(IntraPaintTestCase):
         self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), ['#ff000009', '#ff000002', '#ff000001', '#ff000003'])
         color_controller.insert_saved_color(QColor('#ff000003'), 0)
         self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), ['#ff000003', '#ff000009', '#ff000002', '#ff000001'])
+
+
+def _full_saved_list() -> list[str]:
+    return [f'#ff0000{index:02x}' for index in range(MAX_SAVED_COLORS)]
+
+
+class SavedColorsCapTest(IntraPaintTestCase):
+    """Tests the MAX_SAVED_COLORS cap on saved colors."""
+
+    def test_save_color_stops_at_cap(self) -> None:
+        """A full list refuses new colors and reports it, and a color already saved is refused too."""
+        full = _full_saved_list()
+        AppConfig().set(AppConfig.SAVED_COLORS, full[:-1])
+        self.assertFalse(color_controller.saved_colors_full())
+        self.assertTrue(color_controller.save_color(QColor(full[-1])))
+        self.assertTrue(color_controller.saved_colors_full())
+        self.assertFalse(color_controller.save_color(QColor('#ffabcdef')))
+        self.assertFalse(color_controller.save_color(QColor(full[0])))
+        self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), full)
+
+    def test_insert_into_full_list_only_moves(self) -> None:
+        """A full list refuses a new color dropped into it, but still reorders a color already saved."""
+        full = _full_saved_list()
+        AppConfig().set(AppConfig.SAVED_COLORS, full)
+        self.assertFalse(color_controller.insert_saved_color(QColor('#ffabcdef'), 0))
+        self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), full)
+        self.assertTrue(color_controller.insert_saved_color(QColor(full[-1]), 0))
+        self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), [full[-1], *full[:-1]])
+
+    def test_over_cap_config_is_truncated(self) -> None:
+        """A hand-edited list past the cap reads as its first MAX_SAVED_COLORS colors, and the next change drops the
+        rest."""
+        full = _full_saved_list()
+        AppConfig().set(AppConfig.SAVED_COLORS, [*full, '#ffabcdef', '#ff123456'])
+        self.assertEqual([color.name(QColor.NameFormat.HexArgb) for color in color_controller.saved_colors()], full)
+        self.assertEqual(color_controller.saved_color_index(QColor('#ffabcdef')), -1)
+        color_controller.remove_saved_color(0)
+        self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), full[1:])
+
+    def test_saved_color_index(self) -> None:
+        """saved_color_index finds a color in canonical form, or returns -1."""
+        AppConfig().set(AppConfig.SAVED_COLORS, ['#ff112233', '#80445566'])
+        self.assertEqual(color_controller.saved_color_index(QColor('#80445566')), 1)
+        self.assertEqual(color_controller.saved_color_index(QColor('#FF112233')), 0)
+        self.assertEqual(color_controller.saved_color_index(QColor('#ff112234')), -1)
 
 
 class SwapColorsDrawTest(ToolTestCase):

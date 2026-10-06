@@ -7,7 +7,9 @@ from PySide6.QtGui import QColor, QDrag, QDropEvent
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.panel.color_panel import ColorControlPanel
+from src.controller.color_controller import MAX_SAVED_COLORS
 from src.ui.widget.color_picker.color_swatch_grid import ColorSwatchGrid, SWATCH_SIZE, SWATCH_SPACING
+from src.ui.widget.color_picker.saved_colors_panel import MAX_VISIBLE_ROWS, SAVE_BUTTON_FULL_TOOLTIP
 from test.base_test_case import IntraPaintTestCase
 from test.ui.widget.color_picker_test_utils import press, move, release, SignalRecorder
 
@@ -127,6 +129,37 @@ class ColorPanelSavedColorsTest(IntraPaintTestCase):
         self.panel.saved_colors_panel.save_button.click()
         self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), ['#ffaabbcc', '#ff336699'])
         self.assertEqual(_names(self.saved_grid.colors()), ['#ffaabbcc', '#ff336699'])
+
+    def test_remove_button_removes_current_color(self) -> None:
+        """The remove button is enabled only when the current color is saved, and removes it."""
+        saved_panel = self.panel.saved_colors_panel
+        self.assertFalse(saved_panel.remove_button.isEnabled())
+        self.assertTrue(saved_panel.save_button.isEnabled())
+        Cache().set(Cache.LAST_BRUSH_COLOR, '#ffaabbcc')
+        self.assertTrue(saved_panel.remove_button.isEnabled())
+        self.assertFalse(saved_panel.save_button.isEnabled())
+        saved_panel.remove_button.click()
+        self.assertEqual(AppConfig().get(AppConfig.SAVED_COLORS), [])
+        self.assertFalse(saved_panel.remove_button.isEnabled())
+        self.assertTrue(saved_panel.save_button.isEnabled())
+
+    def test_full_list_disables_save_and_scrolls(self) -> None:
+        """A full list shows its count, disables saving with a tooltip saying why, and scrolls past
+        MAX_VISIBLE_ROWS rows."""
+        saved_panel = self.panel.saved_colors_panel
+        AppConfig().set(AppConfig.SAVED_COLORS, [f'#ff0000{index:02x}' for index in range(MAX_SAVED_COLORS)])
+        self.assertIn(f'{MAX_SAVED_COLORS}/{MAX_SAVED_COLORS}', saved_panel.label.text())
+        self.assertFalse(saved_panel.save_button.isEnabled())
+        self.assertEqual(saved_panel.save_button.toolTip(), SAVE_BUTTON_FULL_TOOLTIP)
+        # A hidden widget gets its resize event only once shown.
+        self.panel.show()
+        self.panel.resize(240, 600)
+        tabs = self.panel.tab_widget
+        tabs.setCurrentIndex(tabs.indexOf(saved_panel.parentWidget()))
+        max_height = MAX_VISIBLE_ROWS * (SWATCH_SIZE + SWATCH_SPACING) - SWATCH_SPACING
+        self.assertEqual(saved_panel.scroll_area.maximumHeight(), max_height)
+        self.assertGreater(saved_panel.grid.heightForWidth(saved_panel.scroll_area.viewport().width()), max_height)
+        self.panel.hide()
 
     def test_saved_swatch_click_sets_and_commits_foreground(self) -> None:
         """Clicking a saved color sets the foreground and records it as a recent color."""
