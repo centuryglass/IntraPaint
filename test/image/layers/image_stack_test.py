@@ -8,6 +8,7 @@ from PySide6.QtCore import QSize, QRect, QPoint, Qt
 from PySide6.QtGui import QImage, QPainter
 from PySide6.QtWidgets import QApplication
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
@@ -279,6 +280,9 @@ class ImageStackTest(IntraPaintTestCase):
 
     def test_borrow_layer_image(self) -> None:
         """Confirm that setting layer images within the stack still works correctly"""
+        # Loading and selecting a layer merge into one undo entry only within UNDO_MERGE_INTERVAL, so a short interval
+        # makes the count below depend on runner speed (#11).
+        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 60.0)
         read_ora_image(self.image_stack, LAYER_MOVE_TEST_IMAGE)
         new_content = QImage(QSize(512, 512), QImage.Format.Format_ARGB32_Premultiplied)
         new_content.fill(Qt.GlobalColor.red)
