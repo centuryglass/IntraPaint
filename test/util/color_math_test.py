@@ -2,7 +2,8 @@
 import numpy as np
 
 from src.util.visual.color_math import srgb_to_linear, linear_to_srgb, srgb_to_oklab, oklab_to_srgb, \
-    srgb_to_oklch, oklch_to_srgb, srgb_to_okhsv, okhsv_to_srgb, okhsv_plane_to_srgb, is_in_srgb_gamut
+    srgb_to_oklch, oklch_to_srgb, srgb_to_okhsv, okhsv_to_srgb, okhsv_plane_to_srgb, is_in_srgb_gamut, \
+    oklch_to_srgb_in_gamut
 from test.base_test_case import IntraPaintTestCase
 
 ONE_8BIT_STEP = 1.0 / 255.0
@@ -131,6 +132,25 @@ class TestColorMath(IntraPaintTestCase):
             saturation_grid, value_grid = np.meshgrid(saturations, values)
             hsv = np.stack((np.full_like(saturation_grid, hue), saturation_grid, value_grid), axis=-1)
             np.testing.assert_allclose(plane, okhsv_to_srgb(hsv), atol=1e-12, err_msg=str(hue))
+
+    def test_oklch_gamut_mapping(self) -> None:
+        """In-gamut colors convert unchanged; others keep lightness and hue at the largest chroma that fits."""
+        in_gamut = srgb_to_oklch(_srgb_grid(5))
+        np.testing.assert_allclose(oklch_to_srgb_in_gamut(in_gamut), np.clip(oklch_to_srgb(in_gamut), 0.0, 1.0),
+                                   atol=1e-12)
+        lightness, hue = np.meshgrid(np.linspace(0.05, 0.95, 10), np.linspace(0.0, 350.0, 36))
+        out_of_gamut = np.stack((lightness, np.full_like(lightness, 0.5), hue), axis=-1).reshape(-1, 3)
+        mapped = oklch_to_srgb_in_gamut(out_of_gamut)
+        self.assertTrue(np.all(is_in_srgb_gamut(mapped, 0.0)))
+        mapped_lch = srgb_to_oklch(mapped)
+        np.testing.assert_allclose(mapped_lch[:, 0], out_of_gamut[:, 0], atol=2e-4)
+        # Clipping the accepted channel error shifts the hue of near-gray results, so only check chromatic ones.
+        chromatic = mapped_lch[:, 1] > 0.03
+        hue_error = (mapped_lch[chromatic, 2] - out_of_gamut[chromatic, 2] + 180.0) % 360.0 - 180.0
+        np.testing.assert_allclose(hue_error, 0.0, atol=0.1)
+        slightly_more = mapped_lch.copy()
+        slightly_more[:, 1] += 1e-3
+        self.assertFalse(np.any(is_in_srgb_gamut(oklch_to_srgb(slightly_more), 0.0)))
 
     def test_rejects_wrong_channel_count(self) -> None:
         """Arrays without three channels on the last axis raise ValueError."""

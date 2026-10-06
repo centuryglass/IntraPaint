@@ -98,6 +98,16 @@
         "saved": true,
         "translate": false
     },
+    "color_slider_mode": {
+        "label": "Color slider mode:",
+        "category": "Cache",
+        "description": "Color model the color picker's sliders edit.",
+        "type": "string",
+        "default": "RGB",
+        "options": ["RGB", "HSV", "OKLCH"],
+        "saved": true,
+        "translate": false
+    },
     "new_image_background_color": {
         "label": "New image background color:",
         "category": "Cache",

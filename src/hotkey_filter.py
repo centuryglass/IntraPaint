@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QApplication, QWidget, QTextEdit, QLineEdit, QPlai
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
+from src.ui.widget.color_picker.gradient_slider import GradientSlider
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.util.key_code_utils import get_modifiers, get_modifier_string, get_key_string, get_key_with_modifiers
 
@@ -246,7 +247,8 @@ class HotkeyFilter(QObject):
 
         # Avoid blocking inputs to text fields:
         focused_widget = QApplication.focusWidget()
-        if (isinstance(focused_widget, (QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox))
+        if (isinstance(focused_widget, (QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox,
+                                        GradientSlider))
                 and focused_widget.isVisible()):
             # Cut/copy/paste/clear bindings can dynamically handle selecting between text and image content, so let
             # these run as usual.
@@ -270,7 +272,7 @@ class HotkeyFilter(QObject):
             if event.key() == Qt.Key.Key_Escape and self._default_focus is not None and self._default_focus.isVisible():
                 self._default_focus.setFocus()
                 return True
-            if (not is_text_control_event and isinstance(focused_widget, QAbstractSpinBox)
+            if (not is_text_control_event and isinstance(focused_widget, (QAbstractSpinBox, GradientSlider))
                     and event.key() in self._bindings):
                 # Let keybindings work within numeric fields if they're not also keys used by the input:
                 numeric_inputs = {

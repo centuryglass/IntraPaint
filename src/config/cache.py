@@ -103,6 +103,7 @@ class Cache(Config, metaclass=Singleton):
     BATCH_COUNT: str
     BATCH_SIZE: str
     CANVAS_RESIZE_CROP_LAYERS: str
+    COLOR_SLIDER_MODE: str
     CANVAS_RESIZE_LAYER_MODE: str
     CLIP_SKIP: str
     CLONE_STAMP_TOOL_ANTIALIAS: str
