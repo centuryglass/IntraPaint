@@ -114,11 +114,12 @@ class ColorSliderBlock(QWidget):
     color_changed = Signal(QColor)
     color_committed = Signal(QColor)
 
-    def __init__(self, parent: Optional[QWidget] = None, mode_key: Optional[str] = Cache.COLOR_SLIDER_MODE) -> None:
-        """Creates the block, reading and saving its mode in the `mode_key` cache entry if it isn't None."""
+    def __init__(self, parent: Optional[QWidget] = None, save_mode: bool = True) -> None:
+        """Creates the block, reading and saving its mode in `Cache.COLOR_SLIDER_MODE` if `save_mode` is true."""
         super().__init__(parent)
-        self._mode_key = mode_key
-        mode = Cache().get(mode_key) if mode_key is not None else MODE_RGB
+        # Cache key attributes exist only once the Cache singleton is constructed, so this can't be a default argument.
+        self._mode_key: Optional[str] = Cache.COLOR_SLIDER_MODE if save_mode else None
+        mode = Cache().get(self._mode_key) if self._mode_key is not None else MODE_RGB
         self._mode = mode if mode in MODES else MODE_RGB
         self._color = QColor(Qt.GlobalColor.black)
         self._components = np.zeros(3)
@@ -168,7 +169,7 @@ class ColorSliderBlock(QWidget):
         return self._mode
 
     def set_mode(self, mode: str) -> None:
-        """Switches the color model, keeping the color, and saves it as the default if the block has a mode key."""
+        """Switches the color model, keeping the color, and saves it as the default if the block saves its mode."""
         assert mode in MODES, f'unexpected mode {mode}'
         if mode == self._mode:
             return

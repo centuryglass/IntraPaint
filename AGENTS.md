@@ -96,6 +96,9 @@ Config is JSON-backed and typed, with `get()` / `set()` / `connect()` (signal on
 - Singletons (the config classes, `UndoStack`) bind to the arguments of their first construction and ignore them
   afterwards, so `AppConfig('other.json')` returns the existing instance. `conftest.py` relies on this to back every
   test's config with temporary copies.
+- **Key constants like `Cache.BACKGROUND_COLOR` exist only after the class's first construction,** which sets them
+  from the definition file. Code that runs at import time (default arguments, class bodies, module constants) can't
+  use them. Tests can't catch this because `conftest.py` constructs every config first; CI's `bundle` smoke test can.
 
 ## Conventions
 
