@@ -1,7 +1,6 @@
 """Tests the OKHSV ring + square picker, its alpha/hex row, and its Wheel tab in the color panel."""
-from PySide6.QtCore import QEvent, QPointF, Qt
-from PySide6.QtGui import QColor, QMouseEvent
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtCore import QPointF, Qt
+from PySide6.QtGui import QColor
 from PySide6 import QtTest
 
 from src.config.cache import Cache
@@ -11,36 +10,10 @@ from src.ui.widget.color_picker.okhsv_ring_square import OkhsvRingSquare
 from src.ui.widget.color_picker.wheel_picker import WheelPicker
 from src.util.visual import color_math
 from test.base_test_case import IntraPaintTestCase
+from test.ui.widget.color_picker_test_utils import press as _press, move as _move, release as _release, \
+    SignalRecorder
 
 WIDGET_SIZE = 200
-
-
-def _send_mouse(widget: QWidget, event_type: QEvent.Type, point: QPointF) -> None:
-    button = Qt.MouseButton.NoButton if event_type == QEvent.Type.MouseMove else Qt.MouseButton.LeftButton
-    buttons = Qt.MouseButton.NoButton if event_type == QEvent.Type.MouseButtonRelease else Qt.MouseButton.LeftButton
-    event = QMouseEvent(event_type, point, widget.mapToGlobal(point), button, buttons,
-                        Qt.KeyboardModifier.NoModifier)
-    QApplication.sendEvent(widget, event)
-
-
-def _press(widget: QWidget, point: QPointF) -> None:
-    _send_mouse(widget, QEvent.Type.MouseButtonPress, point)
-
-
-def _move(widget: QWidget, point: QPointF) -> None:
-    _send_mouse(widget, QEvent.Type.MouseMove, point)
-
-
-def _release(widget: QWidget, point: QPointF) -> None:
-    _send_mouse(widget, QEvent.Type.MouseButtonRelease, point)
-
-
-class SignalRecorder:
-    """Records the colors a signal emits."""
-
-    def __init__(self, signal) -> None:
-        self.colors: list[QColor] = []
-        signal.connect(lambda color: self.colors.append(QColor(color)))
 
 
 class HexParsingTest(IntraPaintTestCase):
@@ -184,12 +157,13 @@ class WheelPickerTest(IntraPaintTestCase):
     def test_alpha_slider_drag_commits_on_release(self) -> None:
         """Dragging the alpha slider changes alpha without committing; releasing it commits."""
         slider = self.picker.alpha_hex_row.alpha_slider
-        slider.setSliderDown(True)
-        slider.setValue(100)
+        slider.resize(300, slider.sizeHint().height())
+        _press(slider, QPointF(slider.x_for_value(200), 5))
+        _move(slider, QPointF(slider.x_for_value(100), 5))
         self.assertEqual(self.picker.selected_color().alpha(), 100)
         self.assertEqual(self.picker.alpha_hex_row.hex_field.text(), '#64336699')
         self.assertEqual(self.committed.colors, [])
-        slider.setSliderDown(False)
+        _release(slider, QPointF(slider.x_for_value(100), 5))
         self.assertEqual([color.alpha() for color in self.committed.colors], [100])
 
     def test_ring_drag_updates_hex_field(self) -> None:
