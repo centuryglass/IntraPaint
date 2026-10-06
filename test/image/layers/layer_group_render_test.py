@@ -41,8 +41,6 @@ HSL_MODES = tuple(mode for mode in CompositeMode if mode.qt_composite_mode() is 
 
 ISSUE_132 = ('https://github.com/centuryglass/IntraPaint/issues/132: a non-isolated group composites the content '
              'beneath it over itself, and should render as isolated below full opacity or outside Normal mode')
-STALE_GROUP_CACHE = ('https://github.com/centuryglass/IntraPaint/issues/166: a group\'s cached image and pixmap keep '
-                     'its old opacity after a change to the group\'s own opacity')
 ISSUE_151 = ('https://github.com/centuryglass/IntraPaint/issues/151: HSL blend modes change base pixels outside the '
              'layer')
 
@@ -565,11 +563,19 @@ class CachedCompositeTest(GroupRenderTestCase):
         self.upper.visible = False
         self.assert_images_equal(self.group.get_qimage(), self.expected_cache())
 
-    @pytest.mark.xfail(strict=True, reason=STALE_GROUP_CACHE)
     def test_cache_after_group_opacity_change(self) -> None:
         """After the group's own opacity changes and is flushed, its cached image shows it."""
         self.assert_cache_current()
         self.group.opacity = 0.3
+        self.assert_cache_current()
+
+    def test_cache_after_group_mode_change(self) -> None:
+        """After the group's own composition mode changes and is flushed, its cached image shows it.
+
+        Hue is used because, unlike Qt's modes, it changes the composite even on the cache's transparent base.
+        """
+        self.assert_cache_current()
+        self.group.composition_mode = CompositeMode.HUE
         self.assert_cache_current()
 
     def test_view_displays_groups(self) -> None:
