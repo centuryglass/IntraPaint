@@ -97,10 +97,12 @@ class GradientSliderTest(IntraPaintTestCase):
         left = image.pixelColor(int(track.left() + 8), y)
         self.assertEqual((left.red(), left.green(), left.blue()), (255, 0, 0))
         palette = self.slider.palette()
-        hatch_colors = {palette.color(QPalette.ColorRole.Mid).rgb(), palette.color(QPalette.ColorRole.Dark).rgb()}
+        background = palette.color(QPalette.ColorRole.Mid).lightness()
         start = int(track.left() + track.width() * 0.7)
-        hatched = {image.pixelColor(x, y).rgb() for x in range(start, start + 16)}
-        self.assertEqual(hatched, hatch_colors)
+        lightness = {image.pixelColor(x, y).lightness() for x in range(start, start + 16)}
+        self.assertIn(background, lightness)
+        self.assertLess(min(lightness), background)
+        self.assertGreater(max(lightness), background)
         edge_x = int(track.left() + track.width() / 2)
         self.assertEqual(image.pixelColor(edge_x, y).rgb(), palette.color(QPalette.ColorRole.WindowText).rgb())
 

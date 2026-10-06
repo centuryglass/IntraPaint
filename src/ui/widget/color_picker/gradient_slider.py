@@ -2,8 +2,8 @@
 
 The track shows what the color would become at each slider position, so callers recompute the gradient whenever the
 other components change. Transparent gradient samples show the track background: a checkerboard when
-`checkerboard` is set, for alpha tracks. Otherwise they mark positions with no valid color, drawn as diagonal hatching
-with a solid edge line where the valid range ends, and the handle's outline turns dashed while it sits in one.
+`checkerboard` is set, for alpha tracks. Otherwise they mark positions with no valid color, drawn as black and white
+hatching with a solid edge line where the valid range ends, and the handle's outline turns dashed while it sits in one.
 
 Dragging emits `value_changed`; releasing the mouse emits `value_committed`. Arrow keys emit both.
 """
@@ -11,7 +11,7 @@ from typing import Optional
 
 import numpy as np
 from PySide6.QtCore import Qt, QRectF, QSize, Signal, QPointF
-from PySide6.QtGui import QBrush, QImage, QKeyEvent, QMouseEvent, QPainter, QPaintEvent, QPen, QPalette
+from PySide6.QtGui import QBrush, QColor, QImage, QKeyEvent, QMouseEvent, QPainter, QPaintEvent, QPen, QPalette
 from PySide6.QtWidgets import QWidget, QSizePolicy
 
 from src.util.visual.image_utils import tile_pattern_fill
@@ -21,6 +21,8 @@ MIN_WIDTH = 60
 HEIGHT = 20
 HANDLE_WIDTH = 6.0
 CHECKER_TILE_SIZE = 4
+HATCH_DARK = QColor(0, 0, 0, 160)
+HATCH_LIGHT = QColor(255, 255, 255, 160)
 # Gradient samples with alpha below this are positions with no valid color.
 VALID_ALPHA_THRESHOLD = 0.5
 # Arrow keys move the value by this fraction of the range, unless a step is given.
@@ -198,8 +200,10 @@ class GradientSlider(QWidget):
                               Qt.GlobalColor.darkGray)
         else:
             painter.fillRect(track, self.palette().color(QPalette.ColorRole.Mid))
-            painter.setBrushOrigin(track.topLeft())
-            painter.fillRect(track, QBrush(self.palette().color(QPalette.ColorRole.Dark), Qt.BrushStyle.BDiagPattern))
+            # Paired black and white stripes keep the hatching visible on light and dark themes.
+            for color, offset in ((HATCH_DARK, 0.0), (HATCH_LIGHT, 1.0)):
+                painter.setBrushOrigin(track.topLeft() + QPointF(offset, 0.0))
+                painter.fillRect(track, QBrush(color, Qt.BrushStyle.BDiagPattern))
         gradient_image = self._get_gradient_image()
         if gradient_image is not None:
             painter.drawImage(track.toAlignedRect(), gradient_image)
