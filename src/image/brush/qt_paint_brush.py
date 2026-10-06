@@ -354,7 +354,8 @@ class QtPaintBrush(LayerBrush):
         # Make sure the paint buffer is clear, draw the most recent segment in the brush stroke:
         np_paint_buf[:, :, :] = 0
 
-        new_input_painter.setRenderHint(QPainter.RenderHint.Antialiasing, self._antialiasing)
+        new_input_painter.setRenderHint(QPainter.RenderHint.Antialiasing,
+                                        self._antialiasing and not isinstance(input_event.layer, SelectionLayer))
         self._input_event_paint_segment(new_input_painter, input_event)
 
         # Find the pixels this segment changes. Pixels outside the input mask are never changed.
@@ -460,12 +461,14 @@ class QtPaintBrush(LayerBrush):
             layer_bounds = layer.bounds
             self.layer = layer
             self.size = size
-            self.opacity = opacity
-            self.hardness = hardness
+            # The selection layer is one-bit, so strokes on it are always opaque and hard-edged:
+            is_selection = isinstance(layer, SelectionLayer)
+            self.opacity = 1.0 if is_selection else opacity
+            self.hardness = 1.0 if is_selection else hardness
             if pressure is not None:
-                if isinstance(layer, SelectionLayer) or pressure_size:
+                if is_selection or pressure_size:
                     self.size = max(int(size * pressure), 1)
-                if not isinstance(layer, SelectionLayer):
+                if not is_selection:
                     if pressure_opacity:
                         self.opacity = float(clamp(self.opacity * pressure, 0.0, 1.0))
                     if pressure_hardness:
