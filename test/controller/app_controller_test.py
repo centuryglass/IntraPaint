@@ -1,10 +1,12 @@
+import gc
 import os
 import sys
 import tempfile
+import weakref
 from unittest.mock import patch, MagicMock
 
-from PySide6.QtCore import QSize, QTimer
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QEvent, QSize, QTimer
+from PySide6.QtWidgets import QApplication, QStyleFactory, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -14,6 +16,7 @@ from src.controller.image_generation.test_generator import TestGenerator
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
 from src.util.arg_parser import build_arg_parser
+from src.util.gc_paused import gc_paused
 from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_READ_FORMATS, \
     IMAGE_WRITE_FORMATS
 from test.base_test_case import IntraPaintTestCase
@@ -21,6 +24,33 @@ from test.base_test_case import IntraPaintTestCase
 app = QApplication.instance() or QApplication(sys.argv)
 
 LAYER_IMAGE = 'test/resources/test_images/layer_move_test.ora'
+
+
+class _GcStateRecorder(QWidget):
+    """Records whether cyclic garbage collection was enabled each time the widget receives a style change."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.gc_enabled_states: list[bool] = []
+
+    def event(self, event: QEvent) -> bool:
+        """Records the garbage collector state on style changes."""
+        if event.type() == QEvent.Type.StyleChange:
+            self.gc_enabled_states.append(gc.isenabled())
+        return super().event(event)
+
+
+class _WidgetCycle:
+    """Holds a Python-owned widget in a reference cycle, so only cyclic garbage collection can free it."""
+
+    def __init__(self) -> None:
+        self.widget = QWidget()
+        self.cycle = self
+
+
+def _unreachable_widget_cycle() -> weakref.ref:
+    """Creates an unreachable _WidgetCycle and returns a weak reference to it."""
+    return weakref.ref(_WidgetCycle())
 
 
 class TestAppController(IntraPaintTestCase):
@@ -99,6 +129,40 @@ class TestAppController(IntraPaintTestCase):
         self.assertFalse(MockQDarkTheme.setup_theme.called)
         self.assertTrue(MockQtMaterial.apply_stylesheet.called)
         self.assertEqual(AppConfig().get('font_point_size'), QApplication.instance().font().pointSize())
+
+    def test_style_change_pauses_garbage_collection(self):
+        """QApplication.setStyle runs after a collection, with collection paused (see gc_paused)."""
+        initial_style = AppConfig().get(AppConfig.STYLE)
+        new_style = next(key for key in QStyleFactory.keys() if key.lower() != initial_style.lower())
+        recorder = _GcStateRecorder()
+        garbage = _unreachable_widget_cycle()
+        try:
+            AppConfig().set(AppConfig.STYLE, new_style, add_missing_options=True)
+        finally:
+            AppConfig().set(AppConfig.STYLE, initial_style)
+        self.assertIsNone(garbage())
+        self.assertNotEqual(recorder.gc_enabled_states, [])
+        self.assertNotIn(True, recorder.gc_enabled_states)
+        self.assertTrue(gc.isenabled())
+
+    @patch('src.controller.app_controller.qdarktheme')
+    def test_theme_change_pauses_garbage_collection(self, mock_qdarktheme):
+        """Theme stylesheets are applied after a collection, with collection paused (see gc_paused)."""
+        mock_qdarktheme.setup_theme.side_effect = lambda *_args: app.setStyleSheet('QWidget { margin: 1px; }')
+        recorder = _GcStateRecorder()
+        garbage = _unreachable_widget_cycle()
+        try:
+            AppConfig().set(AppConfig.THEME, 'qdarktheme_dark', add_missing_options=True)
+            gc_enabled_states = list(recorder.gc_enabled_states)
+        finally:
+            AppConfig().set(AppConfig.THEME, 'None')
+            with gc_paused():
+                app.setStyleSheet('')
+        mock_qdarktheme.setup_theme.assert_called_once()
+        self.assertIsNone(garbage())
+        self.assertNotEqual(gc_enabled_states, [])
+        self.assertNotIn(True, gc_enabled_states)
+        self.assertTrue(gc.isenabled())
 
     # TODO: Fix issues with MenuBuilder mocking that are breaking this test case.
     def test_start_app(self):
