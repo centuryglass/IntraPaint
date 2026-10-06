@@ -27,7 +27,7 @@ class CloneStampBrush(QtPaintBrush):
     def source_offset(self) -> Optional[QPoint]:
         """Accesses the clone source offset. This value will be None if using a fixed source point. Setting this value
            will set source_pos to None."""
-        return self._source_pos
+        return self._source_offset
 
     @source_offset.setter
     def source_offset(self, source_offset: QPoint) -> None:
