@@ -22,8 +22,7 @@ APP_ICON_PATH = f'{PROJECT_DIR}/resources/icons/app_icon.png'
 DATA_DIR = user_data_dir('IntraPaint', 'centuryglass')
 LOG_DIR = user_log_dir('IntraPaint', 'centuryglass')
 for app_dir in [DATA_DIR, LOG_DIR]:
-    if not os.path.isdir(app_dir):
-        os.makedirs(app_dir)
+    os.makedirs(app_dir, exist_ok=True)
 
 # Numeric:
 INT_MIN = -2147483647
