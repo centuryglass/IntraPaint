@@ -39,7 +39,7 @@ class AppConfig(Config, metaclass=Singleton):
 
     def _adjust_defaults(self):
         """Dynamically initialize application style and theme options based on available modules."""
-        theme_options = DEFAULT_THEME_OPTIONS
+        theme_options = list(DEFAULT_THEME_OPTIONS)
         if qdarktheme is not None:
             theme_options += DARK_THEME_OPTIONS
         if qt_material is not None and hasattr(qt_material, 'list_themes'):
