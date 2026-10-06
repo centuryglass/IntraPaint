@@ -495,7 +495,8 @@ class CustomColorPaletteWidget(PaletteWidget):
     def _update_config_color_slot(self, idx: int, color: QColor) -> None:
         colors = config_colors(self.num_rows() * self.num_cols())
         colors[idx] = color
-        AppConfig().set(AppConfig.SAVED_COLORS, [col.name(QColor.NameFormat.HexArgb) for col in colors])
+        AppConfig().set(AppConfig.SAVED_COLORS, [col.name(QColor.NameFormat.HexArgb) if col.isValid() else ''
+                                              for col in colors])
         for i in range(self.num_cols() * 2):
             # QColorDialog is indexed by column instead of row.  This is intentional, it makes it less of a hassle
             # to keep them synchronized when CustomColorPaletteWidget adds extra rows. We do still need to recalculate

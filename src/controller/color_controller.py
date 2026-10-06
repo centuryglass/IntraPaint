@@ -1,4 +1,4 @@
-"""Foreground/background color pair operations and the recent colors list.
+"""Foreground/background color pair operations, and the recent and saved color lists.
 
 The foreground color is `Cache.LAST_BRUSH_COLOR` and the background color is `Cache.BACKGROUND_COLOR`. Every write goes
 through `Config.set_color`, so listeners keep using `Cache().connect` on those keys.
@@ -6,10 +6,13 @@ through `Config.set_color`, so listeners keep using `Cache().connect` on those k
 Browsing and choosing are separate: `set_foreground` and `set_background` with `commit=False` only change the color,
 while a commit also pushes the color onto `Cache.RECENT_COLORS`. Picker drags write without committing; a finished
 choice (dialog OK, eyedropper pick, swatch click) commits.
+
+Saved colors are `AppConfig.SAVED_COLORS`, a user-curated list kept in the order colors were saved.
 """
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 
 MAX_RECENT_COLORS = 16
@@ -78,3 +81,29 @@ def commit_color(color: QColor) -> None:
     updated = updated_recent_colors(recent, color)
     if updated != recent:
         cache.set(Cache.RECENT_COLORS, updated)
+
+
+def saved_colors() -> list[QColor]:
+    """Returns the saved colors, in the order they were saved, skipping any value that isn't a valid color."""
+    return [QColor(color_str) for color_str in AppConfig().get(AppConfig.SAVED_COLORS) if QColor(color_str).isValid()]
+
+
+def _set_saved_colors(colors: list[QColor]) -> None:
+    AppConfig().set(AppConfig.SAVED_COLORS, [color.name(QColor.NameFormat.HexArgb) for color in colors])
+
+
+def save_color(color: QColor) -> None:
+    """Adds a color to the end of the saved colors, unless it is already saved."""
+    colors = saved_colors()
+    color_str = color.name(QColor.NameFormat.HexArgb)
+    if any(saved.name(QColor.NameFormat.HexArgb) == color_str for saved in colors):
+        return
+    _set_saved_colors([*colors, color])
+
+
+def remove_saved_color(index: int) -> None:
+    """Removes the saved color at an index into `saved_colors()`."""
+    colors = saved_colors()
+    if 0 <= index < len(colors):
+        del colors[index]
+        _set_saved_colors(colors)
