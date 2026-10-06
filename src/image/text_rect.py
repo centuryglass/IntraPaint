@@ -202,7 +202,7 @@ class TextRect:
         elif self._scale_mode == SCALE_MODE_TEXT_TO_BOUNDS:
             if len(self._text) == 0:
                 return
-            max_pt_size = max_font_size(self._text, self._font, self._size, True)
+            max_pt_size = max_font_size(self._text, self._font, self._size)
             if max_pt_size > 0:
                 self._font.setPointSize(max_pt_size)
 
