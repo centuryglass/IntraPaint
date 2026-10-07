@@ -5,7 +5,8 @@ from PySide6.QtCore import QObject, Signal, QRect, QPoint, QPointF, QRectF
 from PySide6.QtGui import QPainter, QImage, QTransform
 
 from src.image.layers.layer import Layer
-from src.util.visual.geometry_utils import extract_transform_parameters, combine_transform_parameters, map_rect_precise
+from src.util.visual.geometry_utils import (extract_transform_parameters, combine_transform_parameters,
+                                           map_rect_precise, transform_needs_smooth_sampling)
 from src.util.visual.image_utils import create_transparent_image
 
 
@@ -41,13 +42,34 @@ class TransformLayer(Layer):
         return map_rect_precise(bounds, self._transform).toAlignedRect()
 
     def set_transform(self, transform: QTransform) -> None:
-        """Updates the layer's matrix transformation."""
+        """Updates the layer's matrix transformation, reporting both the old and new areas as changed."""
         if transform != self._transform:
             assert transform.isInvertible(), f'layer {self.name}:{self.id} given non-invertible transform'
+            old_transform = self._transform
             self._transform = transform
             self.transform_changed.emit(self, transform)
             if self.visible and self.opacity > 0.0:
-                self.signal_content_changed(self.bounds)
+                self.signal_content_changed(self.transform_change_bounds(old_transform))
+
+    def map_changed_rect_to_image(self, layer_rect: QRect) -> QRect:
+        """Returns the image area that changing layer_rect can affect, given the layer's current transform.
+
+        Under a transform that needs smooth sampling, the area extends one pixel past the mapped rect.
+        """
+        return self._changed_image_area(layer_rect, self._transform)
+
+    def transform_change_bounds(self, old_transform: QTransform) -> QRect:
+        """Returns a rect in layer coordinates that covers the layer's area under both old_transform and its current
+           transform, once mapped with map_changed_rect_to_image."""
+        old_area = self._changed_image_area(self.bounds, old_transform)
+        return self.bounds.united(self.map_rect_from_image(old_area))
+
+    @staticmethod
+    def _changed_image_area(layer_rect: QRect, transform: QTransform) -> QRect:
+        image_rect = map_rect_precise(layer_rect, transform).toAlignedRect()
+        if transform_needs_smooth_sampling(transform):
+            image_rect.adjust(-1, -1, 1, 1)
+        return image_rect
 
     def transformed_image(self) -> tuple[QImage, QTransform]:
         """Apply all non-translating transformations to a copy of the image, returning it with the final translation."""

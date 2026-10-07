@@ -11,7 +11,7 @@ from src.config.application_config import AppConfig
 from src.image.composite_mode import CompositeMode
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.cached_data import CachedData
-from src.util.visual.geometry_utils import map_rect_precise, transform_scale, rotation_angle
+from src.util.visual.geometry_utils import map_rect_precise, transform_needs_smooth_sampling
 from src.util.visual.image_utils import (create_transparent_image, NpAnyArray, image_data_as_numpy_8bit_readonly,
                                          image_is_fully_transparent)
 
@@ -66,6 +66,9 @@ class Layer(QObject):
 
     name_changed = Signal(QObject, str)
     visibility_changed = Signal(QObject, bool)
+    # The rect is in the layer's own coordinates: before the transform for a TransformLayer (map it with
+    # TransformLayer.map_changed_rect_to_image), and image coordinates for a LayerGroup. Region compositing redraws
+    # only the reported area, so a rect that misses a changed pixel leaves it stale.
     content_changed = Signal(QObject, QRect)
     opacity_changed = Signal(QObject, float)
     size_changed = Signal(QObject, QSize)
@@ -354,13 +357,18 @@ class Layer(QObject):
         return self._visible
 
     def set_size(self, new_size: QSize) -> None:
-        """Updates the layer's size."""
+        """Updates the layer's size, reporting both the old and new areas as changed."""
         if self._size != new_size:
+            old_size = self._size
             self._size = QSize(new_size)
             self._pixmap.invalidate()
             self.size_changed.emit(self, new_size)
             if self.visible and self.opacity > 0.0:
-                self.signal_content_changed(self.bounds)
+                self.signal_content_changed(self._size_change_bounds(old_size))
+
+    def _size_change_bounds(self, old_size: QSize) -> QRect:
+        """Returns the area a size change affects, in the coordinates content_changed uses."""
+        return self.bounds.united(QRect(QPoint(), old_size))
 
     def set_locked(self, locked: bool) -> None:
         """Locks or unlocks the layer."""
@@ -489,9 +497,7 @@ class Layer(QObject):
                 painter.setCompositionMode(qt_composite_mode)
                 if transform is not None:
                     painter.setTransform(transform)
-                    s_x, s_y = transform_scale(transform)
-                    angle = rotation_angle(transform)
-                    if (s_x % 1.0) != 0.0 or (s_y % 1.0) != 0.0 or (angle % 90.0) != 0.0:
+                    if transform_needs_smooth_sampling(transform):
                         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
                 painter.setClipPath(clip_path)
                 painter.drawImage(source_bounds, layer_image, source_bounds)

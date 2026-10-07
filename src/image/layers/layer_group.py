@@ -78,6 +78,11 @@ class LayerGroup(Layer, LayerParent):
         self._bounds = QRect(bounds)
         return bounds
 
+    def _size_change_bounds(self, old_size: QSize) -> QRect:
+        """Returns the group's new bounds. Its old bounds aren't known here: _get_local_bounds updates them after
+           calling set_size."""
+        return self.bounds
+
     def flip_horizontal(self) -> None:
         """Flip the group horizontally."""
         if self.locked:
@@ -573,6 +578,7 @@ class LayerGroup(Layer, LayerParent):
                     layer.lock_changed.emit(layer, layer.locked)
                 if isinstance(layer, TransformLayer) and layer_transforms[layer] != layer.transform:
                     layer.transform_changed.emit(layer, layer.transform)
+                    layer.content_changed.emit(layer, layer.transform_change_bounds(layer_transforms[layer]))
                 if isinstance(layer, ImageLayer) and alpha_lock_states[layer] != layer.alpha_locked:
                     layer.alpha_lock_changed.emit(layer, layer.alpha_locked)
                 if isinstance(layer, LayerGroup) and isolate_states[layer] != layer.isolate:
