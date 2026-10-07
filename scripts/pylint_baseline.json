@@ -96,9 +96,6 @@
     "too-many-nested-blocks": 1,
     "unused-argument": 2
   },
-  "src/image/layers/layer_group.py": {
-    "line-too-long": 2
-  },
   "src/image/layers/transform_group.py": {
     "unused-argument": 1
   },
