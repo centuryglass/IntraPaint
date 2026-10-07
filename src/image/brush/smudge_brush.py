@@ -4,6 +4,10 @@ Brush implementing smudge tool operations.
 A smudge stroke is a chain of one-pixel steps. Each step samples the layer under the brush, then draws that sample
 over the layer at the next step, so every step depends on the one before it. Input is buffered and drawn in batches
 from a timer, so the cost of a stroke is the number of steps times the cost of those two compositing operations.
+
+Steps composite in a 16-bit-per-channel copy of the layer that lasts for the whole stroke, and each batch copies its
+changes back to the 8-bit layer image. Rounding every step to 8 bits shifts the color of paint picked up from nearly
+transparent pixels.
 """
 from typing import Optional
 
@@ -14,10 +18,13 @@ from src.image.brush.layer_brush import LayerBrush, draw_buffered_input
 from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.layers.image_layer import ImageLayer
 from src.util.math_utils import clamp
-from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit
+from src.util.visual.image_utils import create_transparent_image
 
 PAINT_BUFFER_DELAY_MS = 50
 INITIAL_POINTS_PER_DRAW = 64
+
+# Format of the stroke's working copy of the layer, and of the samples carried between steps:
+SMUDGE_FORMAT = QImage.Format.Format_RGBA64_Premultiplied
 
 
 class SmudgeBrush(LayerBrush):
@@ -29,6 +36,10 @@ class SmudgeBrush(LayerBrush):
         self._hardness = 1.0
         self._last_point: Optional[QPointF] = None
         self._last_point_img = QImage()
+        # SMUDGE_FORMAT copy of the layer image, kept for the whole stroke so that how input is split into draws
+        # can't change the result. Other changes to the layer image mid-stroke are overwritten wherever the stroke
+        # draws next.
+        self._smudge_image = QImage()
         self._input_buffer: list['_SmudgePoint'] = []
         self._buffer_timer = QTimer()
         self._buffer_timer.setSingleShot(True)
@@ -101,6 +112,7 @@ class SmudgeBrush(LayerBrush):
             self.end_stroke()
         self._last_point = None
         self._last_point_img = QImage()
+        self._smudge_image = QImage()
         super().start_stroke()
 
     def end_stroke(self) -> None:
@@ -108,6 +120,7 @@ class SmudgeBrush(LayerBrush):
         super().end_stroke()
         self._last_point = None
         self._draw_buffered_events()
+        self._smudge_image = QImage()
 
     def _brush_mask(self, smudge_point: '_SmudgePoint') -> QImage:
         """Returns the brush mask for a smudge point: a black circle with diameter equal to the brush size, highest
@@ -121,40 +134,29 @@ class SmudgeBrush(LayerBrush):
             self._mask_cache_key = cache_key
         return self._mask_cache
 
-    def _sample_smudge_point(self, smudge_point: '_SmudgePoint', layer_image: QImage) -> QImage:
+    def _sample_smudge_point(self, smudge_point: '_SmudgePoint', image: QImage) -> QImage:
         """Sample a point from the image, to be drawn over the next smudge point.
 
         Parameters:
         -----------
         smudge_point: _SmudgePoint
             Data from one smudge tool input event, storing location, brush size, opacity, and hardness.
-        layer_image: QImage
-            The ARGB32_Premultiplied layer image.
+        image: QImage
+            The SMUDGE_FORMAT copy of the layer image.
 
         Returns:
         --------
-        A new ARGB32_Premultiplied QImage containing the layer content under the brush mask, or a null QImage if the
-        point is entirely outside the layer.
+        A new SMUDGE_FORMAT QImage containing the image content under the brush mask, or a null QImage if the point
+        is entirely outside the image.
         """
-        intersect_bounds = smudge_point.rect.intersected(QRect(QPoint(), layer_image.size()))
-        if intersect_bounds.isEmpty():
+        if not smudge_point.rect.intersects(QRect(QPoint(), image.size())):
             return QImage()
-        smudge_mask = self._brush_mask(smudge_point).copy()
-
-        # Clear the parts of the brush mask that are outside the layer:
-        mask_intersect_bounds = intersect_bounds.translated(-smudge_point.rect.x(), -smudge_point.rect.y())
-        if intersect_bounds.size() != smudge_mask.size():
-            np_smudge_mask = image_data_as_numpy_8bit(smudge_mask)
-            np_smudge_mask[:mask_intersect_bounds.y(), :, :] = 0
-            np_smudge_mask[mask_intersect_bounds.y() + mask_intersect_bounds.height():, :, :] = 0
-            np_smudge_mask[:, :mask_intersect_bounds.x(), :] = 0
-            np_smudge_mask[:, mask_intersect_bounds.x() + mask_intersect_bounds.width():, :] = 0
-
-        painter = QPainter(smudge_mask)
-        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
-        painter.drawImage(mask_intersect_bounds, layer_image, intersect_bounds)
+        sample = image.copy(smudge_point.rect)  # Pixels outside the image are transparent.
+        painter = QPainter(sample)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+        painter.drawImage(0, 0, self._brush_mask(smudge_point))
         painter.end()
-        return smudge_mask
+        return sample
 
     def _draw_buffered_events(self) -> None:
         """Draws buffered smudge points to the layer, within the time limit draw_buffered_input sets mid-stroke."""
@@ -171,10 +173,15 @@ class SmudgeBrush(LayerBrush):
         for smudge_point in points:
             change_bounds = change_bounds.united(smudge_point.rect)
         change_bounds = change_bounds.intersected(layer.bounds)
+        if change_bounds.isEmpty():  # Every point is outside the layer, so none has a sample to carry.
+            self._last_point_img = QImage()
+            return
         mask_image = self.input_mask
         with layer.borrow_image(change_bounds) as layer_image:
             assert isinstance(layer_image, QImage)
-            img_painter = QPainter(layer_image)
+            if self._smudge_image.size() != layer_image.size():
+                self._smudge_image = layer_image.convertToFormat(SMUDGE_FORMAT)
+            img_painter = QPainter(self._smudge_image)
             for smudge_point in points:
                 if not self._last_point_img.isNull():  # Draw the sample from the last point over the current one:
                     paint_bounds = QRect(QPoint(), self._last_point_img.size())
@@ -189,8 +196,12 @@ class SmudgeBrush(LayerBrush):
                         point_img_painter.drawImage(destination_bounds, mask_image, source_bounds)
                         point_img_painter.end()
                     img_painter.drawImage(paint_bounds, self._last_point_img)
-                self._last_point_img = self._sample_smudge_point(smudge_point, layer_image)
+                self._last_point_img = self._sample_smudge_point(smudge_point, self._smudge_image)
             img_painter.end()
+            layer_painter = QPainter(layer_image)
+            layer_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+            layer_painter.drawImage(change_bounds, self._smudge_image, change_bounds)
+            layer_painter.end()
 
     def _draw(self, x: float, y: float, pressure: Optional[float], x_tilt: Optional[float],
               y_tilt: Optional[float]) -> None:
