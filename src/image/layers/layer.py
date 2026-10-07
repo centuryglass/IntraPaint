@@ -384,6 +384,16 @@ class Layer(QObject):
         yield
         self._locked = lock_state
 
+    @contextmanager
+    def with_visibility_forced(self) -> Generator[None, None, None]:
+        """Temporarily marks the layer visible without sending signals, so a render can show hidden content."""
+        visible = self._visible
+        self._visible = True
+        try:
+            yield
+        finally:
+            self._visible = visible
+
     # Unimplemented interface:
 
     def get_qimage(self) -> QImage:

@@ -208,6 +208,38 @@ class LayerGroup(Layer, LayerParent):
         self._image_cache.data = image
         return image
 
+    def preview_image(self) -> QImage:
+        """Returns the group's own content for its layer panel preview, covering the group's bounds.
+
+        Like an image layer's preview, this ignores the group's own visibility, opacity and composition mode, and
+        the visibility of the groups it is in. Descendants that are hidden themselves, or inside a hidden nested
+        group, stay hidden, so a group whose layers are all hidden has a blank preview.
+        """
+        hidden_ancestors: list[Layer] = []
+        ancestor: Optional[Layer] = self
+        while ancestor is not None:
+            if not ancestor.get_visible():
+                hidden_ancestors.append(ancestor)
+            parent = ancestor.layer_parent
+            assert parent is None or isinstance(parent, Layer)
+            ancestor = parent
+        if not hidden_ancestors and self._opacity == 1.0 and self._mode == CompositeMode.NORMAL:
+            return self.get_qimage()
+        bounds = self.bounds
+        image = create_transparent_image(bounds.size())
+        opacity, mode = self._opacity, self._mode
+        # Rendering reads visibility, opacity and mode, so they change without signals and are restored before
+        # anything else can read them.
+        with ExitStack() as stack:
+            for hidden_layer in hidden_ancestors:
+                stack.enter_context(hidden_layer.with_visibility_forced())
+            self._opacity, self._mode = 1.0, CompositeMode.NORMAL
+            try:
+                self.render(base_image=image, transform=QTransform.fromTranslate(-bounds.x(), -bounds.y()))
+            finally:
+                self._opacity, self._mode = opacity, mode
+        return image
+
     def render(self, base_image: QImage, transform: Optional[QTransform] = None,
                image_bounds: Optional[QRect] = None, z_max: Optional[int] = None,
                image_adjuster: Optional[Callable[['Layer', QImage], QImage]] = None,
