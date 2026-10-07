@@ -93,7 +93,7 @@ class DraggableDivider(QWidget):
         if self._hidden:
             return
         self._dragging = True
-        self._last_pos = event.pos() + self.pos()
+        self._last_pos = event.position().toPoint() + self.pos()
         self.setCursor(self._dragging_cursor)
         self.update()
 
@@ -226,8 +226,9 @@ class DraggableDivider(QWidget):
         if event is None:
             return
         if event.buttons() and self._dragging:
-            self.dragged.emit(event.pos() + self.geometry().topLeft())
-            self._update_layout_stretch(event.pos())
+            pos = event.position().toPoint()
+            self.dragged.emit(pos + self.geometry().topLeft())
+            self._update_layout_stretch(pos)
 
     def mouseReleaseEvent(self, unused_event: Optional[QMouseEvent]) -> None:
         """Exits the dragging state when the mouse is released. """
@@ -302,6 +303,6 @@ def _item_at_maximum_size(item: Optional[QWidget | QLayout | QSpacerItem]) -> tu
         size_policy = item.sizePolicy()
         at_maximum_width = _widget_at_maximum(item.width(), item.maximumWidth(), size_hint.width(),
                                               size_policy.horizontalPolicy())
-        at_maximum_height = _widget_at_maximum(item.height(), item.maximumWidth(), size_hint.height(),
+        at_maximum_height = _widget_at_maximum(item.height(), item.maximumHeight(), size_hint.height(),
                                                size_policy.verticalPolicy())
     return at_maximum_width, at_maximum_height

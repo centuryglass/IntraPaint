@@ -93,7 +93,7 @@ class GridContainer(QWidget):
     def min_rows(self, new_min: int) -> None:
         self._min_rows = max(new_min, 1)
         if self._max_rows < self._min_rows:
-            raise ValueError(f'new min {new_min} is less than maximum {self._max_rows}')
+            raise ValueError(f'new min {new_min} is greater than maximum {self._max_rows}')
         self._update_grid_flow()
 
     @property
@@ -104,7 +104,7 @@ class GridContainer(QWidget):
     @max_columns.setter
     def max_columns(self, new_max: int) -> None:
         self._max_columns = max(new_max, 1)
-        if self._max_columns < self._min_rows:
+        if self._max_columns < self._min_columns:
             raise ValueError(f'new max {new_max} is less than minimum {self._min_columns}')
         self._update_grid_flow()
 
@@ -117,7 +117,7 @@ class GridContainer(QWidget):
     def min_columns(self, new_min: int) -> None:
         self._min_columns = max(new_min, 1)
         if self._max_columns < self._min_columns:
-            raise ValueError(f'new min {new_min} is less than maximum {self._max_columns}')
+            raise ValueError(f'new min {new_min} is greater than maximum {self._max_columns}')
         self._update_grid_flow()
 
     def actual_content_size(self) -> QSize:
@@ -205,6 +205,8 @@ class GridContainer(QWidget):
             self._layout.addWidget(child, row, col)
         self._rows = row_count
         self._columns = column_count
-        content_height = (self._children[-1].sizeHint().height() + self._layout.spacing() * 2) * row_count
+        # In fill_vertical mode the height sets the row count, so a minimum of every row would stop it shrinking.
+        min_row_count = 1 if self._fill_vertical else row_count
+        content_height = (self._children[-1].sizeHint().height() + self._layout.spacing() * 2) * min_row_count
         self.setMinimumHeight(content_height)
         self.update()
