@@ -3,7 +3,7 @@ import logging
 from dataclasses import dataclass
 from typing import Optional, Callable, cast, TypeAlias
 
-from PySide6.QtCore import Qt, QObject, QEvent, Signal, QTimer
+from PySide6.QtCore import Qt, QObject, QEvent, Signal, QTimer, SIGNAL
 from PySide6.QtGui import QKeyEvent, QKeySequence
 from PySide6.QtWidgets import QApplication, QWidget, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox
 
@@ -69,6 +69,18 @@ class HotkeyFilter(QObject):
         self._hotkey_timer.setInterval(MODIFIER_TIMER_INTERVAL_MS)
         self._hotkey_timer.timeout.connect(self._check_modifiers)
         self._hotkey_timer.start()
+
+    def _reset(self) -> None:
+        """Removes all keybindings, the default focus widget, and all modifiers_changed connections.
+
+        Tests call this between cases, since bindings and connections from one test would otherwise act on the next.
+        """
+        self._bindings.clear()
+        self._config_bindings.clear()
+        self._default_focus = None
+        self._last_modifier_state = QApplication.keyboardModifiers()
+        if self.receivers(SIGNAL('modifiers_changed(Qt::KeyboardModifier)')) > 0:
+            self.modifiers_changed.disconnect()
 
     def default_focus(self) -> Optional[QWidget]:
         """Returns the widget set as the default input focus, if any."""
