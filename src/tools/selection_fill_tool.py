@@ -106,7 +106,7 @@ class SelectionFillTool(BaseTool):
             if not QRect(QPoint(), image.size()).contains(sample_point):
                 return True
             if Cache().get(Cache.COLOR_SELECT_MODE):
-                mask = color_fill(image, image.pixelColor(image_coordinates), threshold)
+                mask = color_fill(image, image.pixelColor(sample_point), threshold)
             else:
                 mask = flood_fill(image, sample_point, self._color, threshold, False)
             selection_image = self._image_stack.selection_layer.image
