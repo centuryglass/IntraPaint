@@ -379,3 +379,40 @@ class ImageStackTest(IntraPaintTestCase):
         restored_names = [layer.name for layer in self.image_stack.layer_stack.child_layers]
         self.assertEqual(['a', 'b', 'hidden'], restored_names)
 
+
+    def test_remove_group_containing_active_layer(self) -> None:
+        """Removing a group that contains the active layer activates the layer below the group, and undo restores
+        the old active layer."""
+        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
+        group = self.image_stack.create_layer_group('group')
+        below = self.image_stack.create_layer('below', layer_parent=self.image_stack.layer_stack, layer_index=1)
+        nested_group = self.image_stack.create_layer_group('nested', layer_parent=group, layer_index=0)
+        inner = self.image_stack.create_layer('inner', layer_parent=nested_group, layer_index=0)
+        self.image_stack.active_layer = inner
+
+        self.image_stack.remove_layer(group)
+        self.assertEqual(self.image_stack.active_layer, below)
+        UndoStack().undo()
+        self.assertEqual(self.image_stack.active_layer, inner)
+
+    def test_remove_last_group_containing_active_layer(self) -> None:
+        """Removing the bottom group while one of its layers is active activates the layer above the group."""
+        above = self.image_stack.create_layer('above')
+        group = self.image_stack.create_layer_group('group', layer_parent=self.image_stack.layer_stack,
+                                                    layer_index=1)
+        inner = self.image_stack.create_layer('inner', layer_parent=group, layer_index=0)
+        self.image_stack.active_layer = inner
+
+        self.image_stack.remove_layer(group)
+        self.assertEqual(self.image_stack.active_layer, above)
+
+    def test_merge_all_visible_with_active_layer_in_group(self) -> None:
+        """Merging visible layers while a layer inside a merged group is active activates the merged layer."""
+        self.image_stack.create_layer('top')
+        group = self.image_stack.create_layer_group('group', layer_parent=self.image_stack.layer_stack,
+                                                    layer_index=1)
+        inner = self.image_stack.create_layer('inner', layer_parent=group, layer_index=0)
+        self.image_stack.active_layer = inner
+
+        self.image_stack.merge_all_visible()
+        self.assertEqual(self.image_stack.active_layer.name, 'Merged')
