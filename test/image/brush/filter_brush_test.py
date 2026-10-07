@@ -148,12 +148,22 @@ class FilterBrushTest(BrushTestCase):
         self.filter_stroke_matches_golden(RGBColorBalanceFilter(self.image_stack), [1.0, 0.75, 0.5, 0.5],
                                           'rgb_color_balance_alpha')
 
-    @pytest.mark.xfail(strict=True, reason='RGBColorBalanceFilter writes unpremultiplied color to translucent pixels: '
-                                           'https://github.com/centuryglass/IntraPaint/issues/160')
     def test_rgb_color_balance_keeps_translucent_pixels_valid(self) -> None:
         """Color balance with every factor at 1.0 leaves valid premultiplied pixels where the layer is translucent."""
         self.use_filter(RGBColorBalanceFilter(self.image_stack), [1.0, 1.0, 1.0, 1.0])
         self.assert_valid_premultiplied(self.stroke(zigzag_points()))
+
+    def test_rgb_color_balance_boost_with_lower_alpha_keeps_pixels_valid(self) -> None:
+        """Color balance that raises a channel while lowering alpha leaves valid premultiplied pixels."""
+        self.use_layer(opaque_test_pattern())
+        self.use_filter(RGBColorBalanceFilter(self.image_stack), [1.0, 2.0, 0.5, 0.5])
+        self.assert_valid_premultiplied(self.stroke(zigzag_points()))
+
+    def test_rgb_color_balance_identity_leaves_translucent_pixels_unchanged(self) -> None:
+        """Color balance with every factor at 1.0 returns translucent pixels unchanged."""
+        image = brush_test_pattern()
+        filtered = RGBColorBalanceFilter.color_balance(image, 1.0, 1.0, 1.0, 1.0)
+        self.assertTrue(np.array_equal(image_data_as_numpy_8bit(filtered), image_data_as_numpy_8bit(image)))
 
     def test_invert(self) -> None:
         """Color inversion, which has no parameters."""
