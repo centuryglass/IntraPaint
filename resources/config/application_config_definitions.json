@@ -15,8 +15,8 @@
         "subcategory": "Appearance",
         "description": "Theme to use for the user interface (may require restart)",
         "type": "string",
-        "default": "None",
-        "options": ["None"],
+        "default": "intrapaint_ink",
+        "options": ["intrapaint_ink", "None"],
         "saved": true
     },
     "font_point_size": {

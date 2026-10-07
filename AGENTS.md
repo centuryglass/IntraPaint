@@ -161,6 +161,8 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
     `QT_QPA_PLATFORM=xcb pytest ...` to watch a test render.
   - creates the config singletons from temporary copies of `test/resources/*_test.json` before collection, so tests
     can't rewrite the committed fixtures.
+  - applies the fixture's style, theme and font size (`src/ui/theme.py`), so text metrics and palette colors are the
+    same on every machine. A test that switches theme restores `THEME_INK` afterwards.
   - fails any test that opens a modal dialog or menu, which would otherwise block forever offscreen. Mock the dialog,
     or avoid the code path.
 - **Tests extend `IntraPaintTestCase`** (`test/base_test_case.py`), in files named `<name>_test.py` under `test/`. Its
