@@ -151,13 +151,13 @@ class TextLayer(TransformLayer):
 
         def _swap_in_image_layer():
             layer_index = parent.get_layer_index(text_layer)
-            assert layer_index > 0
+            assert layer_index is not None
             parent.remove_layer(text_layer)
             parent.insert_layer(image_layer, layer_index)
 
         def _swap_back():
             layer_index = parent.get_layer_index(image_layer)
-            assert layer_index > 0
+            assert layer_index is not None
             parent.remove_layer(image_layer)
             parent.insert_layer(text_layer, layer_index)
 
