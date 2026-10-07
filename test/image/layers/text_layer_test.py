@@ -201,6 +201,19 @@ class TextLayerEditTest(IntraPaintTestCase):
         self.assertEqual([text_rect.text for text_rect in emitted], ['Second'])
         self.assertEqual(UndoStack().undo_count(), 0)
 
+    def test_text_edit_signals_content_change_once(self) -> None:
+        """A same-size text edit reports the layer bounds as changed once, and an edit to a hidden layer reports
+           nothing."""
+        changes: list[QRect] = []
+        self.layer.content_changed.connect(lambda _, rect: changes.append(rect))
+        self.layer.set_text_rect(self._edited(size=LAYER_SIZE))
+        self.assertEqual(changes, [QRect(QPoint(), LAYER_SIZE)])
+        changes.clear()
+        self.layer.set_visible(False)
+        changes.clear()
+        self.layer.set_text_rect(self._edited('Third', LAYER_SIZE))
+        self.assertEqual(changes, [])
+
     def test_unchanged_text_rect_is_ignored(self) -> None:
         """Setting an equal TextRect adds no undo entry and emits nothing."""
         emitted: list[TextRect] = []
