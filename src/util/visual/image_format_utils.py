@@ -16,38 +16,26 @@ TIFF_DESCRIPTION_TAG = 'ImageDescription'
 
 OPENRASTER_FORMAT = 'ORA'
 
-# QImage can read: ['BMP', 'CUR', 'GIF', 'ICNS', 'ICO', 'JP2', 'JPEG', 'JPG', 'MNG', 'PBM', 'PDF', 'PGM', 'PNG', 'PPM',
-#                   'SVG', 'SVGZ', 'TGA', 'TIF', 'TIFF', 'WBMP', 'WEBP', 'XBM', 'XPM']
+# Formats Qt's image plugins can read or write. Qt also picks a plugin from a file's contents when reading.
 QIMAGE_READ_FORMATS = {str(qba.data(), encoding='utf-8').upper() for qba in QImageReader.supportedImageFormats()}
-
-# QImage can write: ['BMP', 'CUR', 'ICNS', 'ICO', 'JP2', 'JPEG', 'JPG', 'PBM', 'PGM', 'PNG', 'PPM', 'TIF', 'TIFF',
-#                    'WBMP', 'WEBP', 'XBM', 'XPM']
 QIMAGE_WRITE_FORMATS = {str(qba.data(), encoding='utf-8').upper() for qba in QImageWriter.supportedImageFormats()}
 
-# PIL can read: ['BLP', 'BMP', 'DIB', 'BUFR', 'CUR', 'PCX', 'DCX', 'DDS', 'PS', 'EPS', 'FIT', 'FITS', 'FLI', 'FLC',
-#                'FPX', 'FTC', 'FTU', 'GBR', 'GIF', 'GRIB', 'H5', 'HDF', 'PNG', 'APNG', 'JP2', 'J2K', 'JPC', 'JPF',
-#                'JPX', 'J2C', 'ICNS', 'ICO', 'IM', 'IIM', 'JFIF', 'JPE', 'JPG', 'JPEG', 'TIF', 'TIFF', 'MIC', 'MPG',
-#                'MPEG', 'MSP', 'PCD', 'PXR', 'PBM', 'PGM', 'PPM', 'PNM', 'PFM', 'PSD', 'QOI', 'BW', 'RGB', 'RGBA',
-#                'SGI', 'RAS', 'TGA', 'ICB', 'VDA', 'VST', 'WEBP', 'WMF', 'EMF', 'XBM', 'XPM']
+# File extensions of the Pillow formats IntraPaint uses, see pil_image_utils.EXCLUDED_PIL_FORMATS.
 PIL_READ_FORMATS = {ex[1:].upper() for ex, f in Image.registered_extensions().items()
                     if f in Image.OPEN and f not in EXCLUDED_PIL_FORMATS}
 
-# PIL can write: ['BLP', 'BMP', 'DIB', 'BUFR', 'PCX', 'DDS', 'PS', 'EPS', 'GIF', 'GRIB', 'H5', 'HDF', 'PNG', 'APNG',
-#                 'JP2', 'J2K', 'JPC', 'JPF', 'JPX', 'J2C', 'ICNS', 'ICO', 'IM', 'JFIF', 'JPE', 'JPG', 'JPEG', 'TIF',
-#                 'TIFF', 'MPO', 'MSP', 'PALM', 'PDF', 'PBM', 'PGM', 'PPM', 'PNM', 'PFM', 'BW', 'RGB', 'RGBA', 'SGI',
-#                 'TGA', 'ICB', 'VDA', 'VST', 'WEBP', 'WMF', 'EMF', 'XBM']
 PIL_WRITE_FORMATS = {ex[1:].upper() for ex, f in Image.registered_extensions().items()
                      if f in Image.SAVE and f not in EXCLUDED_PIL_FORMATS}
 
 # Formats that are programmatically listed as valid, but fail in testing.
-INVALID_WRITE_FORMATS = {'MSP', 'JFIF', 'H5', 'HDF', 'PFM', 'APNG', 'WBMP', 'AVIFS'}
+INVALID_WRITE_FORMATS = {'MSP', 'JFIF', 'PFM', 'APNG', 'WBMP', 'AVIFS', 'WMF', 'EMF'}
 
 # Formats that need to be renamed to work correctly:
 RENAMED_FORMATS = {'ICB': 'TGA', 'VST': 'TGA', 'VDA': 'TGA', 'EMF': 'WMF', 'JPE': 'JPEG', 'JPG': 'JPEG',
                    'RGB': 'SGI', 'RGBA': 'SGI', 'BW': 'SGI', 'PBM': 'PPM', 'PGM': 'PPM', 'PNM': 'PPM', 'TIF': 'TIFF'}
 
-# Formats that need to be omitted from PIL save parameters to work correctly:
-OMITTED_FORMATS = {'J2K', 'JPC', 'JPF'}
+# Formats saved with no Pillow format name. Pillow names these JPEG2000, and picks the container from the extension.
+OMITTED_FORMATS = {'JP2', 'J2K', 'JPC', 'JPF', 'JPX', 'J2C'}
 
 
 for format_set in PIL_WRITE_FORMATS, QIMAGE_WRITE_FORMATS:

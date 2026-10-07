@@ -12,14 +12,19 @@ from src.util.shared_constants import PIL_SCALING_MODES
 from src.util.visual.geometry_utils import is_smaller_size
 from src.util.visual.image_utils import BASE_64_PREFIX
 
-# Pillow formats IntraPaint never opens or saves. Pillow's EPS format covers .eps and .ps files, which it reads by
-# running them as programs in the external Ghostscript interpreter, and crafted files have repeatedly escaped its
-# sandbox to run commands.
-EXCLUDED_PIL_FORMATS = {'EPS'}
+# Pillow formats IntraPaint never opens or saves.
+# - EPS covers .eps and .ps files, which Pillow reads by running them as programs in the external Ghostscript
+#   interpreter. Crafted files have repeatedly escaped its sandbox to run commands.
+# - BUFR, GRIB, HDF5 and MPEG files are ones Pillow can identify but not decode or encode.
+# - WMF covers .wmf and .emf files. Pillow draws them only on Windows, where Image.core has drawwmf, and saves them
+#   nowhere.
+Image.init()
+EXCLUDED_PIL_FORMATS = {'EPS', 'BUFR', 'GRIB', 'HDF5', 'MPEG'}
+if not hasattr(Image.core, 'drawwmf'):
+    EXCLUDED_PIL_FORMATS.add('WMF')
 
 # Image.open() picks a decoder from the file's contents, not its name, so it always gets this list. Otherwise an EPS
 # file renamed to .png would still reach Ghostscript.
-Image.init()
 PIL_OPEN_FORMATS = tuple(pil_format for pil_format in Image.OPEN if pil_format not in EXCLUDED_PIL_FORMATS)
 
 
