@@ -92,7 +92,8 @@ class TextLayerGeometryTest(IntraPaintTestCase):
         self.assertGreaterEqual(right.right(), width - 1 - ALIGN_MARGIN)
         self.assertGreater(right.left(), width // 2)
         self.assertAlmostEqual(center.left(), width - 1 - center.right(), delta=ALIGN_MARGIN)
-        self.assertEqual(left.width(), right.width())
+        # Glyph antialiasing at a different subpixel offset can cover one more pixel column.
+        self.assertAlmostEqual(left.width(), right.width(), delta=1)
 
     def test_vertical_alignment(self) -> None:
         """Bottom-aligned text sits below top-aligned text, against the bottom edge."""
