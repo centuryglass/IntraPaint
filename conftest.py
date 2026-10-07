@@ -55,6 +55,9 @@ def pytest_sessionstart(session: pytest.Session) -> None:
     from src.config.application_config import AppConfig
     from src.config.cache import Cache
     from src.config.key_config import KeyConfig
+    from src.util import shared_constants
+    assert shared_constants.DATA_DIR == os.environ['INTRAPAINT_DATA_DIR'], \
+        'src.util.shared_constants was imported before conftest.py set INTRAPAINT_DATA_DIR'
     _config_copy_dir = tempfile.mkdtemp(prefix='intrapaint-test-config-')
     for config_class, file_name in ((AppConfig, 'app_config_test.json'), (KeyConfig, 'key_config_test.json'),
                                     (Cache, 'cache_test.json')):
