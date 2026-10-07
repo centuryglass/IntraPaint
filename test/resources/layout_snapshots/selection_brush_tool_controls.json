@@ -1,9 +1,9 @@
 {
   "minimum": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 201x30, minimum 128x70",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 201x10, minimum 104x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 201x10, minimum 128x30",
+      "squeezed: ReflowingButtonGroup is 201x30, minimum 126x70",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 201x10, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 201x10, minimum 126x30",
       "squeezed: DualToggle/Label 'Select' is 89x27, minimum 84x29",
       "squeezed: DualToggle/Label 'Deselect' is 89x27, minimum 98x29"
     ],
@@ -14,9 +14,9 @@
   },
   "narrow": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 91x30, minimum 128x70",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 91x10, minimum 104x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 91x10, minimum 128x30",
+      "squeezed: ReflowingButtonGroup is 91x30, minimum 126x70",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 91x10, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 91x10, minimum 126x30",
       "squeezed: QLabel 'Size:' is 26x30, minimum 28x17",
       "squeezed: IntSliderSpinbox[1] is 26x30, minimum 75x30",
       "squeezed: IntSliderSpinbox[1]/QSlider is 8x20, minimum 15x20",
@@ -31,41 +31,41 @@
   },
   "preferred": {
     "problems": [
-      "squeezed: DualToggle/Label 'Select' is 109x27, minimum 84x29",
-      "squeezed: DualToggle/Label 'Deselect' is 109x27, minimum 98x29"
+      "squeezed: DualToggle/Label 'Select' is 107x27, minimum 84x29",
+      "squeezed: DualToggle/Label 'Deselect' is 107x27, minimum 98x29"
     ],
     "size": [
-      260,
+      256,
       126
     ]
   },
   "short": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 242x8, minimum 128x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 104x8, minimum 104x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 128x8, minimum 128x30",
+      "squeezed: ReflowingButtonGroup is 238x8, minimum 126x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 102x8, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 126x8, minimum 126x30",
       "squeezed: KeyHintLabel '[' is 11x8, minimum 11x21",
       "squeezed: KeyHintLabel ']' is 11x8, minimum 10x21",
       "squeezed: QLabel 'Size:' is 28x8, minimum 28x17",
-      "squeezed: IntSliderSpinbox[1] is 174x8, minimum 75x30",
-      "squeezed: IntSliderSpinbox[1]/QSlider is 114x4, minimum 15x20",
+      "squeezed: IntSliderSpinbox[1] is 170x8, minimum 75x30",
+      "squeezed: IntSliderSpinbox[1]/QSlider is 110x4, minimum 15x20",
       "squeezed: IntSliderSpinbox[1]/QSpinBox is 50x4, minimum 50x26",
-      "squeezed: DualToggle/Label 'Select' is 109x8, minimum 84x29",
-      "squeezed: DualToggle/Label 'Deselect' is 109x8, minimum 98x29",
+      "squeezed: DualToggle/Label 'Select' is 107x8, minimum 84x29",
+      "squeezed: DualToggle/Label 'Deselect' is 107x8, minimum 98x29",
       "squeezed: KeyHintLabel 'Q' is 16x8, minimum 15x21"
     ],
     "size": [
-      260,
+      256,
       63
     ]
   },
   "tall": {
     "problems": [
-      "squeezed: DualToggle/Label 'Select' is 109x27, minimum 84x29",
-      "squeezed: DualToggle/Label 'Deselect' is 109x27, minimum 98x29"
+      "squeezed: DualToggle/Label 'Select' is 107x27, minimum 84x29",
+      "squeezed: DualToggle/Label 'Deselect' is 107x27, minimum 98x29"
     ],
     "size": [
-      260,
+      256,
       1200
     ]
   },

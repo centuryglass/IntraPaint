@@ -4,7 +4,6 @@
       "squeezed: ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
       "squeezed: ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
       "squeezed: ToolButton[5]/KeyHintLabel 'M' is 15x22, minimum 16x22",
-      "squeezed: ToolButton[9]/KeyHintLabel '\u21e7+S' is 32x22, minimum 33x22",
       "squeezed: ToolButton[13]/KeyHintLabel 'R' is 14x22, minimum 15x22",
       "squeezed: ToolButton[14]/KeyHintLabel 'A' is 15x22, minimum 16x22"
     ],
@@ -50,8 +49,7 @@
       "squeezed: ToolButton[7] is 22x48, minimum 48x48",
       "squeezed: ToolButton[8] is 23x48, minimum 48x48",
       "squeezed: ToolButton[9] is 23x48, minimum 48x48",
-      "clipped: ToolButton[9]/KeyHintLabel '\u21e7+S' shows 23x22 of 32x22",
-      "squeezed: ToolButton[9]/KeyHintLabel '\u21e7+S' is 32x22, minimum 33x22",
+      "clipped: ToolButton[9]/KeyHintLabel '\u21e7+S' shows 23x22 of 29x22",
       "squeezed: ToolButton[10] is 23x48, minimum 48x48",
       "squeezed: ToolButton[11] is 23x48, minimum 48x48",
       "squeezed: ToolButton[12] is 23x48, minimum 48x48",
@@ -71,7 +69,6 @@
       "squeezed: ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
       "squeezed: ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
       "squeezed: ToolButton[5]/KeyHintLabel 'M' is 15x22, minimum 16x22",
-      "squeezed: ToolButton[9]/KeyHintLabel '\u21e7+S' is 32x22, minimum 33x22",
       "squeezed: ToolButton[13]/KeyHintLabel 'R' is 14x22, minimum 15x22",
       "squeezed: ToolButton[14]/KeyHintLabel 'A' is 15x22, minimum 16x22"
     ],
@@ -117,7 +114,6 @@
       "squeezed: ToolButton[7] is 48x35, minimum 48x48",
       "squeezed: ToolButton[8] is 48x34, minimum 48x48",
       "squeezed: ToolButton[9] is 48x34, minimum 48x48",
-      "squeezed: ToolButton[9]/KeyHintLabel '\u21e7+S' is 32x22, minimum 33x22",
       "squeezed: ToolButton[10] is 48x34, minimum 48x48",
       "squeezed: ToolButton[11] is 48x34, minimum 48x48",
       "squeezed: ToolButton[12] is 48x34, minimum 48x48",
@@ -137,7 +133,6 @@
       "squeezed: ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
       "squeezed: ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
       "squeezed: ToolButton[5]/KeyHintLabel 'M' is 15x22, minimum 16x22",
-      "squeezed: ToolButton[9]/KeyHintLabel '\u21e7+S' is 32x22, minimum 33x22",
       "squeezed: ToolButton[13]/KeyHintLabel 'R' is 14x22, minimum 15x22",
       "squeezed: ToolButton[14]/KeyHintLabel 'A' is 15x22, minimum 16x22"
     ],
@@ -151,7 +146,6 @@
       "squeezed: ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
       "squeezed: ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
       "squeezed: ToolButton[5]/KeyHintLabel 'M' is 15x22, minimum 16x22",
-      "squeezed: ToolButton[9]/KeyHintLabel '\u21e7+S' is 32x22, minimum 33x22",
       "squeezed: ToolButton[13]/KeyHintLabel 'R' is 14x22, minimum 15x22",
       "squeezed: ToolButton[14]/KeyHintLabel 'A' is 15x22, minimum 16x22"
     ],
