@@ -151,8 +151,10 @@ class LayerGroup(Layer, LayerParent):
     def copy(self) -> 'LayerGroup':
         """Returns a copy of this layer, and all the layers within it."""
         copy = LayerGroup(self.name + ' (copy)')
-        copy.opacity = self.opacity
-        copy.composition_mode = self.composition_mode
+        copy.set_opacity(self.opacity)
+        copy.set_composition_mode(self.composition_mode)
+        copy.set_visible(self.visible)
+        copy.set_isolate(self.isolate)
         for layer in self._layers:
             child_layer_copy = layer.copy()
             copy.insert_layer(child_layer_copy, copy.count)
