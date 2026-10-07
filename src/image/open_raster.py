@@ -428,7 +428,9 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
         for child_element in element:
             is_active = False
             if child_element.tag == STACK_ELEMENT:
-                child_layer, active_layer = parse_stack_element(child_element)
+                child_layer, nested_active_layer = parse_stack_element(child_element)
+                if nested_active_layer is not None:
+                    active_layer = nested_active_layer
             elif child_element.tag == LAYER_ELEMENT:
                 child_layer, is_active = parse_image_element(child_element)
             else:
