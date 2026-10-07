@@ -127,6 +127,23 @@ def map_rect_precise(rect: QRect | QRectF, transform: QTransform) -> QRectF:
     return transformed_poly.boundingRect()
 
 
+def panel_position(rect: QRect | QRectF, transform: QTransform) -> QPointF:
+    """Returns the X/Y position the layer transform and text tool panels show for a transformed rectangle: the
+       top-left of its transformed bounding box.
+
+    Both tools read and write position through this function and transform_at_panel_position, so changing the
+    convention here changes it in both panels.
+    """
+    return map_rect_precise(rect, transform).topLeft()
+
+
+def transform_at_panel_position(rect: QRect | QRectF, transform: QTransform, position: QPointF) -> QTransform:
+    """Returns the transform translated so that panel_position(rect, result) is position, with rotation and scale
+       unchanged."""
+    offset = position - panel_position(rect, transform)
+    return transform * QTransform.fromTranslate(offset.x(), offset.y())
+
+
 def translate_to_point(transform: QTransform,
                        new_origin: Optional[QPointF | QPoint] = None) -> QTransform:
     """Creates an adjusted transformation by adding a final translation to ensure (0, 0) lands on a specific point."""

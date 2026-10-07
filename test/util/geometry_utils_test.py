@@ -3,12 +3,12 @@ import math
 import sys
 import unittest
 
-from PySide6.QtCore import QPointF
+from PySide6.QtCore import QPointF, QRectF
 from PySide6.QtGui import QTransform
 from PySide6.QtWidgets import QApplication
 
 from src.util.visual.geometry_utils import extract_transform_parameters, combine_transform_parameters, transform_str, \
-    transforms_approx_equal
+    transforms_approx_equal, panel_position, transform_at_panel_position
 from src.util.math_utils import convert_degrees
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -98,3 +98,24 @@ class TestGeometryUtils(unittest.TestCase):
                                 restored_matrix = combine_transform_parameters(final_x, final_y, final_sx, final_sy,
                                                                                final_deg, origin)
                                 self.assertTrue(transforms_approx_equal(matrix, restored_matrix, 5))
+
+    def test_panel_position(self):
+        """panel_position is the top-left of the transformed bounding box."""
+        rect = QRectF(0, 0, 200, 100)
+        self.assertEqual(panel_position(rect, QTransform.fromTranslate(10, 20)), QPointF(10, 20))
+        rotated = QTransform().rotate(90) * QTransform.fromTranslate(300, 50)
+        self.assertEqual(panel_position(rect, rotated), QPointF(200, 50))
+        flipped = QTransform.fromScale(-1, 1) * QTransform.fromTranslate(300, 50)
+        self.assertEqual(panel_position(rect, flipped), QPointF(100, 50))
+
+    def test_transform_at_panel_position(self):
+        """transform_at_panel_position moves the bounding box to the position and keeps rotation and scale."""
+        rect = QRectF(0, 0, 200, 100)
+        source = QTransform().rotate(30) * QTransform.fromScale(1.5, 0.5) * QTransform.fromTranslate(300, 50)
+        moved = transform_at_panel_position(rect, source, QPointF(12.5, -4.0))
+        position = panel_position(rect, moved)
+        self.assertAlmostEqual(position.x(), 12.5, 5)
+        self.assertAlmostEqual(position.y(), -4.0, 5)
+        for m_source, m_moved in ((source.m11(), moved.m11()), (source.m12(), moved.m12()),
+                                  (source.m21(), moved.m21()), (source.m22(), moved.m22())):
+            self.assertEqual(m_source, m_moved)

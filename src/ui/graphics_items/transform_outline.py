@@ -12,7 +12,8 @@ from src.ui.graphics_items.transform_handle import TransformHandle, TRANSFORM_MO
 from src.util.math_utils import clamp, avoiding_zero
 from src.util.shared_constants import MIN_NONZERO
 from src.util.signals_blocked import signals_blocked
-from src.util.visual.geometry_utils import extract_transform_parameters, combine_transform_parameters
+from src.util.visual.geometry_utils import (extract_transform_parameters, combine_transform_parameters, panel_position,
+                                            transform_at_panel_position)
 from src.util.visual.graphics_scene_utils import (get_view_bounds_of_scene_item_rect,
                                                   map_scene_item_point_to_view_point,
                                                   get_scene_item_bounds_of_view_rect, get_view,
@@ -177,29 +178,23 @@ class TransformOutline(QGraphicsObject):
 
     @property
     def x_pos(self) -> float:
-        """The minimum x-position within the scene, after all transformations are applied."""
-        return min(pt.x() for pt in self._corner_points_in_scene())
+        """The x-position shown in the panel, from panel_position."""
+        return panel_position(self.rect(), self.transform()).x()
 
     @x_pos.setter
     def x_pos(self, new_x: float) -> None:
-        """Set the minimum x-position within the scene, without changing rotation or scale."""
-        offset = new_x - self.x_pos
-        matrix = combine_transform_parameters(self._x_offset + offset, self._y_offset, self._x_scale, self._y_scale,
-                                              self._degrees, self.transformation_origin)
-        self.setTransform(matrix)
+        """Set the panel x-position, without changing rotation or scale."""
+        self.setTransform(transform_at_panel_position(self.rect(), self.transform(), QPointF(new_x, self.y_pos)))
 
     @property
     def y_pos(self) -> float:
-        """The minimum y-position within the scene, after all transformations are applied."""
-        return min(pt.y() for pt in self._corner_points_in_scene())
+        """The y-position shown in the panel, from panel_position."""
+        return panel_position(self.rect(), self.transform()).y()
 
     @y_pos.setter
     def y_pos(self, new_y: float) -> None:
-        """Set the minimum x-position within the scene, without changing rotation or scale."""
-        offset = new_y - self.y_pos
-        matrix = combine_transform_parameters(self._x_offset, self._y_offset + offset, self._x_scale, self._y_scale,
-                                              self._degrees, self.transformation_origin)
-        self.setTransform(matrix)
+        """Set the panel y-position, without changing rotation or scale."""
+        self.setTransform(transform_at_panel_position(self.rect(), self.transform(), QPointF(self.x_pos, new_y)))
 
     @property
     def width(self) -> float:
@@ -528,15 +523,6 @@ class TransformOutline(QGraphicsObject):
         rect = self._rect
         return QPointF(rect.x() + rect.width() * self._relative_origin.x(),
                        rect.y() + rect.height() * self._relative_origin.y())
-
-    def _corner_points_in_scene(self) -> list[QPointF]:
-        bounds = self.rect()
-        corners: list[QPointF] = []
-        for pt in (bounds.topLeft(), bounds.topRight(), bounds.bottomLeft(), bounds.bottomRight()):
-            corner = self.mapToScene(pt)
-            assert isinstance(corner, QPointF)
-            corners.append(corner)
-        return corners
 
     def _update_handles(self) -> None:
         """Keep the corners and origin positioned and sized correctly as the rectangle transforms."""
