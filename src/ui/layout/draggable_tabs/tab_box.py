@@ -8,7 +8,7 @@ content widget if the TabBar is in the open state.
 from typing import Optional
 
 from PySide6.QtCore import Signal, Qt, QSize
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QColor
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget, QSizePolicy, QBoxLayout
 
 from src.ui.layout.bordered_widget import BorderedWidget
@@ -67,7 +67,7 @@ class TabBox(BorderedWidget):
 
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
         self._default_border_color = self.frame_color
-        self._empty_border_color = self._default_border_color
+        self._empty_border_color = QColor(self._default_border_color)
         self._empty_border_color.setAlphaF(0.5)
         self.frame_color = self._empty_border_color
 
@@ -195,8 +195,8 @@ class TabBox(BorderedWidget):
         if active_stretch_item_count == 0:
             return
         if self.is_open:  # Reclaim stretch from inline items, taking back any previously relinquished stretch:
-            requested_stretch = self._last_stretch
-            if requested_stretch < own_stretch:
+            requested_stretch = self._last_stretch - own_stretch
+            if requested_stretch <= 0:
                 return
             added_stretch = 0
             for i, stretch in enumerate(stretch_values):

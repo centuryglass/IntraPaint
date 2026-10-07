@@ -302,6 +302,6 @@ def _item_at_maximum_size(item: Optional[QWidget | QLayout | QSpacerItem]) -> tu
         size_policy = item.sizePolicy()
         at_maximum_width = _widget_at_maximum(item.width(), item.maximumWidth(), size_hint.width(),
                                               size_policy.horizontalPolicy())
-        at_maximum_height = _widget_at_maximum(item.height(), item.maximumWidth(), size_hint.height(),
+        at_maximum_height = _widget_at_maximum(item.height(), item.maximumHeight(), size_hint.height(),
                                                size_policy.verticalPolicy())
     return at_maximum_width, at_maximum_height
