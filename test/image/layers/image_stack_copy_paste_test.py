@@ -65,16 +65,43 @@ class CopyPasteTest(ImageStackOpTestCase):
         self.assertEqual(SELECTED.intersected(self.top.transformed_bounds), pasted.transformed_bounds)
 
     def test_copy_paste_transformed_layer(self) -> None:
-        """A rotated layer's copy keeps its rotation, and renders the same selected pixels."""
+        """A rotated, translucent layer's copy keeps its rotation and opacity, and renders the same selected pixels."""
         self.top.set_transform(QTransform().rotate(90) * QTransform.fromTranslate(16, 1))
+        self.top.set_opacity(0.7)
         pasted = self.assert_copy_pastes(self.top)
         self.assertEqual(self.top.transform.m12(), pasted.transform.m12())
+        self.assertEqual(0.7, pasted.opacity)
+
+    def test_copy_paste_keeps_opacity_and_mode(self) -> None:
+        """A pasted layer keeps the copied layer's opacity and composite mode, in every mode."""
+        for mode in CompositeMode:
+            with self.subTest(mode=mode.name):
+                UndoStack().clear()
+                self.setUp()
+                self.top.set_opacity(0.5)
+                self.top.set_composition_mode(mode)
+                pasted = self.assert_copy_pastes(self.top)
+                self.assertEqual((0.5, mode), (pasted.opacity, pasted.composition_mode))
+
+    def test_cut_paste_translucent_blended_layer(self) -> None:
+        """Cutting and pasting a translucent layer in a non-Normal mode restores the composite exactly."""
+        self.top.set_opacity(0.4)
+        self.top.set_composition_mode(CompositeMode.MULTIPLY)
+        self.image_stack.active_layer = self.top
+        original = full_render(self.image_stack)
+        self.assert_undo_redo(lambda: self.image_stack.cut_selected(self.top))
+        pasted = self.paste()
+        self.assertEqual((0.4, CompositeMode.MULTIPLY), (pasted.opacity, pasted.composition_mode))
+        self.assert_images_equal(full_render(self.image_stack), original)
 
     def test_copy_paste_group(self) -> None:
         """A group's copy is its rendered content, with the group's opacity and its children's modes applied."""
         self.group.set_opacity(0.6)
         self.inner_a.set_composition_mode(CompositeMode.DIFFERENCE)
-        self.assert_copy_pastes(self.group)
+        self.group.set_composition_mode(CompositeMode.SCREEN)
+        pasted = self.assert_copy_pastes(self.group)
+        # The group's opacity and mode are already in the rendered pixels:
+        self.assertEqual((1.0, CompositeMode.NORMAL), (pasted.opacity, pasted.composition_mode))
 
     def test_paste_into_group_above_active_layer(self) -> None:
         """Pasting while a layer in a group is active puts the pasted layer above it in the group."""
