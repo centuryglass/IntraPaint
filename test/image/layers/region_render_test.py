@@ -13,6 +13,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer_group import LayerGroup
 from src.image.open_raster import read_ora_image
+from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.image_viewer import ImageViewer
 from src.util.visual.image_utils import image_data_as_numpy_8bit
 from test.base_test_case import IntraPaintTestCase
@@ -33,7 +34,6 @@ ISSUE_147 = ('https://github.com/centuryglass/IntraPaint/issues/147: scaled and 
              'a region render')
 ISSUE_151 = ('https://github.com/centuryglass/IntraPaint/issues/151: HSL blend modes change base pixels outside the '
              'layer')
-ISSUE_150 = 'https://github.com/centuryglass/IntraPaint/issues/150: the view applies the layer stack\'s opacity twice'
 
 
 def _gradient_image(size: QSize, seed: int) -> QImage:
@@ -140,11 +140,26 @@ class DisplayedImageTest(RenderTestCase):
         self.assertLess(self.image_stack.layer_stack.bounds.x(), 0)
         self.assert_view_matches_render()
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_150)
     def test_view_with_layer_stack_opacity(self) -> None:
         """The layer stack's own opacity shows on screen the way it renders."""
         self.image_stack.layer_stack.opacity = 0.5
         self.assert_view_matches_render()
+
+    def test_layer_stack_item_paints_composite_as_is(self) -> None:
+        """The layer stack's item paints at full opacity in Normal mode, since its composite already applies both.
+
+        displayed_image renders over transparency, where most modes act like Normal, so this checks the item itself.
+        """
+        layer_stack = self.image_stack.layer_stack
+        layer_stack.opacity = 0.5
+        layer_stack.composition_mode = CompositeMode.MULTIPLY
+        scene = self.viewer.scene()
+        assert scene is not None
+        stack_items = [item for item in scene.items()
+                       if isinstance(item, LayerGraphicsItem) and item.layer is layer_stack]
+        self.assertEqual(len(stack_items), 1)
+        self.assertEqual(stack_items[0].opacity(), 1.0)
+        self.assertEqual(stack_items[0].composition_mode, CompositeMode.NORMAL)
 
 
 class RegionRenderTest(RenderTestCase):
