@@ -216,9 +216,8 @@ class ColorPanelSlidersTabTest(IntraPaintTestCase):
         Cache().set(Cache.LAST_BRUSH_COLOR, '#ff336699')
         Cache().set(Cache.RECENT_COLORS, [])
         Cache().restore_default_options(Cache.COLOR_SLIDER_MODE)
-        self.panel = ColorControlPanel(disable_extended_layouts=True)
-        self.panel.set_four_tab_mode()
-        self.block = self.panel.slider_picker.slider_block
+        self.panel = ColorControlPanel()
+        self.block = self.panel.slider_block
         self.block.set_mode(MODE_RGB)
         self.block.resize(SLIDER_WIDTH, self.block.sizeHint().height())
 
@@ -237,4 +236,4 @@ class ColorPanelSlidersTabTest(IntraPaintTestCase):
         self.assertEqual(Cache().get(Cache.RECENT_COLORS), [])
         release(red, _point(red, 255))
         self.assertEqual(Cache().get(Cache.RECENT_COLORS), ['#ffff6699'])
-        self.assertEqual(self.panel.wheel_picker.selected_color(), QColor('#ffff6699'))
+        self.assertEqual(self.panel.ring_square.color(), QColor('#ffff6699'))

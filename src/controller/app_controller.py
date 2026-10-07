@@ -50,7 +50,7 @@ from PIL import Image, UnidentifiedImageError, ExifTags
 from PIL.ExifTags import IFD
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage, Qt, QIcon
-from PySide6.QtWidgets import QApplication, QMessageBox, QWidget, QVBoxLayout
+from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -98,7 +98,6 @@ from src.ui.panel.color_panel import ColorControlPanel
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
-from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.tool_tab import ToolTab
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
 from src.ui.window.main_window import MainWindow, TabBoxID
@@ -438,14 +437,8 @@ class AppController(MenuBuilder):
         self._tool_panel_navigation_panel.mouse_navigation_enabled = False
         self._tool_panel.add_utility_widget_tab(LayerPanel(self._image_stack), TOOL_PANEL_LAYER_TAB,
                                                 QIcon(ICON_PATH_LAYER_TAB))
-        self._tool_panel_color_picker = ColorControlPanel(disable_extended_layouts=True)
-        self._tool_panel_color_picker.set_four_tab_mode()
-        color_tab = QWidget()
-        color_tab_layout = QVBoxLayout(color_tab)
-        color_tab_layout.setContentsMargins(0, 0, 0, 0)
-        color_tab_layout.addWidget(ColorPairWidget(color_tab))
-        color_tab_layout.addWidget(self._tool_panel_color_picker, stretch=1)
-        self._tool_panel.add_utility_widget_tab(color_tab, TOOL_PANEL_COLOR_TAB,
+        self._tool_panel_color_picker = ColorControlPanel()
+        self._tool_panel.add_utility_widget_tab(self._tool_panel_color_picker, TOOL_PANEL_COLOR_TAB,
                                                 QIcon(ICON_PATH_COLOR_TAB))
         self._tool_panel.add_utility_widget_tab(self._tool_panel_navigation_panel, TOOL_PANEL_NAV_TAB,
                                                 QIcon(ICON_PATH_NAVIGATION_TAB))

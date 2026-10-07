@@ -108,6 +108,16 @@
         "saved": true,
         "translate": false
     },
+    "color_slider_mode_secondary": {
+        "label": "Second color slider mode:",
+        "category": "Cache",
+        "description": "Color model of the second slider block, shown in wide color picker layouts.",
+        "type": "string",
+        "default": "OKLCH",
+        "options": ["RGB", "HSV", "OKLCH"],
+        "saved": true,
+        "translate": false
+    },
     "new_image_background_color": {
         "label": "New image background color:",
         "category": "Cache",

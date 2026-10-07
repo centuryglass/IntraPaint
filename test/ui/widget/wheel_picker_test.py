@@ -1,13 +1,11 @@
-"""Tests the OKHSV ring + square picker, its alpha/hex row, and its Wheel tab in the color panel."""
-from PySide6.QtCore import QPointF, Qt
+"""Tests the OKHSV ring + square, hex parsing, and the ring in the color panel."""
+from PySide6.QtCore import QPointF
 from PySide6.QtGui import QColor
-from PySide6 import QtTest
 
 from src.config.cache import Cache
 from src.ui.panel.color_panel import ColorControlPanel
 from src.ui.widget.color_picker.alpha_hex_row import parse_hex_color, format_hex_color
-from src.ui.widget.color_picker.okhsv_ring_square import OkhsvRingSquare
-from src.ui.widget.color_picker.wheel_picker import WheelPicker
+from src.ui.widget.color_picker.okhsv_ring_square import OkhsvRingSquare, MAX_SQUARE_RENDER_SIZE
 from src.util.visual import color_math
 from test.base_test_case import IntraPaintTestCase
 from test.ui.widget.color_picker_test_utils import press as _press, move as _move, release as _release, \
@@ -122,56 +120,26 @@ class OkhsvRingSquareTest(IntraPaintTestCase):
                 self.assertAlmostEqual(channel, expected_channel, delta=6)
 
 
-class WheelPickerTest(IntraPaintTestCase):
-    """Tests WheelPicker's alpha slider and hex field."""
+    def test_renders_okhsv_hues_on_ring(self) -> None:
+        """The ring shows each hue's full-saturation, full-value OKHSV color where a press selects that hue."""
+        image = self.widget.grab().toImage()
+        for hue in (0.0, 45.0, 120.0, 200.0, 300.0):
+            pixel = image.pixelColor(self.widget.point_for_hue(hue).toPoint())
+            expected = color_math.okhsv_to_srgb((hue, 1.0, 1.0)) * 255
+            for channel, expected_channel in zip((pixel.red(), pixel.green(), pixel.blue()), expected):
+                self.assertAlmostEqual(channel, expected_channel, delta=8, msg=f'hue {hue}')
 
-    def setUp(self) -> None:
-        super().setUp()
-        self.picker = WheelPicker()
-        self.picker.resize(WIDGET_SIZE, WIDGET_SIZE + 40)
-        self.picker.set_color(QColor('#336699'))
-        self.changed = SignalRecorder(self.picker.color_changed)
-        self.committed = SignalRecorder(self.picker.color_committed)
-
-    def _enter_hex(self, text: str) -> None:
-        field = self.picker.alpha_hex_row.hex_field
-        field.setText(text)
-        QtTest.QTest.keyClick(field, Qt.Key.Key_Return)
-
-    def test_hex_field_accepts_argb(self) -> None:
-        """Entering #AARRGGBB selects that color and alpha, and commits it."""
-        self._enter_hex('#80112233')
-        expected = QColor(0x11, 0x22, 0x33, 0x80)
-        self.assertEqual(self.picker.selected_color(), expected)
-        self.assertEqual(self.picker.alpha_hex_row.alpha_slider.value(), 0x80)
-        self.assertEqual(self.changed.colors, [expected])
-        self.assertEqual(self.committed.colors, [expected])
-
-    def test_invalid_hex_restores_field(self) -> None:
-        """Invalid hex text reverts to the current color without emitting."""
-        self._enter_hex('nonsense')
-        self.assertEqual(self.picker.alpha_hex_row.hex_field.text(), '#336699')
-        self.assertEqual(self.changed.colors, [])
-        self.assertEqual(self.committed.colors, [])
-
-    def test_alpha_slider_drag_commits_on_release(self) -> None:
-        """Dragging the alpha slider changes alpha without committing; releasing it commits."""
-        slider = self.picker.alpha_hex_row.alpha_slider
-        slider.resize(300, slider.sizeHint().height())
-        _press(slider, QPointF(slider.x_for_value(200), 5))
-        _move(slider, QPointF(slider.x_for_value(100), 5))
-        self.assertEqual(self.picker.selected_color().alpha(), 100)
-        self.assertEqual(self.picker.alpha_hex_row.hex_field.text(), '#64336699')
-        self.assertEqual(self.committed.colors, [])
-        _release(slider, QPointF(slider.x_for_value(100), 5))
-        self.assertEqual([color.alpha() for color in self.committed.colors], [100])
-
-    def test_ring_drag_updates_hex_field(self) -> None:
-        """Dragging in the square updates the hex field to the new color."""
-        ring_square = self.picker.ring_square
-        _press(ring_square, ring_square.point_for_saturation_value(0.0, 1.0))
-        self.assertEqual(self.picker.alpha_hex_row.hex_field.text(), '#ffffff')
-        self.assertEqual(self.picker.selected_color(), QColor('#ffffff'))
+    def test_large_square_renders_at_capped_resolution(self) -> None:
+        """A large square scales up a capped render, still matching the selected hue's colors."""
+        self.widget.resize(1200, 1200)
+        self.widget.set_okhsv(140.0, 1.0, 1.0)
+        image = self.widget.grab().toImage()
+        self.assertLessEqual(self.widget._get_square_image().width(), MAX_SQUARE_RENDER_SIZE)
+        for saturation, value in ((0.0, 1.0), (0.85, 0.85), (0.5, 0.2)):
+            pixel = image.pixelColor(self.widget.point_for_saturation_value(saturation, value).toPoint())
+            expected = color_math.okhsv_to_srgb((140.0, saturation, value)) * 255
+            for channel, expected_channel in zip((pixel.red(), pixel.green(), pixel.blue()), expected):
+                self.assertAlmostEqual(channel, expected_channel, delta=6)
 
 
 class ColorPanelWheelTabTest(IntraPaintTestCase):
@@ -181,16 +149,15 @@ class ColorPanelWheelTabTest(IntraPaintTestCase):
         super().setUp()
         Cache().set(Cache.LAST_BRUSH_COLOR, '#ff336699')
         Cache().set(Cache.RECENT_COLORS, [])
-        self.panel = ColorControlPanel(disable_extended_layouts=True)
-        self.panel.set_four_tab_mode()
-        self.ring_square = self.panel.wheel_picker.ring_square
+        self.panel = ColorControlPanel()
+        self.ring_square = self.panel.ring_square
         self.ring_square.resize(WIDGET_SIZE, WIDGET_SIZE)
 
     def test_wheel_shows_foreground(self) -> None:
         """The wheel starts on the foreground color and follows changes to it."""
-        self.assertEqual(self.panel.wheel_picker.selected_color(), QColor('#ff336699'))
+        self.assertEqual(self.ring_square.color(), QColor('#ff336699'))
         Cache().set(Cache.LAST_BRUSH_COLOR, '#ff112233')
-        self.assertEqual(self.panel.wheel_picker.selected_color(), QColor('#ff112233'))
+        self.assertEqual(self.ring_square.color(), QColor('#ff112233'))
 
     def test_drag_sets_foreground_and_release_records_recent_color(self) -> None:
         """Dragging writes the foreground live without recording it; releasing records it as a recent color."""

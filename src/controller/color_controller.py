@@ -7,7 +7,8 @@ Browsing and choosing are separate: `set_foreground` and `set_background` with `
 while a commit also pushes the color onto `Cache.RECENT_COLORS`. Picker drags write without committing; a finished
 choice (dialog OK, eyedropper pick, swatch click) commits.
 
-Saved colors are `AppConfig.SAVED_COLORS`, a user-curated list kept in the order colors were saved.
+Saved colors are `AppConfig.SAVED_COLORS`, a user-curated list kept in the order colors were saved, holding at most
+MAX_SAVED_COLORS. Entries past the cap in a hand-edited config are ignored, and the next change to the list drops them.
 """
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
@@ -16,6 +17,7 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 
 MAX_RECENT_COLORS = 16
+MAX_SAVED_COLORS = 64
 DEFAULT_FOREGROUND = QColor(Qt.GlobalColor.black)
 DEFAULT_BACKGROUND = QColor(Qt.GlobalColor.white)
 
@@ -84,36 +86,51 @@ def commit_color(color: QColor) -> None:
 
 
 def saved_colors() -> list[QColor]:
-    """Returns the saved colors, in the order they were saved, skipping any value that isn't a valid color."""
-    return [QColor(color_str) for color_str in AppConfig().get(AppConfig.SAVED_COLORS) if QColor(color_str).isValid()]
+    """Returns the first MAX_SAVED_COLORS saved colors in the order they were saved, skipping invalid values."""
+    colors = [QColor(color_str) for color_str in AppConfig().get(AppConfig.SAVED_COLORS) if QColor(color_str).isValid()]
+    return colors[:MAX_SAVED_COLORS]
 
 
 def _set_saved_colors(colors: list[QColor]) -> None:
     AppConfig().set(AppConfig.SAVED_COLORS, [color.name(QColor.NameFormat.HexArgb) for color in colors])
 
 
-def save_color(color: QColor) -> None:
-    """Adds a color to the end of the saved colors, unless it is already saved."""
-    colors = saved_colors()
+def saved_color_index(color: QColor) -> int:
+    """Returns a color's index in `saved_colors()`, or -1 if it isn't saved."""
     color_str = color.name(QColor.NameFormat.HexArgb)
-    if any(saved.name(QColor.NameFormat.HexArgb) == color_str for saved in colors):
-        return
-    _set_saved_colors([*colors, color])
-
-
-def insert_saved_color(color: QColor, index: int) -> None:
-    """Puts a color into the saved colors before an index into `saved_colors()`, moving it there if it is already
-    saved."""
-    colors = saved_colors()
-    color_str = color.name(QColor.NameFormat.HexArgb)
-    for saved_index, saved in enumerate(colors):
+    for index, saved in enumerate(saved_colors()):
         if saved.name(QColor.NameFormat.HexArgb) == color_str:
-            del colors[saved_index]
-            if saved_index < index:
-                index -= 1
-            break
+            return index
+    return -1
+
+
+def saved_colors_full() -> bool:
+    """Returns whether the saved colors hold MAX_SAVED_COLORS, so no new color can be saved."""
+    return len(saved_colors()) >= MAX_SAVED_COLORS
+
+
+def save_color(color: QColor) -> bool:
+    """Adds a color to the end of the saved colors. Returns false if it was already saved or the list is full."""
+    if saved_color_index(color) >= 0 or saved_colors_full():
+        return False
+    _set_saved_colors([*saved_colors(), color])
+    return True
+
+
+def insert_saved_color(color: QColor, index: int) -> bool:
+    """Puts a color into the saved colors before an index into `saved_colors()`, moving it there if it is already
+    saved. Returns false, changing nothing, if it is a new color and the list is full."""
+    colors = saved_colors()
+    saved_index = saved_color_index(color)
+    if saved_index >= 0:
+        del colors[saved_index]
+        if saved_index < index:
+            index -= 1
+    elif len(colors) >= MAX_SAVED_COLORS:
+        return False
     colors.insert(max(0, min(index, len(colors))), QColor(color))
     _set_saved_colors(colors)
+    return True
 
 
 def remove_saved_color(index: int) -> None:
