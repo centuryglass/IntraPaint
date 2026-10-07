@@ -35,7 +35,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 SAVED_COLORS_LABEL = _tr('Saved colors ({count}/{max_count}):')
 SAVED_COLORS_TOOLTIP = _tr('Click a color to use it. Drag colors here to save them, or drag to reorder them. '
                            'Right-click a color to remove it.')
-SAVE_BUTTON_LABEL = _tr('Save c&urrent color')
+SAVE_BUTTON_LABEL = _tr('Sa&ve')
 SAVE_BUTTON_TOOLTIP = _tr('Add the current color to the saved colors')
 SAVE_BUTTON_FULL_TOOLTIP = _tr('The saved colors are full. Remove one to save another.')
 REMOVE_BUTTON_LABEL = _tr('Re&move')

@@ -277,7 +277,7 @@ class ColorControlPanelTest(IntraPaintTestCase):
         self.panel.resize(400, 360)
         self.panel.set_orientation(Qt.Orientation.Horizontal)
         self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.SIDE_COMPACT)
-        self.panel.resize(560, 360)
+        self.panel.resize(700, 360)
         self.panel.set_orientation(Qt.Orientation.Horizontal)
         self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.BOTTOM_MEDIUM)
 

@@ -252,7 +252,7 @@ panel its parts sit in tabs, and in a tall or wide panel they are all shown at o
 - **Sliders**: three sliders with number fields. The dropdown switches them between RGB, HSV and OKLCH. Each track
   shows the colors that slider would produce. On OKLCH tracks, hatched sections are colors the screen can't show.
   Wide panels show a second slider block with its own dropdown.
-- **Palettes**: your saved colors, up to 64. **Save current color** adds the current color, and **Remove** takes it
+- **Palettes**: your saved colors, up to 64. **Save** adds the current color, and **Remove** takes it
   out again. Click a saved color to use it, drag colors in to save or reorder them, and right-click one to remove it.
   The grid scrolls once it has more rows than fit.
 - **Alpha and hex**: the alpha slider sets opacity. The hex field accepts `#RGB`, `#RRGGBB` and `#AARRGGBB`.
