@@ -19,8 +19,12 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 # resources from it, never write there.
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 APP_ICON_PATH = f'{PROJECT_DIR}/resources/icons/app_icon.png'
-DATA_DIR = user_data_dir('IntraPaint', 'centuryglass')
-LOG_DIR = user_log_dir('IntraPaint', 'centuryglass')
+# DATA_DIR_ENV_VAR and LOG_DIR_ENV_VAR replace the platformdirs locations when set. They must be set before this module
+# is first imported. conftest.py sets both so test runs stay out of the real user profile.
+DATA_DIR_ENV_VAR = 'INTRAPAINT_DATA_DIR'
+LOG_DIR_ENV_VAR = 'INTRAPAINT_LOG_DIR'
+DATA_DIR = os.environ.get(DATA_DIR_ENV_VAR) or user_data_dir('IntraPaint', 'centuryglass')
+LOG_DIR = os.environ.get(LOG_DIR_ENV_VAR) or user_log_dir('IntraPaint', 'centuryglass')
 for app_dir in [DATA_DIR, LOG_DIR]:
     os.makedirs(app_dir, exist_ok=True)
 

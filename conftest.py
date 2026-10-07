@@ -7,6 +7,8 @@ prepare the environment that the Qt-based tests rely on:
   which is what makes them work identically on a developer machine and in CI. `setdefault` is used
   so a developer can still override the platform (e.g. to watch a test render) with
   `QT_QPA_PLATFORM=xcb pytest ...`.
+- Point `INTRAPAINT_DATA_DIR` and `INTRAPAINT_LOG_DIR` at a temporary directory before any `src` import, so test
+  runs never create or write files in the developer's real user data and log directories.
 - Ensure the project root is importable, so `from src... import ...` works regardless of the
   directory pytest is invoked from.
 - Back the config singletons with temporary copies of the `test/resources/*_test.json` fixtures, so
@@ -22,6 +24,11 @@ from typing import Callable, Optional
 
 # Must run before PySide6 is imported anywhere (including by test modules at collection time):
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+
+# Must run before src.util.shared_constants is imported, which reads these to set DATA_DIR and LOG_DIR:
+_user_dir_root = tempfile.mkdtemp(prefix='intrapaint-test-user-dirs-')
+os.environ['INTRAPAINT_DATA_DIR'] = os.path.join(_user_dir_root, 'data')
+os.environ['INTRAPAINT_LOG_DIR'] = os.path.join(_user_dir_root, 'log')
 
 _PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 if _PROJECT_ROOT not in sys.path:
@@ -58,9 +65,10 @@ def pytest_sessionstart(session: pytest.Session) -> None:
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """Remove the temporary config copies."""
+    """Remove the temporary config copies and user directories."""
     if _config_copy_dir is not None:
         shutil.rmtree(_config_copy_dir, ignore_errors=True)
+    shutil.rmtree(_user_dir_root, ignore_errors=True)
 
 
 @pytest.fixture(scope='session', autouse=True)
