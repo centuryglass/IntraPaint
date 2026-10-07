@@ -1,0 +1,49 @@
+{
+    "font": {
+        "family": "IBM Plex Sans",
+        "files": [
+            "resources/fonts/IBMPlexSans-Regular.ttf",
+            "resources/fonts/IBMPlexSans-Medium.ttf",
+            "resources/fonts/IBMPlexSans-SemiBold.ttf"
+        ],
+        "features": {
+            "zero": 1
+        }
+    },
+    "palette": {
+        "all": {
+            "Window": "#26272b",
+            "WindowText": "#e5e5e2",
+            "Base": "#1b1c1f",
+            "AlternateBase": "#202125",
+            "ToolTipBase": "#121315",
+            "ToolTipText": "#e5e5e2",
+            "PlaceholderText": "#75777c",
+            "Text": "#e5e5e2",
+            "Button": "#35373c",
+            "ButtonText": "#e5e5e2",
+            "BrightText": "#ffffff",
+            "Light": "#4a4c51",
+            "Midlight": "#404247",
+            "Mid": "#45474d",
+            "Dark": "#0d0e10",
+            "Shadow": "#0d0e10",
+            "Highlight": "#46c5be",
+            "HighlightedText": "#0d0e10",
+            "Link": "#46c5be",
+            "LinkVisited": "#8fdcd7",
+            "Accent": "#46c5be"
+        },
+        "disabled": {
+            "WindowText": "#5e6065",
+            "Text": "#5e6065",
+            "ButtonText": "#5e6065",
+            "PlaceholderText": "#4a4c51",
+            "Base": "#222327",
+            "Button": "#2c2d31",
+            "Highlight": "#2f5f5c",
+            "HighlightedText": "#9b9ca0",
+            "Accent": "#2f5f5c"
+        }
+    }
+}

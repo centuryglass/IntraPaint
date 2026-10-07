@@ -16,7 +16,6 @@ from src.controller.image_generation.test_generator import TestGenerator
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
 from src.util.arg_parser import build_arg_parser
-from src.util.gc_paused import gc_paused
 from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_READ_FORMATS, \
     IMAGE_WRITE_FORMATS
 from test.base_test_case import IntraPaintTestCase
@@ -104,8 +103,8 @@ class TestAppController(IntraPaintTestCase):
         self.assertEqual(changed_settings['zoom_in'], KeyConfig().get('zoom_in'))
         KeyConfig().set('zoom_in', 'PgUp')
 
-    @patch('src.controller.app_controller.qdarktheme')
-    @patch('src.controller.app_controller.qt_material')
+    @patch('src.ui.theme.qdarktheme')
+    @patch('src.ui.theme.qt_material')
     def test_fix_styles_qdarktheme(self, MockQtMaterial, MockQDarkTheme):
         AppConfig()._reset()
         AppConfig().add_option('theme', 'qdarktheme_dark')
@@ -117,8 +116,8 @@ class TestAppController(IntraPaintTestCase):
         self.assertFalse(MockQtMaterial.apply_stylesheet.called)
         self.assertEqual(AppConfig().get('font_point_size'), QApplication.instance().font().pointSize())
 
-    @patch('src.controller.app_controller.qdarktheme')
-    @patch('src.controller.app_controller.qt_material')
+    @patch('src.ui.theme.qdarktheme')
+    @patch('src.ui.theme.qt_material')
     def test_fix_styles_qt_material(self, MockQtMaterial, MockQDarkTheme):
         AppConfig()._reset()
         AppConfig().add_option('theme', 'qt_material_dark')
@@ -145,19 +144,18 @@ class TestAppController(IntraPaintTestCase):
         self.assertNotIn(True, recorder.gc_enabled_states)
         self.assertTrue(gc.isenabled())
 
-    @patch('src.controller.app_controller.qdarktheme')
+    @patch('src.ui.theme.qdarktheme')
     def test_theme_change_pauses_garbage_collection(self, mock_qdarktheme):
         """Theme stylesheets are applied after a collection, with collection paused (see gc_paused)."""
         mock_qdarktheme.setup_theme.side_effect = lambda *_args: app.setStyleSheet('QWidget { margin: 1px; }')
+        initial_theme = AppConfig().get(AppConfig.THEME)
         recorder = _GcStateRecorder()
         garbage = _unreachable_widget_cycle()
         try:
             AppConfig().set(AppConfig.THEME, 'qdarktheme_dark', add_missing_options=True)
             gc_enabled_states = list(recorder.gc_enabled_states)
         finally:
-            AppConfig().set(AppConfig.THEME, 'None')
-            with gc_paused():
-                app.setStyleSheet('')
+            AppConfig().set(AppConfig.THEME, initial_theme)
         mock_qdarktheme.setup_theme.assert_called_once()
         self.assertIsNone(garbage())
         self.assertNotEqual(gc_enabled_states, [])

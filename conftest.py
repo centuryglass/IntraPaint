@@ -13,6 +13,8 @@ prepare the environment that the Qt-based tests rely on:
   directory pytest is invoked from.
 - Back the config singletons with temporary copies of the `test/resources/*_test.json` fixtures, so
   tests that change settings can't rewrite the committed files.
+- Apply the style, theme and font size from the app config fixture, so text metrics and colors match on every
+  machine instead of following the platform's default font and palette.
 - Fail any test that opens a modal dialog or menu. Under the offscreen platform nothing can close
   one, so it would block the whole run until the CI job times out.
 """
@@ -43,7 +45,7 @@ _config_copy_dir: Optional[str] = None
 
 
 def pytest_sessionstart(session: pytest.Session) -> None:
-    """Create the config singletons from temporary copies of the committed config fixtures.
+    """Create the config singletons from temporary copies of the committed config fixtures, then apply their appearance.
 
     This runs before test collection. Config classes are singletons, so these are the instances every later
     `AppConfig('test/resources/app_config_test.json')`-style call returns, and the path in those calls is ignored.
@@ -65,6 +67,11 @@ def pytest_sessionstart(session: pytest.Session) -> None:
         shutil.copyfile(os.path.join(_CONFIG_FIXTURE_DIR, file_name), copy_path)
         config = config_class(copy_path)
         assert config.json_path == copy_path, f'{config_class.__name__} was created before pytest_sessionstart'
+    from src.ui.theme import apply_font_point_size, apply_style, apply_theme
+    app_config = AppConfig()
+    apply_style(app_config.get(AppConfig.STYLE))
+    apply_theme(app_config.get(AppConfig.THEME))
+    apply_font_point_size(app_config.get(AppConfig.FONT_POINT_SIZE))
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:

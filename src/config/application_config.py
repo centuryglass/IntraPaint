@@ -5,6 +5,7 @@ from typing import Optional
 from PySide6.QtWidgets import QStyleFactory
 
 from src.config.config import Config
+from src.ui.theme import THEME_INK, THEME_SYSTEM
 from src.util.optional_import import optional_import
 from src.util.shared_constants import PROJECT_DIR, DATA_DIR, PIL_SCALING_MODES
 from src.util.singleton import Singleton
@@ -18,7 +19,7 @@ CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/application_config_definit
 
 
 # System-based theme/style init constants
-DEFAULT_THEME_OPTIONS = ['None']
+DEFAULT_THEME_OPTIONS = [THEME_INK, THEME_SYSTEM]
 DARK_THEME_OPTIONS = ['qdarktheme_dark', 'qdarktheme_light', 'qdarktheme_auto']
 
 
