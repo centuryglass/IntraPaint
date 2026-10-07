@@ -31,6 +31,9 @@ logger = logging.getLogger(__name__)
 SELECTION_LAYER_NAME = _tr('Selection')
 DEFAULT_BRUSH_COLOR_STR = '#55ff0000'
 
+# Pixels around a bounded change whose outline polygons are re-traced, in addition to the change itself.
+OUTLINE_RETRACE_MARGIN = 10
+
 
 class SelectionLayer(ImageLayer):
     """A layer used to select regions for editing or inpainting.
@@ -214,7 +217,10 @@ class SelectionLayer(ImageLayer):
         self.image = inverted
 
     def grow_or_shrink_selection(self, num_pixels: int) -> None:
-        """Expand the selection outwards a given amount, or shrink it if num_pixels is negative."""
+        """Expand the selection outwards a given amount, or shrink it if num_pixels is negative.
+
+        Every edge moves by abs(num_pixels) pixels, and corners stay square.
+        """
         image = self.image
         image_ptr = image.bits()
         assert image_ptr is not None, 'Selection layer image was invalid'
@@ -225,7 +231,7 @@ class SelectionLayer(ImageLayer):
         if num_pixels == 0:
             adjusted_mask = masked
         else:
-            kernel_size = abs(num_pixels * 3)
+            kernel_size = 2 * abs(num_pixels) + 1
             kernel: NpAnyArray = np.ones((kernel_size, kernel_size), np.uint8)
             if num_pixels > 0:
                 adjusted_mask = cv2.dilate(mask_uint8, kernel, iterations=1)
@@ -301,7 +307,10 @@ class SelectionLayer(ImageLayer):
         x_offset = pos.x()
         y_offset = pos.y()
         if change_bounds is not None:
-            final_image_bounds = QRect(change_bounds).translated(pos.x(), pos.y())
+            # Re-trace the change bounds plus a margin, grown until it holds every polygon that touches it. A polygon
+            # that touches the traced area but is only partly inside it would come back clipped or duplicated.
+            final_image_bounds = QRect(change_bounds).translated(pos.x(), pos.y()).adjusted(
+                -OUTLINE_RETRACE_MARGIN, -OUTLINE_RETRACE_MARGIN, OUTLINE_RETRACE_MARGIN, OUTLINE_RETRACE_MARGIN)
             polys_to_remove = []
             bounds_expanded = True
             while bounds_expanded:
@@ -317,7 +326,6 @@ class SelectionLayer(ImageLayer):
             for poly in polys_to_remove:
                 self._outline_polygons.remove(poly)
             final_local_bounds = final_image_bounds.translated(-pos.x(), -pos.y())\
-                .adjusted(-10, -10, 10, 10)\
                 .intersected(QRect(0, 0, self.width, self.height))
             cropped_image = np_image[final_local_bounds.y():final_local_bounds.y() + final_local_bounds.height(),
                                      final_local_bounds.x():final_local_bounds.x() + final_local_bounds.width(), :]
