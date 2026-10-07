@@ -3,8 +3,7 @@ import logging
 from typing import Optional
 
 from PySide6.QtCore import QPointF, QPoint, QLine, Qt, Signal
-from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter, \
-    QResizeEvent
+from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QToolButton, QGridLayout
 
 from src.image.layers.image_stack import ImageStack
@@ -12,10 +11,12 @@ from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.panel.layer_ui.layer_widget import LayerWidget
-from src.util.layout import clear_layout
 from src.util.signals_blocked import signals_blocked
 
 logger = logging.getLogger(__name__)
+
+# Width of the empty grid column that indents child layer widgets under the group's own layer widget:
+CHILD_INDENT = 12
 
 
 class LayerGroupWidget(BorderedWidget):
@@ -29,6 +30,7 @@ class LayerGroupWidget(BorderedWidget):
         self._layout = QGridLayout(self)
         self._layout.setSpacing(4)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self._layout.setColumnMinimumWidth(0, CHILD_INDENT)
         self._layer = layer_stack
         self._image_stack = image_stack
         self._layer_items: dict[Layer, LayerGroupWidget | LayerWidget] = {}
@@ -123,25 +125,6 @@ class LayerGroupWidget(BorderedWidget):
         """Return whether the widget is expanded to show child layers."""
         return self._toggle_button.isChecked()
 
-    def _refresh_layout(self) -> None:
-        """Refresh the layout by removing and replacing this widget within its parent."""
-        # TODO: Sometimes the outer layer refuses to update when a group is expanded or collapsed or when child items
-        #  change. The normal methods for fixing this kind of issue (updateGeometry, adjustSize, update,
-        #  layout.invalidate) all make no difference, but removing and re-inserting the widget fixes the problem.
-        #  This is an acceptable solution for now, but there really should be a better way to fix this.
-        parent_widget = self.parentWidget()
-        if parent_widget is None:
-            return
-        parent_layout = parent_widget.layout()
-        if not isinstance(parent_layout, QGridLayout):
-            return
-        own_index = parent_layout.indexOf(self)
-        if own_index < 0:
-            return
-        row, col, row_stretch, col_stretch = parent_layout.getItemPosition(own_index)
-        parent_layout.removeWidget(self)
-        parent_layout.addWidget(self, row, col, row_stretch, col_stretch)
-
     def set_expanded(self, expanded: bool) -> None:
         """Open or close the widget."""
         if expanded != self._toggle_button.isChecked():
@@ -150,11 +133,6 @@ class LayerGroupWidget(BorderedWidget):
         self._toggle_button.setArrowType(Qt.ArrowType.DownArrow if expanded else Qt.ArrowType.RightArrow)
         for child_item in self.child_items:
             child_item.setVisible(expanded)
-        self._refresh_layout()
-
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
-        """Keep child layers indented under the parent group layer"""
-        self._layout.setColumnMinimumWidth(0, self._parent_item.x() // 3)
 
     def dragEnterEvent(self, event: Optional[QDragEnterEvent]) -> None:
         """Accept drag events from layer widgets."""
@@ -231,7 +209,7 @@ class LayerGroupWidget(BorderedWidget):
         """Returns the list widgets for all child layers."""
         return list(self._layer_items.values())
 
-    def get_child_item(self, child_layer: Layer) -> LayerWidget:
+    def get_child_item(self, child_layer: Layer) -> 'LayerGroupWidget | LayerWidget':
         """Finds the layer widget for a child layer, or throws ValueError if child_layer isn't a direct child of this
            widget's layer group."""
         if child_layer not in self._layer_items:
@@ -244,13 +222,13 @@ class LayerGroupWidget(BorderedWidget):
         return self._layer
 
     def add_child_layer(self, layer: Layer) -> None:
-        """Add one of the group's child layers into the list."""
+        """Add one of the group's child layers into the list.
+
+        LayerGroup forwards the layer_added signals of its nested groups, so layers that aren't direct children are
+        expected here and ignored."""
         if layer in self._layer_items:
-            assert self._layer_items[layer].isVisible()
             return  # Layer is already there.
-        index = self._layer.get_layer_index(layer)
-        if index is None:
-            # Signal was probably passed on from a nested group, ignore it unless that's not true:
+        if not self._layer.contains(layer):
             if not self._layer.contains_recursive(layer):
                 logger.warning(f'Tried to add layer {layer.name}:{layer.id} to unrelated group'
                                f' {self._layer.name}:{self._layer.id}')
@@ -265,35 +243,38 @@ class LayerGroupWidget(BorderedWidget):
             child_widget = LayerWidget(layer, self._image_stack)
         child_widget.drag_ended.connect(self.drag_ended)
         self._layer_items[layer] = child_widget
-        self._layout.addWidget(child_widget, index + 1, 1)
+        self._update_child_rows()
         child_widget.setVisible(self.is_expanded())
-        self._refresh_layout()
 
     def remove_child_layer(self, layer: Layer) -> None:
-        """Remove one of the group's child layers from the list."""
+        """Remove one of the group's child layers from the list.
+
+        LayerGroup forwards the layer_removed signals of its nested groups, and removing a group also signals the
+        removal of its direct children, so layers without a widget here are expected and ignored."""
         if layer not in self._layer_items:
-            logger.warning(f'Tried to remove layer {layer.name}:{layer.id} from group'
-                           f' {self._layer.name}:{self._layer.id} not containing that layer')
             return
-        layer_item = self._layer_items[layer]
-        index = self._layout.indexOf(layer_item)
-        if index >= 0:
-            self._layout.takeAt(index)
-        del self._layer_items[layer]
+        layer_item = self._layer_items.pop(layer)
+        self._layout.removeWidget(layer_item)
+        layer_item.hide()
         layer_item.deleteLater()
-        self._refresh_layout()
+        self._update_child_rows()
 
     def reorder_child_layers(self) -> None:
-        """Update child layer order based on layer z-values."""
-        clear_layout(self._layout, unparent=False)
-        self._layout.addWidget(self._parent_frame, 0, 0, 1, 2)
-        child_items = list(self._layer_items.values())
-        child_items.sort(key=lambda layer_widget: layer_widget.layer.z_value, reverse=True)
-        for i, widget in enumerate(child_items):
-            self._layout.addWidget(widget, i + 1, 1)
-            widget.setVisible(self.is_expanded())
+        """Update child widget order to match the order of layers in the group, recursively."""
+        self._update_child_rows()
+        for widget in self._layer_items.values():
             if isinstance(widget, LayerGroupWidget):
                 widget.reorder_child_layers()
+
+    def _update_child_rows(self) -> None:
+        """Place each child widget in the grid row matching its layer's index in the group."""
+        for widget in self._layer_items.values():
+            self._layout.removeWidget(widget)
+        row = 1
+        for layer in self._layer.child_layers:
+            if layer in self._layer_items:
+                self._layout.addWidget(self._layer_items[layer], row, 1)
+                row += 1
 
     def _update_layer_lock_slot(self, layer: Layer, locked: bool) -> None:
         assert layer == self._layer or layer.contains_recursive(self._layer)

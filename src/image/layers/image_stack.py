@@ -1612,16 +1612,17 @@ class ImageStack(QObject):
         assert layer_parent is not None
         assert layer_parent.contains(layer)
         self._disconnect_layer(layer)
-        if self.active_layer_id == layer.id:
-            active_layer = self.active_layer
-            next_active_layer = self.next_layer(active_layer)
-            if isinstance(active_layer, LayerGroup):
-                while next_active_layer is not None and active_layer.contains_recursive(next_active_layer):
+        active_layer = self.active_layer
+        # Removing a group that contains the active layer also removes the active layer:
+        if active_layer == layer or (isinstance(layer, LayerGroup) and layer.contains_recursive(active_layer)):
+            next_active_layer = self.next_layer(layer)
+            if isinstance(layer, LayerGroup):
+                while next_active_layer is not None and layer.contains_recursive(next_active_layer):
                     next_active_layer = self.next_layer(next_active_layer)
             if next_active_layer is None:
-                next_active_layer = self.prev_layer(active_layer)
-                if isinstance(active_layer, LayerGroup):
-                    while next_active_layer is not None and active_layer.contains_recursive(next_active_layer):
+                next_active_layer = self.prev_layer(layer)
+                if isinstance(layer, LayerGroup):
+                    while next_active_layer is not None and layer.contains_recursive(next_active_layer):
                         next_active_layer = self.prev_layer(next_active_layer)
             if next_active_layer is None or next_active_layer == layer or not \
                     self._layer_stack.contains_recursive(next_active_layer):

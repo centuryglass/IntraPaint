@@ -13,7 +13,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer, LayerParent
 from src.image.layers.layer_group import LayerGroup
 from src.ui.panel.layer_ui.layer_group_widget import LayerGroupWidget
-from src.ui.panel.layer_ui.layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH, LayerWidget
+from src.ui.panel.layer_ui.layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH
 from src.util.shared_constants import PROJECT_DIR, APP_ICON_PATH, SMALL_ICON_SIZE
 
 logger = logging.getLogger(__name__)
@@ -95,6 +95,7 @@ class LayerPanel(QWidget):
         self._layout.addLayout(self._opacity_layout)
         self._opacity_slider.setRange(0, 100)
         self._opacity_spinbox.setRange(0.0, 1.0)
+        self._opacity_spinbox.setSingleStep(0.01)
         active_layer = image_stack.active_layer
         self._opacity_slider.setValue(int(active_layer.opacity * 100))
         self._opacity_spinbox.setValue(active_layer.opacity)
@@ -266,6 +267,17 @@ class LayerPanel(QWidget):
                 input_widget.setValue(value)
                 input_widget.valueChanged.connect(self._update_opacity_slot)
 
+    def _active_layer_opacity_change_slot(self, _, opacity: float) -> None:
+        self._update_opacity_slot(opacity)
+
+    def _show_composition_mode(self, mode: CompositeMode) -> None:
+        mode_index = self._mode_box.findText(mode)
+        if mode_index >= 0:
+            self._mode_box.setCurrentIndex(mode_index)
+
+    def _active_layer_mode_change_slot(self, _, mode: CompositeMode) -> None:
+        self._show_composition_mode(mode)
+
     def _mode_change_slot(self, _) -> None:
         mode_text = self._mode_box.currentText()
         mode = CompositeMode(mode_text)
@@ -307,39 +319,31 @@ class LayerPanel(QWidget):
                 parent.set_expanded(True)
 
     def _active_layer_change_slot(self, new_active_layer: Layer) -> None:
+        """Track the active layer's state in the panel controls. Each LayerWidget highlights itself when active."""
         if self._active_layer is not None:
             self._active_layer.lock_changed.disconnect(self._lock_change_slot)
+            self._active_layer.opacity_changed.disconnect(self._active_layer_opacity_change_slot)
+            self._active_layer.composition_mode_changed.disconnect(self._active_layer_mode_change_slot)
         self._active_layer = new_active_layer
         self._open_parent_groups(new_active_layer)
         new_active_layer.lock_changed.connect(self._lock_change_slot)
+        new_active_layer.opacity_changed.connect(self._active_layer_opacity_change_slot)
+        new_active_layer.composition_mode_changed.connect(self._active_layer_mode_change_slot)
         for button in (self._move_up_button, self._move_down_button):
             button.setEnabled(new_active_layer != self._image_stack.layer_stack)
-        self._lock_change_slot(new_active_layer, new_active_layer.locked)
-        layer_id = new_active_layer.id
-        layer_groups: list[LayerGroupWidget] = [self._parent_group_item]
-        while len(layer_groups) > 0:
-            group = layer_groups.pop()
-            group.layer_item.active = group.layer_item.layer.id == layer_id
-            for child in group.child_items:
-                if isinstance(child, LayerGroupWidget):
-                    layer_groups.append(child)
-                else:
-                    assert isinstance(child, LayerWidget)
-                    child.active = child.layer.id == layer_id
-        if new_active_layer is not None:
-            self._update_opacity_slot(new_active_layer.opacity)
-            image_mode = new_active_layer.composition_mode
-            mode_index = self._mode_box.findText(image_mode)
-            if mode_index >= 0:
-                self._mode_box.setCurrentIndex(mode_index)
+        self._lock_change_slot()
+        self._update_opacity_slot(new_active_layer.opacity)
+        self._show_composition_mode(new_active_layer.composition_mode)
 
     def _layer_added_slot(self, new_layer: Layer) -> None:
         self._open_parent_groups(new_layer)
 
-    def _lock_change_slot(self, layer: Layer, is_locked: bool) -> None:
-        assert layer == self._image_stack.active_layer or layer.contains_recursive(self._image_stack.active_layer)
+    def _lock_change_slot(self, *_) -> None:
+        # The signal's arguments may describe a parent group's lock, so read the lock state from the layer instead.
+        active_layer = self._image_stack.active_layer
+        editable = not active_layer.locked and not active_layer.parent_locked
         for widget in (self._opacity_spinbox,
                        self._opacity_slider):
-            widget.setEnabled(not is_locked and not layer.parent_locked)
+            widget.setEnabled(editable)
         for widget in (self._mode_box, self._merge_down_button, self._delete_button):
-            widget.setEnabled(not is_locked and not layer.parent_locked and not layer == self._image_stack.layer_stack)
+            widget.setEnabled(editable and active_layer != self._image_stack.layer_stack)
