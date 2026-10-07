@@ -679,7 +679,7 @@ class TextToolPanel(QWidget):
 
     def _text_height_changed_slot(self, height: int) -> None:
         text_size = self._text_rect.size
-        if height != text_size.width():
+        if height != text_size.height():
             text_size.setHeight(height)
             self._text_rect.size = text_size
             self._sync_size_changes()

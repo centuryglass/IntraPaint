@@ -112,7 +112,6 @@ class TextLayer(TransformLayer):
             self.invalidate_pixmap()
             self.set_name(self._get_name_from_text())
             self.set_size(new_text.size)
-            self.signal_content_changed(self.bounds)
             self.text_data_changed.emit(new_text)
             if self.visible and self.opacity > 0.0:
                 self.signal_content_changed(self.bounds)
@@ -151,13 +150,13 @@ class TextLayer(TransformLayer):
 
         def _swap_in_image_layer():
             layer_index = parent.get_layer_index(text_layer)
-            assert layer_index > 0
+            assert layer_index is not None
             parent.remove_layer(text_layer)
             parent.insert_layer(image_layer, layer_index)
 
         def _swap_back():
             layer_index = parent.get_layer_index(image_layer)
-            assert layer_index > 0
+            assert layer_index is not None
             parent.remove_layer(image_layer)
             parent.insert_layer(text_layer, layer_index)
 
