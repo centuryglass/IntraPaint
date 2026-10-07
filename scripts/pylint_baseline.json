@@ -183,8 +183,7 @@
     "unused-argument": 1
   },
   "src/ui/panel/layer_ui/layer_group_widget.py": {
-    "fixme": 1,
-    "unused-argument": 2
+    "unused-argument": 1
   },
   "src/ui/panel/layer_ui/layer_panel.py": {
     "unnecessary-lambda": 1,

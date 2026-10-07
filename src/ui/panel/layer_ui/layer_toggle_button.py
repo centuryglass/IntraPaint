@@ -32,8 +32,9 @@ class LayerToggleButton(QToolButton):
             if connected_layer.locked or connected_layer.parent_locked:
                 self.setEnabled(False)
 
-    def _lock_change_slot(self, _, is_locked: bool) -> None:
-        self.setEnabled(not is_locked)
+    def _lock_change_slot(self, *_) -> None:
+        # The signal's arguments may describe a parent group's lock, so read the lock state from the layer instead.
+        self.setEnabled(not self._layer.locked and not self._layer.parent_locked)
 
     # noinspection PyMethodMayBeStatic
     def sizeHint(self):
