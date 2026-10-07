@@ -1,0 +1,128 @@
+{
+  "minimum": {
+    "problems": [
+      "overlap: QScrollArea and QWidget share 174x21",
+      "squeezed: QDoubleSpinBox is 54x22, minimum 54x26",
+      "squeezed: QComboBox is 102x22, minimum 126x25",
+      "clipped: QScrollArea shows 183x54 of 257x54",
+      "squeezed: QScrollArea is 257x54, minimum 70x70",
+      "clipped: QScrollArea/QWidget[0] shows 182x52 of 241x52",
+      "squeezed: QWidget is 174x21, minimum 192x31",
+      "squeezed: QWidget/QToolButton[0] is 29x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[1] is 29x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[2] is 29x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[3] is 29x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[4] is 29x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[5] is 29x21, minimum 32x31"
+    ],
+    "size": [
+      192,
+      123
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "overlap: QScrollArea and QWidget share 78x21",
+      "squeezed: QLabel 'Opacity:' is 32x22, minimum 49x17",
+      "squeezed: QDoubleSpinBox is 32x22, minimum 54x26",
+      "squeezed: QLabel 'Layer mode:' is 39x22, minimum 72x17",
+      "squeezed: QComboBox is 39x22, minimum 126x25",
+      "clipped: QScrollArea shows 87x54 of 257x54",
+      "squeezed: QScrollArea is 257x54, minimum 70x70",
+      "clipped: QScrollArea/QWidget[0] shows 86x52 of 241x52",
+      "squeezed: QWidget is 78x21, minimum 192x31",
+      "squeezed: QWidget/QToolButton[0] is 13x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[1] is 13x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[2] is 13x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[3] is 13x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[4] is 13x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[5] is 13x21, minimum 32x31"
+    ],
+    "size": [
+      96,
+      123
+    ]
+  },
+  "preferred": {
+    "problems": [
+      "overlap: QScrollArea and QWidget share 174x21",
+      "squeezed: QDoubleSpinBox is 54x22, minimum 54x26",
+      "squeezed: QComboBox is 102x22, minimum 126x25",
+      "clipped: QScrollArea shows 183x54 of 257x54",
+      "squeezed: QScrollArea is 257x54, minimum 70x70",
+      "clipped: QScrollArea/QWidget[0] shows 182x52 of 241x52",
+      "squeezed: QWidget is 174x21, minimum 192x31",
+      "squeezed: QWidget/QToolButton[0] is 29x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[1] is 29x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[2] is 29x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[3] is 29x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[4] is 29x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[5] is 29x21, minimum 32x31"
+    ],
+    "size": [
+      192,
+      123
+    ]
+  },
+  "short": {
+    "problems": [
+      "overlap: QScrollArea and QWidget share 174x6",
+      "squeezed: QLabel 'Opacity:' is 49x7, minimum 49x17",
+      "squeezed: QSlider is 71x7, minimum 15x15",
+      "squeezed: QDoubleSpinBox is 54x7, minimum 54x26",
+      "squeezed: QLabel 'Layer mode:' is 72x6, minimum 72x17",
+      "squeezed: QComboBox is 102x6, minimum 126x25",
+      "clipped: QScrollArea shows 183x27 of 257x54",
+      "squeezed: QScrollArea is 257x54, minimum 70x70",
+      "clipped: QScrollArea/QWidget[0] shows 182x26 of 241x52",
+      "squeezed: QWidget is 174x6, minimum 192x31",
+      "squeezed: QWidget/QToolButton[0] is 29x6, minimum 32x31",
+      "squeezed: QWidget/QToolButton[1] is 29x6, minimum 32x31",
+      "squeezed: QWidget/QToolButton[2] is 29x6, minimum 32x31",
+      "squeezed: QWidget/QToolButton[3] is 29x6, minimum 32x31",
+      "squeezed: QWidget/QToolButton[4] is 29x6, minimum 32x31",
+      "squeezed: QWidget/QToolButton[5] is 29x6, minimum 32x31"
+    ],
+    "size": [
+      192,
+      61
+    ]
+  },
+  "tall": {
+    "problems": [
+      "squeezed: QComboBox is 102x25, minimum 126x25",
+      "clipped: QScrollArea shows 183x1082 of 257x1082",
+      "clipped: QScrollArea/QWidget[0] shows 182x1080 of 241x1080",
+      "squeezed: QWidget is 174x31, minimum 192x31",
+      "squeezed: QWidget/QToolButton[0] is 29x31, minimum 32x31",
+      "squeezed: QWidget/QToolButton[1] is 29x31, minimum 32x31",
+      "squeezed: QWidget/QToolButton[2] is 29x31, minimum 32x31",
+      "squeezed: QWidget/QToolButton[3] is 29x31, minimum 32x31",
+      "squeezed: QWidget/QToolButton[4] is 29x31, minimum 32x31",
+      "squeezed: QWidget/QToolButton[5] is 29x31, minimum 32x31"
+    ],
+    "size": [
+      192,
+      1200
+    ]
+  },
+  "wide": {
+    "problems": [
+      "overlap: QScrollArea and QWidget share 1582x21",
+      "squeezed: QDoubleSpinBox is 54x22, minimum 54x26",
+      "squeezed: QComboBox is 791x22, minimum 126x25",
+      "squeezed: QScrollArea is 1582x54, minimum 70x70",
+      "squeezed: QWidget is 1582x21, minimum 192x31",
+      "squeezed: QWidget/QToolButton[0] is 32x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[1] is 32x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[2] is 32x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[3] is 32x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[4] is 32x21, minimum 32x31",
+      "squeezed: QWidget/QToolButton[5] is 32x21, minimum 32x31"
+    ],
+    "size": [
+      1600,
+      123
+    ]
+  }
+}

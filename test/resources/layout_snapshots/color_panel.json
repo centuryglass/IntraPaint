@@ -1,0 +1,59 @@
+{
+  "minimum": {
+    "problems": [],
+    "size": [
+      269,
+      249
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "squeezed: QWidget[4] is 132x326, minimum 200x247",
+      "squeezed: QWidget[4]/ColorPickerHeader is 132x48, minimum 149x48",
+      "squeezed: QWidget[4]/ColorPickerHeader/QLabel '#000000' is 44x17, minimum 57x17",
+      "squeezed: QWidget[4]/QTabWidget is 132x241, minimum 196x162",
+      "squeezed: QWidget[4]/AlphaHexRow is 132x25, minimum 200x25",
+      "squeezed: QWidget[4]/AlphaHexRow/GradientSlider is 41x20, minimum 60x20",
+      "clipped: QWidget[4]/AlphaHexRow/QLineEdit shows 41x25 of 90x25"
+    ],
+    "size": [
+      134,
+      328
+    ]
+  },
+  "preferred": {
+    "problems": [],
+    "size": [
+      302,
+      328
+    ]
+  },
+  "short": {
+    "problems": [
+      "squeezed: QWidget[4] is 300x122, minimum 200x247",
+      "squeezed: QWidget[4]/ColorPickerHeader is 300x43, minimum 149x48",
+      "clipped: QWidget[4]/ColorPickerHeader/ColorPairWidget shows 48x43 of 48x48",
+      "squeezed: QWidget[4]/QTabWidget is 300x42, minimum 196x162"
+    ],
+    "size": [
+      302,
+      124
+    ]
+  },
+  "tall": {
+    "problems": [
+      "squeezed: QWidget[3]/SavedColorsPanel/_GridScrollArea is 282x20, minimum 68x68"
+    ],
+    "size": [
+      302,
+      1200
+    ]
+  },
+  "wide": {
+    "problems": [],
+    "size": [
+      1600,
+      328
+    ]
+  }
+}

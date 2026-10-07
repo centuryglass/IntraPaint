@@ -1,0 +1,63 @@
+{
+  "minimum": {
+    "problems": [],
+    "size": [
+      426,
+      121
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "squeezed: ReflowingButtonGroup is 195x30, minimum 128x70",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 195x10, minimum 104x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 195x10, minimum 128x30",
+      "squeezed: CheckBox 'Sample Merged' is 54x22, minimum 115x22",
+      "squeezed: CheckBox 'Select all by color' is 54x22, minimum 127x22",
+      "squeezed: CheckBox 'Fill selection holes' is 54x22, minimum 133x22"
+    ],
+    "size": [
+      213,
+      121
+    ]
+  },
+  "preferred": {
+    "problems": [],
+    "size": [
+      427,
+      121
+    ]
+  },
+  "short": {
+    "problems": [
+      "squeezed: ReflowingButtonGroup is 409x7, minimum 128x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 200x7, minimum 104x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 199x7, minimum 128x30",
+      "squeezed: FloatSliderSpinbox is 409x7, minimum 183x30",
+      "squeezed: FloatSliderSpinbox/QLabel 'Color threshold:' is 94x3, minimum 94x17",
+      "squeezed: FloatSliderSpinbox/QSlider is 241x3, minimum 15x20",
+      "squeezed: FloatSliderSpinbox/QDoubleSpinBox is 62x3, minimum 62x26",
+      "squeezed: KeyHintLabel 'Q' is 16x7, minimum 15x21",
+      "squeezed: CheckBox 'Sample Merged' is 115x7, minimum 115x22",
+      "squeezed: CheckBox 'Select all by color' is 127x7, minimum 127x22",
+      "squeezed: CheckBox 'Fill selection holes' is 133x7, minimum 133x22"
+    ],
+    "size": [
+      427,
+      60
+    ]
+  },
+  "tall": {
+    "problems": [],
+    "size": [
+      427,
+      1200
+    ]
+  },
+  "wide": {
+    "problems": [],
+    "size": [
+      1600,
+      121
+    ]
+  }
+}

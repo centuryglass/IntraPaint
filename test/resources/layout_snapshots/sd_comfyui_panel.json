@@ -1,0 +1,48 @@
+{
+  "minimum": {
+    "problems": [],
+    "size": [
+      860,
+      328
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "squeezed: QTabWidget is 420x316, minimum 850x316"
+    ],
+    "size": [
+      430,
+      328
+    ]
+  },
+  "preferred": {
+    "problems": [],
+    "size": [
+      860,
+      328
+    ]
+  },
+  "short": {
+    "problems": [
+      "squeezed: QTabWidget is 850x152, minimum 850x316"
+    ],
+    "size": [
+      860,
+      164
+    ]
+  },
+  "tall": {
+    "problems": [],
+    "size": [
+      860,
+      1200
+    ]
+  },
+  "wide": {
+    "problems": [],
+    "size": [
+      2580,
+      328
+    ]
+  }
+}

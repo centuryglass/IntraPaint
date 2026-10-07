@@ -1,0 +1,97 @@
+{
+  "minimum": {
+    "problems": [],
+    "size": [
+      299,
+      256
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "overlap: QLabel 'Size:' and KeyHintLabel '[' share 11x30",
+      "overlap: IntSliderSpinbox and KeyHintLabel ']' share 14x30",
+      "overlap: QLabel 'Opacity:' and KeyHintLabel '<' share 11x30",
+      "overlap: FloatSliderSpinbox[0] and KeyHintLabel '>' share 14x30",
+      "overlap: QLabel 'Hardness:' and KeyHintLabel '{' share 11x30",
+      "overlap: FloatSliderSpinbox[1] and KeyHintLabel '}' share 14x30",
+      "squeezed: QWidget[0] is 131x44, minimum 281x44",
+      "squeezed: QWidget[0]/QSpinBox[0] is 36x26, minimum 111x26",
+      "squeezed: QWidget[0]/QSpinBox[1] is 36x26, minimum 111x26",
+      "squeezed: QWidget[1] is 131x43, minimum 221x43",
+      "squeezed: QWidget[1]/QLabel 'Source mode:' is 54x25, minimum 81x17",
+      "squeezed: QWidget[1]/ComboBox is 53x25, minimum 116x25",
+      "clipped: IntSliderSpinbox shows 71x30 of 148x30",
+      "clipped: IntSliderSpinbox/QSlider shows 67x20 of 88x20",
+      "clipped: IntSliderSpinbox/QSpinBox shows 0x0 of 50x26",
+      "clipped: FloatSliderSpinbox[0] shows 71x30 of 148x30",
+      "clipped: FloatSliderSpinbox[0]/QSlider shows 67x20 of 84x20",
+      "clipped: FloatSliderSpinbox[0]/QDoubleSpinBox shows 0x0 of 54x26",
+      "clipped: FloatSliderSpinbox[1] shows 71x30 of 148x30",
+      "clipped: FloatSliderSpinbox[1]/QSlider shows 67x20 of 84x20",
+      "clipped: FloatSliderSpinbox[1]/QDoubleSpinBox shows 0x0 of 54x26",
+      "squeezed: CheckBox 'Antialiasing' is 63x22, minimum 92x22",
+      "squeezed: CheckBox 'Update selection only' is 62x22, minimum 152x22"
+    ],
+    "size": [
+      149,
+      256
+    ]
+  },
+  "preferred": {
+    "problems": [],
+    "size": [
+      299,
+      256
+    ]
+  },
+  "short": {
+    "problems": [
+      "squeezed: QWidget[0] is 281x12, minimum 281x44",
+      "squeezed: QWidget[0]/QLabel 'X:' is 12x0, minimum 12x17",
+      "squeezed: QWidget[0]/QSpinBox[0] is 111x0, minimum 111x26",
+      "squeezed: QWidget[0]/QLabel 'Y:' is 11x0, minimum 11x17",
+      "squeezed: QWidget[0]/QSpinBox[1] is 111x0, minimum 111x26",
+      "squeezed: QWidget[1] is 281x12, minimum 221x43",
+      "squeezed: QWidget[1]/QLabel 'Source mode:' is 81x0, minimum 81x17",
+      "squeezed: QWidget[1]/ComboBox is 116x0, minimum 116x25",
+      "squeezed: KeyHintLabel '[' is 14x12, minimum 14x21",
+      "squeezed: KeyHintLabel ']' is 14x12, minimum 14x21",
+      "squeezed: QLabel 'Size:' is 60x12, minimum 28x17",
+      "squeezed: IntSliderSpinbox is 175x12, minimum 75x30",
+      "squeezed: IntSliderSpinbox/QSlider is 115x8, minimum 15x20",
+      "squeezed: IntSliderSpinbox/QSpinBox is 50x8, minimum 50x26",
+      "squeezed: KeyHintLabel '<' is 14x12, minimum 14x21",
+      "squeezed: KeyHintLabel '>' is 14x12, minimum 14x21",
+      "squeezed: QLabel 'Opacity:' is 60x12, minimum 49x17",
+      "squeezed: FloatSliderSpinbox[0] is 175x12, minimum 79x30",
+      "squeezed: FloatSliderSpinbox[0]/QSlider is 111x8, minimum 15x20",
+      "squeezed: FloatSliderSpinbox[0]/QDoubleSpinBox is 54x8, minimum 54x26",
+      "squeezed: KeyHintLabel '{' is 14x11, minimum 14x21",
+      "squeezed: KeyHintLabel '}' is 14x11, minimum 14x21",
+      "squeezed: QLabel 'Hardness:' is 60x11, minimum 60x17",
+      "squeezed: FloatSliderSpinbox[1] is 175x11, minimum 79x30",
+      "squeezed: FloatSliderSpinbox[1]/QSlider is 111x7, minimum 15x20",
+      "squeezed: FloatSliderSpinbox[1]/QDoubleSpinBox is 54x7, minimum 54x26",
+      "squeezed: CheckBox 'Antialiasing' is 92x12, minimum 92x22",
+      "squeezed: CheckBox 'Update selection only' is 152x12, minimum 152x22"
+    ],
+    "size": [
+      299,
+      128
+    ]
+  },
+  "tall": {
+    "problems": [],
+    "size": [
+      299,
+      1200
+    ]
+  },
+  "wide": {
+    "problems": [],
+    "size": [
+      1600,
+      256
+    ]
+  }
+}
