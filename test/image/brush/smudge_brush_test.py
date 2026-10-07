@@ -19,6 +19,9 @@ GOLDEN_DIR = 'test/resources/test_images/smudge'
 GRADIENT_COLOR = (200, 80, 30)
 # Largest per-channel color error that 8-bit premultiplied storage alone causes at alpha >= 64:
 GRADIENT_COLOR_TOLERANCE = 4
+# Lowest alpha whose 8-bit premultiplied pixels keep GRADIENT_COLOR closely enough for the tolerance to hold after
+# smudging builds them up to visible opacity:
+GRADIENT_MIN_SOURCE_ALPHA = 32
 
 
 class SmudgeBrushTest(BrushTestCase):
@@ -143,19 +146,33 @@ class SmudgeBrushTest(BrushTestCase):
         self.assert_valid_premultiplied(image)
         self.assert_image_matches_golden(image, f'{GOLDEN_DIR}/opacity_gradient.png')
 
-    @pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/110: 8-bit '
-                                          'compositing shifts color picked up from nearly transparent pixels')
+    def gradient_color_error(self, image: QImage, min_source_alpha: int) -> int:
+        """Returns the largest per-channel difference from GRADIENT_COLOR among pixels that end up at least 25%
+           opaque and started with alpha of at least min_source_alpha."""
+        np_image = image_data_as_numpy_8bit(image.convertToFormat(QImage.Format.Format_ARGB32)).astype(int)
+        source_alpha = image_data_as_numpy_8bit(opacity_gradient_image(color=GRADIENT_COLOR))[:, :, 3]
+        checked = (np_image[:, :, 3] >= 64) & (source_alpha >= min_source_alpha)
+        expected_bgr = np.array(GRADIENT_COLOR[::-1])
+        return int(np.abs(np_image[:, :, :3] - expected_bgr).max(axis=2)[checked].max())
+
     def test_smudge_keeps_color_on_opacity_gradient(self) -> None:
-        """Smudging a single color with varying opacity changes opacity but not color."""
+        """Smudging a single color with varying opacity changes opacity but not color, wherever 8-bit storage holds
+           the color."""
         self.use_layer(opacity_gradient_image(color=GRADIENT_COLOR))
         self.brush.brush_size = 40
         image = self.gradient_strokes()
         self.assert_valid_premultiplied(image)
-        np_image = image_data_as_numpy_8bit(image.convertToFormat(QImage.Format.Format_ARGB32)).astype(int)
-        visible = np_image[:, :, 3] >= 64
-        expected_bgr = np.array(GRADIENT_COLOR[::-1])
-        color_error = np.abs(np_image[:, :, :3] - expected_bgr).max(axis=2)[visible].max()
-        self.assertLessEqual(color_error, GRADIENT_COLOR_TOLERANCE)
+        self.assertLessEqual(self.gradient_color_error(image, GRADIENT_MIN_SOURCE_ALPHA), GRADIENT_COLOR_TOLERANCE)
+
+    @pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/203: smudging '
+                                          'builds alpha from nearly transparent pixels whose 8-bit color is lost')
+    def test_smudge_keeps_color_built_from_nearly_transparent_pixels(self) -> None:
+        """Smudging a single color doesn't change it where the stroke builds opacity from nearly transparent
+           pixels."""
+        self.use_layer(opacity_gradient_image(color=GRADIENT_COLOR))
+        self.brush.brush_size = 40
+        image = self.gradient_strokes()
+        self.assertLessEqual(self.gradient_color_error(image, 0), GRADIENT_COLOR_TOLERANCE)
 
     def test_stroke_inside_transparent_area_changes_nothing(self) -> None:
         """Smudging within fully transparent pixels leaves them transparent."""
