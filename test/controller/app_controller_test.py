@@ -231,16 +231,12 @@ class TestAppController(IntraPaintTestCase):
         self.controller.load_image(LAYER_IMAGE)
         self.assertTrue(self.controller._image_stack.has_image)
 
-        # These may work on some systems, but require additional plugins.
-        optional_formats = {'WMF', 'BUFR', 'GRIB', 'EMF', 'PNM'}
 
         sorted_formats = [*IMAGE_WRITE_FORMATS]
         sorted_formats.sort()
         with tempfile.TemporaryDirectory() as save_dir:
             for file_format in sorted_formats:
                 self.controller.load_image(LAYER_IMAGE)
-                if file_format in optional_formats:
-                    continue
                 save_path = os.path.join(save_dir, f'save_test_{file_format}.{file_format.lower()}')
                 test_prompt_str = f'{file_format} R/W test'
                 Cache().set(Cache.PROMPT, test_prompt_str)

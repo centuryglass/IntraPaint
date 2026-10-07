@@ -5,8 +5,12 @@ import tempfile
 import unittest
 
 from PIL import Image, UnidentifiedImageError
+from PySide6.QtWidgets import QApplication
 
 from src.util.visual.image_format_utils import IMAGE_READ_FORMATS, IMAGE_WRITE_FORMATS, load_image, save_image
+
+
+app = QApplication.instance() or QApplication([])
 
 
 def _write_eps_file(directory: str, file_name: str) -> str:
@@ -51,3 +55,26 @@ class TestImageFormatUtils(unittest.TestCase):
                 with self.assertRaises(ValueError, msg=file_name):
                     save_image(image, file_path)
                 self.assertFalse(os.path.exists(file_path), file_name)
+
+    def test_undecodable_formats_unsupported(self) -> None:
+        """Formats Pillow identifies but can't decode or encode aren't offered."""
+        for file_format in ('BUFR', 'GRIB', 'H5', 'HDF', 'MPG', 'MPEG'):
+            self.assertNotIn(file_format, IMAGE_READ_FORMATS)
+            self.assertNotIn(file_format, IMAGE_WRITE_FORMATS)
+        for file_format in ('WMF', 'EMF'):
+            self.assertNotIn(file_format, IMAGE_WRITE_FORMATS)
+            if not hasattr(Image.core, 'drawwmf'):
+                self.assertNotIn(file_format, IMAGE_READ_FORMATS)
+
+    def test_save_and_load_every_format(self) -> None:
+        """Every offered save format saves, and loads again if it is also offered for loading."""
+        image = Image.new('RGBA', (32, 32), (200, 50, 50, 255))
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for file_format in sorted(IMAGE_WRITE_FORMATS - {'ORA'}):
+                with self.subTest(file_format=file_format):
+                    file_path = os.path.join(temp_dir, f'image.{file_format.lower()}')
+                    save_image(image, file_path)
+                    self.assertTrue(os.path.isfile(file_path))
+                    if file_format in IMAGE_READ_FORMATS:
+                        loaded_image, _, _ = load_image(file_path)
+                        self.assertFalse(loaded_image.isNull())
