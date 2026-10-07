@@ -503,6 +503,8 @@ class ImageStack(QObject):
             def _undo_resize(size=last_size, sel_state=selection_state, stack_state=layer_state):
                 self.size = size
                 self._layer_stack.restore_state(stack_state)
+                # restore_state reinserts deleted layers without updating z-values.
+                self._update_z_values()
                 self._selection_layer.restore_state(sel_state)
 
             UndoStack().commit_action(_resize, _undo_resize, 'ImageStack.resize_canvas')
@@ -594,7 +596,7 @@ class ImageStack(QObject):
             image_data = create_transparent_image(self.size)
         layer = self._create_layer_internal(layer_name, image_data)
         if transform is not None:
-            layer.transform = transform
+            layer.set_transform(transform)
 
         @self._with_batch_content_update
         def _create_new(parent=layer_parent, new_layer=layer, i=layer_index) -> None:
@@ -678,7 +680,8 @@ class ImageStack(QObject):
             return
         assert layer.layer_parent is not None and layer.layer_parent.contains(layer)
         layer_parent = cast(LayerGroup, layer.layer_parent)
-        layer_parent, layer_index = self._get_new_layer_placement(layer_parent)
+        layer_index = layer_parent.get_layer_index(layer)
+        assert layer_index is not None
         layer_copy = layer.copy()
         layer_copy.set_name(layer.name + ' copy')
 
@@ -1306,10 +1309,10 @@ class ImageStack(QObject):
     def paste(self) -> None:
         """If the copy buffer contains image data, paste it into a new layer."""
         if self._copy_buffer is not None:
-            new_layer = self.create_layer('Paste layer', self._copy_buffer.copy())
-            if self._copy_buffer_transform is not None:
-                new_layer.set_transform(self._copy_buffer_transform)
-            self.active_layer = new_layer
+            with UndoStack().combining_actions('ImageStack.paste'):
+                new_layer = self.create_layer('Paste layer', self._copy_buffer.copy(),
+                                              transform=self._copy_buffer_transform)
+                self.active_layer = new_layer
 
     def set_generation_area_content(self,
                                     image_data: QImage,
