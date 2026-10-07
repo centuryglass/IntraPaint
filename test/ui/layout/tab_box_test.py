@@ -145,3 +145,16 @@ class TabBoxTest(IntraPaintTestCase):
         self.box.is_open = False
         self.assertEqual(self.layout.stretch(2), 30)
         self.assertEqual(self._stretches(), (1, 69))
+
+    def test_hidden_items_keep_their_stretch(self) -> None:
+        """Stretch hand-off skips hidden items, so a hidden widget can't collect stretch it can't use."""
+        hidden = QWidget()
+        self.layout.addWidget(hidden, stretch=30)
+        hidden.hide()
+        self.layout.setStretch(0, 20)
+        self.layout.setStretch(1, 50)
+        self.box.add_widget(self._tab('tab'))
+        finish_open(self.box)
+        self.box.is_open = False
+        self.assertEqual(self.layout.stretch(2), 30)
+        self.assertEqual(self._stretches(), (1, 69))

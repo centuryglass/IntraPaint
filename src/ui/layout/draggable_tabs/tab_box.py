@@ -14,7 +14,6 @@ from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget, QSizePolicy, QB
 from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.layout.draggable_tabs.tab_bar import TabBar
-from src.util.layout import extract_layout_item
 
 EMPTY_MARGIN = 0
 NONEMPTY_MARGIN = 2
@@ -168,7 +167,10 @@ class TabBox(BorderedWidget):
         return super().minimumSizeHint() if self.is_open else self._tab_bar.minimumSizeHint()
 
     def _update_stretch_on_toggle(self, _=None) -> None:
-        """Relinquish stretch when closed, reclaim it when opened"""
+        """Relinquish stretch when closed, reclaim it when opened.
+
+        Hidden items and other bordered widgets (including other tab boxes) never give or take stretch.
+        """
         parent = self.parentWidget()
         if parent is None:
             return
@@ -182,9 +184,10 @@ class TabBox(BorderedWidget):
         for i in range(parent_layout.count()):
             stretch = parent_layout.stretch(i)
             total_stretch += stretch
-            widget = extract_layout_item(parent_layout.itemAt(i))
+            layout_item = parent_layout.itemAt(i)
+            widget = layout_item.widget() if layout_item is not None else None
             stretch_values.append(stretch)
-            if isinstance(widget, BorderedWidget):
+            if layout_item is None or layout_item.isEmpty() or isinstance(widget, BorderedWidget):
                 skipped_indexes.add(i)
             if widget == self:
                 own_idx = i
