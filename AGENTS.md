@@ -161,8 +161,9 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
     `QT_QPA_PLATFORM=xcb pytest ...` to watch a test render.
   - creates the config singletons from temporary copies of `test/resources/*_test.json` before collection, so tests
     can't rewrite the committed fixtures.
-  - applies the fixture's style, theme and font size (`src/ui/theme.py`), so text metrics and palette colors are the
-    same on every machine. A test that switches theme restores `THEME_INK` afterwards.
+  - applies the fixture's style, theme and font size (`src/ui/theme.py`), and on Linux hides the system's fonts from Qt,
+    so text metrics and palette colors are the same on every machine. A test that switches theme restores `THEME_INK`
+    afterwards.
   - fails any test that opens a modal dialog or menu, which would otherwise block forever offscreen. Mock the dialog,
     or avoid the code path.
 - **Tests extend `IntraPaintTestCase`** (`test/base_test_case.py`), in files named `<name>_test.py` under `test/`. Its
@@ -170,6 +171,10 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
   Tests share one process, so a test that changes any other singleton resets it too.
 - **Golden images go through `assert_image_matches_golden`**, and JSON snapshots through
   `assert_json_matches_snapshot`, both in `test/base_test_case.py`. Its module docstring covers updating either.
+- **Style and panel layouts are pinned.** `test/ui/style_gallery_test.py` compares each standard control's states with
+  text-free goldens, and `test/ui/panel_layout_test.py` snapshots each panel's layout problems at extreme sizes, so a
+  change to the style, theme, fonts or any panel's layout can fail them. `python scripts/capture_ui.py` saves the same
+  renders as images. `test/ui/ui_capture.py` describes both.
 - **Stable Diffusion requests are pinned by snapshots.** `test/controller/image_generation/` compares what the WebUI
   and ComfyUI generators send with `test/resources/sd_request_snapshots/`, so a change under `src/api/` or to those
   generators can fail it. A PR that changes a snapshot explains the diff.

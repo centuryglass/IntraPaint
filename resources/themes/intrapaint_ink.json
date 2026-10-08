@@ -1,10 +1,13 @@
 {
     "font": {
         "family": "IBM Plex Sans",
+        "fallback_families": ["IBM Plex Math", "Noto Sans Math"],
         "files": [
             "resources/fonts/IBMPlexSans-Regular.ttf",
             "resources/fonts/IBMPlexSans-Medium.ttf",
-            "resources/fonts/IBMPlexSans-SemiBold.ttf"
+            "resources/fonts/IBMPlexSans-SemiBold.ttf",
+            "resources/fonts/IBMPlexMath-Regular.ttf",
+            "resources/fonts/NotoSansMath-Regular.ttf"
         ],
         "features": {
             "zero": 1

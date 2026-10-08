@@ -51,13 +51,17 @@ def _app() -> QApplication:
 def load_theme_font(font_data: dict[str, Any]) -> Optional[QFont]:
     """Registers a theme's font files and returns its font, or None if any file fails to load.
 
-    The font has no size: callers keep the application's current point size.
+    The font has no size: callers keep the application's current point size. Characters `family` lacks come from
+    `fallback_families`, in order. A character none of them has comes from a system font, so its width depends on the
+    platform: the fallbacks need to cover every symbol the interface draws, such as the key symbols in
+    `src/util/visual/text_drawing_utils.py`.
     """
     for font_file in font_data['files']:
         if QFontDatabase.addApplicationFont(os.path.join(PROJECT_DIR, font_file)) < 0:
             logger.error(f'Failed to load theme font file {font_file}, keeping the system font')
             return None
     font = QFont(font_data['family'])
+    font.setFamilies([font_data['family'], *font_data.get('fallback_families', [])])
     # Hinting only vertical positions keeps glyph advances, and so text widths, the same on every platform:
     font.setHintingPreference(QFont.HintingPreference.PreferVerticalHinting)
     for feature, value in font_data.get('features', {}).items():

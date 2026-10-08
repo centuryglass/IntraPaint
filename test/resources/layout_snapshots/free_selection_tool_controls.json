@@ -1,0 +1,72 @@
+{
+  "minimum": {
+    "problems": [
+      "squeezed: ReflowingButtonGroup is 201x30, minimum 126x70",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 201x10, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 201x10, minimum 126x30",
+      "squeezed: DualToggle/Label 'Select' is 89x27, minimum 84x29",
+      "squeezed: DualToggle/Label 'Deselect' is 89x27, minimum 98x29"
+    ],
+    "size": [
+      219,
+      90
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "squeezed: ReflowingButtonGroup is 91x30, minimum 126x70",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 91x10, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 91x10, minimum 126x30",
+      "squeezed: DualToggle/Label 'Select' is 34x27, minimum 84x29",
+      "squeezed: DualToggle/Label 'Deselect' is 34x27, minimum 98x29"
+    ],
+    "size": [
+      109,
+      90
+    ]
+  },
+  "preferred": {
+    "problems": [
+      "squeezed: DualToggle/Label 'Select' is 107x27, minimum 84x29",
+      "squeezed: DualToggle/Label 'Deselect' is 107x27, minimum 98x29"
+    ],
+    "size": [
+      256,
+      90
+    ]
+  },
+  "short": {
+    "problems": [
+      "squeezed: ReflowingButtonGroup is 238x6, minimum 126x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 102x6, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 126x6, minimum 126x30",
+      "squeezed: DualToggle/Label 'Select' is 107x6, minimum 84x29",
+      "squeezed: DualToggle/Label 'Deselect' is 107x6, minimum 98x29",
+      "squeezed: KeyHintLabel 'Q' is 16x6, minimum 15x21"
+    ],
+    "size": [
+      256,
+      45
+    ]
+  },
+  "tall": {
+    "problems": [
+      "squeezed: DualToggle/Label 'Select' is 107x27, minimum 84x29",
+      "squeezed: DualToggle/Label 'Deselect' is 107x27, minimum 98x29"
+    ],
+    "size": [
+      256,
+      1200
+    ]
+  },
+  "wide": {
+    "problems": [
+      "squeezed: DualToggle/Label 'Select' is 779x27, minimum 84x29",
+      "squeezed: DualToggle/Label 'Deselect' is 779x27, minimum 98x29"
+    ],
+    "size": [
+      1600,
+      90
+    ]
+  }
+}
