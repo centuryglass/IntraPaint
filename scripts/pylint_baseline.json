@@ -190,8 +190,7 @@
     "unused-argument": 3
   },
   "src/ui/panel/mypaint_brush_panel.py": {
-    "consider-iterating-dictionary": 1,
-    "unnecessary-negation": 1
+    "consider-iterating-dictionary": 1
   },
   "src/ui/panel/tool_control_panels/generation_area_tool_panel.py": {
     "no-member": 1,
