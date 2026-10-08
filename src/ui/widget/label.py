@@ -99,7 +99,7 @@ class Label(QLabel):
         self.update()
 
     def sizeHint(self) -> QSize:
-        """Calculate ideal widget size based on text size."""
+        """Returns the text and icon image size, plus the frame around it unless text scales to the bounds."""
         assert self._image is not None
         if self._scale_text_to_bounds:
             text_size = find_text_size(self._text or '', self._font)
@@ -108,7 +108,7 @@ class Label(QLabel):
             if self._orientation == Qt.Orientation.Vertical:
                 text_size.transpose()
             return text_size
-        return QSize(self._image.width(), self._image.height())
+        return self._image.size().grownBy(self.contentsMargins())
 
     def text(self) -> str:
         """Return the current displayed string"""
