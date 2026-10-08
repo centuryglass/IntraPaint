@@ -9,10 +9,10 @@
   "narrow": {
     "problems": [
       "overlap: ColorPairWidget and CheckBox 'Paint selection only' share 1x22",
-      "squeezed: QLabel 'Size:' is 25x30, minimum 28x17",
-      "squeezed: IntSliderSpinbox is 25x30, minimum 72x30",
-      "squeezed: IntSliderSpinbox/QSlider is 8x23, minimum 12x23",
-      "squeezed: IntSliderSpinbox/QSpinBox is 8x26, minimum 50x26",
+      "squeezed: QLabel 'Size:' is 23x30, minimum 28x17",
+      "squeezed: IntSliderSpinbox is 23x30, minimum 72x30",
+      "squeezed: IntSliderSpinbox/QSlider is 7x23, minimum 12x23",
+      "squeezed: IntSliderSpinbox/QSpinBox is 7x26, minimum 50x26",
       "squeezed: CheckBox 'Paint selection only' is 41x22, minimum 140x22",
       "squeezed: MypaintBrushPanel is 88x141, minimum 127x87"
     ],
@@ -31,8 +31,10 @@
   "short": {
     "problems": [
       "overlap: ColorPairWidget and MypaintBrushPanel share 48x21",
-      "squeezed: IntSliderSpinbox is 163x21, minimum 72x30",
-      "squeezed: IntSliderSpinbox/QSlider is 103x17, minimum 12x23",
+      "squeezed: KeyHintLabel '[' is 13x21, minimum 13x22",
+      "squeezed: KeyHintLabel ']' is 12x21, minimum 12x22",
+      "squeezed: IntSliderSpinbox is 160x21, minimum 72x30",
+      "squeezed: IntSliderSpinbox/QSlider is 100x17, minimum 12x23",
       "squeezed: IntSliderSpinbox/QSpinBox is 50x17, minimum 50x26",
       "squeezed: CheckBox 'Paint selection only' is 177x21, minimum 140x22",
       "squeezed: MypaintBrushPanel is 231x21, minimum 127x87"

@@ -343,7 +343,7 @@ class TextToolPanel(QWidget):
             self._layout.addWidget(self._checkbox_label, 0, 3)
             self._layout.addWidget(self._checkbox_scroll, 1, 3, 6, 1)
 
-            self._layout.addWidget(self._preview, 0, 4, 4, 4, Qt.AlignmentFlag.AlignCenter)
+            self._layout.addWidget(self._preview, 0, 4, 3, 4, Qt.AlignmentFlag.AlignCenter)
             self._layout.addWidget(self._text_box, 3, 4, 3, 4)
             self._layout.addWidget(self._font_size_slider, 6, 4, 1, 3)
             self._layout.addWidget(self._size_type_dropdown, 6, 7)

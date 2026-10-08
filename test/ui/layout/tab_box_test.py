@@ -56,13 +56,15 @@ class TabBoxTest(IntraPaintTestCase):
         self.assertFalse(tab.content_widget.isHidden())
 
     def test_closed_box_hides_content(self) -> None:
-        """Closing hides the content widget, and the size hint shrinks to the tab bar's."""
+        """Closing hides the content widget, and the size hint shrinks to the tab bar and the box's margins."""
         tab = self._tab('tab')
         self.box.add_widget(tab)
         finish_open(self.box)
         self.box.is_open = False
         self.assertTrue(tab.content_widget.isHidden())
-        self.assertEqual(self.box.sizeHint(), self.box._tab_bar.sizeHint())  # pylint: disable=protected-access
+        bar_hint = self.box._tab_bar.sizeHint()  # pylint: disable=protected-access
+        margins = self.box.contentsMargins() + self.box.layout().contentsMargins()
+        self.assertEqual(self.box.sizeHint(), bar_hint.grownBy(margins))
 
     def test_switching_tabs_swaps_content(self) -> None:
         """Activating another tab replaces the displayed content widget."""

@@ -145,6 +145,17 @@ class SelectionPanel(QWidget):
         cache.connect(self, Cache.EDIT_MODE, _update_clear_pins_visibility)
         _update_clear_pins_visibility()
 
+    def minimumSizeHint(self) -> QSize:
+        """Returns the layout's minimum width, and the height its contents need at that width.
+
+        The button group stacks its buttons below the width of one row, so the panel is taller at its minimum width
+        than its layout's minimum size says.
+        """
+        hint = super().minimumSizeHint()
+        if self._layout.hasHeightForWidth():
+            hint.setHeight(max(hint.height(), self._layout.totalHeightForWidth(hint.width())))
+        return hint
+
     def insert_into_layout(self, layout_item: QWidget | QLayout, stretch=0) -> None:
         """Insert an item into the layout above all default items but below previously inserted content."""
         if isinstance(layout_item, QWidget):

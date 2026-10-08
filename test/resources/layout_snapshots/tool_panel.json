@@ -1,12 +1,6 @@
 {
   "minimum": {
-    "problems": [
-      "squeezed: ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
-      "squeezed: ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
-      "squeezed: ToolButton[5]/KeyHintLabel 'M' is 15x22, minimum 16x22",
-      "squeezed: ToolButton[13]/KeyHintLabel 'R' is 14x22, minimum 15x22",
-      "squeezed: ToolButton[14]/KeyHintLabel 'A' is 15x22, minimum 16x22"
-    ],
+    "problems": [],
     "size": [
       402,
       467
@@ -37,26 +31,21 @@
       "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/CheckBox 'Draw in selection only' is 71x22, minimum 154x22",
       "squeezed: QTabWidget is 197x282, minimum 298x282",
       "squeezed: ToolButton[0] is 23x48, minimum 48x48",
-      "squeezed: ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
       "squeezed: ToolButton[1] is 23x48, minimum 48x48",
       "squeezed: ToolButton[2] is 23x48, minimum 48x48",
       "squeezed: ToolButton[3] is 23x48, minimum 48x48",
-      "squeezed: ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
       "squeezed: ToolButton[4] is 23x48, minimum 48x48",
       "squeezed: ToolButton[5] is 23x48, minimum 48x48",
-      "squeezed: ToolButton[5]/KeyHintLabel 'M' is 15x22, minimum 16x22",
       "squeezed: ToolButton[6] is 23x48, minimum 48x48",
       "squeezed: ToolButton[7] is 22x48, minimum 48x48",
       "squeezed: ToolButton[8] is 23x48, minimum 48x48",
       "squeezed: ToolButton[9] is 23x48, minimum 48x48",
-      "clipped: ToolButton[9]/KeyHintLabel '\u21e7+S' shows 23x22 of 29x22",
+      "clipped: ToolButton[9]/KeyHintLabel '\u21e7+S' shows 23x22 of 31x22",
       "squeezed: ToolButton[10] is 23x48, minimum 48x48",
       "squeezed: ToolButton[11] is 23x48, minimum 48x48",
       "squeezed: ToolButton[12] is 23x48, minimum 48x48",
       "squeezed: ToolButton[13] is 23x48, minimum 48x48",
-      "squeezed: ToolButton[13]/KeyHintLabel 'R' is 14x22, minimum 15x22",
       "squeezed: ToolButton[14] is 23x48, minimum 48x48",
-      "squeezed: ToolButton[14]/KeyHintLabel 'A' is 15x22, minimum 16x22",
       "squeezed: ToolButton[15] is 22x48, minimum 48x48"
     ],
     "size": [
@@ -65,13 +54,7 @@
     ]
   },
   "preferred": {
-    "problems": [
-      "squeezed: ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
-      "squeezed: ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
-      "squeezed: ToolButton[5]/KeyHintLabel 'M' is 15x22, minimum 16x22",
-      "squeezed: ToolButton[13]/KeyHintLabel 'R' is 14x22, minimum 15x22",
-      "squeezed: ToolButton[14]/KeyHintLabel 'A' is 15x22, minimum 16x22"
-    ],
+    "problems": [],
     "size": [
       402,
       546
@@ -102,14 +85,11 @@
       "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/CheckBox 'Draw in selection only' is 71x22, minimum 154x22",
       "squeezed: QTabWidget is 398x73, minimum 298x282",
       "squeezed: ToolButton[0] is 48x36, minimum 48x48",
-      "squeezed: ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
       "squeezed: ToolButton[1] is 48x36, minimum 48x48",
       "squeezed: ToolButton[2] is 48x36, minimum 48x48",
       "squeezed: ToolButton[3] is 48x36, minimum 48x48",
-      "squeezed: ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
       "squeezed: ToolButton[4] is 48x36, minimum 48x48",
       "squeezed: ToolButton[5] is 48x36, minimum 48x48",
-      "squeezed: ToolButton[5]/KeyHintLabel 'M' is 15x22, minimum 16x22",
       "squeezed: ToolButton[6] is 48x36, minimum 48x48",
       "squeezed: ToolButton[7] is 48x36, minimum 48x48",
       "squeezed: ToolButton[8] is 48x35, minimum 48x48",
@@ -118,9 +98,7 @@
       "squeezed: ToolButton[11] is 48x35, minimum 48x48",
       "squeezed: ToolButton[12] is 48x35, minimum 48x48",
       "squeezed: ToolButton[13] is 48x35, minimum 48x48",
-      "squeezed: ToolButton[13]/KeyHintLabel 'R' is 14x22, minimum 15x22",
       "squeezed: ToolButton[14] is 48x35, minimum 48x48",
-      "squeezed: ToolButton[14]/KeyHintLabel 'A' is 15x22, minimum 16x22",
       "squeezed: ToolButton[15] is 48x35, minimum 48x48"
     ],
     "size": [
@@ -129,26 +107,14 @@
     ]
   },
   "tall": {
-    "problems": [
-      "squeezed: ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
-      "squeezed: ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
-      "squeezed: ToolButton[5]/KeyHintLabel 'M' is 15x22, minimum 16x22",
-      "squeezed: ToolButton[13]/KeyHintLabel 'R' is 14x22, minimum 15x22",
-      "squeezed: ToolButton[14]/KeyHintLabel 'A' is 15x22, minimum 16x22"
-    ],
+    "problems": [],
     "size": [
       402,
       1638
     ]
   },
   "wide": {
-    "problems": [
-      "squeezed: ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
-      "squeezed: ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
-      "squeezed: ToolButton[5]/KeyHintLabel 'M' is 15x22, minimum 16x22",
-      "squeezed: ToolButton[13]/KeyHintLabel 'R' is 14x22, minimum 15x22",
-      "squeezed: ToolButton[14]/KeyHintLabel 'A' is 15x22, minimum 16x22"
-    ],
+    "problems": [],
     "size": [
       1600,
       546

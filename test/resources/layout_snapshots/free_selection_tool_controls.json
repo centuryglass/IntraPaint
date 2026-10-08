@@ -1,25 +1,21 @@
 {
   "minimum": {
-    "problems": [
-      "squeezed: ReflowingButtonGroup is 219x30, minimum 126x70",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 219x10, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 219x10, minimum 126x30"
-    ],
+    "problems": [],
     "size": [
-      237,
-      92
+      239,
+      132
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 100x30, minimum 126x70",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 100x10, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 100x10, minimum 126x30",
+      "squeezed: ReflowingButtonGroup is 101x30, minimum 126x70",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 101x10, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 101x10, minimum 126x30",
       "squeezed: DualToggle/Label 'Select' is 38x29, minimum 84x29",
       "squeezed: DualToggle/Label 'Deselect' is 38x29, minimum 98x29"
     ],
     "size": [
-      118,
+      119,
       92
     ]
   },
@@ -32,16 +28,16 @@
   },
   "short": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 238x7, minimum 126x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 102x7, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 126x7, minimum 126x30",
-      "squeezed: DualToggle/Label 'Select' is 107x7, minimum 84x29",
-      "squeezed: DualToggle/Label 'Deselect' is 107x7, minimum 98x29",
-      "squeezed: KeyHintLabel 'Q' is 16x7, minimum 15x21"
+      "squeezed: ReflowingButtonGroup is 238x17, minimum 126x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 102x17, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 126x17, minimum 126x30",
+      "squeezed: DualToggle/Label 'Select' is 106x17, minimum 84x29",
+      "squeezed: DualToggle/Label 'Deselect' is 106x17, minimum 98x29",
+      "squeezed: KeyHintLabel 'Q' is 17x17, minimum 17x22"
     ],
     "size": [
       256,
-      46
+      66
     ]
   },
   "tall": {
