@@ -84,6 +84,8 @@ class TransformLayer(Layer):
         painter = QPainter(image)
         paint_transform = layer_transform * QTransform.fromTranslate(-offset.x(), -offset.y())
         painter.setTransform(paint_transform)
+        if transform_needs_smooth_sampling(paint_transform):
+            painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
         painter.drawImage(self.bounds, self.get_qimage())
         painter.end()
         return image, final_transform

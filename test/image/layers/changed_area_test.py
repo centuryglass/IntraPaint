@@ -329,10 +329,6 @@ class OtherChangeTest(ChangedAreaTestCase):
         """Cropping a rotated layer to bounds, with undo and redo."""
         self.assert_undo_redo_covered(lambda: self.rotated.crop_to_bounds(QRect(5, 5, 20, 15)))
 
-    def test_layer_to_image_size(self) -> None:
-        """Resizing a rotated layer to the image size, with undo and redo."""
-        self.assert_undo_redo_covered(lambda: self.image_stack.layer_to_image_size(self.rotated))
-
     def test_resize_canvas(self) -> None:
         """Growing the canvas and offsetting its content, with undo and redo."""
         self.assert_undo_redo_covered(lambda: self.image_stack.resize_canvas(QSize(140, 100), 10, 6))

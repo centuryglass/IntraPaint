@@ -70,6 +70,8 @@ ERROR_MESSAGE_LOCKED_LAYER = _tr('Unlock the layer before attempting any changes
 
 ERROR_TITLE_MERGE_FAILED = _tr('Merging layers failed')
 ERROR_MESSAGE_HIDDEN_LAYER_MERGE = _tr('Only visible layers can be merged.')
+ERROR_TITLE_FLATTEN_FAILED = _tr('Flattening layer failed')
+ERROR_MESSAGE_HIDDEN_LAYER_FLATTEN = _tr('Only visible layers can be flattened.')
 ERROR_MESSAGE_GROUP_MERGE_BLOCKED = _tr('The layer below is a layer group, flatten the group into a single image layer'
                                         ' first.')
 
@@ -852,8 +854,9 @@ class ImageStack(QObject):
     def layer_is_flat(layer: Layer) -> bool:
         """Returns true if calling flatten_layer on a layer would do nothing."""
         if isinstance(layer, ImageLayer):
+            transform = layer.transform
             return layer.composition_mode == CompositeMode.NORMAL and layer.opacity == 1.0 \
-                and layer.transform == QTransform.fromTranslate(layer.bounds.x(), layer.bounds.y())
+                and transform == QTransform.fromTranslate(round(transform.dx()), round(transform.dy()))
         if isinstance(layer, LayerGroup):
             return layer.count == 0
         return False
@@ -868,13 +871,19 @@ class ImageStack(QObject):
 
         The goal is to simplify a layer's properties while leaving the final image as close to unchanged as possible.
         Note that this isn't totally possible in some cases, it doesn't work with some composition modes.
+        Hidden layers can't be flattened.
 
-        TODO: Color accuracy has issues when both the top and base are partially transparent, look into reverse
+        TODO: Color accuracy has issues when both the top and base are partially transparent (see
+              https://github.com/centuryglass/IntraPaint/issues/237), look into reverse
               composition further and see if this can be improved.
         """
         if layer is None:
             layer = self.active_layer
         if not self.validate_layer_showing_errors(layer):
+            return
+        # The replacement layer is rendered from the parent, which leaves out hidden layers.
+        if not layer.visible:
+            show_error_dialog(None, ERROR_TITLE_FLATTEN_FAILED, ERROR_MESSAGE_HIDDEN_LAYER_FLATTEN)
             return
         parent = layer.layer_parent
         assert isinstance(parent, LayerGroup)
@@ -1151,59 +1160,60 @@ class ImageStack(QObject):
     def layer_to_image_size(self, layer: Optional[Layer] = None) -> None:
         """Resizes a layer to match the image size. Out-of-bounds content is cropped, new content is transparent.
 
+        A layer group resizes each unlocked image layer it contains, as one undo step.
+
         Parameters
         ----------
-            layer: ImageLayer | int | None, default=None
-                The layer object to copy, or its id. If None, the active layer will be used.
+            layer: Layer | None, default=None
+                The layer or group to resize. If None, the active layer will be used.
         """
         if layer is None:
             layer = self.active_layer
         if not self.validate_layer_showing_errors(layer):
             return
         with UndoStack().combining_actions('ImageStack.layer_to_image_size'):
-            if isinstance(layer, TextLayer):
-                layer_bounds = layer.transformed_bounds
-                if self.bounds.contains(layer_bounds):
-                    return  # No need to alter text layers that are already fully in the image bounds.
-                if TextLayer.confirm_or_cancel_render_to_image([layer.name], ACTION_NAME_LAYER_TO_IMAGE_SIZE):
-                    layer = self.replace_text_layer_with_image(layer)
-            if not isinstance(layer, ImageLayer):
-                assert isinstance(layer, LayerGroup)
-                layers = layer.recursive_child_layers
-                for child_layer in layers:
+            if isinstance(layer, LayerGroup):
+                for child_layer in layer.recursive_child_layers:
                     if child_layer.locked or child_layer.parent_locked or not isinstance(child_layer, ImageLayer):
                         continue
-                    self.layer_to_image_size(child_layer)
+                    self._layer_to_image_size_internal(child_layer)
+            else:
+                self._layer_to_image_size_internal(layer)
+
+    def _layer_to_image_size_internal(self, layer: Layer) -> None:
+        """Resizes one unlocked image or text layer to match the image size, committing to the open undo group. Text
+        layers outside the image bounds are converted to image layers if the user confirms."""
+        if isinstance(layer, TextLayer):
+            if self.bounds.contains(layer.transformed_bounds):
+                return  # No need to alter text layers that are already fully in the image bounds.
+            if not TextLayer.confirm_or_cancel_render_to_image([layer.name], ACTION_NAME_LAYER_TO_IMAGE_SIZE):
                 return
-            layer_image_bounds = layer.transformed_bounds
-            image_bounds = self.bounds
-            if layer_image_bounds == image_bounds or layer.locked or layer.parent_locked:
-                show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
-                return
-            base_state = layer.save_state()
-            layer_image, offset_transform = layer.transformed_image()
-            layer_position = QPoint(int(offset_transform.dx()), int(offset_transform.dy()))
-            resized_image = create_transparent_image(self.size)
-            painter = QPainter(resized_image)
-            painter.drawImage(QRect(layer_position, layer_image.size()), layer_image)
-            painter.end()
-            content_changed = layer.visible and not layer.empty
+            layer = self.replace_text_layer_with_image(layer)
+        assert isinstance(layer, ImageLayer)
+        if layer.transformed_bounds == self.bounds:
+            return
+        base_state = layer.save_state()
+        layer_image, offset_transform = layer.transformed_image()
+        layer_position = QPoint(int(offset_transform.dx()), int(offset_transform.dy()))
+        resized_image = create_transparent_image(self.size)
+        painter = QPainter(resized_image)
+        painter.drawImage(QRect(layer_position, layer_image.size()), layer_image)
+        painter.end()
+        content_changed = layer.visible and not layer.empty
 
-            def _resize(resized=layer, img=resized_image, changed=content_changed) -> None:
-                assert isinstance(resized, ImageLayer)
-                with resized.with_alpha_lock_disabled():
-                    resized.set_image(img)
-                    if isinstance(resized, TransformLayer):
-                        resized.set_transform(QTransform())
-                if changed:
-                    self._emit_content_changed()
+        def _resize(resized=layer, img=resized_image, changed=content_changed) -> None:
+            with resized.with_alpha_lock_disabled():
+                resized.set_image(img)
+                resized.set_transform(QTransform())
+            if changed:
+                self._emit_content_changed()
 
-            def _undo_resize(restored=layer, state=base_state, changed=content_changed) -> None:
-                restored.restore_state(state)
-                if changed:
-                    self._emit_content_changed()
+        def _undo_resize(restored=layer, state=base_state, changed=content_changed) -> None:
+            restored.restore_state(state)
+            if changed:
+                self._emit_content_changed()
 
-            UndoStack().commit_action(_resize, _undo_resize, 'ImageStack.layer_to_image_size')
+        UndoStack().commit_action(_resize, _undo_resize, 'ImageStack.layer_to_image_size')
 
     def get_layer_selection_mask(self, layer: Layer) -> QImage:
         """Transform the selection layer to another layer's local coordinates, crop to bounds, and return the
@@ -1298,13 +1308,13 @@ class ImageStack(QObject):
                 self._copy_buffer, self._copy_buffer_transform, self._copy_buffer_layer_properties = copy_buffer_backup
             if image_is_fully_transparent(selected):
                 return  # cutting selection changes nothing, no need to render to image.
-            if TextLayer.confirm_or_cancel_render_to_image([layer.name], ACTION_NAME_CLEAR_SELECTED):
-                with UndoStack().combining_actions('ImageStack.clear_selected'):
-                    layer = self.replace_text_layer_with_image(layer)
-                    layer.cut_masked(transformed_mask)
-            else:
+            if not TextLayer.confirm_or_cancel_render_to_image([layer.name], ACTION_NAME_CLEAR_SELECTED):
                 self._copy_buffer, self._copy_buffer_transform, self._copy_buffer_layer_properties = copy_buffer_backup
                 return
+            with UndoStack().combining_actions('ImageStack.clear_selected'):
+                layer = self.replace_text_layer_with_image(layer)
+                layer.cut_masked(transformed_mask)
+            return
         if save_to_copy_buffer:
             self.copy_selected(layer, transformed_mask)
         layer.cut_masked(transformed_mask)
