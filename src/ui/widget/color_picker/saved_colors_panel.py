@@ -61,6 +61,10 @@ class _GridScrollArea(QScrollArea):
         """Asks for the full maximum height, so layouts show every row they have room for."""
         return QSize(super().sizeHint().width(), self.maximumHeight())
 
+    def minimumSizeHint(self) -> QSize:
+        """Asks for the minimum height update_height_limits sets, which can be below a scroll area's usual minimum."""
+        return QSize(super().minimumSizeHint().width(), self.minimumHeight())
+
     def resizeEvent(self, event) -> None:
         """Updates the height limits for the new width."""
         super().resizeEvent(event)

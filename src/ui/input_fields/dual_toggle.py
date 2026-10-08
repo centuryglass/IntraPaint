@@ -73,12 +73,11 @@ class DualToggle(QWidget):
         self.update()
 
     def sizeHint(self) -> QSize:
-        """Return ideal size based on orientation and button size."""
+        """Returns room for two equal halves, each as large as the larger option label."""
+        label_size = self.label1.sizeHint().expandedTo(self.label2.sizeHint())
         if self._orientation == Qt.Orientation.Vertical:
-            return QSize(self.label1.sizeHint().width(),
-                         self.label1.sizeHint().height() + self.label2.sizeHint().height() + 2)
-        return QSize(self.label1.sizeHint().width() + self.label2.sizeHint().width() + 2,
-                     self.label1.sizeHint().height())
+            return QSize(label_size.width(), label_size.height() * 2 + 2)
+        return QSize(label_size.width() * 2 + 2, label_size.height())
 
     def resizeEvent(self, unused_event: Optional[QEvent]) -> None:
         """Divide space evenly between the two option buttons on resize."""

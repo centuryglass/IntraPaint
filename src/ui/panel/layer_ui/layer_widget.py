@@ -288,13 +288,10 @@ class LayerWidget(BorderedWidget):
         self._layer.name = new_name
 
     def sizeHint(self) -> QSize:
-        """Returns a reasonable default size."""
+        """Returns the layout's preferred width, capped at MAX_WIDTH but never below the minimum width."""
         text_size = find_text_size(self.layer.name)
-        layer_width = text_size.width()
-        layer_height = text_size.height()
-        layer_width += _preview_size().width() + ICON_SIZE
-        layer_width = min(layer_width, MAX_WIDTH)
-        layer_height = max(layer_height, ICON_SIZE, _preview_size().height(), super().minimumSizeHint().height())
+        layer_width = max(min(super().sizeHint().width(), MAX_WIDTH), super().minimumSizeHint().width())
+        layer_height = max(text_size.height(), ICON_SIZE, _preview_size().height(), super().minimumSizeHint().height())
         return QSize(layer_width, layer_height)
 
     def minimumSizeHint(self) -> QSize:

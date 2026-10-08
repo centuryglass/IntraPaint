@@ -1,96 +1,20 @@
 {
   "minimum": {
-    "problems": [
-      "squeezed: FloatSliderSpinbox[0] is 748x8, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[0]/QLabel 'X:' is 37x4, minimum 12x17",
-      "squeezed: FloatSliderSpinbox[0]/QDoubleSpinBox is 705x4, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[1] is 748x7, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[1]/QLabel 'Y:' is 37x3, minimum 11x17",
-      "squeezed: FloatSliderSpinbox[1]/QDoubleSpinBox is 705x3, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[2] is 748x7, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[2]/QLabel 'Angle:' is 37x3, minimum 37x17",
-      "squeezed: FloatSliderSpinbox[2]/QDoubleSpinBox is 705x3, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[3] is 748x7, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[3]/QLabel 'W:' is 37x3, minimum 16x17",
-      "squeezed: FloatSliderSpinbox[3]/QDoubleSpinBox is 705x3, minimum 102x26",
-      "squeezed: FloatSliderSpinbox[4] is 748x7, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[4]/QLabel 'H:' is 37x3, minimum 13x17",
-      "squeezed: FloatSliderSpinbox[4]/QDoubleSpinBox is 705x3, minimum 102x26",
-      "squeezed: QWidget is 748x7, minimum 129x24",
-      "squeezed: QWidget/CheckBox 'Keep aspect ratio' is 127x5, minimum 127x22",
-      "clipped: QPushButton 'Clear' shows 369x16 of 369x25",
-      "clipped: QPushButton 'Reset' shows 369x16 of 369x25"
-    ],
+    "problems": [],
     "size": [
-      766,
-      128
+      247,
+      357
     ]
   },
   "narrow": {
-    "problems": [
-      "squeezed: FloatSliderSpinbox[0] is 365x23, minimum 229x30",
-      "squeezed: FloatSliderSpinbox[0]/QDoubleSpinBox is 243x19, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[0]/KeyHintLabel '\u2190' is 32x19, minimum 16x21",
-      "squeezed: FloatSliderSpinbox[0]/KeyHintLabel '\u2192' is 32x19, minimum 16x21",
-      "squeezed: FloatSliderSpinbox[1] is 365x22, minimum 229x30",
-      "squeezed: FloatSliderSpinbox[1]/QDoubleSpinBox is 243x18, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[1]/KeyHintLabel '\u2191' is 32x18, minimum 16x21",
-      "squeezed: FloatSliderSpinbox[1]/KeyHintLabel '\u2193' is 32x18, minimum 16x21",
-      "squeezed: FloatSliderSpinbox[2] is 365x23, minimum 229x30",
-      "squeezed: FloatSliderSpinbox[2]/QDoubleSpinBox is 243x19, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[2]/KeyHintLabel 'O' is 32x19, minimum 15x21",
-      "squeezed: FloatSliderSpinbox[2]/KeyHintLabel 'P' is 32x19, minimum 15x21",
-      "squeezed: FloatSliderSpinbox[3] is 365x23, minimum 229x30",
-      "squeezed: FloatSliderSpinbox[3]/QDoubleSpinBox is 243x19, minimum 102x26",
-      "squeezed: FloatSliderSpinbox[3]/KeyHintLabel '\u2303+\u2190' is 32x19, minimum 30x21",
-      "squeezed: FloatSliderSpinbox[3]/KeyHintLabel '\u2303+\u2192' is 32x19, minimum 30x21",
-      "squeezed: FloatSliderSpinbox[4] is 365x22, minimum 229x30",
-      "squeezed: FloatSliderSpinbox[4]/QDoubleSpinBox is 243x18, minimum 102x26",
-      "squeezed: FloatSliderSpinbox[4]/KeyHintLabel '\u2303+\u2193' is 32x18, minimum 30x21",
-      "squeezed: FloatSliderSpinbox[4]/KeyHintLabel '\u2303+\u2191' is 32x18, minimum 30x21",
-      "squeezed: QWidget is 365x22, minimum 146x24",
-      "squeezed: QWidget/CheckBox 'Keep aspect ratio' is 127x20, minimum 127x22",
-      "squeezed: QWidget/KeyHintLabel '\u21e7' is 16x20, minimum 16x21",
-      "squeezed: FloatSliderSpinbox[5] is 365x23, minimum 229x30",
-      "squeezed: FloatSliderSpinbox[5]/QDoubleSpinBox is 243x19, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[6] is 365x22, minimum 229x30",
-      "squeezed: FloatSliderSpinbox[6]/QDoubleSpinBox is 243x18, minimum 107x26"
-    ],
+    "problems": [],
     "size": [
-      383,
+      123,
       300
     ]
   },
   "preferred": {
-    "problems": [
-      "squeezed: FloatSliderSpinbox[0] is 382x23, minimum 229x30",
-      "squeezed: FloatSliderSpinbox[0]/QDoubleSpinBox is 260x19, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[0]/KeyHintLabel '\u2190' is 32x19, minimum 16x21",
-      "squeezed: FloatSliderSpinbox[0]/KeyHintLabel '\u2192' is 32x19, minimum 16x21",
-      "squeezed: FloatSliderSpinbox[1] is 382x22, minimum 229x30",
-      "squeezed: FloatSliderSpinbox[1]/QDoubleSpinBox is 260x18, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[1]/KeyHintLabel '\u2191' is 32x18, minimum 16x21",
-      "squeezed: FloatSliderSpinbox[1]/KeyHintLabel '\u2193' is 32x18, minimum 16x21",
-      "squeezed: FloatSliderSpinbox[2] is 382x23, minimum 229x30",
-      "squeezed: FloatSliderSpinbox[2]/QDoubleSpinBox is 260x19, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[2]/KeyHintLabel 'O' is 32x19, minimum 15x21",
-      "squeezed: FloatSliderSpinbox[2]/KeyHintLabel 'P' is 32x19, minimum 15x21",
-      "squeezed: FloatSliderSpinbox[3] is 382x23, minimum 229x30",
-      "squeezed: FloatSliderSpinbox[3]/QDoubleSpinBox is 260x19, minimum 102x26",
-      "squeezed: FloatSliderSpinbox[3]/KeyHintLabel '\u2303+\u2190' is 32x19, minimum 30x21",
-      "squeezed: FloatSliderSpinbox[3]/KeyHintLabel '\u2303+\u2192' is 32x19, minimum 30x21",
-      "squeezed: FloatSliderSpinbox[4] is 382x22, minimum 229x30",
-      "squeezed: FloatSliderSpinbox[4]/QDoubleSpinBox is 260x18, minimum 102x26",
-      "squeezed: FloatSliderSpinbox[4]/KeyHintLabel '\u2303+\u2193' is 32x18, minimum 30x21",
-      "squeezed: FloatSliderSpinbox[4]/KeyHintLabel '\u2303+\u2191' is 32x18, minimum 30x21",
-      "squeezed: QWidget is 382x22, minimum 146x24",
-      "squeezed: QWidget/CheckBox 'Keep aspect ratio' is 127x20, minimum 127x22",
-      "squeezed: QWidget/KeyHintLabel '\u21e7' is 16x20, minimum 16x21",
-      "squeezed: FloatSliderSpinbox[5] is 382x23, minimum 229x30",
-      "squeezed: FloatSliderSpinbox[5]/QDoubleSpinBox is 260x19, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[6] is 382x22, minimum 229x30",
-      "squeezed: FloatSliderSpinbox[6]/QDoubleSpinBox is 260x18, minimum 107x26"
-    ],
+    "problems": [],
     "size": [
       400,
       300
@@ -98,29 +22,29 @@
   },
   "short": {
     "problems": [
-      "squeezed: FloatSliderSpinbox[0] is 382x2, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[0]/QLabel 'X:' is 37x0, minimum 12x17",
-      "squeezed: FloatSliderSpinbox[0]/QDoubleSpinBox is 339x0, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[1] is 382x2, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[1]/QLabel 'Y:' is 37x0, minimum 11x17",
-      "squeezed: FloatSliderSpinbox[1]/QDoubleSpinBox is 339x0, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[2] is 382x2, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[2]/QLabel 'Angle:' is 37x0, minimum 37x17",
-      "squeezed: FloatSliderSpinbox[2]/QDoubleSpinBox is 339x0, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[3] is 382x2, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[3]/QLabel 'W:' is 37x0, minimum 16x17",
-      "squeezed: FloatSliderSpinbox[3]/QDoubleSpinBox is 339x0, minimum 102x26",
-      "squeezed: FloatSliderSpinbox[4] is 382x1, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[4]/QLabel 'H:' is 37x0, minimum 13x17",
-      "squeezed: FloatSliderSpinbox[4]/QDoubleSpinBox is 339x0, minimum 102x26",
-      "squeezed: QWidget is 382x2, minimum 129x24",
-      "squeezed: QWidget/CheckBox 'Keep aspect ratio' is 127x0, minimum 127x22",
-      "clipped: QPushButton 'Clear' shows 186x10 of 186x25",
-      "clipped: QPushButton 'Reset' shows 186x10 of 186x25"
+      "squeezed: FloatSliderSpinbox[0] is 382x15, minimum 150x30",
+      "squeezed: FloatSliderSpinbox[0]/QLabel 'X:' is 37x11, minimum 12x17",
+      "squeezed: FloatSliderSpinbox[0]/QDoubleSpinBox is 339x11, minimum 107x26",
+      "squeezed: FloatSliderSpinbox[1] is 382x14, minimum 150x30",
+      "squeezed: FloatSliderSpinbox[1]/QLabel 'Y:' is 37x10, minimum 11x17",
+      "squeezed: FloatSliderSpinbox[1]/QDoubleSpinBox is 339x10, minimum 107x26",
+      "squeezed: FloatSliderSpinbox[2] is 382x14, minimum 150x30",
+      "squeezed: FloatSliderSpinbox[2]/QLabel 'Angle:' is 37x10, minimum 37x17",
+      "squeezed: FloatSliderSpinbox[2]/QDoubleSpinBox is 339x10, minimum 107x26",
+      "squeezed: FloatSliderSpinbox[3] is 382x14, minimum 150x30",
+      "squeezed: FloatSliderSpinbox[3]/QLabel 'W:' is 37x10, minimum 16x17",
+      "squeezed: FloatSliderSpinbox[3]/QDoubleSpinBox is 339x10, minimum 102x26",
+      "squeezed: FloatSliderSpinbox[4] is 382x15, minimum 150x30",
+      "squeezed: FloatSliderSpinbox[4]/QLabel 'H:' is 37x11, minimum 13x17",
+      "squeezed: FloatSliderSpinbox[4]/QDoubleSpinBox is 339x11, minimum 102x26",
+      "squeezed: QWidget is 382x14, minimum 129x24",
+      "squeezed: QWidget/CheckBox 'Keep aspect ratio' is 127x12, minimum 127x22",
+      "clipped: QPushButton 'Clear' shows 186x23 of 186x25",
+      "clipped: QPushButton 'Reset' shows 186x23 of 186x25"
     ],
     "size": [
       400,
-      64
+      178
     ]
   },
   "tall": {

@@ -13,7 +13,6 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer, LayerParent
 from src.image.layers.layer_group import LayerGroup
 from src.ui.panel.layer_ui.layer_group_widget import LayerGroupWidget
-from src.ui.panel.layer_ui.layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH
 from src.util.shared_constants import PROJECT_DIR, APP_ICON_PATH, SMALL_ICON_SIZE
 from src.util.visual.palette_icon import palette_icon
 
@@ -124,7 +123,7 @@ class LayerPanel(QWidget):
         self._scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         horizontal_scroll_bar = self._scroll_area.horizontalScrollBar()
         assert horizontal_scroll_bar is not None
-        horizontal_scroll_bar.rangeChanged.connect(self.resizeEvent)
+        horizontal_scroll_bar.rangeChanged.connect(self._update_scroll_area_minimum)
         horizontal_scroll_bar.setMinimum(0)
         horizontal_scroll_bar.setMaximum(0)
         self._scroll_area.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
@@ -169,6 +168,7 @@ class LayerPanel(QWidget):
         self._image_stack.layer_added.connect(self._layer_added_slot)
         self._active_layer_change_slot(self._image_stack.active_layer)
         self._image_stack.layer_order_changed.connect(self._update_order_slot)
+        self._update_scroll_area_minimum()
 
     def _scroll_timer_slot(self) -> None:
         if self._scroll_offset == 0:
@@ -214,10 +214,14 @@ class LayerPanel(QWidget):
         if self._scroll_timer.isActive():
             self._scroll_timer.stop()
 
-    def resizeEvent(self, event):
-        """Keep at least one layer visible, block horizontal scrolling."""
-        self._scroll_area.setMinimumHeight(self._parent_group_item.layer_item.sizeHint().height() + LIST_SPACING)
-        min_scroll_width = self._parent_group_item.sizeHint().width()
+    def _update_scroll_area_minimum(self, *_) -> None:
+        """Keeps the scroll area tall enough for one layer, and wide enough that the layer list never scrolls sideways.
+
+        The panel's size hints come from its layout, so this minimum sets the panel's minimum size too.
+        """
+        min_scroll_height = self._parent_group_item.layer_item.sizeHint().height() + LIST_SPACING
+        self._scroll_area.setMinimumHeight(max(min_scroll_height, self._scroll_area.minimumSizeHint().height()))
+        min_scroll_width = self._parent_group_item.minimumSizeHint().width() + 2 * self._scroll_area.frameWidth()
         vertical_scrollbar = self._scroll_area.verticalScrollBar()
         if vertical_scrollbar is not None:
             min_scroll_width += vertical_scrollbar.sizeHint().width()
@@ -225,27 +229,12 @@ class LayerPanel(QWidget):
         if horizontal_scrollbar is not None:
             horizontal_scrollbar.setRange(0, 0)
         self._scroll_area.setMinimumWidth(min_scroll_width)
+
+    def resizeEvent(self, event):
+        """Refreshes the scroll area minimum, and saves the panel's bounds when it's a separate window."""
+        self._update_scroll_area_minimum()
         if self.isVisible() and self.isWindow():
             Cache().save_bounds(Cache.SAVED_LAYER_WINDOW_POS, self)
-
-    def sizeHint(self) -> QSize:
-        """At minimum, always show one layer."""
-        layer_width = PREVIEW_SIZE.width() + SMALL_ICON_SIZE + 2 * LAYER_PADDING
-        layer_height = max(SMALL_ICON_SIZE, PREVIEW_SIZE.height())
-        width = min(MAX_WIDTH, layer_width + LAYER_PADDING)
-        height = layer_height + LAYER_PADDING
-        scrollbar = self._scroll_area.verticalScrollBar()
-        if scrollbar is not None:
-            width += scrollbar.sizeHint().width()
-
-        bar_size = self._button_bar.sizeHint()
-        height += bar_size.height() + LAYER_PADDING * 2
-        width = max(bar_size.width(), width)
-        return QSize(width, height)
-
-    def minimumSizeHint(self) -> QSize:
-        """At minimum, always show one layer."""
-        return self.sizeHint()
 
     def _update_order_slot(self) -> None:
         self._parent_group_item.reorder_child_layers()
