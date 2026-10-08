@@ -33,7 +33,8 @@ class ImageGraphicsView(QGraphicsView):
 
     def __init__(self, parent: Optional[QWidget] = None, use_keybindings=True) -> None:
         super().__init__(parent)
-        self._scene = QGraphicsScene()
+        # The view owns its scene: deleting the view deletes the scene and every item in it.
+        self._scene = QGraphicsScene(self)
         self._content_size: QSize = QSize(0, 0)
         self._content_rect: Optional[QRect] = None
         self._background: Optional[QPixmap] = None
@@ -452,7 +453,7 @@ class ImageGraphicsView(QGraphicsView):
                                                               and KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER,
                                                                                           True)):
             if self._mouse_navigation_enabled:
-                self._widget_drag_point = event.pos()
+                self._widget_drag_point = event.position().toPoint()
         # A press accepted by a scene item belongs to that item, so filters only see presses the scene ignored.
         handled = False if event.isAccepted() else self._forward_to_event_filters(event)
         return handled if get_result else None
@@ -467,7 +468,7 @@ class ImageGraphicsView(QGraphicsView):
             if (event.buttons() == Qt.MouseButton.MiddleButton or
                     (event.buttons() == Qt.MouseButton.LeftButton
                      and KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER))):
-                mouse_pt = event.pos()
+                mouse_pt = event.position().toPoint()
                 scale = self.scene_scale
                 x_off = (self._widget_drag_point.x() - mouse_pt.x()) / scale
                 y_off = (self._widget_drag_point.y() - mouse_pt.y()) / scale

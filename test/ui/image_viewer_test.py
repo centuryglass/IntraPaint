@@ -1,8 +1,10 @@
-"""Tests ImageViewer's context pin markers."""
+"""Tests ImageViewer's context pin markers and what deleting a viewer releases."""
 import sys
 
-from PySide6.QtCore import QPoint, QSize
+from PySide6.QtCore import QCoreApplication, QEvent, QPoint, QSize
+from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
+import shiboken6
 
 from src.image.layers.image_stack import ImageStack
 from src.ui.graphics_items.context_pin_item import marker_size_for_view, DEFAULT_MARKER_SIZE, MIN_MARKER_SIZE, \
@@ -51,6 +53,27 @@ class ImageViewerContextPinTest(IntraPaintTestCase):
         viewer.resizeEvent(None)
         self.assertEqual(viewer.context_pin_marker_size, MIN_MARKER_SIZE)
         self.assertEqual(viewer._context_pin_items[0].marker_size, MIN_MARKER_SIZE)  # pylint: disable=protected-access
+
+
+class ImageViewerLifetimeTest(IntraPaintTestCase):
+    """Tests that deleting a viewer releases its scene and its layers' connections, while the image stack lives on."""
+
+    def test_delete_releases_scene_and_layer_items(self) -> None:
+        """Deleting a viewer deletes its scene and disconnects its layer items, so layer changes don't reach them."""
+        image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64))
+        layer = image_stack.create_layer()
+        viewer = ImageViewer(None, image_stack, use_keybindings=False)
+        scene = viewer.scene()
+        layer_items = list(viewer._layer_items.values())  # pylint: disable=protected-access
+        self.assertNotEqual(layer_items, [])
+        viewer.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        self.assertFalse(shiboken6.isValid(scene))
+        for layer_item in layer_items:
+            self.assertEqual(layer_item._connections, [])  # pylint: disable=protected-access
+        image = QImage(layer.size, QImage.Format.Format_ARGB32_Premultiplied)
+        image.fill(0xff00ff00)
+        layer.image = image
 
 
 class MarkerSizeForViewTest(IntraPaintTestCase):

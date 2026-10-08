@@ -1,0 +1,104 @@
+{
+  "minimum": {
+    "problems": [],
+    "size": [
+      318,
+      383
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "overlap: QLabel 'Size:' and KeyHintLabel '[' share 6x30",
+      "overlap: IntSliderSpinbox and KeyHintLabel ']' share 14x30",
+      "overlap: QLabel 'Opacity:' and KeyHintLabel '<' share 6x30",
+      "overlap: FloatSliderSpinbox[0] and KeyHintLabel '>' share 14x30",
+      "overlap: QLabel 'Hardness:' and KeyHintLabel '{' share 6x30",
+      "overlap: FloatSliderSpinbox[1] and KeyHintLabel '}' share 14x30",
+      "overlap: QWidget/FloatSliderSpinbox[0]/QSlider and QWidget/FloatSliderSpinbox[0]/QDoubleSpinBox share 54x23",
+      "overlap: QWidget/FloatSliderSpinbox[1]/QSlider and QWidget/FloatSliderSpinbox[1]/QDoubleSpinBox share 54x23",
+      "overlap: QWidget/FloatSliderSpinbox[2]/QSlider and QWidget/FloatSliderSpinbox[2]/QDoubleSpinBox share 54x23",
+      "overlap: QWidget/FloatSliderSpinbox[3]/QSlider and QWidget/FloatSliderSpinbox[3]/QDoubleSpinBox share 54x23",
+      "squeezed: QWidget is 141x220, minimum 300x220",
+      "squeezed: QWidget/QWidget is 123x58, minimum 240x58",
+      "clipped: QWidget/QWidget/ComboBox shows 72x40 of 180x40",
+      "squeezed: QWidget/FloatSliderSpinbox[0] is 123x30, minimum 282x30",
+      "clipped: QWidget/FloatSliderSpinbox[0]/QSlider shows 81x23 of 180x23",
+      "clipped: QWidget/FloatSliderSpinbox[0]/QDoubleSpinBox shows 39x26 of 54x26",
+      "squeezed: QWidget/FloatSliderSpinbox[1] is 123x30, minimum 282x30",
+      "clipped: QWidget/FloatSliderSpinbox[1]/QSlider shows 81x23 of 180x23",
+      "clipped: QWidget/FloatSliderSpinbox[1]/QDoubleSpinBox shows 39x26 of 54x26",
+      "squeezed: QWidget/FloatSliderSpinbox[2] is 123x30, minimum 282x30",
+      "clipped: QWidget/FloatSliderSpinbox[2]/QSlider shows 81x23 of 180x23",
+      "clipped: QWidget/FloatSliderSpinbox[2]/QDoubleSpinBox shows 39x26 of 54x26",
+      "squeezed: QWidget/FloatSliderSpinbox[3] is 123x30, minimum 282x30",
+      "clipped: QWidget/FloatSliderSpinbox[3]/QSlider shows 81x23 of 180x23",
+      "clipped: QWidget/FloatSliderSpinbox[3]/QDoubleSpinBox shows 39x26 of 54x26",
+      "clipped: IntSliderSpinbox shows 76x30 of 148x30",
+      "clipped: IntSliderSpinbox/QSlider shows 72x23 of 88x23",
+      "clipped: IntSliderSpinbox/QSpinBox shows 0x0 of 50x26",
+      "clipped: FloatSliderSpinbox[0] shows 76x30 of 148x30",
+      "clipped: FloatSliderSpinbox[0]/QSlider shows 72x23 of 84x23",
+      "clipped: FloatSliderSpinbox[0]/QDoubleSpinBox shows 0x0 of 54x26",
+      "clipped: FloatSliderSpinbox[1] shows 76x30 of 148x30",
+      "clipped: FloatSliderSpinbox[1]/QSlider shows 72x23 of 84x23",
+      "clipped: FloatSliderSpinbox[1]/QDoubleSpinBox shows 0x0 of 54x26",
+      "squeezed: CheckBox 'Antialiasing' is 68x22, minimum 93x22",
+      "squeezed: CheckBox 'Filter selection only' is 67x22, minimum 141x22"
+    ],
+    "size": [
+      159,
+      383
+    ]
+  },
+  "preferred": {
+    "problems": [],
+    "size": [
+      318,
+      383
+    ]
+  },
+  "short": {
+    "problems": [
+      "squeezed: QWidget is 300x30, minimum 300x220",
+      "squeezed: QWidget/QWidget is 282x0, minimum 240x58",
+      "squeezed: QWidget/QWidget/QLabel 'Filter:' is 36x0, minimum 35x17",
+      "squeezed: QWidget/QWidget/ComboBox is 180x0, minimum 180x40",
+      "squeezed: QWidget/FloatSliderSpinbox[0] is 282x0, minimum 282x30",
+      "squeezed: QWidget/FloatSliderSpinbox[0]/QLabel 'Red' is 36x0, minimum 23x17",
+      "squeezed: QWidget/FloatSliderSpinbox[0]/QSlider is 180x0, minimum 12x23",
+      "squeezed: QWidget/FloatSliderSpinbox[0]/QDoubleSpinBox is 54x0, minimum 54x26",
+      "squeezed: QWidget/FloatSliderSpinbox[1] is 282x0, minimum 282x30",
+      "squeezed: QWidget/FloatSliderSpinbox[1]/QLabel 'Green' is 36x0, minimum 36x17",
+      "squeezed: QWidget/FloatSliderSpinbox[1]/QSlider is 180x0, minimum 12x23",
+      "squeezed: QWidget/FloatSliderSpinbox[1]/QDoubleSpinBox is 54x0, minimum 54x26",
+      "squeezed: QWidget/FloatSliderSpinbox[2] is 282x0, minimum 282x30",
+      "squeezed: QWidget/FloatSliderSpinbox[2]/QLabel 'Blue' is 36x0, minimum 27x17",
+      "squeezed: QWidget/FloatSliderSpinbox[2]/QSlider is 180x0, minimum 12x23",
+      "squeezed: QWidget/FloatSliderSpinbox[2]/QDoubleSpinBox is 54x0, minimum 54x26",
+      "squeezed: QWidget/FloatSliderSpinbox[3] is 282x0, minimum 282x30",
+      "squeezed: QWidget/FloatSliderSpinbox[3]/QLabel 'Alpha' is 36x0, minimum 34x17",
+      "squeezed: QWidget/FloatSliderSpinbox[3]/QSlider is 180x0, minimum 12x23",
+      "squeezed: QWidget/FloatSliderSpinbox[3]/QDoubleSpinBox is 54x0, minimum 54x26",
+      "squeezed: FloatSliderSpinbox[0] is 194x29, minimum 76x30",
+      "squeezed: FloatSliderSpinbox[0]/QDoubleSpinBox is 54x25, minimum 54x26"
+    ],
+    "size": [
+      318,
+      191
+    ]
+  },
+  "tall": {
+    "problems": [],
+    "size": [
+      318,
+      1200
+    ]
+  },
+  "wide": {
+    "problems": [],
+    "size": [
+      1600,
+      383
+    ]
+  }
+}

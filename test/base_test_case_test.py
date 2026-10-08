@@ -4,12 +4,17 @@ import os
 import shutil
 import tempfile
 import unittest
+from unittest.mock import MagicMock
 
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QColor, QImage
+from PySide6.QtCore import QEvent, QSize, Qt
+from PySide6.QtGui import QColor, QImage, QKeyEvent, QKeySequence
+from PySide6.QtWidgets import QApplication, QPushButton, QWidget
+import shiboken6
 
 from src.config.application_config import AppConfig
+from src.hotkey_filter import HotkeyFilter
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_INIT, APP_STATE_LOADING
 from test.base_test_case import (IntraPaintTestCase, PROJECT_ROOT, assert_image_matches_golden, assert_images_equal,
                                  assert_json_matches_snapshot, tested_image_path)
 
@@ -165,6 +170,99 @@ class IntraPaintTestCaseTest(unittest.TestCase):
         self.assertEqual(observed, {'max_undo': default_max_undo, 'undo_count': 0, 'cwd': PROJECT_ROOT})
         self.assertEqual(AppConfig().get(AppConfig.MAX_UNDO), default_max_undo)
         self.assertEqual(UndoStack().undo_count(), 0)
+
+    def test_hotkeys_reset_before_and_after(self) -> None:
+        """Hotkey bindings and modifier connections made outside a test, or inside one, don't outlive it."""
+        hotkey_filter = HotkeyFilter.instance()
+        widget = QWidget()
+        observed: dict[str, int] = {}
+
+        def _press_key_and_change_modifiers() -> None:
+            key_event = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_F12, Qt.KeyboardModifier.NoModifier)
+            QApplication.sendEvent(widget, key_event)
+            hotkey_filter.modifiers_changed.emit(Qt.KeyboardModifier.ShiftModifier)
+
+        outside_hotkey = MagicMock(return_value=True)
+        outside_listener = MagicMock()
+        inside_hotkey = MagicMock(return_value=True)
+        inside_listener = MagicMock()
+
+        class _Case(IntraPaintTestCase):
+            def test_body(self) -> None:
+                """Checks that earlier bindings are gone, then adds its own."""
+                _press_key_and_change_modifiers()
+                observed['outside_hotkey'] = outside_hotkey.call_count
+                observed['outside_listener'] = outside_listener.call_count
+                hotkey_filter.register_keybinding('test.inside', inside_hotkey, QKeySequence(Qt.Key.Key_F12))
+                hotkey_filter.modifiers_changed.connect(inside_listener)
+                hotkey_filter.set_default_focus(widget)
+
+        hotkey_filter.register_keybinding('test.outside', outside_hotkey, QKeySequence(Qt.Key.Key_F12))
+        hotkey_filter.modifiers_changed.connect(outside_listener)
+        result = unittest.TestResult()
+        _Case('test_body').run(result)
+        self.assertTrue(result.wasSuccessful(), result.errors + result.failures)
+        self.assertEqual(observed, {'outside_hotkey': 0, 'outside_listener': 0})
+        _press_key_and_change_modifiers()
+        inside_hotkey.assert_not_called()
+        inside_listener.assert_not_called()
+        self.assertIsNone(hotkey_filter.default_focus())
+
+    def test_state_signals_reset_before_and_after(self) -> None:
+        """Undo count and app state connections made outside a test, or inside one, don't outlive it, and each test
+        starts in the initial app state."""
+        observed: dict[str, object] = {}
+        outside_listener = MagicMock()
+        inside_listener = MagicMock()
+
+        def _change_undo_count_and_state(new_state: str) -> None:
+            UndoStack().commit_action(lambda: None, lambda: None, 'test.signals')
+            UndoStack().undo()
+            AppStateTracker.set_app_state(new_state)
+
+        class _Case(IntraPaintTestCase):
+            def test_body(self) -> None:
+                """Checks that earlier connections are gone, then adds its own."""
+                observed['state'] = AppStateTracker.app_state()
+                _change_undo_count_and_state(APP_STATE_LOADING)
+                observed['outside_listener'] = outside_listener.call_count
+                for signal in (UndoStack().undo_count_changed, UndoStack().redo_count_changed,
+                               AppStateTracker.signal()):
+                    signal.connect(inside_listener)
+
+        for signal in (UndoStack().undo_count_changed, UndoStack().redo_count_changed, AppStateTracker.signal()):
+            signal.connect(outside_listener)
+        AppStateTracker.set_app_state(APP_STATE_EDITING)
+        outside_listener.reset_mock()
+        result = unittest.TestResult()
+        _Case('test_body').run(result)
+        self.assertTrue(result.wasSuccessful(), result.errors + result.failures)
+        self.assertEqual(observed, {'state': APP_STATE_INIT, 'outside_listener': 0})
+        self.assertEqual(AppStateTracker.app_state(), APP_STATE_INIT)
+        _change_undo_count_and_state(APP_STATE_EDITING)
+        inside_listener.assert_not_called()
+
+    def test_widgets_created_in_test_are_deleted(self) -> None:
+        """Parentless widgets a test creates are deleted after it, including one that Python can't collect, while
+        widgets created before it are kept."""
+        widgets: dict[str, QWidget] = {}
+
+        class _Case(IntraPaintTestCase):
+            def test_body(self) -> None:
+                """Creates a plain widget and one kept alive by a closure connected to its child's signal."""
+                widgets['plain'] = QWidget()
+                cycle = QWidget()
+                button = QPushButton(cycle)
+                button.clicked.connect(lambda: cycle.setWindowTitle('clicked'))
+                widgets['cycle'] = cycle
+                widgets['child'] = button
+
+        widgets['outside'] = QWidget()
+        result = unittest.TestResult()
+        _Case('test_body').run(result)
+        self.assertTrue(result.wasSuccessful(), result.errors + result.failures)
+        self.assertEqual({name: shiboken6.isValid(widget) for name, widget in widgets.items()},
+                         {'outside': True, 'plain': False, 'cycle': False, 'child': False})
 
 
 if __name__ == '__main__':

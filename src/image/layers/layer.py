@@ -384,6 +384,16 @@ class Layer(QObject):
         yield
         self._locked = lock_state
 
+    @contextmanager
+    def with_visibility_forced(self) -> Generator[None, None, None]:
+        """Temporarily marks the layer visible without sending signals, so a render can show hidden content."""
+        visible = self._visible
+        self._visible = True
+        try:
+            yield
+        finally:
+            self._visible = visible
+
     # Unimplemented interface:
 
     def get_qimage(self) -> QImage:
@@ -485,12 +495,16 @@ class Layer(QObject):
                 layer_image = image_adjuster(self, layer_image.copy())
             qt_composite_mode = self.composition_mode.qt_composite_mode()
             if qt_composite_mode is None:
+                # Custom ops recompute every pixel in the bounds they're given, so limit them to the layer's area.
                 if transform is not None:
                     composite_transform = transform
+                    layer_bounds = map_rect_precise(self.bounds, transform).toAlignedRect()
+                    composite_bounds = final_bounds.intersected(layer_bounds)
                 else:
                     composite_transform = QTransform.fromTranslate(final_bounds.x(), final_bounds.y())
+                    composite_bounds = final_bounds
                 composite_op = self.composition_mode.custom_composite_op()
-                composite_op(layer_image, base_image, self.opacity, composite_transform, final_bounds)
+                composite_op(layer_image, base_image, self.opacity, composite_transform, composite_bounds)
             else:
                 painter = QPainter(base_image)
                 painter.setOpacity(self.opacity)

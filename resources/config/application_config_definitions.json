@@ -5,8 +5,8 @@
         "subcategory": "Appearance",
         "description": "Qt style to use for the user interface",
         "type": "string",
-        "default": "fusion",
-        "options": ["fusion"],
+        "default": "Fusion",
+        "options": ["Fusion"],
         "saved": true
     },
     "theme": {
@@ -17,6 +17,15 @@
         "type": "string",
         "default": "intrapaint_ink",
         "options": ["intrapaint_ink", "None"],
+        "saved": true
+    },
+    "overlay_scroll_bars": {
+        "label": "Overlay scroll bars:",
+        "category": "Interface",
+        "subcategory": "Appearance",
+        "description": "With the IntraPaint Ink theme, draw thin scroll bars over the content they scroll, instead of beside it.",
+        "type": "bool",
+        "default": true,
         "saved": true
     },
     "font_point_size": {

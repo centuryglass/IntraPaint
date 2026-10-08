@@ -1,0 +1,60 @@
+{
+  "minimum": {
+    "problems": [
+      "squeezed: MypaintBrushPanel is 194x2193, minimum 646x717"
+    ],
+    "size": [
+      212,
+      2310
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "overlap: ColorPairWidget and CheckBox 'Paint selection only' share 1x22",
+      "squeezed: QLabel 'Size:' is 25x30, minimum 28x17",
+      "squeezed: IntSliderSpinbox is 25x30, minimum 72x30",
+      "squeezed: IntSliderSpinbox/QSlider is 8x23, minimum 12x23",
+      "squeezed: IntSliderSpinbox/QSpinBox is 8x26, minimum 50x26",
+      "squeezed: CheckBox 'Paint selection only' is 41x22, minimum 140x22",
+      "squeezed: MypaintBrushPanel is 88x2193, minimum 646x1401"
+    ],
+    "size": [
+      106,
+      2310
+    ]
+  },
+  "preferred": {
+    "problems": [
+      "squeezed: MypaintBrushPanel is 212x2193, minimum 646x489"
+    ],
+    "size": [
+      230,
+      2310
+    ]
+  },
+  "short": {
+    "problems": [
+      "squeezed: MypaintBrushPanel is 212x1038, minimum 646x489"
+    ],
+    "size": [
+      230,
+      1155
+    ]
+  },
+  "tall": {
+    "problems": [
+      "squeezed: MypaintBrushPanel is 212x6813, minimum 646x489"
+    ],
+    "size": [
+      230,
+      6930
+    ]
+  },
+  "wide": {
+    "problems": [],
+    "size": [
+      1600,
+      2310
+    ]
+  }
+}

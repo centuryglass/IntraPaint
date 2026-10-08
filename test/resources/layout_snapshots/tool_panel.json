@@ -1,0 +1,157 @@
+{
+  "minimum": {
+    "problems": [
+      "squeezed: ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
+      "squeezed: ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
+      "squeezed: ToolButton[5]/KeyHintLabel 'M' is 15x22, minimum 16x22",
+      "squeezed: ToolButton[13]/KeyHintLabel 'R' is 14x22, minimum 15x22",
+      "squeezed: ToolButton[14]/KeyHintLabel 'A' is 15x22, minimum 16x22"
+    ],
+    "size": [
+      402,
+      467
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Size:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '[' share 3x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/IntSliderSpinbox and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel ']' share 14x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Opacity:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '<' share 3x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[0] and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '>' share 14x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Hardness:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '{' share 3x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[1] and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '}' share 14x30",
+      "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget is 184x220, minimum 327x220",
+      "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel is 166x202, minimum 309x202",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/IntSliderSpinbox shows 80x30 of 148x30",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/IntSliderSpinbox/QSlider shows 76x23 of 88x23",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/IntSliderSpinbox/QSpinBox shows 0x0 of 50x26",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[0] shows 80x30 of 148x30",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[0]/QSlider shows 76x23 of 84x23",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[0]/QDoubleSpinBox shows 0x0 of 54x26",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[1] shows 80x30 of 148x30",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[1]/QSlider shows 76x23 of 84x23",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[1]/QDoubleSpinBox shows 0x0 of 54x26",
+      "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Pattern:' is 45x48, minimum 47x17",
+      "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FillStyleComboBox is 45x32, minimum 184x32",
+      "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/CheckBox 'Antialiasing' is 71x22, minimum 93x22",
+      "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/CheckBox 'Draw in selection only' is 71x22, minimum 154x22",
+      "squeezed: QTabWidget is 197x282, minimum 273x282",
+      "squeezed: ToolButton[0] is 23x48, minimum 48x48",
+      "squeezed: ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
+      "squeezed: ToolButton[1] is 23x48, minimum 48x48",
+      "squeezed: ToolButton[2] is 23x48, minimum 48x48",
+      "squeezed: ToolButton[3] is 23x48, minimum 48x48",
+      "squeezed: ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
+      "squeezed: ToolButton[4] is 23x48, minimum 48x48",
+      "squeezed: ToolButton[5] is 23x48, minimum 48x48",
+      "squeezed: ToolButton[5]/KeyHintLabel 'M' is 15x22, minimum 16x22",
+      "squeezed: ToolButton[6] is 23x48, minimum 48x48",
+      "squeezed: ToolButton[7] is 22x48, minimum 48x48",
+      "squeezed: ToolButton[8] is 23x48, minimum 48x48",
+      "squeezed: ToolButton[9] is 23x48, minimum 48x48",
+      "clipped: ToolButton[9]/KeyHintLabel '\u21e7+S' shows 23x22 of 29x22",
+      "squeezed: ToolButton[10] is 23x48, minimum 48x48",
+      "squeezed: ToolButton[11] is 23x48, minimum 48x48",
+      "squeezed: ToolButton[12] is 23x48, minimum 48x48",
+      "squeezed: ToolButton[13] is 23x48, minimum 48x48",
+      "squeezed: ToolButton[13]/KeyHintLabel 'R' is 14x22, minimum 15x22",
+      "squeezed: ToolButton[14] is 23x48, minimum 48x48",
+      "squeezed: ToolButton[14]/KeyHintLabel 'A' is 15x22, minimum 16x22",
+      "squeezed: ToolButton[15] is 22x48, minimum 48x48"
+    ],
+    "size": [
+      201,
+      546
+    ]
+  },
+  "preferred": {
+    "problems": [
+      "squeezed: ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
+      "squeezed: ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
+      "squeezed: ToolButton[5]/KeyHintLabel 'M' is 15x22, minimum 16x22",
+      "squeezed: ToolButton[13]/KeyHintLabel 'R' is 14x22, minimum 15x22",
+      "squeezed: ToolButton[14]/KeyHintLabel 'A' is 15x22, minimum 16x22"
+    ],
+    "size": [
+      402,
+      546
+    ]
+  },
+  "short": {
+    "problems": [
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Size:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '[' share 3x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/IntSliderSpinbox and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel ']' share 14x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Opacity:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '<' share 3x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[0] and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '>' share 14x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Hardness:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '{' share 3x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[1] and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '}' share 14x30",
+      "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget is 184x220, minimum 327x220",
+      "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel is 166x202, minimum 309x202",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/IntSliderSpinbox shows 80x30 of 148x30",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/IntSliderSpinbox/QSlider shows 76x23 of 88x23",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/IntSliderSpinbox/QSpinBox shows 0x0 of 50x26",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[0] shows 80x30 of 148x30",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[0]/QSlider shows 76x23 of 84x23",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[0]/QDoubleSpinBox shows 0x0 of 54x26",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[1] shows 80x30 of 148x30",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[1]/QSlider shows 76x23 of 84x23",
+      "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[1]/QDoubleSpinBox shows 0x0 of 54x26",
+      "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Pattern:' is 45x48, minimum 47x17",
+      "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FillStyleComboBox is 45x32, minimum 184x32",
+      "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/CheckBox 'Antialiasing' is 71x22, minimum 93x22",
+      "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/CheckBox 'Draw in selection only' is 71x22, minimum 154x22",
+      "squeezed: QTabWidget is 398x73, minimum 273x282",
+      "squeezed: ToolButton[0] is 48x36, minimum 48x48",
+      "squeezed: ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
+      "squeezed: ToolButton[1] is 48x36, minimum 48x48",
+      "squeezed: ToolButton[2] is 48x36, minimum 48x48",
+      "squeezed: ToolButton[3] is 48x36, minimum 48x48",
+      "squeezed: ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
+      "squeezed: ToolButton[4] is 48x36, minimum 48x48",
+      "squeezed: ToolButton[5] is 48x36, minimum 48x48",
+      "squeezed: ToolButton[5]/KeyHintLabel 'M' is 15x22, minimum 16x22",
+      "squeezed: ToolButton[6] is 48x36, minimum 48x48",
+      "squeezed: ToolButton[7] is 48x36, minimum 48x48",
+      "squeezed: ToolButton[8] is 48x35, minimum 48x48",
+      "squeezed: ToolButton[9] is 48x35, minimum 48x48",
+      "squeezed: ToolButton[10] is 48x35, minimum 48x48",
+      "squeezed: ToolButton[11] is 48x35, minimum 48x48",
+      "squeezed: ToolButton[12] is 48x35, minimum 48x48",
+      "squeezed: ToolButton[13] is 48x35, minimum 48x48",
+      "squeezed: ToolButton[13]/KeyHintLabel 'R' is 14x22, minimum 15x22",
+      "squeezed: ToolButton[14] is 48x35, minimum 48x48",
+      "squeezed: ToolButton[14]/KeyHintLabel 'A' is 15x22, minimum 16x22",
+      "squeezed: ToolButton[15] is 48x35, minimum 48x48"
+    ],
+    "size": [
+      402,
+      233
+    ]
+  },
+  "tall": {
+    "problems": [
+      "squeezed: ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
+      "squeezed: ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
+      "squeezed: ToolButton[5]/KeyHintLabel 'M' is 15x22, minimum 16x22",
+      "squeezed: ToolButton[13]/KeyHintLabel 'R' is 14x22, minimum 15x22",
+      "squeezed: ToolButton[14]/KeyHintLabel 'A' is 15x22, minimum 16x22"
+    ],
+    "size": [
+      402,
+      1638
+    ]
+  },
+  "wide": {
+    "problems": [
+      "squeezed: ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
+      "squeezed: ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
+      "squeezed: ToolButton[5]/KeyHintLabel 'M' is 15x22, minimum 16x22",
+      "squeezed: ToolButton[13]/KeyHintLabel 'R' is 14x22, minimum 15x22",
+      "squeezed: ToolButton[14]/KeyHintLabel 'A' is 15x22, minimum 16x22"
+    ],
+    "size": [
+      1600,
+      546
+    ]
+  }
+}

@@ -404,9 +404,6 @@ class SelectionLayerGrowShrinkTest(SelectionLayerOperationTestCase):
         self._grown(-1)
         self.assert_selection(rect_mask(self.REGION.adjusted(1, 1, -1, -1)))
 
-    @pytest.mark.xfail(strict=True, reason='grow_or_shrink_selection uses a 3n-pixel kernel, so |n| > 1 moves '
-                                           'edges by about 1.5n, unevenly: '
-                                           'https://github.com/centuryglass/IntraPaint/issues/209')
     def test_grow_and_shrink_by_several(self) -> None:
         """Growing or shrinking by n moves every edge of a rectangle by n pixels."""
         for num_pixels in (2, 3, -2, -3):
@@ -488,21 +485,36 @@ class SelectionLayerOutlineTest(SelectionLayerOperationTestCase):
         self.assert_selection(rect_mask(QRect(1, 1, 3, 3), QRect(25, 25, 3, 3)))
         self.assertEqual(len(self.selection_layer.outline), 2)
 
-    @pytest.mark.xfail(strict=True, reason='a bounded edit re-traces regions within 10px of it without removing their'
-                                           ' old polygons: https://github.com/centuryglass/IntraPaint/issues/23')
     def test_bounded_edit_near_region_clipped_by_margin(self) -> None:
         """A bounded edit near a region that extends past the re-traced margin keeps that region's outline whole."""
         self._paint(QRect(0, 20, 30, 3))
         self._paint(QRect(12, 12, 2, 2))
         self.assertEqual(self._outline_bounds(), [QRect(0, 20, 30, 3), QRect(12, 12, 2, 2)])
 
-    @pytest.mark.xfail(strict=True, reason='a bounded edit re-traces regions within 10px of it without removing their'
-                                           ' old polygons: https://github.com/centuryglass/IntraPaint/issues/23')
     def test_bounded_edit_near_region_duplicates_it(self) -> None:
         """A bounded edit near a region doesn't add a second polygon for that region."""
         self._paint(QRect(2, 2, 4, 4))
         self._paint(QRect(12, 12, 2, 2))
         self.assertEqual(self._outline_bounds(), [QRect(2, 2, 4, 4), QRect(12, 12, 2, 2)])
+
+    def test_bounded_edit_near_region_spanning_another(self) -> None:
+        """A region inside the bounds of a nearby region, but far from the edit, keeps one whole polygon."""
+        corner = (QRect(10, 2, 20, 1), QRect(29, 2, 1, 28))
+        self.selection_layer.set_image(self._image_with(*corner, QRect(20, 20, 3, 3)))
+        self._paint(QRect(2, 2, 1, 1))
+        self.assertEqual(self._outline_bounds(), [QRect(2, 2, 1, 1), QRect(10, 2, 20, 28), QRect(20, 20, 3, 3)])
+
+    def test_bounded_edits_match_full_trace(self) -> None:
+        """Outlines built up from bounded edits match tracing the final selection from scratch."""
+        self._paint(QRect(0, 20, 30, 3))
+        self._paint(QRect(3, 3, 5, 5))
+        self._paint(QRect(12, 12, 2, 2))
+        self._paint(QRect(6, 6, 8, 2))
+        self._paint(QRect(4, 4, 2, 2), Qt.GlobalColor.transparent)
+        self._paint(QRect(13, 10, 1, 12))
+        incremental = self._outline_bounds()
+        self.selection_layer.set_image(self.selection_layer.image)
+        self.assertEqual(incremental, self._outline_bounds())
 
     @staticmethod
     def _image_with(*rects: QRect) -> QImage:
@@ -574,8 +586,6 @@ class SelectionLayerUndoTest(SelectionLayerOperationTestCase):
         self._assert_undo_redo(lambda: self.selection_layer.insert_image_content(pasted, QRect(27, 27, 4, 4)),
                                rect_mask(self.INITIAL, QRect(27, 27, 4, 4)))
 
-    @pytest.mark.xfail(strict=True, reason='a bounded edit re-traces regions within 10px of it without removing their'
-                                           ' old polygons: https://github.com/centuryglass/IntraPaint/issues/23')
     def test_undo_edit_near_region(self) -> None:
         """Undoing a bounded edit that doesn't touch a nearby region keeps that region's outline exact."""
         self._assert_undo_redo(lambda: self._paint(QRect(20, 20, 4, 4)), rect_mask(self.INITIAL, QRect(20, 20, 4, 4)))

@@ -1,0 +1,132 @@
+{
+  "minimum": {
+    "problems": [
+      "squeezed: ImageWidget is 218x84, minimum 160x160"
+    ],
+    "size": [
+      1032,
+      253
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "overlap: ImageWidget and PlainTextEdit share 136x77",
+      "overlap: IntSliderSpinbox[2]/KeyHintLabel '\u2190' and IntSliderSpinbox[2]/QSpinBox share 14x26",
+      "overlap: IntSliderSpinbox[2]/QSpinBox and IntSliderSpinbox[2]/KeyHintLabel '\u2192' share 32x26",
+      "overlap: IntSliderSpinbox[3]/KeyHintLabel '\u2191' and IntSliderSpinbox[3]/QSpinBox share 14x26",
+      "overlap: IntSliderSpinbox[3]/QSpinBox and IntSliderSpinbox[3]/KeyHintLabel '\u2193' share 32x26",
+      "overlap: IntSliderSpinbox[4]/KeyHintLabel '\u2303+\u2190' and IntSliderSpinbox[4]/QSpinBox share 14x26",
+      "overlap: IntSliderSpinbox[4]/QSpinBox and IntSliderSpinbox[4]/KeyHintLabel '\u2303+\u2192' share 32x26",
+      "overlap: IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2191' and IntSliderSpinbox[5]/QSpinBox share 14x26",
+      "overlap: IntSliderSpinbox[5]/QSpinBox and IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2193' share 32x26",
+      "squeezed: QWidget[0] is 74x81, minimum 96x25",
+      "squeezed: QWidget[0]/CheckBox is 34x21, minimum 45x21",
+      "squeezed: QWidget[0]/QLabel 'Resize Bounds to Text' is 34x77, minimum 45x17",
+      "squeezed: QWidget[1] is 74x82, minimum 96x25",
+      "squeezed: QWidget[1]/CheckBox is 34x21, minimum 45x21",
+      "squeezed: QWidget[1]/QLabel 'Resize Font to Bounds' is 34x78, minimum 45x17",
+      "squeezed: ColorButton 'Text Color' is 73x82, minimum 101x30",
+      "squeezed: ColorButton 'Background Color' is 73x81, minimum 146x30",
+      "squeezed: ImageWidget is 136x196, minimum 160x160",
+      "squeezed: IntSliderSpinbox[0] is 73x30, minimum 155x30",
+      "squeezed: IntSliderSpinbox[0]/QLabel 'Font Size:' is 17x26, minimum 57x17",
+      "squeezed: IntSliderSpinbox[0]/QSpinBox is 16x26, minimum 58x26",
+      "squeezed: QComboBox[1] is 73x25, minimum 87x25",
+      "squeezed: IntSliderSpinbox[2] is 74x40, minimum 196x30",
+      "clipped: IntSliderSpinbox[2]/QSpinBox shows 36x26 of 106x26",
+      "clipped: IntSliderSpinbox[2]/KeyHintLabel '\u2192' shows 18x36 of 32x36",
+      "squeezed: IntSliderSpinbox[3] is 74x39, minimum 196x30",
+      "clipped: IntSliderSpinbox[3]/QSpinBox shows 36x26 of 106x26",
+      "clipped: IntSliderSpinbox[3]/KeyHintLabel '\u2193' shows 18x35 of 32x35",
+      "squeezed: IntSliderSpinbox[4] is 73x40, minimum 196x30",
+      "clipped: IntSliderSpinbox[4]/QSpinBox shows 35x26 of 106x26",
+      "clipped: IntSliderSpinbox[4]/KeyHintLabel '\u2303+\u2192' shows 18x36 of 32x36",
+      "squeezed: IntSliderSpinbox[5] is 73x39, minimum 196x30",
+      "clipped: IntSliderSpinbox[5]/QSpinBox shows 35x26 of 106x26",
+      "clipped: IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2193' shows 18x35 of 32x35"
+    ],
+    "size": [
+      516,
+      588
+    ]
+  },
+  "preferred": {
+    "problems": [
+      "overlap: ImageWidget and PlainTextEdit share 480x64"
+    ],
+    "size": [
+      1294,
+      588
+    ]
+  },
+  "short": {
+    "problems": [
+      "overlap: ImageWidget and PlainTextEdit share 480x2",
+      "squeezed: QLabel 'Stretch:' is 196x16, minimum 47x17",
+      "squeezed: QWidget[0] is 196x16, minimum 96x25",
+      "squeezed: QWidget[0]/CheckBox is 62x12, minimum 45x21",
+      "squeezed: QWidget[0]/QLabel 'Resize Bounds to Text' is 128x12, minimum 45x17",
+      "squeezed: QWidget[1] is 196x16, minimum 96x25",
+      "squeezed: QWidget[1]/CheckBox is 60x12, minimum 45x21",
+      "squeezed: QWidget[1]/QLabel 'Resize Font to Bounds' is 130x12, minimum 45x17",
+      "squeezed: ColorButton 'Text Color' is 196x16, minimum 101x30",
+      "squeezed: ColorButton 'Background Color' is 196x16, minimum 146x30",
+      "squeezed: QLabel 'Font:' is 127x16, minimum 30x17",
+      "squeezed: QLabel 'Text Style:' is 156x16, minimum 61x17",
+      "squeezed: ImageWidget is 480x42, minimum 160x160",
+      "squeezed: PlainTextEdit is 480x52, minimum 61x61",
+      "squeezed: IntSliderSpinbox[0] is 417x16, minimum 155x30",
+      "squeezed: IntSliderSpinbox[0]/QLabel 'Font Size:' is 57x12, minimum 57x17",
+      "squeezed: IntSliderSpinbox[0]/QSpinBox is 319x12, minimum 58x26",
+      "squeezed: IntSliderSpinbox[0]/KeyHintLabel 'O' is 16x12, minimum 15x21",
+      "squeezed: IntSliderSpinbox[0]/KeyHintLabel 'P' is 15x12, minimum 15x21",
+      "squeezed: QComboBox[0] is 61x16, minimum 61x25",
+      "squeezed: QLabel 'Alignment:' is 196x16, minimum 64x17",
+      "squeezed: QComboBox[1] is 196x16, minimum 87x25",
+      "squeezed: IntSliderSpinbox[1] is 196x16, minimum 66x30",
+      "squeezed: IntSliderSpinbox[1]/QSpinBox is 188x12, minimum 58x26",
+      "squeezed: IntSliderSpinbox[2] is 196x16, minimum 196x30",
+      "squeezed: IntSliderSpinbox[2]/QLabel 'X:' is 16x12, minimum 12x17",
+      "squeezed: IntSliderSpinbox[2]/QSpinBox is 106x12, minimum 106x26",
+      "squeezed: IntSliderSpinbox[2]/KeyHintLabel '\u2190' is 32x12, minimum 32x21",
+      "squeezed: IntSliderSpinbox[2]/KeyHintLabel '\u2192' is 32x12, minimum 32x21",
+      "squeezed: IntSliderSpinbox[3] is 196x16, minimum 196x30",
+      "squeezed: IntSliderSpinbox[3]/QLabel 'Y:' is 16x12, minimum 11x17",
+      "squeezed: IntSliderSpinbox[3]/QSpinBox is 106x12, minimum 106x26",
+      "squeezed: IntSliderSpinbox[3]/KeyHintLabel '\u2191' is 32x12, minimum 32x21",
+      "squeezed: IntSliderSpinbox[3]/KeyHintLabel '\u2193' is 32x12, minimum 32x21",
+      "squeezed: IntSliderSpinbox[4] is 196x16, minimum 196x30",
+      "squeezed: IntSliderSpinbox[4]/QLabel 'W:' is 16x12, minimum 16x17",
+      "squeezed: IntSliderSpinbox[4]/QSpinBox is 106x12, minimum 106x26",
+      "squeezed: IntSliderSpinbox[4]/KeyHintLabel '\u2303+\u2190' is 32x12, minimum 32x21",
+      "squeezed: IntSliderSpinbox[4]/KeyHintLabel '\u2303+\u2192' is 32x12, minimum 32x21",
+      "squeezed: IntSliderSpinbox[5] is 196x16, minimum 196x30",
+      "squeezed: IntSliderSpinbox[5]/QLabel 'H:' is 16x12, minimum 13x17",
+      "squeezed: IntSliderSpinbox[5]/QSpinBox is 106x12, minimum 106x26",
+      "squeezed: IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2191' is 32x12, minimum 32x21",
+      "squeezed: IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2193' is 32x12, minimum 32x21"
+    ],
+    "size": [
+      1294,
+      126
+    ]
+  },
+  "tall": {
+    "problems": [
+      "overlap: ImageWidget and PlainTextEdit share 480x118"
+    ],
+    "size": [
+      1294,
+      1764
+    ]
+  },
+  "wide": {
+    "problems": [
+      "overlap: ImageWidget and PlainTextEdit share 480x64"
+    ],
+    "size": [
+      3882,
+      588
+    ]
+  }
+}

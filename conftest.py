@@ -9,6 +9,8 @@ prepare the environment that the Qt-based tests rely on:
   `QT_QPA_PLATFORM=xcb pytest ...`.
 - Point `INTRAPAINT_DATA_DIR` and `INTRAPAINT_LOG_DIR` at a temporary directory before any `src` import, so test
   runs never create or write files in the developer's real user data and log directories.
+- On Linux, point fontconfig at a configuration with no font directories, so Qt sees only the fonts the theme bundles.
+  Text then lays out the same whatever fonts a machine has installed. A developer's own `FONTCONFIG_FILE` wins.
 - Ensure the project root is importable, so `from src... import ...` works regardless of the
   directory pytest is invoked from.
 - Back the config singletons with temporary copies of the `test/resources/*_test.json` fixtures, so
@@ -31,6 +33,15 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 _user_dir_root = tempfile.mkdtemp(prefix='intrapaint-test-user-dirs-')
 os.environ['INTRAPAINT_DATA_DIR'] = os.path.join(_user_dir_root, 'data')
 os.environ['INTRAPAINT_LOG_DIR'] = os.path.join(_user_dir_root, 'log')
+
+# Must run before PySide6 loads fontconfig:
+if sys.platform.startswith('linux') and 'FONTCONFIG_FILE' not in os.environ:
+    _fontconfig_path = os.path.join(_user_dir_root, 'fonts.conf')
+    _fontconfig_cache = os.path.join(_user_dir_root, 'fontconfig-cache')
+    with open(_fontconfig_path, 'w', encoding='utf-8') as _fontconfig_file:
+        _fontconfig_file.write('<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "fonts.dtd">\n'
+                               f'<fontconfig><cachedir>{_fontconfig_cache}</cachedir></fontconfig>\n')
+    os.environ['FONTCONFIG_FILE'] = _fontconfig_path
 
 _PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 if _PROJECT_ROOT not in sys.path:
@@ -67,8 +78,9 @@ def pytest_sessionstart(session: pytest.Session) -> None:
         shutil.copyfile(os.path.join(_CONFIG_FIXTURE_DIR, file_name), copy_path)
         config = config_class(copy_path)
         assert config.json_path == copy_path, f'{config_class.__name__} was created before pytest_sessionstart'
-    from src.ui.theme import apply_font_point_size, apply_style, apply_theme
+    from src.ui.theme import apply_font_point_size, apply_overlay_scroll_bars, apply_style, apply_theme
     app_config = AppConfig()
+    apply_overlay_scroll_bars(app_config.get(AppConfig.OVERLAY_SCROLL_BARS))
     apply_style(app_config.get(AppConfig.STYLE))
     apply_theme(app_config.get(AppConfig.THEME))
     apply_font_point_size(app_config.get(AppConfig.FONT_POINT_SIZE))

@@ -52,7 +52,6 @@ class GradientSliderTest(IntraPaintTestCase):
         self.assertEqual(self.slider.value(), 100.0)
 
     def _key(self, key: Qt.Key) -> None:
-        # Calls the handler directly: earlier tests can leave HotkeyFilter bindings that would claim the key (#165).
         self.slider.keyPressEvent(QKeyEvent(QEvent.Type.KeyPress, key, Qt.KeyboardModifier.NoModifier))
 
     def test_keys_step_and_commit(self) -> None:

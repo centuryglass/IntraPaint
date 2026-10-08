@@ -2,6 +2,7 @@
 Interact with edited image layers through the Qt6 2D graphics engine.
 """
 import math
+from functools import partial
 from typing import Optional
 
 from PySide6.QtCore import Qt, QRect, QRectF, QSize, QPoint, QPointF
@@ -29,6 +30,11 @@ GENERATION_AREA_BORDER_COLOR = Qt.GlobalColor.black
 MIN_OUTLINE_PIXEL_SIZE = 8.0
 
 
+def _disconnect_layer_items(layer_items: dict[int, LayerGraphicsItem]) -> None:
+    for layer_item in layer_items.values():
+        layer_item.disconnect_layer()
+
+
 class ImageViewer(ImageGraphicsView):
     """Shows the image being edited, and allows the user to select sections."""
 
@@ -42,6 +48,10 @@ class ImageViewer(ImageGraphicsView):
         self._image_stack = image_stack
         self._generation_area = image_stack.generation_area
         self._layer_items: dict[int, 'LayerGraphicsItem'] = {}
+        # Layers outlive the view when something else holds the image stack. destroyed is emitted before the view
+        # deletes its scene and the items in it. The slot captures the item dict, not the view: a slot that captured
+        # the view would keep it alive.
+        self.destroyed.connect(partial(_disconnect_layer_items, self._layer_items))
         self.content_size = image_stack.size
         self.background = get_transparency_tile_pixmap()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
@@ -343,6 +353,7 @@ class ImageViewer(ImageGraphicsView):
         layer_was_visible = layer_item.isVisible()
         scene = self.scene()
         assert scene is not None
+        layer_item.disconnect_layer()
         scene.removeItem(layer_item)
         del self._layer_items[removed_layer.id]
         if layer_was_visible:

@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QApplication
 from src.util.visual.display_size import logger
 from src.util.visual.geometry_utils import align_inner_bounds
 from src.util.visual.image_utils import create_transparent_image, temp_rich_text_image
+from src.util.visual.palette_icon import palette_rich_text_image
 from src.util.shared_constants import PROJECT_DIR
 
 ICON_LMB = f'{PROJECT_DIR}/resources/input_hints/lmb.svg'
@@ -164,33 +165,29 @@ def rich_text_code_block(code_string: str) -> str:
             f' padding: 5px; border: 1px solid #ccc; margin-right: 100px;">{code_string}</pre>')
 
 
-def _rich_text_image(img_path: str) -> str:
-    return f'<img src="{img_path}"/>'
-
-
 def left_button_hint_text() -> str:
     """Returns a rich-text inline image representing the left mouse button."""
-    return _rich_text_image(ICON_LMB)
+    return palette_rich_text_image(ICON_LMB)
 
 
 def middle_button_hint_text() -> str:
     """Returns a rich-text inline image representing the middle mouse button."""
-    return _rich_text_image(ICON_MMB)
+    return palette_rich_text_image(ICON_MMB)
 
 
 def right_button_hint_text() -> str:
     """Returns a rich-text inline image representing the right mouse button."""
-    return _rich_text_image(ICON_RMB)
+    return palette_rich_text_image(ICON_RMB)
 
 
 def vertical_scroll_hint_text() -> str:
     """Returns a rich-text inline image representing scroll wheel vertical scrolling."""
-    return _rich_text_image(ICON_V_SCROLL)
+    return palette_rich_text_image(ICON_V_SCROLL)
 
 
 def horizontal_scroll_hint_text() -> str:
     """Returns a rich-text inline image representing scroll wheel horizontal scrolling."""
-    return _rich_text_image(ICON_H_SCROLL)
+    return palette_rich_text_image(ICON_H_SCROLL)
 
 
 def get_key_display_string(keys: QKeySequence | Qt.Key | int | str, rich_text: bool = True) -> str:

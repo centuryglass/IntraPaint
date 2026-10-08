@@ -98,7 +98,7 @@ from src.ui.panel.color_panel import ColorControlPanel
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
-from src.ui.theme import apply_font_point_size, apply_style, apply_theme
+from src.ui.theme import apply_font_point_size, apply_overlay_scroll_bars, apply_style, apply_theme
 from src.ui.widget.tool_tab import ToolTab
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
 from src.ui.window.main_window import MainWindow, TabBoxID
@@ -256,6 +256,8 @@ class AppController(MenuBuilder):
         self._generator_window: Optional[GeneratorSetupWindow] = None
 
         # Apply style and theme before creating widgets, which copy the palette and font when they're created:
+        config.connect(self, AppConfig.OVERLAY_SCROLL_BARS, apply_overlay_scroll_bars)
+        apply_overlay_scroll_bars(config.get(AppConfig.OVERLAY_SCROLL_BARS))
         config.connect(self, AppConfig.STYLE, apply_style)
         apply_style(config.get(AppConfig.STYLE))
         config.connect(self, AppConfig.THEME, apply_theme)

@@ -39,8 +39,6 @@ OPAQUE = 255
 QT_MODES = tuple(mode for mode in CompositeMode if mode.qt_composite_mode() is not None)
 HSL_MODES = tuple(mode for mode in CompositeMode if mode.qt_composite_mode() is None)
 
-ISSUE_132 = ('https://github.com/centuryglass/IntraPaint/issues/132: a non-isolated group composites the content '
-             'beneath it over itself, and should render as isolated below full opacity or outside Normal mode')
 ISSUE_151 = ('https://github.com/centuryglass/IntraPaint/issues/151: HSL blend modes change base pixels outside the '
              'layer')
 
@@ -181,7 +179,6 @@ class IsolationTest(GroupRenderTestCase):
         multiply = self.add_layer('multiply', QPoint(14, 10), group, CompositeMode.MULTIPLY, 0.8)
         self.assert_stack_renders(self.canvas_with(background, lower, multiply))
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_132)
     def test_non_isolated_group_smaller_than_canvas_over_partial_alpha(self) -> None:
         """Children of a non-isolated group smaller than the canvas blend directly with partly transparent content."""
         background = self.add_background()
@@ -190,7 +187,6 @@ class IsolationTest(GroupRenderTestCase):
         multiply = self.add_layer('multiply', QPoint(14, 10), group, CompositeMode.MULTIPLY, 0.8)
         self.assert_stack_renders(self.canvas_with(background, lower, multiply))
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_132)
     def test_non_isolated_group_below_full_opacity_renders_isolated(self) -> None:
         """A non-isolated group below full opacity renders as if it were isolated."""
         background = self.add_background(OPAQUE)
@@ -200,7 +196,6 @@ class IsolationTest(GroupRenderTestCase):
         self.assert_stack_renders(self.canvas_with_group(self.canvas_with(background), group,
                                                          self.isolated(group, lower, multiply)))
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_132)
     def test_non_isolated_group_outside_normal_mode_renders_isolated(self) -> None:
         """A non-isolated group in a mode other than Normal renders as if it were isolated."""
         background = self.add_background(OPAQUE)
@@ -289,12 +284,10 @@ class GroupModeTest(GroupRenderTestCase):
         """A layer in a non-isolated group blends with the content beneath the group, in every QPainter mode."""
         self.check_child_modes(False, QT_MODES, True)
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_151)
     def test_child_hsl_modes_in_isolated_group(self) -> None:
         """A layer in an isolated group blends only with the group's other children, in every custom mode."""
         self.check_child_modes(True, HSL_MODES, False)
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_151)
     def test_child_hsl_modes_in_non_isolated_group(self) -> None:
         """A layer in a non-isolated group blends with the content beneath the group, in every custom mode."""
         self.check_child_modes(False, HSL_MODES, False)

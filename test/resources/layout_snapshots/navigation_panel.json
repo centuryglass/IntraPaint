@@ -1,0 +1,65 @@
+{
+  "minimum": {
+    "problems": [
+      "squeezed: QWidget[1]/DualToggle/Label 'Move gen. area' is 119x27, minimum 135x29",
+      "squeezed: QWidget[1]/DualToggle/Label 'Move view' is 119x27, minimum 108x29"
+    ],
+    "size": [
+      263,
+      122
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "squeezed: QWidget[1] is 113x31, minimum 245x31",
+      "squeezed: QWidget[1]/DualToggle/Label 'Move gen. area' is 53x27, minimum 135x29",
+      "squeezed: QWidget[1]/DualToggle/Label 'Move view' is 53x27, minimum 108x29"
+    ],
+    "size": [
+      131,
+      122
+    ]
+  },
+  "preferred": {
+    "problems": [
+      "squeezed: QWidget[1]/DualToggle/Label 'Move gen. area' is 119x27, minimum 135x29",
+      "squeezed: QWidget[1]/DualToggle/Label 'Move view' is 119x27, minimum 108x29"
+    ],
+    "size": [
+      263,
+      122
+    ]
+  },
+  "short": {
+    "problems": [
+      "squeezed: ImageViewer is 245x16, minimum 61x61",
+      "squeezed: QWidget[1] is 245x16, minimum 245x31",
+      "squeezed: QWidget[1]/DualToggle/Label 'Move gen. area' is 119x12, minimum 135x29",
+      "squeezed: QWidget[1]/DualToggle/Label 'Move view' is 119x12, minimum 108x29"
+    ],
+    "size": [
+      263,
+      61
+    ]
+  },
+  "tall": {
+    "problems": [
+      "squeezed: QWidget[1]/DualToggle/Label 'Move gen. area' is 119x27, minimum 135x29",
+      "squeezed: QWidget[1]/DualToggle/Label 'Move view' is 119x27, minimum 108x29"
+    ],
+    "size": [
+      263,
+      1200
+    ]
+  },
+  "wide": {
+    "problems": [
+      "squeezed: QWidget[1]/DualToggle/Label 'Move gen. area' is 788x27, minimum 135x29",
+      "squeezed: QWidget[1]/DualToggle/Label 'Move view' is 788x27, minimum 108x29"
+    ],
+    "size": [
+      1600,
+      122
+    ]
+  }
+}

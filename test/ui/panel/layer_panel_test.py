@@ -276,6 +276,7 @@ class LayerPanelTest(IntraPaintTestCase):
 
     def test_activation_keeps_widget_size(self) -> None:
         """Highlighting a layer widget doesn't change its size, so the list doesn't shift on click."""
+        flush_layouts()
         widget = self.widget_for(self.inner_top)
         inactive_size = widget.size()
         self.image_stack.active_layer = self.inner_top
@@ -443,6 +444,22 @@ class LayerPanelTest(IntraPaintTestCase):
         self.assertFalse(button.isEnabled())
         self.group.locked = False
         self.assertTrue(button.isEnabled())
+
+    def test_isolate_button_shows_forced_isolation(self) -> None:
+        """Below full opacity or outside Normal mode, the isolate button shows isolation on and can't be toggled."""
+        button = self._button(self.nested, LayerIsolateButton)
+        self.assertFalse(self.nested.isolate)
+        off_icon_key = button.icon().cacheKey()
+        for force, restore in ((lambda: self.nested.set_opacity(0.5), lambda: self.nested.set_opacity(1.0)),
+                               (lambda: self.nested.set_composition_mode(CompositeMode.MULTIPLY),
+                                lambda: self.nested.set_composition_mode(CompositeMode.NORMAL))):
+            force()
+            self.assertFalse(button.isEnabled())
+            self.assertNotEqual(button.icon().cacheKey(), off_icon_key)
+            self.assertFalse(self.nested.isolate)
+            restore()
+            self.assertTrue(button.isEnabled())
+            self.assertEqual(button.icon().cacheKey(), off_icon_key)
 
     def test_rename(self) -> None:
         """Editing a layer widget's label renames the layer, and renaming the layer updates the label."""
