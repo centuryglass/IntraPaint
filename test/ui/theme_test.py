@@ -3,9 +3,11 @@ import json
 import sys
 
 from PySide6.QtGui import QFont, QFontInfo, QPalette
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QPushButton, QStyle
 
-from src.ui.theme import INK_THEME_PATH, THEME_INK, THEME_SYSTEM, apply_theme, load_theme_palette
+from src.ui.ink_style import InkColors, InkStyle, STICKER_OFFSET, set_primary_button
+from src.ui.theme import (INK_THEME_PATH, THEME_INK, THEME_SYSTEM, apply_overlay_scroll_bars, apply_style, apply_theme,
+                          load_theme_palette)
 from src.util.gc_paused import gc_paused
 from test.base_test_case import IntraPaintTestCase
 
@@ -25,6 +27,8 @@ class ThemeTest(IntraPaintTestCase):
     """The test session applies THEME_INK in conftest.py, so each test starts and ends with it applied."""
 
     def tearDown(self) -> None:
+        apply_overlay_scroll_bars(True)
+        apply_style('Fusion')
         apply_theme(THEME_INK)
         super().tearDown()
 
@@ -80,3 +84,49 @@ class ThemeTest(IntraPaintTestCase):
         palette = load_theme_palette({'disabled': {'Text': '#ff0000'}, 'all': {'Text': '#00ff00'}})
         self.assertEqual('#00ff00', palette.color(QPalette.ColorGroup.Active, QPalette.ColorRole.Text).name())
         self.assertEqual('#ff0000', palette.color(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text).name())
+
+    def test_ink_theme_installs_ink_style(self):
+        """The Ink theme wraps the configured style in InkStyle, and other themes use the configured style alone."""
+        self.assertIsInstance(app.style(), InkStyle)
+        self.assertEqual('fusion', app.style().baseStyle().name().lower())
+        apply_theme(THEME_SYSTEM)
+        self.assertNotIsInstance(app.style(), InkStyle)
+        self.assertEqual('fusion', app.style().name().lower())
+        apply_theme(THEME_INK)
+        self.assertIsInstance(app.style(), InkStyle)
+
+    def test_style_change_keeps_ink_style_and_palette(self):
+        window_color = app.palette().color(QPalette.ColorRole.Window).name()
+        apply_style('Windows')
+        self.assertIsInstance(app.style(), InkStyle)
+        self.assertEqual('windows', app.style().baseStyle().name().lower())
+        self.assertEqual(window_color, app.palette().color(QPalette.ColorRole.Window).name())
+
+    def test_unknown_style_falls_back_to_fusion(self):
+        with self.assertLogs('src.ui.theme', level='ERROR'):
+            apply_style('NotAStyle')
+        self.assertEqual('fusion', app.style().baseStyle().name().lower())
+
+    def test_overlay_scroll_bar_option(self):
+        transient = QStyle.StyleHint.SH_ScrollBar_Transient
+        self.assertTrue(app.style().styleHint(transient))
+        apply_overlay_scroll_bars(False)
+        self.assertIsInstance(app.style(), InkStyle)
+        self.assertFalse(app.style().styleHint(transient))
+        apply_overlay_scroll_bars(True)
+        self.assertTrue(app.style().styleHint(transient))
+
+    def test_ink_style_colors_parsed(self):
+        colors = InkColors.from_theme_data(_load_theme_data()['style_colors'])
+        self.assertEqual('#1e4544', colors.accent_wash.name())
+        for color_data in ({}, {**_load_theme_data()['style_colors'], 'accent_wash': 'not a color'}):
+            with self.assertRaises(ValueError):
+                InkColors.from_theme_data(color_data)
+
+    def test_primary_button_makes_room_for_its_offset(self):
+        """A primary button is taller by its raised offset, and wide enough for its bolder label."""
+        plain = QPushButton('Generate')
+        primary = QPushButton('Generate')
+        set_primary_button(primary)
+        self.assertEqual(plain.sizeHint().height() + STICKER_OFFSET, primary.sizeHint().height())
+        self.assertGreaterEqual(primary.sizeHint().width(), plain.sizeHint().width())

@@ -94,6 +94,7 @@ class AppConfig(Config, metaclass=Singleton):
     MIN_EDIT_SIZE: str
     MIN_GENERATION_SIZE: str
     OPENGL_ACCELERATION: str
+    OVERLAY_SCROLL_BARS: str
     PIL_DOWNSCALE_MODE: str
     PIL_UPSCALE_MODE: str
     RULER_FONT_SIZE: str

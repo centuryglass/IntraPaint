@@ -3,32 +3,32 @@
     "problems": [],
     "size": [
       860,
-      384
+      388
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: QTabWidget is 420x372, minimum 850x372"
+      "squeezed: QTabWidget is 420x376, minimum 850x376"
     ],
     "size": [
       430,
-      384
+      388
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
       860,
-      384
+      388
     ]
   },
   "short": {
     "problems": [
-      "squeezed: QTabWidget is 850x180, minimum 850x372"
+      "squeezed: QTabWidget is 850x182, minimum 850x376"
     ],
     "size": [
       860,
-      192
+      194
     ]
   },
   "tall": {
@@ -42,7 +42,7 @@
     "problems": [],
     "size": [
       2580,
-      384
+      388
     ]
   }
 }

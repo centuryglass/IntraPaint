@@ -42,7 +42,7 @@
   },
   "tall": {
     "problems": [
-      "squeezed: QWidget[3]/SavedColorsPanel/_GridScrollArea is 282x20, minimum 68x68"
+      "squeezed: QWidget[3]/SavedColorsPanel/_GridScrollArea is 282x20, minimum 59x59"
     ],
     "size": [
       302,

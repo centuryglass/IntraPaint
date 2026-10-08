@@ -1,8 +1,9 @@
 """Applies the application's Qt style, theme and font size.
 
 The default theme, IntraPaint Ink, fixes the interface font and every palette color from
-`resources/themes/intrapaint_ink.json`, so widget metrics and colors don't depend on the platform. The system look and
-the optional qdarktheme and qt-material themes stay available as config options.
+`resources/themes/intrapaint_ink.json`, so widget metrics and colors don't depend on the platform. It also draws
+controls with `InkStyle`, wrapped around the configured Qt style. The system look and the optional qdarktheme and
+qt-material themes stay available as config options, and use the configured Qt style unwrapped.
 """
 import json
 import logging
@@ -10,8 +11,9 @@ import os
 from typing import Any, Optional
 
 from PySide6.QtGui import QColor, QFont, QFontDatabase, QPalette
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QStyleFactory
 
+from src.ui.ink_style import InkColors, InkStyle
 from src.util.gc_paused import gc_paused
 from src.util.optional_import import optional_import
 from src.util.shared_constants import PROJECT_DIR
@@ -35,8 +37,16 @@ class _ThemeState:
         # The application font and palette before any theme changed them, restored by THEME_SYSTEM:
         self.system_font: Optional[QFont] = None
         self.system_palette: Optional[QPalette] = None
-        # The loaded IntraPaint Ink font and palette. Its font files register with Qt once, on first load:
-        self.ink_theme: Optional[tuple[Optional[QFont], QPalette]] = None
+        # The loaded IntraPaint Ink font, palette and style colors. Its font files register with Qt once, on first
+        # load:
+        self.ink_theme: Optional[tuple[Optional[QFont], QPalette, InkColors]] = None
+        # The configured Qt style name, the applied theme and the scroll bar option, which together pick the
+        # installed QStyle:
+        self.style_name: Optional[str] = None
+        self.theme: Optional[str] = None
+        self.overlay_scroll_bars = True
+        # The installed InkStyle. QApplication owns it, and deletes it when another style replaces it:
+        self.ink_style: Optional[InkStyle] = None
 
 
 _state = _ThemeState()
@@ -97,12 +107,33 @@ def load_theme_palette(palette_data: dict[str, dict[str, str]]) -> QPalette:
     return palette
 
 
-def _load_ink_theme() -> tuple[Optional[QFont], QPalette]:
+def _load_ink_theme() -> tuple[Optional[QFont], QPalette, InkColors]:
     if _state.ink_theme is None:
         with open(INK_THEME_PATH, encoding='utf-8') as theme_file:
             theme_data = json.load(theme_file)
-        _state.ink_theme = (load_theme_font(theme_data['font']), load_theme_palette(theme_data['palette']))
+        _state.ink_theme = (load_theme_font(theme_data['font']), load_theme_palette(theme_data['palette']),
+                            InkColors.from_theme_data(theme_data['style_colors']))
     return _state.ink_theme
+
+
+def _install_style() -> None:
+    """Installs the configured Qt style, wrapped in InkStyle while THEME_INK is applied.
+
+    Call this inside gc_paused. QApplication.setStyle keeps an application palette that was set explicitly, so the
+    theme's palette survives a style change.
+    """
+    app = _app()
+    style_name = _state.style_name if _state.style_name is not None else app.style().name()
+    if _state.theme == THEME_INK:
+        if style_name.lower() not in (key.lower() for key in QStyleFactory.keys()):
+            logger.error(f'Unknown Qt style {style_name}, using Fusion')
+            style_name = 'Fusion'
+        _, _, colors = _load_ink_theme()
+        _state.ink_style = InkStyle(style_name, colors, _state.overlay_scroll_bars)
+        app.setStyle(_state.ink_style)
+    else:
+        _state.ink_style = None
+        app.setStyle(style_name)
 
 
 def _set_font_family(font: QFont) -> None:
@@ -127,11 +158,14 @@ def apply_theme(theme: str) -> None:
         _state.system_palette = QPalette(app.palette())
     # Both theme packages call QApplication.setStyleSheet, which has the hazard gc_paused describes.
     with gc_paused():
+        _state.theme = theme
+        if (theme == THEME_INK) != (_state.ink_style is not None):
+            _install_style()
         if theme in (THEME_INK, THEME_SYSTEM):
             if app.styleSheet() != '':
                 app.setStyleSheet('')
             if theme == THEME_INK:
-                font, palette = _load_ink_theme()
+                font, palette, _ = _load_ink_theme()
             else:
                 font, palette = _state.system_font, _state.system_palette
             if font is not None:
@@ -152,8 +186,19 @@ def apply_theme(theme: str) -> None:
 
 def apply_style(style: str) -> None:
     """Applies a Qt style name from `AppConfig.STYLE` to the application."""
+    _state.style_name = style
     with gc_paused():
-        _app().setStyle(style)
+        _install_style()
+
+
+def apply_overlay_scroll_bars(overlay: bool) -> None:
+    """Sets whether THEME_INK draws scroll bars over their content, from `AppConfig.OVERLAY_SCROLL_BARS`."""
+    if overlay == _state.overlay_scroll_bars:
+        return
+    _state.overlay_scroll_bars = overlay
+    if _state.theme == THEME_INK:
+        with gc_paused():
+            _install_style()
 
 
 def apply_font_point_size(font_pt: int) -> None:

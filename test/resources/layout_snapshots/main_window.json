@@ -16,10 +16,10 @@
   },
   "hd": {
     "problems": [
-      "squeezed: QStackedWidget is 1280x698, minimum 568x752",
-      "squeezed: QStackedWidget/QWidget is 1280x698, minimum 568x752",
+      "squeezed: QStackedWidget is 1280x698, minimum 565x752",
+      "squeezed: QStackedWidget/QWidget is 1280x698, minimum 565x752",
       "clipped: QStackedWidget/QWidget/TabBox[0]/TabBar shows 1266x3 of 1266x10",
-      "squeezed: QStackedWidget/QWidget/ImagePanel is 1280x662, minimum 568x716",
+      "squeezed: QStackedWidget/QWidget/ImagePanel is 1280x662, minimum 565x716",
       "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[0]/TabBar shows 3x646 of 10x646",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1] is 56x660, minimum 56x714",
       "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar shows 53x654 of 56x654",
@@ -37,18 +37,18 @@
   },
   "minimum": {
     "problems": [
-      "clipped: QStackedWidget/QWidget/TabBox[0]/TabBar shows 554x3 of 554x10",
+      "clipped: QStackedWidget/QWidget/TabBox[0]/TabBar shows 551x3 of 551x10",
       "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[0]/TabBar shows 3x700 of 10x700",
       "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar shows 53x708 of 56x708",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar is 56x708, minimum 56x714",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/Tab 'Image Generation' is 45x202, minimum 33x208",
-      "clipped: QStackedWidget/QWidget/TabBox[1]/TabBar shows 554x3 of 554x10",
-      "clipped: QStackedWidget/QWidget/TabBox[2]/TabBar shows 554x3 of 554x10"
+      "clipped: QStackedWidget/QWidget/TabBox[1]/TabBar shows 551x3 of 551x10",
+      "clipped: QStackedWidget/QWidget/TabBox[2]/TabBar shows 551x3 of 551x10"
     ],
     "size": [
-      568,
+      565,
       774
     ]
   },
@@ -69,10 +69,10 @@
   },
   "small": {
     "problems": [
-      "squeezed: QStackedWidget is 800x578, minimum 344x752",
-      "squeezed: QStackedWidget/QWidget is 800x578, minimum 344x752",
+      "squeezed: QStackedWidget is 800x578, minimum 341x752",
+      "squeezed: QStackedWidget/QWidget is 800x578, minimum 341x752",
       "clipped: QStackedWidget/QWidget/TabBox[0]/TabBar shows 786x3 of 786x10",
-      "squeezed: QStackedWidget/QWidget/ImagePanel is 800x542, minimum 344x716",
+      "squeezed: QStackedWidget/QWidget/ImagePanel is 800x542, minimum 341x716",
       "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[0]/TabBar shows 3x526 of 10x526",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1] is 56x540, minimum 56x714",
       "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar shows 53x534 of 56x534",

@@ -19,10 +19,12 @@ from PySide6.QtCore import QPoint, QRect, QSize, Qt
 from PySide6 import QtGui
 from PySide6.QtGui import QFontMetrics, QImage, QPainter, QPalette, QTextDocumentFragment
 from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QAbstractSpinBox, QApplication, QGroupBox, QLabel, QLayout,
-                               QSizePolicy, QStyle, QStyleOption, QStyleOptionButton, QStyleOptionComboBox,
+                               QPushButton, QSizePolicy, QStyle, QStyleOption, QStyleOptionButton, QStyleOptionComboBox,
                                QStyleOptionComplex, QStyleOptionFrame, QStyleOptionGroupBox, QStyleOptionMenuItem,
                                QStyleOptionProgressBar, QStyleOptionSlider, QStyleOptionSpinBox, QStyleOptionTab,
                                QStyleOptionToolButton, QStyleOptionViewItem, QSlider, QTabBar, QWidget)
+
+from src.ui.ink_style import InkStyle, set_primary_button
 
 if TYPE_CHECKING:
     from src.controller.app_controller import AppController
@@ -54,11 +56,13 @@ class GalleryState:
 
 
 _ENABLED = State.State_Enabled | State.State_Active
+# Styles may show a focus ring only when focus last moved by keyboard, so the focus states set that flag too:
+_FOCUSED = _ENABLED | State.State_HasFocus | State.State_KeyboardFocusChange
 STANDARD_STATES = (
     GalleryState('normal', _ENABLED),
     GalleryState('hover', _ENABLED | State.State_MouseOver),
     GalleryState('pressed', _ENABLED | State.State_Sunken | State.State_MouseOver),
-    GalleryState('focus', _ENABLED | State.State_HasFocus),
+    GalleryState('focus', _FOCUSED),
     GalleryState('disabled', State.State_None),
 )
 # Complex controls mark the hovered or pressed part with an active sub-control. Each entry is a function of the part:
@@ -66,7 +70,7 @@ _PART_STATES: tuple[Callable[[SubControl], GalleryState], ...] = (
     lambda _part: GalleryState('normal', _ENABLED),
     lambda part: GalleryState('hover', _ENABLED | State.State_MouseOver, part),
     lambda part: GalleryState('pressed', _ENABLED | State.State_Sunken | State.State_MouseOver, part),
-    lambda _part: GalleryState('focus', _ENABLED | State.State_HasFocus),
+    lambda _part: GalleryState('focus', _FOCUSED),
     lambda _part: GalleryState('disabled', State.State_None),
 )
 MENU_STATES = (
@@ -111,16 +115,44 @@ def _style() -> QStyle:
     return QApplication.style()
 
 
+_widget_cache: dict[str, QWidget] = {}
+_style_cache: dict[str, QStyle] = {}
+
+
+def _primary_button() -> QPushButton:
+    """Returns a hidden push button marked primary, for styles that read the mark from the drawn widget."""
+    if 'primary' not in _widget_cache:
+        button = QPushButton()
+        set_primary_button(button)
+        _widget_cache['primary'] = button
+    widget = _widget_cache['primary']
+    assert isinstance(widget, QPushButton)
+    return widget
+
+
+def _classic_scroll_bar_style() -> QStyle:
+    """Returns the application style with classic scroll bars, if it has an overlay scroll bar option."""
+    style = _style()
+    if not isinstance(style, InkStyle) or not style.overlay_scroll_bars:
+        return style
+    if 'classic_style' not in _style_cache:
+        _style_cache['classic_style'] = InkStyle(style.baseStyle().name(), style.colors, overlay_scroll_bars=False)
+    return _style_cache['classic_style']
+
+
 def _draw_push_button(painter: QPainter, rect: QRect, variant: str, state: GalleryState) -> None:
     option = QStyleOptionButton()
     _init_option(option, rect, state)
+    widget: Optional[QWidget] = None
     if variant == 'default':
         option.features = QStyleOptionButton.ButtonFeature.DefaultButton
     elif variant == 'flat':
         option.features = QStyleOptionButton.ButtonFeature.Flat
     elif variant == 'checked':
         option.state |= State.State_On
-    _style().drawControl(Control.CE_PushButton, option, painter, None)
+    elif variant == 'primary':
+        widget = _primary_button()
+    _style().drawControl(Control.CE_PushButton, option, painter, widget)
 
 
 def _draw_tool_button(painter: QPainter, rect: QRect, variant: str, state: GalleryState) -> None:
@@ -186,12 +218,16 @@ def _draw_slider(painter: QPainter, rect: QRect, variant: str, state: GallerySta
 
 
 def _draw_scroll_bar(painter: QPainter, rect: QRect, variant: str, state: GalleryState) -> None:
+    style = _style()
+    if variant.startswith('classic_'):
+        style = _classic_scroll_bar_style()
+        variant = variant.removeprefix('classic_')
     orientation, position = {'start': (Qt.Orientation.Horizontal, 0), 'middle': (Qt.Orientation.Horizontal, 50),
                              'end': (Qt.Orientation.Horizontal, 100), 'vertical': (Qt.Orientation.Vertical, 30)}[variant]
     option = _slider_option(rect, state, orientation, position)
     option.upsideDown = False
     option.subControls = SubControl.SC_All
-    _style().drawComplexControl(Complex.CC_ScrollBar, option, painter, None)
+    style.drawComplexControl(Complex.CC_ScrollBar, option, painter, None)
 
 
 def _draw_spin_box(painter: QPainter, rect: QRect, variant: str, state: GalleryState) -> None:
@@ -328,7 +364,7 @@ def _draw_tooltip(painter: QPainter, rect: QRect, _variant: str, state: GalleryS
 
 
 GALLERY_CONTROLS: tuple[GalleryControl, ...] = (
-    GalleryControl('push_button', QSize(72, 28), ('plain', 'default', 'checked', 'flat'), STANDARD_STATES,
+    GalleryControl('push_button', QSize(72, 28), ('plain', 'default', 'checked', 'flat', 'primary'), STANDARD_STATES,
                    _draw_push_button),
     GalleryControl('tool_button', QSize(44, 32), ('plain', 'auto_raise', 'checked', 'menu'), STANDARD_STATES,
                    _draw_tool_button),
@@ -342,6 +378,8 @@ GALLERY_CONTROLS: tuple[GalleryControl, ...] = (
                    _draw_scroll_bar),
     GalleryControl('scroll_bar_vertical', QSize(16, 140), ('vertical',), part_states(SubControl.SC_ScrollBarSlider),
                    _draw_scroll_bar),
+    GalleryControl('scroll_bar_classic', QSize(140, 16), ('classic_start', 'classic_middle', 'classic_end'),
+                   part_states(SubControl.SC_ScrollBarSlider), _draw_scroll_bar),
     GalleryControl('spin_box', QSize(80, 26), ('both', 'at_minimum', 'at_maximum'), part_states(SubControl.SC_SpinBoxUp),
                    _draw_spin_box),
     GalleryControl('combo_box', QSize(100, 26), ('plain', 'editable'), part_states(SubControl.SC_ComboBoxArrow),

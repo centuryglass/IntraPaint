@@ -19,6 +19,15 @@
         "options": ["intrapaint_ink", "None"],
         "saved": true
     },
+    "overlay_scroll_bars": {
+        "label": "Overlay scroll bars:",
+        "category": "Interface",
+        "subcategory": "Appearance",
+        "description": "With the IntraPaint Ink theme, draw thin scroll bars over the content they scroll, instead of beside it.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
     "font_point_size": {
         "label": "Font size:",
         "category": "Interface",

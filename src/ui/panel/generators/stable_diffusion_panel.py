@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QSizePolicy, QLabel, QPushButton, \
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QComboBox
 
 from src.config.cache import Cache
+from src.ui.ink_style import set_primary_button
 from src.ui.input_fields.seed_value_spinbox import SeedValueSpinbox
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.layout.divider import Divider
@@ -145,6 +146,7 @@ class StableDiffusionPanel(GeneratorPanel):
         self._generate_button = QPushButton()
         self._generate_button.setText(BUTTON_TEXT_GENERATE)
         self._generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
+        set_primary_button(self._generate_button)
         self._generate_button.clicked.connect(self.generate_signal)
 
         self._toolbar_generate_button = RotatingToolbarButton(BUTTON_TEXT_GENERATE)
