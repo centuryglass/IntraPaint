@@ -281,7 +281,8 @@ class ImagePanel(QWidget):
         if show_highlights:
             if self._showing_image_gen_controls:
                 area = self._image_stack.generation_area
-                color = AppConfig().get_color(AppConfig.RULER_GENERATION_AREA_COLOR, Qt.GlobalColor.blue)
+                color = AppConfig().get_color(AppConfig.RULER_GENERATION_AREA_COLOR,
+                                              self._horizontal_ruler.palette().color(QPalette.ColorRole.Highlight))
                 horizontal.append(RulerHighlight(area.x(), area.x() + area.width(), color, GENERATION_AREA_RULER_LANE))
                 vertical.append(RulerHighlight(area.y(), area.y() + area.height(), color, GENERATION_AREA_RULER_LANE))
             selection_layer = self._image_stack.selection_layer

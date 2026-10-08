@@ -191,6 +191,13 @@ class ImagePanelRulerTest(IntraPaintTestCase):
         AppConfig().set(AppConfig.RULER_GENERATION_AREA_COLOR, '#ff00ff')
         self.assertEqual([h.color for h in self.vertical.highlights], [QColor('#ff00ff')])
 
+    def test_empty_generation_area_color_uses_accent(self) -> None:
+        """With no generation area color configured, the highlight takes the palette's accent color."""
+        AppConfig().set(AppConfig.RULER_GENERATION_AREA_COLOR, '')
+        accent = self.horizontal.palette().color(QPalette.ColorRole.Highlight)
+        self.assertEqual([h.color for h in self.horizontal.highlights], [accent])
+        self.assertEqual([h.color for h in self.vertical.highlights], [accent])
+
     def test_font_size_setting(self) -> None:
         """A larger ruler font makes both rulers and the corner between them thicker."""
         initial_thickness = self.horizontal.thickness

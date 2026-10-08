@@ -10,8 +10,8 @@ Tabs have the following properties:
 import datetime
 from typing import Optional
 
-from PySide6.QtCore import Signal, Qt, QMimeData, QRect, QPoint, QSize
-from PySide6.QtGui import QPalette, QMouseEvent, QDrag, QResizeEvent
+from PySide6.QtCore import Signal, Qt, QMimeData, QRect, QRectF, QPoint, QSize
+from PySide6.QtGui import QPalette, QMouseEvent, QDrag, QResizeEvent, QPaintEvent, QPainter, QPen
 from PySide6.QtWidgets import QWidget, QFrame
 
 from src.config.application_config import AppConfig
@@ -35,10 +35,8 @@ class Tab(Label):
     def __init__(self, text: str, widget: Optional[QWidget] = None, shortcut_config_key: Optional[str] = None,
                  parent: Optional[QWidget] = None) -> None:
         super().__init__(text, size=AppConfig().get(AppConfig.TAB_FONT_POINT_SIZE), parent=parent)
+        # The frame reserves a 1px margin. paintEvent draws over it in ink:
         self.setFrameStyle(QFrame.Shape.Panel | QFrame.Shadow.Plain)
-        palette = self.palette()
-        palette.setColor(QPalette.ColorRole.Mid, palette.color(self.foregroundRole()))
-        self.setPalette(palette)
         self._content_widget: Optional[QWidget] = widget
         self._tab_bar_widgets: list[QWidget] = []
         self._container: Optional[QWidget] = None
@@ -166,6 +164,14 @@ class Tab(Label):
             self.clicked.emit(self)
         self._clicking = False
         self._dragging = False
+
+    def paintEvent(self, event: Optional[QPaintEvent]) -> None:
+        """Draws the label, then outlines it in the palette's ink color."""
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setPen(QPen(self.palette().color(QPalette.ColorRole.Shadow), 1))
+        painter.drawRect(QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5))
+        painter.end()
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Position the shortcut key hint label if relevant."""

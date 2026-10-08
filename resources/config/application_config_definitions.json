@@ -115,9 +115,9 @@
         "label": "Ruler generation area color:",
         "category": "Interface",
         "subcategory": "Layout",
-        "description": "Color of the image generation area's bar on the rulers. The selection's bar uses the selection overlay color. Both are drawn opaque, lightened or darkened as needed to stand out against the ruler.",
+        "description": "Color of the image generation area's bar on the rulers. Leave empty to use the theme's accent color. The selection's bar uses the selection overlay color. Both are drawn opaque, lightened or darkened as needed to stand out against the ruler.",
         "type": "string",
-        "default": "#3daee9",
+        "default": "",
         "saved": true
     },
     "ruler_font_size": {

@@ -1,13 +1,13 @@
 {
   "full_hd": {
     "problems": [
-      "clipped: QStackedWidget/QWidget/TabBox[0]/TabBar shows 1906x3 of 1906x10",
-      "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[0]/TabBar shows 3x1006 of 10x1006",
+      "clipped: QStackedWidget/QWidget/TabBox[0]/TabBar shows 1916x8 of 1916x10",
+      "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[0]/TabBar shows 8x1016 of 10x1016",
       "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar shows 53x1014 of 56x1014",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
-      "clipped: QStackedWidget/QWidget/TabBox[1]/TabBar shows 1906x3 of 1906x10",
-      "clipped: QStackedWidget/QWidget/TabBox[2]/TabBar shows 1906x3 of 1906x10"
+      "clipped: QStackedWidget/QWidget/TabBox[1]/TabBar shows 1916x8 of 1916x10",
+      "clipped: QStackedWidget/QWidget/TabBox[2]/TabBar shows 1916x8 of 1916x10"
     ],
     "size": [
       1920,
@@ -18,17 +18,17 @@
     "problems": [
       "squeezed: QStackedWidget is 1280x698, minimum 565x752",
       "squeezed: QStackedWidget/QWidget is 1280x698, minimum 565x752",
-      "clipped: QStackedWidget/QWidget/TabBox[0]/TabBar shows 1266x3 of 1266x10",
+      "clipped: QStackedWidget/QWidget/TabBox[0]/TabBar shows 1276x8 of 1276x10",
       "squeezed: QStackedWidget/QWidget/ImagePanel is 1280x662, minimum 565x716",
-      "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[0]/TabBar shows 3x646 of 10x646",
+      "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[0]/TabBar shows 8x656 of 10x656",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1] is 56x660, minimum 56x714",
       "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar shows 53x654 of 56x654",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar is 56x654, minimum 56x714",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/Tab 'Image Generation' is 45x148, minimum 33x208",
-      "clipped: QStackedWidget/QWidget/TabBox[1]/TabBar shows 1266x3 of 1266x10",
-      "clipped: QStackedWidget/QWidget/TabBox[2]/TabBar shows 1266x3 of 1266x10"
+      "clipped: QStackedWidget/QWidget/TabBox[1]/TabBar shows 1276x8 of 1276x10",
+      "clipped: QStackedWidget/QWidget/TabBox[2]/TabBar shows 1276x8 of 1276x10"
     ],
     "size": [
       1280,
@@ -37,15 +37,15 @@
   },
   "minimum": {
     "problems": [
-      "clipped: QStackedWidget/QWidget/TabBox[0]/TabBar shows 551x3 of 551x10",
-      "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[0]/TabBar shows 3x700 of 10x700",
+      "clipped: QStackedWidget/QWidget/TabBox[0]/TabBar shows 561x8 of 561x10",
+      "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[0]/TabBar shows 8x710 of 10x710",
       "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar shows 53x708 of 56x708",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar is 56x708, minimum 56x714",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/Tab 'Image Generation' is 45x202, minimum 33x208",
-      "clipped: QStackedWidget/QWidget/TabBox[1]/TabBar shows 551x3 of 551x10",
-      "clipped: QStackedWidget/QWidget/TabBox[2]/TabBar shows 551x3 of 551x10"
+      "clipped: QStackedWidget/QWidget/TabBox[1]/TabBar shows 561x8 of 561x10",
+      "clipped: QStackedWidget/QWidget/TabBox[2]/TabBar shows 561x8 of 561x10"
     ],
     "size": [
       565,
@@ -54,13 +54,13 @@
   },
   "portrait": {
     "problems": [
-      "clipped: QStackedWidget/QWidget/TabBox[0]/TabBar shows 1066x3 of 1066x10",
-      "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[0]/TabBar shows 3x1846 of 10x1846",
+      "clipped: QStackedWidget/QWidget/TabBox[0]/TabBar shows 1076x8 of 1076x10",
+      "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[0]/TabBar shows 8x1856 of 10x1856",
       "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar shows 53x1854 of 56x1854",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
-      "clipped: QStackedWidget/QWidget/TabBox[1]/TabBar shows 1066x3 of 1066x10",
-      "clipped: QStackedWidget/QWidget/TabBox[2]/TabBar shows 1066x3 of 1066x10"
+      "clipped: QStackedWidget/QWidget/TabBox[1]/TabBar shows 1076x8 of 1076x10",
+      "clipped: QStackedWidget/QWidget/TabBox[2]/TabBar shows 1076x8 of 1076x10"
     ],
     "size": [
       1080,
@@ -71,9 +71,9 @@
     "problems": [
       "squeezed: QStackedWidget is 800x578, minimum 341x752",
       "squeezed: QStackedWidget/QWidget is 800x578, minimum 341x752",
-      "clipped: QStackedWidget/QWidget/TabBox[0]/TabBar shows 786x3 of 786x10",
+      "clipped: QStackedWidget/QWidget/TabBox[0]/TabBar shows 796x8 of 796x10",
       "squeezed: QStackedWidget/QWidget/ImagePanel is 800x542, minimum 341x716",
-      "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[0]/TabBar shows 3x526 of 10x526",
+      "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[0]/TabBar shows 8x536 of 10x536",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1] is 56x540, minimum 56x714",
       "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar shows 53x534 of 56x534",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar is 56x534, minimum 56x714",
@@ -81,8 +81,8 @@
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/Tab 'Image Generation' is 45x73, minimum 33x208",
-      "clipped: QStackedWidget/QWidget/TabBox[1]/TabBar shows 786x3 of 786x10",
-      "clipped: QStackedWidget/QWidget/TabBox[2]/TabBar shows 786x3 of 786x10"
+      "clipped: QStackedWidget/QWidget/TabBox[1]/TabBar shows 796x8 of 796x10",
+      "clipped: QStackedWidget/QWidget/TabBox[2]/TabBar shows 796x8 of 796x10"
     ],
     "size": [
       800,
@@ -91,13 +91,13 @@
   },
   "ultrawide": {
     "problems": [
-      "clipped: QStackedWidget/QWidget/TabBox[0]/TabBar shows 3426x3 of 3426x10",
-      "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[0]/TabBar shows 3x1366 of 10x1366",
+      "clipped: QStackedWidget/QWidget/TabBox[0]/TabBar shows 3436x8 of 3436x10",
+      "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[0]/TabBar shows 8x1376 of 10x1376",
       "clipped: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar shows 53x1374 of 56x1374",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/ToolButton[0]/KeyHintLabel 'B' is 14x22, minimum 15x22",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/ToolButton[3]/KeyHintLabel 'F' is 13x22, minimum 14x22",
-      "clipped: QStackedWidget/QWidget/TabBox[1]/TabBar shows 3426x3 of 3426x10",
-      "clipped: QStackedWidget/QWidget/TabBox[2]/TabBar shows 3426x3 of 3426x10"
+      "clipped: QStackedWidget/QWidget/TabBox[1]/TabBar shows 3436x8 of 3436x10",
+      "clipped: QStackedWidget/QWidget/TabBox[2]/TabBar shows 3436x8 of 3436x10"
     ],
     "size": [
       3440,

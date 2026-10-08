@@ -4,7 +4,7 @@ from typing import Optional, cast, Callable
 
 from PySide6.QtCore import QSize, Qt, QRect, QPoint, QMimeData, Signal, QTimer
 from PySide6.QtGui import (QPixmap, QImage, QPainter, QTransform, QResizeEvent, QPaintEvent, QColor, QMouseEvent, QDrag,
-                           QAction, QPainterPath, QPen, QIcon)
+                           QAction, QPainterPath, QPalette, QPen, QIcon)
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QMenu, QApplication
 
 from src.config.cache import Cache
@@ -125,7 +125,7 @@ class LayerWidget(BorderedWidget):
         if isinstance(self._layer, TransformLayer):
             self._layer.transform_changed.connect(self._layer_content_change_slot)
         self._active = False
-        self._active_color = self.frame_color
+        self._active_color = self.palette().color(QPalette.ColorRole.Mid)
         self._inactive_color = self._active_color.darker() if self._active_color.lightness() > 100 \
             else self._active_color.lighter()
         self.frame_color = self._inactive_color
@@ -300,6 +300,10 @@ class LayerWidget(BorderedWidget):
     def minimumSizeHint(self) -> QSize:
         """Layer widgets have a fixed height, so the minimum height matches the size hint."""
         return QSize(super().minimumSizeHint().width(), self.sizeHint().height())
+
+    def hasHeightForWidth(self) -> bool:
+        """Layer widgets have a fixed height, so the word-wrapped label's height-for-width doesn't apply."""
+        return False
 
     @property
     def layer(self) -> Layer:
