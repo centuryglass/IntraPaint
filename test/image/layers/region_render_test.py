@@ -30,8 +30,6 @@ LAYER_MOVE_TEST_IMAGE = 'test/resources/test_images/layer_move_test.ora'
 
 ISSUE_147 = ('https://github.com/centuryglass/IntraPaint/issues/147: scaled and rotated layers sample differently in '
              'a region render')
-ISSUE_151 = ('https://github.com/centuryglass/IntraPaint/issues/151: HSL blend modes change base pixels outside the '
-             'layer')
 
 
 def _gradient_image(size: QSize, seed: int) -> QImage:
@@ -172,15 +170,14 @@ class RegionRenderTest(RenderTestCase):
                     layer.set_composition_mode(mode)
                     self.assert_tiles_match()
 
-    # No subtests here: a failed subtest fails the test outright instead of counting as the expected failure.
-    @pytest.mark.xfail(strict=True, reason=ISSUE_151)
     def test_pixel_aligned_layer_in_hsl_modes(self) -> None:
         """A translated layer over partial alpha renders the same in tiles, in the modes with custom compositing."""
         layer = self.add_layer('top', QTransform.fromTranslate(13, 7), opacity=0.7)
         for mode in CompositeMode:
             if mode.qt_composite_mode() is None:
-                layer.set_composition_mode(mode)
-                self.assert_tiles_match()
+                with self.subTest(mode=mode.name):
+                    layer.set_composition_mode(mode)
+                    self.assert_tiles_match()
 
     def test_fractional_translation(self) -> None:
         """A layer translated by a fraction of a pixel renders the same in tiles."""

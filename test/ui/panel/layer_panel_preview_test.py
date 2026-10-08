@@ -12,7 +12,6 @@ import sys
 from contextlib import nullcontext
 from typing import Optional
 
-import pytest
 from PySide6.QtCore import QPoint, QRect
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
@@ -24,7 +23,7 @@ from src.image.layers.layer_group import LayerGroup
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.layer_ui.layer_widget import LayerWidget
 from src.util.visual.image_utils import create_transparent_image, crop_to_content
-from test.image.layers.layer_group_render_test import CANVAS_SIZE, HSL_MODES, ISSUE_151, QT_MODES, \
+from test.image.layers.layer_group_render_test import CANVAS_SIZE, HSL_MODES, QT_MODES, \
     GroupRenderTestCase, _composite
 from test.render_assertions import full_render
 
@@ -138,7 +137,6 @@ class LayerPanelGroupPreviewTest(GroupRenderTestCase):
         """A group's preview composites its children in their own modes, for every Qt mode."""
         self.check_child_mode_previews(QT_MODES, True)
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_151)
     def test_child_hsl_mode_previews(self) -> None:
         """A group's preview composites its children in their own modes, for every HSL mode."""
         self.check_child_mode_previews(HSL_MODES, False)

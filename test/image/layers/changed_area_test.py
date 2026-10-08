@@ -36,8 +36,6 @@ from test.render_assertions import full_render
 app = QApplication.instance() or QApplication(sys.argv)
 
 CANVAS_SIZE = QSize(120, 90)
-ISSUE_132 = ('https://github.com/centuryglass/IntraPaint/issues/132: a non-isolated group smaller than the canvas '
-             'composites the content beneath it over itself, so moving its bounds changes pixels no layer reports')
 ISSUE_210 = ('https://github.com/centuryglass/IntraPaint/issues/210: adding, removing and reordering layers schedule a '
              'group render without reporting a changed area')
 LAYER_SIZE = QSize(40, 30)
@@ -93,11 +91,7 @@ class ChangedAreaRecorder:
 
 class ChangedAreaTestCase(IntraPaintTestCase):
     """Builds a stack with a background, a translated layer, and an isolated group holding a translated layer and a
-       scaled, rotated one.
-
-    The group is isolated because a non-isolated group smaller than the canvas changes the pixels beneath it wherever
-    its bounds reach (https://github.com/centuryglass/IntraPaint/issues/132). `NonIsolatedGroupTest` covers that case.
-    """
+       scaled, rotated one. `NonIsolatedGroupTest` covers the same group without isolation."""
 
     def setUp(self) -> None:
         super().setUp()
@@ -285,18 +279,16 @@ class LayerStructureTest(ChangedAreaTestCase):
 
 
 class NonIsolatedGroupTest(ChangedAreaTestCase):
-    """Changes to a non-isolated group's bounds, which also change the pixels beneath the group."""
+    """Changes to a non-isolated group's bounds."""
 
     def setUp(self) -> None:
         super().setUp()
         self.group.set_isolate(False)
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_132)
     def test_group_bounds_shrink(self) -> None:
         """Rotating a layer out past the group's bounds, then undoing it, shrinks the group's bounds."""
         self.assert_undo_redo_covered(lambda: self.grouped.rotate(45))
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_132)
     def test_crop_layer_in_group(self) -> None:
         """Cropping the layer that sets the group's bounds shrinks them."""
         self.assert_change_covered(lambda: self.rotated.crop_to_bounds(QRect(5, 5, 20, 15)))

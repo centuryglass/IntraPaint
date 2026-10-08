@@ -284,12 +284,10 @@ class GroupModeTest(GroupRenderTestCase):
         """A layer in a non-isolated group blends with the content beneath the group, in every QPainter mode."""
         self.check_child_modes(False, QT_MODES, True)
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_151)
     def test_child_hsl_modes_in_isolated_group(self) -> None:
         """A layer in an isolated group blends only with the group's other children, in every custom mode."""
         self.check_child_modes(True, HSL_MODES, False)
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_151)
     def test_child_hsl_modes_in_non_isolated_group(self) -> None:
         """A layer in a non-isolated group blends with the content beneath the group, in every custom mode."""
         self.check_child_modes(False, HSL_MODES, False)
