@@ -5,7 +5,7 @@ import datetime
 from threading import Lock
 from typing import Callable, Optional, Any, Generator
 
-from PySide6.QtCore import QObject, Signal, SignalInstance
+from PySide6.QtCore import QObject, Signal, SignalInstance, SIGNAL
 
 from src.config.application_config import AppConfig
 from src.util.singleton import Singleton
@@ -243,6 +243,18 @@ class UndoStack(metaclass=Singleton):
                 self.undo_count_changed.emit(0)
             if redo_count != 0:
                 self.redo_count_changed.emit(0)
+
+    def _reset(self) -> None:
+        """Disconnects everything connected to the count signals, then clears the undo/redo history.
+
+        Tests call this between cases. A connected slot that captures its owner keeps it alive for as long as the
+        connection exists, so connections left behind would keep every earlier test's widgets alive.
+        """
+        for signal, signature in ((self.undo_count_changed, 'undo_count_changed(int)'),
+                                  (self.redo_count_changed, 'redo_count_changed(int)')):
+            if self._signal_manager.receivers(SIGNAL(signature)) > 0:
+                signal.disconnect()
+        self.clear()
 
     def _add_to_stack(self, stack_item: _UndoAction | _UndoGroup, stack: list[_UndoAction | _UndoGroup]) -> None:
         # Identity, not equality: both stacks are empty lists after undoing the only action, and [] == [].

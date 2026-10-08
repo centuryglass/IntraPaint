@@ -20,7 +20,9 @@ import unittest
 from typing import Any, Optional
 
 import numpy as np
+from PySide6.QtCore import QCoreApplication, QEvent
 from PySide6.QtGui import QImage
+from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.a1111_config import A1111Config
 from src.config.application_config import AppConfig
@@ -28,6 +30,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.undo_stack import UndoStack
+from src.util.application_state import AppStateTracker
 from src.util.singleton import Singleton
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -43,8 +46,8 @@ COMPARISON_FORMAT = QImage.Format.Format_ARGB32_Premultiplied
 
 
 def reset_singletons() -> None:
-    """Discards all changes to config values and undo history, all config change connections, and all hotkey bindings
-    and modifier connections."""
+    """Discards all changes to config values, undo history and app state, and all connections, hotkey bindings and
+    modifier connections held by those singletons."""
     # pylint: disable=protected-access
     AppConfig()._reset()
     KeyConfig()._reset()
@@ -53,10 +56,32 @@ def reset_singletons() -> None:
     # test expects.
     if A1111Config in Singleton._instances:
         A1111Config()._reset()
-    UndoStack().clear()
+    UndoStack()._reset()
+    if AppStateTracker in Singleton._instances:
+        AppStateTracker()._reset()
     # HotkeyFilter needs a QApplication to construct, and an instance that doesn't exist has no state to reset.
     if HotkeyFilter.shared_instance is not None:
         HotkeyFilter.shared_instance._reset()
+
+
+def parentless_widgets() -> set[QWidget]:
+    """Returns every widget with no parent, or an empty set when no QApplication exists."""
+    if QApplication.instance() is None:
+        return set()
+    return {widget for widget in QApplication.topLevelWidgets() if widget.parentWidget() is None}
+
+
+def delete_widgets_created_since(existing: set[QWidget]) -> None:
+    """Deletes every widget with no parent that isn't in `existing`, along with its children.
+
+    A widget connected to a closure that captures it, from one of its own children's signals, is a reference cycle
+    that passes through Qt, so Python never collects it. Deleting it through Qt is the only way to free it.
+    """
+    if QApplication.instance() is None:
+        return
+    for widget in parentless_widgets() - existing:
+        widget.deleteLater()
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
 
 
 def tested_image_path(golden_path: str) -> str:
@@ -184,9 +209,10 @@ def assert_json_matches_snapshot(actual: Any, snapshot_path: str, msg: Optional[
 class IntraPaintTestCase(unittest.TestCase):
     """Base class for IntraPaint tests, keeping tests independent of the order they run in.
 
-    Config values, config connections, the undo history and hotkey bindings are singletons that persist across tests.
-    They're reset before each test, so it starts from the test config defaults, and again after it, so it can't leave
-    state behind for tests that don't use this class. The working directory is the project root during every test, since resources
+    Config values, config connections, the undo history, app state and hotkey bindings are singletons that persist
+    across tests. They're reset before each test, so it starts from the test config defaults, and again after it, so it
+    can't leave state behind for tests that don't use this class. Widgets with no parent that the test created are
+    deleted after it, with their children. The working directory is the project root during every test, since resources
     and the config definitions load from paths relative to it.
 
     Subclasses that override setUp or tearDown must call the superclass implementation: setUp first, tearDown last.
@@ -196,9 +222,12 @@ class IntraPaintTestCase(unittest.TestCase):
         super().setUp()
         os.chdir(PROJECT_ROOT)
         reset_singletons()
+        self._existing_widgets = parentless_widgets()
 
     def tearDown(self) -> None:
         reset_singletons()
+        delete_widgets_created_since(self._existing_widgets)
+        del self._existing_widgets
         super().tearDown()
 
     def assert_image_matches_golden(self, actual: QImage, golden_path: str, msg: Optional[str] = None) -> None:

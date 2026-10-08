@@ -167,8 +167,9 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
   - fails any test that opens a modal dialog or menu, which would otherwise block forever offscreen. Mock the dialog,
     or avoid the code path.
 - **Tests extend `IntraPaintTestCase`** (`test/base_test_case.py`), in files named `<name>_test.py` under `test/`. Its
-  `setUp` and `tearDown` reset the config singletons and the undo stack, and `setUp` changes to the project root.
-  Tests share one process, so a test that changes any other singleton resets it too.
+  `setUp` and `tearDown` reset the singletons listed in `reset_singletons`, and `setUp` changes to the project root.
+  Tests share one process, so a test that changes any other singleton resets it too. `tearDown` deletes every
+  parentless widget the test created, so a widget shared between tests is created in `setUpClass`.
 - **Golden images go through `assert_image_matches_golden`**, and JSON snapshots through
   `assert_json_matches_snapshot`, both in `test/base_test_case.py`. Its module docstring covers updating either.
 - **Style and panel layouts are pinned.** `test/ui/style_gallery_test.py` compares each standard control's states with
