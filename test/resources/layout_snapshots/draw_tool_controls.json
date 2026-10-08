@@ -2,41 +2,41 @@
   "minimum": {
     "problems": [],
     "size": [
-      312,
+      309,
       202
     ]
   },
   "narrow": {
     "problems": [
-      "overlap: QLabel 'Size:' and KeyHintLabel '[' share 8x30",
+      "overlap: QLabel 'Size:' and KeyHintLabel '[' share 9x30",
       "overlap: IntSliderSpinbox and KeyHintLabel ']' share 14x30",
-      "overlap: QLabel 'Opacity:' and KeyHintLabel '<' share 8x30",
+      "overlap: QLabel 'Opacity:' and KeyHintLabel '<' share 9x30",
       "overlap: FloatSliderSpinbox[0] and KeyHintLabel '>' share 14x30",
-      "overlap: QLabel 'Hardness:' and KeyHintLabel '{' share 8x30",
+      "overlap: QLabel 'Hardness:' and KeyHintLabel '{' share 9x30",
       "overlap: FloatSliderSpinbox[1] and KeyHintLabel '}' share 14x30",
-      "clipped: IntSliderSpinbox shows 75x30 of 148x30",
-      "clipped: IntSliderSpinbox/QSlider shows 71x20 of 88x20",
+      "clipped: IntSliderSpinbox shows 74x30 of 148x30",
+      "clipped: IntSliderSpinbox/QSlider shows 70x23 of 88x23",
       "clipped: IntSliderSpinbox/QSpinBox shows 0x0 of 50x26",
-      "clipped: FloatSliderSpinbox[0] shows 75x30 of 148x30",
-      "clipped: FloatSliderSpinbox[0]/QSlider shows 71x20 of 84x20",
+      "clipped: FloatSliderSpinbox[0] shows 74x30 of 148x30",
+      "clipped: FloatSliderSpinbox[0]/QSlider shows 70x23 of 84x23",
       "clipped: FloatSliderSpinbox[0]/QDoubleSpinBox shows 0x0 of 54x26",
-      "clipped: FloatSliderSpinbox[1] shows 75x30 of 148x30",
-      "clipped: FloatSliderSpinbox[1]/QSlider shows 71x20 of 84x20",
+      "clipped: FloatSliderSpinbox[1] shows 74x30 of 148x30",
+      "clipped: FloatSliderSpinbox[1]/QSlider shows 70x23 of 84x23",
       "clipped: FloatSliderSpinbox[1]/QDoubleSpinBox shows 0x0 of 54x26",
-      "squeezed: QLabel 'Pattern:' is 42x48, minimum 47x17",
-      "squeezed: FillStyleComboBox is 42x32, minimum 187x32",
-      "squeezed: CheckBox 'Antialiasing' is 66x22, minimum 92x22",
-      "squeezed: CheckBox 'Draw in selection only' is 66x22, minimum 153x22"
+      "squeezed: QLabel 'Pattern:' is 41x48, minimum 47x17",
+      "squeezed: FillStyleComboBox is 41x32, minimum 184x32",
+      "squeezed: CheckBox 'Antialiasing' is 65x22, minimum 93x22",
+      "squeezed: CheckBox 'Draw in selection only' is 65x22, minimum 154x22"
     ],
     "size": [
-      156,
+      154,
       202
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      312,
+      309,
       202
     ]
   },
@@ -46,36 +46,36 @@
       "squeezed: KeyHintLabel '[' is 14x12, minimum 14x21",
       "squeezed: KeyHintLabel ']' is 14x12, minimum 14x21",
       "squeezed: QLabel 'Size:' is 60x12, minimum 28x17",
-      "squeezed: IntSliderSpinbox is 188x12, minimum 75x30",
-      "squeezed: IntSliderSpinbox/QSlider is 128x8, minimum 15x20",
+      "squeezed: IntSliderSpinbox is 185x12, minimum 72x30",
+      "squeezed: IntSliderSpinbox/QSlider is 125x8, minimum 12x23",
       "squeezed: IntSliderSpinbox/QSpinBox is 50x8, minimum 50x26",
       "squeezed: KeyHintLabel '<' is 14x12, minimum 14x21",
       "squeezed: KeyHintLabel '>' is 14x12, minimum 14x21",
       "squeezed: QLabel 'Opacity:' is 60x12, minimum 49x17",
-      "squeezed: FloatSliderSpinbox[0] is 188x12, minimum 79x30",
-      "squeezed: FloatSliderSpinbox[0]/QSlider is 124x8, minimum 15x20",
+      "squeezed: FloatSliderSpinbox[0] is 185x12, minimum 76x30",
+      "squeezed: FloatSliderSpinbox[0]/QSlider is 121x8, minimum 12x23",
       "squeezed: FloatSliderSpinbox[0]/QDoubleSpinBox is 54x8, minimum 54x26",
       "squeezed: KeyHintLabel '{' is 14x12, minimum 14x21",
       "squeezed: KeyHintLabel '}' is 14x12, minimum 14x21",
       "squeezed: QLabel 'Hardness:' is 60x12, minimum 60x17",
-      "squeezed: FloatSliderSpinbox[1] is 188x12, minimum 79x30",
-      "squeezed: FloatSliderSpinbox[1]/QSlider is 124x8, minimum 15x20",
+      "squeezed: FloatSliderSpinbox[1] is 185x12, minimum 76x30",
+      "squeezed: FloatSliderSpinbox[1]/QSlider is 121x8, minimum 12x23",
       "squeezed: FloatSliderSpinbox[1]/QDoubleSpinBox is 54x8, minimum 54x26",
       "clipped: ColorPairWidget shows 48x38 of 48x48",
       "squeezed: QLabel 'Pattern:' is 47x12, minimum 47x17",
-      "squeezed: FillStyleComboBox is 187x12, minimum 187x32",
-      "squeezed: CheckBox 'Antialiasing' is 92x12, minimum 92x22",
-      "squeezed: CheckBox 'Draw in selection only' is 153x12, minimum 153x22"
+      "squeezed: FillStyleComboBox is 184x12, minimum 184x32",
+      "squeezed: CheckBox 'Antialiasing' is 93x12, minimum 93x22",
+      "squeezed: CheckBox 'Draw in selection only' is 154x12, minimum 154x22"
     ],
     "size": [
-      312,
+      309,
       101
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      312,
+      309,
       1200
     ]
   },

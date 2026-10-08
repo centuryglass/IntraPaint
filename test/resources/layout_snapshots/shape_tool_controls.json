@@ -2,65 +2,65 @@
   "minimum": {
     "problems": [],
     "size": [
-      537,
+      531,
       227
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: QLabel 'Shape Type:' is 50x40, minimum 72x17",
-      "squeezed: FillStyleComboBox is 62x32, minimum 187x32",
-      "squeezed: QLabel 'Line style:' is 50x32, minimum 60x17",
-      "squeezed: PenStyleComboBox is 62x32, minimum 149x32",
-      "squeezed: PenJoinStyleComboBox is 62x32, minimum 95x32",
-      "squeezed: QLabel 'Line join style:' is 50x32, minimum 84x17"
+      "squeezed: QLabel 'Shape Type:' is 49x40, minimum 72x17",
+      "squeezed: FillStyleComboBox is 61x32, minimum 184x32",
+      "squeezed: QLabel 'Line style:' is 49x32, minimum 60x17",
+      "squeezed: PenStyleComboBox is 61x32, minimum 146x32",
+      "squeezed: PenJoinStyleComboBox is 61x32, minimum 92x32",
+      "squeezed: QLabel 'Line join style:' is 49x32, minimum 84x17"
     ],
     "size": [
-      268,
+      265,
       227
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      537,
+      531,
       227
     ]
   },
   "short": {
     "problems": [
       "squeezed: QLabel 'Shape Type:' is 72x10, minimum 72x17",
-      "squeezed: ShapeModeComboBox is 441x10, minimum 124x40",
-      "squeezed: ColorButton 'Fill Color' is 265x10, minimum 94x30",
+      "squeezed: ShapeModeComboBox is 435x10, minimum 121x40",
+      "squeezed: ColorButton 'Fill Color' is 262x10, minimum 94x30",
       "squeezed: QLabel 'Pattern:' is 72x10, minimum 47x17",
-      "squeezed: FillStyleComboBox is 187x10, minimum 187x32",
-      "squeezed: ColorButton 'Line color' is 239x10, minimum 99x30",
-      "squeezed: IntSliderSpinbox[1] is 519x10, minimum 141x30",
+      "squeezed: FillStyleComboBox is 184x10, minimum 184x32",
+      "squeezed: ColorButton 'Line color' is 236x10, minimum 99x30",
+      "squeezed: IntSliderSpinbox[1] is 513x10, minimum 138x30",
       "squeezed: IntSliderSpinbox[1]/QLabel 'Line width:' is 64x6, minimum 64x17",
-      "squeezed: IntSliderSpinbox[1]/QSlider is 393x6, minimum 15x20",
+      "squeezed: IntSliderSpinbox[1]/QSlider is 387x6, minimum 12x23",
       "squeezed: IntSliderSpinbox[1]/QSpinBox is 50x6, minimum 50x26",
       "squeezed: QLabel 'Line style:' is 84x10, minimum 60x17",
-      "squeezed: PenStyleComboBox is 149x10, minimum 149x32",
-      "squeezed: PenJoinStyleComboBox is 149x10, minimum 95x32",
-      "squeezed: CheckBox 'Antialiasing' is 265x10, minimum 92x22",
+      "squeezed: PenStyleComboBox is 146x10, minimum 146x32",
+      "squeezed: PenJoinStyleComboBox is 146x10, minimum 92x32",
+      "squeezed: CheckBox 'Antialiasing' is 262x10, minimum 93x22",
       "squeezed: QLabel 'Line join style:' is 84x10, minimum 84x17"
     ],
     "size": [
-      537,
+      531,
       113
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      537,
+      531,
       1200
     ]
   },
   "wide": {
     "problems": [],
     "size": [
-      1611,
+      1600,
       227
     ]
   }

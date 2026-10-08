@@ -276,6 +276,7 @@ class LayerPanelTest(IntraPaintTestCase):
 
     def test_activation_keeps_widget_size(self) -> None:
         """Highlighting a layer widget doesn't change its size, so the list doesn't shift on click."""
+        flush_layouts()
         widget = self.widget_for(self.inner_top)
         inactive_size = widget.size()
         self.image_stack.active_layer = self.inner_top
