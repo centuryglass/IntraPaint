@@ -188,6 +188,7 @@ class TextTool(BaseTool):
             self._text_layer.lock_changed.disconnect(self._layer_lock_change_slot)
             self._text_layer.transform_changed.disconnect(self._layer_transform_change_slot)
             self._text_layer.size_changed.disconnect(self._layer_size_change_slot)
+            self._text_layer.text_data_changed.disconnect(self._layer_text_data_change_slot)
         self._control_panel.text_rect_changed.disconnect(self._control_text_data_changed_slot)
         self._control_panel.offset_changed.disconnect(self._control_offset_changed_slot)
         self._placement_outline.placement_changed.disconnect(self._placement_outline_changed_slot)
@@ -197,6 +198,7 @@ class TextTool(BaseTool):
             self._text_layer.lock_changed.connect(self._layer_lock_change_slot)
             self._text_layer.transform_changed.connect(self._layer_transform_change_slot)
             self._text_layer.size_changed.connect(self._layer_size_change_slot)
+            self._text_layer.text_data_changed.connect(self._layer_text_data_change_slot)
         self._control_panel.text_rect_changed.connect(self._control_text_data_changed_slot)
         self._control_panel.offset_changed.connect(self._control_offset_changed_slot)
         self._placement_outline.placement_changed.connect(self._placement_outline_changed_slot)
@@ -255,6 +257,15 @@ class TextTool(BaseTool):
         text_rect.size = size
         self._control_panel.text_rect = text_rect
         self._placement_outline.outline_size = QSizeF(size)
+        self._connect_signals()
+
+    def _layer_text_data_change_slot(self, text_data: TextRect) -> None:
+        """Loads text changes made outside the panel, such as undo and redo, into the panel and outline."""
+        if not self.is_active:
+            return
+        self._disconnect_signals()
+        self._control_panel.text_rect = text_data
+        self._placement_outline.outline_size = QSizeF(text_data.size)
         self._connect_signals()
 
     def _layer_transform_change_slot(self, layer: TransformLayer, transform: QTransform) -> None:

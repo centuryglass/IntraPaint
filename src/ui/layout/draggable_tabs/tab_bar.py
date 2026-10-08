@@ -423,7 +423,7 @@ class TabBar(QFrame):
 
     def _apply_orientation(self) -> None:
         layout_class = QHBoxLayout if self._orientation == Qt.Orientation.Horizontal else QVBoxLayout
-        if not isinstance(self._orientation, layout_class):
+        if not isinstance(self._layout, layout_class):
             clear_layout(self._layout, unparent=False)
             temp_widget = QWidget()
             temp_widget.setLayout(self._layout)
@@ -462,14 +462,14 @@ class TabBar(QFrame):
 
     def _update_insert_pos(self, point: QPointF):
         """When dragging in a Tab or other widget, find where the tab will be placed."""
-        if len(self._widgets) == 0:
+        assert self._drag_list is not None
+        if len(self._drag_list) == 0:
             if self._insert_index != 0:
                 self._insert_index = 0
                 self._insert_pos = 10
                 self.update()
             return
         mouse_pos = int(point.x() if self._orientation == Qt.Orientation.Horizontal else point.y())
-        assert self._drag_list is not None
         start_widget = self._toggle_button if self._drag_list == self._tabs else self._spacer_widget
         if self._orientation == Qt.Orientation.Horizontal:
             margin = self._layout.contentsMargins().right()

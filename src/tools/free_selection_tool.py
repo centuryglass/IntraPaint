@@ -14,6 +14,7 @@ from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_DESELECT
 from src.ui.panel.tool_control_panels.free_selection_panel import FreeSelectionPanel
+from src.undo_stack import UndoStack
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.text_drawing_utils import rich_text_key_hint, left_button_hint_text
 
@@ -86,26 +87,30 @@ class FreeSelectionTool(BaseTool):
         return self._control_panel
 
     def _close_and_select(self) -> None:
+        """Clears the polygon and selects or deselects its area, as one undo step that restores the open polygon."""
         polygon = self._path_item.get_path()
         if polygon is None:
             return
         self._preview_line.set_line(QLineF())
         self._preview_line.setVisible(False)
-        self._path_item.clear_points()
         layer = self._image_stack.selection_layer
         layer_pos = layer.transformed_bounds.topLeft()
         bounds = polygon.boundingRect().toAlignedRect()
         bounds.translate(-layer_pos.x(), -layer_pos.y())
         bounds = bounds.intersected(layer.bounds)
-        with layer.borrow_image(bounds) as selection_img:
-            painter = QPainter(selection_img)
-            if self._clearing:
-                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
-            painter.setTransform(QTransform.fromTranslate(-layer_pos.x(), -layer_pos.y()))
-            path = QPainterPath()
-            path.addPolygon(polygon)
-            painter.fillPath(path, Qt.GlobalColor.red)
-            painter.end()
+        with UndoStack().combining_actions('FreeSelectionTool._close_and_select'):
+            self._path_item.clear_points()
+            if bounds.isEmpty():
+                return
+            with layer.borrow_image(bounds) as selection_img:
+                painter = QPainter(selection_img)
+                if self._clearing:
+                    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
+                painter.setTransform(QTransform.fromTranslate(-layer_pos.x(), -layer_pos.y()))
+                path = QPainterPath()
+                path.addPolygon(polygon)
+                painter.fillPath(path, Qt.GlobalColor.red)
+                painter.end()
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Start selecting on click."""

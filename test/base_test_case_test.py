@@ -4,11 +4,14 @@ import os
 import shutil
 import tempfile
 import unittest
+from unittest.mock import MagicMock
 
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QColor, QImage
+from PySide6.QtCore import QEvent, QSize, Qt
+from PySide6.QtGui import QColor, QImage, QKeyEvent, QKeySequence
+from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.application_config import AppConfig
+from src.hotkey_filter import HotkeyFilter
 from src.undo_stack import UndoStack
 from test.base_test_case import (IntraPaintTestCase, PROJECT_ROOT, assert_image_matches_golden, assert_images_equal,
                                  assert_json_matches_snapshot, tested_image_path)
@@ -165,6 +168,43 @@ class IntraPaintTestCaseTest(unittest.TestCase):
         self.assertEqual(observed, {'max_undo': default_max_undo, 'undo_count': 0, 'cwd': PROJECT_ROOT})
         self.assertEqual(AppConfig().get(AppConfig.MAX_UNDO), default_max_undo)
         self.assertEqual(UndoStack().undo_count(), 0)
+
+    def test_hotkeys_reset_before_and_after(self) -> None:
+        """Hotkey bindings and modifier connections made outside a test, or inside one, don't outlive it."""
+        hotkey_filter = HotkeyFilter.instance()
+        widget = QWidget()
+        observed: dict[str, int] = {}
+
+        def _press_key_and_change_modifiers() -> None:
+            key_event = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_F12, Qt.KeyboardModifier.NoModifier)
+            QApplication.sendEvent(widget, key_event)
+            hotkey_filter.modifiers_changed.emit(Qt.KeyboardModifier.ShiftModifier)
+
+        outside_hotkey = MagicMock(return_value=True)
+        outside_listener = MagicMock()
+        inside_hotkey = MagicMock(return_value=True)
+        inside_listener = MagicMock()
+
+        class _Case(IntraPaintTestCase):
+            def test_body(self) -> None:
+                """Checks that earlier bindings are gone, then adds its own."""
+                _press_key_and_change_modifiers()
+                observed['outside_hotkey'] = outside_hotkey.call_count
+                observed['outside_listener'] = outside_listener.call_count
+                hotkey_filter.register_keybinding('test.inside', inside_hotkey, QKeySequence(Qt.Key.Key_F12))
+                hotkey_filter.modifiers_changed.connect(inside_listener)
+                hotkey_filter.set_default_focus(widget)
+
+        hotkey_filter.register_keybinding('test.outside', outside_hotkey, QKeySequence(Qt.Key.Key_F12))
+        hotkey_filter.modifiers_changed.connect(outside_listener)
+        result = unittest.TestResult()
+        _Case('test_body').run(result)
+        self.assertTrue(result.wasSuccessful(), result.errors + result.failures)
+        self.assertEqual(observed, {'outside_hotkey': 0, 'outside_listener': 0})
+        _press_key_and_change_modifiers()
+        inside_hotkey.assert_not_called()
+        inside_listener.assert_not_called()
+        self.assertIsNone(hotkey_filter.default_focus())
 
 
 if __name__ == '__main__':

@@ -90,6 +90,11 @@ class LayerGroup(Layer, LayerParent):
         self._bounds = QRect(bounds)
         return bounds
 
+    def _size_change_bounds(self, old_size: QSize) -> QRect:
+        """Returns the group's new bounds. Its old bounds aren't known here: _get_local_bounds updates them after
+           calling set_size."""
+        return self.bounds
+
     def flip_horizontal(self) -> None:
         """Flip the group horizontally."""
         if self.locked:
@@ -158,8 +163,10 @@ class LayerGroup(Layer, LayerParent):
     def copy(self) -> 'LayerGroup':
         """Returns a copy of this layer, and all the layers within it."""
         copy = LayerGroup(self.name + ' (copy)')
-        copy.opacity = self.opacity
-        copy.composition_mode = self.composition_mode
+        copy.set_opacity(self.opacity)
+        copy.set_composition_mode(self.composition_mode)
+        copy.set_visible(self.visible)
+        copy.set_isolate(self.isolate)
         for layer in self._layers:
             child_layer_copy = layer.copy()
             copy.insert_layer(child_layer_copy, copy.count)
@@ -211,6 +218,38 @@ class LayerGroup(Layer, LayerParent):
         image = create_transparent_image(bounds.size())
         self.render(base_image=image, transform=QTransform.fromTranslate(-bounds.x(), -bounds.y()))
         self._image_cache.data = image
+        return image
+
+    def preview_image(self) -> QImage:
+        """Returns the group's own content for its layer panel preview, covering the group's bounds.
+
+        Like an image layer's preview, this ignores the group's own visibility, opacity and composition mode, and
+        the visibility of the groups it is in. Descendants that are hidden themselves, or inside a hidden nested
+        group, stay hidden, so a group whose layers are all hidden has a blank preview.
+        """
+        hidden_ancestors: list[Layer] = []
+        ancestor: Optional[Layer] = self
+        while ancestor is not None:
+            if not ancestor.get_visible():
+                hidden_ancestors.append(ancestor)
+            parent = ancestor.layer_parent
+            assert parent is None or isinstance(parent, Layer)
+            ancestor = parent
+        if not hidden_ancestors and self._opacity == 1.0 and self._mode == CompositeMode.NORMAL:
+            return self.get_qimage()
+        bounds = self.bounds
+        image = create_transparent_image(bounds.size())
+        opacity, mode = self._opacity, self._mode
+        # Rendering reads visibility, opacity and mode, so they change without signals and are restored before
+        # anything else can read them.
+        with ExitStack() as stack:
+            for hidden_layer in hidden_ancestors:
+                stack.enter_context(hidden_layer.with_visibility_forced())
+            self._opacity, self._mode = 1.0, CompositeMode.NORMAL
+            try:
+                self.render(base_image=image, transform=QTransform.fromTranslate(-bounds.x(), -bounds.y()))
+            finally:
+                self._opacity, self._mode = opacity, mode
         return image
 
     def render(self, base_image: QImage, transform: Optional[QTransform] = None,
@@ -578,6 +617,7 @@ class LayerGroup(Layer, LayerParent):
                     layer.lock_changed.emit(layer, layer.locked)
                 if isinstance(layer, TransformLayer) and layer_transforms[layer] != layer.transform:
                     layer.transform_changed.emit(layer, layer.transform)
+                    layer.content_changed.emit(layer, layer.transform_change_bounds(layer_transforms[layer]))
                 if isinstance(layer, ImageLayer) and alpha_lock_states[layer] != layer.alpha_locked:
                     layer.alpha_lock_changed.emit(layer, layer.alpha_locked)
                 if isinstance(layer, LayerGroup) and isolate_states[layer] != layer.isolate:

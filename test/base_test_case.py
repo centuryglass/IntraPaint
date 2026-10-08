@@ -26,6 +26,7 @@ from src.config.a1111_config import A1111Config
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.hotkey_filter import HotkeyFilter
 from src.undo_stack import UndoStack
 from src.util.singleton import Singleton
 
@@ -42,7 +43,8 @@ COMPARISON_FORMAT = QImage.Format.Format_ARGB32_Premultiplied
 
 
 def reset_singletons() -> None:
-    """Discards all changes to config values and undo history, along with all config change connections."""
+    """Discards all changes to config values and undo history, all config change connections, and all hotkey bindings
+    and modifier connections."""
     # pylint: disable=protected-access
     AppConfig()._reset()
     KeyConfig()._reset()
@@ -52,6 +54,9 @@ def reset_singletons() -> None:
     if A1111Config in Singleton._instances:
         A1111Config()._reset()
     UndoStack().clear()
+    # HotkeyFilter needs a QApplication to construct, and an instance that doesn't exist has no state to reset.
+    if HotkeyFilter.shared_instance is not None:
+        HotkeyFilter.shared_instance._reset()
 
 
 def tested_image_path(golden_path: str) -> str:
@@ -179,9 +184,9 @@ def assert_json_matches_snapshot(actual: Any, snapshot_path: str, msg: Optional[
 class IntraPaintTestCase(unittest.TestCase):
     """Base class for IntraPaint tests, keeping tests independent of the order they run in.
 
-    Config values, config connections and the undo history are singletons that persist across tests. They're reset
-    before each test, so it starts from the test config defaults, and again after it, so it can't leave state behind
-    for tests that don't use this class. The working directory is the project root during every test, since resources
+    Config values, config connections, the undo history and hotkey bindings are singletons that persist across tests.
+    They're reset before each test, so it starts from the test config defaults, and again after it, so it can't leave
+    state behind for tests that don't use this class. The working directory is the project root during every test, since resources
     and the config definitions load from paths relative to it.
 
     Subclasses that override setUp or tearDown must call the superclass implementation: setUp first, tearDown last.

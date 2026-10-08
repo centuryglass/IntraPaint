@@ -1,0 +1,72 @@
+{
+  "minimum": {
+    "problems": [
+      "squeezed: ReflowingButtonGroup is 211x30, minimum 126x70",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 211x10, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 211x10, minimum 126x30",
+      "squeezed: DualToggle/Label 'Rectangle' is 94x27, minimum 106x29",
+      "squeezed: DualToggle/Label 'Ellipse' is 94x27, minimum 86x29"
+    ],
+    "size": [
+      229,
+      90
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "squeezed: ReflowingButtonGroup is 96x30, minimum 126x70",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 96x10, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 96x10, minimum 126x30",
+      "squeezed: DualToggle/Label 'Rectangle' is 36x27, minimum 106x29",
+      "squeezed: DualToggle/Label 'Ellipse' is 36x27, minimum 86x29"
+    ],
+    "size": [
+      114,
+      90
+    ]
+  },
+  "preferred": {
+    "problems": [
+      "squeezed: DualToggle/Label 'Rectangle' is 107x27, minimum 106x29",
+      "squeezed: DualToggle/Label 'Ellipse' is 107x27, minimum 86x29"
+    ],
+    "size": [
+      256,
+      90
+    ]
+  },
+  "short": {
+    "problems": [
+      "squeezed: ReflowingButtonGroup is 238x6, minimum 126x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 102x6, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 126x6, minimum 126x30",
+      "squeezed: DualToggle/Label 'Rectangle' is 107x6, minimum 106x29",
+      "squeezed: DualToggle/Label 'Ellipse' is 107x6, minimum 86x29",
+      "squeezed: KeyHintLabel 'Q' is 16x6, minimum 15x21"
+    ],
+    "size": [
+      256,
+      45
+    ]
+  },
+  "tall": {
+    "problems": [
+      "squeezed: DualToggle/Label 'Rectangle' is 107x27, minimum 106x29",
+      "squeezed: DualToggle/Label 'Ellipse' is 107x27, minimum 86x29"
+    ],
+    "size": [
+      256,
+      1200
+    ]
+  },
+  "wide": {
+    "problems": [
+      "squeezed: DualToggle/Label 'Rectangle' is 779x27, minimum 106x29",
+      "squeezed: DualToggle/Label 'Ellipse' is 779x27, minimum 86x29"
+    ],
+    "size": [
+      1600,
+      90
+    ]
+  }
+}

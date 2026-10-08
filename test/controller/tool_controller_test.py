@@ -1,5 +1,5 @@
-"""Tests ToolController tool loading, including startup without the compiled image_fill module, and the padding scroll
-   modifier."""
+"""Tests ToolController tool loading, including startup without the compiled image_fill module, modifier delegation,
+   and the padding scroll modifier."""
 import importlib
 import sys
 from unittest.mock import patch
@@ -13,8 +13,11 @@ from src.config.cache import Cache
 from src.config.config_entry import RangeKey
 from src.controller import tool_controller
 from src.controller.tool_controller import ToolController, WHEEL_NOTCH_DELTA
+from src.hotkey_filter import HotkeyFilter
+from src.tools.base_tool import BaseTool
 from src.tools.draw_tool import DrawTool
 from src.tools.eraser_tool import EraserTool
+from src.tools.eyedropper_tool import EyedropperTool
 from src.tools.fill_tool import FillTool
 from src.tools.selection_fill_tool import SelectionFillTool
 from src.tools.shape_selection_tool import ShapeSelectionTool
@@ -59,6 +62,65 @@ class ToolControllerTest(ToolTestCase):
         for tool_class in (DrawTool, EraserTool, ShapeSelectionTool):
             self.assertIsNotNone(controller.find_tool_by_class(tool_class))
         self.assertIsInstance(controller.active_tool, DrawTool)
+
+
+class ModifierDelegationTest(ToolTestCase):
+    """Tool delegation through held modifiers."""
+
+    CTRL = Qt.KeyboardModifier.ControlModifier
+    CTRL_SHIFT = Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.draw_tool = DrawTool(self.image_stack, self.image_viewer)
+        self.eyedropper_tool = EyedropperTool(self.image_stack)
+        self.eraser_tool = EraserTool(self.image_stack, self.image_viewer)
+        self.tool_controller.add_tool(self.eyedropper_tool)
+        self.tool_controller.add_tool(self.eraser_tool)
+        self.activate_tool(self.draw_tool)
+        self.tool_controller.register_tool_delegate(self.draw_tool, self.eyedropper_tool, self.CTRL)
+        self.tool_controller.register_tool_delegate(self.draw_tool, self.eyedropper_tool, self.CTRL_SHIFT)
+        self.tool_controller.register_tool_delegate(self.draw_tool, self.eraser_tool, Qt.KeyboardModifier.AltModifier)
+        self.tool_changes: list[BaseTool] = []
+        self.tool_controller.active_tool_changed.connect(self.tool_changes.append)
+
+    def _set_modifiers(self, modifiers: Qt.KeyboardModifier) -> None:
+        HotkeyFilter.instance().modifiers_changed.emit(modifiers)
+
+    def test_modifier_activates_delegate_and_release_restores_tool(self) -> None:
+        """Holding a registered modifier activates its delegate, and releasing it restores the original tool."""
+        self._set_modifiers(self.CTRL)
+        self.assertIs(self.tool_controller.active_tool, self.eyedropper_tool)
+        self.assertTrue(self.eyedropper_tool.is_active)
+        self.assertFalse(self.draw_tool.is_active)
+        self._set_modifiers(Qt.KeyboardModifier.NoModifier)
+        self.assertIs(self.tool_controller.active_tool, self.draw_tool)
+        self.assertTrue(self.draw_tool.is_active)
+        self.assertFalse(self.eyedropper_tool.is_active)
+        self.assertEqual(self.tool_changes, [self.eyedropper_tool, self.draw_tool])
+
+    def test_modifier_change_to_same_delegate_keeps_it_active(self) -> None:
+        """Changing to other modifiers mapped to the active delegate keeps it active without a tool change."""
+        self._set_modifiers(self.CTRL)
+        self.tool_changes.clear()
+        self._set_modifiers(self.CTRL_SHIFT)
+        self.assertIs(self.tool_controller.active_tool, self.eyedropper_tool)
+        self.assertEqual(self.tool_changes, [])
+
+    def test_modifier_change_to_other_delegate_switches(self) -> None:
+        """Changing to modifiers mapped to another delegate switches to it."""
+        self._set_modifiers(self.CTRL)
+        self._set_modifiers(Qt.KeyboardModifier.AltModifier)
+        self.assertIs(self.tool_controller.active_tool, self.eraser_tool)
+        self.assertFalse(self.eyedropper_tool.is_active)
+        self.assertFalse(self.draw_tool.is_active)
+
+    def test_unmapped_modifier_ends_delegation(self) -> None:
+        """Changing to modifiers with no delegate restores the original tool."""
+        self._set_modifiers(self.CTRL)
+        self._set_modifiers(Qt.KeyboardModifier.ShiftModifier)
+        self.assertIs(self.tool_controller.active_tool, self.draw_tool)
+        self.assertTrue(self.draw_tool.is_active)
 
 
 class PaddingScrollTest(ToolTestCase):

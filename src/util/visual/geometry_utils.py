@@ -190,6 +190,17 @@ def transform_scale(transformation: QTransform) -> tuple[float, float]:
     return scale_x, scale_y
 
 
+def transform_needs_smooth_sampling(transformation: QTransform) -> bool:
+    """Returns whether layers drawn through a transformation are sampled smoothly.
+
+    Smooth sampling applies to scales that aren't whole numbers and rotations that aren't multiples of 90 degrees. It
+    blends neighboring source pixels, so a changed pixel can affect image pixels one past its mapped bounds.
+    """
+    s_x, s_y = transform_scale(transformation)
+    angle = rotation_angle(transformation)
+    return (s_x % 1.0) != 0.0 or (s_y % 1.0) != 0.0 or (angle % 90.0) != 0.0
+
+
 def extract_transform_parameters(transform: QTransform,
                                  origin: Optional[QPointF] = None) -> tuple[float, float, float, float, float]:
     """Break a matrix down into a scale, rotation, and translation at an arbitrary origin, returning

@@ -98,6 +98,7 @@ from src.ui.panel.color_panel import ColorControlPanel
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
+from src.ui.theme import apply_font_point_size, apply_style, apply_theme
 from src.ui.widget.tool_tab import ToolTab
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
 from src.ui.window.main_window import MainWindow, TabBoxID
@@ -106,7 +107,6 @@ from src.undo_stack import UndoStack
 from src.util.active_text_field_tracker import ActiveTextFieldTracker
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
     APP_STATE_SELECTION
-from src.util.gc_paused import gc_paused
 from src.util.math_utils import clamp
 from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, MenuData
 from src.util.optional_import import optional_import
@@ -120,9 +120,7 @@ from src.util.visual.image_format_utils import save_image_with_metadata, save_im
     GREYSCALE_IMAGE_FORMATS, METADATA_COMMENT_KEY, PIL_WRITE_FORMATS, QIMAGE_WRITE_FORMATS
 from src.util.visual.image_utils import image_is_fully_opaque, image_has_partial_alpha, create_transparent_image
 
-# Optional spacenav support and extended theming:
-qdarktheme = optional_import('qdarktheme')
-qt_material = optional_import('qt_material')
+# Optional spacenav support:
 SpacenavManager = optional_import('src.controller.spacenav_manager', attr_name='SpacenavManager')
 
 logger = logging.getLogger(__name__)
@@ -257,6 +255,14 @@ class AppController(MenuBuilder):
         self._layer_panel: Optional[LayerPanel] = None
         self._generator_window: Optional[GeneratorSetupWindow] = None
 
+        # Apply style and theme before creating widgets, which copy the palette and font when they're created:
+        config.connect(self, AppConfig.STYLE, apply_style)
+        apply_style(config.get(AppConfig.STYLE))
+        config.connect(self, AppConfig.THEME, apply_theme)
+        apply_theme(config.get(AppConfig.THEME))
+        config.connect(self, AppConfig.FONT_POINT_SIZE, apply_font_point_size)
+        apply_font_point_size(config.get(AppConfig.FONT_POINT_SIZE))
+
         # Initialize edited image data structures:
         self._image_stack = ImageStack(config.get(AppConfig.DEFAULT_IMAGE_SIZE), cache.get(Cache.EDIT_SIZE),
                                        config.get(AppConfig.MIN_EDIT_SIZE), config.get(AppConfig.MAX_EDIT_SIZE))
@@ -388,42 +394,6 @@ class AppController(MenuBuilder):
             lambda _layer, _bounds: self._update_enabled_actions())
         UndoStack().undo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
         UndoStack().redo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
-
-        # Load and apply styling and themes:
-
-        def _apply_style(new_style: str) -> None:
-            with gc_paused():
-                app.setStyle(new_style)
-
-        config.connect(self, AppConfig.STYLE, _apply_style)
-        _apply_style(config.get(AppConfig.STYLE))
-
-        def _apply_theme(theme: str) -> None:
-            # Both theme packages call QApplication.setStyleSheet, which has the hazard gc_paused describes.
-            with gc_paused():
-                if theme.startswith('qdarktheme_') and qdarktheme is not None and hasattr(qdarktheme, 'setup_theme'):
-                    if theme.endswith('_light'):
-                        qdarktheme.setup_theme('light')
-                    elif theme.endswith('_auto'):
-                        qdarktheme.setup_theme('auto')
-                    else:
-                        qdarktheme.setup_theme()
-                elif theme.startswith('qt_material_') and qt_material is not None:
-                    xml_file = theme[len('qt_material_'):]
-                    qt_material.apply_stylesheet(app, theme=xml_file)
-                elif theme != 'None':
-                    logger.error(f'Failed to load theme {theme}')
-
-        config.connect(self, AppConfig.THEME, _apply_theme)
-        _apply_theme(config.get(AppConfig.THEME))
-
-        def _apply_font(font_pt: int) -> None:
-            font = app.font()
-            font.setPointSize(font_pt)
-            app.setFont(font)
-
-        config.connect(self, AppConfig.FONT_POINT_SIZE, _apply_font)
-        _apply_font(config.get(AppConfig.FONT_POINT_SIZE))
 
         # ToolPanel/ToolController: Set up editing tools:
         self._tool_controller = ToolController(self._image_stack, self._image_viewer)

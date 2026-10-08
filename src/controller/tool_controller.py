@@ -195,12 +195,13 @@ class ToolController(QObject):
         """Check for changes in held key modifiers, and handle tool delegation."""
         if self._active_tool is None:
             return
-        if self._active_delegate is not None and self._tool_modifier_delegates[self._active_tool] != modifiers:
+        delegates = self._tool_modifier_delegates[self._active_tool]
+        if self._active_delegate is not None and delegates.get(modifiers) is not self._active_delegate:
             self._active_delegate.is_active = False
             self._active_delegate = None
             self._active_tool.reactivate_after_delegation()
             self.active_tool_changed.emit(self._active_tool)
-        if modifiers in self._tool_modifier_delegates[self._active_tool]:
+        if self._active_delegate is None and modifiers in delegates:
             # Special case: if a text input widget is active, modifiers should be used for text input, not delegation.
             focused_widget = QApplication.focusWidget()
             if (isinstance(focused_widget, (QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox))
