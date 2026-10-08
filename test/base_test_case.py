@@ -212,7 +212,7 @@ class IntraPaintTestCase(unittest.TestCase):
     Config values, config connections, the undo history, app state and hotkey bindings are singletons that persist
     across tests. They're reset before each test, so it starts from the test config defaults, and again after it, so it
     can't leave state behind for tests that don't use this class. Widgets with no parent that the test created are
-    deleted after it, with their children. The working directory is the project root during every test, since resources
+    deleted after it, with their children, and the system clipboard is cleared. The working directory is the project root during every test, since resources
     and the config definitions load from paths relative to it.
 
     Subclasses that override setUp or tearDown must call the superclass implementation: setUp first, tearDown last.
@@ -226,6 +226,9 @@ class IntraPaintTestCase(unittest.TestCase):
 
     def tearDown(self) -> None:
         reset_singletons()
+        # Clipboard content set from Python must not outlive the test: the offscreen platform deletes it after the
+        # interpreter shuts down, which crashes the test process on exit.
+        QApplication.clipboard().clear()
         delete_widgets_created_since(self._existing_widgets)
         del self._existing_widgets
         super().tearDown()

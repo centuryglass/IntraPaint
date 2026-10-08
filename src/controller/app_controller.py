@@ -49,7 +49,7 @@ from typing import Optional, Any, Callable
 from PIL import Image, UnidentifiedImageError, ExifTags
 from PIL.ExifTags import IFD
 from PySide6.QtCore import QSize
-from PySide6.QtGui import QImage, Qt, QIcon
+from PySide6.QtGui import QImage, Qt, QIcon, QTransform
 from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
 
 from src.config.application_config import AppConfig
@@ -113,6 +113,8 @@ from src.util.optional_import import optional_import
 from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.qtexcepthook import QtExceptHook
 from src.util.shared_constants import PROJECT_DIR, PIL_SCALING_MODES
+from src.util.system_clipboard import clipboard_has_image, clipboard_image_is_own_copy, get_clipboard_image, \
+    set_clipboard_image
 from src.util.visual.display_size import get_screen_size
 from src.util.visual.image_format_utils import save_image_with_metadata, save_image, load_image, \
     IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_FORMATS_SUPPORTING_ALPHA, IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA, \
@@ -373,12 +375,17 @@ class AppController(MenuBuilder):
         # We'll also want flags for tracking whether cut/copy/paste/clear are currently valid for image content, so
         # that we don't need to recalculate that every time they become invalid for an active text field:
         self._can_copy_image = False
-        self._can_paste_image = False
+        self._can_paste_image = clipboard_has_image()
         self._can_clear_or_cut_image = False
 
         # Finally, track active text inputs, so we always know when text-relevant events should be available:
         self._active_text_field_tracker = ActiveTextFieldTracker()
         self._active_text_field_tracker.status_changed.connect(self._update_enabled_text_relevant_actions)
+        clipboard = QApplication.clipboard()
+        clipboard.dataChanged.connect(self._update_clipboard_paste_availability)
+        # The clipboard outlives the controller, so the connection ends with the window the actions belong to.
+        self._window.destroyed.connect(
+            lambda: clipboard.dataChanged.disconnect(self._update_clipboard_paste_availability))
 
         self._last_active = self._image_stack.active_layer
         self._lock_connection = self._last_active.lock_changed.connect(
@@ -789,6 +796,16 @@ class AppController(MenuBuilder):
                 (self.clear, self._can_clear_or_cut_image, self._active_text_field_tracker.focused_can_cut_or_clear())):
             self.get_action_for_method(method).setEnabled(valid_for_image or valid_for_text)
 
+    def _update_clipboard_paste_availability(self) -> None:
+        """Marks image paste available when the system clipboard gains image content, from any program.
+
+        The flag never reverts to False on clipboard changes: content kept in the copy buffer stays pasteable even
+        when the clipboard holds no image.
+        """
+        if clipboard_has_image() and not self._can_paste_image:
+            self._can_paste_image = True
+            self._update_enabled_actions()
+
     # Menu action definitions:
 
     # File menu:
@@ -1162,7 +1179,9 @@ class AppController(MenuBuilder):
             assert text_field is not None
             text_field.cut()
         else:
-            self._image_stack.cut_selected()
+            cut_image = self._image_stack.cut_selected()
+            if cut_image is not None and not cut_image.isNull():
+                set_clipboard_image(cut_image)
             if not self._can_paste_image:
                 self._can_paste_image = True
                 self._update_enabled_actions()
@@ -1175,7 +1194,9 @@ class AppController(MenuBuilder):
             assert text_field is not None
             text_field.copy()
         else:
-            self._image_stack.copy_selected()
+            copied_image = self._image_stack.copy_selected()
+            if copied_image is not None and not copied_image.isNull():
+                set_clipboard_image(copied_image)
             if not self._can_paste_image:
                 self._can_paste_image = True
                 self._update_enabled_actions()
@@ -1187,8 +1208,23 @@ class AppController(MenuBuilder):
             text_field = self._active_text_field_tracker.focused_text_input
             assert text_field is not None
             text_field.paste()
+            return
+        clipboard_image = get_clipboard_image()
+        if clipboard_image is not None and not clipboard_image_is_own_copy():
+            self._paste_image_from_system_clipboard(clipboard_image)
         else:
             self._image_stack.paste()
+
+    def _paste_image_from_system_clipboard(self, image: QImage) -> None:
+        """Pastes an image copied in another program into a new layer, centered on the generation area when a
+        generator is active, or centered in the visible view otherwise."""
+        if self._generator != self._null_generator:
+            center = self._image_stack.generation_area.center()
+        else:
+            center = self._image_viewer.visible_scene_bounds.center().toPoint()
+        offset = QTransform.fromTranslate(center.x() - (image.width() - 1) // 2,
+                                          center.y() - (image.height() - 1) // 2)
+        self._image_stack.paste_image(image, offset)
 
     @menu_action(MENU_EDIT, 'clear_shortcut', 105, valid_app_states=[APP_STATE_EDITING])
     def clear(self) -> None:

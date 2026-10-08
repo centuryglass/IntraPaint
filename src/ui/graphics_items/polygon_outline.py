@@ -69,8 +69,13 @@ class PolygonOutline(QGraphicsPathItem):
                 return self._parent.animation_offset
 
             def animation_offset_setter(self, offset: int) -> None:
-                """Updates the animation offset value."""
-                self._parent.animation_offset = offset
+                """Updates the animation offset value, stopping the loop if the outline was deleted under it."""
+                try:
+                    self._parent.animation_offset = offset
+                except RuntimeError:
+                    # The outline's C++ item is gone; an unparented animator would otherwise crash on every further
+                    # tick of its endless loop.
+                    self._anim.stop()
 
             # noinspection PyTypeChecker
             animation_offset = Property(int, animation_offset_getter, animation_offset_setter)
