@@ -54,7 +54,11 @@ class MyPaintBrushToolPanel(QWidget):
         selection_only_checkbox = Cache().get_control_widget(Cache.PAINT_SELECTION_ONLY)
         selection_only_checkbox.setText(SELECTION_ONLY_LABEL)
         second_row.addWidget(selection_only_checkbox)
-        selection_only_checkbox.setText(SELECTION_ONLY_LABEL)
-        second_row.addWidget(selection_only_checkbox)
-        brush_panel = MypaintBrushPanel()
-        self._layout.addWidget(brush_panel)
+        # The brush list takes all remaining height and scrolls inside it:
+        self._brush_panel = MypaintBrushPanel()
+        self._layout.addWidget(self._brush_panel, stretch=1)
+
+    @property
+    def brush_panel(self) -> MypaintBrushPanel:
+        """The brush picker."""
+        return self._brush_panel
