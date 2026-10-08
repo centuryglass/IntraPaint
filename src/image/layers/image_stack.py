@@ -50,6 +50,9 @@ ACTION_NAME_CLEAR_SELECTED = _tr('cut/clear selection')
 ACTION_NAME_RESIZE_IMAGE_CANVAS = _tr('resize image canvas')
 ACTION_NAME_CROP_LAYER_TO_SELECTION = _tr('crop layer to selection')
 MERGED_LAYER_NAME = _tr('Merged')
+# Alpha values tried either side of the estimate when flattening over partially transparent content:
+FLATTEN_ALPHA_SEARCH = 4
+FLATTEN_NEAR_OPAQUE_ALPHA = 250
 PASTE_LAYER_NAME = _tr('Paste layer')
 
 ERROR_TITLE_RESIZE_FAILED = _tr('Resizing image canvas failed')
@@ -874,9 +877,7 @@ class ImageStack(QObject):
         Note that this isn't totally possible in some cases, it doesn't work with some composition modes.
         Hidden layers can't be flattened.
 
-        TODO: Color accuracy has issues when both the top and base are partially transparent (see
-              https://github.com/centuryglass/IntraPaint/issues/237), look into reverse
-              composition further and see if this can be improved.
+        Where both the top and base are partially transparent, the composite is reproduced to within 8-bit rounding.
         """
         if layer is None:
             layer = self.active_layer
@@ -921,19 +922,36 @@ class ImageStack(QObject):
         alpha_top[blended_px] /= (1 - alpha_base[blended_px])
         alpha_top[blended_px] = np.clip(alpha_top[blended_px], .00001, 1.0)
 
-        # Solve for the reversed rgb compositing function:
-        # c, t, b = combined, top, base, CA, TA, BA = combinedAlpha, topAlpha, baseAlpha
-        # c = (tAT + bAB(1 - AT)) / AC
-        # cAC = tAT + bAB(1 - AT)
-        # cAC - bAB(1 - AT) = tAT
-        # t = (cAC - bAB(1 - AT)) / AT
-        for c in range(3):
-            comp_mult = np_combined[blended_px, c] * alpha_combined[blended_px]
-            top_inv_alpha = 1 - alpha_top[blended_px]
-            base_mult = np_base[blended_px, c] * alpha_base[blended_px]
-            np_top[blended_px, c] = np.clip(comp_mult - (base_mult * top_inv_alpha) / alpha_top[blended_px],
-                                            0, 255)
-        np_top[blended_px, 3] = alpha_top[blended_px] * 255
+        # The renders are premultiplied, so SourceOver is C = T + B * (1 - alpha_top) per channel, with C, T and B the
+        # premultiplied combined, top and base values. Solving for the top layer:
+        #   T = C - B * (1 - alpha_top)
+        # The result stays premultiplied, so it can't exceed its own alpha. 8-bit alpha can't be recovered exactly,
+        # so nearby alpha values are tried and the one that best reproduces the combined pixel is kept. Where the base
+        # is nearly opaque the estimate is unreliable, so every alpha value is tried.
+        est_alpha = np.round(alpha_top[blended_px] * 255)
+        comb_px = np_combined[blended_px].astype(np.float64)
+        base_px = np_base[blended_px].astype(np.float64)
+        wide_search = base_px[:, 3] >= FLATTEN_NEAR_OPAQUE_ALPHA
+        best_alpha = est_alpha
+        best_color = np.zeros((est_alpha.shape[0], 3))
+        best_error = np.full(est_alpha.shape, np.inf)
+        candidates = [np.clip(est_alpha + offset, 1, 255) for offset in range(-FLATTEN_ALPHA_SEARCH,
+                                                                              FLATTEN_ALPHA_SEARCH + 1)]
+        if wide_search.any():
+            candidates.extend(np.where(wide_search, alpha_value, est_alpha) for alpha_value in range(1, 256))
+        for candidate_alpha in candidates:
+            inv_alpha = 1 - candidate_alpha / 255.0
+            candidate_color = np.clip(np.round(comb_px[:, :3] - base_px[:, :3] * inv_alpha[:, None]),
+                                      0, candidate_alpha[:, None])
+            recomposed = (np.column_stack([candidate_color, candidate_alpha])
+                          + np.round(base_px * inv_alpha[:, None]))
+            error = np.abs(recomposed - comb_px).max(axis=1)
+            better = error < best_error
+            best_error[better] = error[better]
+            best_alpha = np.where(better, candidate_alpha, best_alpha)
+            best_color[better] = candidate_color[better]
+        np_top[blended_px, :3] = best_color
+        np_top[blended_px, 3] = best_alpha
 
         layer_offset = parent.bounds.topLeft()
         replacement_layer = self._create_layer_internal(layer.name, top_render)
