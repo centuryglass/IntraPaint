@@ -8,6 +8,7 @@ from PySide6.QtGui import QFont, QKeySequence
 
 from src.util.visual.text_drawing_utils import find_text_size, max_font_size, MAX_FONT_PT, create_text_path, \
     get_key_display_string, left_button_hint_text, ICON_LMB
+from src.util.visual.palette_icon import palette_rich_text_image
 from test.base_test_case import IntraPaintTestCase
 
 
@@ -127,5 +128,5 @@ class TestTextDrawingUtils(IntraPaintTestCase):
         self.assertEqual(get_key_display_string('A', rich_text=False), 'A')
 
     def test_mouse_hint_text(self) -> None:
-        """Mouse hints are rich-text images of the matching icon."""
-        self.assertEqual(left_button_hint_text(), f'<img src="{ICON_LMB}"/>')
+        """Mouse hints are rich-text images of the matching icon, recolored for the palette."""
+        self.assertEqual(left_button_hint_text(), palette_rich_text_image(ICON_LMB))

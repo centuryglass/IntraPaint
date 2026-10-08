@@ -15,6 +15,7 @@ from src.image.layers.layer_group import LayerGroup
 from src.ui.panel.layer_ui.layer_group_widget import LayerGroupWidget
 from src.ui.panel.layer_ui.layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH
 from src.util.shared_constants import PROJECT_DIR, APP_ICON_PATH, SMALL_ICON_SIZE
+from src.util.visual.palette_icon import palette_icon
 
 logger = logging.getLogger(__name__)
 
@@ -144,8 +145,7 @@ class LayerPanel(QWidget):
             button = QToolButton()
             button.setToolTip(tooltip)
             button.setContentsMargins(2, 2, 2, 2)
-            icon = QIcon(icon_path)
-            button.setIcon(icon)
+            button.setIcon(palette_icon(icon_path))
             button.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
             button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
             button.clicked.connect(lambda: action())

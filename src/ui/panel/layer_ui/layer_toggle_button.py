@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QToolButton, QSizePolicy
 
 from src.image.layers.layer import Layer
 from src.util.shared_constants import SMALL_ICON_SIZE
+from src.util.visual.palette_icon import palette_icon
 
 BUTTON_MARGIN = 4
 
@@ -15,15 +16,16 @@ class LayerToggleButton(QToolButton):
     """Toggles a boolean layer property."""
 
     def __init__(self, connected_layer: Layer, true_icon_path: str, false_icon_path: str,
-                 disable_when_locked: bool = True) -> None:
-        """Connect to the layer and load the initial icon."""
+                 disable_when_locked: bool = True, palette_icons: bool = False) -> None:
+        """Connect to the layer and load the initial icon. With palette_icons, icons load through `palette_icon`."""
         super().__init__()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
         self.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
         self._layer = connected_layer
         self._get_signal(self._layer).connect(self._update_icon)
-        self._true_icon = QIcon(true_icon_path)
-        self._false_icon = QIcon(false_icon_path)
+        load_icon = palette_icon if palette_icons else QIcon
+        self._true_icon = load_icon(true_icon_path)
+        self._false_icon = load_icon(false_icon_path)
         self._update_icon()
         self._disable_when_locked = disable_when_locked
 
