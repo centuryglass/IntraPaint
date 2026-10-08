@@ -6,8 +6,8 @@ from PySide6.QtCore import QMimeData, QSize
 from PySide6.QtGui import QColor, QImage
 from PySide6.QtWidgets import QApplication
 
-from src.util.system_clipboard import clipboard_has_image, clipboard_image_is_own_copy, get_clipboard_image, \
-    set_clipboard_image
+from src.util.system_clipboard import _OWNERSHIP_MARKER, clipboard_has_image, clipboard_image_is_own_copy, \
+    get_clipboard_image, set_clipboard_image
 from test.base_test_case import IntraPaintTestCase, assert_images_equal
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -43,6 +43,15 @@ class SystemClipboardTest(IntraPaintTestCase):
         read_back = get_clipboard_image()
         assert read_back is not None
         assert_images_equal(read_back, image)
+
+    def test_other_instance_image_is_not_own_copy(self) -> None:
+        """An image marked by another IntraPaint process isn't recognized as this process's copy."""
+        mime_data = QMimeData()
+        mime_data.setImageData(_filled_image(FOREIGN_COLOR))
+        mime_data.setData(_OWNERSHIP_MARKER, b'another process')
+        QApplication.clipboard().setMimeData(mime_data)
+        self.assertTrue(clipboard_has_image())
+        self.assertFalse(clipboard_image_is_own_copy())
 
     def test_text_clipboard_holds_no_image(self) -> None:
         """Clipboard content without image data counts as having no image."""

@@ -1,12 +1,13 @@
 """Tests AppController copy, cut and paste exchanging images with the system clipboard.
 
-The Qt clipboard is shared across tests, so every test starts by placing known content on it.
+IntraPaintTestCase clears the Qt clipboard after each test, so each test starts with it empty.
 """
 import os
 import sys
 import tempfile
+import unittest
 
-from PySide6.QtCore import QRect, QSize
+from PySide6.QtCore import QCoreApplication, QEvent, QRect, QSize, SIGNAL
 from PySide6.QtGui import QColor, QImage
 from PySide6.QtWidgets import QApplication
 
@@ -40,7 +41,7 @@ class AppControllerClipboardTest(IntraPaintTestCase):
         self.args.mode = 'mock'
         self.args.server_url = ''
         self.args.fast_ngrok_connection = False
-        self.controller = AppController(self.args)
+        self.controller = self._create_controller()
         self.image_stack = self.controller._image_stack
         temp_dir = tempfile.TemporaryDirectory()
         self.addCleanup(temp_dir.cleanup)
@@ -48,6 +49,9 @@ class AppControllerClipboardTest(IntraPaintTestCase):
         self.assertTrue(_filled_image(CANVAS_SIZE, CANVAS_COLOR).save(image_path))
         self.controller.load_image(image_path)
         select_rect(self.image_stack, SELECTION)
+
+    def _create_controller(self) -> AppController:
+        return AppController(self.args)
 
     def _expected_selection_image(self) -> QImage:
         """Returns the filled image copy and cut are expected to place on the clipboard."""
@@ -107,6 +111,21 @@ class AppControllerClipboardTest(IntraPaintTestCase):
         self.assertFalse(paste_action.isEnabled())
         QApplication.clipboard().setImage(_filled_image(QSize(20, 20), PASTE_COLOR))
         self.assertTrue(paste_action.isEnabled())
+
+    def test_clipboard_image_at_startup_enables_paste(self) -> None:
+        """An image already on the system clipboard when the controller starts makes paste available."""
+        QApplication.clipboard().setImage(_filled_image(QSize(20, 20), PASTE_COLOR))
+        controller = self._create_controller()
+        controller._update_enabled_actions()
+        self.assertTrue(controller.get_action_for_method(controller.paste).isEnabled())
+
+    def test_deleted_window_disconnects_clipboard(self) -> None:
+        """Deleting the controller's window ends its connection to the application clipboard."""
+        clipboard = QApplication.clipboard()
+        connected = clipboard.receivers(SIGNAL('dataChanged()'))
+        self.controller._window.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        self.assertEqual(connected - 1, clipboard.receivers(SIGNAL('dataChanged()')))
 
 
 if __name__ == '__main__':

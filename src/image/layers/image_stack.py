@@ -1319,7 +1319,7 @@ class ImageStack(QObject):
             with UndoStack().combining_actions('ImageStack.clear_selected'):
                 layer = self.replace_text_layer_with_image(layer)
                 layer.cut_masked(transformed_mask)
-            return selected
+            return selected if save_to_copy_buffer else None
         copied = self.copy_selected(layer, transformed_mask) if save_to_copy_buffer else None
         layer.cut_masked(transformed_mask)
         return copied

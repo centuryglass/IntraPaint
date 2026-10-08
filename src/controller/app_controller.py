@@ -375,13 +375,17 @@ class AppController(MenuBuilder):
         # We'll also want flags for tracking whether cut/copy/paste/clear are currently valid for image content, so
         # that we don't need to recalculate that every time they become invalid for an active text field:
         self._can_copy_image = False
-        self._can_paste_image = False
+        self._can_paste_image = clipboard_has_image()
         self._can_clear_or_cut_image = False
 
         # Finally, track active text inputs, so we always know when text-relevant events should be available:
         self._active_text_field_tracker = ActiveTextFieldTracker()
         self._active_text_field_tracker.status_changed.connect(self._update_enabled_text_relevant_actions)
-        QApplication.clipboard().dataChanged.connect(self._update_clipboard_paste_availability)
+        clipboard = QApplication.clipboard()
+        clipboard.dataChanged.connect(self._update_clipboard_paste_availability)
+        # The clipboard outlives the controller, so the connection ends with the window the actions belong to.
+        self._window.destroyed.connect(
+            lambda: clipboard.dataChanged.disconnect(self._update_clipboard_paste_availability))
 
         self._last_active = self._image_stack.active_layer
         self._lock_connection = self._last_active.lock_changed.connect(
