@@ -28,13 +28,16 @@ class LayerToggleButton(QToolButton):
         self._disable_when_locked = disable_when_locked
 
         if disable_when_locked:
-            connected_layer.lock_changed.connect(self._lock_change_slot)
-            if connected_layer.locked or connected_layer.parent_locked:
-                self.setEnabled(False)
+            connected_layer.lock_changed.connect(self._update_enabled)
+        self._update_enabled()
 
-    def _lock_change_slot(self, *_) -> None:
-        # The signal's arguments may describe a parent group's lock, so read the lock state from the layer instead.
-        self.setEnabled(not self._layer.locked and not self._layer.parent_locked)
+    def _update_enabled(self, *_) -> None:
+        # The lock signal's arguments may describe a parent group's lock, so read the state from the layer instead.
+        self.setEnabled(self._can_toggle(self._layer))
+
+    def _can_toggle(self, layer: Layer) -> bool:
+        """Returns whether clicking the button can change the property."""
+        return not self._disable_when_locked or (not layer.locked and not layer.parent_locked)
 
     # noinspection PyMethodMayBeStatic
     def sizeHint(self):

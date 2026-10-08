@@ -445,6 +445,22 @@ class LayerPanelTest(IntraPaintTestCase):
         self.group.locked = False
         self.assertTrue(button.isEnabled())
 
+    def test_isolate_button_shows_forced_isolation(self) -> None:
+        """Below full opacity or outside Normal mode, the isolate button shows isolation on and can't be toggled."""
+        button = self._button(self.nested, LayerIsolateButton)
+        self.assertFalse(self.nested.isolate)
+        off_icon_key = button.icon().cacheKey()
+        for force, restore in ((lambda: self.nested.set_opacity(0.5), lambda: self.nested.set_opacity(1.0)),
+                               (lambda: self.nested.set_composition_mode(CompositeMode.MULTIPLY),
+                                lambda: self.nested.set_composition_mode(CompositeMode.NORMAL))):
+            force()
+            self.assertFalse(button.isEnabled())
+            self.assertNotEqual(button.icon().cacheKey(), off_icon_key)
+            self.assertFalse(self.nested.isolate)
+            restore()
+            self.assertTrue(button.isEnabled())
+            self.assertEqual(button.icon().cacheKey(), off_icon_key)
+
     def test_rename(self) -> None:
         """Editing a layer widget's label renames the layer, and renaming the layer updates the label."""
         label = self.widget_for(self.inner_top)._label

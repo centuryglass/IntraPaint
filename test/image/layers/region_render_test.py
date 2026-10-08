@@ -28,12 +28,8 @@ LAYER_SIZE = QSize(90, 70)
 TILE_SIZES = (64, 37)
 LAYER_MOVE_TEST_IMAGE = 'test/resources/test_images/layer_move_test.ora'
 
-ISSUE_132 = ('https://github.com/centuryglass/IntraPaint/issues/132: a non-isolated group smaller than the canvas '
-             'composites the content beneath it over itself')
 ISSUE_147 = ('https://github.com/centuryglass/IntraPaint/issues/147: scaled and rotated layers sample differently in '
              'a region render')
-ISSUE_151 = ('https://github.com/centuryglass/IntraPaint/issues/151: HSL blend modes change base pixels outside the '
-             'layer')
 
 
 def _gradient_image(size: QSize, seed: int) -> QImage:
@@ -174,15 +170,14 @@ class RegionRenderTest(RenderTestCase):
                     layer.set_composition_mode(mode)
                     self.assert_tiles_match()
 
-    # No subtests here: a failed subtest fails the test outright instead of counting as the expected failure.
-    @pytest.mark.xfail(strict=True, reason=ISSUE_151)
     def test_pixel_aligned_layer_in_hsl_modes(self) -> None:
         """A translated layer over partial alpha renders the same in tiles, in the modes with custom compositing."""
         layer = self.add_layer('top', QTransform.fromTranslate(13, 7), opacity=0.7)
         for mode in CompositeMode:
             if mode.qt_composite_mode() is None:
-                layer.set_composition_mode(mode)
-                self.assert_tiles_match()
+                with self.subTest(mode=mode.name):
+                    layer.set_composition_mode(mode)
+                    self.assert_tiles_match()
 
     def test_fractional_translation(self) -> None:
         """A layer translated by a fraction of a pixel renders the same in tiles."""
@@ -214,7 +209,6 @@ class RegionRenderTest(RenderTestCase):
         self.assertTrue(group.bounds.contains(QRect(QPoint(), CANVAS_SIZE)))
         self.assert_tiles_match()
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_132)
     def test_non_isolated_group_smaller_than_canvas(self) -> None:
         """A non-isolated group smaller than the canvas renders the same in tiles."""
         group = self.image_stack.create_layer_group('group')
@@ -233,7 +227,7 @@ class RegionRenderTest(RenderTestCase):
         self.add_layer('rotated', QTransform.fromTranslate(60, 10).rotate(30))
         self.assert_tiles_match()
 
-    @pytest.mark.xfail(strict=True, reason=f'{ISSUE_132}; {ISSUE_147}')
+    @pytest.mark.xfail(strict=True, reason=ISSUE_147)
     def test_layer_move_test_image(self) -> None:
         """The nested, transformed groups in layer_move_test.ora render the same in tiles."""
         read_ora_image(self.image_stack, LAYER_MOVE_TEST_IMAGE)

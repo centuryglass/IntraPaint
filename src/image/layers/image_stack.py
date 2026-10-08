@@ -1116,7 +1116,8 @@ class ImageStack(QObject):
             else:
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
                 composite_op = top_layer.composition_mode.custom_composite_op()
-                composite_op(top_image, merged_image, top_layer.opacity, painter.transform(), None)
+                composite_op(top_image, merged_image, top_layer.opacity, painter.transform(),
+                             map_rect_precise(top_layer.bounds, painter.transform()).toAlignedRect())
             if base_layer.alpha_locked:
                 painter.setTransform(base_paint_transform)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
