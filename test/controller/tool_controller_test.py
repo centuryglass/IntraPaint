@@ -81,7 +81,6 @@ class ModifierDelegationTest(ToolTestCase):
         self.tool_controller.register_tool_delegate(self.draw_tool, self.eyedropper_tool, self.CTRL)
         self.tool_controller.register_tool_delegate(self.draw_tool, self.eyedropper_tool, self.CTRL_SHIFT)
         self.tool_controller.register_tool_delegate(self.draw_tool, self.eraser_tool, Qt.KeyboardModifier.AltModifier)
-        self.addCleanup(HotkeyFilter.instance().modifiers_changed.emit, Qt.KeyboardModifier.NoModifier)
         self.tool_changes: list[BaseTool] = []
         self.tool_controller.active_tool_changed.connect(self.tool_changes.append)
 
