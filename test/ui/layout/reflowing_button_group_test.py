@@ -1,9 +1,9 @@
 """Tests ReflowingButtonGroup's switch between a row and a column."""
 import sys
 
-from PySide6.QtWidgets import QApplication, QPushButton
+from PySide6.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
 
-from src.ui.layout.reflowing_button_group import ReflowingButtonGroup
+from src.ui.layout.reflowing_button_group import ReflowingButtonGroup, ROW_SPACING
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -47,3 +47,16 @@ class ReflowingButtonGroupTest(IntraPaintTestCase):
         self.assertTrue(self.group.is_row)
         self.buttons[2].show()
         self.assertFalse(self.group.is_row)
+
+    def test_parent_layout_height_follows_width(self) -> None:
+        """A parent layout asks for one row's height at the row width, and the column's height below it."""
+        parent = QWidget()
+        layout = QVBoxLayout(parent)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.group)
+        heights = [button.sizeHint().height() for button in self.buttons]
+        self.assertTrue(layout.hasHeightForWidth())
+        self.assertEqual(layout.totalHeightForWidth(self.group.row_width()), max(heights))
+        self.assertEqual(layout.totalHeightForWidth(self.group.row_width() - 1),
+                         sum(heights) + ROW_SPACING * (len(heights) - 1))
+        self.group.setParent(None)

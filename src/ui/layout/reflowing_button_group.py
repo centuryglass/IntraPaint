@@ -1,5 +1,5 @@
 """A group of buttons shown in one row when they fit at full size, and stacked in a column otherwise."""
-from typing import Optional
+from typing import Callable, Optional
 
 from PySide6.QtCore import QEvent, QObject, QSize
 from PySide6.QtGui import QResizeEvent
@@ -8,17 +8,39 @@ from PySide6.QtWidgets import QWidget, QBoxLayout, QAbstractButton, QLayout, QSi
 ROW_SPACING = 10
 
 
+class _HeightForWidthBoxLayout(QBoxLayout):
+    """A box layout whose height for a width comes from a function.
+
+    Qt asks a widget's layout for its height for a width, not the widget, whenever the widget has a layout.
+    """
+
+    def __init__(self, height_for_width: Callable[[int], int], parent: QWidget) -> None:
+        super().__init__(QBoxLayout.Direction.LeftToRight, parent)
+        self._height_for_width = height_for_width
+
+    def hasHeightForWidth(self) -> bool:
+        """Returns true, so parent layouts ask for the height at each width."""
+        return True
+
+    def heightForWidth(self, width: int) -> int:
+        """Returns the height from the layout's height function."""
+        return self._height_for_width(width)
+
+
 class ReflowingButtonGroup(QWidget):
     """Lays out buttons in a row when the group is wide enough for every visible button's size hint, or in a column.
 
     The group's minimum width is the column layout's, so a parent layout can always shrink it far enough to switch to a
-    column. Showing or hiding a button re-checks the layout.
+    column. Its height depends on its width, which parent layouts read through heightForWidth. Showing or hiding a
+    button re-checks the layout.
     """
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        self._layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self)
+        policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        policy.setHeightForWidth(True)
+        self.setSizePolicy(policy)
+        self._layout = _HeightForWidthBoxLayout(self.heightForWidth, self)
         self._layout.setContentsMargins(0, 0, 0, 0)
         self._layout.setSpacing(ROW_SPACING)
         self._layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
@@ -36,12 +58,24 @@ class ReflowingButtonGroup(QWidget):
         """Returns whether the buttons are currently laid out in a single row."""
         return self._layout.direction() == QBoxLayout.Direction.LeftToRight
 
+    def _visible_buttons(self) -> list[QAbstractButton]:
+        return [button for button in self._buttons if not button.isHidden()]
+
     def row_width(self) -> int:
         """Returns the width the visible buttons need to fit in one row at their size hints."""
-        visible = [button for button in self._buttons if not button.isHidden()]
+        visible = self._visible_buttons()
         if len(visible) == 0:
             return 0
         return sum(button.sizeHint().width() for button in visible) + ROW_SPACING * (len(visible) - 1)
+
+    def heightForWidth(self, width: int) -> int:
+        """Returns the height of one row if the buttons fit in it at this width, or of the column if they don't."""
+        heights = [button.sizeHint().height() for button in self._visible_buttons()]
+        if len(heights) == 0:
+            return 0
+        if width >= self.row_width():
+            return max(heights)
+        return sum(heights) + ROW_SPACING * (len(heights) - 1)
 
     def minimumSizeHint(self) -> QSize:
         """Returns the column layout's minimum width, and the current layout's minimum height."""

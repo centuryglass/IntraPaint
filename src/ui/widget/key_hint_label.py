@@ -54,11 +54,21 @@ class KeyHintLabel(QLabel):
             KeyConfig().disconnect(self, self._config_key)
         super().deleteLater()
 
+    def _key_font(self) -> QFont:
+        """Returns the bold font the key text is drawn in."""
+        key_font = QFont(self.font())
+        key_font.setBold(True)
+        return key_font
+
     def sizeHint(self) -> QSize:
-        """Calculate size hint with adjusted margins"""
+        """Returns the size of the key text in bold, plus the keycap's margins."""
         if self._saved_size is None:
-            self._saved_size = find_text_size(self._base_text, self.font(), exact=False) + QSize(6, 6)
+            self._saved_size = find_text_size(self._base_text, self._key_font(), exact=False) + QSize(6, 6)
         return QSize(self._saved_size)
+
+    def minimumSizeHint(self) -> QSize:
+        """Returns the size hint, since a smaller label cuts off the keycap."""
+        return self.sizeHint()
 
     def setText(self, text: str) -> None:
         """Update label text, clearing saved text size calculations."""
@@ -76,7 +86,7 @@ class KeyHintLabel(QLabel):
             super().paintEvent(event)
             return
         own_bounds = QRect(QPoint(), self.size())
-        text_bounds = QRect(QPoint(), find_text_size(self._base_text, self.font())).adjusted(0, 0, 5, 5)
+        text_bounds = QRect(QPoint(), find_text_size(self._base_text, self._key_font())).adjusted(0, 0, 5, 5)
         alignment = self.alignment()
         if alignment & Qt.AlignmentFlag.AlignHCenter == Qt.AlignmentFlag.AlignHCenter:
             text_bounds.moveLeft((own_bounds.width() - text_bounds.width()) // 2)

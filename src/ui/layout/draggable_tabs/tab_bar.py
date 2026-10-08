@@ -20,7 +20,8 @@ from src.ui.panel.layer_ui.layer_widget import LayerWidget
 from src.util.layout import clear_layout
 from src.util.signals_blocked import signals_blocked
 
-BASE_EMPTY_BAR_SIZE = 10
+# An empty bar is still a drop target for dragged tabs. Its TabBox adds a frame and margins around this thickness:
+BASE_EMPTY_BAR_SIZE = 8
 TAB_BAR_OPEN_DELAY_MS = 100
 INLINE_MARGIN = 2
 EDGE_MARGIN = 5

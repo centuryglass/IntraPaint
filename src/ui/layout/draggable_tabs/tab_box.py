@@ -159,12 +159,20 @@ class TabBox(BorderedWidget):
             self.is_open = False
 
     def sizeHint(self) -> QSize:
-        """Calculate size based on whether content is expanded."""
-        return super().sizeHint() if self.is_open else self._tab_bar.sizeHint()
+        """Returns the layout's size hint when open, or the tab bar's plus the box's margins when closed."""
+        return super().sizeHint() if self.is_open else self._closed_size(self._tab_bar.sizeHint())
 
     def minimumSizeHint(self) -> QSize:
-        """Calculate size based on whether content is expanded."""
-        return super().minimumSizeHint() if self.is_open else self._tab_bar.minimumSizeHint()
+        """Returns the layout's minimum size when open, or the tab bar's plus the box's margins when closed."""
+        return super().minimumSizeHint() if self.is_open else self._closed_size(self._tab_bar.minimumSizeHint())
+
+    def _closed_size(self, tab_bar_size: QSize) -> QSize:
+        """Grows a tab bar size by the margins around the bar.
+
+        Closed hints read the tab bar directly: the layout caches its items' hints until it next activates, which is
+        stale before the window first shows.
+        """
+        return tab_bar_size.grownBy(self.contentsMargins() + self._layout.contentsMargins())
 
     def _update_stretch_on_toggle(self, _=None) -> None:
         """Relinquish stretch when closed, reclaim it when opened.
