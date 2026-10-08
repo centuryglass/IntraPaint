@@ -185,6 +185,32 @@ class FollowSelectionTest(IntraPaintTestCase):
         self._settle()
         self.assertEqual(self.image_stack.generation_area, QRect(220, 100, 200, 200))
 
+    def test_frame_keeps_selection_inside(self) -> None:
+        """Applying a frame places the new area over the selection, using the follow-selection placement rule."""
+        self._select(QRect(900, 700, 20, 20))
+        self._settle()
+        self.assertEqual(self.image_stack.generation_area, QRect(720, 520, 200, 200))
+        apply_generation_area_frame(self.image_stack, QSize(128, 128))
+        self.assertEqual(self.image_stack.generation_area, QRect(792, 592, 128, 128))
+        self.assertTrue(self.image_stack.generation_area.contains(QRect(900, 700, 20, 20)))
+
+    def test_frame_without_selection_or_follow_centers(self) -> None:
+        """Without a selection, or with follow-selection off, applying a frame resizes around the area's center."""
+        apply_generation_area_frame(self.image_stack, QSize(128, 128))
+        self.assertEqual(self.image_stack.generation_area, QRect(136, 136, 128, 128))
+        AppConfig().set(AppConfig.GENERATION_AREA_FOLLOW_SELECTION, FOLLOW_SELECTION_OFF)
+        self._select(QRect(900, 700, 20, 20))
+        apply_generation_area_frame(self.image_stack, QSize(256, 256))
+        self.assertEqual(self.image_stack.generation_area, QRect(72, 72, 256, 256))
+
+    def test_frame_keeps_selection_inside_with_padding(self) -> None:
+        """Applied frames count the full resolution padding, like follow_selection does."""
+        Cache().set(Cache.INPAINT_FULL_RES_PADDING, 10)
+        self._select(QRect(900, 700, 20, 20))
+        self._settle()
+        apply_generation_area_frame(self.image_stack, QSize(128, 128))
+        self.assertEqual(self.image_stack.generation_area, QRect(802, 602, 128, 128))
+
     def test_context_pin_moves_area(self) -> None:
         """Pin changes are followed like selection edits, but only alongside a selection."""
         self.selection_layer.add_context_pin(QPoint(500, 120))
