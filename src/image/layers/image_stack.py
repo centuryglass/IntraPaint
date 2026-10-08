@@ -50,6 +50,7 @@ ACTION_NAME_CLEAR_SELECTED = _tr('cut/clear selection')
 ACTION_NAME_RESIZE_IMAGE_CANVAS = _tr('resize image canvas')
 ACTION_NAME_CROP_LAYER_TO_SELECTION = _tr('crop layer to selection')
 MERGED_LAYER_NAME = _tr('Merged')
+PASTE_LAYER_NAME = _tr('Paste layer')
 
 ERROR_TITLE_RESIZE_FAILED = _tr('Resizing image canvas failed')
 ERROR_TITLE_IMAGE_SCALE_FAILED = _tr('Image scaling failed')
@@ -1294,12 +1295,16 @@ class ImageStack(QObject):
             self._copy_buffer_layer_properties = (layer.opacity, layer.composition_mode)
         return image
 
-    def clear_selected(self, layer: Optional[Layer] = None, save_to_copy_buffer=False) -> None:
-        """Replaces all masked image content in a layer with transparency."""
+    def clear_selected(self, layer: Optional[Layer] = None, save_to_copy_buffer=False) -> Optional[QImage]:
+        """Replaces all masked image content in a layer with transparency, returning the content the operation copied.
+
+        Returns None when nothing was copied: the layer is locked or hidden, the masked content is empty, a text
+        layer's render-to-image confirmation was declined, or the content wasn't saved to the copy buffer.
+        """
         if layer is None:
             layer = self.active_layer
         if not self.validate_layer_showing_errors(layer, allow_layer_stack=True):
-            return
+            return None
         transformed_mask = self.get_layer_selection_mask(layer)
         if isinstance(layer, TextLayer):
             copy_buffer_backup = (self._copy_buffer, self._copy_buffer_transform, self._copy_buffer_layer_properties)
@@ -1307,33 +1312,45 @@ class ImageStack(QObject):
             if not save_to_copy_buffer:
                 self._copy_buffer, self._copy_buffer_transform, self._copy_buffer_layer_properties = copy_buffer_backup
             if image_is_fully_transparent(selected):
-                return  # cutting selection changes nothing, no need to render to image.
+                return None  # cutting selection changes nothing, no need to render to image.
             if not TextLayer.confirm_or_cancel_render_to_image([layer.name], ACTION_NAME_CLEAR_SELECTED):
                 self._copy_buffer, self._copy_buffer_transform, self._copy_buffer_layer_properties = copy_buffer_backup
-                return
+                return None
             with UndoStack().combining_actions('ImageStack.clear_selected'):
                 layer = self.replace_text_layer_with_image(layer)
                 layer.cut_masked(transformed_mask)
-            return
-        if save_to_copy_buffer:
-            self.copy_selected(layer, transformed_mask)
+            return selected
+        copied = self.copy_selected(layer, transformed_mask) if save_to_copy_buffer else None
         layer.cut_masked(transformed_mask)
+        return copied
 
-    def cut_selected(self, layer: Optional[Layer] = None) -> None:
-        """Replaces all masked image content in a layer with transparency, saving it in the copy buffer."""
-        self.clear_selected(layer, True)
+    def cut_selected(self, layer: Optional[Layer] = None) -> Optional[QImage]:
+        """Replaces all masked image content in a layer with transparency, saving it in the copy buffer.
+
+        Returns the image content the cut removed, or None when the cut removed nothing or was cancelled.
+        """
+        return self.clear_selected(layer, True)
 
     def paste(self) -> None:
         """If the copy buffer contains image data, paste it into a new layer with the copied layer's opacity and
         composite mode."""
         if self._copy_buffer is not None:
             with UndoStack().combining_actions('ImageStack.paste'):
-                new_layer = self.create_layer('Paste layer', self._copy_buffer.copy(),
+                new_layer = self.create_layer(PASTE_LAYER_NAME, self._copy_buffer.copy(),
                                               transform=self._copy_buffer_transform)
                 opacity, mode = self._copy_buffer_layer_properties
                 new_layer.set_opacity(opacity)
                 new_layer.set_composition_mode(mode)
                 self.active_layer = new_layer
+
+    def paste_image(self, image: QImage, transform: Optional[QTransform] = None) -> None:
+        """Creates a new layer from image content that didn't come from the copy buffer, and makes it active.
+
+        The layer keeps the default opacity and composite mode; `transform` decides where the image sits.
+        """
+        with UndoStack().combining_actions('ImageStack.paste'):
+            new_layer = self.create_layer(PASTE_LAYER_NAME, image, transform=transform)
+            self.active_layer = new_layer
 
     def set_generation_area_content(self,
                                     image_data: QImage,

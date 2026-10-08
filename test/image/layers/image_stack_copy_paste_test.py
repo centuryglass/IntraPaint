@@ -15,7 +15,7 @@ from src.image.layers.layer import Layer
 from src.image.layers.text_layer import TextLayer
 from src.image.text_rect import TextRect
 from src.undo_stack import UndoStack
-from test.image.layers.image_stack_state import ImageStackOpTestCase, masked_to_rect, select_rect
+from test.image.layers.image_stack_state import ImageStackOpTestCase, masked_to_rect, noise_image, select_rect
 from test.render_assertions import full_render
 
 SELECTED = QRect(5, 4, 15, 12)
@@ -122,6 +122,28 @@ class CopyPasteTest(ImageStackOpTestCase):
         self.capture().assert_matches(before, 'paste')
         self.assertEqual(0, UndoStack().undo_count())
 
+    def test_cut_returns_removed_content(self) -> None:
+        """cut_selected returns the content it removed, matching what paste puts in the new layer."""
+        removed = self.image_stack.cut_selected(self.top)
+        assert removed is not None
+        pasted = self.paste()
+        self.assert_images_equal(removed, pasted.image)
+
+    def test_clear_returns_nothing(self) -> None:
+        """clear_selected without save_to_copy_buffer copies nothing, and returns None."""
+        removed = self.image_stack.clear_selected(self.top)
+        self.assertIsNone(removed)
+
+    def test_paste_image(self) -> None:
+        """paste_image creates a layer with the given image at the given transform, in one undo step."""
+        image = noise_image(QSize(10, 8), 5)
+        _, after = self.assert_undo_redo(lambda: self.image_stack.paste_image(image, QTransform.fromTranslate(3, 4)))
+        pasted = after.active_layer
+        assert isinstance(pasted, ImageLayer)
+        self.assertEqual('Paste layer', pasted.name)
+        self.assert_images_equal(pasted.image, image)
+        self.assertEqual(QRect(3, 4, 10, 8), pasted.transformed_bounds)
+
     def test_cut_paste_image_layer(self) -> None:
         """Cutting clears the selected pixels in one undo step, and pasting the cut content restores the composite."""
         original = full_render(self.image_stack)
@@ -191,7 +213,7 @@ class CopyPasteTest(ImageStackOpTestCase):
         self.image_stack.copy_selected(self.top)
         UndoStack().clear()
         before = self.capture()
-        self.image_stack.cut_selected(text_layer)
+        self.assertIsNone(self.image_stack.cut_selected(text_layer))
         self.capture().assert_matches(before, 'declined cut')
         self.assertEqual(0, UndoStack().undo_count())
         self.image_stack.active_layer = self.top
