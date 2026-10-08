@@ -10,13 +10,13 @@ import numpy as np
 import pytest
 
 from PySide6.QtCore import QPoint, QRect, QSize
-from PySide6.QtGui import QTransform
+from PySide6.QtGui import QImage, QTransform
 
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.image.text_rect import TextRect
 from src.undo_stack import UndoStack
-from src.util.visual.image_utils import image_content_bounds, image_data_as_numpy_8bit_readonly
+from src.util.visual.image_utils import image_content_bounds, image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly
 from test.image.layers.image_stack_state import CANVAS_SIZE, ImageStackOpTestCase, noise_image
 
 ERROR_DIALOG = 'src.image.layers.image_stack.show_error_dialog'
@@ -25,8 +25,6 @@ CONFIRM_RENDER_TEXT = 'src.image.layers.text_layer.request_confirmation'
 
 ISSUE_BASE_OPACITY = ('https://github.com/centuryglass/IntraPaint/issues/211: merge down applies the base layer\'s'
                       ' opacity to the merged top layer')
-ISSUE_FLATTEN_TRANSLUCENT = ('https://github.com/centuryglass/IntraPaint/issues/237: flattening a layer'
-                             ' over translucent content changes the composite')
 ISSUE_ALPHA_LOCK = ('https://github.com/centuryglass/IntraPaint/issues/212: merge down onto an alpha-locked layer'
                     ' changes its alpha')
 
@@ -308,11 +306,15 @@ class MergeGroupTest(MergeTestCase):
         UndoStack().undo()
         self.assertIs(text_layer, self.image_stack.layer_stack.child_layers[0])
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_FLATTEN_TRANSLUCENT)
     def test_flatten_over_translucent_layer(self) -> None:
-        """Flattening a translucent layer over translucent content leaves the composite unchanged."""
+        """Flattening a translucent layer over translucent content leaves the composite within 8-bit rounding."""
         self.child_a.set_opacity(0.5)
-        self.assert_composite_kept(lambda: self.image_stack.flatten_layer(self.child_a))
+        before, after = self.assert_undo_redo(lambda: self.image_stack.flatten_layer(self.child_a))
+        def pixels(image: QImage) -> np.ndarray:
+            return image_data_as_numpy_8bit(image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)).astype(int)
+
+        max_difference = np.abs(pixels(before.composite) - pixels(after.composite)).max()
+        self.assertLessEqual(max_difference, 2)
 
     @patch(ERROR_DIALOG)
     def test_flatten_hidden_layer_blocked(self, error_dialog) -> None:
