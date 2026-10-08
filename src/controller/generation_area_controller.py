@@ -39,14 +39,28 @@ def record_generation_area_size(size: QSize) -> None:
 
 
 def apply_generation_area_frame(image_stack: ImageStack, size: QSize) -> None:
-    """Resizes the generation area around its center, then records the resulting size as a recent frame.
+    """Resizes the generation area, then records the resulting size as a recent frame.
 
+    With follow-selection on and a selection, the new area is placed by the same rule that follows selection edits,
+    so it still contains the selection when the selection fits in `size`. Otherwise it resizes around its old center.
     ImageStack clamps the new area to the image and the area size limits, so the recorded size can be smaller than
     `size`.
     """
     area = image_stack.generation_area
     new_area = QRect(0, 0, size.width(), size.height())
-    new_area.moveCenter(area.center())
+    mode = AppConfig().get(AppConfig.GENERATION_AREA_FOLLOW_SELECTION)
+    position = None
+    if mode != FOLLOW_SELECTION_OFF:
+        cache = Cache()
+        padding = cache.get(Cache.INPAINT_FULL_RES_PADDING) if cache.get(Cache.INPAINT_FULL_RES) else 0
+        selection_layer = image_stack.selection_layer
+        target = follow_selection_target(selection_layer.get_selection_bounds(), selection_layer.context_pins,
+                                         padding)
+        if target is not None:
+            position = follow_selection_position(new_area, target, mode, image_stack.bounds)
+            new_area.moveTopLeft(position)
+    if position is None:
+        new_area.moveCenter(area.center())
     image_stack.generation_area = new_area
     record_generation_area_size(image_stack.generation_area.size())
 
