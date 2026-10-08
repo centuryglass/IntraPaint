@@ -11,6 +11,7 @@ from src.tools.text_tool import TextTool, MIN_DRAG_SIZE
 from src.ui.graphics_items.placement_outline import PlacementOutline
 from src.ui.panel.tool_control_panels.text_tool_panel import TextToolPanel
 from src.undo_stack import UndoStack
+from src.util.visual.geometry_utils import panel_position
 from test.tools.tool_test_case import ToolTestCase
 
 DRAG_START = QPoint(50, 60)
@@ -53,7 +54,7 @@ class TextToolTest(ToolTestCase):
         self.assertEqual(self.panel.text_rect.text, layer.text_rect.text)
         self.assertEqual(self.panel._text_box.value(), layer.text_rect.text)
         self.assertEqual(self.panel.text_rect.size, layer.size)
-        self.assertEqual(self.panel.offset, layer.offset.toPoint())
+        self.assertEqual(self.panel.offset, panel_position(layer.bounds, layer.transform).toPoint())
         self.assertEqual(self.outline.outline_size, QSizeF(layer.size))
         self.assertEqual(self.outline.offset, layer.offset)
 
@@ -204,27 +205,67 @@ class TextToolTest(ToolTestCase):
         self.assertIs(self.tool._text_layer, layer)
         self.assert_panel_matches_layer(layer)
 
-    @pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/22: the text tool '
-                                           'shows the translation, the transform tool the bounding box corner')
-    def test_rotated_position_matches_transform_tool(self) -> None:
-        """For a rotated text layer, the text tool's X and Y match the transform tool's."""
-        layer = self._drag_new_layer()
-        layer.rotate(90)
-        text_tool_offset = self.panel.offset
+    def _activate_transform_tool(self) -> LayerTransformTool:
         transform_tool = LayerTransformTool(self.image_stack, self.image_viewer)
         self.tool_controller.add_tool(transform_tool)
         self.activate_tool(transform_tool)
-        transform_panel = transform_tool._control_panel
-        self.assertEqual(QPointF(text_tool_offset),
-                         QPointF(transform_panel.x_position, transform_panel.y_position))
+        return transform_tool
+
+    def _transformed_layers(self) -> list[tuple[str, TextLayer]]:
+        """Returns a text layer for each kind of transform, all created by drag with the text tool."""
+        layers: list[tuple[str, TextLayer]] = []
+        for label, change in (('translated', lambda _: None),
+                              ('rotated 90', lambda layer: layer.rotate(90)),
+                              ('rotated 45', lambda layer: layer.rotate(45)),
+                              ('scaled', lambda layer: setattr(layer, 'transform', layer.transform
+                                                               * QTransform.fromScale(1.5, 0.5))),
+                              ('flipped', lambda layer: layer.flip_vertical())):
+            layer = self._drag_new_layer()
+            change(layer)
+            layers.append((label, layer))
+        return layers
+
+    def test_position_matches_transform_tool(self) -> None:
+        """For translated, rotated, scaled and flipped text layers, the text tool's X and Y are the transform tool's,
+           rounded to whole pixels."""
+        for label, layer in self._transformed_layers():
+            with self.subTest(label):
+                self.image_stack.active_layer = layer
+                self.activate_tool(self.tool)
+                text_tool_position = self.panel.offset
+                transform_panel = self._activate_transform_tool()._control_panel
+                self.assertEqual(text_tool_position,
+                                 QPointF(transform_panel.x_position, transform_panel.y_position).toPoint())
 
     def test_unrotated_position_matches_transform_tool(self) -> None:
-        """For a text layer that is only translated, the text tool's X and Y match the transform tool's."""
+        """For a text layer that is only translated, the text tool's X and Y are exactly the transform tool's."""
         self._drag_new_layer()
-        text_tool_offset = self.panel.offset
-        transform_tool = LayerTransformTool(self.image_stack, self.image_viewer)
-        self.tool_controller.add_tool(transform_tool)
-        self.activate_tool(transform_tool)
-        transform_panel = transform_tool._control_panel
-        self.assertEqual(QPointF(text_tool_offset),
-                         QPointF(transform_panel.x_position, transform_panel.y_position))
+        text_tool_position = self.panel.offset
+        transform_panel = self._activate_transform_tool()._control_panel
+        self.assertEqual(QPointF(text_tool_position), QPointF(transform_panel.x_position, transform_panel.y_position))
+
+    def test_rotated_position_set_in_text_tool(self) -> None:
+        """Setting X and Y in the text tool on a rotated layer moves it without rotating it, and the transform tool
+           reads the same values back."""
+        layer = self._drag_new_layer()
+        layer.rotate(90)
+        rotation = (layer.transform.m11(), layer.transform.m12(), layer.transform.m21(), layer.transform.m22())
+        self.panel._x_input.setValue(30)
+        self.panel._y_input.setValue(40)
+        self.assertEqual(self.panel.offset, QPoint(30, 40))
+        self.assertEqual(layer.transformed_bounds.topLeft(), QPoint(30, 40))
+        self.assertEqual((layer.transform.m11(), layer.transform.m12(), layer.transform.m21(),
+                          layer.transform.m22()), rotation)
+        transform_panel = self._activate_transform_tool()._control_panel
+        self.assertEqual(QPointF(transform_panel.x_position, transform_panel.y_position), QPointF(30, 40))
+
+    def test_rotated_position_set_in_transform_tool(self) -> None:
+        """Setting X and Y in the transform tool on a rotated layer shows the same values in the text tool."""
+        layer = self._drag_new_layer()
+        layer.rotate(90)
+        transform_tool = self._activate_transform_tool()
+        transform_tool._control_panel._x_pos_box.setValue(30.0)
+        transform_tool._control_panel._y_pos_box.setValue(40.0)
+        self.activate_tool(self.tool)
+        self.assertEqual(self.panel.offset, QPoint(30, 40))
+        self.assertEqual(layer.transformed_bounds.topLeft(), QPoint(30, 40))
