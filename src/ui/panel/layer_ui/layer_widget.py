@@ -204,6 +204,8 @@ class LayerWidget(BorderedWidget):
         self._preview_render_timer.stop()
         if isinstance(self._layer, TransformLayer):
             layer_image, _ = self._layer.transformed_image()
+        elif isinstance(self._layer, LayerGroup):
+            layer_image = self._layer.preview_image()
         else:
             layer_image = self._layer.image
         min_dim = min(layer_image.width(), layer_image.height())
