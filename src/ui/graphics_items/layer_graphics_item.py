@@ -1,5 +1,5 @@
 """Renders an image layer into a QGraphicsScene."""
-from PySide6.QtCore import QRect
+from PySide6.QtCore import QRect, QObject
 from PySide6.QtGui import QTransform
 from PySide6.QtWidgets import QGraphicsItem
 
@@ -25,15 +25,18 @@ class LayerGraphicsItem(PixmapItem):
         self._pending_bounds = QRect()
         self.composition_mode = self._display_mode()
 
-        layer.visibility_changed.connect(self._update_visibility)
-        layer.content_changed.connect(self._update_pixmap)
-        layer.opacity_changed.connect(self._update_opacity)
+        # The item isn't a QObject, so Qt can't drop these connections when it's deleted. See disconnect_layer.
+        self._connections = [
+            layer.visibility_changed.connect(self._update_visibility),
+            layer.content_changed.connect(self._update_pixmap),
+            layer.opacity_changed.connect(self._update_opacity),
+            layer.z_value_changed.connect(lambda _, z_value: self.setZValue(z_value)),
+            layer.composition_mode_changed.connect(self._update_mode)
+        ]
         if isinstance(layer, TransformLayer):
-            layer.transform_changed.connect(self._update_transform)
+            self._connections.append(layer.transform_changed.connect(self._update_transform))
         elif isinstance(layer, LayerGroup):
-            layer.bounds_changed.connect(self._update_bounds)
-        layer.z_value_changed.connect(lambda _, z_value: self.setZValue(z_value))
-        layer.composition_mode_changed.connect(self._update_mode)
+            self._connections.append(layer.bounds_changed.connect(self._update_bounds))
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent, True)
 
         self.setOpacity(self._display_opacity())
@@ -50,6 +53,16 @@ class LayerGraphicsItem(PixmapItem):
     def layer(self) -> Layer:
         """Returns the rendered image layer."""
         return self._layer
+
+    def disconnect_layer(self) -> None:
+        """Stops following the layer's changes. Call this before deleting the item or removing it from its scene.
+
+        Connections left in place keep the item alive, and the layer's signals keep updating it after its scene deleted
+        it.
+        """
+        for connection in self._connections:
+            QObject.disconnect(connection)
+        self._connections.clear()
 
     @property
     def hidden(self) -> bool:

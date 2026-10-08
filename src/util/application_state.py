@@ -3,7 +3,7 @@
 from typing import Any
 import logging
 
-from PySide6.QtCore import QObject, Signal, SignalInstance
+from PySide6.QtCore import QObject, Signal, SignalInstance, SIGNAL
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QWidget
 
@@ -92,3 +92,14 @@ class AppStateTracker(metaclass=Singleton):
             logger.info(f'State change: from {self._app_state} to {new_state}')
             self._app_state = new_state
             self._state_changed.emit(new_state)
+
+    def _reset(self) -> None:
+        """Restores the initial state and disconnects every widget, action and slot connected to state changes.
+
+        Tests call this between cases. Connections keep their widgets alive, and a later state change would act on
+        widgets from earlier tests.
+        """
+        self._connections.clear()
+        if self._signal_object.receivers(SIGNAL('state_changed(QString)')) > 0:
+            self._state_changed.disconnect()
+        self._app_state = APP_STATE_INIT

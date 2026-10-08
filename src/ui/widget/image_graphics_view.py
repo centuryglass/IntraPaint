@@ -33,7 +33,8 @@ class ImageGraphicsView(QGraphicsView):
 
     def __init__(self, parent: Optional[QWidget] = None, use_keybindings=True) -> None:
         super().__init__(parent)
-        self._scene = QGraphicsScene()
+        # The view owns its scene: deleting the view deletes the scene and every item in it.
+        self._scene = QGraphicsScene(self)
         self._content_size: QSize = QSize(0, 0)
         self._content_rect: Optional[QRect] = None
         self._background: Optional[QPixmap] = None
