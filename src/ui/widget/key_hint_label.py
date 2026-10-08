@@ -1,8 +1,8 @@
-"""Shows formatted key suggestions to the user."""
+"""Shows formatted key suggestions to the user, drawn as raised keycaps."""
 from typing import Optional
 
-from PySide6.QtCore import Qt, QRect, QPoint, QSize
-from PySide6.QtGui import QKeySequence, QPainter, QPainterPath, QPaintEvent, QFont
+from PySide6.QtCore import Qt, QRect, QRectF, QPoint, QSize
+from PySide6.QtGui import QKeySequence, QPainter, QPaintEvent, QFont, QPalette, QPen
 from PySide6.QtWidgets import QLabel, QWidget
 
 from src.config.application_config import AppConfig
@@ -10,9 +10,16 @@ from src.config.key_config import KeyConfig
 from src.util.key_code_utils import get_key_with_modifiers, get_modifier_string, KEY_REQUIRES_SHIFT
 from src.util.visual.text_drawing_utils import find_text_size, get_key_display_string
 
+KEYCAP_RADIUS = 3.0
+# The keycap's ink shadow drops this far below it:
+KEYCAP_DEPTH = 1
+
 
 class KeyHintLabel(QLabel):
-    """Shows formatted key suggestions to the user."""
+    """Shows formatted key suggestions to the user, drawn as raised keycaps.
+
+    The keycap takes the palette's `Button` fill and `Shadow` outline, and its text takes `ButtonText`.
+    """
 
     def __init__(self, keys: Optional[QKeySequence | Qt.KeyboardModifier | str] = None,
                  config_key: Optional[str] = None,
@@ -24,6 +31,7 @@ class KeyHintLabel(QLabel):
         font.setPointSize(self._default_size)
         self.setFont(font)
         self.setTextFormat(Qt.TextFormat.RichText)
+        self.setForegroundRole(QPalette.ColorRole.ButtonText)
         self.setContentsMargins(3, 3, 3, 3)
         self._saved_size: Optional[QSize] = None
         self._config_key = config_key
@@ -63,7 +71,7 @@ class KeyHintLabel(QLabel):
         super().setFont(font)
 
     def paintEvent(self, event: Optional[QPaintEvent]):
-        """Outline the key text."""
+        """Draw the keycap behind the key text."""
         if self._base_text == '':
             super().paintEvent(event)
             return
@@ -79,12 +87,16 @@ class KeyHintLabel(QLabel):
         elif alignment & Qt.AlignmentFlag.AlignBottom == Qt.AlignmentFlag.AlignBottom:
             text_bounds.moveTop(own_bounds.height() - text_bounds.height())
         text_bounds = text_bounds.intersected(own_bounds)
+        palette = self.palette()
+        ink = palette.color(QPalette.ColorRole.Shadow)
+        keycap = QRectF(text_bounds).adjusted(0.5, 0.5, -0.5, -0.5 - KEYCAP_DEPTH)
         painter = QPainter(self)
-        painter.setPen(self.palette().color(self.foregroundRole()))
-        path = QPainterPath()
-        path.addRoundedRect(text_bounds.adjusted(0, 0, -1, -1), 3, 3)
-        painter.fillPath(path, self.palette().color(self.backgroundRole()))
-        painter.drawPath(path)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(QPen(ink, 1))
+        painter.setBrush(ink)
+        painter.drawRoundedRect(keycap.translated(0, KEYCAP_DEPTH), KEYCAP_RADIUS, KEYCAP_RADIUS)
+        painter.setBrush(palette.color(QPalette.ColorRole.Button))
+        painter.drawRoundedRect(keycap, KEYCAP_RADIUS, KEYCAP_RADIUS)
         painter.end()
         super().paintEvent(event)
 

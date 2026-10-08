@@ -29,7 +29,7 @@
     "show_tool_control_hints": true,
     "show_rulers": true,
     "show_ruler_highlights": true,
-    "ruler_generation_area_color": "#3daee9",
+    "ruler_generation_area_color": "",
     "ruler_font_size": {
         "min": 4,
         "max": 72,

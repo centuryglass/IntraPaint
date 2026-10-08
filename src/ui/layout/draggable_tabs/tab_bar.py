@@ -12,7 +12,7 @@ from typing import Optional
 
 from PySide6.QtCore import Signal, Qt, QPointF, QLine, QSize, QTimer
 from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter, \
-    QResizeEvent
+    QPalette, QResizeEvent
 from PySide6.QtWidgets import QWidget, QBoxLayout, QHBoxLayout, QVBoxLayout, QToolButton, QSizePolicy, QFrame
 
 from src.ui.layout.draggable_tabs.tab import Tab
@@ -531,11 +531,11 @@ class TabBar(QFrame):
             self.update()
 
     def paintEvent(self, event: Optional[QPaintEvent]) -> None:
-        """Draw the insert position on drag and drop."""
+        """Marks the active tab and any drag and drop insert position in the accent color."""
         super().paintEvent(event)
         painter = QPainter(self)
-        foreground_color = self.palette().color(self.foregroundRole())
-        painter.setPen(foreground_color)
+        accent_color = self.palette().color(QPalette.ColorRole.Highlight)
+        painter.setPen(accent_color)
         active_tab = self.active_tab
         if active_tab is not None:
             active_rect = active_tab.geometry()
@@ -553,7 +553,7 @@ class TabBar(QFrame):
                 else:
                     active_rect.setX(1)
                     active_rect.setRight(active_tab.x() - 1)
-            painter.fillRect(active_rect, foreground_color)
+            painter.fillRect(active_rect, accent_color)
 
         if self._insert_pos is not None:
             if self._orientation == Qt.Orientation.Horizontal:
