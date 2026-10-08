@@ -4,18 +4,22 @@ Pasted content is checked by rendering: with the source hidden, the pasted layer
 source rendered inside the selection.
 """
 import unittest
+from unittest.mock import patch
 
-from PySide6.QtCore import QRect, Qt
+from PySide6.QtCore import QRect, QSize, Qt
 from PySide6.QtGui import QImage, QPainter, QTransform
 
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.layer import Layer
+from src.image.layers.text_layer import TextLayer
+from src.image.text_rect import TextRect
 from src.undo_stack import UndoStack
 from test.image.layers.image_stack_state import ImageStackOpTestCase, masked_to_rect, select_rect
 from test.render_assertions import full_render
 
 SELECTED = QRect(5, 4, 15, 12)
+CONFIRM_RENDER_TEXT = 'src.image.layers.text_layer.request_confirmation'
 
 
 class CopyPasteTest(ImageStackOpTestCase):
@@ -147,6 +151,52 @@ class CopyPasteTest(ImageStackOpTestCase):
         before_group = self.render_alone(self.group)
         self.assert_undo_redo(lambda: self.image_stack.clear_selected(self.group))
         self.assert_images_equal(self.render_alone(self.group), self._cleared(before_group, SELECTED))
+
+    def test_copy_with_mask(self) -> None:
+        """copy_selected with an explicit mask copies the masked pixels instead of the selection."""
+        mask_rect = QRect(1, 1, 6, 4)
+        mask = QImage(self.top.size, QImage.Format.Format_ARGB32_Premultiplied)
+        mask.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(mask)
+        painter.fillRect(mask_rect, Qt.GlobalColor.black)
+        painter.end()
+        copied = self.image_stack.copy_selected(self.top, mask)
+        assert copied is not None
+        self.assert_images_equal(copied, self.top.image.copy(mask_rect))
+        pasted = self.paste()
+        self.assertEqual(mask_rect.translated(self.top.transformed_bounds.topLeft()), pasted.transformed_bounds)
+
+    def _add_text_layer(self) -> TextLayer:
+        text_data = TextRect()
+        text_data.text = 'text'
+        text_data.size = QSize(24, 16)
+        return self.image_stack.create_text_layer(text_data, self.stack, 0)
+
+    @patch(CONFIRM_RENDER_TEXT, return_value=True)
+    def test_cut_paste_text_layer(self, _) -> None:
+        """Cutting from a text layer converts it to an image layer in one undo step, and pasting the cut content
+        restores the composite."""
+        text_layer = self._add_text_layer()
+        original = full_render(self.image_stack)
+        self.assert_undo_redo(lambda: self.image_stack.cut_selected(text_layer))
+        self.assertEqual([], self.image_stack.text_layers)
+        self.image_stack.active_layer = self.stack.child_layers[0]
+        self.paste()
+        self.assert_images_equal(full_render(self.image_stack), original)
+
+    @patch(CONFIRM_RENDER_TEXT, return_value=False)
+    def test_cut_text_layer_declined(self, _) -> None:
+        """Declining to convert a text layer cancels the cut, and keeps the earlier copy for paste."""
+        text_layer = self._add_text_layer()
+        self.image_stack.copy_selected(self.top)
+        UndoStack().clear()
+        before = self.capture()
+        self.image_stack.cut_selected(text_layer)
+        self.capture().assert_matches(before, 'declined cut')
+        self.assertEqual(0, UndoStack().undo_count())
+        self.image_stack.active_layer = self.top
+        pasted = self.paste()
+        self.assertEqual(SELECTED.intersected(self.top.transformed_bounds), pasted.transformed_bounds)
 
     @staticmethod
     def _cleared(image: QImage, rect: QRect) -> QImage:

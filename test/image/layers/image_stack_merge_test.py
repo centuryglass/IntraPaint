@@ -17,7 +17,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.text_rect import TextRect
 from src.undo_stack import UndoStack
 from src.util.visual.image_utils import image_content_bounds, image_data_as_numpy_8bit_readonly
-from test.image.layers.image_stack_state import CANVAS_SIZE, ImageStackOpTestCase
+from test.image.layers.image_stack_state import CANVAS_SIZE, ImageStackOpTestCase, noise_image
 
 ERROR_DIALOG = 'src.image.layers.image_stack.show_error_dialog'
 CONFIRM = 'src.image.layers.image_stack.request_confirmation'
@@ -25,6 +25,8 @@ CONFIRM_RENDER_TEXT = 'src.image.layers.text_layer.request_confirmation'
 
 ISSUE_BASE_OPACITY = ('https://github.com/centuryglass/IntraPaint/issues/211: merge down applies the base layer\'s'
                       ' opacity to the merged top layer')
+ISSUE_FLATTEN_TRANSLUCENT = ('https://github.com/centuryglass/IntraPaint/issues/237: flattening a layer'
+                             ' over translucent content changes the composite')
 ISSUE_ALPHA_LOCK = ('https://github.com/centuryglass/IntraPaint/issues/212: merge down onto an alpha-locked layer'
                     ' changes its alpha')
 
@@ -129,9 +131,24 @@ class MergeLayerDownTest(MergeTestCase):
 
     @patch(ERROR_DIALOG)
     def test_merge_down_hidden_blocked(self, error_dialog) -> None:
-        """Hidden layers can't be merged."""
-        self.base.set_visible(False)
-        self.assert_blocked(lambda: self.image_stack.merge_layer_down(self.top), error_dialog)
+        """Hidden layers can't be merged, whether the hidden layer is the top or the base."""
+        for hidden in (self.top, self.base):
+            with self.subTest(hidden=hidden.name):
+                error_dialog.reset_mock()
+                hidden.set_visible(False)
+                self.assert_blocked(lambda: self.image_stack.merge_layer_down(self.top), error_dialog)
+                hidden.set_visible(True)
+
+    def test_merge_group_down_does_nothing(self) -> None:
+        """A group can't be merged down onto the layer below it."""
+        group = self.add_group('group')
+        self.image_stack.move_layer(group, self.image_stack.layer_stack, 1)
+        self.add_layer('child', 3, parent=group)
+        UndoStack().clear()
+        before = self.capture()
+        self.image_stack.merge_layer_down(group)
+        self.capture().assert_matches(before, 'merging group down')
+        self.assertEqual(0, UndoStack().undo_count())
 
     @patch(ERROR_DIALOG)
     def test_merge_down_onto_locked_blocked(self, error_dialog) -> None:
@@ -251,6 +268,62 @@ class MergeGroupTest(MergeTestCase):
         flattened = self.image_stack.layer_stack.child_layers[0]
         assert isinstance(flattened, ImageLayer)
         self.assertTrue(self.image_stack.layer_is_flat(flattened))
+
+    def test_layer_is_flat(self) -> None:
+        """Only a group with no children, or an image layer at full opacity in Normal mode with a whole-pixel offset,
+        is flat."""
+        self.assertTrue(self.image_stack.layer_is_flat(self.child_a))
+        self.assertFalse(self.image_stack.layer_is_flat(self.group))
+        self.assertTrue(self.image_stack.layer_is_flat(self.add_group('empty')))
+        for change, undo in ((lambda: self.child_a.set_opacity(0.5), lambda: self.child_a.set_opacity(1.0)),
+                             (lambda: self.child_a.set_composition_mode(CompositeMode.MULTIPLY),
+                              lambda: self.child_a.set_composition_mode(CompositeMode.NORMAL)),
+                             (lambda: self.child_a.set_transform(QTransform.fromTranslate(2.5, 3)),
+                              lambda: self.child_a.set_transform(QTransform.fromTranslate(2, 3))),
+                             (lambda: self.child_a.set_transform(QTransform().rotate(90)),
+                              lambda: self.child_a.set_transform(QTransform.fromTranslate(2, 3)))):
+            change()
+            self.assertFalse(self.image_stack.layer_is_flat(self.child_a))
+            undo()
+            self.assertTrue(self.image_stack.layer_is_flat(self.child_a))
+
+    def test_flatten_layer_in_group(self) -> None:
+        """A translucent layer inside a group flattens in place within the group."""
+        self.child_b.image = noise_image(self.child_b.size, 5)
+        self.child_a.set_opacity(0.5)
+        self.assert_composite_kept(lambda: self.image_stack.flatten_layer(self.child_a))
+        flattened = self.group.child_layers[0]
+        assert isinstance(flattened, ImageLayer)
+        self.assertEqual([flattened, self.child_b], self.group.child_layers)
+        self.assertTrue(self.image_stack.layer_is_flat(flattened))
+
+    def test_flatten_text_layer(self) -> None:
+        """Flattening a text layer replaces it with an image layer, which undo turns back into the text layer."""
+        self.group.set_visible(False)
+        self.add_layer('base', 3)
+        text_layer = self.image_stack.create_text_layer(_text_data(), self.image_stack.layer_stack, 0)
+        self.assert_composite_kept(lambda: self.image_stack.flatten_layer(text_layer))
+        self.assertEqual([], self.image_stack.text_layers)
+        self.assertIsInstance(self.image_stack.layer_stack.child_layers[0], ImageLayer)
+        UndoStack().undo()
+        self.assertIs(text_layer, self.image_stack.layer_stack.child_layers[0])
+
+    @pytest.mark.xfail(strict=True, reason=ISSUE_FLATTEN_TRANSLUCENT)
+    def test_flatten_over_translucent_layer(self) -> None:
+        """Flattening a translucent layer over translucent content leaves the composite unchanged."""
+        self.child_a.set_opacity(0.5)
+        self.assert_composite_kept(lambda: self.image_stack.flatten_layer(self.child_a))
+
+    @patch(ERROR_DIALOG)
+    def test_flatten_hidden_layer_blocked(self, error_dialog) -> None:
+        """A hidden layer or group can't be flattened, since its rendered content is empty."""
+        self.child_a.set_opacity(0.5)
+        for hidden in (self.child_a, self.group):
+            with self.subTest(hidden=hidden.name):
+                error_dialog.reset_mock()
+                hidden.set_visible(False)
+                self.assert_blocked(lambda: self.image_stack.flatten_layer(hidden), error_dialog)
+                hidden.set_visible(True)
 
 
 class MergeAllVisibleTest(MergeTestCase):
