@@ -1022,7 +1022,7 @@ class ImageStack(QObject):
         if len(hidden_in_groups) > 0:
             hidden_names = ', '.join([f'"{layer.name}"' for layer in hidden_in_groups])
             warning_message = WARNING_MESSAGE_HIDDEN_LAYERS_LOST.format(layer_names=hidden_names)
-            if not request_confirmation(None, WARNING_TITLE_HIDDEN_LAYERS_LOST, warning_message):
+            if not request_confirmation(None, WARNING_TITLE_HIDDEN_LAYERS_LOST, warning_message, discards_work=True):
                 return
 
         bottom_layer = visible_layers[-1]
@@ -1095,7 +1095,7 @@ class ImageStack(QObject):
             show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, ERROR_MESSAGE_GROUP_MERGE_BLOCKED)
             return
         if not isinstance(base_layer, TransformLayer) or base_layer.locked or base_layer.parent_locked:
-            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
+            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER, signal=True)
             return
         if not top_layer.visible or not base_layer.visible:
             show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, ERROR_MESSAGE_HIDDEN_LAYER_MERGE)
@@ -1883,10 +1883,10 @@ class ImageStack(QObject):
             show_error_dialog(None, ERROR_TITLE_TOP_GROUP_CHANGE, ERROR_MESSAGE_TOP_GROUP_CHANGE)
             return False
         if not allow_lock and layer.locked:
-            show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, ERROR_MESSAGE_LOCKED_LAYER)
+            show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, ERROR_MESSAGE_LOCKED_LAYER, signal=True)
             return False
         if not allow_parent_lock and layer.parent_locked:
             show_error_dialog(None, ERROR_TITLE_LOCKED_GROUP.format(layer_name=layer.name),
-                              ERROR_MESSAGE_LOCKED_GROUP)
+                              ERROR_MESSAGE_LOCKED_GROUP, signal=True)
             return False
         return True

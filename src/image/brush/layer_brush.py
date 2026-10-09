@@ -9,7 +9,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.ui.modal.modal_utils import show_error_dialog
 from src.util.shared_constants import (ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_LAYER_HIDDEN,
                                        ERROR_MESSAGE_LAYER_LOCKED, ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED,
-                                       ERROR_MESSAGE_LAYER_GROUP_LOCKED)
+                                       ERROR_MESSAGE_LAYER_GROUP_LOCKED, LOCK_ERROR_MESSAGES)
 from src.util.visual.image_utils import image_is_fully_transparent
 
 # Longest a mid-stroke draw should block the event loop. Input left over is drawn on the next event loop pass, so the
@@ -133,7 +133,8 @@ class LayerBrush:
             if image_is_fully_transparent(self._mask):
                 error_message = ERROR_MESSAGE_EMPTY_MASK
         if error_message is not None:
-            show_error_dialog(None, ERROR_TITLE_EDIT_FAILED, error_message)
+            show_error_dialog(None, ERROR_TITLE_EDIT_FAILED, error_message,
+                              signal=error_message in LOCK_ERROR_MESSAGES)
             return
         if not self._drawing:
             self.start_stroke()

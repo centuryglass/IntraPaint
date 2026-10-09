@@ -20,6 +20,7 @@ from src.ui.graphics_items.context_pin_item import ContextPinItem, marker_size_f
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.selection_outline import SelectionOutline
+from src.ui.ink_style import ink_colors
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.visual.graphics_scene_utils import get_view_bounds_of_scene_item_rect
 from src.util.visual.image_utils import get_transparency_tile_pixmap, tile_pattern_fill, TRANSPARENCY_PATTERN_TILE_DIM
@@ -166,8 +167,12 @@ class ImageViewer(ImageGraphicsView):
         return QSize()
 
     def drawBackground(self, painter: Optional[QPainter], rect: QRectF) -> None:
-        """Draw the background as a fixed size tiling image."""
+        """Fill the area around the image with the theme's canvas surround color, then draw the background as a fixed
+        size tiling image."""
         assert painter is not None
+        colors = ink_colors()
+        if colors is not None:
+            painter.fillRect(rect, colors.canvas_surround)
         painter.save()
         painter.setTransform(QTransform())
         content_bounds = get_view_bounds_of_scene_item_rect(self._image_outline.boundingRect(),

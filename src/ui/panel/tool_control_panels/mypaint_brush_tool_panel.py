@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QApplication, QHBoxLayout, Q
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.ui.ink_style import set_signal
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.layout.divider import Divider
 from src.ui.panel.mypaint_brush_panel import MypaintBrushPanel
@@ -52,6 +53,7 @@ class MyPaintBrushToolPanel(QWidget):
         second_row.addWidget(ColorPairWidget(self))
 
         selection_only_checkbox = Cache().get_control_widget(Cache.PAINT_SELECTION_ONLY)
+        set_signal(selection_only_checkbox)
         selection_only_checkbox.setText(SELECTION_ONLY_LABEL)
         second_row.addWidget(selection_only_checkbox)
         # The brush list takes all remaining height and scrolls inside it:

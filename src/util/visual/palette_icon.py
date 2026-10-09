@@ -4,6 +4,9 @@ Some icons are black glyphs with a white halo, drawn for light backgrounds. On a
 their neutral pixels from black-to-white onto `Text`-to-`Dark`, so the glyph takes the text color and the halo becomes
 an ink outline. Colored pixels keep their color. On a light palette the icons load unchanged.
 
+Icons loaded as signal icons map all their pixels, colored or not, from the signal color to the ink color, and load
+unchanged under styles with no signal color.
+
 Recolored icons and images take the application palette when they first load, and keep those colors.
 """
 import os
@@ -14,6 +17,7 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QColor, QIcon, QImage, QImageReader, QPalette, QPixmap
 from PySide6.QtWidgets import QApplication
 
+from src.ui.ink_style import signal_color
 from src.util.visual.contrast_color import relative_luminance, LUMINANCE_THRESHOLD
 from src.util.visual.image_utils import image_data_as_numpy_8bit, temp_image_path
 
@@ -24,7 +28,7 @@ COLOR_SATURATION_THRESHOLD = 0.3
 # Pixmap sizes rasterized for each recolored icon. QIcon scales the nearest one to the requested size:
 ICON_PIXMAP_SIZES = (16, 24, 32, 48, 64, 96, 128)
 
-_icon_cache: dict[tuple[str, int, int], QIcon] = {}
+_icon_cache: dict[tuple[str, int, int, bool], QIcon] = {}
 
 
 def _palette_colors() -> Optional[tuple[QColor, QColor]]:
@@ -35,11 +39,12 @@ def _palette_colors() -> Optional[tuple[QColor, QColor]]:
     return palette.color(QPalette.ColorRole.Text), palette.color(QPalette.ColorRole.Dark)
 
 
-def recolor_neutral_pixels(image: QImage, black_color: QColor, white_color: QColor) -> QImage:
+def recolor_neutral_pixels(image: QImage, black_color: QColor, white_color: QColor,
+                           keep_colored: bool = True) -> QImage:
     """Returns a copy of an image with its neutral pixels mapped from black-to-white onto black_color-to-white_color.
 
-    Each pixel's luminance picks its point on the new range. Alpha is unchanged, and pixels at or above
-    COLOR_SATURATION_THRESHOLD keep their color.
+    Each pixel's luminance picks its point on the new range. Alpha is unchanged. Pixels at or above
+    COLOR_SATURATION_THRESHOLD keep their color, unless keep_colored is false and they are mapped too.
     """
     recolored = image.convertToFormat(QImage.Format.Format_ARGB32)
     pixels = image_data_as_numpy_8bit(recolored)
@@ -47,7 +52,10 @@ def recolor_neutral_pixels(image: QImage, black_color: QColor, white_color: QCol
     max_channel = rgb.max(axis=-1)
     min_channel = rgb.min(axis=-1)
     saturation = np.where(max_channel > 0, (max_channel - min_channel) / np.maximum(max_channel, 1e-6), 0.0)
-    neutral_weight = np.clip(1.0 - saturation / COLOR_SATURATION_THRESHOLD, 0.0, 1.0)[..., np.newaxis]
+    if keep_colored:
+        neutral_weight = np.clip(1.0 - saturation / COLOR_SATURATION_THRESHOLD, 0.0, 1.0)[..., np.newaxis]
+    else:
+        neutral_weight = np.ones_like(saturation)[..., np.newaxis]
     luminance = (rgb @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32))[..., np.newaxis]
     black_rgb = np.array(black_color.getRgbF()[:3], dtype=np.float32)
     white_rgb = np.array(white_color.getRgbF()[:3], dtype=np.float32)
@@ -57,19 +65,29 @@ def recolor_neutral_pixels(image: QImage, black_color: QColor, white_color: QCol
     return recolored
 
 
-def palette_icon(icon_path: str) -> QIcon:
-    """Loads an icon, recolored for the application palette if it is dark."""
+def palette_icon(icon_path: str, signal: bool = False) -> QIcon:
+    """Loads an icon, recolored for the application palette if it is dark.
+
+    With signal set, a dark palette's icon is drawn in the signal color instead of the text color, if the application
+    style has one.
+    """
     colors = _palette_colors()
     if colors is None:
         return QIcon(icon_path)
     black_color, white_color = colors
-    cache_key = (icon_path, black_color.rgba(), white_color.rgba())
+    keep_colored = True
+    if signal:
+        red = signal_color()
+        if red is not None:
+            black_color, keep_colored = red, False
+    cache_key = (icon_path, black_color.rgba(), white_color.rgba(), keep_colored)
     if cache_key not in _icon_cache:
         source = QIcon(icon_path)
         icon = QIcon()
         for size in ICON_PIXMAP_SIZES:
             pixmap_image = source.pixmap(QSize(size, size)).toImage()
-            icon.addPixmap(QPixmap.fromImage(recolor_neutral_pixels(pixmap_image, black_color, white_color)))
+            recolored = recolor_neutral_pixels(pixmap_image, black_color, white_color, keep_colored)
+            icon.addPixmap(QPixmap.fromImage(recolored))
         _icon_cache[cache_key] = icon
     return QIcon(_icon_cache[cache_key])
 

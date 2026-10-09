@@ -152,7 +152,7 @@
     "unused-import": 3
   },
   "src/ui/image_viewer.py": {
-    "unused-argument": 5
+    "unused-argument": 4
   },
   "src/ui/input_fields/combo_box.py": {
     "invalid-name": 2,

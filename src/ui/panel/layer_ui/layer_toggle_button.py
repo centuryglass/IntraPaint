@@ -16,15 +16,19 @@ class LayerToggleButton(QToolButton):
     """Toggles a boolean layer property."""
 
     def __init__(self, connected_layer: Layer, true_icon_path: str, false_icon_path: str,
-                 disable_when_locked: bool = True, palette_icons: bool = False) -> None:
-        """Connect to the layer and load the initial icon. With palette_icons, icons load through `palette_icon`."""
+                 disable_when_locked: bool = True, palette_icons: bool = False, signal_true_icon: bool = False) -> None:
+        """Connect to the layer and load the initial icon.
+
+        With palette_icons, icons load through `palette_icon`. With signal_true_icon, the icon shown while the property
+        is true loads as a signal icon.
+        """
         super().__init__()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
         self.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
         self._layer = connected_layer
         self._get_signal(self._layer).connect(self._update_icon)
         load_icon = palette_icon if palette_icons else QIcon
-        self._true_icon = load_icon(true_icon_path)
+        self._true_icon = palette_icon(true_icon_path, signal=True) if signal_true_icon else load_icon(true_icon_path)
         self._false_icon = load_icon(false_icon_path)
         self._update_icon()
         self._disable_when_locked = disable_when_locked

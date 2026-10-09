@@ -1,8 +1,8 @@
 """Tests ImageViewer's context pin markers and what deleting a viewer releases."""
 import sys
 
-from PySide6.QtCore import QCoreApplication, QEvent, QPoint, QSize
-from PySide6.QtGui import QImage
+from PySide6.QtCore import QCoreApplication, QEvent, QPoint, QRectF, QSize
+from PySide6.QtGui import QImage, QPainter
 from PySide6.QtWidgets import QApplication
 import shiboken6
 
@@ -10,6 +10,7 @@ from src.image.layers.image_stack import ImageStack
 from src.ui.graphics_items.context_pin_item import marker_size_for_view, DEFAULT_MARKER_SIZE, MIN_MARKER_SIZE, \
     MAX_MARKER_SIZE, MARKER_REFERENCE_VIEW_SIDE
 from src.ui.image_viewer import ImageViewer
+from src.ui.ink_style import ink_colors
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -53,6 +54,21 @@ class ImageViewerContextPinTest(IntraPaintTestCase):
         viewer.resizeEvent(None)
         self.assertEqual(viewer.context_pin_marker_size, MIN_MARKER_SIZE)
         self.assertEqual(viewer._context_pin_items[0].marker_size, MIN_MARKER_SIZE)  # pylint: disable=protected-access
+
+
+class ImageViewerSurroundTest(IntraPaintTestCase):
+    """Tests that the area around the image takes the theme's canvas surround color."""
+
+    def test_background_fills_with_canvas_surround(self) -> None:
+        """Drawing the background fills the exposed area with the canvas surround color, before the image's tiles."""
+        image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64))
+        viewer = ImageViewer(None, image_stack, use_keybindings=False)
+        image = QImage(QSize(32, 32), QImage.Format.Format_ARGB32_Premultiplied)
+        image.fill(0)
+        painter = QPainter(image)
+        viewer.drawBackground(painter, QRectF(0, 0, 32, 32))
+        painter.end()
+        self.assertEqual(ink_colors().canvas_surround.name(), image.pixelColor(0, 0).name())
 
 
 class ImageViewerLifetimeTest(IntraPaintTestCase):

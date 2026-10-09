@@ -55,6 +55,10 @@
         "accent_wash": "#1e4544",
         "accent_stripe": "#3aaea8",
         "field_hover": "#1e1f23",
-        "disabled_outline": "#1a1b1e"
+        "disabled_outline": "#1a1b1e",
+        "signal": "#ff5145",
+        "signal_hover": "#ff6b61",
+        "signal_pressed": "#e6453a",
+        "canvas_surround": "#303134"
     }
 }

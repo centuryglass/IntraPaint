@@ -10,6 +10,7 @@ from PIL import UnidentifiedImageError
 from PySide6.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle, QApplication
 
 from src.config.application_config import AppConfig
+from src.ui.ink_style import set_signal
 from src.ui.input_fields.check_box import CheckBox
 from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.visual.display_size import get_screen_size
@@ -66,8 +67,9 @@ LOAD_IMAGE_MODE = 'load'
 SAVE_IMAGE_MODE = 'save'
 
 
-def show_error_dialog(parent: Optional[QWidget], title: str, error: str | BaseException) -> None:
-    """Opens a message box to show some text to the user."""
+def show_error_dialog(parent: Optional[QWidget], title: str, error: str | BaseException,
+                      signal: bool = False) -> None:
+    """Opens a message box to show some text to the user. With `signal` set, the OK button uses the signal color."""
     logger.error(f'Error: {error}')
     if isinstance(error, BaseException) and hasattr(error, '__traceback__'):
         traceback.print_exception(type(error), error, error.__traceback__)
@@ -77,6 +79,10 @@ def show_error_dialog(parent: Optional[QWidget], title: str, error: str | BaseEx
     messagebox.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxWarning, parent))
     messagebox.setIcon(QMessageBox.Icon.Critical)
     messagebox.setStandardButtons(QMessageBox.StandardButton.Ok)
+    if signal:
+        ok_button = messagebox.button(QMessageBox.StandardButton.Ok)
+        assert ok_button is not None
+        set_signal(ok_button)
     messagebox.exec()
 
 
@@ -102,8 +108,11 @@ def show_warning_dialog(parent: Optional[QWidget], title: str, message: str,
 def request_confirmation(parent: Optional[QWidget], title: str, message: str,
                          reminder_config_key: Optional[str] = None,
                          confirm_option=QMessageBox.StandardButton.Ok,
-                         cancel_option=QMessageBox.StandardButton.Cancel) -> bool:
-    """Requests confirmation from the user, returns whether that confirmation was granted."""
+                         cancel_option=QMessageBox.StandardButton.Cancel, discards_work: bool = False) -> bool:
+    """Requests confirmation from the user, returns whether that confirmation was granted.
+
+    With `discards_work` set, the confirm button uses the signal color.
+    """
     if reminder_config_key is not None:
         reminder_setting = AppConfig().get(reminder_config_key)
         if reminder_setting not in (REMEMBER_OPTION_NONE, REMEMBER_OPTION_CONFIRM, REMEMBER_OPTION_CANCEL):
@@ -117,6 +126,10 @@ def request_confirmation(parent: Optional[QWidget], title: str, message: str,
     confirm_box.setText(message)
     confirm_box.setStandardButtons(confirm_option | cancel_option)
     confirm_box.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxQuestion, parent))
+    if discards_work:
+        confirm_button = confirm_box.button(confirm_option)
+        assert confirm_button is not None
+        set_signal(confirm_button)
     checkbox: Optional[CheckBox] = None
     if reminder_config_key is not None:
         checkbox = CheckBox()

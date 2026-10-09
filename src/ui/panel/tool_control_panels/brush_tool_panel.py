@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QLayout
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.ui.ink_style import set_signal
 from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.ui.widget.color_button import ColorButton
@@ -112,6 +113,7 @@ class BrushToolPanel(QWidget):
             antialias_checkbox.setText(cache.get_label(antialias_key))
             checkbox_row.addWidget(antialias_checkbox)
         selection_only_checkbox = cache.get_control_widget(Cache.PAINT_SELECTION_ONLY)
+        set_signal(selection_only_checkbox)
         if selection_only_label is not None:
             selection_only_checkbox.setText(selection_only_label)
         checkbox_row.addWidget(selection_only_checkbox)
