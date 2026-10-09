@@ -4,14 +4,13 @@ Provides a widget that can be dragged to resize UI elements.
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QSize, QRect, Signal
-from PySide6.QtGui import QPainter, QPen, QResizeEvent, QMouseEvent, QPaintEvent, QCursor
+from PySide6.QtGui import QPainter, QPen, QResizeEvent, QMouseEvent, QPaintEvent, QCursor, QPalette
 from PySide6.QtWidgets import QWidget, QSizePolicy, QBoxLayout, QHBoxLayout, QVBoxLayout, QLayoutItem, QSpacerItem, \
     QLayout
 
 from src.util.layout import extract_layout_item
-from src.util.visual.contrast_color import contrast_color
 
-DIVIDER_SIZE = 4
+DIVIDER_SIZE = 6
 
 
 class DraggableDivider(QWidget):
@@ -74,8 +73,11 @@ class DraggableDivider(QWidget):
         if self._hidden:
             return
         painter = QPainter(self)
-        color = contrast_color(self).lighter() if self._dragging else contrast_color(self)
-        size = 4 if self._dragging else 2
+        palette = self.palette()
+        color = palette.color(QPalette.ColorRole.Text)
+        if self._dragging:
+            color = color.lighter()
+        size = 6 if self._dragging else 3
         painter.setPen(QPen(color, size, Qt.PenStyle.SolidLine, Qt.PenCapStyle.SquareCap,
                             Qt.PenJoinStyle.BevelJoin))
 

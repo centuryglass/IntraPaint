@@ -819,7 +819,8 @@ class AppController(MenuBuilder):
         image_size = image_modal.show_image_modal()
         if image_size and (not self._image_stack.has_image or request_confirmation(self._window,
                                                                                    NEW_IMAGE_CONFIRMATION_TITLE,
-                                                                                   NEW_IMAGE_CONFIRMATION_MESSAGE)):
+                                                                                   NEW_IMAGE_CONFIRMATION_MESSAGE,
+                                                                                   discards_work=True)):
             new_image = QImage(image_size, QImage.Format.Format_ARGB32_Premultiplied)
             new_image.fill(Cache().get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, Qt.GlobalColor.white))
             Cache().set(Cache.LAST_FILE_PATH, '')
@@ -1132,7 +1133,8 @@ class AppController(MenuBuilder):
             return
         if not self._image_stack.has_image or request_confirmation(self._window,
                                                                    RELOAD_CONFIRMATION_TITLE,
-                                                                   RELOAD_CONFIRMATION_MESSAGE):
+                                                                   RELOAD_CONFIRMATION_MESSAGE,
+                                                                   discards_work=True):
             self.load_image(file_path=file_path)
 
     @menu_action(MENU_FILE, 'quit_shortcut', 6)
@@ -1145,7 +1147,7 @@ class AppController(MenuBuilder):
 
     def _confirm_quit(self) -> bool:
         """Asks the user to confirm closing the main window, returning whether to proceed."""
-        return request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE)
+        return request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE, discards_work=True)
 
     # Edit menu:
 

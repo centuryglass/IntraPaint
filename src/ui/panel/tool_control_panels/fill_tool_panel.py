@@ -3,6 +3,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QWidget, QFormLayout
 
 from src.config.cache import Cache
+from src.ui.ink_style import set_signal
 from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.widget.color_pair_widget import ColorPairWidget
 
@@ -22,6 +23,7 @@ class FillToolPanel(QWidget):
         sample_merged_checkbox = cache.get_control_widget(Cache.SAMPLE_MERGED)
         self._layout.addRow(sample_merged_checkbox)
         selection_only_checkbox = cache.get_control_widget(Cache.PAINT_SELECTION_ONLY)
+        set_signal(selection_only_checkbox)
         self._layout.addRow(selection_only_checkbox)
 
         def _update_pattern_color(color_str: str) -> None:

@@ -140,29 +140,33 @@ class LayerPanel(QWidget):
         self._button_bar_layout.setSpacing(0)
         self._button_bar_layout.setContentsMargins(0, 0, 0, 0)
 
-        def _create_button(icon_path: str, tooltip: str, action: Callable[..., Any]) -> QToolButton:
+        def _create_button(icon_path: str, tooltip: str, action: Callable[..., Any],
+                           signal: bool = False, stretch=None) -> QToolButton:
             button = QToolButton()
             button.setToolTip(tooltip)
             button.setContentsMargins(2, 2, 2, 2)
-            button.setIcon(palette_icon(icon_path))
+            button.setIcon(palette_icon(icon_path, signal=signal))
             button.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
             button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
             button.clicked.connect(lambda: action())
             self._button_bar_layout.addWidget(button)
+            if stretch is not None:
+                self._button_bar_layout.addStretch(stretch)
             return button
 
-        self._add_button = _create_button(ICON_PATH_ADD_BUTTON, ADD_BUTTON_TOOLTIP, self._image_stack.create_layer)
+        self._add_button = _create_button(ICON_PATH_ADD_BUTTON, ADD_BUTTON_TOOLTIP, self._image_stack.create_layer,
+                                          stretch=1)
         self._add_group_button = _create_button(ICON_PATH_ADD_GROUP_BUTTON, ADD_GROUP_BUTTON_TOOLTIP,
-                                                self._image_stack.create_layer_group)
-        self._delete_button = _create_button(ICON_PATH_DELETE_BUTTON, DELETE_BUTTON_TOOLTIP,
-                                             self._image_stack.remove_layer)
+                                                self._image_stack.create_layer_group, stretch=1)
         self._move_up_button = _create_button(ICON_PATH_LAYER_UP_BUTTON, LAYER_UP_BUTTON_TOOLTIP,
-                                              lambda: self._image_stack.move_layer_by_offset(-1))
+                                              lambda: self._image_stack.move_layer_by_offset(-1), stretch=1)
         self._move_down_button = _create_button(ICON_PATH_LAYER_DOWN_BUTTON, LAYER_DOWN_BUTTON_TOOLTIP,
-                                                lambda: self._image_stack.move_layer_by_offset(1))
+                                                lambda: self._image_stack.move_layer_by_offset(1), stretch=1)
 
         self._merge_down_button = _create_button(ICON_PATH_MERGE_BUTTON, MERGE_DOWN_BUTTON_TOOLTIP,
-                                                 self._image_stack.merge_layer_down)
+                                                 self._image_stack.merge_layer_down, stretch=10)
+        self._delete_button = _create_button(ICON_PATH_DELETE_BUTTON, DELETE_BUTTON_TOOLTIP,
+                                             self._image_stack.remove_layer, signal=True)
 
         self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
         self._image_stack.layer_added.connect(self._layer_added_slot)

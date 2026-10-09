@@ -73,6 +73,9 @@ ERROR_MESSAGE_LAYER_NONE = _tr('The selected layer is not an image layer, select
 ERROR_MESSAGE_EMPTY_MASK = _tr('Changes are restricted to selected content only, but nothing is selected in this layer.'
                                ' Select layer content or enable changes in unselected areas.')
 
+# Errors caused by locks and selection restrictions, which error dialogs show with the signal color:
+LOCK_ERROR_MESSAGES = (ERROR_MESSAGE_LAYER_LOCKED, ERROR_MESSAGE_LAYER_GROUP_LOCKED, ERROR_MESSAGE_EMPTY_MASK)
+
 # Network/Connection keys:
 AUTH_ERROR_MESSAGE = _tr('Not authenticated')
 URL_REQUEST_TITLE = _tr('Image generator connection')

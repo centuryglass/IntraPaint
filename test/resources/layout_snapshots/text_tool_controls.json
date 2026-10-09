@@ -68,7 +68,7 @@
       "squeezed: ColorButton 'Text Color' is 198x18, minimum 101x30",
       "squeezed: ColorButton 'Background Color' is 198x19, minimum 146x30",
       "squeezed: ImageWidget is 480x47, minimum 160x160",
-      "squeezed: PlainTextEdit is 480x59, minimum 61x61",
+      "squeezed: PlainTextEdit is 480x59, minimum 63x63",
       "squeezed: IntSliderSpinbox[0] is 417x19, minimum 158x30",
       "squeezed: IntSliderSpinbox[0]/QLabel 'Font Size:' is 57x15, minimum 57x17",
       "squeezed: IntSliderSpinbox[0]/QSpinBox is 317x15, minimum 58x26",

@@ -67,7 +67,7 @@ class TextLayer(TransformLayer):
             title = CONFIRM_MULTI_CONVERT_TO_IMAGE_TITLE
             message = CONFIRM_MULTI_CONVERT_TO_IMAGE_MESSAGE.format(action_name=action_name,
                                                                     num_text_layers=len(layer_names))
-        return request_confirmation(None, title, message)
+        return request_confirmation(None, title, message, discards_work=True)
 
     @property
     def offset(self) -> QPointF:

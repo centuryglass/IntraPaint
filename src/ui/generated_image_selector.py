@@ -17,6 +17,7 @@ from PySide6.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel,
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.ui.ink_style import set_signal
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
@@ -209,6 +210,7 @@ class GeneratedImageSelector(QWidget):
         self._cancel_button.setIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_DialogCancelButton))
         self._cancel_button.setText(CANCEL_BUTTON_TEXT)
         self._cancel_button.setToolTip(CANCEL_BUTTON_TOOLTIP)
+        set_signal(self._cancel_button)
 
         def _cancel() -> None:
             if AppStateTracker.app_state() == APP_STATE_LOADING:

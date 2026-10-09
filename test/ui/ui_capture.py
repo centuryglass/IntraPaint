@@ -18,13 +18,14 @@ from unittest.mock import patch
 from PySide6.QtCore import QPoint, QRect, QSize, Qt
 from PySide6 import QtGui
 from PySide6.QtGui import QFontMetrics, QImage, QPainter, QPalette, QTextDocumentFragment
-from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QAbstractSpinBox, QApplication, QGroupBox, QLabel, QLayout,
-                               QPushButton, QSizePolicy, QStyle, QStyleOption, QStyleOptionButton, QStyleOptionComboBox,
+from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QAbstractSpinBox, QApplication, QCheckBox,
+                               QGroupBox, QLabel, QLayout, QPushButton, QSizePolicy, QStyle, QStyleOption,
+                               QStyleOptionButton, QStyleOptionComboBox,
                                QStyleOptionComplex, QStyleOptionFrame, QStyleOptionGroupBox, QStyleOptionMenuItem,
                                QStyleOptionProgressBar, QStyleOptionSlider, QStyleOptionSpinBox, QStyleOptionTab,
                                QStyleOptionToolButton, QStyleOptionViewItem, QSlider, QTabBar, QWidget)
 
-from src.ui.ink_style import InkStyle, set_primary_button
+from src.ui.ink_style import InkStyle, set_primary_button, set_signal
 
 if TYPE_CHECKING:
     from src.controller.app_controller import AppController
@@ -130,6 +131,16 @@ def _primary_button() -> QPushButton:
     return widget
 
 
+def _signal_widget(widget_type: type[QCheckBox]) -> QWidget:
+    """Returns a hidden widget marked with the signal color."""
+    key = f'signal_{widget_type.__name__}'
+    if key not in _widget_cache:
+        widget = widget_type()
+        set_signal(widget)
+        _widget_cache[key] = widget
+    return _widget_cache[key]
+
+
 def _classic_scroll_bar_style() -> QStyle:
     """Returns the application style with classic scroll bars, if it has an overlay scroll bar option."""
     style = _style()
@@ -179,8 +190,9 @@ def _check_state(variant: str) -> State:
 def _draw_check_box(painter: QPainter, rect: QRect, variant: str, state: GalleryState) -> None:
     option = QStyleOptionButton()
     _init_option(option, rect, state)
-    option.state |= _check_state(variant)
-    _style().drawControl(Control.CE_CheckBox, option, painter, None)
+    option.state |= _check_state(variant.removeprefix('signal_'))
+    widget = _signal_widget(QCheckBox) if variant.startswith('signal_') else None
+    _style().drawControl(Control.CE_CheckBox, option, painter, widget)
 
 
 def _draw_radio_button(painter: QPainter, rect: QRect, variant: str, state: GalleryState) -> None:
@@ -368,7 +380,7 @@ GALLERY_CONTROLS: tuple[GalleryControl, ...] = (
                    _draw_push_button),
     GalleryControl('tool_button', QSize(44, 32), ('plain', 'auto_raise', 'checked', 'menu'), STANDARD_STATES,
                    _draw_tool_button),
-    GalleryControl('check_box', QSize(24, 24), ('off', 'on', 'partial'), STANDARD_STATES, _draw_check_box),
+    GalleryControl('check_box', QSize(24, 24), ('off', 'on', 'partial', 'signal_on'), STANDARD_STATES, _draw_check_box),
     GalleryControl('radio_button', QSize(24, 24), ('off', 'on'), STANDARD_STATES, _draw_radio_button),
     GalleryControl('slider', QSize(120, 32), ('plain', 'ticks'), part_states(SubControl.SC_SliderHandle),
                    _draw_slider),
