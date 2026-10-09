@@ -9,7 +9,6 @@ from PySide6.QtWidgets import QWidget, QSizePolicy, QBoxLayout, QHBoxLayout, QVB
     QLayout
 
 from src.util.layout import extract_layout_item
-from src.util.visual.contrast_color import contrast_color
 
 DIVIDER_SIZE = 6
 
