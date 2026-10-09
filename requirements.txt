@@ -8,6 +8,8 @@ pillow==12.3.0
 requests==2.34.2
 websocket-client==1.9.2
 platformdirs==4.12.0
+pydantic==2.14.0
+sd-backend-client==0.3.0
 
 # IntraPaint.py compiles src/util/visual/image_fill.py with Cython on launch when the compiled module is missing.
 cython==3.3.0

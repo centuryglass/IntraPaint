@@ -20,6 +20,8 @@ updates:
       - dependency-name: requests
       - dependency-name: websocket-client
       - dependency-name: platformdirs
+      - dependency-name: pydantic
+      - dependency-name: sd-backend-client
       - dependency-name: cython
       - dependency-name: pytest
       - dependency-name: coverage
