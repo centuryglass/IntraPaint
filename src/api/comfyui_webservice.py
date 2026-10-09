@@ -660,9 +660,16 @@ class ComfyUiWebservice(WebService):
                     'outputs': {'images': []}
                 }
                 for output_data in entry_history['outputs'].values():
-                    if 'images' in output_data:
-                        for reference in output_data['images']:
-                            progress['outputs']['images'].append(cast(ImageFileReference, reference))
+                    if 'images' not in output_data:
+                        continue
+                    for reference in output_data['images']:
+                        file_ref: ImageFileReference = {
+                            'filename': reference['filename'],
+                            'subfolder': reference['subfolder']
+                        }
+                        if 'type' in reference:
+                            file_ref['type'] = reference['type']
+                        progress['outputs']['images'].append(file_ref)
                 return progress
         queue_info = self.get_queue_info()
         for running_task in queue_info['queue_running']:
