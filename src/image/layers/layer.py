@@ -455,7 +455,16 @@ class Layer(QObject):
             If not None, draw the rendered bounds onto this image, to use when determining what parts of the base image
             were rendered onto.
         """
-        if self.render_would_be_empty(base_image, transform, image_bounds, z_max):
+        self._render_image(self.get_qimage(), self.bounds, base_image, transform, image_bounds, z_max, image_adjuster,
+                           returned_mask)
+
+    def _render_image(self, layer_image: QImage, layer_bounds: QRect, base_image: QImage,
+                      transform: Optional[QTransform], image_bounds: Optional[QRect], z_max: Optional[int],
+                      image_adjuster: Optional[Callable[['Layer', QImage], QImage]],
+                      returned_mask: Optional[QImage]) -> None:
+        """Renders layer_image, which occupies layer_bounds in the coordinate space transform maps from, with the
+           layer's opacity and composition mode. `render` documents the other parameters."""
+        if self.render_would_be_empty(base_image, transform, image_bounds, z_max, layer_bounds):
             return
 
         # Find the final bounds of all changes within base_image:
@@ -463,9 +472,9 @@ class Layer(QObject):
             final_bounds = QRect(image_bounds)
         else:
             if transform is not None:
-                final_bounds = map_rect_precise(self.bounds, transform).toAlignedRect()
+                final_bounds = map_rect_precise(layer_bounds, transform).toAlignedRect()
             else:
-                final_bounds = self.bounds
+                final_bounds = layer_bounds
         base_image_bounds = QRect(QPoint(), base_image.size())
         final_bounds = final_bounds.intersected(base_image_bounds)
         clip_path = QPainterPath()
@@ -481,15 +490,14 @@ class Layer(QObject):
             source_bounds = map_rect_precise(final_bounds, inverse).toAlignedRect()
 
             # Any part of source_bounds that doesn't intersect with the layer can also be excluded:
-            source_bounds = source_bounds.intersected(self.bounds)
+            source_bounds = source_bounds.intersected(layer_bounds)
             source_bounds_in_image = inverse.map(QPolygonF(QRectF(final_bounds)))
             assert isinstance(source_bounds_in_image, QPolygonF)
             clip_path.addPolygon(source_bounds_in_image)
         else:  # transform is None
-            source_bounds = self.bounds.intersected(final_bounds)
+            source_bounds = layer_bounds.intersected(final_bounds)
             clip_path.addRect(final_bounds)
 
-        layer_image = self.get_qimage()
         if layer_image is not None and not layer_image.isNull():
             if image_adjuster is not None:
                 layer_image = image_adjuster(self, layer_image.copy())
@@ -498,7 +506,7 @@ class Layer(QObject):
                 # Custom ops recompute every pixel in the bounds they're given, so limit them to the layer's area.
                 if transform is not None:
                     composite_transform = transform
-                    layer_bounds = map_rect_precise(self.bounds, transform).toAlignedRect()
+                    layer_bounds = map_rect_precise(layer_bounds, transform).toAlignedRect()
                     composite_bounds = final_bounds.intersected(layer_bounds)
                 else:
                     composite_transform = QTransform.fromTranslate(final_bounds.x(), final_bounds.y())
@@ -550,8 +558,13 @@ class Layer(QObject):
         return base_image
 
     def render_would_be_empty(self, base_image: QImage, transform: Optional[QTransform] = None,
-                              image_bounds: Optional[QRect] = None, z_max: Optional[int] = None) -> bool:
-        """Given a set of rendering parameters, return True if nothing would be rendered."""
+                              image_bounds: Optional[QRect] = None, z_max: Optional[int] = None,
+                              layer_bounds: Optional[QRect] = None) -> bool:
+        """Given a set of rendering parameters, return True if nothing would be rendered.
+
+        layer_bounds replaces the layer's own bounds as the area that transform maps into the base image."""
+        if layer_bounds is None:
+            layer_bounds = self.bounds
         base_image_bounds = QRect(QPoint(), base_image.size())
 
         # Exit early in any of the cases where nothing would render:
@@ -563,7 +576,7 @@ class Layer(QObject):
                 (image_bounds is not None and not QRect(QPoint(), base_image.size()).intersects(image_bounds))):
             return True
         if transform is not None:
-            transformed_bounds = map_rect_precise(self.bounds, transform).toAlignedRect()
+            transformed_bounds = map_rect_precise(layer_bounds, transform).toAlignedRect()
             intersect_test_bounds = image_bounds if image_bounds is not None else base_image_bounds
             if not intersect_test_bounds.intersects(transformed_bounds):
                 return True
