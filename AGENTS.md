@@ -113,7 +113,8 @@ Config is JSON-backed and typed, with `get()` / `set()` / `connect()` (signal on
   them installed.
 - Match the surrounding code's style, naming, and structure.
 - **A bug found during unrelated work gets fixed or filed, never just noticed.**
-  - Trivial to fix (a wrong assertion, an off-by-one, a stale comment or pointer): fix it in the same pass.
+  - Trivial to fix (a wrong assertion, an off-by-one, a stale comment or pointer): fix it in the same pass. A bug users
+    can see gets its own PR (see "A user-visible fix gets its own `fix` PR" under "Working with GitHub").
   - Needs real investigation or design, or touches code you weren't already changing: open a GitHub issue (see
     "Tracking open work") with what was observed, how to reproduce it, and what is ruled out.
   - "Trivial" is about the fix, not the effort spent finding it. A fix that needs a manual GUI check, a new test
@@ -244,6 +245,10 @@ valid for the version it was generated with.
   (`fix(layers): ...`). Mark a breaking change with `!` (`feat!: ...`). PRs into `integration` are squash-merged, so
   the title becomes the commit release-please turns into a changelog entry and version bump (`feat`, `fix` and
   `perf` appear in the changelog). Describe the change from a user's or contributor's point of view.
+- **A user-visible fix gets its own `fix` PR.** release-please reads only the squash commit's title, so a fix inside a
+  `test`, `refactor` or `feat` PR never reaches the changelog. When work on one PR finds a bug users can see in
+  `integration`, put the fix in a separate PR, stacked on the first if it depends on it. Fixes to tests, comments and
+  code the PR itself adds stay in that PR.
 - **A PR closing an issue says `Closes #NN` in its description.**
 - **Don't ask whether to subscribe to a PR you just opened.** If the maintainer wants it watched, they'll say so.
 - **An issue or comment an AI agent writes under the maintainer's account ends with a footer marking it as
