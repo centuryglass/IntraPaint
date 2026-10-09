@@ -326,7 +326,7 @@ class InkStyle(QProxyStyle):
         """Draws button panels, fields, indicators, menus, tooltips and item view rows."""
         if element in (Primitive.PE_PanelButtonCommand, Primitive.PE_PanelButtonTool,
                        Primitive.PE_IndicatorButtonDropDown):
-            self._draw_bevel(painter, option)
+            self._draw_bevel(painter, option, widget)
         elif element in (Primitive.PE_FrameDefaultButton, Primitive.PE_FrameButtonTool):
             return
         elif element == Primitive.PE_FrameFocusRect:
@@ -356,7 +356,7 @@ class InkStyle(QProxyStyle):
         else:
             super().drawPrimitive(element, option, painter, widget)
 
-    def _draw_bevel(self, painter: QPainter, option: QStyleOption) -> None:
+    def _draw_bevel(self, painter: QPainter, option: QStyleOption, widget: Optional[QWidget] = None) -> None:
         """Draws a button panel: a flat fill in an ink outline, lit along the top edge unless pressed or checked."""
         palette = option.palette
         rect = option.rect
@@ -375,7 +375,12 @@ class InkStyle(QProxyStyle):
             fill = palette.color(Role.Button)
         is_default = (isinstance(option, QStyleOptionButton)
                       and bool(option.features & QStyleOptionButton.ButtonFeature.DefaultButton))
-        outline = palette.color(Role.Highlight) if is_default else palette.color(Role.Shadow)
+        if _is_signal(widget):
+            outline = self._colors.signal
+        elif is_default:
+            outline = palette.color(Role.Highlight)
+        else:
+            outline = palette.color(Role.Shadow)
         _draw_box(painter, rect, fill, outline)
         _draw_inset_line(painter, rect, SUNKEN_SHADE if (pressed or checked) else BEVEL_HIGHLIGHT)
         if _keyboard_focus(option):

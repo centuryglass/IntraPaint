@@ -18,8 +18,7 @@
       "squeezed: QWidget/QToolButton[2] is 19x31, minimum 32x31",
       "squeezed: QWidget/QToolButton[3] is 20x31, minimum 32x31",
       "squeezed: QWidget/QToolButton[4] is 19x31, minimum 32x31",
-      "clipped: QWidget/QToolButton[5] shows 19x31 of 20x31",
-      "squeezed: QWidget/QToolButton[5] is 20x31, minimum 32x31"
+      "squeezed: QWidget/QToolButton[5] is 19x31, minimum 32x31"
     ],
     "size": [
       134,
