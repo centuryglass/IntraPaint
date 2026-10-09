@@ -131,8 +131,8 @@ def _primary_button() -> QPushButton:
     return widget
 
 
-def _signal_widget(widget_type: type[QPushButton] | type[QCheckBox]) -> QWidget:
-    """Returns a hidden button or check box marked with the signal color."""
+def _signal_widget(widget_type: type[QCheckBox]) -> QWidget:
+    """Returns a hidden widget marked with the signal color."""
     key = f'signal_{widget_type.__name__}'
     if key not in _widget_cache:
         widget = widget_type()
@@ -163,8 +163,6 @@ def _draw_push_button(painter: QPainter, rect: QRect, variant: str, state: Galle
         option.state |= State.State_On
     elif variant == 'primary':
         widget = _primary_button()
-    elif variant == 'signal':
-        widget = _signal_widget(QPushButton)
     _style().drawControl(Control.CE_PushButton, option, painter, widget)
 
 
@@ -378,7 +376,7 @@ def _draw_tooltip(painter: QPainter, rect: QRect, _variant: str, state: GalleryS
 
 
 GALLERY_CONTROLS: tuple[GalleryControl, ...] = (
-    GalleryControl('push_button', QSize(72, 28), ('plain', 'default', 'checked', 'flat', 'primary', 'signal'), STANDARD_STATES,
+    GalleryControl('push_button', QSize(72, 28), ('plain', 'default', 'checked', 'flat', 'primary'), STANDARD_STATES,
                    _draw_push_button),
     GalleryControl('tool_button', QSize(44, 32), ('plain', 'auto_raise', 'checked', 'menu'), STANDARD_STATES,
                    _draw_tool_button),

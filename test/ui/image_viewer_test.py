@@ -2,14 +2,14 @@
 import sys
 
 from PySide6.QtCore import QCoreApplication, QEvent, QPoint, QRectF, QSize
-from PySide6.QtGui import QImage, QPainter
+from PySide6.QtGui import QColor, QImage, QPainter
 from PySide6.QtWidgets import QApplication
 import shiboken6
 
 from src.image.layers.image_stack import ImageStack
 from src.ui.graphics_items.context_pin_item import marker_size_for_view, DEFAULT_MARKER_SIZE, MIN_MARKER_SIZE, \
     MAX_MARKER_SIZE, MARKER_REFERENCE_VIEW_SIDE
-from src.ui.image_viewer import ImageViewer
+from src.ui.image_viewer import ImageViewer, color_under_overlay, IMAGE_BORDER_COLOR, IMAGE_BORDER_OPACITY
 from src.ui.ink_style import ink_colors
 from test.base_test_case import IntraPaintTestCase
 
@@ -68,7 +68,30 @@ class ImageViewerSurroundTest(IntraPaintTestCase):
         painter = QPainter(image)
         viewer.drawBackground(painter, QRectF(0, 0, 32, 32))
         painter.end()
-        self.assertEqual(ink_colors().canvas_surround.name(), image.pixelColor(0, 0).name())
+        surround = ink_colors().canvas_surround
+        self.assertEqual(color_under_overlay(surround, QColor(IMAGE_BORDER_COLOR), IMAGE_BORDER_OPACITY).name(),
+                         image.pixelColor(0, 0).name())
+
+    def test_surround_shows_through_image_border_veil(self) -> None:
+        """Drawing the image border veil over the filled background gives the theme's surround color."""
+        surround = ink_colors().canvas_surround
+        under = color_under_overlay(surround, QColor(IMAGE_BORDER_COLOR), IMAGE_BORDER_OPACITY)
+        shown = QImage(QSize(1, 1), QImage.Format.Format_ARGB32_Premultiplied)
+        shown.fill(under)
+        painter = QPainter(shown)
+        painter.setOpacity(IMAGE_BORDER_OPACITY)
+        painter.fillRect(0, 0, 1, 1, QColor(IMAGE_BORDER_COLOR))
+        painter.end()
+        for channel in ('red', 'green', 'blue'):
+            self.assertAlmostEqual(getattr(surround, channel)(), getattr(shown.pixelColor(0, 0), channel)(), delta=1)
+
+    def test_color_under_overlay(self) -> None:
+        """The overlay math inverts compositing, and clamps colors the overlay can't produce."""
+        self.assertEqual('#3c3d41', color_under_overlay(QColor('#303134'), QColor('black'), 0.2).name())
+        self.assertEqual('#303134', color_under_overlay(QColor('#303134'), QColor('black'), 0.0).name())
+        self.assertEqual('#303134', color_under_overlay(QColor('#303134'), QColor('black'), 1.0).name())
+        self.assertEqual('#000000', color_under_overlay(QColor('#000000'), QColor('#808080'), 0.5).name())
+        self.assertEqual('#ffffff', color_under_overlay(QColor('#ffffff'), QColor('#808080'), 0.5).name())
 
 
 class ImageViewerLifetimeTest(IntraPaintTestCase):

@@ -141,6 +141,18 @@ class LayerPanelTest(IntraPaintTestCase):
 
     # Widget tree structure:
 
+    def test_delete_button_is_right_of_the_other_buttons(self) -> None:
+        """The delete button sits alone at the bar's right end, with the other buttons clustered at the left."""
+        panel = self.panel
+        others = (panel._add_button, panel._add_group_button, panel._move_up_button, panel._move_down_button,
+                  panel._merge_down_button)
+        lefts = [button.geometry().left() for button in others]
+        self.assertEqual(sorted(lefts), lefts, 'buttons are in order')
+        cluster_right = others[-1].geometry().right()
+        delete_geometry = panel._delete_button.geometry()
+        self.assertGreater(delete_geometry.left(), cluster_right + 20)
+        self.assertEqual(panel._button_bar.width(), delete_geometry.right() + 1)
+
     def test_initial_tree_matches_stack(self) -> None:
         """The panel starts with a widget for every layer, nested like the layer stack."""
         self.assert_panel_matches_stack()

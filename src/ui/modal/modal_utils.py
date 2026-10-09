@@ -67,13 +67,23 @@ LOAD_IMAGE_MODE = 'load'
 SAVE_IMAGE_MODE = 'save'
 
 
+def _new_message_box(parent: Optional[QWidget]) -> QMessageBox:
+    """Creates a message box that Qt draws itself, so the application style and `set_signal` marks apply.
+
+    Platform themes may otherwise show message boxes through a native dialog, which ignores both.
+    """
+    message_box = QMessageBox(parent)
+    message_box.setOption(QMessageBox.Option.DontUseNativeDialog, True)
+    return message_box
+
+
 def show_error_dialog(parent: Optional[QWidget], title: str, error: str | BaseException,
                       signal: bool = False) -> None:
     """Opens a message box to show some text to the user. With `signal` set, the OK button uses the signal color."""
     logger.error(f'Error: {error}')
     if isinstance(error, BaseException) and hasattr(error, '__traceback__'):
         traceback.print_exception(type(error), error, error.__traceback__)
-    messagebox = QMessageBox(parent)
+    messagebox = _new_message_box(parent)
     messagebox.setWindowTitle(title)
     messagebox.setText(f'{error}')
     messagebox.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxWarning, parent))
@@ -91,7 +101,7 @@ def show_warning_dialog(parent: Optional[QWidget], title: str, message: str,
     """Show a warning dialog, optionally with a 'don't show again' checkbox"""
     if reminder_config_key is not None and not AppConfig().get(reminder_config_key):
         return  # Warning already disabled
-    messagebox = QMessageBox(parent)
+    messagebox = _new_message_box(parent)
     messagebox.setWindowTitle(title)
     messagebox.setText(message)
     messagebox.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxWarning, parent))
@@ -121,7 +131,7 @@ def request_confirmation(parent: Optional[QWidget], title: str, message: str,
             return True
         if reminder_setting == REMEMBER_OPTION_CANCEL:
             return False
-    confirm_box = QMessageBox(parent)
+    confirm_box = _new_message_box(parent)
     confirm_box.setWindowTitle(title)
     confirm_box.setText(message)
     confirm_box.setStandardButtons(confirm_option | cancel_option)

@@ -28,6 +28,8 @@ from src.util.visual.image_utils import get_transparency_tile_pixmap, tile_patte
 GENERATION_AREA_BORDER_OPACITY = 0.6
 IMAGE_BORDER_OPACITY = 0.2
 GENERATION_AREA_BORDER_COLOR = Qt.GlobalColor.black
+# The veil drawn over everything outside the image. The canvas surround theme color is the color that shows through it:
+IMAGE_BORDER_COLOR = GENERATION_AREA_BORDER_COLOR
 MIN_OUTLINE_PIXEL_SIZE = 8.0
 
 
@@ -35,6 +37,20 @@ def _disconnect_layer_items(layer_items: dict[int, LayerGraphicsItem]) -> None:
     for layer_item in layer_items.values():
         layer_item.disconnect_layer()
 
+
+
+def color_under_overlay(shown: QColor, overlay: QColor, opacity: float) -> QColor:
+    """Returns the color that shows as `shown` once `overlay` is drawn over it at `opacity`.
+
+    Channels that would fall outside the displayable range are clamped, so the result only matches `shown` when the
+    overlay can produce it.
+    """
+    if opacity >= 1.0:
+        return QColor(shown)
+    channels = []
+    for shown_channel, overlay_channel in zip(shown.getRgbF()[:3], overlay.getRgbF()[:3]):
+        channels.append(min(max((shown_channel - overlay_channel * opacity) / (1.0 - opacity), 0.0), 1.0))
+    return QColor.fromRgbF(*channels)
 
 class ImageViewer(ImageGraphicsView):
     """Shows the image being edited, and allows the user to select sections."""
@@ -66,7 +82,7 @@ class ImageViewer(ImageGraphicsView):
         self._image_outline = Outline(scene, self)
         self._image_border = Border(scene, self)
         self._image_border.windowed_area = image_stack.bounds
-        self._image_border.color = QColor(GENERATION_AREA_BORDER_COLOR)
+        self._image_border.color = QColor(IMAGE_BORDER_COLOR)
         self._image_border.setOpacity(IMAGE_BORDER_OPACITY)
         self._image_border.setVisible(True)
         self._image_outline.dash_pattern = [1, 0]  # solid line
@@ -167,12 +183,13 @@ class ImageViewer(ImageGraphicsView):
         return QSize()
 
     def drawBackground(self, painter: Optional[QPainter], rect: QRectF) -> None:
-        """Fill the area around the image with the theme's canvas surround color, then draw the background as a fixed
-        size tiling image."""
+        """Fill the area around the image with a color that shows as the theme's canvas surround once the image border
+        veil covers it, then draw the background as a fixed size tiling image."""
         assert painter is not None
         colors = ink_colors()
         if colors is not None:
-            painter.fillRect(rect, colors.canvas_surround)
+            painter.fillRect(rect, color_under_overlay(colors.canvas_surround, QColor(IMAGE_BORDER_COLOR),
+                                                       IMAGE_BORDER_OPACITY))
         painter.save()
         painter.setTransform(QTransform())
         content_bounds = get_view_bounds_of_scene_item_rect(self._image_outline.boundingRect(),

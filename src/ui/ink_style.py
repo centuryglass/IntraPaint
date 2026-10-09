@@ -4,9 +4,9 @@
 every control it doesn't override come from the base style. Colors come from the palette the control is drawn with,
 plus the few `InkColors` that have no QPalette role, so a palette change restyles every control.
 
-Only push buttons marked with `set_primary_button` get the raised accent "sticker" look, and only those marked with
-`set_signal` get it in the signal color. Check boxes, radio buttons and slider handles use a smaller version of the
-same raised shadow, and `set_signal` also switches a check box to the signal color.
+Only push buttons marked with `set_primary_button` get the raised accent "sticker" look. Check boxes, radio buttons
+and slider handles use a smaller version of the same raised shadow. `set_signal` draws a push button's text in the
+signal color, and fills a check box with it.
 """
 from dataclasses import dataclass, fields
 from typing import Optional
@@ -32,6 +32,9 @@ PRIMARY_BUTTON_PROPERTY = 'ink_primary'
 SIGNAL_PROPERTY = 'ink_signal'
 
 RADIUS = 4.0
+# A text area's square viewport sits this far inside its rounded outline, so the viewport's corners stay inside the
+# outline's curve:
+TEXT_AREA_FRAME_WIDTH = 2
 STICKER_OFFSET = 3
 SMALL_STICKER_OFFSET = 2
 INDICATOR_SIZE = 15
@@ -105,8 +108,9 @@ def set_primary_button(button: QPushButton) -> None:
 def set_signal(widget: QWidget) -> None:
     """Marks a push button or check box as risky, which InkStyle draws in the signal color.
 
-    A push button becomes a raised sticker like a primary button, and a check box fills its checked indicator. Use it
-    for actions that discard work, and for options that restrict where changes apply. Other styles ignore the mark.
+    A push button keeps its normal fill and draws its text in the signal color. A check box fills its checked
+    indicator with it. Use it for actions that discard work, and for options that restrict where changes apply.
+    Other styles ignore the mark.
     """
     widget.setProperty(SIGNAL_PROPERTY, True)
 
@@ -129,11 +133,6 @@ def _is_primary(widget: Optional[QWidget]) -> bool:
 
 def _is_signal(widget: Optional[QWidget]) -> bool:
     return isinstance(widget, (QPushButton, QCheckBox)) and bool(widget.property(SIGNAL_PROPERTY))
-
-
-def _is_sticker(widget: Optional[QWidget]) -> bool:
-    """Whether a push button is drawn as a raised sticker, which makes it taller and its label bolder."""
-    return isinstance(widget, QPushButton) and (_is_primary(widget) or _is_signal(widget))
 
 
 def _keyboard_focus(option: QStyleOption) -> bool:
@@ -241,6 +240,8 @@ class InkStyle(QProxyStyle):
             return SLIDER_HANDLE_LENGTH
         if metric in (Metric.PM_SliderThickness, Metric.PM_SliderControlThickness):
             return SLIDER_HANDLE_THICKNESS + SMALL_STICKER_OFFSET
+        if metric == Metric.PM_DefaultFrameWidth and isinstance(widget, (QTextEdit, QPlainTextEdit)):
+            return TEXT_AREA_FRAME_WIDTH
         if metric == Metric.PM_ScrollBarExtent:
             if self._overlay_scroll_bars:
                 return OVERLAY_SCROLL_BAR_HOVER_WIDTH + OVERLAY_SCROLL_BAR_MARGIN
@@ -256,9 +257,9 @@ class InkStyle(QProxyStyle):
 
     def sizeFromContents(self, content_type: QStyle.ContentsType, option: Optional[QStyleOption],
                          contents_size: QSize, widget: Optional[QWidget] = None) -> QSize:
-        """Makes room for a sticker button's raised offset and bolder label."""
+        """Makes room for a primary button's raised offset and bolder label."""
         size = super().sizeFromContents(content_type, option, contents_size, widget)
-        if (content_type == QStyle.ContentsType.CT_PushButton and _is_sticker(widget)
+        if (content_type == QStyle.ContentsType.CT_PushButton and _is_primary(widget)
                 and isinstance(option, QStyleOptionButton)):
             assert widget is not None
             bold_metrics = QFontMetrics(self._primary_font(widget.font()))
@@ -397,15 +398,19 @@ class InkStyle(QProxyStyle):
             _draw_focus_ring(painter, rect, palette.color(Role.Highlight))
 
     def _draw_text_area_frame(self, painter: QPainter, option: QStyleOption) -> None:
-        """Outlines a multi-line text field in ink, or accent while it has focus. Its viewport paints the fill."""
+        """Fills a multi-line text field and outlines it in ink, or accent while it has focus. The frame is wide enough
+        that the square viewport, which paints over the middle, stays inside the outline's rounded corners."""
         palette = option.palette
         if not option.state & State.State_Enabled:
             outline = self._colors.disabled_outline
+            fill = palette.color(Group.Disabled, Role.Base)
         elif option.state & State.State_HasFocus:
             outline = palette.color(Role.Highlight)
+            fill = palette.color(Role.Base)
         else:
             outline = palette.color(Role.Shadow)
-        _draw_box(painter, option.rect, None, outline, 0)
+            fill = palette.color(Role.Base)
+        _draw_box(painter, option.rect, fill, outline)
 
     def _draw_line_edit(self, painter: QPainter, option: QStyleOption) -> None:
         line_width = getattr(option, 'lineWidth', 1)
@@ -479,13 +484,15 @@ class InkStyle(QProxyStyle):
 
     def drawControl(self, element: Control, option: QStyleOption, painter: QPainter,
                     widget: Optional[QWidget] = None) -> None:
-        """Draws sticker buttons, progress bars, tabs, menu items and item view text in the Ink look."""
-        if element == Control.CE_PushButtonBevel and _is_sticker(widget):
-            self._draw_sticker_bevel(painter, option, _is_signal(widget))
-        elif element == Control.CE_PushButtonLabel and _is_sticker(widget) and isinstance(option,
+        """Draws primary and signal buttons, progress bars, tabs, menu items and item view text in the Ink look."""
+        if element == Control.CE_PushButtonBevel and _is_primary(widget):
+            self._draw_primary_bevel(painter, option)
+        elif element == Control.CE_PushButtonLabel and _is_primary(widget) and isinstance(option,
                                                                                            QStyleOptionButton):
             assert widget is not None
-            self._draw_sticker_label(painter, option, widget)
+            self._draw_primary_label(painter, option, widget)
+        elif element == Control.CE_PushButtonLabel and _is_signal(widget) and isinstance(option, QStyleOptionButton):
+            self._draw_signal_label(painter, option, widget)
         elif element == Control.CE_ProgressBarGroove:
             self._draw_field(painter, option, option.rect)
         elif element == Control.CE_ProgressBarContents and isinstance(option, QStyleOptionProgressBar):
@@ -526,9 +533,8 @@ class InkStyle(QProxyStyle):
         bold_font.setWeight(QFont.Weight.DemiBold)
         return bold_font
 
-    def _draw_sticker_bevel(self, painter: QPainter, option: QStyleOption, signal: bool) -> None:
-        """Draws a button as a sticker on an ink shadow, in accent or signal color. Pressing it moves it onto its
-        shadow."""
+    def _draw_primary_bevel(self, painter: QPainter, option: QStyleOption) -> None:
+        """Draws a primary button as an accent sticker on an ink shadow. Pressing it moves it onto its shadow."""
         palette = option.palette
         body = option.rect.adjusted(0, 0, 0, -STICKER_OFFSET)
         if not option.state & State.State_Enabled:
@@ -536,19 +542,15 @@ class InkStyle(QProxyStyle):
             return
         ink = palette.color(Role.Shadow)
         if option.state & State.State_Sunken:
-            _draw_box(painter, body.translated(0, STICKER_OFFSET),
-                      self._colors.signal_pressed if signal else self._colors.accent_pressed, ink)
+            _draw_box(painter, body.translated(0, STICKER_OFFSET), self._colors.accent_pressed, ink)
             return
         _draw_box(painter, body.translated(0, STICKER_OFFSET), ink, ink)
-        if signal:
-            fill = self._colors.signal_hover if option.state & State.State_MouseOver else self._colors.signal
-        else:
-            fill = self._colors.accent_hover if option.state & State.State_MouseOver else palette.color(Role.Highlight)
+        fill = self._colors.accent_hover if option.state & State.State_MouseOver else palette.color(Role.Highlight)
         _draw_box(painter, body, fill, ink)
         if _keyboard_focus(option):
             _draw_focus_ring(painter, body, palette.color(Role.Text))
 
-    def _draw_sticker_label(self, painter: QPainter, option: QStyleOptionButton, widget: QWidget) -> None:
+    def _draw_primary_label(self, painter: QPainter, option: QStyleOptionButton, widget: QWidget) -> None:
         label_option = QStyleOptionButton(option)
         label_rect = option.rect.adjusted(0, 0, 0, -STICKER_OFFSET)
         if option.state & State.State_Sunken:
@@ -563,6 +565,22 @@ class InkStyle(QProxyStyle):
         label_option.fontMetrics = painter.fontMetrics()
         super().drawControl(Control.CE_PushButtonLabel, label_option, painter, widget)
         painter.restore()
+
+    def _draw_signal_label(self, painter: QPainter, option: QStyleOptionButton, widget: QWidget) -> None:
+        """Draws a signal button's label in the signal color, lightened on hover and darkened while pressed."""
+        label_option = QStyleOptionButton(option)
+        if option.state & State.State_Enabled:
+            if option.state & State.State_Sunken:
+                text_color = self._colors.signal_pressed
+            elif option.state & State.State_MouseOver:
+                text_color = self._colors.signal_hover
+            else:
+                text_color = self._colors.signal
+            palette = QPalette(option.palette)
+            for group in (Group.Active, Group.Inactive):
+                palette.setColor(group, Role.ButtonText, text_color)
+            label_option.palette = palette
+        super().drawControl(Control.CE_PushButtonLabel, label_option, painter, widget)
 
     def _draw_progress(self, painter: QPainter, option: QStyleOptionProgressBar, widget: Optional[QWidget]) -> None:
         """Fills the done part of a horizontal progress bar with diagonal accent stripes."""

@@ -6,7 +6,7 @@ from PySide6.QtGui import QColor, QImage
 from PySide6.QtWidgets import QApplication, QCheckBox, QMessageBox, QPushButton
 
 from src.ui.ink_style import SIGNAL_PROPERTY, InkStyle, ink_colors, set_signal, signal_color
-from src.ui.modal.modal_utils import request_confirmation, show_error_dialog
+from src.ui.modal.modal_utils import request_confirmation, show_error_dialog, show_warning_dialog
 from src.ui.theme import THEME_SYSTEM, apply_theme, THEME_INK
 from src.util.visual.palette_icon import palette_icon
 from test.base_test_case import IntraPaintTestCase
@@ -28,6 +28,11 @@ def _render(widget: QPushButton | QCheckBox) -> QImage:
     return widget.grab().toImage()
 
 
+def _is_near(color: QColor, expected: QColor, tolerance: int = 40) -> bool:
+    return (abs(color.red() - expected.red()) <= tolerance and abs(color.green() - expected.green()) <= tolerance
+            and abs(color.blue() - expected.blue()) <= tolerance)
+
+
 class SignalColorTest(IntraPaintTestCase):
     """The test session applies THEME_INK in conftest.py, so each test starts and ends with it applied."""
 
@@ -45,15 +50,21 @@ class SignalColorTest(IntraPaintTestCase):
         self.assertIsNone(signal_color())
         self.assertIsNone(ink_colors())
 
-    def test_signal_button_draws_in_signal_color(self):
+    def test_signal_button_draws_text_in_signal_color(self):
+        """A signal button keeps the plain button fill, and only its text takes the signal color."""
         plain = QPushButton('Discard')
         marked = QPushButton('Discard')
         set_signal(marked)
         self.assertTrue(marked.property(SIGNAL_PROPERTY))
+        plain_image = _render(plain)
         marked_image = _render(marked)
-        self.assertNotEqual(_render(plain), marked_image)
-        self.assertIn(signal_color().rgb(), {marked_image.pixel(x, marked_image.height() // 2)
-                                              for x in range(marked_image.width())})
+        self.assertEqual(plain_image.size(), marked_image.size())
+        self.assertNotEqual(plain_image, marked_image)
+        self.assertEqual(plain_image.pixel(3, 3), marked_image.pixel(3, 3))
+        self.assertTrue(any(_is_near(marked_image.pixelColor(x, y), signal_color())
+                            for x in range(marked_image.width()) for y in range(marked_image.height())))
+        self.assertFalse(any(_is_near(plain_image.pixelColor(x, y), signal_color())
+                             for x in range(plain_image.width()) for y in range(plain_image.height())))
 
     def test_signal_check_box_fills_with_signal_color(self):
         plain = QCheckBox()
@@ -90,6 +101,20 @@ class SignalColorTest(IntraPaintTestCase):
             self.assertEqual({'confirm': True, 'cancel': False}, marked)
             self.assertTrue(request_confirmation(None, 'title', 'message'))
             self.assertEqual({'confirm': False, 'cancel': False}, marked)
+
+    def test_message_boxes_are_drawn_by_qt(self):
+        """Native message boxes ignore the style, so signal marks would never show."""
+        native_options: list[bool] = []
+
+        def _record(box: QMessageBox) -> int:
+            native_options.append(box.testOption(QMessageBox.Option.DontUseNativeDialog))
+            return int(QMessageBox.StandardButton.Ok)
+
+        with patch.object(QMessageBox, 'exec', _record, create=True):
+            request_confirmation(None, 'title', 'message')
+            show_error_dialog(None, 'title', 'message')
+            show_warning_dialog(None, 'title', 'message', None)
+        self.assertEqual([True, True, True], native_options)
 
     def test_error_dialog_marks_ok_button_only_with_signal(self):
         marked: list[bool] = []
