@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 from PySide6.QtCore import QPoint, QRect, QSize
-from PySide6.QtGui import QImage, QTransform
+from PySide6.QtGui import QColor, QImage, QPainter, QTransform
 from PySide6.QtWidgets import QApplication
 
 from src.image.composite_mode import CompositeMode
@@ -222,17 +222,24 @@ class RegionRenderTest(RenderTestCase):
         self.assert_tiles_match()
 
     def test_edited_rotated_layer(self) -> None:
-        """Painting on a rotated layer updates its cached raster to match a full re-raster."""
+        """Painting on a rotated layer redraws the changed part of its cached raster, matching a full re-raster."""
         layer = self.add_layer('rotated', QTransform.fromTranslate(60, 10).rotate(30))
         self.assert_tiles_match()
+        raster = layer._raster  # pylint: disable=protected-access
+        self.assertIsNotNone(raster)
         with layer.borrow_image(QRect(10, 12, 20, 15)) as image:
             assert image is not None
-            image.fill(0xff3070a0)
+            painter = QPainter(image)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+            painter.fillRect(QRect(10, 12, 20, 15), QColor(0x30, 0x70, 0xa0))
+            painter.end()
+        self.assertIs(layer._raster, raster)  # pylint: disable=protected-access
+        edited = full_render(self.image_stack)
         self.assert_tiles_match()
-        updated = full_render(self.image_stack)
-        layer.transform = QTransform(layer.transform)  # same value: no change
-        layer.invalidate_pixmap()
-        assert_images_equal(full_render(self.image_stack), updated)
+        layer.set_transform(QTransform.fromTranslate(61, 10).rotate(30))
+        layer.set_transform(QTransform.fromTranslate(60, 10).rotate(30))
+        self.assertIsNot(layer._raster, raster)  # pylint: disable=protected-access
+        assert_images_equal(full_render(self.image_stack), edited)
 
     def test_layer_move_test_image(self) -> None:
         """The nested, transformed groups in layer_move_test.ora render the same in tiles."""

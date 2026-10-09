@@ -193,11 +193,6 @@ class TransformLayer(Layer):
         self._update_raster(change_bounds)
         super().signal_content_changed(change_bounds)
 
-    def invalidate_pixmap(self) -> None:
-        """Marks the cached pixmap and the cached raster as out of date."""
-        self._raster = None
-        super().invalidate_pixmap()
-
     def _paint_raster(self, raster_image: QImage, origin: QPoint, area: QRect) -> None:
         """Redraws the part of the raster inside area (in raster coordinates) from the layer image."""
         painter = QPainter(raster_image)
@@ -239,6 +234,8 @@ class TransformLayer(Layer):
             return
         area = self._changed_image_area(layer_change_bounds, self._transform).translated(-origin)
         area = area.intersected(QRect(QPoint(), raster_image.size()))
+        # Qt's sampling depends on where each drawn span starts, so redraw whole rows to match a full redraw exactly.
+        area = QRect(0, area.y(), raster_image.width(), area.height())
         if not area.isEmpty():
             self._paint_raster(raster_image, origin, area)
 
