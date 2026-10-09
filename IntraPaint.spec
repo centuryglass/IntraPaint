@@ -1,16 +1,23 @@
 # -*- mode: python ; coding: utf-8 -*-
+import sys
 
+sys.path.insert(0, SPECPATH)
+from src.util.platform_tag import PLATFORM_TAG
+
+# Only this platform's libmypaint. As binaries, PyInstaller also collects the libraries they link against.
+LIBMYPAINT_DIR = f'lib/{PLATFORM_TAG}'
 
 a = Analysis(
     ['IntraPaint.py'],
     pathex=[],
-    binaries=[],
-    datas=[('resources', 'resources'), ('lib', 'lib')],
-    hiddenimports=['src.tools.mypaint_brush_tool'],
+    binaries=[(f'{LIBMYPAINT_DIR}/*', LIBMYPAINT_DIR)],
+    datas=[('resources', 'resources')],
+    hiddenimports=['src.tools.mypaint_brush_tool', 'src.tools.fill_tool', 'src.tools.selection_fill_tool',
+                   'sd_backend_client'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['PySide6.QtNetwork', 'PySide6.QtDBus', 'libKf6BreezeIcons.so.6'],
+    excludes=['Cython', 'setuptools', 'pyximport', 'PySide6.QtNetwork', 'PySide6.QtDBus', 'libKf6BreezeIcons.so.6'],
     noarchive=False,
     optimize=1,
 )

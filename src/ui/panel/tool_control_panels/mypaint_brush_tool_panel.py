@@ -6,10 +6,11 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QApplication, QHBoxLayout, Q
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.ui.ink_style import set_signal
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.layout.divider import Divider
 from src.ui.panel.mypaint_brush_panel import MypaintBrushPanel
-from src.ui.widget.color_button import ColorButton
+from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.key_hint_label import KeyHintLabel
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -49,13 +50,17 @@ class MyPaintBrushToolPanel(QWidget):
 
         second_row = QHBoxLayout()
         self._layout.addLayout(second_row)
-        color_picker_button = ColorButton(parent=self)
-        second_row.addWidget(color_picker_button)
+        second_row.addWidget(ColorPairWidget(self))
 
         selection_only_checkbox = Cache().get_control_widget(Cache.PAINT_SELECTION_ONLY)
+        set_signal(selection_only_checkbox)
         selection_only_checkbox.setText(SELECTION_ONLY_LABEL)
         second_row.addWidget(selection_only_checkbox)
-        selection_only_checkbox.setText(SELECTION_ONLY_LABEL)
-        second_row.addWidget(selection_only_checkbox)
-        brush_panel = MypaintBrushPanel()
-        self._layout.addWidget(brush_panel)
+        # The brush list takes all remaining height and scrolls inside it:
+        self._brush_panel = MypaintBrushPanel()
+        self._layout.addWidget(self._brush_panel, stretch=1)
+
+    @property
+    def brush_panel(self) -> MypaintBrushPanel:
+        """The brush picker."""
+        return self._brush_panel

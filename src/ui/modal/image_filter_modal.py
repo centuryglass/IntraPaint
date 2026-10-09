@@ -5,6 +5,7 @@ from PySide6.QtCore import QSize, Signal
 from PySide6.QtGui import QImage, QIcon, Qt
 from PySide6.QtWidgets import QDialog, QFormLayout, QLabel, QWidget, QHBoxLayout, QPushButton, QApplication
 
+from src.ui.ink_style import set_signal
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.widget.image_widget import ImageWidget
 from src.util.parameter import Parameter, DynamicFieldWidget
@@ -64,6 +65,7 @@ class ImageFilterModal(QDialog):
             field_widget.valueChanged.connect(self._update_preview)
 
         self._selected_only_checkbox = CheckBox()
+        set_signal(self._selected_only_checkbox)
         self._layout.addRow(self._selected_only_checkbox)
         self._selected_only_checkbox.setText(SELECTED_ONLY_LABEL)
         self._selected_only_checkbox.valueChanged.connect(self.filter_selection_only)

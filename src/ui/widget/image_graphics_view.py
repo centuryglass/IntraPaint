@@ -26,10 +26,15 @@ class ImageGraphicsView(QGraphicsView):
 
     scale_changed = Signal(float)
     offset_changed = Signal(QPoint)
+    # Emitted after any change to the scene-to-widget mapping, including resizes, which emit neither signal above.
+    view_changed = Signal()
+    # Emitted with the cursor's widget position whenever set_cursor_pos runs, or None when the cursor leaves.
+    cursor_moved = Signal(object)
 
     def __init__(self, parent: Optional[QWidget] = None, use_keybindings=True) -> None:
         super().__init__(parent)
-        self._scene = QGraphicsScene()
+        # The view owns its scene: deleting the view deletes the scene and every item in it.
+        self._scene = QGraphicsScene(self)
         self._content_size: QSize = QSize(0, 0)
         self._content_rect: Optional[QRect] = None
         self._background: Optional[QPixmap] = None
@@ -133,7 +138,7 @@ class ImageGraphicsView(QGraphicsView):
         """Maps a point from scene to widget coordinates."""
         if isinstance(scene_point, QPoint):
             scene_point = scene_point.toPointF()
-        view_point = self.mapFromScene(scene_point).boundingRect().topLeft()
+        view_point = self.mapFromScene(scene_point)
         return self.viewport().mapTo(self, view_point)
 
     def widget_point_to_scene(self, widget_point: QPoint | QPointF) -> QPointF:
@@ -217,6 +222,7 @@ class ImageGraphicsView(QGraphicsView):
         self._last_widget_cursor_pos = widget_cursor_pos
         scene_cursor_pos = None if widget_cursor_pos is None else self.widget_point_to_scene(widget_cursor_pos)
         self._last_scene_cursor_pos = scene_cursor_pos
+        self.cursor_moved.emit(widget_cursor_pos)
         if self._cursor_pixmap_item is not None and self._cursor_pixmap_item.scene() is not None:
             self._cursor_pixmap_item.setVisible(widget_cursor_pos is not None)
             if scene_cursor_pos is None:
@@ -407,6 +413,7 @@ class ImageGraphicsView(QGraphicsView):
                           * QTransform.fromScale(adjusted_scale, adjusted_scale))
         if scale_changed:
             self.scale_changed.emit(adjusted_scale)
+        self.view_changed.emit()
         self.update()
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
@@ -440,26 +447,28 @@ class ImageGraphicsView(QGraphicsView):
         """Custom mousePress handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
         assert event is not None
-        self.set_cursor_pos(event.pos())
+        self.set_cursor_pos(self._view_event(event).position())
         super().mousePressEvent(event)
         if event.buttons() == Qt.MouseButton.MiddleButton or (event.buttons() == Qt.MouseButton.LeftButton
                                                               and KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER,
                                                                                           True)):
             if self._mouse_navigation_enabled:
-                self._widget_drag_point = event.pos()
-        return False if get_result else None
+                self._widget_drag_point = event.position().toPoint()
+        # A press accepted by a scene item belongs to that item, so filters only see presses the scene ignored.
+        handled = False if event.isAccepted() else self._forward_to_event_filters(event)
+        return handled if get_result else None
 
     def mouseMoveEvent(self, event: Optional[QMouseEvent], get_result=False) -> Optional[bool]:
         """Custom mouseMove handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
         assert event is not None
-        self.set_cursor_pos(event.pos())
+        self.set_cursor_pos(self._view_event(event).position())
         super().mouseMoveEvent(event)
         if self._mouse_navigation_enabled and self._widget_drag_point is not None and event is not None:
             if (event.buttons() == Qt.MouseButton.MiddleButton or
                     (event.buttons() == Qt.MouseButton.LeftButton
                      and KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER))):
-                mouse_pt = event.pos()
+                mouse_pt = event.position().toPoint()
                 scale = self.scene_scale
                 x_off = (self._widget_drag_point.x() - mouse_pt.x()) / scale
                 y_off = (self._widget_drag_point.y() - mouse_pt.y()) / scale
@@ -470,21 +479,56 @@ class ImageGraphicsView(QGraphicsView):
                 self._widget_drag_point = mouse_pt
             else:
                 self._widget_drag_point = None
-        for event_filter in self._event_filters:
-            if event_filter.eventFilter(self, event):
-                return True if get_result else None
-        return False if get_result else None
+        handled = self._forward_to_event_filters(event)
+        return handled if get_result else None
 
     def mouseReleaseEvent(self, event: Optional[QMouseEvent], get_result=False) -> Optional[bool]:
         """Custom mouseRelease handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
         assert event is not None
-        self.set_cursor_pos(event.pos())
+        self.set_cursor_pos(self._view_event(event).position())
         super().mouseReleaseEvent(event)
+        handled = self._forward_to_event_filters(event)
+        return handled if get_result else None
+
+    def wheelEvent(self, event: Optional[QWheelEvent]) -> None:  # pylint: disable=invalid-name  # Qt override
+        """Offers wheel events to the other filters in installEventFilter's list before the scroll area forwards them
+           to its scroll bars.
+
+        This view filters its scroll bars' events, so its zoom handling in eventFilter runs when a wheel event reaches
+        a scroll bar. A scroll bar that accepts the event stops it from reaching this view's filters, so they would
+        never see it otherwise. An event no filter handles here can reach them a second time through normal
+        propagation.
+        """
+        assert event is not None
         for event_filter in self._event_filters:
-            if event_filter.eventFilter(self, event):
-                return True if get_result else None
-        return False if get_result else None
+            if event_filter is not self and event_filter.eventFilter(self, event):
+                event.accept()
+                return
+        super().wheelEvent(event)
+
+    def _view_event(self, viewport_event: QMouseEvent) -> QMouseEvent:
+        """Returns a copy of a mouse event the viewport received, positioned in this view's coordinates."""
+        viewport = self.viewport()
+        assert viewport is not None
+        view_pos = viewport_event.position() + QPointF(viewport.pos())
+        return QMouseEvent(viewport_event.type(), view_pos, viewport_event.scenePosition(),
+                           viewport_event.globalPosition(), viewport_event.button(), viewport_event.buttons(),
+                           viewport_event.modifiers(), viewport_event.pointingDevice())
+
+    def _forward_to_event_filters(self, viewport_event: QMouseEvent) -> bool:
+        """Passes a viewport mouse event to the filters in installEventFilter's list, in view coordinates, and returns
+           whether one handled it.
+
+        The event is accepted afterward so it doesn't also propagate to this view, where Qt would pass it to the same
+        filters a second time.
+        """
+        view_event = self._view_event(viewport_event)
+        viewport_event.accept()
+        for event_filter in self._event_filters:
+            if event_filter.eventFilter(self, view_event):
+                return True
+        return False
 
     def _zoom_step(self, adjusted_multiplier: float, integer_scaling: bool = True):
         last_scale = self.scene_scale
@@ -546,7 +590,13 @@ class ImageGraphicsView(QGraphicsView):
     def leaveEvent(self, event: Optional[QEvent]):
         """Clear the pixmap mouse cursor on leave."""
         self._last_widget_cursor_pos = None
+        self.cursor_moved.emit(None)
         super().leaveEvent(event)
+
+    def scrollContentsBy(self, dx: int, dy: int) -> None:  # pylint: disable=invalid-name  # Qt override
+        """Report scrolling as a view change, since centering on a point scrolls without a transform update."""
+        super().scrollContentsBy(dx, dy)
+        self.view_changed.emit()
 
     def scroll_content(self, unused_dx: int | float, unused_dy: int | float) -> bool:
         """Scroll content by the given offset, returning whether content was able to move."""

@@ -21,7 +21,7 @@ from src.image.layers.layer import Layer
 from src.ui.modal.modal_utils import show_error_dialog
 from src.util.shared_constants import ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_LAYER_LOCKED, \
     ERROR_MESSAGE_LAYER_GROUP_LOCKED, ERROR_MESSAGE_LAYER_HIDDEN, ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED, \
-    DEBUG_CURSOR_ENV_VAR
+    DEBUG_CURSOR_ENV_VAR, LOCK_ERROR_MESSAGES
 from src.util.visual.image_utils import image_is_fully_transparent
 from src.util.visual.text_drawing_utils import left_button_hint_text, middle_button_hint_text, \
     vertical_scroll_hint_text, get_key_display_string
@@ -229,7 +229,8 @@ class BaseTool(QObject):
             if image_is_fully_transparent(mask_image):
                 error_message = ERROR_MESSAGE_EMPTY_MASK
         if show_error_messages and error_message is not None:
-            show_error_dialog(None, ERROR_TITLE_EDIT_FAILED, error_message)
+            show_error_dialog(None, ERROR_TITLE_EDIT_FAILED, error_message,
+                              signal=error_message in LOCK_ERROR_MESSAGES)
         return error_message is None
 
     def _on_activate(self, restoring_after_delegation=False) -> None:

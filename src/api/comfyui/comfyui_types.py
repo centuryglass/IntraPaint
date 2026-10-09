@@ -261,7 +261,7 @@ class PromptExecOutputs(TypedDict):
 class PromptHistory(TypedDict):
     """Prompt execution data from the /history endpoint."""
     prompt: QueueEntry
-    outputs: dict[str, dict[str, PromptExecOutputs]]  # keys are output node ids
+    outputs: dict[str, PromptExecOutputs]  # keys are output node ids
     status: PromptExecStatus
 
 

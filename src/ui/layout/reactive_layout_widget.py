@@ -33,12 +33,15 @@ class ReactiveLayoutWidget(QWidget):
     def add_layout_mode(self, name: str, setup: Callable[[], None],
                         min_size: Optional[QSize] = None,
                         max_size: Optional[QSize] = None) -> None:
-        """Add a new layout mode to reconfigure the widget when it enters a given size range."""
-        for old_mode in self._layout_modes:
-            if old_mode.in_range(min_size) or old_mode.in_range(max_size):
-                raise RuntimeError(f'Mode {name} bounds {min_size}-{max_size} overlap with mode {old_mode.name} bounds '
-                                   f'{old_mode.min_size}-{old_mode.max_size}')
+        """Add a new layout mode to reconfigure the widget when it enters a given size range.
+
+        Raises RuntimeError if the range shares any size with an existing mode's range. Range ends are inclusive.
+        """
         mode = _LayoutMode(name, self, setup, min_size, max_size)
+        for old_mode in self._layout_modes:
+            if mode.overlaps(old_mode):
+                raise RuntimeError(f'Mode {name} bounds {mode.min_size}-{mode.max_size} overlap with mode '
+                                   f'{old_mode.name} bounds {old_mode.min_size}-{old_mode.max_size}')
         self._layout_modes.append(mode)
         self.resizeEvent(None)
 
@@ -47,7 +50,11 @@ class ReactiveLayoutWidget(QWidget):
         self._default_mode = _LayoutMode('default', self, setup, None, None)
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
-        """Apply visibility rules and switch layout modes if necessary."""
+        """Apply visibility rules and switch layout modes if necessary.
+
+        When no mode range matches and there is no default mode, the last mode stays active and only an error is
+        logged. Callers need gap-free mode ranges or a default mode.
+        """
         new_mode = None
         for mode in self._layout_modes:
             if mode.in_range():
@@ -108,6 +115,12 @@ class _LayoutMode:
         if size.width() > self.max_size.width() or size.height() > self.max_size.height():
             return False
         return True
+
+    def overlaps(self, other: '_LayoutMode') -> bool:
+        """Returns whether any size is in range for both modes."""
+        return (self.min_size.width() <= other.max_size.width() and other.min_size.width() <= self.max_size.width()
+                and self.min_size.height() <= other.max_size.height()
+                and other.min_size.height() <= self.max_size.height())
 
     def activate(self) -> None:
         """Apply the mode setup function after confirming bounds are in range."""

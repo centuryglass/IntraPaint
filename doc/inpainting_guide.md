@@ -46,6 +46,11 @@ will be scaled accordingly. This may result in quality loss or detail artifacts,
 a generation resolution that's larger than the generation area.  In IntraPaint, you can set this within the 
 Image Generation tab, or at the bottom of the Generation Area tool panel.
 
+By default, the resolution follows the generation area: resizing the area sets the resolution to the same size, and
+areas with a shorter side under 512 pixels are scaled up by a whole number (a 256x256 area generates at 512x512). The
+"Resolution rule" dropdown in the Generation Area tool panel changes this, and editing the resolution by hand switches
+the rule to "Manual" so your value isn't overwritten.
+
 ### "Inpaint Full Resolution" Checkbox
 When enabled, the image generator uses a reduced portion of the generation area, focusing only on the selected
 inpainting areas. This gives higher detail at the cost of overall image awareness. This option is only valid when 
@@ -56,6 +61,11 @@ When "Inpaint Full Resolution" is checked, padding is added around the inpaint s
 control the padding size with this option, though it will be cropped if it exceeds the generation area. Controls for
 this option are located beneath the "Inpaint Full Resolution" checkbox.  When active, the padding rectangle will be 
 drawn within the generation area around selected content.
+
+To change padding without opening the selection tool controls, hold Shift and use the scroll wheel over the image or
+the navigation window. This works with any tool, and raising the padding above zero turns "Inpaint Full Resolution" on.
+Hold Alt as well to change it faster. The modifier key is the "Padding Scroll Modifier" option in the
+[settings](./menu_options.md#settings-f9) "Keybindings" tab.
 
 ---
 
@@ -114,7 +124,7 @@ In each case the only difference is the AI model chosen. All models used are var
 ## Generation Area control
 Balancing fine detail with scene awareness is key.
 - *Fine Detail*: For maximum focus and accuracy, select small areas and enable "inpaint full resolution" with low padding.
-- *Scene Awareness*: To help the image generator recognize patterns or maintain composition, increase padding or generation area size. You can extend padding by right-clicking with the selection brush to add a single pixel outside the selection—this extends the padding without affecting content.
+- *Scene Awareness*: To help the image generator recognize patterns or maintain composition, increase padding or generation area size. To stretch the inpainting crop in one direction only, right-click with the selection brush to drop a context pin. The crop grows to include every pin, but nothing under a pin is inpainted. Pins only count while something is selected, and stay in place for repeated inpainting until you right-click them again or use **Selection > Clear context pins**. They are not saved with the image.
 
 |                             Original, before inpainting                              | Full resolution inpainting disabled                                                              | Full resolution inpainting enabled, padding set to 2px                            | Full resolution inpainting enabled, padding set to 70px                            |
 |:------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------|

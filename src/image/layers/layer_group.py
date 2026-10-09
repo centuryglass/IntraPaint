@@ -16,7 +16,7 @@ from src.util.cached_data import CachedData
 from src.util.signals_blocked import signals_blocked
 from src.util.validation import assert_valid_index
 from src.util.visual.geometry_utils import map_rect_precise
-from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit, image_is_fully_transparent
+from src.util.visual.image_utils import create_transparent_image, image_is_fully_transparent
 
 RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
 
@@ -56,6 +56,18 @@ class LayerGroup(Layer, LayerParent):
         self._apply_combinable_change(isolate, self._isolate, self.set_isolate, 'layer_group.isolate')
 
     @property
+    def isolation_forced(self) -> bool:
+        """Whether the group renders isolated regardless of the isolate flag, following the OpenRaster
+           isolation="auto" rule: it passes its children through to the content beneath only at Normal mode and full
+           opacity."""
+        return self.opacity < 1.0 or self.composition_mode != CompositeMode.NORMAL
+
+    @property
+    def renders_isolated(self) -> bool:
+        """Whether the group renders isolated, either from the isolate flag or because isolation is forced."""
+        return self._isolate or self.isolation_forced
+
+    @property
     def count(self) -> int:
         """Returns the number of layers"""
         return len(self._layers)
@@ -78,6 +90,11 @@ class LayerGroup(Layer, LayerParent):
         self._bounds = QRect(bounds)
         return bounds
 
+    def _size_change_bounds(self, old_size: QSize) -> QRect:
+        """Returns the group's new bounds. Its old bounds aren't known here: _get_local_bounds updates them after
+           calling set_size."""
+        return self.bounds
+
     def flip_horizontal(self) -> None:
         """Flip the group horizontally."""
         if self.locked:
@@ -88,7 +105,7 @@ class LayerGroup(Layer, LayerParent):
         bounds = self.bounds
         right_edge = self.bounds.x() + self.bounds.width()
 
-        with UndoStack().combining_actions('LayerGroup.flip_horizontal') and self.all_signals_delayed():
+        with UndoStack().combining_actions('LayerGroup.flip_horizontal'), self.all_signals_delayed():
             for layer in self.recursive_child_layers:
                 if isinstance(layer, TransformLayer):
                     initial_bounds = layer.transformed_bounds
@@ -108,7 +125,7 @@ class LayerGroup(Layer, LayerParent):
                 raise ValueError(f'Attempted transformation on layer group containing locked layer {layer.name}.')
         bounds = self.bounds
         bottom_edge = self.bounds.y() + self.bounds.height()
-        with UndoStack().combining_actions('LayerGroup.flip_vertical') and self.all_signals_delayed():
+        with UndoStack().combining_actions('LayerGroup.flip_vertical'), self.all_signals_delayed():
             for layer in self.recursive_child_layers:
                 if isinstance(layer, TransformLayer):
                     initial_bounds = layer.transformed_bounds
@@ -146,8 +163,10 @@ class LayerGroup(Layer, LayerParent):
     def copy(self) -> 'LayerGroup':
         """Returns a copy of this layer, and all the layers within it."""
         copy = LayerGroup(self.name + ' (copy)')
-        copy.opacity = self.opacity
-        copy.composition_mode = self.composition_mode
+        copy.set_opacity(self.opacity)
+        copy.set_composition_mode(self.composition_mode)
+        copy.set_visible(self.visible)
+        copy.set_isolate(self.isolate)
         for layer in self._layers:
             child_layer_copy = layer.copy()
             copy.insert_layer(child_layer_copy, copy.count)
@@ -201,6 +220,38 @@ class LayerGroup(Layer, LayerParent):
         self._image_cache.data = image
         return image
 
+    def preview_image(self) -> QImage:
+        """Returns the group's own content for its layer panel preview, covering the group's bounds.
+
+        Like an image layer's preview, this ignores the group's own visibility, opacity and composition mode, and
+        the visibility of the groups it is in. Descendants that are hidden themselves, or inside a hidden nested
+        group, stay hidden, so a group whose layers are all hidden has a blank preview.
+        """
+        hidden_ancestors: list[Layer] = []
+        ancestor: Optional[Layer] = self
+        while ancestor is not None:
+            if not ancestor.get_visible():
+                hidden_ancestors.append(ancestor)
+            parent = ancestor.layer_parent
+            assert parent is None or isinstance(parent, Layer)
+            ancestor = parent
+        if not hidden_ancestors and self._opacity == 1.0 and self._mode == CompositeMode.NORMAL:
+            return self.get_qimage()
+        bounds = self.bounds
+        image = create_transparent_image(bounds.size())
+        opacity, mode = self._opacity, self._mode
+        # Rendering reads visibility, opacity and mode, so they change without signals and are restored before
+        # anything else can read them.
+        with ExitStack() as stack:
+            for hidden_layer in hidden_ancestors:
+                stack.enter_context(hidden_layer.with_visibility_forced())
+            self._opacity, self._mode = 1.0, CompositeMode.NORMAL
+            try:
+                self.render(base_image=image, transform=QTransform.fromTranslate(-bounds.x(), -bounds.y()))
+            finally:
+                self._opacity, self._mode = opacity, mode
+        return image
+
     def render(self, base_image: QImage, transform: Optional[QTransform] = None,
                image_bounds: Optional[QRect] = None, z_max: Optional[int] = None,
                image_adjuster: Optional[Callable[['Layer', QImage], QImage]] = None,
@@ -245,57 +296,50 @@ class LayerGroup(Layer, LayerParent):
             transform_offset = QPoint()
 
         # Find the final bounds of all changes within base_image:
-        group_bounds = self.bounds
+        final_bounds = self.bounds.translated(transform_offset)
         if image_bounds is not None:
-            final_bounds = QRect(image_bounds)
-        else:
-            final_bounds = group_bounds.translated(transform_offset)
+            final_bounds = final_bounds.intersected(image_bounds)
         base_image_bounds = QRect(QPoint(), base_image.size())
         final_bounds = final_bounds.intersected(base_image_bounds)
 
         qt_composite_mode = self.composition_mode.qt_composite_mode()
-        isolate = self.isolate
-        intermediate_base = base_image
-        simple_compositing = (qt_composite_mode == QPainter.CompositionMode.CompositionMode_SourceOver
-                              and self.opacity == 1.0 and final_bounds.size() == base_image.size())
-        if isolate:
-            simple_compositing = simple_compositing and image_is_fully_transparent(base_image)
+        isolate = self.renders_isolated
 
-        # Create an intermediate base to render child layers onto. All layers get rendered here, then that image is
-        # rendered to the base with this layer's opacity and composition mode. We can skip this step 9f using normal
-        # composition mode and full opacity, as long as either self.isolate is false or the base is fully transparent.
-        if not simple_compositing:
-            intermediate_base = create_transparent_image(final_bounds.size()) if isolate else base_image.copy(final_bounds)
-        compositing_mask = None if (not isolate and returned_mask is None) else create_transparent_image(final_bounds.size())
+        # A pass-through group renders its children straight onto the base, clipped to the final bounds. An isolated
+        # group renders them onto a transparent intermediate image, then composites that onto the base with the
+        # group's opacity and mode. The intermediate can be skipped when it would be composited at full size and
+        # opacity in Normal mode onto a fully transparent base.
+        direct_render = not isolate or (qt_composite_mode == QPainter.CompositionMode.CompositionMode_SourceOver
+                                        and self.opacity == 1.0 and final_bounds.size() == base_image.size()
+                                        and image_is_fully_transparent(base_image))
+        if direct_render:
+            for layer in reversed(self._layers):
+                layer.render(base_image=base_image, transform=QTransform.fromTranslate(transform_offset.x(),
+                                                                                       transform_offset.y()),
+                             image_bounds=final_bounds, z_max=z_max, image_adjuster=image_adjuster,
+                             returned_mask=returned_mask)
+            return
 
-        # if there's no cropping, layer content would be translated so that the group bounds are at (0, 0)
-        # if there is cropping, translate so that the final bounds are at (0, 0)
+        intermediate_base = create_transparent_image(final_bounds.size())
+        compositing_mask = create_transparent_image(final_bounds.size())
         layer_translation = QTransform.fromTranslate(-final_bounds.x() + transform_offset.x(),
                                                      -final_bounds.y() + transform_offset.y())
         for layer in reversed(self._layers):
             layer.render(base_image=intermediate_base, transform=layer_translation, z_max=z_max,
                          image_adjuster=image_adjuster, returned_mask=compositing_mask)
-        if not self.isolate and returned_mask is not None and not simple_compositing:
-            assert compositing_mask is not None
-            np_base = image_data_as_numpy_8bit(intermediate_base)
-            np_mask = image_data_as_numpy_8bit(compositing_mask)
-            mask_empty = np_mask[:, :, 3] == 0
-            np_base[mask_empty, :] = 0
 
         if qt_composite_mode is not None:
-            if intermediate_base != base_image:
-                painter = QPainter(base_image)
-                painter.setOpacity(self.opacity)
-                painter.setCompositionMode(qt_composite_mode)
-                painter.drawImage(final_bounds, intermediate_base)
-                painter.end()
+            painter = QPainter(base_image)
+            painter.setOpacity(self.opacity)
+            painter.setCompositionMode(qt_composite_mode)
+            painter.drawImage(final_bounds, intermediate_base)
+            painter.end()
         else:
             composite_op = self.composition_mode.custom_composite_op()
             composite_transform = QTransform.fromTranslate(final_bounds.x(), final_bounds.y())
             composite_op(intermediate_base, base_image, self.opacity, composite_transform, final_bounds)
 
         if returned_mask is not None:
-            assert compositing_mask is not None
             mask_painter = QPainter(returned_mask)
             mask_painter.drawImage(final_bounds, compositing_mask)
             mask_painter.end()
@@ -573,6 +617,7 @@ class LayerGroup(Layer, LayerParent):
                     layer.lock_changed.emit(layer, layer.locked)
                 if isinstance(layer, TransformLayer) and layer_transforms[layer] != layer.transform:
                     layer.transform_changed.emit(layer, layer.transform)
+                    layer.content_changed.emit(layer, layer.transform_change_bounds(layer_transforms[layer]))
                 if isinstance(layer, ImageLayer) and alpha_lock_states[layer] != layer.alpha_locked:
                     layer.alpha_lock_changed.emit(layer, layer.alpha_locked)
                 if isinstance(layer, LayerGroup) and isolate_states[layer] != layer.isolate:
@@ -607,15 +652,30 @@ class LayerGroup(Layer, LayerParent):
                         > self.content_change_timestamp:
                     self._trigger_render()
 
+    def flush_render(self) -> None:
+        """Runs any scheduled render now, so the cached image, the pixmap and content_changed listeners are current.
+
+        Child groups flush first, since a child group's render schedules its parent's.
+        """
+        for layer in self._layers:
+            if isinstance(layer, LayerGroup):
+                layer.flush_render()
+        if self._render_timer.isActive():
+            self._start_render()
+
     def _trigger_render(self) -> None:
         if not self._render_timer.isActive():
             self._render_timer.start()
 
+    def signal_content_changed(self, change_bounds: QRect) -> None:
+        """Invalidates the cached image and pixmap, then sends the content change signal."""
+        self._image_cache.invalidate()
+        self.invalidate_pixmap()
+        super().signal_content_changed(change_bounds)
+
     def _start_render(self) -> None:
         self._render_timer.stop()
         bounds = self._get_local_bounds()  # Ensure size is correct
-        self._image_cache.invalidate()
-        self.invalidate_pixmap()
         self.signal_content_changed(bounds)
 
 

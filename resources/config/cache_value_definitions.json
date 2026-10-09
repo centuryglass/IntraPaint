@@ -15,6 +15,28 @@
         "default": "512x512",
         "saved": true
     },
+    "generation_resolution_rule": {
+        "label": "Resolution rule:",
+        "category": "Cache",
+        "description": "How the generation resolution follows generation area size changes. 'Match area' sets the resolution to the area size. 'Match area, upscale small areas' also scales small areas up by a whole-number factor until the shorter side reaches the minimum set in settings. 'Manual' leaves the resolution alone. Editing the resolution by hand selects 'Manual'.",
+        "type": "string",
+        "default": "Match area, upscale small areas",
+        "options": [
+            "Match area",
+            "Match area, upscale small areas",
+            "Manual"
+        ],
+        "saved": true
+    },
+    "recent_generation_area_sizes": {
+        "label": "Recent generation area sizes:",
+        "category": "Cache",
+        "description": "Generation area sizes used most recently, newest first, as \"WxH\" strings",
+        "type": "list",
+        "default": [],
+        "saved": true,
+        "translate": false
+    },
     "tool_tab_bar": {
         "label": "Tool tab bar:",
         "category": "Cache",
@@ -52,12 +74,49 @@
         "translate": false
     },
     "last_brush_color": {
-        "label": "Color",
+        "label": "Foreground color",
         "category": "Cache",
-        "description": "Last brush color",
+        "description": "Foreground color, used to paint with the brush, draw, fill and text tools. The key keeps its older name so existing cache files still load.",
         "type": "string",
         "default": "#ff000000",
         "saved": true
+    },
+    "background_color": {
+        "label": "Background color",
+        "category": "Cache",
+        "description": "Background color, swapped with the foreground color by the swap colors shortcut.",
+        "type": "string",
+        "default": "#ffffffff",
+        "saved": true
+    },
+    "recent_colors": {
+        "label": "Recent colors:",
+        "category": "Cache",
+        "description": "Colors chosen most recently, newest first, as \"#aarrggbb\" strings",
+        "type": "list",
+        "default": [],
+        "saved": true,
+        "translate": false
+    },
+    "color_slider_mode": {
+        "label": "Color slider mode:",
+        "category": "Cache",
+        "description": "Color model the color picker's sliders edit.",
+        "type": "string",
+        "default": "RGB",
+        "options": ["RGB", "HSV", "OKLCH"],
+        "saved": true,
+        "translate": false
+    },
+    "color_slider_mode_secondary": {
+        "label": "Second color slider mode:",
+        "category": "Cache",
+        "description": "Color model of the second slider block, shown in wide color picker layouts.",
+        "type": "string",
+        "default": "OKLCH",
+        "options": ["RGB", "HSV", "OKLCH"],
+        "saved": true,
+        "translate": false
     },
     "new_image_background_color": {
         "label": "New image background color:",

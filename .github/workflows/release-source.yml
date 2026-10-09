@@ -1,0 +1,24 @@
+name: release-source
+
+# master is only updated by release pull requests from integration. Rulesets can't restrict a pull request's source
+# branch, so this check fails any pull request into master that comes from anywhere else. Require it on master.
+on:
+  pull_request:
+    branches: [master]
+
+permissions: {}
+
+jobs:
+  release-source:
+    name: release-source
+    runs-on: ubuntu-latest
+    steps:
+      - name: Source branch is integration
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ] || [ "$HEAD_REF" != "integration" ]; then
+            echo "::error::Pull requests into master must come from $GITHUB_REPOSITORY:integration, not $HEAD_REPO:$HEAD_REF."
+            exit 1
+          fi

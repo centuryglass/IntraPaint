@@ -2,9 +2,10 @@
 import os
 from ctypes import CFUNCTYPE, POINTER, Structure, c_int, c_void_p, c_float, c_double, c_char_p, c_uint16, CDLL, cdll
 from ctypes.util import find_library
-from typing import Optional, TypeAlias
+from typing import TypeAlias
 
 from src.config.application_config import AppConfig
+from src.util.platform_tag import PLATFORM_TAG
 from src.util.shared_constants import PROJECT_DIR
 
 # constants and basic typedefs:
@@ -14,10 +15,8 @@ RECTANGLE_BUF_SIZE = 100  # Paint operation rectangle buffer size.
 NUM_BBOXES_DEFAULT = 32  # Tiled surface default bounding box count.
 TILE_DIM = 64  # Tiled surface x/y resolution
 LIBRARY_NAME = 'mypaint'  # For the ctypes.util.find_library function
-if os.name == 'nt':
-    DEFAULT_LIBRARY_PATH = f'{PROJECT_DIR}/lib/libmypaint.dll'
-else:
-    DEFAULT_LIBRARY_PATH = f'{PROJECT_DIR}/lib/libmypaint.so'
+# The libmypaint build IntraPaint bundles and is tested against. The PyInstaller specs copy it to the same path.
+BUNDLED_LIBRARY_DIR = os.path.join(PROJECT_DIR, 'lib', PLATFORM_TAG)
 
 
 # Rectangles:
@@ -137,44 +136,62 @@ class MyPaintBrushSettingInfo(Structure):
     ]
 
 
-def load_libmypaint(default_library_path: Optional[str]) -> CDLL:
-    """Returns a libmypaint library instance with function types defined."""
-    library_path: Optional[str] = ''
-    try:
-        library_path = find_library(LIBRARY_NAME)
-        if library_path is None:
-            library_path = default_library_path
+def _load_from_dir(library_dir: str) -> CDLL:
+    """Loads the one file in library_dir whose name contains "mypaint", after loading every other file there.
+
+    The other files are taken to be its dependencies, so they load first in case the system loader can't find them.
+    """
+    if not os.path.isdir(library_dir):
+        raise OSError(f'{library_dir} does not exist')
+    if os.name == 'nt':
+        os.add_dll_directory(os.path.abspath(library_dir))
+    mypaint_lib_path = ''
+    for lib_file in sorted(os.listdir(library_dir)):
+        file_path = os.path.join(library_dir, lib_file)
+        if not os.path.isfile(file_path):
+            continue
+        if 'mypaint' in lib_file.lower():
+            mypaint_lib_path = file_path
+        else:
+            cdll.LoadLibrary(file_path)
+    if mypaint_lib_path == '':
+        raise OSError(f'no file in {library_dir} has a name that includes "mypaint" (e.g. libmypaint.dll, '
+                      'libmypaint.so)')
+    return cdll.LoadLibrary(mypaint_lib_path)
+
+
+def load_libmypaint() -> CDLL:
+    """Returns a libmypaint library instance with function types defined.
+
+    Tries, in order: the bundled build in BUNDLED_LIBRARY_DIR, the user's AppConfig.LIBMYPAINT_LIBRARY_DIR, then a
+    system libmypaint found by ctypes.util.find_library. Raises ImportError naming every attempt if none load.
+    """
+    errors: list[str] = []
+    lib: CDLL | None = None
+    for library_dir in (BUNDLED_LIBRARY_DIR, AppConfig().get(AppConfig.LIBMYPAINT_LIBRARY_DIR)):
+        if library_dir == '':
+            continue
         try:
-            if os.name == 'nt':
-                cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libiconv-2.dll')
-                cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libintl-8.dll')
-                cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libjson-c-2.dll')
-                lib = cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libmypaint-1-4-0.dll')
-            else:
-                lib = CDLL(library_path)
+            lib = _load_from_dir(library_dir)
+            break
         except OSError as err:
-            alt_library_dir = AppConfig().get(AppConfig.LIBMYPAINT_LIBRARY_DIR)
-            if not os.path.isdir(alt_library_dir):
-                raise RuntimeError(f'libmypaint alternate library directory {alt_library_dir} does not exist') from err
-            mypaint_lib_path = ''
-            for lib_file in os.listdir(alt_library_dir):
-                file_path = os.path.join(alt_library_dir, lib_file)
-                if not os.path.isfile(file_path):
-                    continue
-                if 'mypaint' in lib_file.lower():
-                    mypaint_lib_path = file_path
-                else:
-                    cdll.LoadLibrary(file_path)
-            if mypaint_lib_path == '':
-                raise RuntimeError(f'No mypaint library found: exactly one file in {alt_library_dir} should have a '
-                                   'name that includes "mypaint" (e.g. libmypaint.dll, libmypaint.so, etc.)') from err
-            lib = cdll.LoadLibrary(mypaint_lib_path)
-    except (OSError, RuntimeError) as err:
-        raise ImportError(f'Failed to find {LIBRARY_NAME} library: last path tried: {library_path}') from err
-    assert lib is not None
+            errors.append(f'{library_dir}: {err}')
+    if lib is None:
+        system_library = find_library(LIBRARY_NAME)
+        if system_library is None:
+            errors.append(f'no system {LIBRARY_NAME} library found')
+        else:
+            try:
+                lib = CDLL(system_library)
+            except OSError as err:
+                errors.append(f'{system_library}: {err}')
+    if lib is None:
+        raise ImportError(f'Failed to load the {LIBRARY_NAME} library: ' + '; '.join(errors))
     # Brush functions:
     lib.mypaint_brush_new.restype = c_void_p
     lib.mypaint_brush_new.argtypes = []
+    lib.mypaint_brush_unref.restype = None
+    lib.mypaint_brush_unref.argtypes = [c_void_p]  # (brush)
     lib.mypaint_brush_from_defaults.restype = None
     lib.mypaint_brush_from_defaults.argtypes = [c_void_p]
     lib.mypaint_brush_from_string.restype = int
@@ -183,6 +200,9 @@ def load_libmypaint(default_library_path: Optional[str]) -> CDLL:
     lib.mypaint_brush_reset.argtypes = [c_void_p]  # (brush)
     lib.mypaint_brush_new_stroke.restype = None
     lib.mypaint_brush_new_stroke.argtypes = [c_void_p]  # (brush)
+    # These argtypes are the libmypaint 2.x form. The bundled 1.x libraries take only the first eight arguments and
+    # ignore the rest, including is_linear. The library version is not detected, so a system libmypaint found by
+    # find_library may use either form.
     lib.mypaint_brush_stroke_to.restype = c_int
     lib.mypaint_brush_stroke_to.argtypes = [c_void_p, surface_ptr,  # brush, surface,
                                             c_float, c_float,  # x, y
@@ -212,4 +232,4 @@ def load_libmypaint(default_library_path: Optional[str]) -> CDLL:
     return lib
 
 
-libmypaint = load_libmypaint(DEFAULT_LIBRARY_PATH)
+libmypaint = load_libmypaint()

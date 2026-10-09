@@ -4,14 +4,13 @@ Provides a widget that can be dragged to resize UI elements.
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QSize, QRect, Signal
-from PySide6.QtGui import QPainter, QPen, QResizeEvent, QMouseEvent, QPaintEvent, QCursor
+from PySide6.QtGui import QPainter, QPen, QResizeEvent, QMouseEvent, QPaintEvent, QCursor, QPalette
 from PySide6.QtWidgets import QWidget, QSizePolicy, QBoxLayout, QHBoxLayout, QVBoxLayout, QLayoutItem, QSpacerItem, \
     QLayout
 
 from src.util.layout import extract_layout_item
-from src.util.visual.contrast_color import contrast_color
 
-DIVIDER_SIZE = 4
+DIVIDER_SIZE = 6
 
 
 class DraggableDivider(QWidget):
@@ -74,8 +73,11 @@ class DraggableDivider(QWidget):
         if self._hidden:
             return
         painter = QPainter(self)
-        color = contrast_color(self).lighter() if self._dragging else contrast_color(self)
-        size = 4 if self._dragging else 2
+        palette = self.palette()
+        color = palette.color(QPalette.ColorRole.Text)
+        if self._dragging:
+            color = color.lighter()
+        size = 6 if self._dragging else 3
         painter.setPen(QPen(color, size, Qt.PenStyle.SolidLine, Qt.PenCapStyle.SquareCap,
                             Qt.PenJoinStyle.BevelJoin))
 
@@ -93,7 +95,7 @@ class DraggableDivider(QWidget):
         if self._hidden:
             return
         self._dragging = True
-        self._last_pos = event.pos() + self.pos()
+        self._last_pos = event.position().toPoint() + self.pos()
         self.setCursor(self._dragging_cursor)
         self.update()
 
@@ -226,8 +228,9 @@ class DraggableDivider(QWidget):
         if event is None:
             return
         if event.buttons() and self._dragging:
-            self.dragged.emit(event.pos() + self.geometry().topLeft())
-            self._update_layout_stretch(event.pos())
+            pos = event.position().toPoint()
+            self.dragged.emit(pos + self.geometry().topLeft())
+            self._update_layout_stretch(pos)
 
     def mouseReleaseEvent(self, unused_event: Optional[QMouseEvent]) -> None:
         """Exits the dragging state when the mouse is released. """
@@ -302,6 +305,6 @@ def _item_at_maximum_size(item: Optional[QWidget | QLayout | QSpacerItem]) -> tu
         size_policy = item.sizePolicy()
         at_maximum_width = _widget_at_maximum(item.width(), item.maximumWidth(), size_hint.width(),
                                               size_policy.horizontalPolicy())
-        at_maximum_height = _widget_at_maximum(item.height(), item.maximumWidth(), size_hint.height(),
+        at_maximum_height = _widget_at_maximum(item.height(), item.maximumHeight(), size_hint.height(),
                                                size_policy.verticalPolicy())
     return at_maximum_width, at_maximum_height

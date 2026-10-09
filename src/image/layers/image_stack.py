@@ -23,7 +23,7 @@ from src.image.layers.selection_layer import SelectionLayer
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.text_rect import TextRect
-from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog
+from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog, request_confirmation
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
 from src.util.cached_data import CachedData
@@ -44,10 +44,16 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 NEW_IMAGE_LAYER_GROUP_NAME = _tr('new image')
 ACTION_NAME_MERGE_LAYERS = _tr('merge layers')
+ACTION_NAME_MERGE_VISIBLE = _tr('merge visible layers')
 ACTION_NAME_LAYER_TO_IMAGE_SIZE = _tr('resize layer to image')
 ACTION_NAME_CLEAR_SELECTED = _tr('cut/clear selection')
 ACTION_NAME_RESIZE_IMAGE_CANVAS = _tr('resize image canvas')
 ACTION_NAME_CROP_LAYER_TO_SELECTION = _tr('crop layer to selection')
+MERGED_LAYER_NAME = _tr('Merged')
+# Alpha values tried either side of the estimate when flattening over partially transparent content:
+FLATTEN_ALPHA_SEARCH = 4
+FLATTEN_NEAR_OPAQUE_ALPHA = 250
+PASTE_LAYER_NAME = _tr('Paste layer')
 
 ERROR_TITLE_RESIZE_FAILED = _tr('Resizing image canvas failed')
 ERROR_TITLE_IMAGE_SCALE_FAILED = _tr('Image scaling failed')
@@ -68,6 +74,8 @@ ERROR_MESSAGE_LOCKED_LAYER = _tr('Unlock the layer before attempting any changes
 
 ERROR_TITLE_MERGE_FAILED = _tr('Merging layers failed')
 ERROR_MESSAGE_HIDDEN_LAYER_MERGE = _tr('Only visible layers can be merged.')
+ERROR_TITLE_FLATTEN_FAILED = _tr('Flattening layer failed')
+ERROR_MESSAGE_HIDDEN_LAYER_FLATTEN = _tr('Only visible layers can be flattened.')
 ERROR_MESSAGE_GROUP_MERGE_BLOCKED = _tr('The layer below is a layer group, flatten the group into a single image layer'
                                         ' first.')
 
@@ -81,6 +89,9 @@ ERROR_MESSAGE_TOP_GROUP_CHANGE = _tr('To edit the main layer group, edit its lay
 WARNING_TITLE_CROP_DELETED_LAYERS = _tr('Warning: cropping deleted layer(s)')
 WARNING_MESSAGE_CROP_DELETED_LAYERS = _tr('<p>Cropping the image deleted the following layers:</p><ul>'
                                           '{layer_names}</ul>')
+WARNING_TITLE_HIDDEN_LAYERS_LOST = _tr('Hidden layers will be deleted')
+WARNING_MESSAGE_HIDDEN_LAYERS_LOST = _tr(
+    'Merging will delete the following hidden layers within groups: {layer_names}. Continue?')
 
 RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
 
@@ -111,6 +122,8 @@ class ImageStack(QObject):
         self._generation_area = QRect(0, 0, generation_area_size.width(), generation_area_size.height())
         self._copy_buffer: Optional[QImage] = None
         self._copy_buffer_transform: Optional[QTransform] = None
+        # Opacity and mode for the pasted layer. Group copies hold rendered pixels, so theirs are already applied.
+        self._copy_buffer_layer_properties: tuple[float, CompositeMode] = (1.0, CompositeMode.NORMAL)
         self._content_change_signal_enabled = True
         self.generation_area = self._generation_area
         self._last_change_timestamp = 0.0
@@ -339,6 +352,14 @@ class ImageStack(QObject):
         Updates the bounds of the image generation area within the image. If `bounds_rect` exceeds the maximum  size
         or doesn't fit fully within the image bounds, the closest valid region will be selected.
         """
+        self.set_generation_area(bounds_rect)
+
+    def set_generation_area(self, bounds_rect: QRect, merge_with_last: bool = True) -> None:
+        """Updates the bounds of the image generation area, adjusted to fit like the `generation_area` setter.
+
+        With `merge_with_last`, a change directly after another generation area change joins its undo step. Pass
+        False to start a new undo step.
+        """
         assert isinstance(bounds_rect, QRect)
         bounds_rect = self._get_closest_valid_generation_area(bounds_rect)
         if bounds_rect != self._generation_area:
@@ -355,7 +376,7 @@ class ImageStack(QObject):
             action_type = 'ImageStack.generation_area'
             prev_action: Optional[_UndoAction | _UndoGroup]
             with UndoStack().last_action(action_type) as prev_action:
-                if isinstance(prev_action, _UndoAction) and prev_action.type == action_type \
+                if merge_with_last and isinstance(prev_action, _UndoAction) and prev_action.type == action_type \
                         and prev_action.action_data is not None:
                     last_bounds = prev_action.action_data['prev_bounds']
                     prev_action.redo = lambda: update_fn(bounds_rect)
@@ -440,6 +461,8 @@ class ImageStack(QObject):
             def _resize(bounds=canvas_image_bounds, translate=transform):
                 self.size = bounds.size()
                 self.selection_layer.set_transform(self.selection_layer.transform * translate)
+                moved_pins = [translate.map(pin) for pin in self.selection_layer.context_pins]
+                self.selection_layer.set_context_pins([pin for pin in moved_pins if bounds.contains(pin)], False)
                 deleted_layer_names = []
                 mapped_bounds = self.selection_layer.map_rect_from_image(bounds)
                 self.selection_layer.adjust_local_bounds(mapped_bounds, False)
@@ -488,6 +511,8 @@ class ImageStack(QObject):
             def _undo_resize(size=last_size, sel_state=selection_state, stack_state=layer_state):
                 self.size = size
                 self._layer_stack.restore_state(stack_state)
+                # restore_state reinserts deleted layers without updating z-values.
+                self._update_z_values()
                 self._selection_layer.restore_state(sel_state)
 
             UndoStack().commit_action(_resize, _undo_resize, 'ImageStack.resize_canvas')
@@ -579,7 +604,7 @@ class ImageStack(QObject):
             image_data = create_transparent_image(self.size)
         layer = self._create_layer_internal(layer_name, image_data)
         if transform is not None:
-            layer.transform = transform
+            layer.set_transform(transform)
 
         @self._with_batch_content_update
         def _create_new(parent=layer_parent, new_layer=layer, i=layer_index) -> None:
@@ -663,7 +688,8 @@ class ImageStack(QObject):
             return
         assert layer.layer_parent is not None and layer.layer_parent.contains(layer)
         layer_parent = cast(LayerGroup, layer.layer_parent)
-        layer_parent, layer_index = self._get_new_layer_placement(layer_parent)
+        layer_index = layer_parent.get_layer_index(layer)
+        assert layer_index is not None
         layer_copy = layer.copy()
         layer_copy.set_name(layer.name + ' copy')
 
@@ -832,8 +858,9 @@ class ImageStack(QObject):
     def layer_is_flat(layer: Layer) -> bool:
         """Returns true if calling flatten_layer on a layer would do nothing."""
         if isinstance(layer, ImageLayer):
+            transform = layer.transform
             return layer.composition_mode == CompositeMode.NORMAL and layer.opacity == 1.0 \
-                and layer.transform == QTransform.fromTranslate(layer.bounds.x(), layer.bounds.y())
+                and transform == QTransform.fromTranslate(round(transform.dx()), round(transform.dy()))
         if isinstance(layer, LayerGroup):
             return layer.count == 0
         return False
@@ -848,13 +875,17 @@ class ImageStack(QObject):
 
         The goal is to simplify a layer's properties while leaving the final image as close to unchanged as possible.
         Note that this isn't totally possible in some cases, it doesn't work with some composition modes.
+        Hidden layers can't be flattened.
 
-        TODO: Color accuracy has issues when both the top and base are partially transparent, look into reverse
-              composition further and see if this can be improved.
+        Where both the top and base are partially transparent, the composite is reproduced to within 8-bit rounding.
         """
         if layer is None:
             layer = self.active_layer
         if not self.validate_layer_showing_errors(layer):
+            return
+        # The replacement layer is rendered from the parent, which leaves out hidden layers.
+        if not layer.visible:
+            show_error_dialog(None, ERROR_TITLE_FLATTEN_FAILED, ERROR_MESSAGE_HIDDEN_LAYER_FLATTEN)
             return
         parent = layer.layer_parent
         assert isinstance(parent, LayerGroup)
@@ -891,24 +922,143 @@ class ImageStack(QObject):
         alpha_top[blended_px] /= (1 - alpha_base[blended_px])
         alpha_top[blended_px] = np.clip(alpha_top[blended_px], .00001, 1.0)
 
-        # Solve for the reversed rgb compositing function:
-        # c, t, b = combined, top, base, CA, TA, BA = combinedAlpha, topAlpha, baseAlpha
-        # c = (tAT + bAB(1 - AT)) / AC
-        # cAC = tAT + bAB(1 - AT)
-        # cAC - bAB(1 - AT) = tAT
-        # t = (cAC - bAB(1 - AT)) / AT
-        for c in range(3):
-            comp_mult = np_combined[blended_px, c] * alpha_combined[blended_px]
-            top_inv_alpha = 1 - alpha_top[blended_px]
-            base_mult = np_base[blended_px, c] * alpha_base[blended_px]
-            np_top[blended_px, c] = np.clip(comp_mult - (base_mult * top_inv_alpha) / alpha_top[blended_px],
-                                            0, 255)
-        np_top[blended_px, 3] = alpha_top[blended_px] * 255
+        # The renders are premultiplied, so SourceOver is C = T + B * (1 - alpha_top) per channel, with C, T and B the
+        # premultiplied combined, top and base values. Solving for the top layer:
+        #   T = C - B * (1 - alpha_top)
+        # The result stays premultiplied, so it can't exceed its own alpha. 8-bit alpha can't be recovered exactly,
+        # so nearby alpha values are tried and the one that best reproduces the combined pixel is kept. Where the base
+        # is nearly opaque the estimate is unreliable, so every alpha value is tried.
+        est_alpha = np.round(alpha_top[blended_px] * 255)
+        comb_px = np_combined[blended_px].astype(np.float64)
+        base_px = np_base[blended_px].astype(np.float64)
+        wide_search = base_px[:, 3] >= FLATTEN_NEAR_OPAQUE_ALPHA
+        best_alpha = est_alpha
+        best_color = np.zeros((est_alpha.shape[0], 3))
+        best_error = np.full(est_alpha.shape, np.inf)
+        candidates = [np.clip(est_alpha + offset, 1, 255) for offset in range(-FLATTEN_ALPHA_SEARCH,
+                                                                              FLATTEN_ALPHA_SEARCH + 1)]
+        if wide_search.any():
+            candidates.extend(np.where(wide_search, alpha_value, est_alpha) for alpha_value in range(1, 256))
+        for candidate_alpha in candidates:
+            inv_alpha = 1 - candidate_alpha / 255.0
+            candidate_color = np.clip(np.round(comb_px[:, :3] - base_px[:, :3] * inv_alpha[:, None]),
+                                      0, candidate_alpha[:, None])
+            recomposed = (np.column_stack([candidate_color, candidate_alpha])
+                          + np.round(base_px * inv_alpha[:, None]))
+            error = np.abs(recomposed - comb_px).max(axis=1)
+            better = error < best_error
+            best_error[better] = error[better]
+            best_alpha = np.where(better, candidate_alpha, best_alpha)
+            best_color[better] = candidate_color[better]
+        np_top[blended_px, :3] = best_color
+        np_top[blended_px, 3] = best_alpha
 
         layer_offset = parent.bounds.topLeft()
         replacement_layer = self._create_layer_internal(layer.name, top_render)
         replacement_layer.set_transform(QTransform.fromTranslate(layer_offset.x(), layer_offset.y()))
         self.replace_layer(layer, replacement_layer)
+
+    def merge_group(self, layer: Optional[Layer] = None) -> None:
+        """Merge a layer group into a single image layer.
+
+        Parameters
+        ----------
+            layer: Layer | None, default=None
+                The layer group to merge. If None, the active layer will be used.
+        """
+        if layer is None:
+            layer = self.active_layer
+        if not isinstance(layer, LayerGroup) or layer == self._layer_stack:
+            return
+        self.flatten_layer(layer)
+
+    def merge_all_visible(self) -> None:
+        """Merge all visible top-level layers into a single image layer.
+
+        Hidden top-level layers are preserved. Hidden layers within visible groups are
+        deleted. The merged layer is placed at the former position of the bottommost
+        visible layer.
+        """
+        visible_layers = [layer for layer in self._layer_stack.child_layers if layer.visible]
+        if len(visible_layers) == 0:
+            return
+        if len(visible_layers) == 1 and isinstance(visible_layers[0], ImageLayer):
+            return  # Already a single image layer; nothing to merge.
+
+        locked_layers = []
+        text_layer_names = []
+        for layer in visible_layers:
+            if layer.locked:
+                locked_layers.append(layer)
+            if isinstance(layer, TextLayer):
+                text_layer_names.append(layer.name)
+            elif isinstance(layer, LayerGroup):
+                for child in layer.recursive_child_layers:
+                    if child.locked:
+                        locked_layers.append(child)
+                    if isinstance(child, TextLayer) and child.visible:
+                        text_layer_names.append(child.name)
+        if len(locked_layers) > 0:
+            if len(locked_layers) > 1:
+                layer_names = ', '.join([f'"{layer.name}"' for layer in locked_layers])
+                error_message = ERROR_MESSAGE_LOCK_CONFLICT_PLURAL.format(
+                    comma_separated_layer_names=layer_names)
+            else:
+                error_message = ERROR_MESSAGE_LOCK_CONFLICT_SINGULAR.format(
+                    layer_name=f'"{locked_layers[0].name}"')
+            show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, error_message)
+            return
+        if len(text_layer_names) > 0:
+            if not TextLayer.confirm_or_cancel_render_to_image(text_layer_names, ACTION_NAME_MERGE_VISIBLE):
+                return
+
+        # Check for hidden layers within visible groups that would be deleted:
+        hidden_in_groups: list[Layer] = []
+        for layer in visible_layers:
+            if isinstance(layer, LayerGroup):
+                for child in layer.recursive_child_layers:
+                    if not child.visible:
+                        hidden_in_groups.append(child)
+        if len(hidden_in_groups) > 0:
+            hidden_names = ', '.join([f'"{layer.name}"' for layer in hidden_in_groups])
+            warning_message = WARNING_MESSAGE_HIDDEN_LAYERS_LOST.format(layer_names=hidden_names)
+            if not request_confirmation(None, WARNING_TITLE_HIDDEN_LAYERS_LOST, warning_message, discards_work=True):
+                return
+
+        bottom_layer = visible_layers[-1]
+        bottom_index = self._layer_stack.get_layer_index(bottom_layer)
+        assert bottom_index is not None
+        insert_index = sum(1 for i in range(bottom_index)
+                           if not self._layer_stack.get_layer_by_index(i).visible)
+
+        stack_bounds = self.merged_layer_bounds
+        if stack_bounds.isEmpty():
+            return
+        merged_image = self.qimage(crop_to_image=False)
+        new_layer = self._create_layer_internal(MERGED_LAYER_NAME, merged_image)
+        new_layer.set_transform(QTransform.fromTranslate(stack_bounds.x(), stack_bounds.y()))
+
+        removed_layers = tuple(visible_layers)
+        removed_indices = [self._layer_stack.get_layer_index(layer) for layer in removed_layers]
+        assert all(idx is not None for idx in removed_indices)
+        last_active_id = self.active_layer_id
+
+        @self._with_batch_content_update
+        def _do_merge(to_remove=removed_layers, replacement=new_layer, idx=insert_index) -> None:
+            for layer in to_remove:
+                self._remove_layer_internal(layer)
+            self._insert_layer_internal(replacement, self._layer_stack, idx)
+            self._set_active_layer_internal(replacement)
+
+        @self._with_batch_content_update
+        def _undo_merge(to_restore=removed_layers, indices=removed_indices, replacement=new_layer,
+                        active_id=last_active_id) -> None:
+            self._remove_layer_internal(replacement)
+            for layer, idx in sorted(zip(to_restore, indices), key=lambda item: cast(int, item[1])):
+                self._insert_layer_internal(layer, self._layer_stack, cast(int, idx))
+            self._set_active_layer_internal(active_id)
+
+        UndoStack().commit_action(_do_merge, _undo_merge, 'ImageStack.merge_all_visible')
 
     def merge_layer_down(self, layer: Optional[Layer] = None) -> None:
         """Merges a layer with the one beneath it on the stack.
@@ -945,7 +1095,7 @@ class ImageStack(QObject):
             show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, ERROR_MESSAGE_GROUP_MERGE_BLOCKED)
             return
         if not isinstance(base_layer, TransformLayer) or base_layer.locked or base_layer.parent_locked:
-            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
+            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER, signal=True)
             return
         if not top_layer.visible or not base_layer.visible:
             show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, ERROR_MESSAGE_HIDDEN_LAYER_MERGE)
@@ -994,7 +1144,8 @@ class ImageStack(QObject):
             else:
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
                 composite_op = top_layer.composition_mode.custom_composite_op()
-                composite_op(top_image, merged_image, top_layer.opacity, painter.transform(), None)
+                composite_op(top_image, merged_image, top_layer.opacity, painter.transform(),
+                             map_rect_precise(top_layer.bounds, painter.transform()).toAlignedRect())
             if base_layer.alpha_locked:
                 painter.setTransform(base_paint_transform)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
@@ -1028,59 +1179,60 @@ class ImageStack(QObject):
     def layer_to_image_size(self, layer: Optional[Layer] = None) -> None:
         """Resizes a layer to match the image size. Out-of-bounds content is cropped, new content is transparent.
 
+        A layer group resizes each unlocked image layer it contains, as one undo step.
+
         Parameters
         ----------
-            layer: ImageLayer | int | None, default=None
-                The layer object to copy, or its id. If None, the active layer will be used.
+            layer: Layer | None, default=None
+                The layer or group to resize. If None, the active layer will be used.
         """
         if layer is None:
             layer = self.active_layer
         if not self.validate_layer_showing_errors(layer):
             return
         with UndoStack().combining_actions('ImageStack.layer_to_image_size'):
-            if isinstance(layer, TextLayer):
-                layer_bounds = layer.transformed_bounds
-                if self.bounds.contains(layer_bounds):
-                    return  # No need to alter text layers that are already fully in the image bounds.
-                if TextLayer.confirm_or_cancel_render_to_image([layer.name], ACTION_NAME_LAYER_TO_IMAGE_SIZE):
-                    layer = self.replace_text_layer_with_image(layer)
-            if not isinstance(layer, ImageLayer):
-                assert isinstance(layer, LayerGroup)
-                layers = layer.recursive_child_layers
-                for child_layer in layers:
+            if isinstance(layer, LayerGroup):
+                for child_layer in layer.recursive_child_layers:
                     if child_layer.locked or child_layer.parent_locked or not isinstance(child_layer, ImageLayer):
                         continue
-                    self.layer_to_image_size(child_layer)
+                    self._layer_to_image_size_internal(child_layer)
+            else:
+                self._layer_to_image_size_internal(layer)
+
+    def _layer_to_image_size_internal(self, layer: Layer) -> None:
+        """Resizes one unlocked image or text layer to match the image size, committing to the open undo group. Text
+        layers outside the image bounds are converted to image layers if the user confirms."""
+        if isinstance(layer, TextLayer):
+            if self.bounds.contains(layer.transformed_bounds):
+                return  # No need to alter text layers that are already fully in the image bounds.
+            if not TextLayer.confirm_or_cancel_render_to_image([layer.name], ACTION_NAME_LAYER_TO_IMAGE_SIZE):
                 return
-            layer_image_bounds = layer.transformed_bounds
-            image_bounds = self.bounds
-            if layer_image_bounds == image_bounds or layer.locked or layer.parent_locked:
-                show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
-                return
-            base_state = layer.save_state()
-            layer_image, offset_transform = layer.transformed_image()
-            layer_position = QPoint(int(offset_transform.dx()), int(offset_transform.dy()))
-            resized_image = create_transparent_image(self.size)
-            painter = QPainter(resized_image)
-            painter.drawImage(QRect(layer_position, layer_image.size()), layer_image)
-            painter.end()
-            content_changed = layer.visible and not layer.empty
+            layer = self.replace_text_layer_with_image(layer)
+        assert isinstance(layer, ImageLayer)
+        if layer.transformed_bounds == self.bounds:
+            return
+        base_state = layer.save_state()
+        layer_image, offset_transform = layer.transformed_image()
+        layer_position = QPoint(int(offset_transform.dx()), int(offset_transform.dy()))
+        resized_image = create_transparent_image(self.size)
+        painter = QPainter(resized_image)
+        painter.drawImage(QRect(layer_position, layer_image.size()), layer_image)
+        painter.end()
+        content_changed = layer.visible and not layer.empty
 
-            def _resize(resized=layer, img=resized_image, changed=content_changed) -> None:
-                assert isinstance(resized, ImageLayer)
-                with resized.with_alpha_lock_disabled():
-                    resized.set_image(img)
-                    if isinstance(resized, TransformLayer):
-                        resized.set_transform(QTransform())
-                if changed:
-                    self._emit_content_changed()
+        def _resize(resized=layer, img=resized_image, changed=content_changed) -> None:
+            with resized.with_alpha_lock_disabled():
+                resized.set_image(img)
+                resized.set_transform(QTransform())
+            if changed:
+                self._emit_content_changed()
 
-            def _undo_resize(restored=layer, state=base_state, changed=content_changed) -> None:
-                restored.restore_state(state)
-                if changed:
-                    self._emit_content_changed()
+        def _undo_resize(restored=layer, state=base_state, changed=content_changed) -> None:
+            restored.restore_state(state)
+            if changed:
+                self._emit_content_changed()
 
-            UndoStack().commit_action(_resize, _undo_resize, 'ImageStack.layer_to_image_size')
+        UndoStack().commit_action(_resize, _undo_resize, 'ImageStack.layer_to_image_size')
 
     def get_layer_selection_mask(self, layer: Layer) -> QImage:
         """Transform the selection layer to another layer's local coordinates, crop to bounds, and return the
@@ -1122,6 +1274,9 @@ class ImageStack(QObject):
     def copy_selected(self, layer: Optional[Layer] = None, mask: Optional[QImage] = None) -> Optional[QImage]:
         """Returns the image content within a layer that's covered by the mask, saving it in the copy buffer.
 
+        The copy buffer also keeps the layer's opacity and composite mode for paste to apply. A layer group's image is
+        its rendered content, so a group copy keeps neither.
+
         Parameters
         ----------
             layer: Layer | None, default=None
@@ -1152,46 +1307,67 @@ class ImageStack(QObject):
             transform = QTransform.fromTranslate(content_bounds.x(), content_bounds.y()) * transform
         self._copy_buffer = image
         self._copy_buffer_transform = transform
+        if isinstance(layer, LayerGroup):
+            self._copy_buffer_layer_properties = (1.0, CompositeMode.NORMAL)
+        else:
+            self._copy_buffer_layer_properties = (layer.opacity, layer.composition_mode)
         return image
 
-    def clear_selected(self, layer: Optional[Layer] = None, save_to_copy_buffer=False) -> None:
-        """Replaces all masked image content in a layer with transparency."""
+    def clear_selected(self, layer: Optional[Layer] = None, save_to_copy_buffer=False) -> Optional[QImage]:
+        """Replaces all masked image content in a layer with transparency, returning the content the operation copied.
+
+        Returns None when nothing was copied: the layer is locked or hidden, the masked content is empty, a text
+        layer's render-to-image confirmation was declined, or the content wasn't saved to the copy buffer.
+        """
         if layer is None:
             layer = self.active_layer
         if not self.validate_layer_showing_errors(layer, allow_layer_stack=True):
-            return
+            return None
         transformed_mask = self.get_layer_selection_mask(layer)
         if isinstance(layer, TextLayer):
-            copy_buffer_backup = self._copy_buffer
-            copy_buffer_transform_backup = self._copy_buffer_transform
+            copy_buffer_backup = (self._copy_buffer, self._copy_buffer_transform, self._copy_buffer_layer_properties)
             selected = self.copy_selected(layer, transformed_mask)
             if not save_to_copy_buffer:
-                self._copy_buffer = copy_buffer_backup
-                self._copy_buffer_transform = copy_buffer_transform_backup
+                self._copy_buffer, self._copy_buffer_transform, self._copy_buffer_layer_properties = copy_buffer_backup
             if image_is_fully_transparent(selected):
-                return  # cutting selection changes nothing, no need to render to image.
-            if TextLayer.confirm_or_cancel_render_to_image([layer.name], ACTION_NAME_CLEAR_SELECTED):
-                with UndoStack().combining_actions('ImageStack.clear_selected'):
-                    layer = self.replace_text_layer_with_image(layer)
-                    layer.cut_masked(transformed_mask)
-            else:
-                self._copy_buffer = copy_buffer_backup
-                self._copy_buffer_transform = copy_buffer_transform_backup
-                return
-        if save_to_copy_buffer:
-            self.copy_selected(layer, transformed_mask)
+                return None  # cutting selection changes nothing, no need to render to image.
+            if not TextLayer.confirm_or_cancel_render_to_image([layer.name], ACTION_NAME_CLEAR_SELECTED):
+                self._copy_buffer, self._copy_buffer_transform, self._copy_buffer_layer_properties = copy_buffer_backup
+                return None
+            with UndoStack().combining_actions('ImageStack.clear_selected'):
+                layer = self.replace_text_layer_with_image(layer)
+                layer.cut_masked(transformed_mask)
+            return selected if save_to_copy_buffer else None
+        copied = self.copy_selected(layer, transformed_mask) if save_to_copy_buffer else None
         layer.cut_masked(transformed_mask)
+        return copied
 
-    def cut_selected(self, layer: Optional[Layer] = None) -> None:
-        """Replaces all masked image content in a layer with transparency, saving it in the copy buffer."""
-        self.clear_selected(layer, True)
+    def cut_selected(self, layer: Optional[Layer] = None) -> Optional[QImage]:
+        """Replaces all masked image content in a layer with transparency, saving it in the copy buffer.
+
+        Returns the image content the cut removed, or None when the cut removed nothing or was cancelled.
+        """
+        return self.clear_selected(layer, True)
 
     def paste(self) -> None:
-        """If the copy buffer contains image data, paste it into a new layer."""
+        """If the copy buffer contains image data, paste it into a new layer with the copied layer's opacity and
+        composite mode."""
         if self._copy_buffer is not None:
-            new_layer = self.create_layer('Paste layer', self._copy_buffer.copy())
-            if self._copy_buffer_transform is not None:
-                new_layer.set_transform(self._copy_buffer_transform)
+            with UndoStack().combining_actions('ImageStack.paste'):
+                new_layer = self.create_layer(PASTE_LAYER_NAME, self._copy_buffer.copy(),
+                                              transform=self._copy_buffer_transform)
+                opacity, mode = self._copy_buffer_layer_properties
+                new_layer.set_opacity(opacity)
+                new_layer.set_composition_mode(mode)
+                self.active_layer = new_layer
+
+    def paste_image(self, image: QImage, transform: Optional[QTransform] = None) -> None:
+        """Creates a new layer from image content that didn't come from the copy buffer, and makes it active.
+
+        The layer keeps the default opacity and composite mode; `transform` decides where the image sits.
+        """
+        with UndoStack().combining_actions('ImageStack.paste'):
+            new_layer = self.create_layer(PASTE_LAYER_NAME, image, transform=transform)
             self.active_layer = new_layer
 
     def set_generation_area_content(self,
@@ -1275,6 +1451,7 @@ class ImageStack(QObject):
         @self._with_batch_content_update
         def _load(loaded=layer_stack, size=new_size, next_active_id=new_active_id):
             self.selection_layer.clear(False)
+            self.selection_layer.clear_context_pins(False)
             self.selection_layer.adjust_local_bounds(QRect(QPoint(), size), False)
             self.selection_layer.set_transform(QTransform())
             assert self.selection_layer.transformed_bounds.size() == new_size
@@ -1332,6 +1509,7 @@ class ImageStack(QObject):
         @self._with_batch_content_update
         def _load(loaded=new_layer, gen_rect=new_gen_area, size=new_size):
             self.selection_layer.clear(False)
+            self.selection_layer.clear_context_pins(False)
             self.selection_layer.adjust_local_bounds(QRect(QPoint(), size), False)
             self.selection_layer.set_transform(QTransform())
             assert self.selection_layer.transformed_bounds.size() == new_size
@@ -1362,6 +1540,14 @@ class ImageStack(QObject):
             self.size = size
 
         UndoStack().commit_action(_load, _undo_load, 'ImageStack.set_image')
+
+    def flush_render(self) -> None:
+        """Runs every scheduled layer group render and content_changed emission now, without waiting on the event
+           loop."""
+        self._layer_stack.flush_render()
+        if self._render_timer.isActive():
+            self._render_timer.stop()
+            self._invalidate_cache()
 
     # INTERNAL:
 
@@ -1485,16 +1671,17 @@ class ImageStack(QObject):
         assert layer_parent is not None
         assert layer_parent.contains(layer)
         self._disconnect_layer(layer)
-        if self.active_layer_id == layer.id:
-            active_layer = self.active_layer
-            next_active_layer = self.next_layer(active_layer)
-            if isinstance(active_layer, LayerGroup):
-                while next_active_layer is not None and active_layer.contains_recursive(next_active_layer):
+        active_layer = self.active_layer
+        # Removing a group that contains the active layer also removes the active layer:
+        if active_layer == layer or (isinstance(layer, LayerGroup) and layer.contains_recursive(active_layer)):
+            next_active_layer = self.next_layer(layer)
+            if isinstance(layer, LayerGroup):
+                while next_active_layer is not None and layer.contains_recursive(next_active_layer):
                     next_active_layer = self.next_layer(next_active_layer)
             if next_active_layer is None:
-                next_active_layer = self.prev_layer(active_layer)
-                if isinstance(active_layer, LayerGroup):
-                    while next_active_layer is not None and active_layer.contains_recursive(next_active_layer):
+                next_active_layer = self.prev_layer(layer)
+                if isinstance(layer, LayerGroup):
+                    while next_active_layer is not None and layer.contains_recursive(next_active_layer):
                         next_active_layer = self.prev_layer(next_active_layer)
             if next_active_layer is None or next_active_layer == layer or not \
                     self._layer_stack.contains_recursive(next_active_layer):
@@ -1696,10 +1883,10 @@ class ImageStack(QObject):
             show_error_dialog(None, ERROR_TITLE_TOP_GROUP_CHANGE, ERROR_MESSAGE_TOP_GROUP_CHANGE)
             return False
         if not allow_lock and layer.locked:
-            show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, ERROR_MESSAGE_LOCKED_LAYER)
+            show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, ERROR_MESSAGE_LOCKED_LAYER, signal=True)
             return False
         if not allow_parent_lock and layer.parent_locked:
             show_error_dialog(None, ERROR_TITLE_LOCKED_GROUP.format(layer_name=layer.name),
-                              ERROR_MESSAGE_LOCKED_GROUP)
+                              ERROR_MESSAGE_LOCKED_GROUP, signal=True)
             return False
         return True

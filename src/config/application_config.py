@@ -5,6 +5,7 @@ from typing import Optional
 from PySide6.QtWidgets import QStyleFactory
 
 from src.config.config import Config
+from src.ui.theme import THEME_INK, THEME_SYSTEM
 from src.util.optional_import import optional_import
 from src.util.shared_constants import PROJECT_DIR, DATA_DIR, PIL_SCALING_MODES
 from src.util.singleton import Singleton
@@ -18,7 +19,7 @@ CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/application_config_definit
 
 
 # System-based theme/style init constants
-DEFAULT_THEME_OPTIONS = ['None']
+DEFAULT_THEME_OPTIONS = [THEME_INK, THEME_SYSTEM]
 DARK_THEME_OPTIONS = ['qdarktheme_dark', 'qdarktheme_light', 'qdarktheme_auto']
 
 
@@ -39,7 +40,7 @@ class AppConfig(Config, metaclass=Singleton):
 
     def _adjust_defaults(self):
         """Dynamically initialize application style and theme options based on available modules."""
-        theme_options = DEFAULT_THEME_OPTIONS
+        theme_options = list(DEFAULT_THEME_OPTIONS)
         if qdarktheme is not None:
             theme_options += DARK_THEME_OPTIONS
         if qt_material is not None and hasattr(qt_material, 'list_themes'):
@@ -54,8 +55,7 @@ class AppConfig(Config, metaclass=Singleton):
             current_path = self.get(config_key)
             if current_path == '':
                 dir_path = os.path.join(DATA_DIR, dir_name)
-                if not os.path.isfile(dir_path) and not os.path.exists(dir_path):
-                    os.mkdir(dir_path)
+                os.makedirs(dir_path, exist_ok=True)
                 if os.path.isdir(dir_path):
                     self.set(config_key, dir_path)
 
@@ -75,9 +75,12 @@ class AppConfig(Config, metaclass=Singleton):
     ANIMATE_SELECTION_OUTLINE: str
     BERT_MODEL_PATH: str
     BRUSH_FAVORITES: str
+    CLEAR_CONTEXT_PINS_AFTER_GENERATING: str
     CLIP_MODEL_NAME: str
     DEFAULT_IMAGE_SIZE: str
     FONT_POINT_SIZE: str
+    GENERATION_AREA_FOLLOW_SELECTION: str
+    GENERATION_RESOLUTION_MIN_SIDE: str
     GLID_MODEL_PATH: str
     GLID_VAE_MODEL_PATH: str
     INTERROGATE_MODEL: str
@@ -91,12 +94,17 @@ class AppConfig(Config, metaclass=Singleton):
     MIN_EDIT_SIZE: str
     MIN_GENERATION_SIZE: str
     OPENGL_ACCELERATION: str
+    OVERLAY_SCROLL_BARS: str
     PIL_DOWNSCALE_MODE: str
     PIL_UPSCALE_MODE: str
+    RULER_FONT_SIZE: str
+    RULER_GENERATION_AREA_COLOR: str
     SAVED_COLORS: str
     SELECTION_COLOR: str
     SELECTION_SCREEN_ZOOMS_TO_CHANGED: str
     SHOW_OPTIONS_FULL_RESOLUTION: str
+    SHOW_RULERS: str
+    SHOW_RULER_HIGHLIGHTS: str
     SHOW_SELECTIONS_IN_GENERATION_OPTIONS: str
     SHOW_TOOL_CONTROL_HINTS: str
     SPEED_MODIFIER_MULTIPLIER: str

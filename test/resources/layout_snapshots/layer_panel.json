@@ -1,0 +1,72 @@
+{
+  "minimum": {
+    "problems": [],
+    "size": [
+      268,
+      179
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "squeezed: QLabel 'Layer mode:' is 58x25, minimum 72x17",
+      "squeezed: QComboBox is 58x25, minimum 123x25",
+      "clipped: QScrollArea shows 125x146 of 250x146",
+      "clipped: QScrollArea/QWidget[0] shows 124x144 of 248x144",
+      "squeezed: QWidget is 116x31, minimum 192x31",
+      "squeezed: QWidget/QToolButton[0] is 20x31, minimum 32x31",
+      "squeezed: QWidget/QToolButton[1] is 19x31, minimum 32x31",
+      "squeezed: QWidget/QToolButton[2] is 19x31, minimum 32x31",
+      "squeezed: QWidget/QToolButton[3] is 20x31, minimum 32x31",
+      "squeezed: QWidget/QToolButton[4] is 19x31, minimum 32x31",
+      "squeezed: QWidget/QToolButton[5] is 19x31, minimum 32x31"
+    ],
+    "size": [
+      134,
+      264
+    ]
+  },
+  "preferred": {
+    "problems": [],
+    "size": [
+      279,
+      264
+    ]
+  },
+  "short": {
+    "problems": [
+      "overlap: QScrollArea and QWidget share 261x13",
+      "squeezed: QLabel 'Opacity:' is 49x14, minimum 49x17",
+      "squeezed: QSlider is 158x14, minimum 12x18",
+      "squeezed: QDoubleSpinBox is 54x14, minimum 54x26",
+      "squeezed: QLabel 'Layer mode:' is 131x13, minimum 72x17",
+      "squeezed: QComboBox is 130x13, minimum 123x25",
+      "clipped: QScrollArea shows 261x41 of 261x61",
+      "clipped: QScrollArea/QWidget[0] shows 259x40 of 259x59",
+      "squeezed: QWidget is 261x13, minimum 192x31",
+      "squeezed: QWidget/QToolButton[0] is 32x13, minimum 32x31",
+      "squeezed: QWidget/QToolButton[1] is 32x13, minimum 32x31",
+      "squeezed: QWidget/QToolButton[2] is 32x13, minimum 32x31",
+      "squeezed: QWidget/QToolButton[3] is 32x13, minimum 32x31",
+      "squeezed: QWidget/QToolButton[4] is 32x13, minimum 32x31",
+      "squeezed: QWidget/QToolButton[5] is 32x13, minimum 32x31"
+    ],
+    "size": [
+      279,
+      89
+    ]
+  },
+  "tall": {
+    "problems": [],
+    "size": [
+      279,
+      1200
+    ]
+  },
+  "wide": {
+    "problems": [],
+    "size": [
+      1600,
+      264
+    ]
+  }
+}

@@ -20,12 +20,19 @@ from logging.handlers import RotatingFileHandler
 import subprocess
 
 from src.util.pyinstaller import is_pyinstaller_bundle
+# In a bundle sys.executable is the IntraPaint binary, not Python, so the build subprocess below must stay gated.
 if not is_pyinstaller_bundle():
     try:
         import src.util.visual.image_fill
     except ImportError:
         print('Building missing compiled image_fill module with cython...')
-        subprocess.run([sys.executable, 'setup.py', 'build_ext', '--inplace'])
+        build_result = subprocess.run([sys.executable, 'setup.py', 'build_ext', '--inplace'],
+                                      cwd=os.path.dirname(os.path.abspath(__file__)), check=False)
+        if build_result.returncode != 0:
+            # Startup continues: only the fill tools need the compiled module (see ToolController).
+            print('WARNING: Building the image_fill module failed, so the fill and selection fill tools will be '
+                  'unavailable. Install a C compiler, then run `python setup.py build_ext --inplace` in the '
+                  'IntraPaint directory to enable them. All other tools will work normally.', file=sys.stderr)
 
 
 from PySide6.QtCore import QTranslator, QObject, QEvent

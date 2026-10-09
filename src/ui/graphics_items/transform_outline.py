@@ -12,7 +12,8 @@ from src.ui.graphics_items.transform_handle import TransformHandle, TRANSFORM_MO
 from src.util.math_utils import clamp, avoiding_zero
 from src.util.shared_constants import MIN_NONZERO
 from src.util.signals_blocked import signals_blocked
-from src.util.visual.geometry_utils import extract_transform_parameters, combine_transform_parameters
+from src.util.visual.geometry_utils import (extract_transform_parameters, combine_transform_parameters, panel_position,
+                                            transform_at_panel_position)
 from src.util.visual.graphics_scene_utils import (get_view_bounds_of_scene_item_rect,
                                                   map_scene_item_point_to_view_point,
                                                   get_scene_item_bounds_of_view_rect, get_view,
@@ -88,8 +89,11 @@ class TransformOutline(QGraphicsObject):
         self.transformation_origin = self.rect().center()
         self._update_handles()
 
-    def reset(self, new_initial_bounds: QRectF) -> None:
-        """Reset the outline with a new initial rectangle, sending no signals."""
+    def reset(self, new_initial_bounds: QRectF, keep_relative_origin: bool = False) -> None:
+        """Reset the outline with a new initial rectangle, sending no signals.
+
+        The transformation origin moves to the new rectangle's center, unless keep_relative_origin is set, in which
+        case it keeps its position relative to the rectangle's bounds."""
         with signals_blocked(self):
             self._rect = QRectF(new_initial_bounds.normalized())
             self._x_offset = 0.0
@@ -98,7 +102,9 @@ class TransformOutline(QGraphicsObject):
             self._y_scale = 0.0
             self._degrees = 0.0
             self._preserve_aspect_ratio = False
-            self.transformation_origin = self.rect().center()
+            if not keep_relative_origin:
+                self._relative_origin = QPointF(0.5, 0.5)
+            self.transformation_origin = self._origin_from_relative()
             self._update_handles()
 
     @property
@@ -112,6 +118,8 @@ class TransformOutline(QGraphicsObject):
 
     def _set_transform_by_parameters(self, dx: float, dy: float, sx: float, sy: float, angle: float,
                                      precalculated_matrix: Optional[QTransform] = None):
+        """Applies transform parameters taken about transformation_origin, the frame extract_transform_parameters
+           uses in setTransform."""
         scale_changed = sx != self._x_scale or sy != self._y_scale
         angle_changed = angle != self._degrees
         self._x_offset = dx
@@ -122,7 +130,7 @@ class TransformOutline(QGraphicsObject):
         x0 = self.x_pos
         y0 = self.y_pos
         if precalculated_matrix is None:
-            precalculated_matrix = combine_transform_parameters(dx, dy, sx, sy, angle)
+            precalculated_matrix = combine_transform_parameters(dx, dy, sx, sy, angle, self.transformation_origin)
         super().setTransform(precalculated_matrix, False)
 
         x1 = self.x_pos
@@ -170,29 +178,23 @@ class TransformOutline(QGraphicsObject):
 
     @property
     def x_pos(self) -> float:
-        """The minimum x-position within the scene, after all transformations are applied."""
-        return min(pt.x() for pt in self._corner_points_in_scene())
+        """The x-position shown in the panel, from panel_position."""
+        return panel_position(self.rect(), self.transform()).x()
 
     @x_pos.setter
     def x_pos(self, new_x: float) -> None:
-        """Set the minimum x-position within the scene, without changing rotation or scale."""
-        offset = new_x - self.x_pos
-        matrix = combine_transform_parameters(self._x_offset + offset, self._y_offset, self._x_scale, self._y_scale,
-                                              self._degrees, self.transformation_origin)
-        self.setTransform(matrix)
+        """Set the panel x-position, without changing rotation or scale."""
+        self.setTransform(transform_at_panel_position(self.rect(), self.transform(), QPointF(new_x, self.y_pos)))
 
     @property
     def y_pos(self) -> float:
-        """The minimum y-position within the scene, after all transformations are applied."""
-        return min(pt.y() for pt in self._corner_points_in_scene())
+        """The y-position shown in the panel, from panel_position."""
+        return panel_position(self.rect(), self.transform()).y()
 
     @y_pos.setter
     def y_pos(self, new_y: float) -> None:
-        """Set the minimum x-position within the scene, without changing rotation or scale."""
-        offset = new_y - self.y_pos
-        matrix = combine_transform_parameters(self._x_offset, self._y_offset + offset, self._x_scale, self._y_scale,
-                                              self._degrees, self.transformation_origin)
-        self.setTransform(matrix)
+        """Set the panel y-position, without changing rotation or scale."""
+        self.setTransform(transform_at_panel_position(self.rect(), self.transform(), QPointF(self.x_pos, new_y)))
 
     @property
     def width(self) -> float:
@@ -281,6 +283,9 @@ class TransformOutline(QGraphicsObject):
         bounds = self.rect()
         pos.setX(clamp(pos.x(), bounds.x(), bounds.right()))
         pos.setY(clamp(pos.y(), bounds.y(), bounds.bottom()))
+        if bounds.width() != 0 and bounds.height() != 0:
+            self._relative_origin = QPointF((pos.x() - bounds.x()) / bounds.width(),
+                                            (pos.y() - bounds.y()) / bounds.height())
         if pos != self._origin:
             if ORIGIN_HANDLE_ID in self._handles:
                 origin_handle = self._handles[ORIGIN_HANDLE_ID]
@@ -451,17 +456,20 @@ class TransformOutline(QGraphicsObject):
                 scale.translate(-origin.x(), -origin.y())
                 self.setTransform(scale)
         elif self._mode == TRANSFORM_MODE_ROTATE:
-            # Rotate the rectangle so that the dragged corner is as close as possible to corner_pos:
+            # Rotate the rectangle so that the dragged corner is as close as possible to corner_pos. Angles are
+            # measured in the scene: scaling and flipping change local angles, but rotation is applied after them.
             corners = {
                 TL_HANDLE_ID: initial_rect.topLeft(),
                 TR_HANDLE_ID: initial_rect.topRight(),
                 BL_HANDLE_ID: initial_rect.bottomLeft(),
                 BR_HANDLE_ID: initial_rect.bottomRight()
             }
-            corner_start = corners[corner_id]
-            origin = self.transformation_origin
+            corner_start = self.mapToScene(corners[corner_id])
+            origin = self.mapToScene(self.transformation_origin)
+            target = self.mapToScene(corner_pos)
+            assert isinstance(corner_start, QPointF) and isinstance(origin, QPointF) and isinstance(target, QPointF)
             init_vector = corner_start - origin
-            target_vector = corner_pos - origin
+            target_vector = target - origin
             init_angle = math.degrees(math.atan2(init_vector.y(), init_vector.x()))
             final_angle = math.degrees(math.atan2(target_vector.y(), target_vector.x()))
             angle_offset = final_angle - init_angle
@@ -507,18 +515,14 @@ class TransformOutline(QGraphicsObject):
         rect.setWidth(avoiding_zero(rect.width()))
         rect.setHeight(avoiding_zero(rect.height()))
         self._rect = QRectF(rect)
-        self._origin = QPointF(rect.x() + rect.width() * self._relative_origin.x(),
-                               rect.y() + rect.height() * self._relative_origin.y())
+        self._origin = self._origin_from_relative()
         self._update_handles()
 
-    def _corner_points_in_scene(self) -> list[QPointF]:
-        bounds = self.rect()
-        corners: list[QPointF] = []
-        for pt in (bounds.topLeft(), bounds.topRight(), bounds.bottomLeft(), bounds.bottomRight()):
-            corner = self.mapToScene(pt)
-            assert isinstance(corner, QPointF)
-            corners.append(corner)
-        return corners
+    def _origin_from_relative(self) -> QPointF:
+        """Returns the point within the rectangle at the transformation origin's relative position."""
+        rect = self._rect
+        return QPointF(rect.x() + rect.width() * self._relative_origin.x(),
+                       rect.y() + rect.height() * self._relative_origin.y())
 
     def _update_handles(self) -> None:
         """Keep the corners and origin positioned and sized correctly as the rectangle transforms."""
@@ -526,10 +530,8 @@ class TransformOutline(QGraphicsObject):
         for handle_id, point in ((TL_HANDLE_ID, bounds.topLeft()), (TR_HANDLE_ID, bounds.topRight()),
                                  (BL_HANDLE_ID, bounds.bottomLeft()), (BR_HANDLE_ID, bounds.bottomRight())):
             self._handles[handle_id].move_rect_center(point)
-        origin_x = bounds.x() + bounds.width() * self._relative_origin.x()
-        origin_y = bounds.y() + bounds.height() * self._relative_origin.y()
         if ORIGIN_HANDLE_ID in self._handles:
-            self._handles[ORIGIN_HANDLE_ID].move_rect_center(QPointF(origin_x, origin_y))
+            self._handles[ORIGIN_HANDLE_ID].move_rect_center(self._origin_from_relative())
 
 
 class _Handle(TransformHandle):

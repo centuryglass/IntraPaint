@@ -1,8 +1,8 @@
 """Tests the ImageStack module"""
-import os
 import sys
-import unittest
 from unittest.mock import MagicMock
+
+from typing import cast
 
 from PySide6.QtCore import QSize, QRect, QPoint, Qt
 from PySide6.QtGui import QImage, QPainter
@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.config.key_config import KeyConfig
+from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.selection_layer import SelectionLayer
@@ -18,6 +18,7 @@ from src.image.layers.transform_layer import TransformLayer
 from src.image.open_raster import read_ora_image
 from src.undo_stack import UndoStack
 from src.util.visual.image_utils import create_transparent_image
+from test.base_test_case import IntraPaintTestCase
 
 IMG_SIZE = QSize(512, 512)
 GEN_AREA_SIZE = QSize(300, 300)
@@ -32,20 +33,11 @@ SELECTION_CLEARED_PNG = 'test/resources/test_images/selected_clear_test.png'
 app = QApplication.instance() or QApplication(sys.argv)
 
 
-class ImageStackTest(unittest.TestCase):
+class ImageStackTest(IntraPaintTestCase):
     """Tests the ImageStack module"""
 
     def setUp(self) -> None:
-        while os.path.basename(os.getcwd()) not in ('IntraPaint', ''):
-            os.chdir('..')
-        assert os.path.basename(os.getcwd()) == 'IntraPaint'
-        self._app_config = AppConfig('test/resources/app_config_test.json')
-        self._key_config = KeyConfig('test/resources/key_config_test.json')
-        self._cache = Cache('test/resources/cache_test.json')
-        AppConfig()._reset()
-        KeyConfig()._reset()
-        Cache()._reset()
-        UndoStack().clear()
+        super().setUp()
         self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
 
         self.generation_area_bounds_changed_mock = MagicMock()
@@ -255,15 +247,9 @@ class ImageStackTest(unittest.TestCase):
                 group_count += 1
         self.assertEqual(3, group_count)
         self.assertEqual(8, image_count)
-        expected_output = QImage(LAYER_MOVE_TEST_PNG).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         output_image = self.image_stack.qimage()
-        test_path = LAYER_MOVE_TEST_PNG + '_tested.png'
-        output_image.save(test_path)
-        self.assertEqual(expected_output.size(), self.image_stack.size)
         self.assertEqual(output_image.size(), self.image_stack.size)
-        self.assertEqual(output_image.format(), expected_output.format())
-        self.assertEqual(output_image, expected_output)
-        os.remove(test_path)
+        self.assert_image_matches_golden(output_image, LAYER_MOVE_TEST_PNG)
 
     def test_copy_paste_selected(self) -> None:
         """Confirm that copying selected layer content properly supports complex transformed nested layer groups."""
@@ -277,15 +263,8 @@ class ImageStackTest(unittest.TestCase):
         self.image_stack.copy_selected()
         self.image_stack.paste()
         pasted_layer = self.image_stack.active_layer
-        expected_content = QImage(SELECTION_PNG).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         self.assertEqual(pasted_layer.name, 'Paste layer')
-        image = pasted_layer.image
-        test_path = SELECTION_PNG + '_tested.png'
-        image.save(test_path)
-        self.assertEqual(image.size(), expected_content.size())
-        self.assertEqual(image.format(), expected_content.format())
-        self.assertEqual(image, expected_content)
-        os.remove(test_path)
+        self.assert_image_matches_golden(pasted_layer.image, SELECTION_PNG)
 
     def test_clear_selected(self) -> None:
         """Confirm that clearing selected layer content properly supports complex transformed nested layer groups."""
@@ -297,17 +276,13 @@ class ImageStackTest(unittest.TestCase):
             painter.end()
         self.image_stack.active_layer = self.image_stack.layer_stack
         self.image_stack.clear_selected()
-        image = self.image_stack.qimage(crop_to_image=False)
-        test_path = SELECTION_CLEARED_PNG + '_tested.png'
-        image.save(test_path)
-        expected_content = QImage(SELECTION_CLEARED_PNG).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-        self.assertEqual(image.size(), expected_content.size())
-        self.assertEqual(image.format(), expected_content.format())
-        self.assertEqual(image, expected_content)
-        os.remove(test_path)
+        self.assert_image_matches_golden(self.image_stack.qimage(crop_to_image=False), SELECTION_CLEARED_PNG)
 
     def test_borrow_layer_image(self) -> None:
         """Confirm that setting layer images within the stack still works correctly"""
+        # Loading and selecting a layer merge into one undo entry only within UNDO_MERGE_INTERVAL, so a short interval
+        # makes the count below depend on runner speed (#11).
+        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 60.0)
         read_ora_image(self.image_stack, LAYER_MOVE_TEST_IMAGE)
         new_content = QImage(QSize(512, 512), QImage.Format.Format_ARGB32_Premultiplied)
         new_content.fill(Qt.GlobalColor.red)
@@ -340,4 +315,104 @@ class ImageStackTest(unittest.TestCase):
         self.assertEqual(expected_image, final_image)
         self.assertEqual(1, UndoStack().undo_count())
 
+    def test_merge_group(self) -> None:
+        """Merge group should replace a layer group with a single image layer."""
+        group = self.image_stack.create_layer_group('group')
+        top = self.image_stack.create_layer('top', layer_parent=group)
+        bottom = self.image_stack.create_layer('bottom', layer_parent=group)
+        with top.borrow_image() as image:
+            painter = QPainter(image)
+            painter.fillRect(QRect(10, 10, 40, 40), Qt.GlobalColor.red)
+            painter.end()
+        with bottom.borrow_image() as image:
+            painter = QPainter(image)
+            painter.fillRect(QRect(20, 20, 40, 40), Qt.GlobalColor.blue)
+            painter.end()
 
+        before = self.image_stack.qimage(crop_to_image=False)
+        self.image_stack.active_layer = group
+        UndoStack().clear()
+        self.image_stack.merge_group()
+        active = self.image_stack.active_layer
+        self.assertIsInstance(active, ImageLayer)
+        self.assertEqual(active.name, 'group')
+        self.assertEqual(1, self.image_stack.count)
+        self.assertEqual(before, self.image_stack.qimage(crop_to_image=False))
+
+        UndoStack().undo()
+        self.assertEqual(1, self.image_stack.count)
+        self.assertIsInstance(self.image_stack.layer_stack.child_layers[0], LayerGroup)
+        self.assertEqual(2, cast(LayerGroup, self.image_stack.layer_stack.child_layers[0]).count)
+
+    def test_merge_all_visible(self) -> None:
+        """Merge all visible should combine visible layers and preserve hidden ones."""
+        hidden = self.image_stack.create_layer('hidden')
+        visible_a = self.image_stack.create_layer('a')
+        visible_b = self.image_stack.create_layer('b')
+        hidden.set_visible(False)
+        with visible_a.borrow_image() as image:
+            painter = QPainter(image)
+            painter.fillRect(QRect(0, 0, 50, 50), Qt.GlobalColor.red)
+            painter.end()
+        with visible_b.borrow_image() as image:
+            painter = QPainter(image)
+            painter.fillRect(QRect(25, 25, 50, 50), Qt.GlobalColor.green)
+            painter.end()
+        with hidden.borrow_image() as image:
+            painter = QPainter(image)
+            painter.fillRect(QRect(100, 100, 30, 30), Qt.GlobalColor.blue)
+            painter.end()
+
+        before_visible = self.image_stack.qimage(crop_to_image=False)
+        UndoStack().clear()
+        self.image_stack.merge_all_visible()
+        self.assertEqual(2, self.image_stack.count)
+        layers = self.image_stack.layer_stack.child_layers
+        self.assertIsInstance(layers[0], ImageLayer)
+        self.assertEqual(layers[0].name, 'Merged')
+        self.assertFalse(layers[1].visible)
+        self.assertEqual(layers[1].name, 'hidden')
+        self.assertEqual(before_visible, self.image_stack.qimage(crop_to_image=False))
+
+        UndoStack().undo()
+        self.assertEqual(3, self.image_stack.count)
+        restored_names = [layer.name for layer in self.image_stack.layer_stack.child_layers]
+        self.assertEqual(['a', 'b', 'hidden'], restored_names)
+
+
+    def test_remove_group_containing_active_layer(self) -> None:
+        """Removing a group that contains the active layer activates the layer below the group, and undo restores
+        the old active layer."""
+        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
+        group = self.image_stack.create_layer_group('group')
+        below = self.image_stack.create_layer('below', layer_parent=self.image_stack.layer_stack, layer_index=1)
+        nested_group = self.image_stack.create_layer_group('nested', layer_parent=group, layer_index=0)
+        inner = self.image_stack.create_layer('inner', layer_parent=nested_group, layer_index=0)
+        self.image_stack.active_layer = inner
+
+        self.image_stack.remove_layer(group)
+        self.assertEqual(self.image_stack.active_layer, below)
+        UndoStack().undo()
+        self.assertEqual(self.image_stack.active_layer, inner)
+
+    def test_remove_last_group_containing_active_layer(self) -> None:
+        """Removing the bottom group while one of its layers is active activates the layer above the group."""
+        above = self.image_stack.create_layer('above')
+        group = self.image_stack.create_layer_group('group', layer_parent=self.image_stack.layer_stack,
+                                                    layer_index=1)
+        inner = self.image_stack.create_layer('inner', layer_parent=group, layer_index=0)
+        self.image_stack.active_layer = inner
+
+        self.image_stack.remove_layer(group)
+        self.assertEqual(self.image_stack.active_layer, above)
+
+    def test_merge_all_visible_with_active_layer_in_group(self) -> None:
+        """Merging visible layers while a layer inside a merged group is active activates the merged layer."""
+        self.image_stack.create_layer('top')
+        group = self.image_stack.create_layer_group('group', layer_parent=self.image_stack.layer_stack,
+                                                    layer_index=1)
+        inner = self.image_stack.create_layer('inner', layer_parent=group, layer_index=0)
+        self.image_stack.active_layer = inner
+
+        self.image_stack.merge_all_visible()
+        self.assertEqual(self.image_stack.active_layer.name, 'Merged')

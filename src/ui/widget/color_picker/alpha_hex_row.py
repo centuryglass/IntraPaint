@@ -1,0 +1,126 @@
+"""An alpha slider and a hex color field.
+
+The hex field accepts `#RGB`, `#RRGGBB` and `#AARRGGBB`, with or without the `#`. It shows `#rrggbb` for opaque colors
+and `#aarrggbb` otherwise. The slider's track fades the current color over a checkerboard. Dragging the slider emits
+`color_changed`; releasing it, an arrow key on it, and a valid hex entry also emit `color_committed`.
+"""
+import re
+from typing import Optional
+
+import numpy as np
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QLabel, QApplication
+
+from src.ui.widget.color_picker.gradient_slider import GradientSlider
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.widget.color_picker.alpha_hex_row'
+
+
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, key, disambiguation, n)
+
+
+ALPHA_LABEL = _tr('Alpha:')
+ALPHA_TOOLTIP = _tr('Opacity, from 0 (transparent) to 255 (opaque)')
+HEX_TOOLTIP = _tr('Hex color: #RGB, #RRGGBB, or #AARRGGBB with alpha first')
+
+HEX_PATTERN = re.compile(r'^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$')
+HEX_FIELD_CHARS = 10
+ALPHA_GRADIENT_SAMPLES = 32
+
+
+def parse_hex_color(text: str) -> Optional[QColor]:
+    """Returns the color for `#RGB`, `#RRGGBB` or `#AARRGGBB` text (the `#` optional), or None for anything else."""
+    match = HEX_PATTERN.match(text.strip())
+    if match is None:
+        return None
+    return QColor(f'#{match.group(1)}')
+
+
+def format_hex_color(color: QColor) -> str:
+    """Returns `#rrggbb` for an opaque color and `#aarrggbb` otherwise."""
+    if color.alpha() == 255:
+        return color.name(QColor.NameFormat.HexRgb)
+    return color.name(QColor.NameFormat.HexArgb)
+
+
+class AlphaHexRow(QWidget):
+    """An alpha slider and a hex color field."""
+
+    color_changed = Signal(QColor)
+    color_committed = Signal(QColor)
+
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self._color = QColor(Qt.GlobalColor.black)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self._alpha_label = QLabel(ALPHA_LABEL)
+        layout.addWidget(self._alpha_label)
+        self._alpha_slider = GradientSlider(0, 255, checkerboard=True, step=1)
+        self._alpha_slider.set_value(255)
+        self._alpha_slider.setToolTip(ALPHA_TOOLTIP)
+        self._alpha_label.setBuddy(self._alpha_slider)
+        self._alpha_slider.value_changed.connect(self._alpha_slider_changed)
+        self._alpha_slider.value_committed.connect(lambda _: self.color_committed.emit(self.color()))
+        layout.addWidget(self._alpha_slider, stretch=1)
+
+        self._hex_field = QLineEdit()
+        self._hex_field.setToolTip(HEX_TOOLTIP)
+        self._hex_field.setMaxLength(9)
+        self._hex_field.setFixedWidth(self._hex_field.fontMetrics().horizontalAdvance('#') * HEX_FIELD_CHARS)
+        self._hex_field.editingFinished.connect(self._hex_field_edited)
+        layout.addWidget(self._hex_field)
+        self._update_hex_field()
+        self._update_alpha_gradient()
+
+    @property
+    def alpha_slider(self) -> GradientSlider:
+        """The alpha slider."""
+        return self._alpha_slider
+
+    @property
+    def hex_field(self) -> QLineEdit:
+        """The hex color field."""
+        return self._hex_field
+
+    def color(self) -> QColor:
+        """Returns the displayed color."""
+        return QColor(self._color)
+
+    def set_color(self, color: QColor) -> None:
+        """Displays a color without emitting signals."""
+        self._color = QColor(color)
+        self._alpha_slider.set_value(color.alpha())
+        self._update_hex_field()
+        self._update_alpha_gradient()
+
+    def _update_hex_field(self) -> None:
+        self._hex_field.setText(format_hex_color(self._color))
+
+    def _update_alpha_gradient(self) -> None:
+        rgba = np.empty((ALPHA_GRADIENT_SAMPLES, 4))
+        rgba[:, :3] = (self._color.redF(), self._color.greenF(), self._color.blueF())
+        rgba[:, 3] = np.linspace(0.0, 1.0, ALPHA_GRADIENT_SAMPLES)
+        self._alpha_slider.set_gradient(rgba)
+
+    def _alpha_slider_changed(self, value: float) -> None:
+        alpha = int(round(value))
+        if alpha == self._color.alpha():
+            return
+        self._color.setAlpha(alpha)
+        self._update_hex_field()
+        self.color_changed.emit(self.color())
+
+    def _hex_field_edited(self) -> None:
+        color = parse_hex_color(self._hex_field.text())
+        if color is None or color == self._color:
+            self._update_hex_field()
+            return
+        self.set_color(color)
+        self.color_changed.emit(self.color())
+        self.color_committed.emit(self.color())

@@ -1,0 +1,64 @@
+{
+    "font": {
+        "family": "IBM Plex Sans",
+        "fallback_families": ["IBM Plex Math", "Noto Sans Math"],
+        "files": [
+            "resources/fonts/IBMPlexSans-Regular.ttf",
+            "resources/fonts/IBMPlexSans-Medium.ttf",
+            "resources/fonts/IBMPlexSans-SemiBold.ttf",
+            "resources/fonts/IBMPlexMath-Regular.ttf",
+            "resources/fonts/NotoSansMath-Regular.ttf"
+        ],
+        "features": {
+            "zero": 1
+        }
+    },
+    "palette": {
+        "all": {
+            "Window": "#26272b",
+            "WindowText": "#e5e5e2",
+            "Base": "#1b1c1f",
+            "AlternateBase": "#202125",
+            "ToolTipBase": "#121315",
+            "ToolTipText": "#e5e5e2",
+            "PlaceholderText": "#75777c",
+            "Text": "#e5e5e2",
+            "Button": "#35373c",
+            "ButtonText": "#e5e5e2",
+            "BrightText": "#ffffff",
+            "Light": "#4a4c51",
+            "Midlight": "#404247",
+            "Mid": "#45474d",
+            "Dark": "#0d0e10",
+            "Shadow": "#0d0e10",
+            "Highlight": "#46c5be",
+            "HighlightedText": "#0d0e10",
+            "Link": "#46c5be",
+            "LinkVisited": "#8fdcd7",
+            "Accent": "#46c5be"
+        },
+        "disabled": {
+            "WindowText": "#5e6065",
+            "Text": "#5e6065",
+            "ButtonText": "#5e6065",
+            "PlaceholderText": "#4a4c51",
+            "Base": "#222327",
+            "Button": "#2c2d31",
+            "Highlight": "#2f5f5c",
+            "HighlightedText": "#9b9ca0",
+            "Accent": "#2f5f5c"
+        }
+    },
+    "style_colors": {
+        "accent_hover": "#5fd3cc",
+        "accent_pressed": "#3db3ac",
+        "accent_wash": "#1e4544",
+        "accent_stripe": "#3aaea8",
+        "field_hover": "#1e1f23",
+        "disabled_outline": "#1a1b1e",
+        "signal": "#ff5145",
+        "signal_hover": "#ff6b61",
+        "signal_pressed": "#e6453a",
+        "canvas_surround": "#303134"
+    }
+}

@@ -99,9 +99,12 @@ class Cache(Config, metaclass=Singleton):
     # DYNAMIC PROPERTIES:
     # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/cache.py`
 
+    BACKGROUND_COLOR: str
     BATCH_COUNT: str
     BATCH_SIZE: str
     CANVAS_RESIZE_CROP_LAYERS: str
+    COLOR_SLIDER_MODE: str
+    COLOR_SLIDER_MODE_SECONDARY: str
     CANVAS_RESIZE_LAYER_MODE: str
     CLIP_SKIP: str
     CLONE_STAMP_TOOL_ANTIALIAS: str
@@ -155,6 +158,7 @@ class Cache(Config, metaclass=Singleton):
     FILTER_TOOL_PRESSURE_OPACITY: str
     FILTER_TOOL_PRESSURE_SIZE: str
     FILTER_TOOL_SELECTED_FILTER: str
+    GENERATION_RESOLUTION_RULE: str
     GENERATION_SIZE: str
     GENERATION_TAB_BAR: str
     GENERATOR_SCALING_MODES: str
@@ -178,6 +182,8 @@ class Cache(Config, metaclass=Singleton):
     PAINT_SELECTION_ONLY: str
     PAINT_TOOL_BRUSH_SIZE: str
     PROMPT: str
+    RECENT_COLORS: str
+    RECENT_GENERATION_AREA_SIZES: str
     RECENT_TOOLS: str
     SAMPLE_MERGED: str
     SAMPLING_METHOD: str

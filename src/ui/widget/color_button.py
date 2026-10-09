@@ -53,14 +53,15 @@ class ColorButton(QPushButton):
 
     def _update_color(self, color: str | QColor) -> None:
         if isinstance(color, str):
-            color = QColor(color) if QColor.isValidColor(color) else self._color
+            color = QColor(color) if QColor(color).isValid() else self._color
         if color != self._color:
             self._color = color
             self._icon = get_color_icon(color)
             self.setIcon(QIcon(self._icon))
             if self._config_key is not None:
+                # A config string in another format or case than HexArgb starts a second notification round here.
                 config = get_config_from_key(self._config_key)
-                config.set(self._config_key, color.name(QColor.NameFormat.HexArgb))
+                config.set_color(self._config_key, color)
             self.update()
 
     def select_color(self) -> None:
@@ -69,9 +70,9 @@ class ColorButton(QPushButton):
         if selection is not None and selection != self._color:
             if self._config_key is not None:
                 config = get_config_from_key(self._config_key)
-                config.set(self._config_key, selection.name(QColor.NameFormat.HexArgb))
+                config.set_color(self._config_key, selection)
             else:
-                self._color = selection
+                self._update_color(selection)
 
     @property
     def color(self) -> QColor:

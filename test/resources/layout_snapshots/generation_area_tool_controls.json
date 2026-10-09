@@ -1,0 +1,84 @@
+{
+  "minimum": {
+    "problems": [],
+    "size": [
+      381,
+      257
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "squeezed: QSpinBox[0] is 17x26, minimum 50x26",
+      "squeezed: QSpinBox[1] is 17x26, minimum 50x26",
+      "squeezed: QSpinBox[2] is 17x26, minimum 58x26",
+      "squeezed: QSpinBox[3] is 17x26, minimum 58x26",
+      "squeezed: QWidget is 172x25, minimum 289x25",
+      "squeezed: QWidget/QPushButton 'Full image' is 56x25, minimum 80x25",
+      "squeezed: QWidget/QPushButton 'Square' is 56x25, minimum 80x25",
+      "squeezed: QLabel 'Resolution rule:' is 58x25, minimum 92x17",
+      "squeezed: ComboBox is 108x25, minimum 213x25",
+      "squeezed: SizeField/QSpinBox[0] is 72x26, minimum 106x26",
+      "clipped: SizeField/QSpinBox[1] shows 71x26 of 72x26",
+      "squeezed: SizeField/QSpinBox[1] is 72x26, minimum 106x26"
+    ],
+    "size": [
+      190,
+      257
+    ]
+  },
+  "preferred": {
+    "problems": [],
+    "size": [
+      426,
+      257
+    ]
+  },
+  "short": {
+    "problems": [
+      "squeezed: QLabel 'Image generation area:' is 408x6, minimum 136x17",
+      "squeezed: QLabel 'X:' is 29x6, minimum 12x17",
+      "squeezed: QSlider[0] is 144x6, minimum 12x18",
+      "squeezed: QSpinBox[0] is 50x6, minimum 50x26",
+      "squeezed: QLabel 'Y:' is 29x6, minimum 11x17",
+      "squeezed: QSlider[1] is 144x6, minimum 12x18",
+      "squeezed: QSpinBox[1] is 50x6, minimum 50x26",
+      "squeezed: QLabel 'W:' is 16x6, minimum 16x17",
+      "squeezed: QSlider[2] is 81x6, minimum 12x18",
+      "squeezed: QSpinBox[2] is 58x6, minimum 58x26",
+      "squeezed: QLabel 'H:' is 16x6, minimum 13x17",
+      "squeezed: QSlider[3] is 81x6, minimum 12x18",
+      "squeezed: QSpinBox[3] is 58x6, minimum 58x26",
+      "squeezed: QLabel 'Area size:' is 408x7, minimum 57x17",
+      "squeezed: QWidget is 408x6, minimum 289x25",
+      "squeezed: QWidget/QPushButton 'Full image' is 135x6, minimum 80x25",
+      "squeezed: QWidget/QPushButton 'Square' is 134x6, minimum 80x25",
+      "squeezed: QWidget/QLineEdit is 135x6, minimum 23x25",
+      "squeezed: QLabel 'Resolution rule:' is 92x6, minimum 92x17",
+      "squeezed: ComboBox is 310x6, minimum 213x25",
+      "squeezed: QLabel 'Image generation resolut' is 408x7, minimum 169x17",
+      "squeezed: SizeField is 408x6, minimum 120x26",
+      "squeezed: SizeField/QSpinBox[0] is 190x6, minimum 106x26",
+      "squeezed: SizeField/QSpinBox[1] is 189x6, minimum 106x26",
+      "squeezed: SizeField/QLabel 'W:' is 16x6, minimum 16x17",
+      "squeezed: SizeField/QLabel 'H:' is 13x6, minimum 13x17"
+    ],
+    "size": [
+      426,
+      128
+    ]
+  },
+  "tall": {
+    "problems": [],
+    "size": [
+      426,
+      1200
+    ]
+  },
+  "wide": {
+    "problems": [],
+    "size": [
+      1600,
+      257
+    ]
+  }
+}

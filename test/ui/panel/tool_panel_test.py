@@ -1,31 +1,22 @@
-import os
 import sys
-import unittest
 
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QApplication, QWidget
 
-from src.config.application_config import AppConfig
-from src.config.cache import Cache
-from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.tools.draw_tool import DrawTool
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.tool_panel import ToolPanel
+from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
 
 
-class ToolPanelTest(unittest.TestCase):
+class ToolPanelTest(IntraPaintTestCase):
     """Tool panel GUI testing"""
 
     def setUp(self) -> None:
-        while os.path.basename(os.getcwd()) not in ('IntraPaint', ''):
-            os.chdir('..')
-        assert os.path.basename(os.getcwd()) == 'IntraPaint'
-        self._app_config = AppConfig('test/resources/app_config_test.json')
-        self._key_config = KeyConfig('test/resources/key_config_test.json')
-        self._cache = Cache('test/resources/cache_test.json')
+        super().setUp()
         test_size = QSize(512, 512)
         self._image_stack = ImageStack(test_size, test_size, test_size, test_size)
         self._image_panel = ImagePanel(self._image_stack)

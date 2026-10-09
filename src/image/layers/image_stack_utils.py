@@ -150,7 +150,7 @@ def scale_all_layers(image_stack: ImageStack, width: int, height: int,
 
     scale_transform = QTransform.fromScale(x_scale, y_scale)
     action_id = 'image_stack_utils.scale_all_layers'
-    with UndoStack().combining_actions(action_id) and image_stack.batching_content_updates():
+    with UndoStack().combining_actions(action_id), image_stack.batching_content_updates():
         for layer in image_stack.all_layers():
             if not isinstance(layer, TransformLayer):
                 continue
@@ -163,6 +163,10 @@ def scale_all_layers(image_stack: ImageStack, width: int, height: int,
                 layer.image = pil_image_scaling(image, new_size, image_scale_mode)
             else:
                 layer.transform = layer.transform * scale_transform
+        selection_layer = image_stack.selection_layer
+        selection_layer.set_context_pins([QPoint(min(int(pin.x() * x_scale), width - 1),
+                                                 min(int(pin.y() * y_scale), height - 1))
+                                          for pin in selection_layer.context_pins])
         new_size = QSize(width, height)
 
         def _final_size_update(size=new_size) -> None:
@@ -180,10 +184,9 @@ def image_stack_color_at_point(image_stack: ImageStack, image_point: QPoint) -> 
     if image_bounds.contains(image_point):
         return image_stack.qimage(True).pixelColor(image_point)
     content_bounds = image_stack.merged_layer_bounds
-    adjusted_point = image_point - content_bounds.topLeft()
-    if not content_bounds.contains(adjusted_point):
+    if not content_bounds.contains(image_point):
         return QColor(0, 0, 0)
-    return image_stack.qimage(False).pixelColor(adjusted_point)
+    return image_stack.qimage(False).pixelColor(image_point - content_bounds.topLeft())
 
 
 def top_layer_at_point(image_stack: ImageStack, image_coordinates: QPoint) -> Optional[ImageLayer | TextLayer]:

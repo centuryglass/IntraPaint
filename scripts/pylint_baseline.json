@@ -1,0 +1,276 @@
+{
+  "(repository)": {
+    "duplicate-code": 69
+  },
+  "src/api/comfyui/comfyui_types.py": {
+    "fixme": 1
+  },
+  "src/api/comfyui/latent_upscale_workflow_builder.py": {
+    "fixme": 1
+  },
+  "src/api/comfyui/workflow_builder_utils.py": {
+    "inconsistent-quotes": 2
+  },
+  "src/api/comfyui_webservice.py": {
+    "inconsistent-quotes": 2
+  },
+  "src/api/controlnet/controlnet_model.py": {
+    "inconsistent-quotes": 1,
+    "line-too-long": 1
+  },
+  "src/api/webui/diffusion_request_body.py": {
+    "fixme": 1
+  },
+  "src/config/a1111_config.py": {
+    "line-too-long": 1
+  },
+  "src/config/application_config.py": {
+    "line-too-long": 1
+  },
+  "src/config/cache.py": {
+    "line-too-long": 1
+  },
+  "src/config/config.py": {
+    "protected-access": 4
+  },
+  "src/config/key_config.py": {
+    "line-too-long": 1
+  },
+  "src/controller/app_controller.py": {
+    "fixme": 2,
+    "too-many-lines": 1
+  },
+  "src/controller/image_generation/glid3_webservice_generator.py": {
+    "fixme": 1,
+    "inconsistent-quotes": 1
+  },
+  "src/controller/image_generation/image_generator.py": {
+    "broad-exception-caught": 1,
+    "logging-too-many-args": 1
+  },
+  "src/controller/image_generation/sd_comfyui_generator.py": {
+    "fixme": 1,
+    "logging-too-many-args": 1,
+    "raise-missing-from": 1,
+    "unsubscriptable-object": 1
+  },
+  "src/controller/image_generation/sd_generator.py": {
+    "broad-exception-caught": 2,
+    "consider-iterating-dictionary": 1,
+    "fixme": 1,
+    "too-many-nested-blocks": 1,
+    "trailing-whitespace": 2
+  },
+  "src/controller/image_generation/sd_webui_generator.py": {
+    "fixme": 1,
+    "logging-too-many-args": 1,
+    "protected-access": 1,
+    "raise-missing-from": 2
+  },
+  "src/image/brush/clone_stamp_brush.py": {
+    "trailing-newlines": 1,
+    "unused-variable": 2
+  },
+  "src/image/brush/qt_paint_brush.py": {
+    "unused-argument": 1
+  },
+  "src/image/filter/filter.py": {
+    "unused-argument": 1
+  },
+  "src/image/filter/invert.py": {
+    "unused-import": 5
+  },
+  "src/image/filter/saturation.py": {
+    "unused-import": 1
+  },
+  "src/image/layers/image_layer.py": {
+    "line-too-long": 1
+  },
+  "src/image/layers/image_stack.py": {
+    "too-many-lines": 1,
+    "unused-argument": 3
+  },
+  "src/image/layers/layer.py": {
+    "comparison-with-callable": 1,
+    "protected-access": 3,
+    "too-many-nested-blocks": 1,
+    "unused-argument": 2
+  },
+  "src/image/layers/transform_group.py": {
+    "unused-argument": 1
+  },
+  "src/image/mypaint/libmypaint.py": {
+    "invalid-name": 1
+  },
+  "src/image/mypaint/mypaint_brush.py": {
+    "line-too-long": 1
+  },
+  "src/image/mypaint/numpy_image_utils.py": {
+    "invalid-name": 1
+  },
+  "src/tools/base_tool.py": {
+    "unused-argument": 15
+  },
+  "src/tools/brush_tool.py": {
+    "assignment-from-none": 4,
+    "unused-argument": 1,
+    "unused-variable": 1
+  },
+  "src/tools/clone_stamp_tool.py": {
+    "inconsistent-quotes": 3,
+    "no-else-return": 1
+  },
+  "src/tools/fill_tool.py": {
+    "line-too-long": 1
+  },
+  "src/tools/layer_transform_tool.py": {
+    "unused-argument": 1
+  },
+  "src/tools/qt_paint_brush_tool.py": {
+    "assignment-from-none": 3,
+    "unused-import": 1
+  },
+  "src/tools/text_tool.py": {
+    "unused-argument": 2
+  },
+  "src/ui/generated_image_selector.py": {
+    "fixme": 1
+  },
+  "src/ui/graphics_items/layer_graphics_item.py": {
+    "unused-argument": 3
+  },
+  "src/ui/graphics_items/loading_spinner.py": {
+    "inconsistent-quotes": 1
+  },
+  "src/ui/graphics_items/pixmap_item.py": {
+    "unused-import": 1
+  },
+  "src/ui/graphics_items/polygon_outline.py": {
+    "inconsistent-quotes": 1
+  },
+  "src/ui/graphics_items/transform_outline.py": {
+    "unused-import": 3
+  },
+  "src/ui/image_viewer.py": {
+    "unused-argument": 4
+  },
+  "src/ui/input_fields/combo_box.py": {
+    "invalid-name": 2,
+    "unused-argument": 1
+  },
+  "src/ui/input_fields/editable_label.py": {
+    "invalid-name": 2
+  },
+  "src/ui/input_fields/pressure_curve_input.py": {
+    "unused-argument": 2
+  },
+  "src/ui/layout/draggable_tabs/tab.py": {
+    "unused-argument": 1
+  },
+  "src/ui/layout/draggable_tabs/tab_bar.py": {
+    "unused-argument": 2
+  },
+  "src/ui/modal/color_dialog.py": {
+    "invalid-name": 1
+  },
+  "src/ui/modal/modal_utils.py": {
+    "inconsistent-quotes": 1
+  },
+  "src/ui/panel/image_panel.py": {
+    "unused-argument": 1
+  },
+  "src/ui/panel/layer_ui/layer_group_widget.py": {
+    "unused-argument": 1
+  },
+  "src/ui/panel/layer_ui/layer_panel.py": {
+    "unnecessary-lambda": 1,
+    "unused-argument": 1
+  },
+  "src/ui/panel/layer_ui/layer_widget.py": {
+    "unused-argument": 3
+  },
+  "src/ui/panel/mypaint_brush_panel.py": {
+    "consider-iterating-dictionary": 1
+  },
+  "src/ui/panel/tool_control_panels/generation_area_tool_panel.py": {
+    "no-member": 1,
+    "unbalanced-tuple-unpacking": 1
+  },
+  "src/ui/panel/tool_control_panels/layer_transform_tool_panel.py": {
+    "unused-argument": 1
+  },
+  "src/ui/panel/tool_control_panels/selection_panel.py": {
+    "unnecessary-lambda": 2
+  },
+  "src/ui/panel/tool_control_panels/shape_selection_panel.py": {
+    "fixme": 1
+  },
+  "src/ui/panel/tool_control_panels/text_tool_panel.py": {
+    "unused-argument": 1
+  },
+  "src/ui/widget/color_button.py": {
+    "unused-import": 1
+  },
+  "src/ui/widget/image_graphics_view.py": {
+    "invalid-name": 1,
+    "unused-argument": 1
+  },
+  "src/ui/widget/image_widget.py": {
+    "unused-argument": 1
+  },
+  "src/ui/widget/key_hint_label.py": {
+    "invalid-name": 1
+  },
+  "src/ui/widget/label.py": {
+    "unused-argument": 1
+  },
+  "src/ui/widget/rotating_toolbar_button.py": {
+    "unused-argument": 1
+  },
+  "src/ui/window/generator_setup_window.py": {
+    "unused-argument": 2
+  },
+  "src/ui/window/main_window.py": {
+    "protected-access": 1,
+    "ungrouped-imports": 1
+  },
+  "src/ui/window/navigation_window.py": {
+    "unused-argument": 4
+  },
+  "src/util/application_state.py": {
+    "protected-access": 10
+  },
+  "src/util/menu_builder.py": {
+    "unnecessary-lambda": 2,
+    "unused-variable": 1
+  },
+  "src/util/optional_import.py": {
+    "broad-exception-caught": 1
+  },
+  "src/util/qtexcepthook.py": {
+    "consider-using-f-string": 2,
+    "super-with-arguments": 1,
+    "unused-import": 2,
+    "useless-object-inheritance": 1
+  },
+  "src/util/validation.py": {
+    "consider-using-with": 1,
+    "too-many-nested-blocks": 2
+  },
+  "src/util/visual/geometry_utils.py": {
+    "no-else-return": 1
+  },
+  "src/util/visual/image_fill.py": {
+    "line-too-long": 1,
+    "no-else-return": 1,
+    "raise-missing-from": 1,
+    "unused-import": 1
+  },
+  "src/util/visual/image_format_utils.py": {
+    "fixme": 1
+  },
+  "src/util/visual/image_utils.py": {
+    "global-statement": 1,
+    "invalid-name": 2
+  }
+}

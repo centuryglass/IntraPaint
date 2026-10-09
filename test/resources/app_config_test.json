@@ -1,6 +1,7 @@
 {
-    "style": "Windows",
-    "theme": "None",
+    "style": "Fusion",
+    "theme": "intrapaint_ink",
+    "overlay_scroll_bars": true,
     "font_point_size": {
         "min": 1,
         "max": 100,
@@ -26,6 +27,15 @@
         "value": 4
     },
     "show_tool_control_hints": true,
+    "show_rulers": true,
+    "show_ruler_highlights": true,
+    "ruler_generation_area_color": "",
+    "ruler_font_size": {
+        "min": 4,
+        "max": 72,
+        "step": 1,
+        "value": 8
+    },
     "animate_selection_outline": false,
     "animate_outlines_and_previews": true,
     "animate_selection_fill": true,

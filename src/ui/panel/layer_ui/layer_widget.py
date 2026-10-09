@@ -4,7 +4,7 @@ from typing import Optional, cast, Callable
 
 from PySide6.QtCore import QSize, Qt, QRect, QPoint, QMimeData, Signal, QTimer
 from PySide6.QtGui import (QPixmap, QImage, QPainter, QTransform, QResizeEvent, QPaintEvent, QColor, QMouseEvent, QDrag,
-                           QAction, QPainterPath, QPen, QIcon)
+                           QAction, QPainterPath, QPalette, QPen, QIcon)
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QMenu, QApplication
 
 from src.config.cache import Cache
@@ -46,6 +46,8 @@ MENU_OPTION_MOVE_DOWN = _tr('Move down')
 MENU_OPTION_COPY = _tr('Copy')
 MENU_OPTION_DELETE = _tr('Delete')
 MENU_OPTION_MERGE_DOWN = _tr('Merge down')
+MENU_OPTION_MERGE_GROUP = _tr('Merge group')
+MENU_OPTION_MERGE_ALL_VISIBLE = _tr('Merge all visible')
 MENU_OPTION_FLATTEN = _tr('Flatten')
 MENU_OPTION_RENAME = _tr('Rename')
 MENU_OPTION_CLEAR_SELECTED = _tr('Clear selected')
@@ -123,9 +125,13 @@ class LayerWidget(BorderedWidget):
         if isinstance(self._layer, TransformLayer):
             self._layer.transform_changed.connect(self._layer_content_change_slot)
         self._active = False
-        self._active_color = self.frame_color
+        self._active_color = self.palette().color(QPalette.ColorRole.Mid)
         self._inactive_color = self._active_color.darker() if self._active_color.lightness() > 100 \
             else self._active_color.lighter()
+        self.frame_color = self._inactive_color
+        self.line_width = 1
+        self._inactive_frame_width = self.frameWidth()
+        self.active = layer.id == image_stack.active_layer_id
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed))
         if LayerWidget._layer_transparency_background is None:
             LayerWidget._layer_transparency_background = get_transparency_tile_pixmap(QSize(64, 64))
@@ -198,6 +204,8 @@ class LayerWidget(BorderedWidget):
         self._preview_render_timer.stop()
         if isinstance(self._layer, TransformLayer):
             layer_image, _ = self._layer.transformed_image()
+        elif isinstance(self._layer, LayerGroup):
+            layer_image = self._layer.preview_image()
         else:
             layer_image = self._layer.image
         min_dim = min(layer_image.width(), layer_image.height())
@@ -213,13 +221,21 @@ class LayerWidget(BorderedWidget):
     def _layer_name_change_slot(self, _, name: str) -> None:
         self._label.set_text(name)
 
-    def _layer_lock_change_slot(self, _, locked: bool) -> None:
+    def _layer_lock_change_slot(self, *_) -> None:
+        # The signal's arguments may describe a parent group's lock, so read the lock state from the layer instead.
         if isinstance(self._label, EditableLabel):
-            self._label.set_changes_allowed(not locked)
+            self._label.set_changes_allowed(not self._layer.locked and not self._layer.parent_locked)
+
+    def _update_frame_style(self) -> None:
+        """Apply the active or inactive border, keeping the widget's size the same in both states."""
+        self.frame_color = self._active_color if self._active else self._inactive_color
+        self.line_width = 0 if self._active else 1
+        # QFrame sets the contents margins to the frame width whenever the frame style changes:
+        margin = self._inactive_frame_width
+        self.setContentsMargins(margin, margin, margin, margin)
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Resize the layer pixmap on resize"""
-        self.setMinimumHeight(self.sizeHint().height())
         self._update_pixmap(True)
 
     def paintEvent(self, event: Optional[QPaintEvent]) -> None:
@@ -272,14 +288,19 @@ class LayerWidget(BorderedWidget):
         self._layer.name = new_name
 
     def sizeHint(self) -> QSize:
-        """Returns a reasonable default size."""
+        """Returns the layout's preferred width, capped at MAX_WIDTH but never below the minimum width."""
         text_size = find_text_size(self.layer.name)
-        layer_width = text_size.width()
-        layer_height = text_size.height()
-        layer_width += _preview_size().width() + ICON_SIZE
-        layer_width = min(layer_width, MAX_WIDTH)
-        layer_height = max(layer_height, ICON_SIZE, _preview_size().height())
+        layer_width = max(min(super().sizeHint().width(), MAX_WIDTH), super().minimumSizeHint().width())
+        layer_height = max(text_size.height(), ICON_SIZE, _preview_size().height(), super().minimumSizeHint().height())
         return QSize(layer_width, layer_height)
+
+    def minimumSizeHint(self) -> QSize:
+        """Layer widgets have a fixed height, so the minimum height matches the size hint."""
+        return QSize(super().minimumSizeHint().width(), self.sizeHint().height())
+
+    def hasHeightForWidth(self) -> bool:
+        """Layer widgets have a fixed height, so the word-wrapped label's height-for-width doesn't apply."""
+        return False
 
     @property
     def layer(self) -> Layer:
@@ -295,16 +316,15 @@ class LayerWidget(BorderedWidget):
     def active(self, is_active: bool) -> None:
         """Updates whether this layer is active."""
         if is_active != self._active:
-            self.frame_color = self._active_color if is_active else self._inactive_color
-            self.line_width = 0 if is_active else 1
             self._active = is_active
+            self._update_frame_style()
             self.update()
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Activate layer on click."""
         assert event is not None
         if event.buttons() == Qt.MouseButton.LeftButton:
-            self._click_pos = event.pos()
+            self._click_pos = event.position().toPoint()
         if self._layer == self._image_stack.selection_layer:
             Cache().set(Cache.LAST_ACTIVE_TOOL, LABEL_TEXT_SELECTION_TOOL)
         elif not self.active and event.button() == Qt.MouseButton.LeftButton:
@@ -315,7 +335,7 @@ class LayerWidget(BorderedWidget):
     def mouseMoveEvent(self, event: Optional[QMouseEvent]) -> None:
         """Allow click and drag."""
         assert event is not None
-        drag_distance = (self._click_pos - event.pos()).manhattanLength()
+        drag_distance = (self._click_pos - event.position().toPoint()).manhattanLength()
 
         if (drag_distance > QApplication.startDragDistance() and self._layer != self._image_stack.layer_stack
                 and not self._layer.parent_locked
@@ -343,6 +363,10 @@ class LayerWidget(BorderedWidget):
         self.active = active_layer == self._layer
 
     def _menu(self, pos: QPoint) -> None:
+        self.build_menu().exec(self.mapToGlobal(pos))
+
+    def build_menu(self) -> QMenu:
+        """Creates the layer's context menu."""
         menu = QMenu()
         menu.setTitle(self._layer.name)
 
@@ -363,15 +387,17 @@ class LayerWidget(BorderedWidget):
                 index = parent.get_layer_index(self._layer)
 
             if index is not None:
-                _add_action(MENU_OPTION_MOVE_UP, lambda: self._image_stack.move_layer_by_offset(-1, self.layer))
-
-                if index < self._image_stack.count - 1:
+                # Moving a layer can take it out of its group, so only the ends of the top-level list block moves:
+                is_top_level = parent == self._image_stack.layer_stack
+                if not is_top_level or index > 0:
+                    _add_action(MENU_OPTION_MOVE_UP, lambda: self._image_stack.move_layer_by_offset(-1, self.layer))
+                if not is_top_level or index < parent.count - 1:
                     _add_action(MENU_OPTION_MOVE_DOWN, lambda: self._image_stack.move_layer_by_offset(1, self.layer))
 
             _add_action(MENU_OPTION_COPY, lambda: self._image_stack.copy_layer(self.layer))
             _add_action(MENU_OPTION_DELETE, lambda: self._image_stack.remove_layer(self.layer), True)
 
-            if index is not None and index < self._image_stack.count - 1:
+            if index is not None:
                 merge_option = _add_action(MENU_OPTION_MERGE_DOWN,
                                            lambda: self._image_stack.merge_layer_down(self.layer), True)
                 if not isinstance(self.layer, TransformLayer):
@@ -381,6 +407,20 @@ class LayerWidget(BorderedWidget):
                     if next_layer is None or next_layer.locked or next_layer.parent_locked or not next_layer.visible \
                             or not isinstance(next_layer, TransformLayer):
                         merge_option.setEnabled(False)
+
+            if isinstance(self.layer, LayerGroup) and self.layer != self._image_stack.layer_stack:
+                merge_group_option = _add_action(MENU_OPTION_MERGE_GROUP,
+                                                 lambda: self._image_stack.merge_group(self.layer), True)
+                if self._image_stack.layer_is_flat(self.layer):
+                    merge_group_option.setEnabled(False)
+
+            merge_visible_option = _add_action(MENU_OPTION_MERGE_ALL_VISIBLE,
+                                               self._image_stack.merge_all_visible)
+            visible_top_layers = [layer for layer in self._image_stack.layer_stack.child_layers if layer.visible]
+            can_merge_visible = len(visible_top_layers) > 1 or (len(visible_top_layers) == 1
+                                                                and isinstance(visible_top_layers[0], LayerGroup)
+                                                                and visible_top_layers[0].count > 0)
+            merge_visible_option.setEnabled(can_merge_visible)
 
             flatten_action = _add_action(MENU_OPTION_FLATTEN, lambda: self._image_stack.flatten_layer(self.layer),
                                          True)
@@ -415,4 +455,4 @@ class LayerWidget(BorderedWidget):
         if isinstance(self._layer, LayerGroup) and any(layer.locked for layer in self._layer.recursive_child_layers):
             for action in mirror_actions:
                 action.setEnabled(False)
-        menu.exec(self.mapToGlobal(pos))
+        return menu

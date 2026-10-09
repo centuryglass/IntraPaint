@@ -8,6 +8,8 @@ from PySide6.QtGui import QMouseEvent, QTabletEvent, QWheelEvent
 from PySide6.QtWidgets import QApplication, QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox
 
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
+from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
@@ -16,11 +18,9 @@ from src.tools.clone_stamp_tool import CloneStampTool
 from src.tools.draw_tool import DrawTool
 from src.tools.eraser_tool import EraserTool
 from src.tools.eyedropper_tool import EyedropperTool
-from src.tools.fill_tool import FillTool
 from src.tools.filter_tool import FilterTool
 from src.tools.free_selection_tool import FreeSelectionTool
 from src.tools.layer_transform_tool import LayerTransformTool
-from src.tools.selection_fill_tool import SelectionFillTool
 from src.tools.selection_brush_tool import SelectionBrushTool
 from src.tools.shape_selection_tool import ShapeSelectionTool
 from src.tools.shape_tool import ShapeTool
@@ -28,9 +28,16 @@ from src.tools.smudge_tool import SmudgeTool
 from src.tools.text_tool import TextTool
 from src.ui.image_viewer import ImageViewer, MIN_OUTLINE_PIXEL_SIZE
 from src.ui.modal.modal_utils import show_warning_dialog
+from src.util.math_utils import clamp
 from src.util.optional_import import optional_import
 
+# PyInstaller can't see optional imports: each module below must be listed in the `hiddenimports` of IntraPaint.spec
+# and IntraPaint-linux.spec, or bundles ship without it.
 MyPaintBrushTool = optional_import('src.tools.mypaint_brush_tool', attr_name='MyPaintBrushTool')
+# Both fill tools import the compiled `src.util.visual.image_fill` module, which is missing when the Cython build
+# failed. They are None in that case, and every use in ToolController must handle that.
+FillTool = optional_import('src.tools.fill_tool', attr_name='FillTool')
+SelectionFillTool = optional_import('src.tools.selection_fill_tool', attr_name='SelectionFillTool')
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +52,13 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 BRUSH_LOAD_ERROR_TITLE = _tr('Failed to load libmypaint brush library files')
 BRUSH_LOAD_ERROR_MESSAGE = _tr('The brush tool will not be available unless this is fixed.')
+# QWheelEvent.angleDelta() units in one notch of a standard mouse wheel:
+WHEEL_NOTCH_DELTA = 120
+
+FILL_TOOLS_UNAVAILABLE_LOG = (
+    'The fill and selection fill tools are unavailable because the compiled image_fill module could not be loaded. '
+    'Install a C compiler, then run `python setup.py build_ext --inplace` from the IntraPaint directory and restart '
+    'IntraPaint.')
 
 
 class ToolController(QObject):
@@ -65,6 +79,8 @@ class ToolController(QObject):
         self._tool_modifier_delegates: dict[BaseTool, dict[Qt.KeyboardModifier, BaseTool]] = {}
         self._mouse_in_bounds = False
         self._all_tools: list[BaseTool] = []
+        # Wheel delta short of a full notch, carried between padding scroll events:
+        self._padding_scroll_remainder = 0
         image_viewer.setMouseTracking(True)
         image_viewer.installEventFilter(self)
         HotkeyFilter.instance().modifiers_changed.connect(self._handle_modifier_delegation)
@@ -83,8 +99,9 @@ class ToolController(QObject):
         draw_tool = DrawTool(image_stack, image_viewer)
         self.add_tool(draw_tool)
         self.add_tool(EraserTool(image_stack, image_viewer))
-        fill_tool = FillTool(image_stack)
-        self.add_tool(fill_tool)
+        fill_tool = FillTool(image_stack) if FillTool is not None else None
+        if fill_tool is not None:
+            self.add_tool(fill_tool)
         self.add_tool(FilterTool(image_stack, image_viewer))
         self.add_tool(SmudgeTool(image_stack, image_viewer))
         self.add_tool(CloneStampTool(image_stack, image_viewer))
@@ -98,7 +115,10 @@ class ToolController(QObject):
         self.add_tool(FreeSelectionTool(image_stack, image_viewer))
         self.add_tool(SelectionBrushTool(image_stack, image_viewer))
         self.add_tool(ShapeSelectionTool(image_stack, image_viewer))
-        self.add_tool(SelectionFillTool(image_stack))
+        if SelectionFillTool is not None:
+            self.add_tool(SelectionFillTool(image_stack))
+        if FillTool is None or SelectionFillTool is None:
+            logger.warning(FILL_TOOLS_UNAVAILABLE_LOG)
 
         eyedropper_modifier = KeyConfig().get_modifier(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER)
         if eyedropper_modifier != Qt.KeyboardModifier.NoModifier:
@@ -175,12 +195,13 @@ class ToolController(QObject):
         """Check for changes in held key modifiers, and handle tool delegation."""
         if self._active_tool is None:
             return
-        if self._active_delegate is not None and self._tool_modifier_delegates[self._active_tool] != modifiers:
+        delegates = self._tool_modifier_delegates[self._active_tool]
+        if self._active_delegate is not None and delegates.get(modifiers) is not self._active_delegate:
             self._active_delegate.is_active = False
             self._active_delegate = None
             self._active_tool.reactivate_after_delegation()
             self.active_tool_changed.emit(self._active_tool)
-        if modifiers in self._tool_modifier_delegates[self._active_tool]:
+        if self._active_delegate is None and modifiers in delegates:
             # Special case: if a text input widget is active, modifiers should be used for text input, not delegation.
             focused_widget = QApplication.focusWidget()
             if (isinstance(focused_widget, (QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox))
@@ -225,6 +246,9 @@ class ToolController(QObject):
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]):
         """Allow the active tool to intercept and handle events."""
         assert event is not None
+        # ImageGraphicsView.wheelEvent passes wheel events here before its zoom handling sees them.
+        if event.type() == QEvent.Type.Wheel and self._scroll_padding(cast(QWheelEvent, event)):
+            return True
         if self._active_tool is None:
             return super().eventFilter(source, event)
         active_tool = self._active_delegate if self._active_delegate is not None else self._active_tool
@@ -271,6 +295,37 @@ class ToolController(QObject):
             case QEvent.Type.Wheel:
                 event_handled = active_tool.wheel_event(cast(QWheelEvent, event))
         return True if event_handled else super().eventFilter(source, event)
+
+    def _scroll_padding(self, event: QWheelEvent) -> bool:
+        """Changes inpaint full-res padding while the padding scroll modifier is held, returning whether the event was
+           consumed.
+
+        Each notch moves padding as far as scrolling the padding slider does, multiplied while the speed modifier is
+        held. Either wheel axis counts, because some platforms turn modifier + vertical scroll into horizontal scroll.
+        Raising padding above zero turns Inpaint Full Resolution on.
+        """
+        if not KeyConfig.modifier_held(KeyConfig.PADDING_SCROLL_MODIFIER, held_modifiers=event.modifiers()):
+            self._padding_scroll_remainder = 0
+            return False
+        delta = event.angleDelta().y() if event.angleDelta().y() != 0 else event.angleDelta().x()
+        if (delta < 0) != (self._padding_scroll_remainder < 0):
+            self._padding_scroll_remainder = 0
+        self._padding_scroll_remainder += delta
+        notches = int(self._padding_scroll_remainder / WHEEL_NOTCH_DELTA)
+        if notches == 0:
+            return True
+        self._padding_scroll_remainder -= notches * WHEEL_NOTCH_DELTA
+        cache = Cache()
+        step = cache.get(Cache.INPAINT_FULL_RES_PADDING, RangeKey.STEP) * QApplication.wheelScrollLines()
+        if KeyConfig.modifier_held(KeyConfig.SPEED_MODIFIER, held_modifiers=event.modifiers()):
+            step *= AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
+        padding = clamp(cache.get(Cache.INPAINT_FULL_RES_PADDING) + notches * step,
+                        cache.get(Cache.INPAINT_FULL_RES_PADDING, RangeKey.MIN),
+                        cache.get(Cache.INPAINT_FULL_RES_PADDING, RangeKey.MAX))
+        cache.set(Cache.INPAINT_FULL_RES_PADDING, int(padding))
+        if padding > 0:
+            cache.set(Cache.INPAINT_FULL_RES, True)
+        return True
 
     def add_tool(self, new_tool: BaseTool) -> None:
         """Adds a new tool to the list of available tools."""

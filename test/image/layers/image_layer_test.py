@@ -1,21 +1,17 @@
 """Tests the ImageLayer class"""
-import os
 import sys
-import unittest
 from unittest.mock import MagicMock
 
 from PySide6.QtCore import QSize, QRect, QPoint, QRectF
 from PySide6.QtGui import QImage, QPainter, QTransform, Qt, QPainterPath, QPolygonF
 from PySide6.QtWidgets import QApplication
 
-from src.config.application_config import AppConfig
-from src.config.cache import Cache
-from src.config.key_config import KeyConfig
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.undo_stack import UndoStack
 from src.util.visual.geometry_utils import map_rect_precise
 from src.util.visual.image_utils import image_is_fully_transparent, create_transparent_image
+from test.base_test_case import IntraPaintTestCase
 
 IMG_SIZE = QSize(512, 512)
 LAYER_NAME = 'test layer'
@@ -23,29 +19,11 @@ INIT_IMAGE = 'test/resources/test_images/source.png'
 TRANSFORM_TEST_IMAGE = 'test/resources/test_images/render_transform_1.png'
 app = QApplication.instance() or QApplication(sys.argv)
 
-def save_temporary(name, expected, actual):
-    expected.save(f'expected_{name}.png')
-    actual.save(f'actual_{name}.png')
-
-def clear_temporary(name):
-    for img_path in (f'expected_{name}.png', f'actual_{name}.png'):
-        if os.path.isfile(img_path):
-            os.remove(img_path)
-
-class ImageLayerTest(unittest.TestCase):
+class ImageLayerTest(IntraPaintTestCase):
     """Tests the ImageLayer class"""
 
     def setUp(self) -> None:
-        while os.path.basename(os.getcwd()) not in ('IntraPaint', ''):
-            os.chdir('..')
-        assert os.path.basename(os.getcwd()) == 'IntraPaint'
-        self._app_config = AppConfig('test/resources/app_config_test.json')
-        self._key_config = KeyConfig('test/resources/key_config_test.json')
-        self._cache = Cache('test/resources/cache_test.json')
-        AppConfig()._reset()
-        KeyConfig()._reset()
-        UndoStack().clear()
-        Cache()._reset()
+        super().setUp()
         self.image_layer = ImageLayer(IMG_SIZE, LAYER_NAME)
 
         self.name_changed_mock = MagicMock()
@@ -108,6 +86,21 @@ class ImageLayerTest(unittest.TestCase):
         self.assertNotEqual(final_image, init_image)
         self.assertEqual(final_image, new_image)
 
+    def test_alpha_lock(self) -> None:
+        """Painting on an alpha-locked layer doesn't change its transparent areas."""
+        self.image_layer.set_alpha_locked(True)
+        with self.image_layer.borrow_image() as image:
+            image.fill(Qt.GlobalColor.red)
+        self.assertTrue(image_is_fully_transparent(self.image_layer.image))
+
+    def test_alpha_lock_after_empty_undo(self) -> None:
+        """Undo with nothing to undo doesn't switch off alpha lock enforcement."""
+        UndoStack().undo()
+        self.image_layer.set_alpha_locked(True)
+        with self.image_layer.borrow_image() as image:
+            image.fill(Qt.GlobalColor.red)
+        self.assertTrue(image_is_fully_transparent(self.image_layer.image))
+
     def test_borrow_image(self) -> None:
         """Test setting content with a QImage when using the borrow_image method"""
         new_image = QImage(INIT_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
@@ -147,9 +140,7 @@ class ImageLayerTest(unittest.TestCase):
         bounds = QRect(50, 5, 100, 150)
         expected_image = self.image_layer.image.copy(bounds)
         render = self.image_layer.render_to_new_image(inner_bounds=bounds)
-        save_temporary('test_bounded_render', expected_image, render)
-        self.assertEqual(expected_image, render)
-        clear_temporary('test_bounded_render')
+        self.assert_images_equal(render, expected_image)
 
     def test_transformed_render(self) -> None:
         """Test rendering when a transformation is provided."""
@@ -170,17 +161,13 @@ class ImageLayerTest(unittest.TestCase):
         painter.end()
 
         render = self.image_layer.render_to_new_image(transform=transform)
-        save_temporary('test_transformed_render', transform_image, render)
-        self.assertEqual(transform_image, render)
-        clear_temporary('test_transformed_render')
+        self.assert_images_equal(render, transform_image)
 
         # Results should be the same when the transform is applied through the layer instead of the render function
         self.image_layer.transform = transform
         render2 = self.image_layer.render_to_new_image()
 
-        save_temporary('test_transformed_render_owntransform', transform_image, render2)
-        self.assertEqual(transform_image, render2)
-        clear_temporary('test_transformed_render_owntransform')
+        self.assert_images_equal(render2, transform_image)
 
     def test_render_with_transform_and_bounds(self) -> None:
         """Test rendering with both transformation and rendering bounds"""
@@ -204,10 +191,8 @@ class ImageLayerTest(unittest.TestCase):
         painter.end()
 
         render = self.image_layer.render_to_new_image(transform=transform, inner_bounds=image_bounds)
-        save_temporary('test_render_with_transform_and_bounds', expected_image, render)
         self.assertEqual(render.size(), image_bounds.size())
-        self.assertEqual(expected_image, render)
-        clear_temporary('test_render_with_transform_and_bounds')
+        self.assert_images_equal(render, expected_image)
 
     def test_render_onto_base(self):
         """Test rendering onto a pre-existing base"""
@@ -222,9 +207,7 @@ class ImageLayerTest(unittest.TestCase):
         painter.end()
 
         self.image_layer.render(base_image=base_image)
-        save_temporary('test_render_onto_base', expected_image, base_image)
-        self.assertEqual(expected_image, base_image)
-        clear_temporary('test_render_onto_base')
+        self.assert_images_equal(base_image, expected_image)
 
     def test_render_onto_base_with_bounds(self):
         """Test rendering onto a pre-existing base, with render bounds provided"""
@@ -241,9 +224,7 @@ class ImageLayerTest(unittest.TestCase):
         painter.end()
 
         self.image_layer.render(base_image=base_image, image_bounds=image_bounds)
-        save_temporary('test_render_onto_base_with_bounds', expected_image, base_image)
-        self.assertEqual(expected_image, base_image)
-        clear_temporary('test_render_onto_base_with_bounds')
+        self.assert_images_equal(base_image, expected_image)
 
     def test_render_onto_base_with_transform_and_bounds(self):
         """Test rendering onto a pre-existing base, with render bounds provided"""
@@ -278,9 +259,7 @@ class ImageLayerTest(unittest.TestCase):
 
         # Confirm that the rendered layer matches:
         self.image_layer.render(base_image=base_image, transform=transform, image_bounds=image_bounds)
-        save_temporary('test_render_onto_base_with_transform_and_bounds', expected_image, base_image)
-        self.assertEqual(expected_image, base_image)
-        clear_temporary('test_render_onto_base_with_transform_and_bounds')
+        self.assert_images_equal(base_image, expected_image)
 
     def test_render_onto_base_with_transform_and_bounds_masked(self):
         """Test rendering onto a pre-existing base, with render bounds provided, and with a transformation that will
@@ -320,6 +299,4 @@ class ImageLayerTest(unittest.TestCase):
         painter.end()
 
         self.image_layer.render(base_image=base_image, transform=transform, image_bounds=image_bounds)
-        save_temporary('test_render_onto_base_with_transform_and_bounds_masked', expected_image, base_image)
-        self.assertEqual(expected_image, base_image)
-        clear_temporary('test_render_onto_base_with_transform_and_bounds_masked')
+        self.assert_images_equal(base_image, expected_image)

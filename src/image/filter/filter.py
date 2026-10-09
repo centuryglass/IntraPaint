@@ -268,8 +268,6 @@ class ImageFilter:
             layer_images: dict[int, QImage] = {}
             if self._filter_selection_only:
                 selection_bounds = self._image_stack.selection_layer.get_content_bounds()
-                selection_pos = self._image_stack.selection_layer.position
-                selection_bounds.translate(-selection_pos.x(), -selection_pos.y())
             else:
                 selection_bounds = None
             for layer in self._image_stack.image_layers:

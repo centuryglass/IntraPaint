@@ -117,6 +117,8 @@ class KeyConfig(Config, metaclass=Singleton):
                 return True
             return False
 
+        # Bindings whose key contains one of these also claim speed_modifier+key. New default bindings must avoid
+        # those combinations, or validation reports a conflict.
         speed_modifier_strings = ('zoom_in', 'zoom_out', 'pan', 'move', 'brush_size')
         speed_modifier = self.get(KeyConfig.SPEED_MODIFIER)
         if speed_modifier != '' and not _is_modifier(speed_modifier):
@@ -194,6 +196,7 @@ class KeyConfig(Config, metaclass=Singleton):
     BRUSH_SIZE_DECREASE: str
     BRUSH_SIZE_INCREASE: str
     BRUSH_TOOL_KEY: str
+    CLEAR_CONTEXT_PINS_SHORTCUT: str
     CLEAR_SHORTCUT: str
     CLONE_STAMP_TOOL_KEY: str
     COLOR_BALANCE_SHORTCUT: str
@@ -233,6 +236,8 @@ class KeyConfig(Config, metaclass=Singleton):
     LOAD_LAYERS_SHORTCUT: str
     LOAD_SHORTCUT: str
     LORA_SHORTCUT: str
+    MERGE_ALL_VISIBLE_SHORTCUT: str
+    MERGE_GROUP_SHORTCUT: str
     MERGE_LAYER_DOWN_SHORTCUT: str
     MOVE_DOWN: str
     MOVE_LAYER_DOWN_SHORTCUT: str
@@ -245,6 +250,7 @@ class KeyConfig(Config, metaclass=Singleton):
     NEW_IMAGE_SHORTCUT: str
     NEW_LAYER_GROUP_SHORTCUT: str
     NEW_LAYER_SHORTCUT: str
+    PADDING_SCROLL_MODIFIER: str
     PAN_DOWN: str
     PAN_LEFT: str
     PAN_RIGHT: str
@@ -252,10 +258,12 @@ class KeyConfig(Config, metaclass=Singleton):
     PAN_VIEW_MODIFIER: str
     PASTE_SHORTCUT: str
     POSTERIZE_SHORTCUT: str
+    PREVIOUS_GENERATION_FRAME_KEY: str
     PROMPT_STYLE_SHORTCUT: str
     QUIT_SHORTCUT: str
     REDO_SHORTCUT: str
     RELOAD_SHORTCUT: str
+    RESET_COLORS_SHORTCUT: str
     RESIZE_CANVAS_SHORTCUT: str
     ROTATE_CCW_KEY: str
     ROTATE_CW_KEY: str
@@ -281,7 +289,9 @@ class KeyConfig(Config, metaclass=Singleton):
     SHRINK_SELECTION_SHORTCUT: str
     SMUDGE_TOOL_KEY: str
     SPEED_MODIFIER: str
+    SWAP_COLORS_SHORTCUT: str
     TEXT_TOOL_KEY: str
+    TOGGLE_RULERS_SHORTCUT: str
     TOOL_ACTION_HOTKEY: str
     TRANSFORM_TOOL_KEY: str
     UNDO_SHORTCUT: str

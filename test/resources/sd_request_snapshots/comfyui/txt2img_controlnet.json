@@ -1,0 +1,346 @@
+[
+  {
+    "body": {
+      "overwrite": "1",
+      "subfolder": "IntraPaint",
+      "type": "input"
+    },
+    "body_format": "multipart/form-data",
+    "endpoint": "/upload/image",
+    "files": {
+      "image": [
+        "controlnet_args_0_comfyui.png",
+        "<image 512x512 Format_ARGB32 72947f38b2e91f8d>",
+        "image/png"
+      ]
+    },
+    "method": "POST",
+    "timeout": 90
+  },
+  {
+    "body": {
+      "client_id": "<client id>",
+      "prompt": {
+        "10": {
+          "class_type": "ControlNetLoader",
+          "inputs": {
+            "control_net_name": "control_v11p_sd15_canny_fp16.safetensors"
+          }
+        },
+        "11": {
+          "class_type": "KSampler",
+          "inputs": {
+            "cfg": 6.5,
+            "denoise": 1.0,
+            "latent_image": [
+              "12",
+              0
+            ],
+            "model": [
+              "3",
+              0
+            ],
+            "negative": [
+              "9",
+              1
+            ],
+            "positive": [
+              "9",
+              0
+            ],
+            "sampler_name": "euler_ancestral",
+            "scheduler": "karras",
+            "seed": 1234,
+            "steps": 20
+          }
+        },
+        "12": {
+          "class_type": "EmptyLatentImage",
+          "inputs": {
+            "batch_size": 2,
+            "height": 512,
+            "width": 512
+          }
+        },
+        "13": {
+          "class_type": "VAEDecode",
+          "inputs": {
+            "samples": [
+              "11",
+              0
+            ],
+            "vae": [
+              "4",
+              2
+            ]
+          }
+        },
+        "14": {
+          "class_type": "SaveImage",
+          "inputs": {
+            "filename_prefix": "",
+            "images": [
+              "13",
+              0
+            ]
+          }
+        },
+        "3": {
+          "class_type": "LoraLoader",
+          "inputs": {
+            "clip": [
+              "4",
+              1
+            ],
+            "lora_name": "detail_lora.safetensors",
+            "model": [
+              "4",
+              0
+            ],
+            "strength_clip": 0.8,
+            "strength_model": 0.8
+          }
+        },
+        "4": {
+          "class_type": "CheckpointLoaderSimple",
+          "inputs": {
+            "ckpt_name": "dreamshaper_8.safetensors"
+          }
+        },
+        "5": {
+          "class_type": "CLIPTextEncode",
+          "inputs": {
+            "clip": [
+              "3",
+              1
+            ],
+            "text": "a lighthouse on a cliff "
+          }
+        },
+        "6": {
+          "class_type": "CLIPTextEncode",
+          "inputs": {
+            "clip": [
+              "3",
+              1
+            ],
+            "text": "blurry"
+          }
+        },
+        "7": {
+          "class_type": "CannyEdgePreprocessor",
+          "inputs": {
+            "high_threshold": 200,
+            "image": [
+              "8",
+              0
+            ],
+            "low_threshold": 100,
+            "resolution": 512
+          }
+        },
+        "8": {
+          "class_type": "LoadImage",
+          "inputs": {
+            "image": "IntraPaint/controlnet_args_0_comfyui.png",
+            "upload": "image"
+          }
+        },
+        "9": {
+          "class_type": "ControlNetApplyAdvanced",
+          "inputs": {
+            "control_net": [
+              "10",
+              0
+            ],
+            "end_percent": 0.9,
+            "image": [
+              "7",
+              0
+            ],
+            "negative": [
+              "6",
+              0
+            ],
+            "positive": [
+              "5",
+              0
+            ],
+            "start_percent": 0.1,
+            "strength": 0.75,
+            "vae": [
+              "4",
+              2
+            ]
+          }
+        }
+      }
+    },
+    "endpoint": "/prompt",
+    "method": "POST",
+    "timeout": 30
+  },
+  {
+    "body": {
+      "client_id": "<client id>",
+      "prompt": {
+        "10": {
+          "class_type": "ControlNetLoader",
+          "inputs": {
+            "control_net_name": "control_v11p_sd15_canny_fp16.safetensors"
+          }
+        },
+        "11": {
+          "class_type": "KSampler",
+          "inputs": {
+            "cfg": 6.5,
+            "denoise": 1.0,
+            "latent_image": [
+              "12",
+              0
+            ],
+            "model": [
+              "3",
+              0
+            ],
+            "negative": [
+              "9",
+              1
+            ],
+            "positive": [
+              "9",
+              0
+            ],
+            "sampler_name": "euler_ancestral",
+            "scheduler": "karras",
+            "seed": 1235,
+            "steps": 20
+          }
+        },
+        "12": {
+          "class_type": "EmptyLatentImage",
+          "inputs": {
+            "batch_size": 2,
+            "height": 512,
+            "width": 512
+          }
+        },
+        "13": {
+          "class_type": "VAEDecode",
+          "inputs": {
+            "samples": [
+              "11",
+              0
+            ],
+            "vae": [
+              "4",
+              2
+            ]
+          }
+        },
+        "14": {
+          "class_type": "SaveImage",
+          "inputs": {
+            "filename_prefix": "",
+            "images": [
+              "13",
+              0
+            ]
+          }
+        },
+        "3": {
+          "class_type": "LoraLoader",
+          "inputs": {
+            "clip": [
+              "4",
+              1
+            ],
+            "lora_name": "detail_lora.safetensors",
+            "model": [
+              "4",
+              0
+            ],
+            "strength_clip": 0.8,
+            "strength_model": 0.8
+          }
+        },
+        "4": {
+          "class_type": "CheckpointLoaderSimple",
+          "inputs": {
+            "ckpt_name": "dreamshaper_8.safetensors"
+          }
+        },
+        "5": {
+          "class_type": "CLIPTextEncode",
+          "inputs": {
+            "clip": [
+              "3",
+              1
+            ],
+            "text": "a lighthouse on a cliff "
+          }
+        },
+        "6": {
+          "class_type": "CLIPTextEncode",
+          "inputs": {
+            "clip": [
+              "3",
+              1
+            ],
+            "text": "blurry"
+          }
+        },
+        "7": {
+          "class_type": "CannyEdgePreprocessor",
+          "inputs": {
+            "high_threshold": 200,
+            "image": [
+              "8",
+              0
+            ],
+            "low_threshold": 100,
+            "resolution": 512
+          }
+        },
+        "8": {
+          "class_type": "LoadImage",
+          "inputs": {
+            "image": "IntraPaint/controlnet_args_0_comfyui.png",
+            "upload": "image"
+          }
+        },
+        "9": {
+          "class_type": "ControlNetApplyAdvanced",
+          "inputs": {
+            "control_net": [
+              "10",
+              0
+            ],
+            "end_percent": 0.9,
+            "image": [
+              "7",
+              0
+            ],
+            "negative": [
+              "6",
+              0
+            ],
+            "positive": [
+              "5",
+              0
+            ],
+            "start_percent": 0.1,
+            "strength": 0.75,
+            "vae": [
+              "4",
+              2
+            ]
+          }
+        }
+      }
+    },
+    "endpoint": "/prompt",
+    "method": "POST",
+    "timeout": 30
+  }
+]

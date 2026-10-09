@@ -1,0 +1,121 @@
+{
+  "minimum": {
+    "problems": [
+      "squeezed: ImageWidget is 221x95, minimum 160x160"
+    ],
+    "size": [
+      1039,
+      285
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "overlap: IntSliderSpinbox[2]/KeyHintLabel '\u2190' and IntSliderSpinbox[2]/QSpinBox share 15x26",
+      "overlap: IntSliderSpinbox[2]/QSpinBox and IntSliderSpinbox[2]/KeyHintLabel '\u2192' share 33x26",
+      "overlap: IntSliderSpinbox[3]/KeyHintLabel '\u2191' and IntSliderSpinbox[3]/QSpinBox share 15x26",
+      "overlap: IntSliderSpinbox[3]/QSpinBox and IntSliderSpinbox[3]/KeyHintLabel '\u2193' share 33x26",
+      "overlap: IntSliderSpinbox[4]/KeyHintLabel '\u2303+\u2190' and IntSliderSpinbox[4]/QSpinBox share 15x26",
+      "overlap: IntSliderSpinbox[4]/QSpinBox and IntSliderSpinbox[4]/KeyHintLabel '\u2303+\u2192' share 33x26",
+      "overlap: IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2191' and IntSliderSpinbox[5]/QSpinBox share 15x26",
+      "overlap: IntSliderSpinbox[5]/QSpinBox and IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2193' share 33x26",
+      "squeezed: QWidget[0] is 74x81, minimum 96x25",
+      "squeezed: QWidget[0]/CheckBox is 34x21, minimum 45x21",
+      "squeezed: QWidget[0]/QLabel 'Resize Bounds to Text' is 34x77, minimum 45x17",
+      "squeezed: QWidget[1] is 74x82, minimum 96x25",
+      "squeezed: QWidget[1]/CheckBox is 34x21, minimum 45x21",
+      "squeezed: QWidget[1]/QLabel 'Resize Font to Bounds' is 34x78, minimum 45x17",
+      "squeezed: ColorButton 'Text Color' is 74x82, minimum 101x30",
+      "squeezed: ColorButton 'Background Color' is 74x81, minimum 146x30",
+      "squeezed: ImageWidget is 137x236, minimum 160x160",
+      "squeezed: IntSliderSpinbox[0] is 74x30, minimum 158x30",
+      "squeezed: IntSliderSpinbox[0]/QLabel 'Font Size:' is 16x26, minimum 57x17",
+      "squeezed: IntSliderSpinbox[0]/QSpinBox is 16x26, minimum 58x26",
+      "squeezed: IntSliderSpinbox[0]/KeyHintLabel 'O' is 16x26, minimum 17x22",
+      "squeezed: QComboBox[1] is 74x25, minimum 87x25",
+      "squeezed: IntSliderSpinbox[2] is 74x78, minimum 198x30",
+      "clipped: IntSliderSpinbox[2]/QSpinBox shows 36x26 of 106x26",
+      "clipped: IntSliderSpinbox[2]/KeyHintLabel '\u2192' shows 18x74 of 33x74",
+      "squeezed: IntSliderSpinbox[3] is 74x77, minimum 198x30",
+      "clipped: IntSliderSpinbox[3]/QSpinBox shows 36x26 of 106x26",
+      "clipped: IntSliderSpinbox[3]/KeyHintLabel '\u2193' shows 18x73 of 33x73",
+      "squeezed: IntSliderSpinbox[4] is 74x78, minimum 198x30",
+      "clipped: IntSliderSpinbox[4]/QSpinBox shows 36x26 of 106x26",
+      "clipped: IntSliderSpinbox[4]/KeyHintLabel '\u2303+\u2192' shows 18x74 of 33x74",
+      "squeezed: IntSliderSpinbox[5] is 74x77, minimum 198x30",
+      "clipped: IntSliderSpinbox[5]/QSpinBox shows 36x26 of 106x26",
+      "clipped: IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2193' shows 18x73 of 33x73"
+    ],
+    "size": [
+      519,
+      708
+    ]
+  },
+  "preferred": {
+    "problems": [],
+    "size": [
+      1298,
+      708
+    ]
+  },
+  "short": {
+    "problems": [
+      "squeezed: QWidget[0] is 198x19, minimum 96x25",
+      "squeezed: QWidget[0]/CheckBox is 64x15, minimum 45x21",
+      "squeezed: QWidget[0]/QLabel 'Resize Bounds to Text' is 128x15, minimum 45x17",
+      "squeezed: QWidget[1] is 198x18, minimum 96x25",
+      "squeezed: QWidget[1]/CheckBox is 62x14, minimum 45x21",
+      "squeezed: QWidget[1]/QLabel 'Resize Font to Bounds' is 130x14, minimum 45x17",
+      "squeezed: ColorButton 'Text Color' is 198x18, minimum 101x30",
+      "squeezed: ColorButton 'Background Color' is 198x19, minimum 146x30",
+      "squeezed: ImageWidget is 480x47, minimum 160x160",
+      "squeezed: PlainTextEdit is 480x59, minimum 63x63",
+      "squeezed: IntSliderSpinbox[0] is 417x19, minimum 158x30",
+      "squeezed: IntSliderSpinbox[0]/QLabel 'Font Size:' is 57x15, minimum 57x17",
+      "squeezed: IntSliderSpinbox[0]/QSpinBox is 317x15, minimum 58x26",
+      "squeezed: IntSliderSpinbox[0]/KeyHintLabel 'O' is 17x15, minimum 17x22",
+      "squeezed: IntSliderSpinbox[0]/KeyHintLabel 'P' is 16x15, minimum 16x22",
+      "squeezed: QComboBox[0] is 61x19, minimum 61x25",
+      "squeezed: QComboBox[1] is 198x18, minimum 87x25",
+      "squeezed: IntSliderSpinbox[1] is 198x19, minimum 66x30",
+      "squeezed: IntSliderSpinbox[1]/QSpinBox is 190x15, minimum 58x26",
+      "squeezed: IntSliderSpinbox[2] is 198x18, minimum 198x30",
+      "squeezed: IntSliderSpinbox[2]/QLabel 'X:' is 16x14, minimum 12x17",
+      "squeezed: IntSliderSpinbox[2]/QSpinBox is 106x14, minimum 106x26",
+      "squeezed: IntSliderSpinbox[2]/KeyHintLabel '\u2190' is 33x14, minimum 18x22",
+      "squeezed: IntSliderSpinbox[2]/KeyHintLabel '\u2192' is 33x14, minimum 18x22",
+      "squeezed: IntSliderSpinbox[3] is 198x19, minimum 198x30",
+      "squeezed: IntSliderSpinbox[3]/QLabel 'Y:' is 16x15, minimum 11x17",
+      "squeezed: IntSliderSpinbox[3]/QSpinBox is 106x15, minimum 106x26",
+      "squeezed: IntSliderSpinbox[3]/KeyHintLabel '\u2191' is 33x15, minimum 15x22",
+      "squeezed: IntSliderSpinbox[3]/KeyHintLabel '\u2193' is 33x15, minimum 15x22",
+      "squeezed: IntSliderSpinbox[4] is 198x18, minimum 198x30",
+      "squeezed: IntSliderSpinbox[4]/QLabel 'W:' is 16x14, minimum 16x17",
+      "squeezed: IntSliderSpinbox[4]/QSpinBox is 106x14, minimum 106x26",
+      "squeezed: IntSliderSpinbox[4]/KeyHintLabel '\u2303+\u2190' is 33x14, minimum 33x22",
+      "squeezed: IntSliderSpinbox[4]/KeyHintLabel '\u2303+\u2192' is 33x14, minimum 33x22",
+      "squeezed: IntSliderSpinbox[5] is 198x19, minimum 198x30",
+      "squeezed: IntSliderSpinbox[5]/QLabel 'H:' is 16x15, minimum 13x17",
+      "squeezed: IntSliderSpinbox[5]/QSpinBox is 106x15, minimum 106x26",
+      "squeezed: IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2191' is 33x15, minimum 32x22",
+      "squeezed: IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2193' is 33x15, minimum 32x22"
+    ],
+    "size": [
+      1298,
+      142
+    ]
+  },
+  "tall": {
+    "problems": [],
+    "size": [
+      1298,
+      2124
+    ]
+  },
+  "wide": {
+    "problems": [],
+    "size": [
+      3894,
+      708
+    ]
+  }
+}

@@ -5,7 +5,7 @@ inpainting modes.  Other editing modes should provide subclasses with implementa
 import logging
 import sys
 from enum import Enum
-from typing import Optional
+from typing import Callable, Optional
 
 from enum import StrEnum
 
@@ -138,6 +138,8 @@ class MainWindow(QMainWindow):
             Object managing application behavior.
         """
         super().__init__()
+        # Called on every close request; returning False keeps the window open. None closes without asking.
+        self.confirm_close: Optional[Callable[[], bool]] = None
         self.setWindowIcon(QIcon(APP_ICON_PATH))
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
         self.setMinimumSize(QSize(0, 0))
@@ -187,7 +189,7 @@ class MainWindow(QMainWindow):
         self._top_divider = DraggableDivider()
         self._layout.addWidget(self._top_divider)
 
-        self._image_panel = ImagePanel(image_stack, True)
+        self._image_panel = ImagePanel(image_stack, True, include_rulers=True)
         self._image_panel.setContentsMargins(1, 1, 1, 1)
         self._layout.addWidget(self._image_panel, stretch=VERTICAL_STRETCH_SUM)
 
@@ -536,9 +538,22 @@ class MainWindow(QMainWindow):
         if not self._is_loading:
             super().mousePressEvent(event)
 
-    def closeEvent(self, unused_event: Optional[QCloseEvent]) -> None:
-        """Close the application when the main window is closed."""
+    def closeEvent(self, event: Optional[QCloseEvent]) -> None:
+        """Asks `confirm_close` for permission, then closes the application. Ignores the event if it declines."""
+        if self.confirm_close is not None and not self.confirm_close():
+            if event is not None:
+                event.ignore()
+            return
         QApplication.exit()
+
+    def close_without_confirmation(self) -> None:
+        """Closes the window and exits the application without consulting `confirm_close`."""
+        confirm_close = self.confirm_close
+        self.confirm_close = None
+        try:
+            self.close()
+        finally:
+            self.confirm_close = confirm_close
 
     @property
     def image_panel(self) -> ImagePanel:

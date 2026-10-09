@@ -5,8 +5,8 @@
         "subcategory": "Appearance",
         "description": "Qt style to use for the user interface",
         "type": "string",
-        "default": "fusion",
-        "options": ["fusion"],
+        "default": "Fusion",
+        "options": ["Fusion"],
         "saved": true
     },
     "theme": {
@@ -15,8 +15,17 @@
         "subcategory": "Appearance",
         "description": "Theme to use for the user interface (may require restart)",
         "type": "string",
-        "default": "None",
-        "options": ["None"],
+        "default": "intrapaint_ink",
+        "options": ["intrapaint_ink", "None"],
+        "saved": true
+    },
+    "overlay_scroll_bars": {
+        "label": "Overlay scroll bars:",
+        "category": "Interface",
+        "subcategory": "Appearance",
+        "description": "With the IntraPaint Ink theme, draw thin scroll bars over the content they scroll, instead of beside it.",
+        "type": "bool",
+        "default": true,
         "saved": true
     },
     "font_point_size": {
@@ -83,6 +92,47 @@
         "type": "bool",
         "default": true,
         "saved": true
+    },
+    "show_rulers": {
+        "label": "Show rulers:",
+        "category": "Interface",
+        "subcategory": "Layout",
+        "description": "Show rulers with image pixel coordinates above and to the left of the image.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "show_ruler_highlights": {
+        "label": "Highlight generation area and selection on rulers:",
+        "category": "Interface",
+        "subcategory": "Layout",
+        "description": "Mark the image generation area and the selection's bounds with bars along the rulers.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "ruler_generation_area_color": {
+        "label": "Ruler generation area color:",
+        "category": "Interface",
+        "subcategory": "Layout",
+        "description": "Color of the image generation area's bar on the rulers. Leave empty to use the theme's accent color. The selection's bar uses the selection overlay color. Both are drawn opaque, lightened or darkened as needed to stand out against the ruler.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "ruler_font_size": {
+        "label": "Ruler font size:",
+        "category": "Interface",
+        "subcategory": "Layout",
+        "description": "Font point size for ruler labels. The rulers' thickness scales with it.",
+        "type": "int",
+        "default": 8,
+        "saved": true,
+        "range_options": {
+            "min": 4,
+            "max": 72,
+            "step": 1
+        }
     },
     "animate_selection_outline": {
         "label": "Animate selected content outlines",
@@ -202,6 +252,34 @@
         "default": "256x256",
         "saved": true
     },
+    "generation_resolution_min_side": {
+        "label": "Minimum upscaled resolution side:",
+        "category": "Editing",
+        "subcategory": "Size",
+        "description": "With the 'Match area, upscale small areas' resolution rule, generation areas with a shorter side below this size are scaled up by a whole-number factor until the shorter side reaches it.",
+        "type": "int",
+        "default": 512,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 8192,
+            "step": 1
+        }
+    },
+    "generation_area_follow_selection": {
+        "label": "Generation area follows selection:",
+        "category": "Editing",
+        "subcategory": "Size",
+        "description": "In inpainting mode, how the generation area moves after the selection or context pins change. 'Minimal move' moves it only as far as needed to contain the selection, its context pins and padding. 'Center on selection' centers it on them. 'Off' leaves it in place. The area is never resized, and undo and redo never move it.",
+        "type": "string",
+        "default": "Minimal move",
+        "options": [
+            "Minimal move",
+            "Center on selection",
+            "Off"
+        ],
+        "saved": true
+    },
     "brush_favorites": {
         "label": "Favorite MyPaint brushes:",
         "category": "Editing",
@@ -256,7 +334,7 @@
     "saved_colors": {
         "label": "Saved colors:",
         "category": "Editing",
-        "description": "List of saved custom color values, used in the color picker tool's custom palette section.",
+        "description": "Colors saved in the color picker's Palettes tab, at most 64.",
         "type": "list",
         "default": [],
         "saved": true
@@ -306,6 +384,14 @@
             "max": 64,
             "step": 1
         },
+        "saved": true
+    },
+    "clear_context_pins_after_generating": {
+        "label": "Clear context pins after generating",
+        "category": "Stable Diffusion",
+        "description": "Remove all context pins when a generated image is applied to the image.",
+        "type": "bool",
+        "default": false,
         "saved": true
     },
     "glid_model_path": {

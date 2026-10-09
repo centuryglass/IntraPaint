@@ -1,5 +1,5 @@
 """Renders an image layer into a QGraphicsScene."""
-from PySide6.QtCore import QRect
+from PySide6.QtCore import QRect, QObject
 from PySide6.QtGui import QTransform
 from PySide6.QtWidgets import QGraphicsItem
 
@@ -12,30 +12,34 @@ from src.ui.graphics_items.pixmap_item import PixmapItem
 
 
 class LayerGraphicsItem(PixmapItem):
-    """Renders an image layer or text layer into a QGraphicsScene."""
+    """Renders an image layer or text layer into a QGraphicsScene.
+
+    A LayerGroup's pixmap is its finished composite, with the group's own opacity and composition mode already
+    applied, so the item shows it at full opacity in Normal mode.
+    """
 
     def __init__(self, layer: Layer):
         super().__init__()
         self._layer = layer
         self._hidden = False
         self._pending_bounds = QRect()
-        self.composition_mode = layer.composition_mode
+        self.composition_mode = self._display_mode()
 
-        layer.visibility_changed.connect(self._update_visibility)
-        layer.content_changed.connect(self._update_pixmap)
-        layer.opacity_changed.connect(self._update_opacity)
+        # The item isn't a QObject, so Qt can't drop these connections when it's deleted. See disconnect_layer.
+        self._connections = [
+            layer.visibility_changed.connect(self._update_visibility),
+            layer.content_changed.connect(self._update_pixmap),
+            layer.opacity_changed.connect(self._update_opacity),
+            layer.z_value_changed.connect(lambda _, z_value: self.setZValue(z_value)),
+            layer.composition_mode_changed.connect(self._update_mode)
+        ]
         if isinstance(layer, TransformLayer):
-            layer.transform_changed.connect(self._update_transform)
+            self._connections.append(layer.transform_changed.connect(self._update_transform))
         elif isinstance(layer, LayerGroup):
-            layer.bounds_changed.connect(self._update_bounds)
-        layer.z_value_changed.connect(lambda _, z_value: self.setZValue(z_value))
-        layer.composition_mode_changed.connect(self._update_mode)
+            self._connections.append(layer.bounds_changed.connect(self._update_bounds))
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent, True)
 
-        if not isinstance(self._layer, SelectionLayer):
-            self.setOpacity(layer.opacity)
-        else:
-            self.setOpacity(0)
+        self.setOpacity(self._display_opacity())
         if isinstance(layer, TransformLayer):
             self.setTransform(layer.transform)
         elif isinstance(layer, LayerGroup):
@@ -49,6 +53,16 @@ class LayerGraphicsItem(PixmapItem):
     def layer(self) -> Layer:
         """Returns the rendered image layer."""
         return self._layer
+
+    def disconnect_layer(self) -> None:
+        """Stops following the layer's changes. Call this before deleting the item or removing it from its scene.
+
+        Connections left in place keep the item alive, and the layer's signals keep updating it after its scene deleted
+        it.
+        """
+        for connection in self._connections:
+            QObject.disconnect(connection)
+        self._connections.clear()
 
     @property
     def hidden(self) -> bool:
@@ -67,18 +81,29 @@ class LayerGraphicsItem(PixmapItem):
         if not self._pending_bounds.isNull() and self._pending_bounds.size() == self.pixmap().size():
             self.setTransform(QTransform.fromTranslate(self._pending_bounds.x(), self._pending_bounds.y()))
             self._pending_bounds = QRect()
-        self.composition_mode = self._layer.composition_mode
+        self.composition_mode = self._display_mode()
         self.update()
 
     def _update_visibility(self, _, visible: bool) -> None:
         self.setVisible(visible and not self.hidden)
 
-    def _update_opacity(self, _, opacity: float) -> None:
-        if not isinstance(self._layer, SelectionLayer):
-            self.setOpacity(opacity)
+    def _display_opacity(self) -> float:
+        if isinstance(self._layer, SelectionLayer):
+            return 0.0  # The selection bitmap is never displayed. The visible selection is SelectionOutline.
+        if isinstance(self._layer, LayerGroup):
+            return 1.0
+        return self._layer.opacity
 
-    def _update_mode(self, _, mode: CompositeMode) -> None:
-        self.composition_mode = mode
+    def _display_mode(self) -> CompositeMode:
+        if isinstance(self._layer, LayerGroup):
+            return CompositeMode.NORMAL
+        return self._layer.composition_mode
+
+    def _update_opacity(self, *_args) -> None:
+        self.setOpacity(self._display_opacity())
+
+    def _update_mode(self, *_args) -> None:
+        self.composition_mode = self._display_mode()
 
     # noinspection PyUnusedLocal
     def _update_transform(self, *args) -> None:

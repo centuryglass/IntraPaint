@@ -22,7 +22,7 @@ from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.geometry_utils import closest_point_keeping_angle, closest_point_at_angle_option
-from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
+from src.util.visual.text_drawing_utils import left_button_hint_text
 
 CURSOR_PATH_BRUSH_DEFAULT = f'{PROJECT_DIR}/resources/cursors/brush_cursor.svg'
 CURSOR_PATH_BRUSH_MIN = f'{PROJECT_DIR}/resources/cursors/min_cursor.svg'
@@ -36,7 +36,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-LINE_HINT = _tr('{modifier_or_modifiers}+{left_mouse_icon}/{right_mouse_icon}: draw line')
+LINE_HINT = _tr('{modifier_or_modifiers}+{left_mouse_icon}: draw line')
 FIXED_ANGLE_HINT = _tr('{modifier_or_modifiers}: fixed angle')
 
 MAX_CURSOR_SIZE = 128
@@ -60,7 +60,6 @@ class BrushTool(BaseTool):
         super().__init__(activation_config_key, label_text, tooltip_text, icon, enable_selection_restrictions)
         self._layer: Optional[ImageLayer] = None
         self._drawing = False
-        self._cached_size: Optional[int] = None
         self._tablet_pressure: Optional[float] = None
         self._last_pressure: Optional[float] = None
         self._tablet_x_tilt: Optional[float] = None
@@ -132,7 +131,6 @@ class BrushTool(BaseTool):
     def brush_control_hints() -> str:
         """Get control hints for line and fixed angle modes, if enabled."""
         line_hint = LINE_HINT.format(left_mouse_icon=left_button_hint_text(),
-                                     right_mouse_icon=right_button_hint_text(),
                                      modifier_or_modifiers='{modifier_or_modifiers}')
         return (f'{BaseTool.modifier_hint(KeyConfig.LINE_MODIFIER, line_hint)}'
                 f' - {BaseTool.modifier_hint(KeyConfig.FIXED_ANGLE_MODIFIER, FIXED_ANGLE_HINT)}')
@@ -251,9 +249,6 @@ class BrushTool(BaseTool):
         """Disconnect from the image when the tool is inactive."""
         if self._drawing:
             self._drawing = False
-            if self._cached_size:
-                self.brush_size = self._cached_size
-                self._cached_size = None
             self._brush.end_stroke()
             self._tablet_input = None
             self._tablet_pressure = None
@@ -312,8 +307,7 @@ class BrushTool(BaseTool):
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Starts drawing when the mouse is clicked in the scene."""
-        if event is None or (event.buttons() != Qt.MouseButton.LeftButton
-                             and event.buttons() != Qt.MouseButton.RightButton) or not self._image_stack.has_image \
+        if event is None or event.buttons() != Qt.MouseButton.LeftButton or not self._image_stack.has_image \
                 or KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True) \
                 or not self.validate_layer(self._layer, image_stack=self._image_stack):
             return False
@@ -325,13 +319,6 @@ class BrushTool(BaseTool):
         if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER) and not \
                 KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER):
             self._last_pos = image_coordinates  # Update so previous clicks don't constrain the angle
-        if self._cached_size is not None and event.buttons() == Qt.MouseButton.LeftButton:
-            self.brush_size = self._cached_size
-            self._cached_size = None
-        elif event.buttons() == Qt.MouseButton.RightButton:
-            if self._cached_size is None:
-                self._cached_size = self._brush.brush_size
-            self.brush_size = 1
         self._brush.start_stroke()
         self._stroke_to(image_coordinates)
         return True
@@ -351,8 +338,7 @@ class BrushTool(BaseTool):
                                                                 list(range(0, 360, 45)))
             half_px_offset = QPointF(0.5, 0.5)  # Draw from the center of the pixel, not the corner.
             self._preview_line.set_line(QLineF(QPointF(self._last_pos) + half_px_offset, line_end + half_px_offset))
-        if (event.buttons() == Qt.MouseButton.LeftButton or event.buttons() == Qt.MouseButton.RightButton
-                and self._drawing):
+        if event.buttons() == Qt.MouseButton.LeftButton:
             self._stroke_to(image_coordinates)
             return True
         return False
@@ -364,9 +350,6 @@ class BrushTool(BaseTool):
         if self._drawing:
             self._drawing = False
             self._brush.end_stroke()
-            if self._cached_size:
-                self.brush_size = self._cached_size
-                self._cached_size = None
             self._tablet_input = None
             self._tablet_pressure = None
             self._last_pressure = None

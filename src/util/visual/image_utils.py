@@ -225,24 +225,40 @@ def get_transparency_tile_pixmap(size: Optional[QSize] = None) -> QPixmap:
     return transparency_pixmap
 
 
-def image_data_as_numpy_8bit(image: QImage) -> NpAnyArray:
-    """Returns a numpy array interface for a QImage's internal data buffer."""
-    assert image.format() in (QImage.Format.Format_ARGB32_Premultiplied, QImage.Format.Format_ARGB32), \
-        f'Image must be pre-converted to ARGB32 or ARGB32_premultiplied, format was {image.format()}'
-    image_ptr = image.bits()
+class _QImageArrayOwner:
+    """Keeps a QImage alive for as long as a numpy array over its pixel buffer exists.
+
+    PySide's QImage.bits() and constBits() don't hold a reference to the QImage, so an array built on them alone
+    reads and writes freed memory once the QImage is garbage-collected. An array created from this object's
+    __array_interface__ holds the object as its base, and every view derived from that array holds the array.
+    """
+    __slots__ = ('_image', '__array_interface__')
+
+    def __init__(self, image: QImage, array: NpAnyArray) -> None:
+        self._image = image
+        self.__array_interface__ = array.__array_interface__
+
+
+def _numpy_8bit_view(image: QImage, image_ptr: Optional[memoryview]) -> NpAnyArray:
     if image_ptr is None:
         raise ValueError('Invalid image parameter')
-    return np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
+    array = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
+    return np.asarray(_QImageArrayOwner(image, array))
+
+
+def image_data_as_numpy_8bit(image: QImage) -> NpAnyArray:
+    """Returns a numpy array interface for a QImage's internal data buffer. The array keeps the QImage alive."""
+    assert image.format() in (QImage.Format.Format_ARGB32_Premultiplied, QImage.Format.Format_ARGB32), \
+        f'Image must be pre-converted to ARGB32 or ARGB32_premultiplied, format was {image.format()}'
+    return _numpy_8bit_view(image, image.bits())
 
 
 def image_data_as_numpy_8bit_readonly(image: QImage) -> NpAnyArray:
-    """Returns a numpy array interface for a QImage's internal data buffer."""
+    """Returns a read-only numpy array interface for a QImage's internal data buffer. The array keeps the QImage
+       alive."""
     assert image.format() == QImage.Format.Format_ARGB32_Premultiplied, \
         f'Image must be pre-converted to ARGB32_premultiplied, format was {image.format()}'
-    image_ptr = image.constBits()
-    if image_ptr is None:
-        raise ValueError('Invalid image parameter')
-    return np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
+    return _numpy_8bit_view(image, image.constBits())
 
 
 def numpy_8bit_to_qimage(np_image: NpAnyArray) -> QImage:
@@ -250,6 +266,22 @@ def numpy_8bit_to_qimage(np_image: NpAnyArray) -> QImage:
     height, width, channel = np_image.shape
     assert channel == 4, f'Expected ARGB32 image, but found {channel} channels'
     return QImage(np_image.data, width, height, QImage.Format.Format_ARGB32_Premultiplied)
+
+
+def mask_to_grayscale(mask_image: QImage) -> QImage:
+    """Converts an alpha-based mask image (e.g. a selection layer's content) into an opaque single-channel grayscale
+       image where pixel brightness matches the source alpha value: white where fully selected, black where not.
+
+       Some inpainting mask consumers (e.g. Forge's ControlNet extension) don't reliably interpret alpha channels,
+       instead flattening any RGBA image by compositing it over a white background before reading color values. Since
+       a colored, alpha-transparent mask image survives that badly (transparent areas and any color sharing the same
+       channel value as the mask color both read the same after compositing), sending a plain grayscale mask instead
+       avoids the ambiguity entirely."""
+    argb_image = mask_image.convertToFormat(QImage.Format.Format_ARGB32)
+    alpha = np.ascontiguousarray(image_data_as_numpy_8bit(argb_image)[..., 3])
+    grayscale_image = QImage(alpha.data, alpha.shape[1], alpha.shape[0], alpha.shape[1],
+                             QImage.Format.Format_Grayscale8)
+    return grayscale_image.copy()
 
 
 def numpy_bounds_index(np_image: NpAnyArray, bounds: QRect) -> NpAnyArray:

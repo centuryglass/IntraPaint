@@ -36,7 +36,6 @@ class QtPaintBrushTool(BrushTool):
         super().__init__(activation_config_key, label_text, tooltip_text, icon, image_stack, image_viewer, brush)
         self._last_click = None
         self._drawing = False
-        self._cached_size = None
         self._size_key = size_key
         self._opacity_key = opacity_key
         self._hardness_key = hardness_key
@@ -118,7 +117,7 @@ class QtPaintBrushTool(BrushTool):
 
         if color_key is not None:
             def _update_color(color_str: str) -> None:
-                if not QColor.isValidColor(color_str):
+                if not QColor(color_str).isValid():
                     logger.error(f'Got invalid color string {color_str}')
                     return
                 self.brush_color = QColor(color_str)

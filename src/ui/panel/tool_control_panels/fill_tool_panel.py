@@ -3,8 +3,9 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QWidget, QFormLayout
 
 from src.config.cache import Cache
+from src.ui.ink_style import set_signal
 from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
-from src.ui.widget.color_button import ColorButton
+from src.ui.widget.color_pair_widget import ColorPairWidget
 
 
 class FillToolPanel(QWidget):
@@ -14,8 +15,7 @@ class FillToolPanel(QWidget):
         super().__init__()
         cache = Cache()
         self._layout = QFormLayout(self)
-        color_button = ColorButton(parent=self)
-        self._layout.addRow(color_button)
+        self._layout.addRow(ColorPairWidget(self))
         pattern_dropdown = FillStyleComboBox(Cache.FILL_TOOL_BRUSH_PATTERN)
         self._layout.addRow(cache.get_label(Cache.FILL_TOOL_BRUSH_PATTERN), pattern_dropdown)
         threshold_slider = cache.get_control_widget(Cache.FILL_THRESHOLD)
@@ -23,10 +23,11 @@ class FillToolPanel(QWidget):
         sample_merged_checkbox = cache.get_control_widget(Cache.SAMPLE_MERGED)
         self._layout.addRow(sample_merged_checkbox)
         selection_only_checkbox = cache.get_control_widget(Cache.PAINT_SELECTION_ONLY)
+        set_signal(selection_only_checkbox)
         self._layout.addRow(selection_only_checkbox)
 
         def _update_pattern_color(color_str: str) -> None:
-            if QColor.isValidColor(color_str):
+            if QColor(color_str).isValid():
                 color = QColor(color_str)
                 pattern_dropdown.set_icon_colors(color)
         cache.connect(self, Cache.LAST_BRUSH_COLOR, _update_pattern_color)

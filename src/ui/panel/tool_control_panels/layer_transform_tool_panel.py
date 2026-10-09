@@ -1,5 +1,5 @@
 """Control panel for the layer transformation tool."""
-from typing import Optional
+from typing import Callable, Optional
 
 from PySide6.QtCore import QRect, QPoint, QSize, QRectF, Signal, SignalInstance
 from PySide6.QtGui import QPaintEvent, QTransform, QColor, Qt, QPolygonF, QPainter, QPen, QKeySequence
@@ -142,14 +142,6 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
                     self._y_scale_box, self._rotate_box, self._aspect_ratio_wrapper, self._clear_button,
                     self._reset_button]
 
-        control_width = 0
-        control_height = 0
-        for control in controls:
-            min_size = control.minimumSizeHint()
-            control_width = max(min_size.width(), control_width)
-            control_height = max(min_size.height(), control_height)
-        preview_size = self._preview.sizeHint()
-
         # Layout setup functions:
         def _clear_grid() -> None:
             clear_layout(grid, unparent=False, hide=True)
@@ -207,14 +199,10 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
             if grid.indexOf(self._preview) >= 0:
                 self._preview.show()
 
-        self.setMinimumWidth(control_width - 10)
-        self.setMinimumHeight(control_height * 3)
-        wide_layout_size = QSize(control_width * 3, control_height * 3)
-        extra_wide_layout_size = QSize(wide_layout_size.width() + preview_size.width(),
-                                       max(wide_layout_size.height(), preview_size.height()))
-
-        tall_layout_size = QSize(control_width, control_height * len(controls))
-        extra_tall_layout_size = QSize(tall_layout_size.width(), tall_layout_size.height() + preview_size.height())
+        def _layout_minimum(build_layout: Callable[[], None]) -> QSize:
+            """Builds a layout mode and returns the smallest size that fits it."""
+            build_layout()
+            return grid.minimumSize().grownBy(self.contentsMargins())
 
         # Wide layout: 3x3 control grid
         wide_layout: tuple[tuple[QWidget, int, int], ...] = (
@@ -239,9 +227,6 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
                 grid.setRowStretch(row, row_stretch)
             _final_grid_adjustments()
 
-        wide_layout_max = QSize(extra_wide_layout_size.width() - 1, INT_MAX)
-        self.add_layout_mode('wide layout', _build_wide_layout, wide_layout_size, wide_layout_max)
-
         # Extra wide layout: wide layout + preview
         def _build_extra_wide_layout() -> None:
             _build_wide_layout()
@@ -251,10 +236,6 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
                 preview_stretch += grid.rowStretch(row)
             grid.setColumnStretch(12, preview_stretch)
             self._preview.show()
-
-        extra_wide_layout_max = QSize(INT_MAX, INT_MAX)
-        self.add_layout_mode('extra wide layout', _build_extra_wide_layout,
-                             extra_wide_layout_size, extra_wide_layout_max)
 
         # Tall layout: one column
         tall_layout: tuple[tuple[QWidget, int, int, int], ...] = (
@@ -276,9 +257,6 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
                 grid.addWidget(widget, row, col, 1, col_stretch)
             _final_grid_adjustments()
 
-        self.add_layout_mode('tall layout', _build_tall_layout, tall_layout_size,
-                             QSize(wide_layout_size.width() - 1, extra_tall_layout_size.height() - 1))
-
         # Extra tall layout: add preview
         extra_tall_row_stretch = {0: 30, 1: 30, 2: 100, 13: 30}
 
@@ -291,10 +269,7 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
                 grid.addWidget(widget, row + 3, col, 1, col_stretch)
             _final_grid_adjustments()
 
-        self.add_layout_mode('extra tall layout', _build_extra_tall_layout, extra_tall_layout_size,
-                             QSize(wide_layout_size.width() - 1, INT_MAX))
-
-        # Reduced layout: leave out width, height, control hints
+        # Reduced layout: leave out the scale controls and key hints
         self._reduced_layout: tuple[tuple[QWidget, int, int, int], ...] = (
             (self._x_pos_box, 0, 0, 2),
             (self._y_pos_box, 1, 0, 2),
@@ -312,7 +287,24 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
                 grid.addWidget(widget, row, col, 1, col_stretch)
             _final_grid_adjustments(True)
 
+        # Each mode's range starts at the size its layout needs, so no mode is chosen where it would squeeze its rows.
+        wide_layout_size = _layout_minimum(_build_wide_layout)
+        extra_wide_layout_size = _layout_minimum(_build_extra_wide_layout)
+        tall_layout_size = _layout_minimum(_build_tall_layout)
+        extra_tall_layout_size = _layout_minimum(_build_extra_tall_layout)
+        reduced_layout_size = _layout_minimum(_build_reduced_layout)
+        self.setMinimumSize(min(tall_layout_size.width(), reduced_layout_size.width()),
+                            min(wide_layout_size.height(), reduced_layout_size.height()))
+
         self.add_default_layout_mode(_build_reduced_layout)
+        self.add_layout_mode('wide layout', _build_wide_layout, wide_layout_size,
+                             QSize(extra_wide_layout_size.width() - 1, INT_MAX))
+        self.add_layout_mode('extra wide layout', _build_extra_wide_layout, extra_wide_layout_size,
+                             QSize(INT_MAX, INT_MAX))
+        self.add_layout_mode('tall layout', _build_tall_layout, tall_layout_size,
+                             QSize(wide_layout_size.width() - 1, extra_tall_layout_size.height() - 1))
+        self.add_layout_mode('extra tall layout', _build_extra_tall_layout, extra_tall_layout_size,
+                             QSize(wide_layout_size.width() - 1, INT_MAX))
 
     @property
     def x_position(self) -> float:
@@ -346,13 +338,13 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
 
     @property
     def layer_height(self) -> float:
-        """Accesses the layer's transformed width value."""
-        return self._width_box.value()
+        """Accesses the layer's transformed height value."""
+        return self._height_box.value()
 
     @layer_height.setter
-    def layer_height(self, width: float) -> None:
+    def layer_height(self, height: float) -> None:
         with signals_blocked(self._height_box):
-            self._height_box.setValue(width)
+            self._height_box.setValue(height)
 
     @property
     def x_scale(self) -> float:

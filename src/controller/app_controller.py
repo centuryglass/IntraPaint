@@ -49,12 +49,14 @@ from typing import Optional, Any, Callable
 from PIL import Image, UnidentifiedImageError, ExifTags
 from PIL.ExifTags import IFD
 from PySide6.QtCore import QSize
-from PySide6.QtGui import QImage, Qt, QIcon
+from PySide6.QtGui import QImage, Qt, QIcon, QTransform
 from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.controller import color_controller
+from src.controller.generation_area_controller import GenerationAreaController
 from src.controller.image_generation.glid3_webservice_generator import Glid3WebserviceGenerator, DEFAULT_GLID_URL
 from src.controller.image_generation.glid3_xl_generator import Glid3XLGenerator
 from src.controller.image_generation.image_generator import ImageGenerator
@@ -96,6 +98,7 @@ from src.ui.panel.color_panel import ColorControlPanel
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
+from src.ui.theme import apply_font_point_size, apply_overlay_scroll_bars, apply_style, apply_theme
 from src.ui.widget.tool_tab import ToolTab
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
 from src.ui.window.main_window import MainWindow, TabBoxID
@@ -110,6 +113,8 @@ from src.util.optional_import import optional_import
 from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.qtexcepthook import QtExceptHook
 from src.util.shared_constants import PROJECT_DIR, PIL_SCALING_MODES
+from src.util.system_clipboard import clipboard_has_image, clipboard_image_is_own_copy, get_clipboard_image, \
+    set_clipboard_image
 from src.util.visual.display_size import get_screen_size
 from src.util.visual.image_format_utils import save_image_with_metadata, save_image, load_image, \
     IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_FORMATS_SUPPORTING_ALPHA, IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA, \
@@ -117,9 +122,7 @@ from src.util.visual.image_format_utils import save_image_with_metadata, save_im
     GREYSCALE_IMAGE_FORMATS, METADATA_COMMENT_KEY, PIL_WRITE_FORMATS, QIMAGE_WRITE_FORMATS
 from src.util.visual.image_utils import image_is_fully_opaque, image_has_partial_alpha, create_transparent_image
 
-# Optional spacenav support and extended theming:
-qdarktheme = optional_import('qdarktheme')
-qt_material = optional_import('qt_material')
+# Optional spacenav support:
 SpacenavManager = optional_import('src.controller.spacenav_manager', attr_name='SpacenavManager')
 
 logger = logging.getLogger(__name__)
@@ -134,7 +137,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 APP_NAME = 'IntraPaint'
-APP_VERSION = 'v1.2.0'
+APP_VERSION = 'v1.3.0'  # x-release-please-version
 
 TOOL_PANEL_LAYER_TAB = _tr('Layers')
 TOOL_PANEL_COLOR_TAB = _tr('Color')
@@ -254,9 +257,20 @@ class AppController(MenuBuilder):
         self._layer_panel: Optional[LayerPanel] = None
         self._generator_window: Optional[GeneratorSetupWindow] = None
 
+        # Apply style and theme before creating widgets, which copy the palette and font when they're created:
+        config.connect(self, AppConfig.OVERLAY_SCROLL_BARS, apply_overlay_scroll_bars)
+        apply_overlay_scroll_bars(config.get(AppConfig.OVERLAY_SCROLL_BARS))
+        config.connect(self, AppConfig.STYLE, apply_style)
+        apply_style(config.get(AppConfig.STYLE))
+        config.connect(self, AppConfig.THEME, apply_theme)
+        apply_theme(config.get(AppConfig.THEME))
+        config.connect(self, AppConfig.FONT_POINT_SIZE, apply_font_point_size)
+        apply_font_point_size(config.get(AppConfig.FONT_POINT_SIZE))
+
         # Initialize edited image data structures:
         self._image_stack = ImageStack(config.get(AppConfig.DEFAULT_IMAGE_SIZE), cache.get(Cache.EDIT_SIZE),
                                        config.get(AppConfig.MIN_EDIT_SIZE), config.get(AppConfig.MAX_EDIT_SIZE))
+        self._generation_area_controller = GenerationAreaController(self._image_stack)
 
         self._metadata: Optional[dict[str, Any]] = None
         self._exif: Optional[Image.Exif] = None
@@ -266,6 +280,7 @@ class AppController(MenuBuilder):
         self.menu_window = self._window
         self._image_viewer = self._window.image_panel.image_viewer
         self._window.generate_signal.connect(self.start_and_manage_inpainting)
+        self._window.confirm_close = self._confirm_quit
         if args.window_size is not None:
             width, height = (int(dim) for dim in args.window_size.split('x'))
             self._window.setGeometry(0, 0, width, height)
@@ -360,12 +375,17 @@ class AppController(MenuBuilder):
         # We'll also want flags for tracking whether cut/copy/paste/clear are currently valid for image content, so
         # that we don't need to recalculate that every time they become invalid for an active text field:
         self._can_copy_image = False
-        self._can_paste_image = False
+        self._can_paste_image = clipboard_has_image()
         self._can_clear_or_cut_image = False
 
         # Finally, track active text inputs, so we always know when text-relevant events should be available:
         self._active_text_field_tracker = ActiveTextFieldTracker()
         self._active_text_field_tracker.status_changed.connect(self._update_enabled_text_relevant_actions)
+        clipboard = QApplication.clipboard()
+        clipboard.dataChanged.connect(self._update_clipboard_paste_availability)
+        # The clipboard outlives the controller, so the connection ends with the window the actions belong to.
+        self._window.destroyed.connect(
+            lambda: clipboard.dataChanged.disconnect(self._update_clipboard_paste_availability))
 
         self._last_active = self._image_stack.active_layer
         self._lock_connection = self._last_active.lock_changed.connect(
@@ -384,39 +404,6 @@ class AppController(MenuBuilder):
         UndoStack().undo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
         UndoStack().redo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
 
-        # Load and apply styling and themes:
-
-        def _apply_style(new_style: str) -> None:
-            app.setStyle(new_style)
-
-        config.connect(self, AppConfig.STYLE, _apply_style)
-        _apply_style(config.get(AppConfig.STYLE))
-
-        def _apply_theme(theme: str) -> None:
-            if theme.startswith('qdarktheme_') and qdarktheme is not None and hasattr(qdarktheme, 'setup_theme'):
-                if theme.endswith('_light'):
-                    qdarktheme.setup_theme('light')
-                elif theme.endswith('_auto'):
-                    qdarktheme.setup_theme('auto')
-                else:
-                    qdarktheme.setup_theme()
-            elif theme.startswith('qt_material_') and qt_material is not None:
-                xml_file = theme[len('qt_material_'):]
-                qt_material.apply_stylesheet(app, theme=xml_file)
-            elif theme != 'None':
-                logger.error(f'Failed to load theme {theme}')
-
-        config.connect(self, AppConfig.THEME, _apply_theme)
-        _apply_theme(config.get(AppConfig.THEME))
-
-        def _apply_font(font_pt: int) -> None:
-            font = app.font()
-            font.setPointSize(font_pt)
-            app.setFont(font)
-
-        config.connect(self, AppConfig.FONT_POINT_SIZE, _apply_font)
-        _apply_font(config.get(AppConfig.FONT_POINT_SIZE))
-
         # ToolPanel/ToolController: Set up editing tools:
         self._tool_controller = ToolController(self._image_stack, self._image_viewer)
         self._tool_panel = ToolPanel()
@@ -429,8 +416,7 @@ class AppController(MenuBuilder):
         self._tool_panel_navigation_panel.mouse_navigation_enabled = False
         self._tool_panel.add_utility_widget_tab(LayerPanel(self._image_stack), TOOL_PANEL_LAYER_TAB,
                                                 QIcon(ICON_PATH_LAYER_TAB))
-        self._tool_panel_color_picker = ColorControlPanel(disable_extended_layouts=True)
-        self._tool_panel_color_picker.set_four_tab_mode()
+        self._tool_panel_color_picker = ColorControlPanel()
         self._tool_panel.add_utility_widget_tab(self._tool_panel_color_picker, TOOL_PANEL_COLOR_TAB,
                                                 QIcon(ICON_PATH_COLOR_TAB))
         self._tool_panel.add_utility_widget_tab(self._tool_panel_navigation_panel, TOOL_PANEL_NAV_TAB,
@@ -619,6 +605,7 @@ class AppController(MenuBuilder):
         image_panels = (self._window.image_panel, self._tool_panel_navigation_panel, self._window.navigation_window)
         for image_panel in image_panels:
             image_panel.set_image_generation_controls_visible(show_image_gen_controls)
+        self._generation_area_controller.generation_area_visible = show_image_gen_controls
         generate_action = self.get_action_for_method(self.start_and_manage_inpainting)
         generate_action.setEnabled(self._generator is not None and not isinstance(self._generator, NullGenerator))
         self._update_enabled_actions()
@@ -698,6 +685,7 @@ class AppController(MenuBuilder):
             self.layer_rotate_ccw,
             self.delete_layer,
             self.merge_layer_down,
+            self.merge_group,
             self.flatten_layer,
             self.layer_to_image_size,
             self.crop_layer_to_content,
@@ -720,10 +708,12 @@ class AppController(MenuBuilder):
             self.move_layer_down,
             self.move_layer_to_top,
             self.flatten_layer,
+            self.merge_group,
             self.copy_layer,
             self.delete_layer
         }
         not_flat_methods: set[Callable[..., None]] = {self.flatten_layer}
+        layer_group_only_methods: set[Callable[..., None]] = {self.merge_group}
         not_layer_group_methods: set[Callable[..., None]] = {
             self.merge_layer_down,
             self.layer_to_image_size
@@ -732,7 +722,8 @@ class AppController(MenuBuilder):
         not_text_layer_methods: set[Callable[..., None]] = {self.crop_layer_to_content}
 
         managed_menu_methods = selection_methods | unlocked_layer_methods | not_bottom_layer_methods \
-                               | not_top_layer_methods | not_layer_stack_methods | not_layer_group_methods
+                               | not_top_layer_methods | not_layer_stack_methods | not_layer_group_methods \
+                               | layer_group_only_methods
 
         active_layer = self._image_stack.active_layer
         is_top_layer = active_layer == self._image_stack.layer_stack or self._image_stack.prev_layer(active_layer) \
@@ -755,6 +746,7 @@ class AppController(MenuBuilder):
                                                    active_layer == self._image_stack.layer_stack),
                                                   (not_flat_methods, self._image_stack.layer_is_flat(active_layer)),
                                                   (not_layer_group_methods, isinstance(active_layer, LayerGroup)),
+                                                  (layer_group_only_methods, not isinstance(active_layer, LayerGroup)),
                                                   (not_text_layer_methods, isinstance(active_layer, TextLayer))):
                 if menu_method in method_set and disable_condition:
                     action.setEnabled(False)
@@ -773,6 +765,22 @@ class AppController(MenuBuilder):
                     or next_layer.layer_parent != active_layer.layer_parent:
                 merge_down_action.setEnabled(False)
 
+        # "Merge group" should also be disabled for empty/flat groups:
+        merge_group_action = self.get_action_for_method(self.merge_group)
+        if merge_group_action.isEnabled() and self._image_stack.layer_is_flat(active_layer):
+            merge_group_action.setEnabled(False)
+
+        # "Merge all visible" needs at least one mergeable visible top-level layer:
+        merge_visible_action = self.get_action_for_method(self.merge_all_visible)
+        if _test_state(self.merge_all_visible):
+            visible_top_layers = [layer for layer in self._image_stack.layer_stack.child_layers if layer.visible]
+            can_merge_visible = len(visible_top_layers) > 1 or (len(visible_top_layers) == 1
+                                                                and isinstance(visible_top_layers[0], LayerGroup)
+                                                                and visible_top_layers[0].count > 0)
+            merge_visible_action.setEnabled(can_merge_visible)
+        else:
+            merge_visible_action.setEnabled(False)
+
         self._can_clear_or_cut_image = not is_locked and not selection_is_empty
         self._can_copy_image = not selection_is_empty
         self._update_enabled_text_relevant_actions()
@@ -788,6 +796,16 @@ class AppController(MenuBuilder):
                 (self.clear, self._can_clear_or_cut_image, self._active_text_field_tracker.focused_can_cut_or_clear())):
             self.get_action_for_method(method).setEnabled(valid_for_image or valid_for_text)
 
+    def _update_clipboard_paste_availability(self) -> None:
+        """Marks image paste available when the system clipboard gains image content, from any program.
+
+        The flag never reverts to False on clipboard changes: content kept in the copy buffer stays pasteable even
+        when the clipboard holds no image.
+        """
+        if clipboard_has_image() and not self._can_paste_image:
+            self._can_paste_image = True
+            self._update_enabled_actions()
+
     # Menu action definitions:
 
     # File menu:
@@ -801,7 +819,8 @@ class AppController(MenuBuilder):
         image_size = image_modal.show_image_modal()
         if image_size and (not self._image_stack.has_image or request_confirmation(self._window,
                                                                                    NEW_IMAGE_CONFIRMATION_TITLE,
-                                                                                   NEW_IMAGE_CONFIRMATION_MESSAGE)):
+                                                                                   NEW_IMAGE_CONFIRMATION_MESSAGE,
+                                                                                   discards_work=True)):
             new_image = QImage(image_size, QImage.Format.Format_ARGB32_Premultiplied)
             new_image.fill(Cache().get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, Qt.GlobalColor.white))
             Cache().set(Cache.LAST_FILE_PATH, '')
@@ -1114,14 +1133,21 @@ class AppController(MenuBuilder):
             return
         if not self._image_stack.has_image or request_confirmation(self._window,
                                                                    RELOAD_CONFIRMATION_TITLE,
-                                                                   RELOAD_CONFIRMATION_MESSAGE):
+                                                                   RELOAD_CONFIRMATION_MESSAGE,
+                                                                   discards_work=True):
             self.load_image(file_path=file_path)
 
     @menu_action(MENU_FILE, 'quit_shortcut', 6)
     def quit(self, skip_confirmation: bool = False) -> None:
         """Quit the application after getting confirmation from the user."""
-        if skip_confirmation or request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE):
-            self._window.close()
+        if skip_confirmation:
+            self._window.close_without_confirmation()
+        else:
+            self._window.close()  # MainWindow.closeEvent asks through _confirm_quit.
+
+    def _confirm_quit(self) -> bool:
+        """Asks the user to confirm closing the main window, returning whether to proceed."""
+        return request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE, discards_work=True)
 
     # Edit menu:
 
@@ -1155,7 +1181,9 @@ class AppController(MenuBuilder):
             assert text_field is not None
             text_field.cut()
         else:
-            self._image_stack.cut_selected()
+            cut_image = self._image_stack.cut_selected()
+            if cut_image is not None and not cut_image.isNull():
+                set_clipboard_image(cut_image)
             if not self._can_paste_image:
                 self._can_paste_image = True
                 self._update_enabled_actions()
@@ -1168,7 +1196,9 @@ class AppController(MenuBuilder):
             assert text_field is not None
             text_field.copy()
         else:
-            self._image_stack.copy_selected()
+            copied_image = self._image_stack.copy_selected()
+            if copied_image is not None and not copied_image.isNull():
+                set_clipboard_image(copied_image)
             if not self._can_paste_image:
                 self._can_paste_image = True
                 self._update_enabled_actions()
@@ -1180,8 +1210,23 @@ class AppController(MenuBuilder):
             text_field = self._active_text_field_tracker.focused_text_input
             assert text_field is not None
             text_field.paste()
+            return
+        clipboard_image = get_clipboard_image()
+        if clipboard_image is not None and not clipboard_image_is_own_copy():
+            self._paste_image_from_system_clipboard(clipboard_image)
         else:
             self._image_stack.paste()
+
+    def _paste_image_from_system_clipboard(self, image: QImage) -> None:
+        """Pastes an image copied in another program into a new layer, centered on the generation area when a
+        generator is active, or centered in the visible view otherwise."""
+        if self._generator != self._null_generator:
+            center = self._image_stack.generation_area.center()
+        else:
+            center = self._image_viewer.visible_scene_bounds.center().toPoint()
+        offset = QTransform.fromTranslate(center.x() - (image.width() - 1) // 2,
+                                          center.y() - (image.height() - 1) // 2)
+        self._image_stack.paste_image(image, offset)
 
     @menu_action(MENU_EDIT, 'clear_shortcut', 105, valid_app_states=[APP_STATE_EDITING])
     def clear(self) -> None:
@@ -1191,7 +1236,17 @@ class AppController(MenuBuilder):
         else:
             self._image_stack.clear_selected()
 
-    @menu_action(MENU_EDIT, 'settings_shortcut', 106)
+    @menu_action(MENU_EDIT, 'swap_colors_shortcut', 106)
+    def swap_colors(self) -> None:
+        """Swap the foreground and background colors."""
+        color_controller.swap()
+
+    @menu_action(MENU_EDIT, 'reset_colors_shortcut', 107)
+    def reset_colors(self) -> None:
+        """Set the foreground color to black and the background color to white."""
+        color_controller.reset()
+
+    @menu_action(MENU_EDIT, 'settings_shortcut', 108)
     def show_settings(self) -> None:
         """Show the settings window."""
         if self._settings_modal is None:
@@ -1203,6 +1258,11 @@ class AppController(MenuBuilder):
         self._settings_modal.show_modal()
 
     # Image menu:
+
+    @menu_action(MENU_IMAGE, 'toggle_rulers_shortcut', 198)
+    def toggle_rulers(self) -> None:
+        """Show or hide the rulers beside the image."""
+        AppConfig().set(AppConfig.SHOW_RULERS, not AppConfig().get(AppConfig.SHOW_RULERS))
 
     @menu_action(MENU_IMAGE, 'navigation_window_shortcut', 199)
     def show_navigation_window(self) -> None:
@@ -1363,6 +1423,11 @@ class AppController(MenuBuilder):
         """Contract the selection by a given pixel count, 1 by default."""
         self._image_stack.selection_layer.grow_or_shrink_selection(-num_pixels)
 
+    @menu_action(MENU_SELECTION, 'clear_context_pins_shortcut', 306, valid_app_states=[APP_STATE_EDITING])
+    def clear_context_pins(self) -> None:
+        """Removes all context pins."""
+        self._image_stack.selection_layer.clear_context_pins()
+
     # Layer menu:
     @menu_action(MENU_LAYERS, 'show_layer_menu_shortcut', 399)
     def show_layer_panel(self) -> None:
@@ -1472,23 +1537,33 @@ class AppController(MenuBuilder):
         """Merge the active layer with the one beneath it."""
         self._image_stack.merge_layer_down()
 
-    @menu_action(MENU_LAYERS, 'flatten_layer_shortcut', 444, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYERS, 'merge_group_shortcut', 445, valid_app_states=[APP_STATE_EDITING])
+    def merge_group(self) -> None:
+        """Merge the active layer group into a single image layer."""
+        self._image_stack.merge_group()
+
+    @menu_action(MENU_LAYERS, 'merge_all_visible_shortcut', 446, valid_app_states=[APP_STATE_EDITING])
+    def merge_all_visible(self) -> None:
+        """Merge all visible layers into a single image layer."""
+        self._image_stack.merge_all_visible()
+
+    @menu_action(MENU_LAYERS, 'flatten_layer_shortcut', 447, valid_app_states=[APP_STATE_EDITING])
     def flatten_layer(self) -> None:
         """Simplifies the active layer."""
         self._image_stack.flatten_layer()
 
-    @menu_action(MENU_LAYERS, 'layer_to_image_size_shortcut', 445,
+    @menu_action(MENU_LAYERS, 'layer_to_image_size_shortcut', 448,
                  valid_app_states=[APP_STATE_EDITING])
     def layer_to_image_size(self) -> None:
         """Crop or expand the active layer to match the image size."""
         self._image_stack.layer_to_image_size()
 
-    @menu_action(MENU_LAYERS, 'crop_layer_to_selection_shortcut', 446, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYERS, 'crop_layer_to_selection_shortcut', 449, valid_app_states=[APP_STATE_EDITING])
     def crop_layer_to_selection(self) -> None:
         """Crop the active layer to fit overlapping selection bounds."""
         crop_layer_to_selection(self._image_stack)
 
-    @menu_action(MENU_LAYERS, 'crop_to_content_shortcut', 447,
+    @menu_action(MENU_LAYERS, 'crop_to_content_shortcut', 450,
                  valid_app_states=[APP_STATE_EDITING])
     def crop_layer_to_content(self) -> None:
         """Crop the active layer to remove fully transparent border pixels."""

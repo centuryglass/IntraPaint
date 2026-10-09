@@ -1,18 +1,16 @@
+# Runtime dependencies, pinned to exact versions so an upstream release can't break fresh installs or CI without
+# warning. Dependabot (.github/dependabot.yml) proposes bumps as PRs, and CI checks each one before it lands.
+# Test and packaging tools are in requirements-dev.txt; optional extras are in optional-requirements.txt.
+PySide6==6.11.2
+numpy==2.4.6
 opencv-python-headless==4.10.0.84
-numpy
-pillow
-requests
-PySide6
-platformdirs
-websocket-client
+pillow==12.3.0
+requests==2.34.2
+websocket-client==1.9.2
+platformdirs==4.12.0
+pydantic==2.14.0
+sd-backend-client==0.3.0
 
-regex
-scipy
-pytest
-setuptools
-more-itertools
-packaging
-ipywidgets
-protobuf
-ipython
-cython
+# IntraPaint.py compiles src/util/visual/image_fill.py with Cython on launch when the compiled module is missing.
+cython==3.3.0
+setuptools==84.0.0

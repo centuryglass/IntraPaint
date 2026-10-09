@@ -56,20 +56,25 @@ class RGBColorBalanceFilter(ImageFilter):
 
     @staticmethod
     def color_balance(image: QImage, red: float, green: float, blue: float, alpha: float) -> QImage:
-        """Add, multiply, subtract, or divide image colors by individual RGB component."""
+        """Multiply image colors and alpha by individual RGBA factors.
+
+        Factors apply to unpremultiplied color. The result is premultiplied by the new alpha, so color never exceeds
+        alpha in the returned image.
+        """
         if alpha == 0:
             return create_transparent_image(image.size())
         color_channel_multipliers = (blue, green, red)
         final_image = image.copy()
         np_image = image_data_as_numpy_8bit(final_image)
-        float_alpha = np_image[:, :, 3] / 255.0
-        alpha_zero = np_image[:, :, 3] == 0
-
+        visible = np_image[:, :, 3] > 0
+        pixels = np_image[visible].astype(np.float64)
+        old_alpha = pixels[:, 3]
+        new_alpha = np.clip(np.round(old_alpha * alpha), 0, 255)
         for color_channel, factor in enumerate(color_channel_multipliers):
-            np_image[~alpha_zero, color_channel] = np.clip(np_image[~alpha_zero, color_channel]
-                                                           / float_alpha[~alpha_zero] * alpha * factor,
-                                                           0, 255)
-        np_image[~alpha_zero, 3] = np.clip(np_image[~alpha_zero, 3] * alpha, 0, 255)
+            unpremultiplied = np.clip(pixels[:, color_channel] * 255.0 / old_alpha * factor, 0, 255)
+            pixels[:, color_channel] = np.round(unpremultiplied * new_alpha / 255.0)
+        pixels[:, 3] = new_alpha
+        np_image[visible] = pixels.astype(np.uint8)
         return final_image
 
     def get_parameters(self) -> list[Parameter]:

@@ -53,6 +53,15 @@
         "default": "Ctrl",
         "saved": true
     },
+    "padding_scroll_modifier": {
+        "label": "Padding Scroll Modifier:",
+        "category": "Keybindings",
+        "subcategory": "Modifiers",
+        "description": "When held, the scroll wheel changes Inpaint Full Resolution padding over the image or the navigation panel, with any tool.",
+        "type": "string",
+        "default": "Shift",
+        "saved": true
+    },
     "zoom_in": {
         "label": "Zoom in:",
         "category": "Keybindings",
@@ -314,6 +323,15 @@
         "default": "G",
         "saved": true
     },
+    "previous_generation_frame_key": {
+        "label": "Previous generation area size:",
+        "category": "Keybindings",
+        "subcategory": "Navigation",
+        "description": "Switch the generation area back to the size used before the current one. Pressing it again switches back.",
+        "type": "string",
+        "default": "Shift+G",
+        "saved": true
+    },
     "brush_tool_key": {
         "label": "Switch to the brush tool:",
         "category": "Keybindings",
@@ -521,6 +539,24 @@
         "default": "Delete",
         "saved": true
     },
+    "swap_colors_shortcut": {
+        "label": "Swap colors",
+        "category": "Menu Shortcuts",
+        "subcategory": "Edit Menu",
+        "description": "Swap the foreground and background colors.",
+        "type": "string",
+        "default": "Shift+X",
+        "saved": true
+    },
+    "reset_colors_shortcut": {
+        "label": "Reset colors",
+        "category": "Menu Shortcuts",
+        "subcategory": "Edit Menu",
+        "description": "Set the foreground color to black and the background color to white.",
+        "type": "string",
+        "default": "Shift+D",
+        "saved": true
+    },
     "settings_shortcut": {
         "label": "Settings",
         "category": "Menu Shortcuts",
@@ -537,6 +573,15 @@
         "description": "Open a navigation window showing the entire edited image.",
         "type": "string",
         "default": "Ctrl+Alt+W",
+        "saved": true
+    },
+    "toggle_rulers_shortcut": {
+        "label": "Show/hide rulers",
+        "category": "Menu Shortcuts",
+        "subcategory": "Image Menu",
+        "description": "Show or hide the rulers beside the image.",
+        "type": "string",
+        "default": "Ctrl+Alt+Shift+R",
         "saved": true
     },
     "resize_canvas_shortcut": {
@@ -665,6 +710,15 @@
         "default": "Ctrl+-",
         "saved": true
     },
+    "clear_context_pins_shortcut": {
+        "label": "Clear context pins",
+        "category": "Menu Shortcuts",
+        "subcategory": "Selection Menu",
+        "description": "Remove all context pins",
+        "type": "string",
+        "default": "Ctrl+Alt+P",
+        "saved": true
+    },
     "show_layer_menu_shortcut": {
         "label": "Show layer window",
         "category": "Menu Shortcuts",
@@ -762,6 +816,24 @@
         "description": "Merge the active layer with the one below it",
         "type": "string",
         "default": "Ctrl+Shift+M",
+        "saved": true
+    },
+    "merge_group_shortcut": {
+        "label": "Merge group",
+        "category": "Menu Shortcuts",
+        "subcategory": "Layer Menu",
+        "description": "Merge the active layer group into a single image layer",
+        "type": "string",
+        "default": "Ctrl+Shift+Alt+G",
+        "saved": true
+    },
+    "merge_all_visible_shortcut": {
+        "label": "Merge all visible",
+        "category": "Menu Shortcuts",
+        "subcategory": "Layer Menu",
+        "description": "Merge all visible layers into a single image layer",
+        "type": "string",
+        "default": "Ctrl+Shift+Alt+M",
         "saved": true
     },
     "flatten_layer_shortcut": {

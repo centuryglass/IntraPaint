@@ -10,7 +10,8 @@ Main features
 """
 import json
 import logging
-import os.path
+import os
+import tempfile
 import threading
 from inspect import signature
 from threading import Lock
@@ -76,7 +77,9 @@ class Config:
             default values. Any expected keys not found in the file will be added with default values. Any unexpected
             values will be removed. If not provided, the Config object won't allow file IO.
         child_class: class
-            Child class where definition keys should be written as properties when first initialized.
+            Child class where definition keys should be written as properties when first initialized. Reading one of
+            those properties before the first construction raises `AttributeError`. `conftest.py` constructs every
+            config up front, so tests don't catch this.
         """
         self._entries: dict[str, ConfigEntry] = {}
         self._connected: dict[str, dict[Any, Callable[..., None]]] = {}
@@ -175,7 +178,11 @@ class Config:
 
     # noinspection PyProtectedMember
     def _reset(self) -> None:
-        """Discard all changes and connections, and reload from JSON. For testing use only."""
+        """Discard all changes and connections, and reload from JSON. For testing use only.
+
+        Option lists shrink to the default value alone, so a test that sets another option calls
+        `restore_default_options` first.
+        """
         with self._lock:
             self._connected = {}
             for key, entry in self._entries.items():
@@ -248,11 +255,19 @@ class Config:
         -------
         The configured color, or the default if the color isn't valid."""
         color_str = self.get(key)
-        if not QColor.isValidColor(color_str):
+        if not QColor(color_str).isValid():
             if isinstance(default_color, Qt.GlobalColor):
                 default_color = QColor(default_color)
             return default_color
         return QColor(color_str)
+
+    def set_color(self, key: str, color: QColor | Qt.GlobalColor, save_change: bool = True) -> None:
+        """Saves a color value to config as a lowercase `#aarrggbb` string, the one form color keys use.
+
+        Mixing cases for the same color makes `set` see a change and notify every listener again, so all color writes
+        go through this method.
+        """
+        self.set(key, QColor(color).name(QColor.NameFormat.HexArgb), save_change)
 
     def get_control_widget(self, key: str, connect_to_config: bool = True, multi_line=False) -> DynamicFieldWidget:
         """Returns a QWidget capable of adjusting the chosen config value. Unless connect_to_config is false, changes
@@ -334,6 +349,8 @@ class Config:
             inner_key: Optional[str] = None) -> None:
         """Updates a saved value.
 
+        Connected callbacks stop running for this change once one of them changes the value again.
+
         Parameters
         ----------
         key : str
@@ -369,10 +386,11 @@ class Config:
             return
         # Schedule save to JSON file:
         if save_change:
+            write_now = False
             with self._lock:
                 if not self._save_timer.isActive():
                     if threading.current_thread() is not threading.main_thread():
-                        self._write_to_json()  # Timers can't be started from other threads.
+                        write_now = True  # Timers can't be started from other threads.
                     else:
                         def write_change() -> None:
                             """Copy changes to the file and disconnect the timer."""
@@ -381,6 +399,8 @@ class Config:
 
                         self._save_timer.timeout.connect(write_change)
                         self._save_timer.start(10)
+            if write_now:
+                self._write_to_json()  # Takes `self._lock` itself, so it must run after the block above releases it.
         # Pass change to connected callback functions:
         callbacks = [*self._connected[key].items()]  # <- So callbacks can disconnect or replace themselves
         for source, callback in callbacks:
@@ -398,6 +418,7 @@ class Config:
                     self.disconnect(source, key)
                 else:
                     raise err
+            # A callback that set the value again already notified every callback of the newer value.
             if self.get(key, inner_key) != value:
                 break
 
@@ -413,7 +434,7 @@ class Config:
         ----------
         connected_object: object
             An object to associate with this connection. Only one connection can be made between a given key and
-            connected_object.
+            connected_object: a second connect with the same object and key replaces the first.
         key: str
             A key tracked by this config file.
         on_change_fn: function(new_value), function(new_value, inner_key)
@@ -639,9 +660,16 @@ class Config:
         with self._lock:
             for entry in self._entries.values():
                 entry.save_to_json_dict(converted_dict)
-            with open(self._json_path, 'w', encoding='utf-8') as file:
-                # noinspection PyTypeChecker
-                json.dump(converted_dict, file, ensure_ascii=False, indent=4)
+            fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(self._json_path) or '.')
+            try:
+                with os.fdopen(fd, 'w', encoding='utf-8') as file:
+                    # noinspection PyTypeChecker
+                    json.dump(converted_dict, file, ensure_ascii=False, indent=4)
+                os.replace(temp_path, self._json_path)
+            except Exception:
+                if os.path.exists(temp_path):
+                    os.unlink(temp_path)
+                raise
 
     def _read_from_json(self) -> None:
         if self._json_path is None:

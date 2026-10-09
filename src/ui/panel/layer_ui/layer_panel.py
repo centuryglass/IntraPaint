@@ -13,8 +13,8 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer, LayerParent
 from src.image.layers.layer_group import LayerGroup
 from src.ui.panel.layer_ui.layer_group_widget import LayerGroupWidget
-from src.ui.panel.layer_ui.layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH, LayerWidget
 from src.util.shared_constants import PROJECT_DIR, APP_ICON_PATH, SMALL_ICON_SIZE
+from src.util.visual.palette_icon import palette_icon
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +95,7 @@ class LayerPanel(QWidget):
         self._layout.addLayout(self._opacity_layout)
         self._opacity_slider.setRange(0, 100)
         self._opacity_spinbox.setRange(0.0, 1.0)
+        self._opacity_spinbox.setSingleStep(0.01)
         active_layer = image_stack.active_layer
         self._opacity_slider.setValue(int(active_layer.opacity * 100))
         self._opacity_spinbox.setValue(active_layer.opacity)
@@ -122,7 +123,7 @@ class LayerPanel(QWidget):
         self._scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         horizontal_scroll_bar = self._scroll_area.horizontalScrollBar()
         assert horizontal_scroll_bar is not None
-        horizontal_scroll_bar.rangeChanged.connect(self.resizeEvent)
+        horizontal_scroll_bar.rangeChanged.connect(self._update_scroll_area_minimum)
         horizontal_scroll_bar.setMinimum(0)
         horizontal_scroll_bar.setMaximum(0)
         self._scroll_area.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
@@ -139,35 +140,39 @@ class LayerPanel(QWidget):
         self._button_bar_layout.setSpacing(0)
         self._button_bar_layout.setContentsMargins(0, 0, 0, 0)
 
-        def _create_button(icon_path: str, tooltip: str, action: Callable[..., Any]) -> QToolButton:
+        def _create_button(icon_path: str, tooltip: str, action: Callable[..., Any],
+                           signal: bool = False, stretch=None) -> QToolButton:
             button = QToolButton()
             button.setToolTip(tooltip)
             button.setContentsMargins(2, 2, 2, 2)
-            icon = QIcon(icon_path)
-            button.setIcon(icon)
+            button.setIcon(palette_icon(icon_path, signal=signal))
             button.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
             button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
             button.clicked.connect(lambda: action())
             self._button_bar_layout.addWidget(button)
+            if stretch is not None:
+                self._button_bar_layout.addStretch(stretch)
             return button
 
-        self._add_button = _create_button(ICON_PATH_ADD_BUTTON, ADD_BUTTON_TOOLTIP, self._image_stack.create_layer)
+        self._add_button = _create_button(ICON_PATH_ADD_BUTTON, ADD_BUTTON_TOOLTIP, self._image_stack.create_layer,
+                                          stretch=1)
         self._add_group_button = _create_button(ICON_PATH_ADD_GROUP_BUTTON, ADD_GROUP_BUTTON_TOOLTIP,
-                                                self._image_stack.create_layer_group)
-        self._delete_button = _create_button(ICON_PATH_DELETE_BUTTON, DELETE_BUTTON_TOOLTIP,
-                                             self._image_stack.remove_layer)
+                                                self._image_stack.create_layer_group, stretch=1)
         self._move_up_button = _create_button(ICON_PATH_LAYER_UP_BUTTON, LAYER_UP_BUTTON_TOOLTIP,
-                                              lambda: self._image_stack.move_layer_by_offset(-1))
+                                              lambda: self._image_stack.move_layer_by_offset(-1), stretch=1)
         self._move_down_button = _create_button(ICON_PATH_LAYER_DOWN_BUTTON, LAYER_DOWN_BUTTON_TOOLTIP,
-                                                lambda: self._image_stack.move_layer_by_offset(1))
+                                                lambda: self._image_stack.move_layer_by_offset(1), stretch=1)
 
         self._merge_down_button = _create_button(ICON_PATH_MERGE_BUTTON, MERGE_DOWN_BUTTON_TOOLTIP,
-                                                 self._image_stack.merge_layer_down)
+                                                 self._image_stack.merge_layer_down, stretch=10)
+        self._delete_button = _create_button(ICON_PATH_DELETE_BUTTON, DELETE_BUTTON_TOOLTIP,
+                                             self._image_stack.remove_layer, signal=True)
 
         self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
         self._image_stack.layer_added.connect(self._layer_added_slot)
         self._active_layer_change_slot(self._image_stack.active_layer)
         self._image_stack.layer_order_changed.connect(self._update_order_slot)
+        self._update_scroll_area_minimum()
 
     def _scroll_timer_slot(self) -> None:
         if self._scroll_offset == 0:
@@ -213,10 +218,14 @@ class LayerPanel(QWidget):
         if self._scroll_timer.isActive():
             self._scroll_timer.stop()
 
-    def resizeEvent(self, event):
-        """Keep at least one layer visible, block horizontal scrolling."""
-        self._scroll_area.setMinimumHeight(self._parent_group_item.layer_item.sizeHint().height() + LIST_SPACING)
-        min_scroll_width = self._parent_group_item.sizeHint().width()
+    def _update_scroll_area_minimum(self, *_) -> None:
+        """Keeps the scroll area tall enough for one layer, and wide enough that the layer list never scrolls sideways.
+
+        The panel's size hints come from its layout, so this minimum sets the panel's minimum size too.
+        """
+        min_scroll_height = self._parent_group_item.layer_item.sizeHint().height() + LIST_SPACING
+        self._scroll_area.setMinimumHeight(max(min_scroll_height, self._scroll_area.minimumSizeHint().height()))
+        min_scroll_width = self._parent_group_item.minimumSizeHint().width() + 2 * self._scroll_area.frameWidth()
         vertical_scrollbar = self._scroll_area.verticalScrollBar()
         if vertical_scrollbar is not None:
             min_scroll_width += vertical_scrollbar.sizeHint().width()
@@ -224,27 +233,12 @@ class LayerPanel(QWidget):
         if horizontal_scrollbar is not None:
             horizontal_scrollbar.setRange(0, 0)
         self._scroll_area.setMinimumWidth(min_scroll_width)
+
+    def resizeEvent(self, event):
+        """Refreshes the scroll area minimum, and saves the panel's bounds when it's a separate window."""
+        self._update_scroll_area_minimum()
         if self.isVisible() and self.isWindow():
             Cache().save_bounds(Cache.SAVED_LAYER_WINDOW_POS, self)
-
-    def sizeHint(self) -> QSize:
-        """At minimum, always show one layer."""
-        layer_width = PREVIEW_SIZE.width() + SMALL_ICON_SIZE + 2 * LAYER_PADDING
-        layer_height = max(SMALL_ICON_SIZE, PREVIEW_SIZE.height())
-        width = min(MAX_WIDTH, layer_width + LAYER_PADDING)
-        height = layer_height + LAYER_PADDING
-        scrollbar = self._scroll_area.verticalScrollBar()
-        if scrollbar is not None:
-            width += scrollbar.sizeHint().width()
-
-        bar_size = self._button_bar.sizeHint()
-        height += bar_size.height() + LAYER_PADDING * 2
-        width = max(bar_size.width(), width)
-        return QSize(width, height)
-
-    def minimumSizeHint(self) -> QSize:
-        """At minimum, always show one layer."""
-        return self.sizeHint()
 
     def _update_order_slot(self) -> None:
         self._parent_group_item.reorder_child_layers()
@@ -265,6 +259,17 @@ class LayerPanel(QWidget):
                 input_widget.valueChanged.disconnect(self._update_opacity_slot)
                 input_widget.setValue(value)
                 input_widget.valueChanged.connect(self._update_opacity_slot)
+
+    def _active_layer_opacity_change_slot(self, _, opacity: float) -> None:
+        self._update_opacity_slot(opacity)
+
+    def _show_composition_mode(self, mode: CompositeMode) -> None:
+        mode_index = self._mode_box.findText(mode)
+        if mode_index >= 0:
+            self._mode_box.setCurrentIndex(mode_index)
+
+    def _active_layer_mode_change_slot(self, _, mode: CompositeMode) -> None:
+        self._show_composition_mode(mode)
 
     def _mode_change_slot(self, _) -> None:
         mode_text = self._mode_box.currentText()
@@ -307,39 +312,31 @@ class LayerPanel(QWidget):
                 parent.set_expanded(True)
 
     def _active_layer_change_slot(self, new_active_layer: Layer) -> None:
+        """Track the active layer's state in the panel controls. Each LayerWidget highlights itself when active."""
         if self._active_layer is not None:
             self._active_layer.lock_changed.disconnect(self._lock_change_slot)
+            self._active_layer.opacity_changed.disconnect(self._active_layer_opacity_change_slot)
+            self._active_layer.composition_mode_changed.disconnect(self._active_layer_mode_change_slot)
         self._active_layer = new_active_layer
         self._open_parent_groups(new_active_layer)
         new_active_layer.lock_changed.connect(self._lock_change_slot)
+        new_active_layer.opacity_changed.connect(self._active_layer_opacity_change_slot)
+        new_active_layer.composition_mode_changed.connect(self._active_layer_mode_change_slot)
         for button in (self._move_up_button, self._move_down_button):
             button.setEnabled(new_active_layer != self._image_stack.layer_stack)
-        self._lock_change_slot(new_active_layer, new_active_layer.locked)
-        layer_id = new_active_layer.id
-        layer_groups: list[LayerGroupWidget] = [self._parent_group_item]
-        while len(layer_groups) > 0:
-            group = layer_groups.pop()
-            group.layer_item.active = group.layer_item.layer.id == layer_id
-            for child in group.child_items:
-                if isinstance(child, LayerGroupWidget):
-                    layer_groups.append(child)
-                else:
-                    assert isinstance(child, LayerWidget)
-                    child.active = child.layer.id == layer_id
-        if new_active_layer is not None:
-            self._update_opacity_slot(new_active_layer.opacity)
-            image_mode = new_active_layer.composition_mode
-            mode_index = self._mode_box.findText(image_mode)
-            if mode_index >= 0:
-                self._mode_box.setCurrentIndex(mode_index)
+        self._lock_change_slot()
+        self._update_opacity_slot(new_active_layer.opacity)
+        self._show_composition_mode(new_active_layer.composition_mode)
 
     def _layer_added_slot(self, new_layer: Layer) -> None:
         self._open_parent_groups(new_layer)
 
-    def _lock_change_slot(self, layer: Layer, is_locked: bool) -> None:
-        assert layer == self._image_stack.active_layer or layer.contains_recursive(self._image_stack.active_layer)
+    def _lock_change_slot(self, *_) -> None:
+        # The signal's arguments may describe a parent group's lock, so read the lock state from the layer instead.
+        active_layer = self._image_stack.active_layer
+        editable = not active_layer.locked and not active_layer.parent_locked
         for widget in (self._opacity_spinbox,
                        self._opacity_slider):
-            widget.setEnabled(not is_locked and not layer.parent_locked)
+            widget.setEnabled(editable)
         for widget in (self._mode_box, self._merge_down_button, self._delete_button):
-            widget.setEnabled(not is_locked and not layer.parent_locked and not layer == self._image_stack.layer_stack)
+            widget.setEnabled(editable and active_layer != self._image_stack.layer_stack)

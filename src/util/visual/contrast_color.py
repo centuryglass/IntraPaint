@@ -30,3 +30,25 @@ def contrast_color(source: QWidget | QColor) -> QColor:
         luminance = relative_luminance(source)
         return QColor(Qt.GlobalColor.white if luminance < LUMINANCE_THRESHOLD else Qt.GlobalColor.black)
     raise ValueError(f"Invalid contrast_color parameter {source}")
+
+
+def contrast_ratio(first: QColor, second: QColor) -> float:
+    """Returns the WCAG contrast ratio between two colors, from 1.0 (identical luminance) to 21.0 (black and white)."""
+    lighter, darker = sorted((relative_luminance(first), relative_luminance(second)), reverse=True)
+    return (lighter + 0.05) / (darker + 0.05)
+
+
+def with_min_contrast(color: QColor, background: QColor, min_ratio: float) -> QColor:
+    """Returns an opaque copy of a color, lightened or darkened until it reaches a contrast ratio against a background.
+
+    Hue and saturation are kept. The color moves away from the background's luminance: lighter on dark backgrounds,
+    darker on light ones. If the ratio can't be reached, the result is the lightest or darkest color of that hue.
+    """
+    result = QColor(color)
+    result.setAlpha(255)
+    lighten = relative_luminance(background) < LUMINANCE_THRESHOLD
+    hue, saturation, lightness, _ = result.getHslF()
+    while contrast_ratio(result, background) < min_ratio and 0.0 < lightness < 1.0:
+        lightness = min(lightness + 0.02, 1.0) if lighten else max(lightness - 0.02, 0.0)
+        result.setHslF(hue, saturation, lightness, 1.0)
+    return result

@@ -31,7 +31,7 @@ This guide covers the editing tools found within the "Tools" panel. and the extr
 All tools share the same set of basic controls for adjusting the image viewport.
 - **Middle-click and drag, or Ctrl + left-click and drag**: Pan image content.
 - **Mouse scroll wheel, Page Up, or Page Down**: Zoom in or zoom out.
-- **"Z" key**: Zoom in on the image generation area, or reset the zoom level.
+- **Shift+Z**: Zoom in on the image generation area, or reset the zoom level.
 - **Hold Alt**: Speed up key or mouse wheel inputs.
 - **Escape, while any input has keyboard focus**: Return keyboard focus to the image.
 
@@ -49,7 +49,6 @@ Draw, paint, blur, smudge, or erase within the image using the [MyPaint](https:/
 
 #### Basic controls
 - **Left-click**: Draw within the image.
-- **Right-click**: Draw with one-pixel brush width.
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size. **Hold shift** to change size faster.
@@ -79,7 +78,6 @@ A basic brush tool with easily adjustable properties.
 
 #### Basic controls
 - **Left-click**: Draw within the image.
-- **Right-click**: Draw with one-pixel brush width.
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size.
@@ -107,7 +105,6 @@ Erase image content.
 
 #### Basic controls
 - **Left-click**: Erase within the image.
-- **Right-click**: Erase with one-pixel brush width.
 - **Hold shift and left-click**: Erase a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the eraser to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the eraser size.
@@ -152,7 +149,6 @@ This tool uses the same filters that are found in the Filters menu.  See [Filter
 
 #### Basic controls
 - **Left-click**: Draw within the image.
-- **Right-click**: Draw with one-pixel brush width.
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size.
@@ -186,7 +182,6 @@ Smudge image content to adjust the placement of image elements and smooth away u
 
 #### Basic controls
 - **Left-click and drag**: Smudge image content.
-- **Right-click and drag**: Smudge with one-pixel brush width.
 - **Hold shift and left-click**: Smudge a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the cursor to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the cursor size.
@@ -242,27 +237,29 @@ Copy image content from one area to another using a brush.
 
 Selects the color used by the brush, draw, and fill tools.  **Left-click** any spot within the image to copy the color at that spot.
 
-#### User interface: Color component tab
-<img src="./labeled_screenshots/tools/color-1.png"  alt="Screenshot of the first panel of color picker tool controls, with specific elements numbered."/>
+#### User interface: Color picker panel
 
-Depending on tool panel size, this tab's top and bottom halves might be split into two panels: **Spectrum** and **Color Component**.
+The same color picker panel appears in the tool panel's color tab. It arranges itself to fit the space it has: in a narrow
+panel its parts sit in tabs, and in a tall or wide panel they are all shown at once.
 
-#### User interface: Palette tab
-<img src="./labeled_screenshots/tools/color-2.png"  alt="Screenshot of the first panel of color picker tool controls, with specific elements numbered." />
+- **Header**: the foreground and background colors, the current color's hex code, and a **pick screen color** button.
+  Click either color to open a color dialog, or use the corner controls to swap or reset them. Drag either color onto
+  the saved colors to save it, or drop any swatch onto either color to use it there. While picking a screen color,
+  left-click to select the color under the cursor, or press Escape to cancel.
+- **Wheel**: drag around the outer ring to change hue, and inside the square to change saturation (left to right) and
+  brightness (bottom to top). The ring and square use the OKHSV color model, so equal steps look about equally
+  different.
+- **Sliders**: three sliders with number fields. The dropdown switches them between RGB, HSV and OKLCH. Each track
+  shows the colors that slider would produce. On OKLCH tracks, hatched sections are colors the screen can't show.
+  Wide panels show a second slider block with its own dropdown.
+- **Palettes**: your saved colors, up to 64. **Save** adds the current color, and **Remove** takes it
+  out again. Click a saved color to use it, drag colors in to save or reorder them, and right-click one to remove it.
+  The grid scrolls once it has more rows than fit.
+- **Alpha and hex**: the alpha slider sets opacity. The hex field accepts `#RGB`, `#RRGGBB` and `#AARRGGBB`.
+- **Recent colors**: the colors you chose most recently, newest first. Click one to use it again.
 
-Depending on tool panel size, this tab's top and bottom halves might be split into two panels: **Basic colors** and **Custom Colors**.
-
-1. **Color control tabs**: switch between different sets of color controls.
-2. **Current color**: The currently selected color.  When the custom palette grid is visible, this can be dragged into any of the custom color squares.
-3. **"Pick Screen Color" button**:  Enters a mode where you can select a color from anywhere on the screen, not just within the image. When active, left-click to select a color, or press escape to cancel.
-4. **Color hue/saturation field**:  Click any spot here to set current color hue and saturation values.
-5. **Color value slider**: Sets the current selected colors value/lightness.
-6. **HSV fields**: Directly view and update the selected color's hue, saturation, and value measurements.
-7. **Color channel fields**: Directly view and update individual color channel strengths for the current color.
-8. **HTML color code**: View and update the selected color's ARGB hexadecimal color code.
-9. **Basic color palette**: Click any of these pre-selected color options to change the active color.  These can also be dragged to any square in the "Custom colors" section to update that saved color.
-10. **Custom color palette**: Saves a set of customized user-selected colors. These will be preserved even when you close and re-open IntraPaint.
-11. **"Add to Custom Colors" button**: Replaces one of the custom colors with the current selected color, starting with the first duplicate color in the grid.  If there are no duplicate colors in the grid, it will start by replacing the first color, and move through the list each time the button is pressed.
+Dragging the wheel or a slider changes the color right away. A color is added to recent colors when you release the
+mouse, enter a hex code, click a swatch or pick a screen color.
 
 ---
 ### ![Text tool icon](./tool_icons/text_icon.png) Text tool (X)
@@ -307,7 +304,7 @@ Draws geometric shapes within the image.
 
 #### Basic controls
 - **Left-click and drag**: Draw a shape into the image.
-- **Hold Ctrl**: Restricts new shapes to a 1:1 aspect ratio.
+- **Hold Shift**: Restricts new shapes to a 1:1 aspect ratio.
 
 #### User interface
 <img src="./labeled_screenshots/tools/shape.png"  alt="Screenshot of the shape tool controls, with specific elements numbered.">
@@ -380,7 +377,7 @@ Select areas by outlining them.
 
 1. **Select/Deselect toggle**: Switch between selecting image content and deselecting content.
 2. **Clear button**: Remove all selections.
-3. **Select All button**: Select all image content.
+3. **Select All button**: Select all image content. In inpainting mode, a **Clear Context Pins** button follows it, removing every [context pin](#-selection-brush-tool-s).
 4. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
 5. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
 6. An in-progress selection.
@@ -392,7 +389,8 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 
 #### Basic controls
 - **Left-click**: Select content within the image.
-- **Right-click**: Select content with one-pixel brush width.
+- **Right-click**: Add a context pin, or remove the pin under the cursor. A pin stretches the "Inpaint Full Resolution" crop to include its spot, without selecting it for inpainting. Pins stay until you remove them or use [Clear context pins](./menu_options.md#clear-context-pins-ctrlaltp).
+- **Right-click and drag**: Drag a new pin into place, or drag an existing pin to move it. Releasing a dragged pin outside the image removes it.
 - **Hold shift and left-click**: Select a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size. **Hold shift** to change size faster.
@@ -406,9 +404,13 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 2. **Select/Deselect toggle**: Switch between selecting image content and deselecting content.
 3. **Clear button**: Remove all selections.
 4. **Select All button**: Select all image content.
-5. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
-6. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
-7. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
+5. **Clear Context Pins button**: Only visible in inpainting mode.  Removes every [context pin](#-selection-brush-tool-s).
+6. Selected content, under the selection brush cursor. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
+7. A context pin. The cropped bounds stretch to include it, but the pinned spot isn't selected for inpainting.
+
+When the Stable Diffusion AI image generator is active, the panel also shows these controls:
+- **"Inpaint Full Resolution" checkbox**: When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
+- **"Inpaint Full Resolution padding" slider**: Only visible when "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
 
 ---
 ### ![Rectangle/Ellipse Selection tool icon](./tool_icons/shape_selection_icon.png) Rectangle/ellipse selection (R)
@@ -418,14 +420,14 @@ Select or deselect rectangular or elliptical regions in the image.
 - **Left-click and drag**: select a region within the image.
 - **Right-click and drag**: deselect a region within the image.
 - **"Q" key**: Toggle between rectangle and ellipse selection.
-- **Hold Ctrl**: Restricts new selections to a 1:1 aspect ratio.
+- **Hold Shift**: Restricts new selections to a 1:1 aspect ratio.
 
 #### User interface
 <img src="./labeled_screenshots/tools/shape_select.png"  alt="Screenshot of the shape selection tool controls, with specific elements numbered."/>
 
 1. **Rectangle/ellipse toggle: Switch between selecting/deselecting rectangular and elliptical regions.
 2. **Clear button**: Remove all selections.
-3. **Select All button**: Select all image content.
+3. **Select All button**: Select all image content. In inpainting mode, a **Clear Context Pins** button follows it, removing every [context pin](#-selection-brush-tool-s).
 4. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
 5. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
 6. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
@@ -455,10 +457,19 @@ Select content based on connected regions and color similarity.
 Controls the area of the image in use for AI image generation. AI generators are restricted to certain resolutions, but this tool lets you use them with images of any size.  When you click "Generate", the AI generator will only act on the area selected by this tool, and only content within this area will influence generated imagery.  See the [inpainting guide](./inpainting_guide.md) for more details.
 
 ### Basic controls
-- **Left-click**: Move the image generation area, without changing its size.
-- **Right-click**: Resize the image generation area, without changing its position.
+- **Left-click and drag inside the area**: Move the image generation area, keeping the spot you grabbed under the pointer.
+- **Left-click and drag outside the area**: Center the image generation area on the clicked spot, then keep moving it while you drag.
+- **Left-click and drag a handle**: Resize the image generation area. While this tool is active, the area's outline has eight square handles. Corner handles keep the area's aspect ratio, and edge handles move one side.
+- **Hold Shift while dragging a corner handle**: Resize freely, without keeping the aspect ratio. This is the reverse of Shift's usual meaning, because keeping the aspect ratio is the safer default here.
+- **Right-click**: Resize the image generation area, without changing its position.  Hold Shift to keep the generation resolution's aspect ratio.
 - **Arrow keys**: Move the image generation area.
 - **Hold Alt**: Increase speed when moving the image generation area using keyboard keys.
+- **Shift + scroll wheel**: Change the "Inpaint Full Resolution" padding. This works with any tool, over the image or the navigation window.
+
+Each drag is one undo step. Resizing applies the resolution rule as the size changes, and adds the finished size to the recent area sizes.
+
+### Following the selection
+In inpainting mode, the generation area moves after you change the selection or its context pins, so that it contains them along with the "Inpaint Full Resolution" padding. It moves only as far as needed, never changes size, and centers on a selection too large to fit. Undo and redo never move it, and moving it by hand isn't overridden until the selection changes again. Change this with **"Generation area follows selection"** in [settings](./menu_options.md#settings-f9) under the **"Editing"** category: **"Minimal move"** (default), **"Center on selection"**, or **"Off"**.
 
 ### User interface
 <img src="./labeled_screenshots/tools/gen_area.png" alt="Screenshot of the generation area tool controls, with specific elements numbered."/>
@@ -467,7 +478,15 @@ Controls the area of the image in use for AI image generation. AI generators are
 2. **Y-coordinate slider**: Sets the position of the generation area's top edge within the image.
 3. **Width slider**: Sets the generation area's width, measured in pixels.
 4. **Height slider**: Sets the generation area's height, measured in pixels.
-5. **"Select full image" button**: Move and resize the image generation area so that it covers the entire image.
-6. **"Gen. area size to resolution" button**: Resizes the image generation area, so that its size exactly matches the AI image generation resolution.
-7. **"Image generation resolution" inputs**: Sets the resolution used for AI image generation.
-8. **"Resolution to gen. area size" button**: Update the AI image generation resolution so that it matches the size of the generation area.
+5. **Area size buttons**: Resize the generation area in one click, keeping its center where it is.
+   - **"Full image"**: Covers the entire image.
+   - **"Square"**: The largest square that fits in the image.
+   - **Recent sizes**: Up to four generation area sizes you've used recently, labeled with their size.
+   - **Shift+G**: Switches back to the size used before the current one. Press it again to switch back.
+6. **"+ size" field**: Type a size such as `768` (a square) or `640x480`, then press Enter to resize the area.
+7. **"Resolution rule" dropdown**: Controls how the AI image generation resolution changes when the generation area is resized.
+   - **"Match area"**: The resolution always equals the generation area size.
+   - **"Match area, upscale small areas"** (default): Like "Match area", but small areas are scaled up by a whole-number factor until their shorter side reaches the minimum set in the settings ("Minimum upscaled resolution side", 512 by default). The factor is reduced if the result would be larger than the maximum generation size.
+   - **"Manual"**: The resolution only changes when you edit it. Editing the resolution by hand selects this rule.
+8. **"Image generation resolution" inputs**: Sets the resolution used for AI image generation.
+9. **Image generation area**: The dotted outline shows the generation area. While this tool is active, drag the square handles on the outline to resize it. Corner handles keep the aspect ratio unless you hold Shift, and edge handles move one side.

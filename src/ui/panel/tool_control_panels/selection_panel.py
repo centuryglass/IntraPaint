@@ -1,7 +1,7 @@
 """Base control panel for selection editing tools."""
 from typing import Optional
 
-from PySide6.QtCore import Qt, QSize, SignalInstance
+from PySide6.QtCore import Qt, QSize, SignalInstance, QPoint
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QPushButton, QHBoxLayout, QLabel, QLayout
 
@@ -9,7 +9,8 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.selection_layer import SelectionLayer
 from src.tools.base_tool import BaseTool
-from src.util.shared_constants import PROJECT_DIR, SMALL_ICON_SIZE
+from src.ui.layout.reflowing_button_group import ReflowingButtonGroup
+from src.util.shared_constants import PROJECT_DIR, SMALL_ICON_SIZE, EDIT_MODE_INPAINT
 from src.util.visual.text_drawing_utils import get_key_display_string
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -25,8 +26,12 @@ FILL_BUTTON_LABEL = _tr('Select All')
 CLEAR_BUTTON_LABEL = _tr('Clear')
 FILL_BUTTON_LABEL_WITH_KEY = _tr('Select All ({select_all_shortcut})')
 CLEAR_BUTTON_LABEL_WITH_KEY = _tr('Clear ({clear_shortcut})')
+CLEAR_PINS_BUTTON_LABEL = _tr('Clear Context Pins')
+CLEAR_PINS_BUTTON_LABEL_WITH_KEY = _tr('Clear Context Pins ({clear_pins_shortcut})')
+CLEAR_PINS_BUTTON_TOOLTIP = _tr('Remove all context pins. Right-click with the selection brush to add or remove pins.')
 ICON_PATH_CLEAR = f'{PROJECT_DIR}/resources/icons/tool_modes/clear_all.svg'
 ICON_PATH_FILL = f'{PROJECT_DIR}/resources/icons/tool_modes/fill.svg'
+ICON_PATH_CLEAR_PINS = f'{PROJECT_DIR}/resources/icons/tool_modes/clear_context_pins.svg'
 
 
 class SelectionPanel(QWidget):
@@ -42,8 +47,11 @@ class SelectionPanel(QWidget):
 
         select_all_key = KeyConfig().get_keycodes(KeyConfig.SELECT_ALL_SHORTCUT)
         clear_key = KeyConfig().get_keycodes(KeyConfig.SELECT_NONE_SHORTCUT)
+        clear_pins_key = KeyConfig().get_keycodes(KeyConfig.CLEAR_CONTEXT_PINS_SHORTCUT)
         select_all_shortcut = None if select_all_key == '' else get_key_display_string(select_all_key, rich_text=False)
         clear_shortcut = None if clear_key == '' else get_key_display_string(clear_key, rich_text=False)
+        clear_pins_shortcut = None if clear_pins_key == '' \
+            else get_key_display_string(clear_pins_key, rich_text=False)
 
         clear_selection_button = QPushButton()
         clear_selection_button.setText(CLEAR_BUTTON_LABEL if clear_shortcut is None
@@ -58,11 +66,28 @@ class SelectionPanel(QWidget):
         fill_selection_button.setIcon(QIcon(QPixmap(ICON_PATH_FILL)))
         fill_selection_button.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
         fill_selection_button.clicked.connect(lambda: selection_layer.select_all())
-        clear_fill_line_layout = QHBoxLayout()
-        clear_fill_line_layout.addWidget(clear_selection_button)
-        clear_fill_line_layout.addSpacing(10)
-        clear_fill_line_layout.addWidget(fill_selection_button)
-        self._layout.addLayout(clear_fill_line_layout)
+
+        clear_pins_button = QPushButton()
+        clear_pins_button.setText(CLEAR_PINS_BUTTON_LABEL if clear_pins_shortcut is None
+                                  else CLEAR_PINS_BUTTON_LABEL_WITH_KEY.format(clear_pins_shortcut=clear_pins_shortcut))
+        clear_pins_button.setToolTip(CLEAR_PINS_BUTTON_TOOLTIP)
+        clear_pins_button.setIcon(QIcon(QPixmap(ICON_PATH_CLEAR_PINS)))
+        clear_pins_button.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
+
+        def _clear_pins() -> None:
+            selection_layer.clear_context_pins()
+        clear_pins_button.clicked.connect(_clear_pins)
+        self._clear_pins_button = clear_pins_button
+
+        def _update_clear_pins_enabled(pins: list[QPoint]) -> None:
+            clear_pins_button.setEnabled(len(pins) > 0)
+        selection_layer.context_pins_changed.connect(_update_clear_pins_enabled)
+        _update_clear_pins_enabled(selection_layer.context_pins)
+
+        button_group = ReflowingButtonGroup()
+        for button in (clear_selection_button, fill_selection_button, clear_pins_button):
+            button_group.add_button(button)
+        self._layout.addWidget(button_group)
 
         cache = Cache()
         padding_checkbox = cache.get_control_widget(Cache.INPAINT_FULL_RES)
@@ -111,6 +136,25 @@ class SelectionPanel(QWidget):
                 padding_spinbox.hide()
         cache.connect(self, Cache.INPAINT_OPTIONS_AVAILABLE, _set_inpainting_control_visibility)
         _set_inpainting_control_visibility(cache.get(Cache.INPAINT_OPTIONS_AVAILABLE))
+
+        def _update_clear_pins_visibility(_=None) -> None:
+            """Show the clear context pins button only while inpainting is available and selected."""
+            clear_pins_button.setVisible(cache.get(Cache.INPAINT_OPTIONS_AVAILABLE)
+                                         and cache.get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT)
+        cache.connect(self, Cache.INPAINT_OPTIONS_AVAILABLE, _update_clear_pins_visibility)
+        cache.connect(self, Cache.EDIT_MODE, _update_clear_pins_visibility)
+        _update_clear_pins_visibility()
+
+    def minimumSizeHint(self) -> QSize:
+        """Returns the layout's minimum width, and the height its contents need at that width.
+
+        The button group stacks its buttons below the width of one row, so the panel is taller at its minimum width
+        than its layout's minimum size says.
+        """
+        hint = super().minimumSizeHint()
+        if self._layout.hasHeightForWidth():
+            hint.setHeight(max(hint.height(), self._layout.totalHeightForWidth(hint.width())))
+        return hint
 
     def insert_into_layout(self, layout_item: QWidget | QLayout, stretch=0) -> None:
         """Insert an item into the layout above all default items but below previously inserted content."""

@@ -2,10 +2,10 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint
-from PySide6.QtGui import QIcon, QCursor, QColor, QMouseEvent
+from PySide6.QtGui import QIcon, QCursor, QMouseEvent
 from PySide6.QtWidgets import QWidget, QApplication
 
-from src.config.cache import Cache
+from src.controller import color_controller
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import image_stack_color_at_point
@@ -61,6 +61,6 @@ class EyedropperTool(BaseTool):
         assert event is not None
         if event.buttons() == Qt.MouseButton.LeftButton:
             color = image_stack_color_at_point(self._image_stack, image_coordinates)
-            Cache().set(Cache.LAST_BRUSH_COLOR, color.name(QColor.NameFormat.HexArgb))
+            color_controller.set_foreground(color)
             return True
         return False

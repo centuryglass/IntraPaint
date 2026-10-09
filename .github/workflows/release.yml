@@ -1,0 +1,69 @@
+name: release
+
+# Publishes a release once its integration -> master pull request merges: when CI passes on a push to master, attaches
+# that run's bundles to the draft release release-please created for the manifest's version, then publishes it. A push
+# whose version has no draft release, such as a master update that isn't a release, is skipped.
+#
+# workflow_run only runs this file from the default branch (integration), so changes here take effect once merged
+# there. Asset names match the download links in README.md.
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [master]
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: publish
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Find draft release
+        id: draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v$(python3 -c 'import json; print(json.load(open(".release-please-manifest.json"))["."])')"
+          is_draft=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || echo missing)
+          if [ "$is_draft" != "true" ]; then
+            echo "::notice::No draft release for $tag (state: $is_draft); nothing to publish."
+            exit 0
+          fi
+          git fetch --tags --force
+          if ! git merge-base --is-ancestor "$tag" HEAD; then
+            echo "::error::$tag isn't an ancestor of this master commit, so these bundles may not contain the release."
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/download-artifact@v8
+        if: steps.draft.outputs.tag
+        with:
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          path: bundles
+
+      - name: Attach bundles and publish
+        if: steps.draft.outputs.tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.draft.outputs.tag }}
+        run: |
+          mv bundles/IntraPaint-linux/IntraPaint IntraPaint-linux
+          mv bundles/IntraPaint-windows/IntraPaint.exe IntraPaint.exe
+          gh release upload "$TAG" IntraPaint-linux IntraPaint.exe --clobber
+          gh release edit "$TAG" --draft=false --latest

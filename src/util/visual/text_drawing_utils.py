@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QApplication
 from src.util.visual.display_size import logger
 from src.util.visual.geometry_utils import align_inner_bounds
 from src.util.visual.image_utils import create_transparent_image, temp_rich_text_image
+from src.util.visual.palette_icon import palette_rich_text_image
 from src.util.shared_constants import PROJECT_DIR
 
 ICON_LMB = f'{PROJECT_DIR}/resources/input_hints/lmb.svg'
@@ -43,7 +44,7 @@ def find_text_size(text: str, font: Optional[QFont] = None, multiline=True, exac
     if not multiline:
         return _find_line_size(font, text, exact)
     lines = text.split('\n')
-    size = QSize()
+    size = QSize(0, 0)
     for line in lines:
         if len(line) == 0:
             line = ' '
@@ -65,8 +66,9 @@ def max_font_size(text: str, font: QFont, bounds: QSize, exact=False) -> int:
     while max_pt < MAX_FONT_PT and test_size.width() < bounds.width() and test_size.height() < bounds.height():
         max_pt += 1
         test_font.setPointSize(max_pt)
-        test_size = find_text_size(text, test_font, exact)
-    max_pt -= 1
+        test_size = find_text_size(text, test_font, exact=exact)
+    if test_size.width() >= bounds.width() or test_size.height() >= bounds.height():
+        max_pt -= 1
     logger.debug(f'"{text}" fits in {bounds} at size {max_pt}')
     return max_pt
 
@@ -163,33 +165,29 @@ def rich_text_code_block(code_string: str) -> str:
             f' padding: 5px; border: 1px solid #ccc; margin-right: 100px;">{code_string}</pre>')
 
 
-def _rich_text_image(img_path: str) -> str:
-    return f'<img src="{img_path}"/>'
-
-
 def left_button_hint_text() -> str:
     """Returns a rich-text inline image representing the left mouse button."""
-    return _rich_text_image(ICON_LMB)
+    return palette_rich_text_image(ICON_LMB)
 
 
 def middle_button_hint_text() -> str:
     """Returns a rich-text inline image representing the middle mouse button."""
-    return _rich_text_image(ICON_MMB)
+    return palette_rich_text_image(ICON_MMB)
 
 
 def right_button_hint_text() -> str:
     """Returns a rich-text inline image representing the right mouse button."""
-    return _rich_text_image(ICON_RMB)
+    return palette_rich_text_image(ICON_RMB)
 
 
 def vertical_scroll_hint_text() -> str:
     """Returns a rich-text inline image representing scroll wheel vertical scrolling."""
-    return _rich_text_image(ICON_V_SCROLL)
+    return palette_rich_text_image(ICON_V_SCROLL)
 
 
 def horizontal_scroll_hint_text() -> str:
     """Returns a rich-text inline image representing scroll wheel horizontal scrolling."""
-    return _rich_text_image(ICON_H_SCROLL)
+    return palette_rich_text_image(ICON_H_SCROLL)
 
 
 def get_key_display_string(keys: QKeySequence | Qt.Key | int | str, rich_text: bool = True) -> str:

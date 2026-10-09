@@ -8,6 +8,7 @@ https://invent.kde.org/documentation/openraster-org/-/blob/master/openraster-sta
 """
 import logging
 import os.path
+import re
 import shutil
 import tempfile
 import zipfile
@@ -23,6 +24,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.text_layer import TextLayer
+from src.image.text_rect import TextRect
 from src.util.visual.geometry_utils import get_scaled_placement
 
 logger = logging.getLogger(__name__)
@@ -96,10 +98,44 @@ TRANSFORM_TAG = 'transformation'
 TRANSFORM_SRC_TAG = 'src_untransformed'
 ATTR_TAG_ALPHA_LOCKED = 'alpha-locked'  # str, optional
 
+# Text layer support:
+# A text layer's extended data entry holds its `TextRect.serialize()` JSON under this tag. Its stack.xml entry and
+# PNG are written as for any image layer, so other editors see the rendered text. Without this tag, or if its data
+# can't be parsed, the layer loads as an image layer.
+TEXT_DATA_TAG = 'text-data'
+
 # Metadata support:
 # The top-level 'metadata' tag can be used to store arbitrary additional string-encoded data, usually image generation
 # parameters.
 METADATA_TAG = 'metadata'
+
+# Layer names become part of the layer's in-archive file name, so characters outside this set are replaced:
+_FILE_NAME_UNSAFE_CHARS = re.compile(r'[^\w .-]')
+_MAX_FILE_NAME_LENGTH = 50
+
+
+def _archive_path(*parts: str) -> str:
+    """Joins path components into an in-archive path.
+
+    The ORA spec requires '/' separators in zip entry names and in the `src` attributes that refer to them, on every
+    platform. Use os.path.join only for paths on the real filesystem.
+    """
+    return '/'.join(parts)
+
+
+def _normalize_archive_path(path: str) -> str:
+    """Converts a `src` value to '/' separators, since files saved on Windows by older versions use '\\'."""
+    return path.replace('\\', '/')
+
+
+def _layer_file_stem(layer: Layer) -> str:
+    """Returns a file name base for a layer's image files, unique per layer and safe for any layer name.
+
+    The layer's real name is stored in stack.xml. This name only has to be a single valid path component: path
+    separators and '..' in a layer name would otherwise write outside the data directory or into a missing one.
+    """
+    safe_name = _FILE_NAME_UNSAFE_CHARS.sub('_', layer.name)[:_MAX_FILE_NAME_LENGTH]
+    return f'{safe_name}_{layer.id}'
 
 
 def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> None:
@@ -134,7 +170,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
             layer_data[ATTR_TAG_SELECTED] = BOOLEAN_TRUE_STR
         layer_data[ATTR_TAG_OPACITY] = layer.opacity
         layer_data[ATTR_TAG_VISIBILITY] = ATTR_VISIBLE if layer.get_visible() else ATTR_HIDDEN
-        image_path = os.path.join(DATA_DIRECTORY_NAME, f'{layer.name}_{layer.id}.png')
+        image_path = _archive_path(DATA_DIRECTORY_NAME, f'{_layer_file_stem(layer)}.png')
         flattened_image, offset_transform = layer.transformed_image()
         layer_data[ATTR_TAG_X_POS] = round(offset_transform.dx())
         layer_data[ATTR_TAG_Y_POS] = round(offset_transform.dy())
@@ -143,14 +179,17 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
 
         # Store untransformed images and transformations in a separate extended data section:
         layer_transform = layer.transform
-        if layer_transform != offset_transform or (isinstance(layer, ImageLayer) and layer.alpha_locked):
+        is_alpha_locked = isinstance(layer, ImageLayer) and layer.alpha_locked
+        if layer_transform != offset_transform or is_alpha_locked or isinstance(layer, TextLayer):
             extended_layer_data: dict[str, str] = {}
-            if isinstance(layer, ImageLayer) and layer.alpha_locked:
+            if isinstance(layer, TextLayer):
+                extended_layer_data[TEXT_DATA_TAG] = layer.text_rect.serialize()
+            if is_alpha_locked:
                 extended_layer_data[ATTR_TAG_ALPHA_LOCKED] = BOOLEAN_TRUE_STR
             if layer_transform != offset_transform:
                 layer_transform_str = _get_transform_str(layer_transform)
-                layer_untransformed_path = os.path.join(DATA_DIRECTORY_NAME,
-                                                        f'{layer.name}_{layer.id}-untransformed.png')
+                layer_untransformed_path = _archive_path(DATA_DIRECTORY_NAME,
+                                                         f'{_layer_file_stem(layer)}-untransformed.png')
                 full_untransformed_path = os.path.join(tmpdir, layer_untransformed_path)
                 assert layer.image.save(full_untransformed_path), f'failed to write to {full_untransformed_path}'
                 extended_layer_data[TRANSFORM_SRC_TAG] = layer_untransformed_path
@@ -178,9 +217,11 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
         for child_layer in layer.child_layers:
             if isinstance(child_layer, LayerGroup):
                 stack_data[DICT_NESTED_CONTENT_NAME].append(encode_layer_group(child_layer))
-            else:
-                assert isinstance(child_layer, (ImageLayer, TextLayer))
+            elif isinstance(child_layer, (ImageLayer, TextLayer)):
                 stack_data[DICT_NESTED_CONTENT_NAME].append(encode_image_layer(child_layer))
+            else:
+                # Saving another layer type as an image layer would lose its data without warning.
+                raise TypeError(f'Saving {type(child_layer).__name__} layers to .ora is not supported')
         return stack_data
 
     image_name = os.path.basename(file_path)
@@ -223,7 +264,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
     for image_file_path, layer_extended_data in extended_data.items():
         extended_layer = Element(LAYER_ELEMENT)
         extended_layer.set(LAYER_TAG_SRC, image_file_path)
-        for extension_tag in [TRANSFORM_TAG, TRANSFORM_SRC_TAG, ATTR_TAG_ALPHA_LOCKED]:
+        for extension_tag in [TRANSFORM_TAG, TRANSFORM_SRC_TAG, ATTR_TAG_ALPHA_LOCKED, TEXT_DATA_TAG]:
             if extension_tag in layer_extended_data:
                 extended_layer.set(extension_tag, layer_extended_data[extension_tag])
         extended_xml_root.append(extended_layer)
@@ -250,7 +291,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
         thumbnail = merged_image.scaled(thumbnail_size)
         tmp_thumbnail_path = os.path.join(tmpdir, THUMBNAIL_FILE_NAME)
         thumbnail.save(tmp_thumbnail_path)
-        zip_file.write(tmp_thumbnail_path, os.path.join(THUMBNAIL_DIRECTORY_NAME, THUMBNAIL_FILE_NAME))
+        zip_file.write(tmp_thumbnail_path, _archive_path(THUMBNAIL_DIRECTORY_NAME, THUMBNAIL_FILE_NAME))
 
         zip_file.write(os.path.join(tmpdir, XML_FILE_NAME), XML_FILE_NAME)
         zip_file.write(os.path.join(tmpdir, EXTENDED_DATA_XML_FILE_NAME), EXTENDED_DATA_XML_FILE_NAME)
@@ -287,8 +328,10 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
             extended_layer_data = {}
             flattened_image_path = extended_layer.get(LAYER_TAG_SRC)
             assert flattened_image_path is not None
+            flattened_image_path = _normalize_archive_path(flattened_image_path)
             transform_image_path = extended_layer.get(TRANSFORM_SRC_TAG)
             if transform_image_path is not None:
+                transform_image_path = _normalize_archive_path(transform_image_path)
                 transform_image_full_path = os.path.join(tmpdir, transform_image_path)
                 assert os.path.isfile(transform_image_full_path), f'missing file: {transform_image_full_path}'
                 transform_image = QImage(transform_image_full_path)
@@ -299,6 +342,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
                 transform = QTransform(*matrix_elements)
                 extended_layer_data[TRANSFORM_TAG] = transform
             extended_layer_data[ATTR_TAG_ALPHA_LOCKED] = extended_layer.get(ATTR_TAG_ALPHA_LOCKED)
+            extended_layer_data[TEXT_DATA_TAG] = extended_layer.get(TEXT_DATA_TAG)
             extended_data[flattened_image_path] = extended_layer_data
 
     def _parse_common_attributes(layer: Layer, element: Element) -> bool:
@@ -325,14 +369,26 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
                 logger.error(f'Unrecognised layer composite mode {composite_op} ignored')
         return element.get(ATTR_TAG_SELECTED) == BOOLEAN_TRUE_STR
 
-    def parse_image_element(element: Element) -> tuple[ImageLayer, bool]:
-        """Load an image layer from its saved XML definition, return whether this layer is selected."""
+    def _parse_text_data(text_data: Optional[str], layer_name: Optional[str]) -> Optional[TextRect]:
+        """Returns the TextRect for a text layer's saved text data, or None if it is missing or can't be parsed."""
+        if text_data is None:
+            return None
+        try:
+            return TextRect.deserialize(text_data)
+        except (ValueError, KeyError, TypeError, AssertionError) as err:
+            logger.error(f'Invalid text data for layer "{layer_name}", loading it as an image layer: {err}')
+            return None
+
+    def parse_image_element(element: Element) -> tuple[ImageLayer | TextLayer, bool]:
+        """Load an image or text layer from its saved XML definition, return whether this layer is selected."""
         assert element.tag == LAYER_ELEMENT
         base_image_path = element.get(LAYER_TAG_SRC)
         assert base_image_path is not None
+        base_image_path = _normalize_archive_path(base_image_path)
         layer_image = QImage()
         layer_transform = QTransform()
         alpha_locked = None
+        text_rect: Optional[TextRect] = None
         if base_image_path in extended_data:
             extended_layer_load_data = extended_data[base_image_path]
             if TRANSFORM_SRC_TAG in extended_layer_load_data:
@@ -340,11 +396,16 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
                 layer_transform = extended_layer_load_data[TRANSFORM_TAG]
             if ATTR_TAG_ALPHA_LOCKED in extended_layer_load_data:
                 alpha_locked = extended_layer_load_data[ATTR_TAG_ALPHA_LOCKED]
-        if layer_image.isNull():
-            layer_image = QImage(os.path.join(tmpdir, base_image_path))
-        layer = ImageLayer(layer_image, '')
+            text_rect = _parse_text_data(extended_layer_load_data.get(TEXT_DATA_TAG), element.get(ATTR_TAG_NAME))
+        layer: ImageLayer | TextLayer
+        if text_rect is not None:
+            layer = TextLayer(text_rect)
+        else:
+            if layer_image.isNull():
+                layer_image = QImage(os.path.join(tmpdir, base_image_path))
+            layer = ImageLayer(layer_image, '')
         is_active = _parse_common_attributes(layer, element)
-        if alpha_locked == BOOLEAN_TRUE_STR:
+        if isinstance(layer, ImageLayer) and alpha_locked == BOOLEAN_TRUE_STR:
             layer.set_alpha_locked(True)
         if not layer_transform.isIdentity():
             layer.set_transform(layer_transform)
@@ -367,7 +428,9 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
         for child_element in element:
             is_active = False
             if child_element.tag == STACK_ELEMENT:
-                child_layer, active_layer = parse_stack_element(child_element)
+                child_layer, nested_active_layer = parse_stack_element(child_element)
+                if nested_active_layer is not None:
+                    active_layer = nested_active_layer
             elif child_element.tag == LAYER_ELEMENT:
                 child_layer, is_active = parse_image_element(child_element)
             else:

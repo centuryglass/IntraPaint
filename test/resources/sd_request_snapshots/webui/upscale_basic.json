@@ -1,0 +1,13 @@
+[
+  {
+    "body": {
+      "image": "<image 600x400 Format_ARGB32 08e9ccbe7255b87b>",
+      "resize_mode": 1,
+      "upscaler_1": "R-ESRGAN 4x+",
+      "upscaling_resize_h": 800,
+      "upscaling_resize_w": 1200
+    },
+    "endpoint": "/sdapi/v1/extra-single-image",
+    "method": "POST"
+  }
+]

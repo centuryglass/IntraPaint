@@ -1,7 +1,5 @@
 """Test conversion between QImage and libmypaint image data formats."""
-import os
 import sys
-import unittest
 
 import numpy as np
 from PySide6.QtGui import QImage
@@ -9,19 +7,18 @@ from PySide6.QtWidgets import QApplication
 
 from src.image.mypaint.numpy_image_utils import numpy_8bit_to_16bit, numpy_16bit_to_8bit
 from src.util.visual.image_utils import image_data_as_numpy_8bit, numpy_8bit_to_qimage
+from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
 
 TEST_IMAGE_PATH = 'test/resources/test_images/layer_move_test.png'
 
 
-class NumpyImageUtilsTest(unittest.TestCase):
+class NumpyImageUtilsTest(IntraPaintTestCase):
     """Test conversion between QImage and libmypaint image data formats."""
 
     def setUp(self) -> None:
-        while os.path.basename(os.getcwd()) not in ('IntraPaint', ''):
-            os.chdir('..')
-        assert os.path.basename(os.getcwd()) == 'IntraPaint'
+        super().setUp()
 
     def test_lossless_conversion(self) -> None:
         """Converting from 8bit to 16bit should be possible without color corruption."""

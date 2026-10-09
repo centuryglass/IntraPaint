@@ -62,7 +62,7 @@ ignore=build,
 # ignore-list. The regex matches against paths and can be in Posix or Windows
 # format. Because '\\' represents the directory delimiter on Windows systems,
 # it can't be used as an escape character.
-ignore-paths=
+ignore-paths=^src/glid_3_xl/.*$
 
 # Files or directories matching the regular expression patterns are skipped.
 # The regex matches against base names, not paths. The default value ignores
@@ -73,7 +73,7 @@ ignore-patterns=^\.#
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis). It
 # supports qualified module names, as well as Unix pattern matching.
-ignored-modules=cv2
+ignored-modules=cv2,cython,spacenav
 
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
@@ -108,10 +108,6 @@ recursive=yes
 # directory used to determine a package namespace for modules located under the
 # source root.
 source-roots=
-
-# When enabled, pylint would attempt to guess common misconfiguration and emit
-# user-friendly hints instead of false-positive error messages.
-suggestion-mode=yes
 
 # Allow loading of arbitrary C extensions. Extensions are imported into the
 # active Python interpreter and may run arbitrary code.
@@ -228,8 +224,10 @@ good-names=i,
            eventFilter,
            sizeHint,
            minimumSizeHint,
+           hasHeightForWidth,
+           heightForWidth,
            setValue,
-           setHorizontalScrollBarPolicy
+           setHorizontalScrollBarPolicy,
            setSingleStep,
            setText,
            setIcon,
@@ -245,7 +243,7 @@ good-names=i,
            setRange,
            setVisible,
            setOpacity,
-           setFont
+           setFont,
            drawBackground,
            drawForeground,
            boundingRect

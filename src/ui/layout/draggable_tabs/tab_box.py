@@ -8,13 +8,12 @@ content widget if the TabBar is in the open state.
 from typing import Optional
 
 from PySide6.QtCore import Signal, Qt, QSize
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QColor
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget, QSizePolicy, QBoxLayout
 
 from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.layout.draggable_tabs.tab_bar import TabBar
-from src.util.layout import extract_layout_item
 
 EMPTY_MARGIN = 0
 NONEMPTY_MARGIN = 2
@@ -67,7 +66,7 @@ class TabBox(BorderedWidget):
 
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
         self._default_border_color = self.frame_color
-        self._empty_border_color = self._default_border_color
+        self._empty_border_color = QColor(self._default_border_color)
         self._empty_border_color.setAlphaF(0.5)
         self.frame_color = self._empty_border_color
 
@@ -160,15 +159,26 @@ class TabBox(BorderedWidget):
             self.is_open = False
 
     def sizeHint(self) -> QSize:
-        """Calculate size based on whether content is expanded."""
-        return super().sizeHint() if self.is_open else self._tab_bar.sizeHint()
+        """Returns the layout's size hint when open, or the tab bar's plus the box's margins when closed."""
+        return super().sizeHint() if self.is_open else self._closed_size(self._tab_bar.sizeHint())
 
     def minimumSizeHint(self) -> QSize:
-        """Calculate size based on whether content is expanded."""
-        return super().minimumSizeHint() if self.is_open else self._tab_bar.minimumSizeHint()
+        """Returns the layout's minimum size when open, or the tab bar's plus the box's margins when closed."""
+        return super().minimumSizeHint() if self.is_open else self._closed_size(self._tab_bar.minimumSizeHint())
+
+    def _closed_size(self, tab_bar_size: QSize) -> QSize:
+        """Grows a tab bar size by the margins around the bar.
+
+        Closed hints read the tab bar directly: the layout caches its items' hints until it next activates, which is
+        stale before the window first shows.
+        """
+        return tab_bar_size.grownBy(self.contentsMargins() + self._layout.contentsMargins())
 
     def _update_stretch_on_toggle(self, _=None) -> None:
-        """Relinquish stretch when closed, reclaim it when opened"""
+        """Relinquish stretch when closed, reclaim it when opened.
+
+        Hidden items and other bordered widgets (including other tab boxes) never give or take stretch.
+        """
         parent = self.parentWidget()
         if parent is None:
             return
@@ -182,9 +192,10 @@ class TabBox(BorderedWidget):
         for i in range(parent_layout.count()):
             stretch = parent_layout.stretch(i)
             total_stretch += stretch
-            widget = extract_layout_item(parent_layout.itemAt(i))
+            layout_item = parent_layout.itemAt(i)
+            widget = layout_item.widget() if layout_item is not None else None
             stretch_values.append(stretch)
-            if isinstance(widget, BorderedWidget):
+            if layout_item is None or layout_item.isEmpty() or isinstance(widget, BorderedWidget):
                 skipped_indexes.add(i)
             if widget == self:
                 own_idx = i
@@ -195,8 +206,8 @@ class TabBox(BorderedWidget):
         if active_stretch_item_count == 0:
             return
         if self.is_open:  # Reclaim stretch from inline items, taking back any previously relinquished stretch:
-            requested_stretch = self._last_stretch
-            if requested_stretch < own_stretch:
+            requested_stretch = self._last_stretch - own_stretch
+            if requested_stretch <= 0:
                 return
             added_stretch = 0
             for i, stretch in enumerate(stretch_values):

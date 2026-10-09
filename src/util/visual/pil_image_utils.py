@@ -12,6 +12,21 @@ from src.util.shared_constants import PIL_SCALING_MODES
 from src.util.visual.geometry_utils import is_smaller_size
 from src.util.visual.image_utils import BASE_64_PREFIX
 
+# Pillow formats IntraPaint never opens or saves.
+# - EPS covers .eps and .ps files, which Pillow reads by running them as programs in the external Ghostscript
+#   interpreter. Crafted files have repeatedly escaped its sandbox to run commands.
+# - BUFR, GRIB, HDF5 and MPEG files are ones Pillow can identify but not decode or encode.
+# - WMF covers .wmf and .emf files. Pillow draws them only on Windows, where Image.core has drawwmf, and saves them
+#   nowhere.
+Image.init()
+EXCLUDED_PIL_FORMATS = {'EPS', 'BUFR', 'GRIB', 'HDF5', 'MPEG'}
+if not hasattr(Image.core, 'drawwmf'):
+    EXCLUDED_PIL_FORMATS.add('WMF')
+
+# Image.open() picks a decoder from the file's contents, not its name, so it always gets this list. Otherwise an EPS
+# file renamed to .png would still reach Ghostscript.
+PIL_OPEN_FORMATS = tuple(pil_format for pil_format in Image.OPEN if pil_format not in EXCLUDED_PIL_FORMATS)
+
 
 def pil_image_to_qimage(pil_image: Image.Image) -> QImage:
     """Convert a PIL Image to a Qt6 QImage."""
@@ -69,4 +84,4 @@ def pil_image_from_base64(image_str: str) -> Image.Image:
     """Returns a PIL image object from base64-encoded string data."""
     if image_str.startswith(BASE_64_PREFIX):
         image_str = image_str[len(BASE_64_PREFIX):]
-    return Image.open(io.BytesIO(base64.b64decode(image_str)))
+    return Image.open(io.BytesIO(base64.b64decode(image_str)), formats=PIL_OPEN_FORMATS)

@@ -617,9 +617,10 @@ class ComfyUiWebservice(WebService):
                                                             tile_size, use_ultimate_upscaler,
                                                             upscale_model, controlnet_tile_preprocessor,
                                                             controlnet_tile_model)
+            # Loading cached settings sets the regular generation steps and denoising strength, so it must come first:
+            self._build_diffusion_body(None, workflow_builder)
             workflow_builder.denoising_strength = cache.get(Cache.SD_UPSCALING_DENOISING_STRENGTH)
             workflow_builder.steps = cache.get(Cache.SD_UPSCALING_STEP_COUNT)
-            self._build_diffusion_body(None, workflow_builder)
             workflow_node_graph = workflow_builder.build_workflow()
 
         else:  # Basic upscaling workflow:
@@ -659,9 +660,16 @@ class ComfyUiWebservice(WebService):
                     'outputs': {'images': []}
                 }
                 for output_data in entry_history['outputs'].values():
-                    if 'images' in output_data:
-                        for reference in output_data['images']:
-                            progress['outputs']['images'].append(cast(ImageFileReference, reference))
+                    if 'images' not in output_data:
+                        continue
+                    for reference in output_data['images']:
+                        file_ref: ImageFileReference = {
+                            'filename': reference['filename'],
+                            'subfolder': reference['subfolder']
+                        }
+                        if 'type' in reference:
+                            file_ref['type'] = reference['type']
+                        progress['outputs']['images'].append(file_ref)
                 return progress
         queue_info = self.get_queue_info()
         for running_task in queue_info['queue_running']:

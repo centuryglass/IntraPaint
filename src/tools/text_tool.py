@@ -22,6 +22,7 @@ from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.text_tool_panel import TextToolPanel
 from src.undo_stack import UndoStack
 from src.util.shared_constants import PROJECT_DIR
+from src.util.visual.geometry_utils import panel_position, transform_at_panel_position
 from src.util.visual.text_drawing_utils import left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -164,7 +165,7 @@ class TextTool(BaseTool):
             self._image_stack.active_layer = layer
         text_rect = layer.text_rect
         self._control_panel.text_rect = text_rect
-        self._control_panel.offset = layer.offset.toPoint()
+        self._control_panel.offset = self._layer_panel_position(layer)
         self._placement_outline.offset = layer.offset
         self._placement_outline.outline_size = QSizeF(text_rect.size)
         self._placement_outline.setTransform(layer.transform)
@@ -188,6 +189,7 @@ class TextTool(BaseTool):
             self._text_layer.lock_changed.disconnect(self._layer_lock_change_slot)
             self._text_layer.transform_changed.disconnect(self._layer_transform_change_slot)
             self._text_layer.size_changed.disconnect(self._layer_size_change_slot)
+            self._text_layer.text_data_changed.disconnect(self._layer_text_data_change_slot)
         self._control_panel.text_rect_changed.disconnect(self._control_text_data_changed_slot)
         self._control_panel.offset_changed.disconnect(self._control_offset_changed_slot)
         self._placement_outline.placement_changed.disconnect(self._placement_outline_changed_slot)
@@ -197,6 +199,7 @@ class TextTool(BaseTool):
             self._text_layer.lock_changed.connect(self._layer_lock_change_slot)
             self._text_layer.transform_changed.connect(self._layer_transform_change_slot)
             self._text_layer.size_changed.connect(self._layer_size_change_slot)
+            self._text_layer.text_data_changed.connect(self._layer_text_data_change_slot)
         self._control_panel.text_rect_changed.connect(self._control_text_data_changed_slot)
         self._control_panel.offset_changed.connect(self._control_offset_changed_slot)
         self._placement_outline.placement_changed.connect(self._placement_outline_changed_slot)
@@ -214,14 +217,30 @@ class TextTool(BaseTool):
             self._disconnect_signals()
             self._text_layer.text_rect = text_data
             self._placement_outline.outline_size = text_data.size
+            self._control_panel.offset = self._layer_panel_position(self._text_layer)
             self._connect_signals()
 
+    @staticmethod
+    def _layer_panel_position(layer: TextLayer) -> QPoint:
+        """Returns the layer position the panel's X/Y fields show, matching the layer transform tool."""
+        return panel_position(layer.bounds, layer.transform).toPoint()
+
     def _control_offset_changed_slot(self, offset: QPoint) -> None:
+        """Moves the layer to the panel's X/Y the way the layer transform tool does, changing only the axes that
+           differ from the rounded values the panel shows."""
         if self._text_layer is not None and self.is_active:
             self._disconnect_signals()
-            if offset != self._text_layer.offset.toPoint():
-                self._text_layer.offset = offset
-            self._placement_outline.setTransform(self._text_layer.transform)
+            layer = self._text_layer
+            position = panel_position(layer.bounds, layer.transform)
+            shown_position = position.toPoint()
+            if offset.x() != shown_position.x():
+                position.setX(offset.x())
+            if offset.y() != shown_position.y():
+                position.setY(offset.y())
+            new_transform = transform_at_panel_position(layer.bounds, layer.transform, position)
+            if new_transform != layer.transform:
+                layer.transform = new_transform
+            self._placement_outline.setTransform(layer.transform)
             self._connect_signals()
 
     def _placement_outline_changed_slot(self, offset: QPointF, size: QSizeF) -> None:
@@ -231,7 +250,6 @@ class TextTool(BaseTool):
         self._disconnect_signals()
         if offset != self._text_layer.offset:
             self._text_layer.offset = offset
-            self._control_panel.offset = offset.toPoint()
         text_rect = self._control_panel.text_rect
         if text_rect.size != size.toSize():
             text_rect.scale_bounds_to_text = False
@@ -241,6 +259,7 @@ class TextTool(BaseTool):
 
             assert self._control_panel.text_rect.size == size.toSize()
             assert self._text_layer.text_rect.size == size.toSize()
+        self._control_panel.offset = self._layer_panel_position(self._text_layer)
         self._connect_signals()
 
     def _layer_size_change_slot(self, layer: Layer, size: QSize) -> None:
@@ -254,7 +273,19 @@ class TextTool(BaseTool):
         text_rect = self._control_panel.text_rect
         text_rect.size = size
         self._control_panel.text_rect = text_rect
+        self._control_panel.offset = self._layer_panel_position(layer)
         self._placement_outline.outline_size = QSizeF(size)
+        self._connect_signals()
+
+    def _layer_text_data_change_slot(self, text_data: TextRect) -> None:
+        """Loads text changes made outside the panel, such as undo and redo, into the panel and outline."""
+        if not self.is_active:
+            return
+        self._disconnect_signals()
+        self._control_panel.text_rect = text_data
+        if self._text_layer is not None:
+            self._control_panel.offset = self._layer_panel_position(self._text_layer)
+        self._placement_outline.outline_size = QSizeF(text_data.size)
         self._connect_signals()
 
     def _layer_transform_change_slot(self, layer: TransformLayer, transform: QTransform) -> None:
@@ -265,7 +296,7 @@ class TextTool(BaseTool):
             return
         assert isinstance(layer, TextLayer)
         self._disconnect_signals()
-        self._control_panel.offset = layer.offset.toPoint()
+        self._control_panel.offset = self._layer_panel_position(layer)
         self._placement_outline.setTransform(transform)
         self._connect_signals()
 

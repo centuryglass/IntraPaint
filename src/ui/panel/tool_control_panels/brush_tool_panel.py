@@ -7,9 +7,11 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QLayout
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.ui.ink_style import set_signal
 from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.ui.widget.color_button import ColorButton
+from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.ui.widget.pen_pressure_panel import PenPressurePanel
 from src.util.layout import extract_layout_item, synchronize_row_widths
@@ -77,7 +79,9 @@ class BrushToolPanel(QWidget):
 
         self._align_rows()
         color_row = QHBoxLayout()
-        if color_key is not None:
+        if color_key == Cache.LAST_BRUSH_COLOR:
+            color_row.addWidget(ColorPairWidget(self))
+        elif color_key is not None:
             color_button = ColorButton(config_key=color_key, parent=self)
             color_row.addWidget(color_button)
         if pattern_key is not None:
@@ -87,7 +91,7 @@ class BrushToolPanel(QWidget):
             color_row.addWidget(pattern_dropdown)
             if color_key is not None:
                 def _pattern_color_update(color_str: str) -> None:
-                    if QColor.isValidColor(color_str):
+                    if QColor(color_str).isValid():
                         color = QColor(color_str)
                         pattern_dropdown.set_icon_colors(color)
                 cache.connect(self, color_key, _pattern_color_update)
@@ -109,6 +113,7 @@ class BrushToolPanel(QWidget):
             antialias_checkbox.setText(cache.get_label(antialias_key))
             checkbox_row.addWidget(antialias_checkbox)
         selection_only_checkbox = cache.get_control_widget(Cache.PAINT_SELECTION_ONLY)
+        set_signal(selection_only_checkbox)
         if selection_only_label is not None:
             selection_only_checkbox.setText(selection_only_label)
         checkbox_row.addWidget(selection_only_checkbox)

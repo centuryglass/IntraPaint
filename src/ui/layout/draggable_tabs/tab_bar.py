@@ -12,7 +12,7 @@ from typing import Optional
 
 from PySide6.QtCore import Signal, Qt, QPointF, QLine, QSize, QTimer
 from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter, \
-    QResizeEvent
+    QPalette, QResizeEvent
 from PySide6.QtWidgets import QWidget, QBoxLayout, QHBoxLayout, QVBoxLayout, QToolButton, QSizePolicy, QFrame
 
 from src.ui.layout.draggable_tabs.tab import Tab
@@ -20,7 +20,8 @@ from src.ui.panel.layer_ui.layer_widget import LayerWidget
 from src.util.layout import clear_layout
 from src.util.signals_blocked import signals_blocked
 
-BASE_EMPTY_BAR_SIZE = 10
+# An empty bar is still a drop target for dragged tabs. Its TabBox adds a frame and margins around this thickness:
+BASE_EMPTY_BAR_SIZE = 8
 TAB_BAR_OPEN_DELAY_MS = 100
 INLINE_MARGIN = 2
 EDGE_MARGIN = 5
@@ -423,7 +424,7 @@ class TabBar(QFrame):
 
     def _apply_orientation(self) -> None:
         layout_class = QHBoxLayout if self._orientation == Qt.Orientation.Horizontal else QVBoxLayout
-        if not isinstance(self._orientation, layout_class):
+        if not isinstance(self._layout, layout_class):
             clear_layout(self._layout, unparent=False)
             temp_widget = QWidget()
             temp_widget.setLayout(self._layout)
@@ -462,14 +463,14 @@ class TabBar(QFrame):
 
     def _update_insert_pos(self, point: QPointF):
         """When dragging in a Tab or other widget, find where the tab will be placed."""
-        if len(self._widgets) == 0:
+        assert self._drag_list is not None
+        if len(self._drag_list) == 0:
             if self._insert_index != 0:
                 self._insert_index = 0
                 self._insert_pos = 10
                 self.update()
             return
         mouse_pos = int(point.x() if self._orientation == Qt.Orientation.Horizontal else point.y())
-        assert self._drag_list is not None
         start_widget = self._toggle_button if self._drag_list == self._tabs else self._spacer_widget
         if self._orientation == Qt.Orientation.Horizontal:
             margin = self._layout.contentsMargins().right()
@@ -531,11 +532,11 @@ class TabBar(QFrame):
             self.update()
 
     def paintEvent(self, event: Optional[QPaintEvent]) -> None:
-        """Draw the insert position on drag and drop."""
+        """Marks the active tab and any drag and drop insert position in the accent color."""
         super().paintEvent(event)
         painter = QPainter(self)
-        foreground_color = self.palette().color(self.foregroundRole())
-        painter.setPen(foreground_color)
+        accent_color = self.palette().color(QPalette.ColorRole.Highlight)
+        painter.setPen(accent_color)
         active_tab = self.active_tab
         if active_tab is not None:
             active_rect = active_tab.geometry()
@@ -553,7 +554,7 @@ class TabBar(QFrame):
                 else:
                     active_rect.setX(1)
                     active_rect.setRight(active_tab.x() - 1)
-            painter.fillRect(active_rect, foreground_color)
+            painter.fillRect(active_rect, accent_color)
 
         if self._insert_pos is not None:
             if self._orientation == Qt.Orientation.Horizontal:

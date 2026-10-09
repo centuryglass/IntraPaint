@@ -14,7 +14,7 @@ from src.api.webui.script_info_types import ScriptRequestData
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG
-from src.util.visual.image_utils import image_to_base64
+from src.util.visual.image_utils import image_to_base64, mask_to_grayscale
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +171,12 @@ class DiffusionRequestBody:
 
             if edit_mode == EDIT_MODE_INPAINT:
                 if mask is not None:
-                    self.mask = image_to_base64(mask, include_prefix=True)
+                    # Send a plain grayscale mask instead of the selection layer's colored, alpha-based image: the
+                    # WebUI's own mask handling copes with an alpha mask fine, but Forge's ControlNet extension
+                    # flattens RGBA images by compositing over white before reading them, which silently destroys
+                    # the mask signal (transparent areas and the mask's own highlight color can end up reading
+                    # identically). A grayscale image sidesteps that compositing path entirely.
+                    self.mask = image_to_base64(mask_to_grayscale(mask), include_prefix=True)
                 self.inpainting_mask_invert = 0
                 self.inpaint_full_res = cache.get(Cache.INPAINT_FULL_RES)
                 self.inpaint_full_res_padding = cache.get(Cache.INPAINT_FULL_RES_PADDING)
@@ -189,7 +194,13 @@ class DiffusionRequestBody:
             if control_image == CONTROLNET_REUSE_IMAGE_CODE and image is not None:
                 if edit_mode in (EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT) and self.init_images is not None \
                         and len(self.init_images) > 0:
-                    control_unit_dict['image'] = self.init_images[-1]
+                    # Leave the unit's image unset instead of sending a redundant copy of the init image: with no
+                    # image of its own, the WebUI falls back to reusing its own img2img/inpaint image and mask
+                    # directly. That's required for inpainting-aware ControlNet preprocessors (inpaint_only,
+                    # inpaint_global_harmonious, etc.), which otherwise never receive a mask and crash server-side.
+                    # It also keeps the "inpaint at full resolution" crop region consistent between the base image
+                    # and the ControlNet unit, since the WebUI applies that crop using the same mask.
+                    control_unit_dict['image'] = None
                 else:
                     control_unit_dict['image'] = image_to_base64(image, include_prefix=True)
             elif isinstance(control_image, str) and os.path.exists(control_image):

@@ -42,6 +42,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Select layer content](#select-layer-content-ctrlshifta)
    - [Expand selection](#expand-selection-ctrl)
    - [Shrink selection](#shrink-selection-ctrl-)
+   - [Clear context pins](#clear-context-pins-ctrlaltp)
 5. [Layers menu](#layers-menu)
    - [Show layer window](#show-layer-window-f7)
       * [Layer window](#layer-window)
@@ -63,6 +64,8 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Delete layer](#delete-layer-ctrlshiftd)
    - [Flatten layer](#flatten-layer-ctrlshiftf)
    - [Merge layer down](#merge-layer-down-ctrlshiftm)
+   - [Merge group](#merge-group-ctrlshiftaltg)
+   - [Merge all visible](#merge-all-visible-ctrlshiftaltm)
    - [Crop layer to selection](#crop-layer-to-selection-ctrlshifte)
    - [Crop layer to contents](#crop-layer-to-contents-ctrlshiftp)
 6. [Filters menu](#filters-menu)
@@ -175,7 +178,7 @@ Opens a window where you can edit IntraPaint's saved settings. Hold your mouse o
 <img src="./labeled_screenshots/settings.png" alt="Screenshot of the settings window, with specific elements numbered."/>
 
 1. **"Interface" tab**:  Contains various settings related to IntraPaint's appearance and the ways it displays data.
-2. **"Editing" tab**:  Contains settings related to undo/redo behavior and image sizes.
+2. **"Editing" tab**:  Contains settings related to undo/redo behavior and image sizes, and **"Generation area follows selection"**, which controls [how the generation area follows selection edits](./tool_guide.md#following-the-selection).
 3. **"Drawing tablet settings" tab**:  Provides controls you can use to adjust the sensitivity of a pressure-sensitive drawing tablet.
 4. **"Alerts" tab**:  Enable or disable various warnings that IntraPaint will occasionally show you.  If a popup window has a "don't show this again" or "remember my choice" option, picking that option will change one of the entries in this category.
 5. **"Files" tab**:  Sets the directories IntraPaint will search for extra fonts, MyPaint brush files, or (if necessary) MyPaint library files.  This section also shows you where settings are saved as files, although those values can't be changed.
@@ -204,10 +207,12 @@ Additional controls vary depending on which option is active: "Move gen. area" o
 - **Left-click**: Move the main window viewport so that its upper-left corner is at the clicked spot.
 - **Right-click and drag**: Draw a rectangle that covers where the main window viewport should be.  When the mouse button is released, the viewport will update to match the window.
 
-When **"Move gen. area"** is active, mouse controls match the image generation area tool:
+When **"Move gen. area"** is active, mouse controls match the [image generation area tool](./tool_guide.md#-image-generation-area-tool-g), without its resize handles:
  
-- **Left-click**: Move the image generation area, without changing its size.
+- **Left-click and drag inside the area**: Move the image generation area, keeping the spot you grabbed under the pointer.
+- **Left-click and drag outside the area**: Center the image generation area on the clicked spot, then keep moving it while you drag.
 - **Right-click**: Resize the image generation area, without changing its position.
+- **Shift + scroll wheel**: Change the "Inpaint Full Resolution" padding.
 
 #### Navigation window
 <img src="./labeled_screenshots/navigation.png" alt="Screenshot of the navigation window, with specific elements numbered."/>
@@ -346,6 +351,9 @@ Expands all selected areas in all directions by one pixel.
 ### Shrink selection (Ctrl+-)
 Shrinks all selected areas by one pixel.
 
+### Clear context pins (Ctrl+Alt+P)
+Removes every context pin. Context pins are added and removed by right-clicking with the [selection brush](./tool_guide.md#-selection-brush-tool-s), and stretch the "Inpaint Full Resolution" crop without being inpainted. Clearing the selection leaves them in place. To remove pins automatically whenever you apply a generated image, enable **"Clear context pins after generating"** in [settings](#settings-f9) under the **"Stable Diffusion"** category.
+
 ---
 
 ## Layers menu
@@ -462,6 +470,12 @@ If none of these changes are relevant for the current active layer, the "flatten
 
 ### Merge layer down (Ctrl+Shift+M)
 Attempts to merge a layer with the one beneath it.  This will only be allowed when both layers are unlocked and visible, both are within the same group, and neither layer is also a group.
+
+### Merge group (Ctrl+Shift+Alt+G)
+Merges the active layer group into a single image layer.  This is only available when a non-empty unlocked layer group is active.  The resulting image layer keeps the group's name and replaces it in the stack.
+
+### Merge all visible (Ctrl+Shift+Alt+M)
+Merges every visible top-level layer into a single new image layer named "Merged".  Hidden top-level layers are left in place.  This requires at least two visible layers, or one visible layer group with contents.  Locked layers that would be removed will block the operation.
 
 ### Crop layer to selection (Ctrl+Shift+E)
 Finds the smallest rectangle that contains all selected content within the active layer's bounds, and crops the layer to fit that rectangle.  This will fail if nothing is selected within the layer bounds.

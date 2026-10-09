@@ -4,7 +4,7 @@ from argparse import Namespace
 from typing import Optional, cast, Any
 
 from PySide6.QtCore import QSize, QThread, QRect, QPoint, SignalInstance
-from PySide6.QtGui import QImage, QPainter, QTransform
+from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 from requests import ReadTimeout
 
@@ -32,7 +32,6 @@ from src.util.application_state import AppStateTracker, APP_STATE_LOADING
 from src.util.parameter import TYPE_LIST, TYPE_STR
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, AUTH_ERROR, \
     GENERATE_ERROR_MESSAGE_EMPTY_MASK, GENERATE_ERROR_TITLE, ERROR_MESSAGE_TIMEOUT, MISC_CONNECTION_ERROR
-from src.util.visual.geometry_utils import map_rect_precise
 from src.util.visual.pil_image_utils import pil_image_scaling
 
 logger = logging.getLogger(__name__)
@@ -506,55 +505,6 @@ class SDComfyUIGenerator(SDGenerator):
                         break
         assert status is not None
         return status
-
-    def _inpaint_gen_area_crop_bounds(self, scale_to_generation_size=True) -> QRect:
-        cache = Cache()
-        edit_mode = cache.get(Cache.EDIT_MODE)
-        gen_area = self._image_stack.generation_area
-        if scale_to_generation_size:
-            image_size = cache.get(Cache.GENERATION_SIZE)
-        else:
-            image_size = gen_area.size()
-        if edit_mode != EDIT_MODE_INPAINT or not cache.get(Cache.INPAINT_FULL_RES):
-            return QRect(QPoint(), image_size)
-
-        selection_layer = self._image_stack.selection_layer
-        selection_gen_area = selection_layer.get_selection_gen_area()
-        if selection_gen_area is None or selection_gen_area.size() == gen_area.size():
-            return QRect(QPoint(), image_size)
-        bounds = selection_gen_area.translated(-selection_layer.position - gen_area.topLeft())
-        if scale_to_generation_size and image_size != gen_area.size():
-            transform = QTransform.fromScale(image_size.width()/gen_area.width(), image_size.height()/gen_area.height())
-            bounds = map_rect_precise(bounds, transform).toAlignedRect()
-        return bounds
-
-    def _scale_and_crop_gen_qimage(self, image: QImage) -> QImage:
-        gen_area = self._image_stack.generation_area
-        crop_bounds = self._inpaint_gen_area_crop_bounds(gen_area.size() != image.size())
-        if crop_bounds.size() != image.size():
-            image = image.copy(crop_bounds)
-        gen_size = Cache().get(Cache.GENERATION_SIZE)
-        if image.size() != gen_size:
-            return pil_image_scaling(image, gen_size)
-        return image
-
-    def _restore_cropped_inpainting_images(self, initial_image: QImage, crop_bounds: QRect,
-                                           cropped_images: list[QImage]) -> list[QImage]:
-        assert QRect(QPoint(), initial_image.size()).contains(crop_bounds), (f'{crop_bounds} not in '
-                                                                             f'{initial_image.size()}')
-        gen_area = self._image_stack.generation_area
-        if gen_area.size() == crop_bounds.size():
-            return cropped_images
-        restored_images: list[QImage] = []
-        for cropped_image in cropped_images:
-            if cropped_image.size() != crop_bounds.size():
-                cropped_image = pil_image_scaling(cropped_image, crop_bounds.size())
-            final_image = initial_image.copy()
-            painter = QPainter(final_image)
-            painter.drawImage(crop_bounds, cropped_image)
-            painter.end()
-            restored_images.append(final_image)
-        return restored_images
 
     def generate(self,
                  status_signal: SignalInstance,

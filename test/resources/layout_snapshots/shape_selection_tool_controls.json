@@ -1,0 +1,57 @@
+{
+  "minimum": {
+    "problems": [],
+    "size": [
+      255,
+      132
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "squeezed: ReflowingButtonGroup is 109x30, minimum 126x70",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 109x10, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 109x10, minimum 126x30",
+      "squeezed: DualToggle/Label 'Rectangle' is 42x29, minimum 106x29",
+      "squeezed: DualToggle/Label 'Ellipse' is 42x29, minimum 86x29"
+    ],
+    "size": [
+      127,
+      92
+    ]
+  },
+  "preferred": {
+    "problems": [],
+    "size": [
+      256,
+      92
+    ]
+  },
+  "short": {
+    "problems": [
+      "squeezed: ReflowingButtonGroup is 238x17, minimum 126x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 102x17, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 126x17, minimum 126x30",
+      "squeezed: DualToggle/Label 'Rectangle' is 106x17, minimum 106x29",
+      "squeezed: DualToggle/Label 'Ellipse' is 106x17, minimum 86x29",
+      "squeezed: KeyHintLabel 'Q' is 17x17, minimum 17x22"
+    ],
+    "size": [
+      256,
+      66
+    ]
+  },
+  "tall": {
+    "problems": [],
+    "size": [
+      256,
+      1200
+    ]
+  },
+  "wide": {
+    "problems": [],
+    "size": [
+      1600,
+      92
+    ]
+  }
+}

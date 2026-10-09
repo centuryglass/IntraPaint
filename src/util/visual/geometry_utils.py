@@ -83,11 +83,11 @@ def align_inner_bounds(outer_bounds: QRect | QRectF, inner_bounds: QRect | QRect
     if alignment & Qt.AlignmentFlag.AlignHCenter == Qt.AlignmentFlag.AlignHCenter:
         x += (outer_bounds.width() - inner_bounds.width() - left_margin - right_margin) / 2
     elif alignment & Qt.AlignmentFlag.AlignRight == Qt.AlignmentFlag.AlignRight:
-        x = outer_bounds.width() - inner_bounds.width() - right_margin
+        x = outer_bounds.x() + outer_bounds.width() - inner_bounds.width() - right_margin
     if alignment & Qt.AlignmentFlag.AlignVCenter == Qt.AlignmentFlag.AlignVCenter:
         y += (outer_bounds.height() - inner_bounds.height() - top_margin - bottom_margin) / 2
     elif alignment & Qt.AlignmentFlag.AlignBottom == Qt.AlignmentFlag.AlignBottom:
-        y = outer_bounds.height() - inner_bounds.height() - bottom_margin
+        y = outer_bounds.y() + outer_bounds.height() - inner_bounds.height() - bottom_margin
     if isinstance(inner_bounds, QRect):
         x = int(round(x))
         y = int(round(y))
@@ -125,6 +125,23 @@ def map_rect_precise(rect: QRect | QRectF, transform: QTransform) -> QRectF:
     transformed_poly = transform.map(polygon)
     assert isinstance(transformed_poly, QPolygonF)
     return transformed_poly.boundingRect()
+
+
+def panel_position(rect: QRect | QRectF, transform: QTransform) -> QPointF:
+    """Returns the X/Y position the layer transform and text tool panels show for a transformed rectangle: the
+       top-left of its transformed bounding box.
+
+    Both tools read and write position through this function and transform_at_panel_position, so changing the
+    convention here changes it in both panels.
+    """
+    return map_rect_precise(rect, transform).topLeft()
+
+
+def transform_at_panel_position(rect: QRect | QRectF, transform: QTransform, position: QPointF) -> QTransform:
+    """Returns the transform translated so that panel_position(rect, result) is position, with rotation and scale
+       unchanged."""
+    offset = position - panel_position(rect, transform)
+    return transform * QTransform.fromTranslate(offset.x(), offset.y())
 
 
 def translate_to_point(transform: QTransform,
@@ -188,6 +205,17 @@ def transform_scale(transformation: QTransform) -> tuple[float, float]:
         scale_x *= -1
         scale_y *= -1
     return scale_x, scale_y
+
+
+def transform_needs_smooth_sampling(transformation: QTransform) -> bool:
+    """Returns whether layers drawn through a transformation are sampled smoothly.
+
+    Smooth sampling applies to scales that aren't whole numbers and rotations that aren't multiples of 90 degrees. It
+    blends neighboring source pixels, so a changed pixel can affect image pixels one past its mapped bounds.
+    """
+    s_x, s_y = transform_scale(transformation)
+    angle = rotation_angle(transformation)
+    return (s_x % 1.0) != 0.0 or (s_y % 1.0) != 0.0 or (angle % 90.0) != 0.0
 
 
 def extract_transform_parameters(transform: QTransform,

@@ -1,9 +1,9 @@
-"""Provides everything needed to replicate the 'pick screen color' option provided by QColorDialog."""
+"""Picks a color from anywhere on screen, ported from QColorDialog along with its Windows workaround."""
 import os
 from typing import Optional, cast
 
 from PySide6.QtGui import QColor, QWindow, Qt, QMouseEvent, QKeyEvent, QKeySequence, QCursor
-from PySide6.QtCore import QObject, QPoint, QTimer, QEvent, Signal, SignalInstance
+from PySide6.QtCore import QPoint, QTimer, QEvent, Signal, SignalInstance
 from PySide6.QtWidgets import QApplication, QWidget
 
 
@@ -18,17 +18,20 @@ def grab_screen_color(pos: QPoint) -> QColor:
 
 
 class ScreenColorWidget(QWidget):
-    """Parent class for widgets handling screen color selection."""
+    """Parent class for widgets handling screen color selection.
+
+    `color_previewed` follows the cursor while picking, and `screen_color_picked` fires once with the chosen color.
+    `color_selected` is for subclasses to report their own color changes; picking never emits it.
+    """
 
     started_color_picking = Signal()
     stopped_color_picking = Signal()
     color_previewed = Signal(QPoint, QColor)
+    screen_color_picked = Signal(QColor)
     color_selected = Signal(QColor)
 
     def __init__(self) -> None:
         super().__init__()
-        self._color = QColor()
-        self._preview_color = QColor()
         self._active = False
         self._last_global_pos = QPoint()
         if os.name == 'nt':
@@ -77,15 +80,6 @@ class ScreenColorWidget(QWidget):
         """Returns whether a screen color is currently being selected."""
         return self._active
 
-    @property
-    def color(self) -> QColor:
-        """Access the current selected color."""
-        return self._color
-
-    @color.setter
-    def color(self, color: QColor) -> None:
-        self._color = color
-
     def update_color_picking(self, pos: QPoint) -> None:
         """Updates screen color picking with a new screen coordinate and color value."""
         color = grab_screen_color(pos)
@@ -100,7 +94,7 @@ class ScreenColorWidget(QWidget):
     def handle_color_picking_mouse_button_release(self, event: QMouseEvent) -> bool:
         """Selects the color covered by the cursor when the mouse button is released."""
         assert event is not None
-        self.color_selected.emit(grab_screen_color(event.globalPos()))
+        self.screen_color_picked.emit(grab_screen_color(event.globalPos()))
         self.release_color_picking()
         return True
 
@@ -109,8 +103,7 @@ class ScreenColorWidget(QWidget):
         if event.matches(QKeySequence.StandardKey.Cancel):
             self.release_color_picking()
         elif event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
-            self._color = grab_screen_color(QCursor.pos())
-            self.color_selected.emit(QColor(self._color))
+            self.screen_color_picked.emit(grab_screen_color(QCursor.pos()))
             self.release_color_picking()
         event.accept()
         return True
@@ -135,11 +128,3 @@ class ScreenColorWidget(QWidget):
         assert self._transparent_selection_window is not None
         self._transparent_selection_window.setPosition(global_pos)
         self.update_color_picking(global_pos)
-
-
-class ColorPickingEventFilter(QObject):
-    """Event filter that handles input when picking screen values."""
-
-    def __init__(self, color_widget: ScreenColorWidget, parent: QObject):
-        super().__init__(parent)
-        self._color_widget = color_widget

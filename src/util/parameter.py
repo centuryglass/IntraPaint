@@ -177,7 +177,7 @@ class Parameter:
         parameter = Parameter(data_dict['name'], data_dict['value_type'], default_val, data_dict['description'],
                               min_val, max_val, step)
         if options is not None:
-            parameter.set_valid_options(options)
+            parameter.set_valid_options(cast(ParamTypeList, [_creating_qsize(option) for option in options]))
         return parameter
 
     def __deepcopy__(self, memo: dict[int, Any]) -> 'Parameter':
@@ -280,7 +280,7 @@ class Parameter:
                 if raise_on_failure:
                     raise TypeError(f'{self.name} parameter: expected {self._type}, got {test_type}')
                 return False
-        except TypeError as err:
+        except (TypeError, ValueError) as err:
             if raise_on_failure:
                 raise TypeError(f'{self.name} parameter: expected {self._type},'
                                 f' got {test_value} {type(test_value)}') from err

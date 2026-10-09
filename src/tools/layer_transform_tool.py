@@ -199,13 +199,16 @@ class LayerTransformTool(BaseTool):
                 UndoStack().commit_action(_apply, _undo, 'LayerTransformTool.reset_transformation')
             self._transform_outline.setTransform(self._initial_transform)
 
-    def _reload_scene_item(self):
-        """Reset all transformations and reload properties from the layer."""
+    def _reload_scene_item(self, keep_relative_origin: bool = False):
+        """Reset all transformations and reload properties from the layer.
+
+        The transformation origin returns to the layer center, unless keep_relative_origin is set for a reload of the
+        same layer."""
         layer = self._layer
 
         # Reset transform outline:
         with signals_blocked(self._transform_outline):
-            self._transform_outline.reset(QRectF() if layer is None else QRectF(layer.bounds))
+            self._transform_outline.reset(QRectF() if layer is None else QRectF(layer.bounds), keep_relative_origin)
             self._transform_outline.setZValue(self._image_stack.selection_layer.z_value + 1)
 
             # Load layer image, set visibility and zValues:
@@ -245,7 +248,7 @@ class LayerTransformTool(BaseTool):
         preview_bounds = QRect(round(self._transform_outline.x_pos), round(self._transform_outline.y_pos),
                                round(self._transform_outline.width), round(self._transform_outline.height))
         if preview_bounds != bounds:
-            self._reload_scene_item()
+            self._reload_scene_item(keep_relative_origin=True)
 
     def _layer_lock_change_slot(self, layer: Layer, locked: bool) -> None:
         assert self._layer is not None
@@ -264,7 +267,7 @@ class LayerTransformTool(BaseTool):
     # noinspection PyUnusedLocal
     def _layer_size_change_slot(self, layer: Layer, size: QSize) -> None:
         assert layer == self._layer
-        self._reload_scene_item()
+        self._reload_scene_item(keep_relative_origin=True)
 
     def _transform_change_slot(self, transform: QTransform) -> None:
         layer = self._layer

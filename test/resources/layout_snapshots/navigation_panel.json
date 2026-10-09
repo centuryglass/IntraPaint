@@ -1,0 +1,53 @@
+{
+  "minimum": {
+    "problems": [],
+    "size": [
+      294,
+      124
+    ]
+  },
+  "narrow": {
+    "problems": [
+      "squeezed: QWidget[1] is 129x33, minimum 276x33",
+      "squeezed: QWidget[1]/DualToggle/Label 'Move gen. area' is 61x29, minimum 135x29",
+      "squeezed: QWidget[1]/DualToggle/Label 'Move view' is 61x29, minimum 108x29"
+    ],
+    "size": [
+      147,
+      124
+    ]
+  },
+  "preferred": {
+    "problems": [],
+    "size": [
+      294,
+      124
+    ]
+  },
+  "short": {
+    "problems": [
+      "squeezed: ImageViewer is 276x16, minimum 61x61",
+      "squeezed: QWidget[1] is 276x16, minimum 276x33",
+      "squeezed: QWidget[1]/DualToggle/Label 'Move gen. area' is 135x12, minimum 135x29",
+      "squeezed: QWidget[1]/DualToggle/Label 'Move view' is 135x12, minimum 108x29"
+    ],
+    "size": [
+      294,
+      62
+    ]
+  },
+  "tall": {
+    "problems": [],
+    "size": [
+      294,
+      1200
+    ]
+  },
+  "wide": {
+    "problems": [],
+    "size": [
+      1600,
+      124
+    ]
+  }
+}

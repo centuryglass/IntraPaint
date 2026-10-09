@@ -2,10 +2,11 @@
 Interact with edited image layers through the Qt6 2D graphics engine.
 """
 import math
+from functools import partial
 from typing import Optional
 
 from PySide6.QtCore import Qt, QRect, QRectF, QSize, QPoint, QPointF
-from PySide6.QtGui import QPainter, QColor, QTransform
+from PySide6.QtGui import QPainter, QColor, QTransform, QResizeEvent
 from PySide6.QtWidgets import QWidget, QSizePolicy
 
 from src.config.application_config import AppConfig
@@ -15,9 +16,11 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.graphics_items.border import Border
+from src.ui.graphics_items.context_pin_item import ContextPinItem, marker_size_for_view, DEFAULT_MARKER_SIZE
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.selection_outline import SelectionOutline
+from src.ui.ink_style import ink_colors
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.visual.graphics_scene_utils import get_view_bounds_of_scene_item_rect
 from src.util.visual.image_utils import get_transparency_tile_pixmap, tile_pattern_fill, TRANSPARENCY_PATTERN_TILE_DIM
@@ -25,8 +28,29 @@ from src.util.visual.image_utils import get_transparency_tile_pixmap, tile_patte
 GENERATION_AREA_BORDER_OPACITY = 0.6
 IMAGE_BORDER_OPACITY = 0.2
 GENERATION_AREA_BORDER_COLOR = Qt.GlobalColor.black
+# The veil drawn over everything outside the image. The canvas surround theme color is the color that shows through it:
+IMAGE_BORDER_COLOR = GENERATION_AREA_BORDER_COLOR
 MIN_OUTLINE_PIXEL_SIZE = 8.0
 
+
+def _disconnect_layer_items(layer_items: dict[int, LayerGraphicsItem]) -> None:
+    for layer_item in layer_items.values():
+        layer_item.disconnect_layer()
+
+
+
+def color_under_overlay(shown: QColor, overlay: QColor, opacity: float) -> QColor:
+    """Returns the color that shows as `shown` once `overlay` is drawn over it at `opacity`.
+
+    Channels that would fall outside the displayable range are clamped, so the result only matches `shown` when the
+    overlay can produce it.
+    """
+    if opacity >= 1.0:
+        return QColor(shown)
+    channels = []
+    for shown_channel, overlay_channel in zip(shown.getRgbF()[:3], overlay.getRgbF()[:3]):
+        channels.append(min(max((shown_channel - overlay_channel * opacity) / (1.0 - opacity), 0.0), 1.0))
+    return QColor.fromRgbF(*channels)
 
 class ImageViewer(ImageGraphicsView):
     """Shows the image being edited, and allows the user to select sections."""
@@ -41,6 +65,10 @@ class ImageViewer(ImageGraphicsView):
         self._image_stack = image_stack
         self._generation_area = image_stack.generation_area
         self._layer_items: dict[int, 'LayerGraphicsItem'] = {}
+        # Layers outlive the view when something else holds the image stack. destroyed is emitted before the view
+        # deletes its scene and the items in it. The slot captures the item dict, not the view: a slot that captured
+        # the view would keep it alive.
+        self.destroyed.connect(partial(_disconnect_layer_items, self._layer_items))
         self.content_size = image_stack.size
         self.background = get_transparency_tile_pixmap()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
@@ -54,7 +82,7 @@ class ImageViewer(ImageGraphicsView):
         self._image_outline = Outline(scene, self)
         self._image_border = Border(scene, self)
         self._image_border.windowed_area = image_stack.bounds
-        self._image_border.color = QColor(GENERATION_AREA_BORDER_COLOR)
+        self._image_border.color = QColor(IMAGE_BORDER_COLOR)
         self._image_border.setOpacity(IMAGE_BORDER_OPACITY)
         self._image_border.setVisible(True)
         self._image_outline.dash_pattern = [1, 0]  # solid line
@@ -65,6 +93,9 @@ class ImageViewer(ImageGraphicsView):
         self._generation_area_selection_outline.setOpacity(GENERATION_AREA_BORDER_OPACITY)
         selection_layer = image_stack.selection_layer
         selection_layer.content_changed.connect(self._selection_content_change_slot)
+        self._context_pin_items: list[ContextPinItem] = []
+        self._context_pin_marker_size = DEFAULT_MARKER_SIZE
+        selection_layer.context_pins_changed.connect(self._context_pins_change_slot)
         Cache().connect(self, Cache.INPAINT_FULL_RES, self._selection_content_change_slot)
         Cache().connect(self, Cache.INPAINT_FULL_RES_PADDING, self._selection_content_change_slot)
 
@@ -101,8 +132,12 @@ class ImageViewer(ImageGraphicsView):
         # Manually trigger signal handlers to set up the initial state:
         self._image_size_changed_slot(self.content_size)
         self._add_layer_item(image_stack.selection_layer)
+        # The scene shows only the composited root group, never per-layer items. Per-layer items would blend against
+        # the viewport instead of their isolated groups, and modes with no qt_composite_mode() would render as Normal,
+        # so the screen would diverge from saved output.
         self._add_layer_item(image_stack.layer_stack)
         self._image_generation_area_change_slot(image_stack.generation_area)
+        self._context_pins_change_slot(selection_layer.context_pins)
         self.resizeEvent(None)
 
     def set_generation_area_visible(self, visible: bool) -> None:
@@ -148,8 +183,13 @@ class ImageViewer(ImageGraphicsView):
         return QSize()
 
     def drawBackground(self, painter: Optional[QPainter], rect: QRectF) -> None:
-        """Draw the background as a fixed size tiling image."""
+        """Fill the area around the image with a color that shows as the theme's canvas surround once the image border
+        veil covers it, then draw the background as a fixed size tiling image."""
         assert painter is not None
+        colors = ink_colors()
+        if colors is not None:
+            painter.fillRect(rect, color_under_overlay(colors.canvas_surround, QColor(IMAGE_BORDER_COLOR),
+                                                       IMAGE_BORDER_OPACITY))
         painter.save()
         painter.setTransform(QTransform())
         content_bounds = get_view_bounds_of_scene_item_rect(self._image_outline.boundingRect(),
@@ -214,6 +254,8 @@ class ImageViewer(ImageGraphicsView):
 
     # noinspection PyUnusedLocal
     def _active_layer_change_slot(self, new_active_layer: Layer, *args) -> None:
+        # Every connect made for the new active layer needs a matching disconnect for the old one, including the
+        # TransformLayer-only transform_changed connection.
         active_id = None if new_active_layer is None else new_active_layer.id
         if active_id != self._active_layer_id:
             last_active = self._image_stack.get_layer_by_id(self._active_layer_id)
@@ -247,6 +289,34 @@ class ImageViewer(ImageGraphicsView):
             self._generation_area_selection_outline.setVisible(False)
         self._selection_poly_outline.setZValue(2)
         self._selection_poly_outline.load_polygons(selection_layer.outline)
+
+    def _context_pins_change_slot(self, _pins: list[QPoint]) -> None:
+        """Replace the pin markers, and sync the 'inpaint masked only' bounds that pins stretch."""
+        scene = self.scene()
+        assert scene is not None
+        for pin_item in self._context_pin_items:
+            scene.removeItem(pin_item)
+        self._context_pin_items.clear()
+        for pin in self._image_stack.selection_layer.context_pins:
+            pin_item = ContextPinItem(pin, self._context_pin_marker_size)
+            pin_item.setZValue(self._generation_area_outline.zValue() + 1)
+            scene.addItem(pin_item)
+            self._context_pin_items.append(pin_item)
+        self._selection_content_change_slot()
+
+    @property
+    def context_pin_marker_size(self) -> int:
+        """Returns the screen size of this view's context pin markers, which scales with the view size."""
+        return self._context_pin_marker_size
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+        """Rescale context pin markers to match the new view size."""
+        super().resizeEvent(event)
+        if not hasattr(self, '_context_pin_items'):
+            return  # Called by ImageGraphicsView before ImageViewer finishes initializing.
+        self._context_pin_marker_size = marker_size_for_view(self.size())
+        for pin_item in self._context_pin_items:
+            pin_item.marker_size = self._context_pin_marker_size
 
     def _image_size_changed_slot(self, new_size: QSize) -> None:
         """Update bounds and background when the image size changes."""
@@ -305,6 +375,7 @@ class ImageViewer(ImageGraphicsView):
         layer_was_visible = layer_item.isVisible()
         scene = self.scene()
         assert scene is not None
+        layer_item.disconnect_layer()
         scene.removeItem(layer_item)
         del self._layer_items[removed_layer.id]
         if layer_was_visible:

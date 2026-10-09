@@ -5,13 +5,12 @@ import datetime
 from threading import Lock
 from typing import Callable, Optional, Any, Generator
 
-from PySide6.QtCore import QObject, Signal, SignalInstance
+from PySide6.QtCore import QObject, Signal, SignalInstance, SIGNAL
 
 from src.config.application_config import AppConfig
 from src.util.singleton import Singleton
 
 logger = logging.getLogger(__name__)
-MAX_UNDO = 50
 
 
 class _UndoAction:
@@ -66,6 +65,7 @@ class UndoStack(metaclass=Singleton):
         self._open_group: Optional[_UndoGroup] = None
         self._in_progress_change = 'none'
         self._undo_in_progress = False
+        self._redo_in_progress = False
 
         class _SignalManager(QObject):
             undo_count_changed = Signal(int)
@@ -76,6 +76,11 @@ class UndoStack(metaclass=Singleton):
     def undo_in_progress(self) -> bool:
         """Returns whether an undo action is currently in progress."""
         return self._undo_in_progress
+
+    @property
+    def redo_in_progress(self) -> bool:
+        """Returns whether a redo action is currently in progress."""
+        return self._redo_in_progress
 
     @property
     def undo_count_changed(self) -> SignalInstance:
@@ -165,7 +170,13 @@ class UndoStack(metaclass=Singleton):
 
     @contextmanager
     def combining_actions(self, action_type: str) -> Generator[None, None, None]:
-        """Combines all actions added with commit_action until the context is exited."""
+        """Combines all actions added with commit_action until the context is exited.
+
+        If the block raises, the actions it already committed still go into the history as one entry, and the group
+        closes so that later actions are recorded normally.
+
+        Combine with other context managers as `with A, B:` or nested `with` blocks. `with A and B:` enters only B, so
+        the actions are silently left ungrouped."""
         if self._access_lock.locked():
             raise RuntimeError(f'Concurrent undo history changes detected! Attempted: {action_type}, '
                                f'in-progress: {self._in_progress_change}')
@@ -175,29 +186,34 @@ class UndoStack(metaclass=Singleton):
                                    f'{self._open_group.type} group is still open')
             self._open_group = _UndoGroup(action_type)
         assert not self._access_lock.locked()
-        yield
-        if self._access_lock.locked():
-            raise RuntimeError(f'Concurrent undo history changes detected! Attempted: {action_type}, '
-                               f'in-progress: {self._in_progress_change}')
-        with self._access_lock:
-            assert self._open_group is not None and self._open_group.type.startswith(action_type)
-            if self._open_group.count() > 0:
-                self._add_to_stack(self._open_group, self._undo_stack)
-            self._open_group = None
+        try:
+            yield
+        finally:
+            if self._access_lock.locked():
+                raise RuntimeError(f'Concurrent undo history changes detected! Attempted: {action_type}, '
+                                   f'in-progress: {self._in_progress_change}')
+            with self._access_lock:
+                assert self._open_group is not None and self._open_group.type.startswith(action_type)
+                if self._open_group.count() > 0:
+                    self._add_to_stack(self._open_group, self._undo_stack)
+                self._open_group = None
 
     def undo(self) -> None:
         """Reverses the most recent action taken."""
         with self._access_lock:
-            self._undo_in_progress = True
             if len(self._undo_stack) == 0:
                 return
             last_action_object = self._undo_stack.pop()
             logger.info(f'UNDO ACTION:{last_action_object.type}, UNDO_COUNT={len(self._undo_stack)},'
                         f' REDO_COUNT={len(self._redo_stack)}')
-            last_action_object.undo()
-            self.undo_count_changed.emit(len(self._undo_stack))
-            self._add_to_stack(last_action_object, self._redo_stack)
-            self._undo_in_progress = False
+            # ImageLayer skips alpha lock enforcement while this is set, so it must never outlive the undo:
+            self._undo_in_progress = True
+            try:
+                last_action_object.undo()
+                self.undo_count_changed.emit(len(self._undo_stack))
+                self._add_to_stack(last_action_object, self._redo_stack)
+            finally:
+                self._undo_in_progress = False
 
     def redo(self) -> None:
         """Re-applies the last undone action as long as no new actions were registered after the last undo."""
@@ -207,9 +223,13 @@ class UndoStack(metaclass=Singleton):
             last_action_object = self._redo_stack.pop()
             logger.info(f'REDO ACTION:{last_action_object.type}, UNDO_COUNT={len(self._undo_stack)},'
                         f' REDO_COUNT={len(self._redo_stack)}')
-            last_action_object.redo()
-            self.redo_count_changed.emit(len(self._redo_stack))
-            self._add_to_stack(last_action_object, self._undo_stack)
+            self._redo_in_progress = True
+            try:
+                last_action_object.redo()
+                self.redo_count_changed.emit(len(self._redo_stack))
+                self._add_to_stack(last_action_object, self._undo_stack)
+            finally:
+                self._redo_in_progress = False
 
     def clear(self) -> None:
         """Clears the entire undo/redo history."""
@@ -224,17 +244,29 @@ class UndoStack(metaclass=Singleton):
             if redo_count != 0:
                 self.redo_count_changed.emit(0)
 
+    def _reset(self) -> None:
+        """Disconnects everything connected to the count signals, then clears the undo/redo history.
+
+        Tests call this between cases. A connected slot that captures its owner keeps it alive for as long as the
+        connection exists, so connections left behind would keep every earlier test's widgets alive.
+        """
+        for signal, signature in ((self.undo_count_changed, 'undo_count_changed(int)'),
+                                  (self.redo_count_changed, 'redo_count_changed(int)')):
+            if self._signal_manager.receivers(SIGNAL(signature)) > 0:
+                signal.disconnect()
+        self.clear()
+
     def _add_to_stack(self, stack_item: _UndoAction | _UndoGroup, stack: list[_UndoAction | _UndoGroup]) -> None:
-        if stack == self._undo_stack:
+        # Identity, not equality: both stacks are empty lists after undoing the only action, and [] == [].
+        if stack is self._undo_stack:
             stack_signal = self.undo_count_changed
         else:
-            assert stack == self._redo_stack
+            assert stack is self._redo_stack
             stack_signal = self.redo_count_changed
+        max_count = max(AppConfig().get(AppConfig.MAX_UNDO), 0)
+        previous_count = len(stack)
         stack.append(stack_item)
-        if len(stack) > MAX_UNDO:
-            if len(stack) != (MAX_UNDO + 1):
-                stack_signal.emit(MAX_UNDO)
-            while len(stack) > MAX_UNDO:
-                stack.pop(0)
-        else:
+        while len(stack) > max_count:
+            stack.pop(0)
+        if len(stack) != previous_count:
             stack_signal.emit(len(stack))
