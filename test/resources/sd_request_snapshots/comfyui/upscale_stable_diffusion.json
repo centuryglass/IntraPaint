@@ -1,15 +1,14 @@
 [
   {
     "body": {
-      "overwrite": "1",
-      "subfolder": "IntraPaint",
+      "subfolder": "sd_backend_client",
       "type": "input"
     },
     "body_format": "multipart/form-data",
     "endpoint": "/upload/image",
     "files": {
       "image": [
-        "src_image.png",
+        "f49c44f3efb3f6220c8329424c314e63.png",
         "<image 600x400 Format_ARGB32 08e9ccbe7255b87b>",
         "image/png"
       ]
@@ -22,38 +21,66 @@
       "client_id": "<client id>",
       "prompt": {
         "10": {
-          "class_type": "ControlNetLoader",
+          "class_type": "ControlNetApplyAdvanced",
           "inputs": {
-            "control_net_name": "control_v11f1e_sd15_tile_fp16.safetensors"
+            "control_net": [
+              "8",
+              0
+            ],
+            "end_percent": 0.9,
+            "image": [
+              "9",
+              0
+            ],
+            "negative": [
+              "7",
+              0
+            ],
+            "positive": [
+              "6",
+              0
+            ],
+            "start_percent": 0.1,
+            "strength": 0.75,
+            "vae": [
+              "4",
+              2
+            ]
           }
         },
         "11": {
+          "class_type": "UpscaleModelLoader",
+          "inputs": {
+            "model_name": "4x-UltraSharp.pth"
+          }
+        },
+        "12": {
           "class_type": "UltimateSDUpscale",
           "inputs": {
             "cfg": 6.5,
             "denoise": 0.25,
             "force_uniform_tiles": false,
             "image": [
-              "8",
+              "3",
               0
             ],
             "mask_blur": 8,
             "mode_type": "Linear",
             "model": [
-              "3",
+              "5",
               0
             ],
             "negative": [
-              "9",
+              "10",
               1
             ],
             "positive": [
-              "9",
+              "10",
               0
             ],
             "sampler_name": "euler_ancestral",
             "scheduler": "karras",
-            "seam_fix_denoise": 0.0,
+            "seam_fix_denoise": 0.35,
             "seam_fix_mask_blur": 8,
             "seam_fix_mode": "None",
             "seam_fix_padding": 16,
@@ -66,7 +93,7 @@
             "tiled_decode": true,
             "upscale_by": 2.0,
             "upscale_model": [
-              "12",
+              "11",
               0
             ],
             "vae": [
@@ -75,23 +102,30 @@
             ]
           }
         },
-        "12": {
-          "class_type": "UpscaleModelLoader",
-          "inputs": {
-            "model_name": "4x-UltraSharp.pth"
-          }
-        },
         "13": {
           "class_type": "SaveImage",
           "inputs": {
-            "filename_prefix": "",
+            "filename_prefix": "sd_backend_client",
             "images": [
-              "11",
+              "12",
               0
             ]
           }
         },
         "3": {
+          "class_type": "LoadImage",
+          "inputs": {
+            "image": "sd_backend_client/f49c44f3efb3f6220c8329424c314e63.png",
+            "upload": "image"
+          }
+        },
+        "4": {
+          "class_type": "CheckpointLoaderSimple",
+          "inputs": {
+            "ckpt_name": "dreamshaper_8.safetensors"
+          }
+        },
+        "5": {
           "class_type": "LoraLoader",
           "inputs": {
             "clip": [
@@ -107,82 +141,46 @@
             "strength_model": 0.8
           }
         },
-        "4": {
-          "class_type": "CheckpointLoaderSimple",
-          "inputs": {
-            "ckpt_name": "dreamshaper_8.safetensors"
-          }
-        },
-        "5": {
+        "6": {
           "class_type": "CLIPTextEncode",
           "inputs": {
             "clip": [
-              "3",
+              "5",
               1
             ],
             "text": "a lighthouse on a cliff "
           }
         },
-        "6": {
+        "7": {
           "class_type": "CLIPTextEncode",
           "inputs": {
             "clip": [
-              "3",
+              "5",
               1
             ],
             "text": "blurry"
           }
         },
-        "7": {
+        "8": {
+          "class_type": "ControlNetLoader",
+          "inputs": {
+            "control_net_name": "control_v11f1e_sd15_tile_fp16.safetensors"
+          }
+        },
+        "9": {
           "class_type": "TilePreprocessor",
           "inputs": {
             "image": [
-              "8",
+              "3",
               0
             ],
             "pyrUp_iters": 3,
             "resolution": 512
           }
-        },
-        "8": {
-          "class_type": "LoadImage",
-          "inputs": {
-            "image": "IntraPaint/src_image.png",
-            "upload": "image"
-          }
-        },
-        "9": {
-          "class_type": "ControlNetApplyAdvanced",
-          "inputs": {
-            "control_net": [
-              "10",
-              0
-            ],
-            "end_percent": 1.0,
-            "image": [
-              "7",
-              0
-            ],
-            "negative": [
-              "6",
-              0
-            ],
-            "positive": [
-              "5",
-              0
-            ],
-            "start_percent": 0.0,
-            "strength": 1.0,
-            "vae": [
-              "4",
-              2
-            ]
-          }
         }
       }
     },
     "endpoint": "/prompt",
-    "method": "POST",
-    "timeout": 30
+    "method": "POST"
   }
 ]

@@ -1,0 +1,57 @@
+[
+  {
+    "body": {
+      "subfolder": "sd_backend_client",
+      "type": "input"
+    },
+    "body_format": "multipart/form-data",
+    "endpoint": "/upload/image",
+    "files": {
+      "image": [
+        "67ead36a115777da664d19d3f4791c6a.png",
+        "<image 512x512 Format_ARGB32 72947f38b2e91f8d>",
+        "image/png"
+      ]
+    },
+    "method": "POST",
+    "timeout": 90
+  },
+  {
+    "body": {
+      "client_id": "<client id>",
+      "prompt": {
+        "3": {
+          "class_type": "LoadImage",
+          "inputs": {
+            "image": "sd_backend_client/67ead36a115777da664d19d3f4791c6a.png",
+            "upload": "image"
+          }
+        },
+        "4": {
+          "class_type": "CannyEdgePreprocessor",
+          "inputs": {
+            "high_threshold": 200,
+            "image": [
+              "3",
+              0
+            ],
+            "low_threshold": 80,
+            "resolution": 512
+          }
+        },
+        "5": {
+          "class_type": "SaveImage",
+          "inputs": {
+            "filename_prefix": "CannyEdgePreprocessor_preview",
+            "images": [
+              "4",
+              0
+            ]
+          }
+        }
+      }
+    },
+    "endpoint": "/prompt",
+    "method": "POST"
+  }
+]

@@ -1,23 +1,26 @@
-"""Generates images through Stable Diffusion and ComfyUI"""
+"""Generates images through Stable Diffusion and ComfyUI, using the `sd_backend_client` library's ComfyUI client."""
 import logging
 from argparse import Namespace
 from typing import Optional, cast, Any
 
-from PySide6.QtCore import QSize, QThread, QRect, QPoint, SignalInstance
+from PySide6.QtCore import QSize, QRect, QPoint, SignalInstance
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
-from requests import ReadTimeout
+from sd_backend_client import AuthError, BackendOption, BackendTimeoutError, ComfyUiWebservice, GenerationError, \
+    GenerationHandle, GenerationProgress, GenerationResult, GenerationStatus, SDBackendError
+# Not in the library's public API. The model config list has no `Backend` equivalent.
+from sd_backend_client.api.comfyui_webservice import ComfyModelType
 
-from src.api.a1111_webservice import AuthError
-from src.api.comfyui.comfyui_types import ImageFileReference
-from src.api.comfyui.nodes.ultimate_upscale_node import ULTIMATE_UPSCALE_NODE_NAME
-from src.api.comfyui_webservice import ComfyUiWebservice, ComfyModelType, AsyncTaskProgress, AsyncTaskStatus
-from src.api.controlnet.controlnet_constants import ControlTypeDef
+from src.api.controlnet.controlnet_constants import ControlTypeDef, PREPROCESSOR_NONE
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.controlnet.controlnet_unit import ControlKeyType
-from src.api.webservice import WebService
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.controller.image_generation.sd_adapters.controlnet_adapter import legacy_preprocessor, \
+    preprocessor_from_legacy
+from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qimage, qimage_to_pil
+from src.controller.image_generation.sd_adapters.params_adapter import build_comfy_params, build_upscale_params
+from src.controller.image_generation.sd_adapters.progress_adapter import progress_status_update
 from src.controller.image_generation.sd_generator import SDGenerator, SD_BASE_DESCRIPTION, \
     STABLE_DIFFUSION_CONFIG_CATEGORY, GETTING_SD_MODELS, INSTALLATION_STABILITY_MATRIX
 from src.image.filter.blur import BlurFilter, MODE_GAUSSIAN
@@ -144,15 +147,7 @@ SD_COMFYUI_GENERATOR_SETUP = SD_COMFYUI_GENERATOR_SETUP_OPTIONS + SD_COMFYUI_GEN
                              + SD_COMFYUI_GENERATOR_SETUP_ALTERNATIVES
 
 
-TASK_STATUS_QUEUED = _tr('Waiting, position {queue_number} in queue.')
-TASK_STATUS_GENERATING = _tr('Generating...')
-TASK_STATUS_BATCH_NUMBER = _tr('Batch {batch_num} of {num_batches}:')
-
 DEFAULT_COMFYUI_URL = 'http://localhost:8188'
-
-MAX_ERROR_COUNT = 10
-MIN_RETRY_US = 300000
-MAX_RETRY_US = 60000000
 
 
 def _check_prompt_styles_available(_) -> bool:
@@ -165,6 +160,10 @@ def _check_lora_available(_) -> bool:
     return len(cache.get(Cache.LORA_MODELS)) > 0
 
 
+def _option_names(options: list[BackendOption]) -> list[str]:
+    return [option.name for option in options]
+
+
 class SDComfyUIGenerator(SDGenerator):
     """Interface for providing image generation capabilities."""
 
@@ -173,9 +172,8 @@ class SDComfyUIGenerator(SDGenerator):
         self._image_stack = image_stack
         self._webservice: Optional[ComfyUiWebservice] = ComfyUiWebservice(self.server_url)
         self._gen_extras_tab = ComfyUIExtrasTab()
-        self._active_task_id = ''
-        self._active_task_number = 0
-        self._last_cancelled_id = ''
+        # The job the worker thread is waiting on, which `cancel_generation` cancels from the main thread:
+        self._active_handle: Optional[GenerationHandle] = None
 
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
@@ -189,7 +187,7 @@ class SDComfyUIGenerator(SDGenerator):
         """Returns an extended description of this generator."""
         return SD_COMFYUI_GENERATOR_DESCRIPTION
 
-    def get_webservice(self) -> Optional[WebService]:
+    def get_webservice(self) -> Optional[ComfyUiWebservice]:
         """Return the webservice object this module uses to connect to Stable Diffusion, if initialized."""
         return self._webservice
 
@@ -197,11 +195,11 @@ class SDComfyUIGenerator(SDGenerator):
         """Destroy and remove any active webservice object."""
         self._webservice = None
 
-    def create_or_get_webservice(self, url: str) -> WebService:
+    def create_or_get_webservice(self, url: str) -> ComfyUiWebservice:
         """Return the webservice object this module uses to connect to Stable Diffusion.  If the webservice already
            exists but the url doesn't match, a new webservice should replace the existing one, using the new url."""
         if self._webservice is not None:
-            if self._webservice.server_url == url:
+            if self._webservice.server_url == url.rstrip('/'):
                 return self._webservice
             self._webservice.disconnect()
             self._webservice = None
@@ -216,17 +214,26 @@ class SDComfyUIGenerator(SDGenerator):
         """Return the list of available Controlnet preprocessors."""
         assert self._webservice is not None
         try:
-            return self._webservice.get_controlnet_preprocessors()
-        except (RuntimeError, KeyError) as err:
+            library_preprocessors = self._webservice.get_controlnet_preprocessors()
+        except SDBackendError as err:
             logger.error(f'Loading ControlNet preprocessors failed: {err}')
             return []
+        preprocessors: list[ControlNetPreprocessor] = []
+        for preprocessor in library_preprocessors:
+            try:
+                preprocessors.append(legacy_preprocessor(preprocessor))
+            except (TypeError, ValueError) as err:
+                logger.warning(f'Skipping ControlNet preprocessor "{preprocessor.name}": {err}')
+        if not any(preprocessor.name == PREPROCESSOR_NONE for preprocessor in preprocessors):
+            preprocessors.append(ControlNetPreprocessor(PREPROCESSOR_NONE, PREPROCESSOR_NONE, []))
+        return preprocessors
 
     def get_controlnet_models(self) -> list[str]:
         """Return the list of available ControlNet models."""
         assert self._webservice is not None
         try:
-            return self._webservice.get_controlnet_models()
-        except (RuntimeError, KeyError) as err:
+            return [model.full_model_name for model in self._webservice.list_controlnet_models()]
+        except SDBackendError as err:
             logger.error(f'Loading ControlNet models failed: {err}')
             return []
 
@@ -234,8 +241,8 @@ class SDComfyUIGenerator(SDGenerator):
         """Return available ControlNet categories."""
         assert self._webservice is not None
         try:
-            return self._webservice.get_controlnet_type_categories()
-        except (RuntimeError, KeyError) as err:
+            return cast(dict[str, ControlTypeDef], self._webservice.get_controlnet_type_categories())
+        except SDBackendError as err:
             logger.error(f'Loading ControlNet types failed: {err}')
             return {}
 
@@ -247,8 +254,8 @@ class SDComfyUIGenerator(SDGenerator):
         """Return the list of available image generation models."""
         assert self._webservice is not None
         try:
-            return self._webservice.get_sd_checkpoints()
-        except (RuntimeError, KeyError) as err:
+            return _option_names(self._webservice.list_checkpoints())
+        except SDBackendError as err:
             logger.error(f'Loading Stable Diffusion model list failed: {err}')
             return []
 
@@ -256,7 +263,7 @@ class SDComfyUIGenerator(SDGenerator):
         """Return available LoRA model extensions."""
         assert self._webservice is not None
         try:
-            lora_names = self._webservice.get_lora_models()
+            lora_names = _option_names(self._webservice.list_loras())
             lora_info: list[dict[str, str]] = []
             for lora_file in lora_names:
                 if '.' in lora_file:
@@ -269,7 +276,7 @@ class SDComfyUIGenerator(SDGenerator):
                     LORA_KEY_PATH: lora_file
                 })
             return lora_info
-        except (RuntimeError, KeyError) as err:
+        except SDBackendError as err:
             logger.error(f'Loading Stable Diffusion LoRA model list failed: {err}')
             return []
 
@@ -277,8 +284,8 @@ class SDComfyUIGenerator(SDGenerator):
         """Return the list of available samplers."""
         assert self._webservice is not None
         try:
-            return self._webservice.get_sampler_names()
-        except (RuntimeError, KeyError) as err:
+            return _option_names(self._webservice.list_samplers())
+        except SDBackendError as err:
             logger.error(f'Loading Stable Diffusion sampler option list failed: {err}')
             return []
 
@@ -286,30 +293,40 @@ class SDComfyUIGenerator(SDGenerator):
         """Return the list of available upscale methods."""
         assert self._webservice is not None
         try:
-            return self._webservice.get_models(ComfyModelType.UPSCALING)
-        except (RuntimeError, KeyError) as err:
-            logger.error(f'Loading Stable Diffusion LoRA model list failed: {err}')
+            return _option_names(self._webservice.list_upscalers())
+        except SDBackendError as err:
+            logger.error(f'Loading Stable Diffusion upscaling model list failed: {err}')
             return []
 
     def ultimate_upscale_script_available(self) -> bool:
         """Return whether the Stable Diffusion API will support the 'Ultimate SD Upscale' script."""
         assert self._webservice is not None
         try:
-            return self._webservice.is_node_available(ULTIMATE_UPSCALE_NODE_NAME)
-        except (RuntimeError, KeyError) as err:
-            logger.error(f'Checking for {ULTIMATE_UPSCALE_NODE_NAME} node failed: {err}')
+            return self._webservice.get_capabilities().ultimate_upscale
+        except SDBackendError as err:
+            logger.error(f'Checking for Ultimate SD Upscale support failed: {err}')
             return False
 
     def cache_generator_specific_data(self) -> None:
         """When activating the generator, after the webservice is connected, this method should be implemented to
            load and cache any generator-specific API data."""
         cache = Cache()
-        assert self._webservice is not None
-        for model_type, cache_key in ((ComfyModelType.CONFIG, Cache.COMFYUI_MODEL_CONFIG),
-                                      (ComfyModelType.HYPERNETWORKS, Cache.HYPERNETWORK_MODELS)):
+        webservice = self._webservice
+        assert webservice is not None
+
+        def _list_model_configs() -> list[str]:
+            assert webservice is not None
+            return webservice.get_models(ComfyModelType.CONFIG)
+
+        def _list_hypernetworks() -> list[str]:
+            assert webservice is not None
+            return _option_names(webservice.list_hypernetworks())
+
+        for list_models, cache_key in ((_list_model_configs, Cache.COMFYUI_MODEL_CONFIG),
+                                       (_list_hypernetworks, Cache.HYPERNETWORK_MODELS)):
             cache_data_type = cache.get_data_type(cache_key)
             try:
-                model_list = self._webservice.get_models(model_type)
+                model_list = list_models()
                 model_list.sort()
                 if cache_data_type == TYPE_LIST:
                     cache.set(cache_key, model_list)
@@ -323,16 +340,16 @@ class SDComfyUIGenerator(SDGenerator):
                         if option not in option_list:
                             option_list.append(option)
                     cache.update_options(cache_key, option_list)
-            except (RuntimeError, KeyError) as err:
-                logger.error(f'Loading {model_type} model options failed: {err}')
+            except SDBackendError as err:
+                logger.error(f'Loading {cache_key} model options failed: {err}')
                 if cache_data_type == TYPE_LIST:
                     cache.set(cache_key, [])
                 else:
                     assert cache_data_type == TYPE_STR
                     cache.restore_default_options(cache_key)
         try:
-            cache.update_options(Cache.SCHEDULER, self._webservice.get_scheduler_names())
-        except (RuntimeError, KeyError) as err:
+            cache.update_options(Cache.SCHEDULER, _option_names(webservice.list_schedulers()))
+        except SDBackendError as err:
             logger.error(f'Loading scheduler options failed: {err}')
             cache.restore_default_options(Cache.SCHEDULER)
 
@@ -342,10 +359,12 @@ class SDComfyUIGenerator(SDGenerator):
 
     def cancel_generation(self) -> None:
         """Cancels image generation, if in-progress"""
-        assert self._webservice is not None
-        if AppStateTracker.app_state() == APP_STATE_LOADING:
-            self._last_cancelled_id = self._active_task_id
-            self._webservice.interrupt(self._active_task_id)
+        handle = self._active_handle
+        if AppStateTracker.app_state() == APP_STATE_LOADING and handle is not None:
+            try:
+                handle.cancel()
+            except SDBackendError as err:
+                logger.error(f'Cancelling ComfyUI job {handle.task_id} failed: {err}')
 
     def load_lora_thumbnail(self, lora_info: Optional[dict[str, str]]) -> Optional[QImage]:
         """Attempt to load a LoRA model thumbnail image from the API."""
@@ -357,20 +376,18 @@ class SDComfyUIGenerator(SDGenerator):
                                   image_signal: SignalInstance) -> None:
         """Requests a ControlNet preprocessor preview image."""
         assert self._webservice is not None
-        queue_info = self._webservice.controlnet_preprocessor_preview(image, mask, preprocessor)
-        self._active_task_number = queue_info['number']
-        self._active_task_id = queue_info['prompt_id']
-        final_status = self._repeated_progress_check(self._active_task_id, self._active_task_number, 0, 1,
-                                                     status_signal)
-
-        if 'outputs' not in final_status:
-            preview_image = image
-        else:
-            assert self._webservice is not None
-            image_data = self._webservice.download_images(final_status['outputs']['images'])
-            if len(image_data) != 1:
-                logger.warning(f'Expected one preprocessor preview image, got {len(image_data)}')
-            preview_image = image_data[0]
+        preprocessor_params = preprocessor_from_legacy(preprocessor)
+        if preprocessor_params is None:
+            image_signal.emit(image)
+            return
+        handle = self._webservice.submit_preprocessor_preview(qimage_to_pil(image), preprocessor_params,
+                                                              None if mask is None else qimage_to_pil(mask))
+        result = self._wait_for_job(handle, status_signal)
+        if result is None:
+            return
+        if len(result.images) != 1:
+            logger.warning(f'Expected one preprocessor preview image, got {len(result.images)}')
+        preview_image = image if len(result.images) == 0 else pil_to_qimage(result.images[0])
         image_signal.emit(preview_image)
 
     def get_gen_area_image(self, init_image: Optional[QImage] = None) -> QImage:
@@ -379,16 +396,17 @@ class SDComfyUIGenerator(SDGenerator):
         return self._scale_and_crop_gen_qimage(image)
 
     def get_gen_area_mask(self, init_mask: Optional[QImage] = None) -> QImage:
-        """Gets the inpainting mask for the image generation area, handling any necessary preprocessing."""
+        """Gets the inpainting mask for the image generation area, blurred by `AppConfig.MASK_BLUR`.
+
+        ComfyUI doesn't blur masks, so the blur is applied here. The mask is opaque where content changes; the library
+        converts it to ComfyUI's format when uploading it.
+        """
         selection_layer = self._image_stack.selection_layer
         mask = init_mask if init_mask is not None else selection_layer.mask_image
         mask = self._scale_and_crop_gen_qimage(mask)
-        # ComfyUI doesn't blur masks unless you add another node to do it, so me might as well just do it here:
         blur_radius = AppConfig().get(AppConfig.MASK_BLUR)
         if blur_radius > 0:
             mask = BlurFilter.blur(mask, MODE_GAUSSIAN, blur_radius)
-        # ComfyUI expects inverted masks:
-        mask.invertPixels(QImage.InvertMode.InvertRgba)
         return mask
 
     def is_available(self) -> bool:
@@ -396,15 +414,16 @@ class SDComfyUIGenerator(SDGenerator):
         if self._webservice is None:
             self._webservice = ComfyUiWebservice(self._server_url)
         try:
-            # Use the system status endpoint to check for ComfyUI:
-            system_status = self._webservice.get_system_stats()
-            return 'system' in system_status and 'comfyui_version' in system_status['system']
-        except RuntimeError as req_err:
+            # Use the system status endpoint to check for ComfyUI. A server that isn't ComfyUI fails the request or
+            # returns a response that fails validation:
+            self._webservice.get_system_stats()
+            return True
+        except AuthError:
+            self.status_signal.emit(AUTH_ERROR.format(url=self._server_url))
+        except (SDBackendError, ValueError) as req_err:
             self.status_signal.emit(MISC_CONNECTION_ERROR.format(url=self._server_url,
                                                                  error_text=str(req_err)))
             logger.error(f'Login check connection failed: {req_err}')
-        except AuthError:
-            self.status_signal.emit(AUTH_ERROR.format(url=self._server_url))
         return False
 
     def init_settings(self, settings_modal: SettingsModal) -> None:
@@ -455,56 +474,32 @@ class SDComfyUIGenerator(SDGenerator):
             self._control_panel.add_extras_tab(self._gen_extras_tab)
         return self._control_panel
 
-    def _repeated_progress_check(self, task_id: str, task_number: int, batch_num: int, num_batches: int,
-                                 external_status_signal: Optional[SignalInstance] = None) -> AsyncTaskProgress:
-        """Repeatedly checks progress of an ongoing task until an ending condition is reached, returning the final
-           status. Call this outside of the UI thread."""
-        webservice = self._webservice
-        assert webservice is not None
-        error_count = 0
-        status: Optional[AsyncTaskProgress] = None
-        batch_num = batch_num + 1
-        last_percentage = 0.0
-        with webservice.open_websocket() as websocket:
-            while status is None or status['status'] in (AsyncTaskStatus.PENDING, AsyncTaskStatus.ACTIVE):
-                ws_message = websocket.recv()
-                percentage = ComfyUiWebservice.parse_percentage_from_websocket_message(ws_message)
-                if num_batches > 1:
-                    if percentage is None:
-                        percentage = 0.0
-                    single_batch_percentage = round(100 / num_batches, ndigits=4)
-                    percentage = round(single_batch_percentage * ((batch_num - 1) + (percentage / 100)), ndigits=4)
-                if percentage is not None:
-                    last_percentage = max(percentage, last_percentage)
+    def _wait_for_job(self, handle: GenerationHandle, status_signal: Optional[SignalInstance],
+                      batch_index: int = 0, num_batches: int = 1) -> Optional[GenerationResult]:
+        """Blocks until a job finishes, emitting progress through `status_signal`. Call this outside the UI thread.
 
-                sleep_time = min(MIN_RETRY_US * pow(2, error_count), MAX_RETRY_US)
-                thread = QThread.currentThread()
-                assert thread is not None
-                thread.usleep(sleep_time)
-                try:
-                    assert webservice is not None
-                    status = webservice.check_queue_entry(task_id, task_number)
-                    if status['status'] == AsyncTaskStatus.PENDING and 'index' in status:
-                        status_text = TASK_STATUS_QUEUED.format(queue_number=status['index'])
-                    else:
-                        status_text = TASK_STATUS_GENERATING
-                    if num_batches > 1:
-                        status_text = (
-                            f'{TASK_STATUS_BATCH_NUMBER.format(batch_num=batch_num, num_batches=num_batches)}'
-                            f' {status_text}')
-                    status_text = f'{status_text}\n{last_percentage}%'
-                    if external_status_signal is not None:
-                        external_status_signal.emit({'progress': status_text})
-                except ReadTimeout:
-                    error_count += 1
-                except RuntimeError as err:
-                    error_count += 1
-                    logger.error(f'Error {error_count}: {err}')
-                    if error_count > MAX_ERROR_COUNT:
-                        logger.error('Image generation failed, reached max retries.')
-                        break
-        assert status is not None
-        return status
+        Returns None if the job was cancelled. `cancel_generation` cancels the job while this waits.
+
+        Raises
+        ------
+        SDBackendError
+            If the job fails, or a request made while waiting fails.
+        """
+
+        def _on_progress(progress: GenerationProgress) -> None:
+            if status_signal is not None:
+                status_signal.emit(progress_status_update(progress, batch_index, num_batches))
+
+        self._active_handle = handle
+        try:
+            return handle.wait(on_progress=_on_progress)
+        except GenerationError as err:
+            if err.status == GenerationStatus.CANCELLED:
+                logger.info(f'ComfyUI job {handle.task_id} was cancelled')
+                return None
+            raise
+        finally:
+            self._active_handle = None
 
     def generate(self,
                  status_signal: SignalInstance,
@@ -522,7 +517,8 @@ class SDComfyUIGenerator(SDGenerator):
         mask_image : QImage, optional
             Mask marking the edited image region.
         """
-        assert self._webservice is not None
+        webservice = self._webservice
+        assert webservice is not None
         cache = Cache()
         edit_mode = cache.get(Cache.EDIT_MODE)
         if edit_mode == EDIT_MODE_INPAINT and self._image_stack.selection_layer.generation_area_fully_selected():
@@ -546,42 +542,28 @@ class SDComfyUIGenerator(SDGenerator):
         if mask_image is not None:
             mask_image = self.get_gen_area_mask(mask_image)
 
-        num_batches = Cache().get(Cache.BATCH_COUNT)
+        if edit_mode == EDIT_MODE_INPAINT:
+            submit = webservice.submit_inpaint
+        elif edit_mode == EDIT_MODE_IMG2IMG:
+            submit = webservice.submit_img2img
+        else:
+            assert edit_mode == EDIT_MODE_TXT2IMG
+            submit = webservice.submit_txt2img
+
+        num_batches = cache.get(Cache.BATCH_COUNT)
         seed: Optional[int] = None
         first_image_idx = 0
-        uploaded_image_references: dict[str, ImageFileReference] = {}
-        mask_reference: Optional[ImageFileReference] = None
         for batch_num in range(num_batches):
             try:
+                # Later batches continue from the first batch's seed, which the library picks when Cache.SEED is -1:
                 sequence_seed = None if seed is None else seed + batch_num
-                if edit_mode == EDIT_MODE_INPAINT:
-                    assert mask_image is not None
-                    queue_info = self._webservice.inpaint(source_image,
-                                                          mask_image if mask_reference is None else mask_reference,
-                                                          uploaded_image_references, sequence_seed)
-                elif edit_mode == EDIT_MODE_IMG2IMG:
-                    assert source_image is not None
-                    queue_info = self._webservice.img2img(source_image, uploaded_image_references, sequence_seed)
-                else:
-                    assert edit_mode == EDIT_MODE_TXT2IMG
-                    queue_info = self._webservice.txt2img(source_image, uploaded_image_references, sequence_seed)
-                if seed is None and 'seed' in queue_info and isinstance(queue_info['seed'], int):
-                    seed = queue_info['seed']
-                if 'uploaded_mask' in queue_info:
-                    mask_reference = queue_info['uploaded_mask']
-                if 'error' in queue_info:
-                    raise RuntimeError(str(queue_info['error']))
-                assert 'number' in queue_info
-                assert 'prompt_id' in queue_info
-                self._active_task_number = queue_info['number']
-                self._active_task_id = queue_info['prompt_id']
-
-                # Check progress in a loop until it finishes or something goes wrong:
-                final_status = self._repeated_progress_check(self._active_task_id, self._active_task_number, batch_num,
-                                                             num_batches, status_signal)
-                if 'outputs' not in final_status:
-                    raise RuntimeError(GENERATE_ERROR_TITLE)
-                image_data = self._webservice.download_images(final_status['outputs']['images'])
+                diffusion_params = build_comfy_params(edit_mode, source_image, mask_image, sequence_seed)
+                result = self._wait_for_job(submit(diffusion_params), status_signal, batch_num, num_batches)
+                if result is None:
+                    return
+                if seed is None:
+                    seed = result.seed
+                image_data = [pil_to_qimage(image) for image in result.images]
                 # If using "inpaint full res", scale and pad images to make them match the gen. area size again.
                 if inpaint_inner_bounds.size() != gen_area.size() and original_source_image is not None:
                     image_data = self._restore_cropped_inpainting_images(original_source_image, inpaint_inner_bounds,
@@ -589,40 +571,27 @@ class SDComfyUIGenerator(SDGenerator):
                 for i, response_image in enumerate(image_data):
                     self._cache_generated_image(response_image, i + first_image_idx)
                 first_image_idx = first_image_idx + len(image_data)
-            except ReadTimeout:
-                raise RuntimeError(ERROR_MESSAGE_TIMEOUT)
-            except (RuntimeError, ConnectionError) as image_gen_error:
-                if self._last_cancelled_id == self._active_task_id and self._last_cancelled_id != '':
-                    logger.info(f'Suppressing errors from cancelled task {self._active_task_id}')
-                    return  # Cancelled tasks will trigger a RuntimeError that should be ignored.
+            except BackendTimeoutError as err:
+                raise RuntimeError(ERROR_MESSAGE_TIMEOUT) from err
+            except SDBackendError as image_gen_error:
                 logger.error(f'request failed: {image_gen_error}')
                 raise RuntimeError(f'request failed: {image_gen_error}') from image_gen_error
-            except Exception as unexpected_err:
-                logger.error('Unexpected error:', unexpected_err)
-                raise RuntimeError(f'unexpected error: {unexpected_err}') from unexpected_err
         if seed is not None:
             status_signal.emit({'seed': str(seed)})
 
     def upscale_image(self, image: QImage, new_size: QSize, status_signal: SignalInstance,
                       image_signal: SignalInstance) -> None:
+        """Upscales an image using cached upscaling settings."""
         assert self._webservice is not None
-        queue_info = self._webservice.upscale(self._image_stack.qimage(), new_size.width(),
-                                              new_size.height())
-        if 'error' in queue_info:
-            raise RuntimeError(str(queue_info['error']))
-        assert 'number' in queue_info
-        assert 'prompt_id' in queue_info
-        self._active_task_number = queue_info['number']
-        self._active_task_id = queue_info['prompt_id']
-
-        # Check progress in a loop until it finishes or something goes wrong:
-        final_status = self._repeated_progress_check(self._active_task_id, self._active_task_number, 0,
-                                                     1, status_signal)
-        if 'outputs' not in final_status:
+        upscale_params = build_upscale_params(build_comfy_params(EDIT_MODE_TXT2IMG))
+        handle = self._webservice.submit_upscale(qimage_to_pil(image), new_size.width(), new_size.height(),
+                                                 upscale_params)
+        result = self._wait_for_job(handle, status_signal)
+        if result is None:
+            return
+        if len(result.images) == 0:
             raise RuntimeError(GENERATE_ERROR_TITLE)
-        image_data = self._webservice.download_images(final_status['outputs']['images'])
-        assert len(image_data) > 0
-        upscaled_image = image_data[0]
+        upscaled_image = pil_to_qimage(result.images[0])
         if upscaled_image.size() != new_size:
             # Apply final scaling, necessary if width and height scale don't exactly match, or if using an
             # upscaling model with a fixed scale:

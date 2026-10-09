@@ -1,9 +1,9 @@
 """Offline stand-in for the Stable Diffusion HTTP backends, for tests that pin the generators' request payloads.
 
-`FakeSdBackend` patches `WebService.get` and `WebService.post`, so every WebUI and ComfyUI request gets a canned
-response and none reaches the network. It records each POST, and `snapshot_requests` turns those records into JSON that
-stays stable across runs: image data becomes a size, format and pixel-hash placeholder, and per-session ids become
-fixed strings.
+`FakeSdBackend` patches `get` and `post` on both `src.api`'s `WebService` and `sd_backend_client`'s, so every WebUI and
+ComfyUI request gets a canned response and none reaches the network. It records each POST, and `snapshot_requests`
+turns those records into JSON that stays stable across runs: image data becomes a size, format and pixel-hash
+placeholder, and per-session ids become fixed strings.
 
 A request with no route fails the test. Generators catch and wrap most exceptions, so the failure can surface as a
 RuntimeError naming the unrouted endpoint.
@@ -19,6 +19,7 @@ from unittest import mock
 import numpy as np
 from PySide6.QtCore import QBuffer, QByteArray
 from PySide6.QtGui import QImage
+from sd_backend_client.api import webservice as library_webservice
 
 from src.api.webservice import WebService
 from src.util.visual.image_utils import BASE_64_PREFIX
@@ -27,8 +28,9 @@ from src.util.visual.image_utils import BASE_64_PREFIX
 BASE_64_PNG_START = 'iVBORw0KGgo'
 PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
 
-_GET_SIGNATURE = inspect.signature(WebService.get)
-_POST_SIGNATURE = inspect.signature(WebService.post)
+# The base classes whose HTTP methods are patched. `sd_backend_client` exports no base class, so this reaches past its
+# public API.
+_WEBSERVICE_CLASSES = (WebService, library_webservice.WebService)
 
 
 class FakeResponse:
@@ -64,6 +66,8 @@ class RecordedRequest:
     method: str
     endpoint: str
     arguments: dict[str, Any] = field(default_factory=dict)
+    # Default values of the arguments the sending method accepts:
+    defaults: dict[str, Any] = field(default_factory=dict)
 
 
 class FakeSdBackend:
@@ -76,8 +80,10 @@ class FakeSdBackend:
     def __init__(self) -> None:
         self._routes: dict[tuple[str, str], Route] = {}
         self.requests: list[RecordedRequest] = []
-        self._patches = [mock.patch.object(WebService, 'get', autospec=True, side_effect=self._handle_get),
-                         mock.patch.object(WebService, 'post', autospec=True, side_effect=self._handle_post)]
+        self._patches = [mock.patch.object(webservice_class, method_name, autospec=True,
+                                           side_effect=self._handler(method_name.upper(),
+                                                                     getattr(webservice_class, method_name)))
+                         for webservice_class in _WEBSERVICE_CLASSES for method_name in ('get', 'post')]
 
     def route(self, method: str, endpoint: str, handler: Route | Any) -> None:
         """Serves `handler` for requests to an endpoint. A non-callable handler is returned as the response body."""
@@ -107,18 +113,20 @@ class FakeSdBackend:
         """Returns the recorded POST requests, in the order they were sent."""
         return [request for request in self.requests if request.method == 'POST']
 
-    def _handle_get(self, service: WebService, *args, **kwargs) -> FakeResponse:
-        return self._handle('GET', _GET_SIGNATURE.bind(service, *args, **kwargs))
+    def _handler(self, method: str, function: Callable[..., Any]) -> Callable[..., FakeResponse]:
+        signature = inspect.signature(function)
+        defaults = {name: parameter.default for name, parameter in signature.parameters.items()}
 
-    def _handle_post(self, service: WebService, *args, **kwargs) -> FakeResponse:
-        return self._handle('POST', _POST_SIGNATURE.bind(service, *args, **kwargs))
+        def _handle_request(*args, **kwargs) -> FakeResponse:
+            return self._handle(method, signature.bind(*args, **kwargs), defaults)
+        return _handle_request
 
-    def _handle(self, method: str, bound: inspect.BoundArguments) -> FakeResponse:
+    def _handle(self, method: str, bound: inspect.BoundArguments, defaults: dict[str, Any]) -> FakeResponse:
         bound.apply_defaults()
         arguments = dict(bound.arguments)
         del arguments['self']
         endpoint = arguments.pop('endpoint')
-        self.requests.append(RecordedRequest(method, endpoint, arguments))
+        self.requests.append(RecordedRequest(method, endpoint, arguments, defaults))
         handler = self._routes.get((method, endpoint))
         if handler is None:
             prefixes = [key for key in self._routes if key[0] == method and key[1].endswith('/')
@@ -200,16 +208,15 @@ def snapshot_requests(requests: list[RecordedRequest], replacements: Optional[di
                       ) -> list[dict[str, Any]]:
     """Converts recorded requests to stable JSON-compatible data for comparing with a committed snapshot.
 
-    Each entry keeps the method, the endpoint and every argument that differs from the WebService default, so a
+    Each entry keeps the method, the endpoint and every argument that differs from the sending method's default, so a
     snapshot shows timeouts and body formats along with the request body.
     """
     replacements = {} if replacements is None else replacements
     snapshot: list[dict[str, Any]] = []
     for request in requests:
-        signature = _GET_SIGNATURE if request.method == 'GET' else _POST_SIGNATURE
         entry: dict[str, Any] = {'method': request.method, 'endpoint': request.endpoint}
         for name, value in request.arguments.items():
-            if value != signature.parameters[name].default:
+            if value != request.defaults[name]:
                 entry[name] = scrub_value(value, replacements)
         snapshot.append(entry)
     return snapshot
