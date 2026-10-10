@@ -12,7 +12,6 @@ import threading
 from typing import Any
 from unittest.mock import patch
 
-import pytest
 from PySide6.QtCore import QSize
 
 from src.config import application_config
@@ -380,50 +379,28 @@ class ConfigTest(IntraPaintTestCase):
         self.assertEqual(sorted(os.listdir(self.temp_dir)), sorted([os.path.basename(self.definition_path),
                                                                     os.path.basename(self.json_path)]))
 
-    def test_set_with_save_from_worker_thread_does_not_deadlock(self) -> None:
-        """`Config.set` with `save_change=True` off the main thread finishes and writes the change to the JSON file.
-
-        This uses a private `Config` instead of `AppConfig`: a deadlocked `set` keeps its lock forever, and
-        `IntraPaintTestCase.tearDown` resets the shared singletons, which would block on that lock and hang the suite
-        instead of failing this test.
-        """
+    def test_set_from_worker_thread_raises_without_changing_value(self) -> None:
+        """`Config.set` off the main thread raises RuntimeError, leaving the value alone and running no callbacks."""
         config = self._config()
+        callback_threads: list[threading.Thread] = []
+        config.connect(self, STR_KEY, lambda: callback_threads.append(threading.current_thread()))
+        original = config.get(STR_KEY)
         errors: list[BaseException] = []
 
         def set_value() -> None:
             try:
-                config.set(TEST_KEY, True, save_change=True)
+                config.set(STR_KEY, 'changed', save_change=True)
             except BaseException as err:  # pylint: disable=broad-exception-caught
                 errors.append(err)
-
-        # Daemon, so a deadlocked worker can't keep the process alive after the test fails.
-        worker = threading.Thread(target=set_value, daemon=True)
-        worker.start()
-        worker.join(THREAD_JOIN_TIMEOUT_SECONDS)
-        self.assertFalse(worker.is_alive(), 'Config.set deadlocked when saving from a worker thread')
-        self.assertEqual([], errors)
-        self.assertTrue(config.get(TEST_KEY))
-        self.assertTrue(self._read_saved_values()[TEST_KEY])
-
-    @pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/28')
-    def test_set_from_worker_thread_does_not_run_callbacks_there(self) -> None:
-        """A `set` call on a worker thread doesn't run connected callbacks on that thread, where they could change
-        widgets."""
-        config = self._config()
-        callback_threads: list[threading.Thread] = []
-        config.connect(self, STR_KEY, lambda: callback_threads.append(threading.current_thread()))
-
-        def set_value() -> None:
-            try:
-                config.set(STR_KEY, 'changed', save_change=False)
-            except AssertionError:  # The main-thread assertion #28 proposes is an acceptable fix.
-                pass
 
         worker = threading.Thread(target=set_value, daemon=True)
         worker.start()
         worker.join(THREAD_JOIN_TIMEOUT_SECONDS)
         self.assertFalse(worker.is_alive())
-        self.assertNotIn(worker, callback_threads)
+        self.assertEqual(1, len(errors))
+        self.assertIsInstance(errors[0], RuntimeError)
+        self.assertEqual(original, config.get(STR_KEY))
+        self.assertEqual([], callback_threads)
 
 
 class AppConfigDataDirTest(IntraPaintTestCase):
