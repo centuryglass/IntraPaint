@@ -158,6 +158,7 @@ class TextTool(BaseTool):
             self._dragging = False
 
     def _connect_text_layer(self, layer: TextLayer) -> None:
+        UndoStack().end_gesture()
         if self._text_layer is not None:
             self._disconnect_text_layer()
         self._text_layer = layer
@@ -176,6 +177,7 @@ class TextTool(BaseTool):
         self._layer_lock_change_slot(layer, layer.locked)
 
     def _disconnect_text_layer(self) -> None:
+        UndoStack().end_gesture()
         if self._text_layer is not None:
             self._disconnect_signals()
             self._text_layer = None
@@ -214,6 +216,7 @@ class TextTool(BaseTool):
         if not self.is_active:
             return
         if self._text_layer is not None:
+            UndoStack().begin_gesture('TextTool.edit_text')
             self._disconnect_signals()
             self._text_layer.text_rect = text_data
             self._placement_outline.outline_size = text_data.size

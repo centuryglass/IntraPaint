@@ -315,14 +315,6 @@
         "default": 30,
         "saved": true
     },
-    "undo_merge_interval": {
-        "label": "Undo merge interval (seconds):",
-        "category": "Editing",
-        "description": "Continuous changes to the same layer property or the generation area are combined into one undo step if they happen less than this many seconds apart.",
-        "type": "float",
-        "default": 0.2,
-        "saved": true
-    },
     "speed_modifier_multiplier": {
         "label": "'Speed modifier' key multiplier:",
         "category": "Editing",

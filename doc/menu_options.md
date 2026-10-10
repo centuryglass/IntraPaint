@@ -137,7 +137,7 @@ Reverses the last change made to the image (or active text).  IntraPaint allows 
 - Undo will not affect most changes that affect the UI only, like switching tools or moving tabs.
 - Undo will not affect changes to settings.
 
-IntraPaint will try to combine saved actions when possible, merging actions that occur within a 0.2 second interval.  This value is configurable in [settings](#settings-f9) under **Editing/Undo merge interval(seconds)**.  The maximum number of previous actions to save for undo is also configurable, under **Editing/Maximum undo count**.
+Each action is its own undo step, except that a continuous gesture, like dragging a layer, the opacity slider or the generation area, or typing in the text tool, undoes as one step, and a menu option that changes several layers undoes as one step.  The maximum number of previous actions to save for undo is also configurable, under **Editing/Maximum undo count**.
 
 ### Redo (Ctrl+Shift+Z)
 

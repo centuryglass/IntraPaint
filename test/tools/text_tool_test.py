@@ -1,9 +1,7 @@
 """Tests the text tool through mouse input on the canvas and edits in its control panel."""
-import pytest
 from PySide6.QtCore import QPoint, QPointF, QRect, QSize, QSizeF, Qt
 from PySide6.QtGui import QTransform
 
-from src.config.application_config import AppConfig
 from src.image.layers.text_layer import TextLayer
 from src.image.text_rect import TextRect
 from src.tools.layer_transform_tool import LayerTransformTool
@@ -24,8 +22,6 @@ class TextToolTest(ToolTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        # Without time-based merging, each change is its own undo entry:
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         self.tool = TextTool(self.image_stack, self.image_viewer)
         self.tool_controller.add_tool(self.tool)
         self.activate_tool(self.tool)
@@ -103,16 +99,16 @@ class TextToolTest(ToolTestCase):
         self.assertIs(self.tool._text_layer, second)
 
     def test_typing_edits_layer(self) -> None:
-        """Text typed into the panel goes to the active layer, one undo step per edit."""
+        """Text typed into the panel goes to the active layer, and edits until the text box loses focus are one undo
+        step."""
         layer = self._drag_new_layer()
         UndoStack().clear()
         self.panel._text_box.setPlainText('Hello')
         self.panel._text_box.setPlainText('Hello world')
+        self.panel._text_box.focus_lost.emit()
         self.assertEqual(layer.text_rect.text, 'Hello world')
         self.assertEqual(layer.name, '"Hello worl..."')
-        self.assertEqual(UndoStack().undo_count(), 2)
-        UndoStack().undo()
-        self.assertEqual(layer.text_rect.text, 'Hello')
+        self.assertEqual(UndoStack().undo_count(), 1)
         UndoStack().undo()
         self.assertEqual(layer.text_rect.text, '')
 
@@ -120,6 +116,7 @@ class TextToolTest(ToolTestCase):
         """Undoing and redoing a text edit updates the panel and outline to match the layer."""
         layer = self._drag_new_layer()
         self.panel._text_box.setPlainText('Hello')
+        self.panel._text_box.focus_lost.emit()
         text_rect = self.panel.text_rect
         text_rect.size = QSize(60, 30)
         self.panel.text_rect = text_rect
@@ -166,10 +163,8 @@ class TextToolTest(ToolTestCase):
         self.assertEqual(layer.size, DRAG_BOUNDS.size() - QSize(1, 1))
         self.assert_panel_matches_layer(layer)
 
-    @pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/11: undo merges a '
-                                           'drag by elapsed time, not by gesture')
     def test_drag_move_is_one_undo_step(self) -> None:
-        """One drag that moves the active layer adds one undo entry, however much time passes between its moves."""
+        """One drag that moves the active layer adds one undo entry."""
         self._drag_new_layer()
         UndoStack().clear()
         start = DRAG_START + QPoint(20, 20)

@@ -7,6 +7,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QToolButton, QSlider, \
     QDoubleSpinBox, QComboBox, QApplication, QSizePolicy
 
+from src.undo_stack import UndoStack
 from src.config.cache import Cache
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_stack import ImageStack
@@ -100,6 +101,8 @@ class LayerPanel(QWidget):
         self._opacity_slider.setValue(int(active_layer.opacity * 100))
         self._opacity_spinbox.setValue(active_layer.opacity)
 
+        self._opacity_slider.sliderPressed.connect(lambda: UndoStack().begin_gesture('LayerPanel.opacity'))
+        self._opacity_slider.sliderReleased.connect(UndoStack().end_gesture)
         self._opacity_slider.valueChanged.connect(self._update_opacity_slot)
         self._opacity_spinbox.valueChanged.connect(self._update_opacity_slot)
 

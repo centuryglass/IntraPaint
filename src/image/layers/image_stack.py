@@ -1,6 +1,5 @@
 """Manages an edited image composed of multiple layers."""
 import datetime
-import math
 import logging
 import os
 import re
@@ -355,11 +354,11 @@ class ImageStack(QObject):
         """
         self.set_generation_area(bounds_rect)
 
-    def set_generation_area(self, bounds_rect: QRect, merge_with_last: bool = True) -> None:
+    def set_generation_area(self, bounds_rect: QRect) -> None:
         """Updates the bounds of the image generation area, adjusted to fit like the `generation_area` setter.
 
-        With `merge_with_last`, a change directly after another generation area change joins its undo step. Pass
-        False to start a new undo step.
+        Consecutive changes inside an open undo group, like a drag bracketed by `UndoStack.begin_gesture`, coalesce into
+        one undo step.
         """
         assert isinstance(bounds_rect, QRect)
         bounds_rect = self._get_closest_valid_generation_area(bounds_rect)
@@ -377,8 +376,7 @@ class ImageStack(QObject):
             action_type = 'ImageStack.generation_area'
             UndoStack().commit_action(lambda: update_fn(bounds_rect),
                                       lambda: update_fn(last_bounds),
-                                      action_type, merge_target=self, merge_interval=math.inf,
-                                      starts_entry=not merge_with_last)
+                                      action_type, merge_target=self)
 
     # IMAGE ACCESS / MANIPULATION FUNCTIONS:
 

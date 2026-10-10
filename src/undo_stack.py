@@ -1,6 +1,5 @@
 """Global stack for tracking undo/redo state, as a thin wrapper over a QUndoStack."""
 import logging
-import time
 from contextlib import contextmanager
 from typing import Callable, Optional, Generator
 
@@ -28,22 +27,19 @@ class _CallableCommand(QUndoCommand):
     PySide6 swallows exceptions raised in virtual overrides, so `redo` and `undo` hand them to `on_error` and the
     owning `UndoStack` re-raises the first one after Qt returns.
 
-    A command with a `merge_target` absorbs the next command of the same action type and target that follows within
-    `merge_interval`: it takes over that command's redo and keeps its own undo, so a continuous change undoes back to
-    the value before it started. A command with `starts_entry` set never merges into the previous command.
+    A command with a `merge_target` absorbs the next command of the same action type and target that follows it inside
+    the same group: it takes over that command's redo and keeps its own undo, so a continuous change undoes back to
+    the value before it started.
     """
 
     def __init__(self, redo_fn: Callable[[], None], undo_fn: Callable[[], None], action_type: str,
-                 merge_target: Optional[object], merge_interval: float, starts_entry: bool,
-                 first_redo_is_noop: bool, on_error: Callable[[BaseException], None]) -> None:
+                 merge_target: Optional[object], first_redo_is_noop: bool,
+                 on_error: Callable[[BaseException], None]) -> None:
         super().__init__(action_type)
         self.redo_fn = redo_fn
         self.undo_fn = undo_fn
         self.action_type = action_type
         self._merge_target = merge_target
-        self._merge_interval = merge_interval
-        self._starts_entry = starts_entry
-        self._merge_time = time.time()
         self._first_redo_is_noop = first_redo_is_noop
         self._on_error = on_error
 
@@ -52,15 +48,12 @@ class _CallableCommand(QUndoCommand):
         return -1 if self._merge_target is None else _merge_id(self.action_type)
 
     def mergeWith(self, other: QUndoCommand) -> bool:  # pylint: disable=invalid-name
-        """Absorbs a later change to the same target made within the merge interval."""
+        """Absorbs a later change to the same target."""
         # pylint: disable=protected-access
-        if not isinstance(other, _CallableCommand) or self._merge_target is None or other._starts_entry \
+        if not isinstance(other, _CallableCommand) or self._merge_target is None \
                 or other._merge_target is not self._merge_target or other.action_type != self.action_type:
             return False
-        if other._merge_time - self._merge_time >= self._merge_interval:
-            return False
         self.redo_fn = other.redo_fn
-        self._merge_time = other._merge_time
         return True
 
     def redo(self) -> None:
@@ -87,6 +80,8 @@ class UndoStack(metaclass=Singleton):
     def __init__(self) -> None:
         self._stack = QUndoStack()
         self._open_group_depth = 0
+        self._gesture_open = False
+        self._gesture_type = ''
         self._group_started = False
         self._group_type = ''
         self._busy_change = ''
@@ -132,8 +127,7 @@ class UndoStack(metaclass=Singleton):
         return self._stack.count() - self._stack.index()
 
     def commit_action(self, action: Callable[[], None], undo_action: Callable[[], None], action_type: str,
-                      merge_target: Optional[object] = None, merge_interval: Optional[float] = None,
-                      starts_entry=False, skip_initial_call=False) -> bool:
+                      merge_target: Optional[object] = None, skip_initial_call=False) -> bool:
         """Performs an action, then commits it to the undo stack.
 
         Each commit outside `combining_actions` is its own undo entry. The parameter functions must not call
@@ -155,15 +149,9 @@ class UndoStack(metaclass=Singleton):
         action_type: str
             An arbitrary label used for logging and as the entry's text, and to match actions when merging.
         merge_target: object, optional
-            If set, this action merges into the previous history entry when that entry has the same `action_type` and
-            `merge_target` (compared by identity) and was committed less than `merge_interval` seconds ago. The merged
-            entry runs the latest `action` and undoes back to before the first one. Inside `combining_actions`, it can
-            merge only with the group's previous action.
-        merge_interval: float, optional
-            Maximum seconds between merged actions. Defaults to `AppConfig.UNDO_MERGE_INTERVAL`; `math.inf` merges
-            regardless of timing. The interval of the entry being merged into applies.
-        starts_entry: bool, default=False
-            If true, this action never merges into the previous entry, but later actions can merge into it.
+            If set and a group is open, this action merges into the group's previous action when that action has the
+            same `action_type` and `merge_target` (compared by identity). The merged action runs the latest `action`
+            and undoes back to before the first one. Outside a group, nothing merges.
         skip_initial_call: bool, default=False
             If true, skip the initial action() call.
         """
@@ -176,10 +164,10 @@ class UndoStack(metaclass=Singleton):
             if self._open_group_depth > 0 and not self._group_started:
                 self._stack.beginMacro(self._group_type)
                 self._group_started = True
-            self._stack.push(_CallableCommand(action, undo_action, action_type, merge_target,
-                                               AppConfig().get(AppConfig.UNDO_MERGE_INTERVAL)
-                                               if merge_interval is None else merge_interval,
-                                               starts_entry, True, self._errors.append))
+            if self._open_group_depth == 0:
+                merge_target = None
+            self._stack.push(_CallableCommand(action, undo_action, action_type, merge_target, True,
+                                              self._errors.append))
         finally:
             self._busy_change = ''
         return True
@@ -195,20 +183,49 @@ class UndoStack(metaclass=Singleton):
         Combine with other context managers as `with A, B:` or nested `with` blocks. `with A and B:` enters only B, so
         the actions are silently left ungrouped."""
         self._assert_idle(action_type)
+        self._open_group(action_type)
+        try:
+            yield
+        finally:
+            self._close_group()
+
+    def begin_gesture(self, action_type: str) -> None:
+        """Opens a group that stays open across input events, for a gesture like a drag.
+
+        Commits until `end_gesture` form one undo entry, and consecutive commits with the same `merge_target`
+        coalesce. Callers must end the gesture on every exit path (release, tool deactivation). `undo`, `redo` and
+        `clear` end an open gesture first. Beginning a gesture with a different `action_type` ends the open one;
+        beginning one with the same `action_type` continues it, so repeated edits like typing can call this on each
+        change."""
+        self._assert_idle(action_type)
+        if self._gesture_open and self._gesture_type == action_type:
+            return
+        self.end_gesture()
+        self._gesture_open = True
+        self._gesture_type = action_type
+        self._open_group(action_type)
+
+    def end_gesture(self) -> None:
+        """Closes the group opened by `begin_gesture`. Does nothing if no gesture is open."""
+        if self._gesture_open:
+            self._gesture_open = False
+            self._close_group()
+
+    def _open_group(self, action_type: str) -> None:
         if self._open_group_depth == 0:
             self._group_type = action_type
             self._group_started = False
         self._open_group_depth += 1
-        try:
-            yield
-        finally:
-            self._open_group_depth -= 1
-            if self._open_group_depth == 0 and self._group_started:
-                self._group_started = False
-                self._stack.endMacro()
+
+    def _close_group(self) -> None:
+        self._open_group_depth -= 1
+        if self._open_group_depth == 0 and self._group_started:
+            self._group_started = False
+            self._stack.endMacro()
 
     def undo(self) -> None:
         """Reverses the most recent action taken."""
+        self.end_gesture()
         self._assert_idle('undo')
         if not self._stack.canUndo():
             return
@@ -226,6 +243,7 @@ class UndoStack(metaclass=Singleton):
 
     def redo(self) -> None:
         """Re-applies the last undone action as long as no new actions were registered after the last undo."""
+        self.end_gesture()
         self._assert_idle('redo')
         if not self._stack.canRedo():
             return
@@ -245,6 +263,7 @@ class UndoStack(metaclass=Singleton):
 
         This is also the only point where a changed `AppConfig.MAX_UNDO` takes effect, since QUndoStack accepts a new
         limit only while empty."""
+        self.end_gesture()
         assert self._open_group_depth == 0
         self._stack.clear()
         self._apply_undo_limit()
@@ -261,6 +280,7 @@ class UndoStack(metaclass=Singleton):
             if self._signal_manager.receivers(SIGNAL(signature)) > 0:
                 signal.disconnect()
         self._open_group_depth = 0
+        self._gesture_open = False
         self._group_started = False
         self._errors.clear()
         self.clear()

@@ -8,7 +8,6 @@ from PySide6.QtCore import QSize, QRect, QPoint, Qt
 from PySide6.QtGui import QImage, QPainter, QTransform
 from PySide6.QtWidgets import QApplication
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
@@ -133,7 +132,6 @@ class ImageStackTest(IntraPaintTestCase):
 
     def test_load_image_undo_restores_transforms(self) -> None:
         """Undoing an image load restores the previous image with its transformation."""
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)  # Keep the two loads as separate undo entries.
         image = QImage(INIT_IMAGE)
         self.image_stack.load_image(image)
         first_layer = self.image_stack.active_layer
@@ -426,7 +424,6 @@ class ImageStackTest(IntraPaintTestCase):
     def test_remove_group_containing_active_layer(self) -> None:
         """Removing a group that contains the active layer activates the layer below the group, and undo restores
         the old active layer."""
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         group = self.image_stack.create_layer_group('group')
         below = self.image_stack.create_layer('below', layer_parent=self.image_stack.layer_stack, layer_index=1)
         nested_group = self.image_stack.create_layer_group('nested', layer_parent=group, layer_index=0)

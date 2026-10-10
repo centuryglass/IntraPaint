@@ -7,7 +7,6 @@ from PySide6.QtCore import QSize, QRect
 from PySide6.QtGui import QTransform
 from PySide6.QtWidgets import QApplication
 
-from src.config.application_config import AppConfig
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.transform_group import TransformGroup
 from src.undo_stack import UndoStack
@@ -29,8 +28,6 @@ class TransformGroupTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        # Without time-based merging, each transform change is its own undo entry:
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
         self.group = self.image_stack.create_layer_group('group')
         self.first = self.image_stack.create_layer('first', layer_parent=self.group, layer_index=0)

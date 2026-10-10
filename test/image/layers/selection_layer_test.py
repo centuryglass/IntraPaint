@@ -36,7 +36,6 @@ class SelectionLayerContextPinTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         cache = Cache()
         cache.set(Cache.INPAINT_FULL_RES, True)
         cache.set(Cache.INPAINT_FULL_RES_PADDING, 0)
@@ -239,7 +238,6 @@ class SelectionLayerOperationTestCase(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         self.image_stack = ImageStack(SMALL_SIZE, SMALL_SIZE, QSize(8, 8), QSize(64, 64))
         self.selection_layer = self.image_stack.selection_layer
         UndoStack().clear()
