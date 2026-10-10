@@ -3,8 +3,8 @@ import logging
 from typing import Optional
 
 from PySide6.QtWidgets import QApplication
+from sd_backend_client import A1111Webservice
 
-from src.api.a1111_webservice import A1111Webservice
 from src.config.config import Config
 from src.util.shared_constants import PROJECT_DIR
 from src.util.singleton import Singleton
@@ -33,8 +33,8 @@ class A1111Config(Config, metaclass=Singleton):
 
     def load_all(self, webservice: A1111Webservice) -> None:
         """Populate options and load values from the remote webservice."""
-        models = list(map(lambda m: m['title'], webservice.get_models()))
-        vae_options = list(map(lambda v: v['model_name'], webservice.get_vae()))
+        models = list(map(lambda m: m.title, webservice.get_models()))
+        vae_options = list(map(lambda v: v.model_name, webservice.get_vae()))
         vae_options.insert(0, 'Automatic')
         vae_options.insert(0, 'None')
         self.update_options(A1111Config.SD_MODEL_CHECKPOINT, models)

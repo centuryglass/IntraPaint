@@ -36,8 +36,10 @@ _WEBSERVICE_CLASSES = (WebService, library_webservice.WebService)
 class FakeResponse:
     """The subset of `requests.Response` that the API clients read."""
 
-    def __init__(self, body: Any = None, content: Optional[bytes] = None, status_code: int = 200) -> None:
+    def __init__(self, body: Any = None, content: Optional[bytes] = None, status_code: int = 200,
+                 url: str = '') -> None:
         self._body = body
+        self.url = url
         self.content = content if content is not None else json.dumps(body).encode('utf-8')
         self.status_code = status_code
 

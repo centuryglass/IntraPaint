@@ -4,6 +4,7 @@
       "alwayson_scripts": {},
       "batch_size": 2,
       "cfg_scale": 6.5,
+      "force_task_id": "task(txt2img-TESTID1)",
       "height": 512,
       "n_iter": 2,
       "negative_prompt": "blurry",
@@ -11,6 +12,7 @@
       "restore_faces": false,
       "sampler_name": "Euler a",
       "save_images": false,
+      "scheduler": "Automatic",
       "seed": 1234,
       "send_images": true,
       "steps": 20,
@@ -18,6 +20,7 @@
       "width": 512
     },
     "endpoint": "/sdapi/v1/txt2img",
-    "method": "POST"
+    "method": "POST",
+    "timeout": 600.0
   }
 ]

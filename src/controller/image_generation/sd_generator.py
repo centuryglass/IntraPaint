@@ -4,19 +4,22 @@ import logging
 from argparse import Namespace
 from typing import Optional, cast, Any, Protocol
 
+from PIL import Image
 from PySide6.QtCore import Signal, QSize, SignalInstance, QRect, QPoint
 from PySide6.QtGui import QImage, QIcon, QPainter, QTransform
 from PySide6.QtWidgets import QInputDialog, QApplication
-from sd_backend_client import CONTROLNET_MODEL_NONE, ControlNetModel, ControlNetPreprocessor, ControlNetUnit, \
-    ControlTypeDef, PreprocessorParams
+from sd_backend_client import AuthError, CONTROLNET_MODEL_NONE, ControlNetModel, ControlNetPreprocessor, \
+    ControlNetUnit, ControlTypeDef, GenerationError, GenerationHandle, GenerationProgress, GenerationResult, \
+    GenerationStatus, PreprocessorParams, SDBackendError
 
-from src.api.a1111_webservice import AuthError
 from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTROLNET_REUSE_IMAGE_CODE, \
     SavedControlNetUnit
+from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qimage, qimage_to_pil
+from src.controller.image_generation.sd_adapters.progress_adapter import progress_status_update
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
 from src.ui.layout.draggable_tabs.tab import Tab
@@ -180,7 +183,7 @@ LCM_LORA_XL = 'lcm-lora-sdxl'
 
 
 class SDClient(Protocol):
-    """The client methods `SDGenerator` calls, shared by `src.api`'s clients and the `sd_backend_client` clients."""
+    """The client methods `SDGenerator` calls, both generators' `sd_backend_client` clients."""
 
     @property
     def server_url(self) -> str:
@@ -188,6 +191,10 @@ class SDClient(Protocol):
 
     def disconnect(self) -> None:
         """Closes the client's connection. The client is unusable afterwards."""
+
+    def submit_preprocessor_preview(self, image: Image.Image, preprocessor: PreprocessorParams,
+                                    mask: Optional[Image.Image] = None) -> GenerationHandle:
+        """Queues a ControlNet preprocessor preview job."""
 
 
 def _check_lcm_mode_available(_) -> bool:
@@ -227,6 +234,7 @@ class SDGenerator(ImageGenerator):
         self._controlnet_panel: Optional[TabbedControlNetPanel] = None
         self._controlnet_key_type = controlnet_key_type
         self._show_extended_controlnet_options = show_extended_controlnet_options
+        self._active_handle: Optional[GenerationHandle] = None
 
     @property
     def server_url(self) -> str:
@@ -306,8 +314,14 @@ class SDGenerator(ImageGenerator):
         raise NotImplementedError()
 
     def cancel_generation(self) -> None:
-        """Cancels image generation, if in-progress"""
-        raise NotImplementedError()
+        """Cancels the job `_wait_for_job` is waiting on, if one is in progress. A job the backend hasn't started is
+        dropped, and a running one is interrupted."""
+        handle = self._active_handle
+        if AppStateTracker.app_state() == APP_STATE_LOADING and handle is not None:
+            try:
+                handle.cancel()
+            except SDBackendError as err:
+                logger.error(f'Cancelling job {handle.task_id} failed: {err}')
 
     def load_lora_thumbnail(self, lora_info: Optional[dict[str, str]]) -> Optional[QImage]:
         """Attempt to load a LoRA model thumbnail image from the API."""
@@ -317,8 +331,46 @@ class SDGenerator(ImageGenerator):
                                   image: QImage, mask: Optional[QImage],
                                   status_signal: SignalInstance,
                                   image_signal: SignalInstance) -> None:
-        """Requests a ControlNet preprocessor preview image."""
-        raise NotImplementedError()
+        """Requests a ControlNet preprocessor preview image. Call this outside the UI thread."""
+        webservice = self.get_webservice()
+        assert webservice is not None
+        handle = webservice.submit_preprocessor_preview(qimage_to_pil(image), preprocessor,
+                                                        None if mask is None else qimage_to_pil(mask))
+        result = self._wait_for_job(handle, status_signal)
+        if result is None:
+            return
+        if len(result.images) != 1:
+            logger.warning(f'Expected one preprocessor preview image, got {len(result.images)}')
+        preview_image = image if len(result.images) == 0 else pil_to_qimage(result.images[0])
+        image_signal.emit(preview_image)
+
+    def _wait_for_job(self, handle: GenerationHandle, status_signal: Optional[SignalInstance],
+                      batch_index: int = 0, num_batches: int = 1) -> Optional[GenerationResult]:
+        """Blocks until a job finishes, emitting progress through `status_signal`. Call this outside the UI thread.
+
+        Returns None if the job was cancelled. `cancel_generation` cancels the job while this waits.
+
+        Raises
+        ------
+        SDBackendError
+            If the job fails, or a request made while waiting fails.
+        """
+
+        def _on_progress(progress: GenerationProgress) -> None:
+            if status_signal is not None:
+                status_signal.emit(progress_status_update(progress, batch_index, num_batches))
+
+        self._active_handle = handle
+        try:
+            return handle.wait(on_progress=_on_progress)
+        except GenerationError as err:
+            if err.status == GenerationStatus.CANCELLED:
+                logger.info(f'Job {handle.task_id} was cancelled')
+                return None
+            raise
+        finally:
+            self._active_handle = None
+
 
     def upscale_image(self, image: QImage, new_size: QSize, status_signal: SignalInstance,
                       image_signal: SignalInstance) -> None:
@@ -686,9 +738,6 @@ class SDGenerator(ImageGenerator):
             task.finish_signal.disconnect(_on_finish)
 
         task.finish_signal.connect(_on_finish)
-        # TODO: get rid of this once the WebUI generator has proper queue support.
-        if hasattr(self, '_async_progress_check'):
-            self._async_progress_check()
         task.start()
         return True
 
