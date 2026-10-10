@@ -84,7 +84,8 @@ class TestAppController(IntraPaintTestCase):
         self.controller.refresh_settings(settings_modal)
         self.assertTrue(settings_modal.update_settings.called)
 
-    def test_update_settings(self):
+    @patch('src.controller.app_controller.show_warning_dialog')
+    def test_update_settings(self, mock_warning_dialog):
         AppConfig().set('max_undo', 10)
         KeyConfig().set('zoom_in', 'PgUp')
 
@@ -99,6 +100,7 @@ class TestAppController(IntraPaintTestCase):
 
         self.controller.update_settings(changed_settings)
 
+        mock_warning_dialog.assert_called_once()  # The new undo limit applies after a restart.
         self.assertEqual(changed_settings['max_undo'], AppConfig().get('max_undo'))
         self.assertEqual(changed_settings['zoom_in'], KeyConfig().get('zoom_in'))
         KeyConfig().set('zoom_in', 'PgUp')

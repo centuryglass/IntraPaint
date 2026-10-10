@@ -139,6 +139,8 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 APP_NAME = 'IntraPaint'
 APP_VERSION = 'v1.3.0'  # x-release-please-version
 
+UNDO_LIMIT_RESTART_TITLE = _tr('Restart required')
+UNDO_LIMIT_RESTART_MESSAGE = _tr('The new maximum undo count will apply after IntraPaint is restarted.')
 TOOL_PANEL_LAYER_TAB = _tr('Layers')
 TOOL_PANEL_COLOR_TAB = _tr('Color')
 TOOL_PANEL_NAV_TAB = _tr('Navigation')
@@ -652,11 +654,15 @@ class AppController(MenuBuilder):
         categories = _get_config_categories()
         base_keys = [key for cat in categories for key in app_config.get_category_keys(cat)]
         key_keys = KeyConfig().get_keys()
+        undo_limit_changed = AppConfig.MAX_UNDO in changed_settings \
+            and changed_settings[AppConfig.MAX_UNDO] != app_config.get(AppConfig.MAX_UNDO)
         for key, value in changed_settings.items():
             if key in base_keys:
                 app_config.set(key, value)
             elif key in key_keys:
                 KeyConfig().set(key, value)
+        if undo_limit_changed:
+            show_warning_dialog(self._window, UNDO_LIMIT_RESTART_TITLE, UNDO_LIMIT_RESTART_MESSAGE, None)
         if self._generator is not None:
             self._generator.update_settings(changed_settings)
 

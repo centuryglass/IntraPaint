@@ -17,9 +17,6 @@ class UndoStackTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        # Commits are never less than zero seconds apart, so this keeps time-based merging out of every test that
-        # doesn't set its own interval.
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         self.undo_stack = UndoStack()
         self.undo_stack.clear()
         self.value = 0
@@ -111,14 +108,52 @@ class UndoStackTest(IntraPaintTestCase):
             pass
         self.assertEqual(self.undo_stack.undo_count(), 0)
 
-    def test_commits_within_merge_interval_merge(self) -> None:
-        """Commits closer together than UNDO_MERGE_INTERVAL become one entry, whatever their type."""
+    def test_unrelated_commits_stay_separate(self) -> None:
+        """Commits close together in time stay separate entries, whatever the merge interval."""
         AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 60.0)
         self.commit_value(1, 'test.first_type')
         self.commit_value(2, 'test.second_type')
+        self.assertEqual(self.undo_stack.undo_count(), 2)
+        self.undo_stack.undo()
+        self.assertEqual(self.value, 1)
+
+    def test_nested_combining_actions_join_outer_group(self) -> None:
+        """A group opened inside another group adds its commits to the outer entry."""
+        with self.undo_stack.combining_actions('test.outer'):
+            self.commit_value(1)
+            with self.undo_stack.combining_actions('test.inner'):
+                self.commit_value(2)
+            self.commit_value(3)
         self.assertEqual(self.undo_stack.undo_count(), 1)
         self.undo_stack.undo()
         self.assertEqual(self.value, 0)
+        self.undo_stack.redo()
+        self.assertEqual(self.value, 3)
+
+    def test_exception_in_nested_group_keeps_outer_group_open(self) -> None:
+        """An exception caught inside an outer group leaves the outer group recording, then closing normally."""
+        with self.undo_stack.combining_actions('test.outer'):
+            self.commit_value(1)
+            with self.assertRaises(ValueError):
+                with self.undo_stack.combining_actions('test.inner'):
+                    self.commit_value(2)
+                    raise ValueError('simulated failure in an inner group')
+            self.commit_value(3)
+        self.assertEqual(self.undo_stack.undo_count(), 1)
+        self.commit_value(4)
+        self.assertEqual(self.undo_stack.undo_count(), 2)
+        self.undo_stack.undo()
+        self.undo_stack.undo()
+        self.assertEqual(self.value, 0)
+
+    def test_last_action_is_none_inside_group(self) -> None:
+        """last_action doesn't expose the history entry from before an open group."""
+        self.commit_value(1)
+        with self.undo_stack.combining_actions('test.group'):
+            with self.undo_stack.last_action('test.set_value') as prev_action:
+                self.assertIsNone(prev_action)
+        with self.undo_stack.last_action('test.set_value') as prev_action:
+            self.assertIsNotNone(prev_action)
 
     def test_commit_inside_action_raises(self) -> None:
         """An action that commits another action is rejected rather than corrupting the history."""
@@ -187,9 +222,25 @@ class UndoStackTest(IntraPaintTestCase):
             self.undo_stack.undo()
         self.assertFalse(self.undo_stack.undo_in_progress)
 
+    def test_failed_redo_raises(self) -> None:
+        """A redo action that raises propagates out of redo()."""
+        calls = []
+
+        def _apply() -> None:
+            calls.append(1)
+            if len(calls) > 1:
+                raise ValueError('simulated failure while redoing')
+
+        self.undo_stack.commit_action(_apply, lambda: None, 'test.failing_redo')
+        self.undo_stack.undo()
+        with self.assertRaises(ValueError):
+            self.undo_stack.redo()
+        self.assertFalse(self.undo_stack.redo_in_progress)
+
     def test_undo_limit_follows_config(self) -> None:
-        """The history holds at most AppConfig.MAX_UNDO entries, dropping the oldest."""
+        """After clear(), the history holds at most AppConfig.MAX_UNDO entries, dropping the oldest."""
         AppConfig().set(AppConfig.MAX_UNDO, 3)
+        self.undo_stack.clear()
         for value in range(1, 6):
             self.commit_value(value)
         self.assertEqual(self.undo_stack.undo_count(), 3)
