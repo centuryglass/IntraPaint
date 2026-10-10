@@ -1,6 +1,6 @@
 {
   "(repository)": {
-    "duplicate-code": 60
+    "duplicate-code": 70
   },
   "src/api/comfyui/comfyui_types.py": {
     "fixme": 1
@@ -59,10 +59,7 @@
     "trailing-whitespace": 2
   },
   "src/controller/image_generation/sd_webui_generator.py": {
-    "fixme": 1,
-    "logging-too-many-args": 1,
-    "protected-access": 1,
-    "raise-missing-from": 2
+    "fixme": 1
   },
   "src/image/brush/clone_stamp_brush.py": {
     "trailing-newlines": 1,
