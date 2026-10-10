@@ -12,7 +12,6 @@ from sd_backend_client import A1111Webservice, AuthError, BackendTimeoutError, C
     SDBackendError
 from sd_backend_client.api.webui.response_formats import GenerationInfoData
 
-from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.config.a1111_config import A1111Config
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -217,7 +216,7 @@ class SDWebUIGenerator(SDGenerator):
     """Interface for providing image generation capabilities."""
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
-        super().__init__(window, image_stack, args, Cache.SD_WEBUI_SERVER_URL, ControlKeyType.WEBUI, True)
+        super().__init__(window, image_stack, args, Cache.SD_WEBUI_SERVER_URL, Cache.WEBUI_CACHED_SCALING_MODE, True)
         self._webservice: Optional[A1111Webservice] = create_webservice(self.server_url)
         self._gen_extras_tab = WebUIExtrasTab()
 

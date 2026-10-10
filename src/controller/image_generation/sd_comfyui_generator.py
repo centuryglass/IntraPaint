@@ -11,7 +11,6 @@ from sd_backend_client import AuthError, BackendOption, BackendTimeoutError, Com
 # Not in the library's public API. The model config list has no `Backend` equivalent.
 from sd_backend_client.api.comfyui_webservice import ComfyModelType
 
-from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qimage, qimage_to_pil
@@ -162,7 +161,7 @@ class SDComfyUIGenerator(SDGenerator):
     """Interface for providing image generation capabilities."""
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
-        super().__init__(window, image_stack, args, Cache.SD_COMFYUI_SERVER_URL, ControlKeyType.COMFYUI)
+        super().__init__(window, image_stack, args, Cache.SD_COMFYUI_SERVER_URL, Cache.COMFYUI_CACHED_SCALING_MODE)
         self._image_stack = image_stack
         self._webservice: Optional[ComfyUiWebservice] = ComfyUiWebservice(self.server_url)
         self._gen_extras_tab = ComfyUIExtrasTab()

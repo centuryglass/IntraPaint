@@ -1,6 +1,6 @@
 """Offline stand-in for the Stable Diffusion HTTP backends, for tests that pin the generators' request payloads.
 
-`FakeSdBackend` patches `get` and `post` on both `src.api`'s `WebService` and `sd_backend_client`'s, so every WebUI and
+`FakeSdBackend` patches `get` and `post` on `sd_backend_client`'s `WebService`, so every WebUI and
 ComfyUI request gets a canned response and none reaches the network. It records each POST, and `snapshot_requests`
 turns those records into JSON that stays stable across runs: image data becomes a size, format and pixel-hash
 placeholder, and per-session ids become fixed strings.
@@ -21,7 +21,6 @@ from PySide6.QtCore import QBuffer, QByteArray
 from PySide6.QtGui import QImage
 from sd_backend_client.api import webservice as library_webservice
 
-from src.api.webservice import WebService
 from src.util.visual.image_utils import BASE_64_PREFIX
 
 # Raw base64 PNG data starts with the encoded PNG signature.
@@ -30,7 +29,7 @@ PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
 
 # The base classes whose HTTP methods are patched. `sd_backend_client` exports no base class, so this reaches past its
 # public API.
-_WEBSERVICE_CLASSES = (WebService, library_webservice.WebService)
+_WEBSERVICE_CLASSES = (library_webservice.WebService,)
 
 
 class FakeResponse:
