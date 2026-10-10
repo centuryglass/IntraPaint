@@ -13,6 +13,7 @@ from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.api.webui.controlnet_webui_utils import get_all_preprocessors
 from src.config.cache import Cache
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator
+from src.undo_stack import UndoStack
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT
 from test.controller.image_generation.fake_sd_backend import image_to_base64_png
 from test.controller.image_generation.sd_generator_test_case import SdGeneratorTestCase, TEST_SEED, \
@@ -145,6 +146,24 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         self.generator.upscale_image(self.image_stack.qimage(), UPSCALE_SIZE, self.status, self.status)
         self.assert_requests_match_snapshot('upscale_basic')
         self.assertEqual(self.status.emitted[-1].size(), UPSCALE_SIZE)
+
+    def test_upscale_applies_result(self) -> None:
+        """Upscaling loads the upscaled image into the image stack as one undo step."""
+        Cache().set(Cache.SCALING_MODE, 'R-ESRGAN 4x+')
+        self.assert_upscale_applied_as_one_undo_step()
+
+    def test_upscale_with_locked_layer_only_resizes_canvas(self) -> None:
+        """With a locked layer, upscaling resizes the canvas and adds the result without scaling existing layers."""
+        Cache().set(Cache.SCALING_MODE, 'R-ESRGAN 4x+')
+        source_layer = self.image_stack.active_layer
+        source_layer.locked = True
+        UndoStack().clear()
+        initial_transform = source_layer.transform
+        self.run_upscale(UPSCALE_SIZE)
+        self.assertEqual(self.image_stack.size, UPSCALE_SIZE)
+        self.assertEqual(source_layer.transform, initial_transform)
+        self.assertEqual(self.image_stack.active_layer.size, UPSCALE_SIZE)
+        self.assertEqual(UndoStack().undo_count(), 1)
 
     def test_upscale_stable_diffusion(self) -> None:
         """Stable Diffusion upscaling sends img2img with a tile ControlNet unit and the Ultimate SD Upscale script."""

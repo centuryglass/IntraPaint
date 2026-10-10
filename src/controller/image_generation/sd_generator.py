@@ -19,7 +19,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.layers.image_stack import ImageStack
-from src.image.layers.image_stack_utils import scale_all_layers
+from src.image.layers.image_stack_utils import scale_all_layers_ungrouped
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.panel.controlnet_panel import TabbedControlNetPanel, CONTROLNET_TITLE
@@ -666,34 +666,14 @@ class SDGenerator(ImageGenerator):
 
         task.error_signal.connect(handle_error)
 
-        def apply_upscaled(img: QImage) -> None:
-            """Copy the upscaled image into the image stack."""
-            with UndoStack().combining_actions('SDWebUIGenerator.upscale'):
-                if self._image_stack.confirm_no_locked_layers():
-                    scale_all_layers(self._image_stack, img.width(), img.height())
-                else:
-                    old_size = self._image_stack.size
-                    scaled_size = img.size()
-
-                    def _update_size(size=scaled_size) -> None:
-                        self._image_stack.size = size
-
-                    def _revert_size(size=old_size) -> None:
-                        self._image_stack.size = size
-
-                    UndoStack().commit_action(_update_size, _revert_size, 'SDWebUIGenerator.upscale_resize')
-                new_layer = self._image_stack.create_layer(layer_name=UPSCALED_LAYER_NAME,
-                                                           layer_parent=self._image_stack.layer_stack, image_data=img)
-                self._image_stack.active_layer = new_layer
-
-        task.image_ready.connect(apply_upscaled)
+        task.image_ready.connect(self._apply_upscaled_image)
 
         def _on_finish() -> None:
             assert self._window is not None
             self._window.set_is_loading(False)
             task.status_signal.disconnect(_apply_status_update)
             task.error_signal.disconnect(handle_error)
-            task.image_ready.disconnect(apply_upscaled)
+            task.image_ready.disconnect(self._apply_upscaled_image)
             task.finish_signal.disconnect(_on_finish)
 
         task.finish_signal.connect(_on_finish)
@@ -702,6 +682,28 @@ class SDGenerator(ImageGenerator):
             self._async_progress_check()
         task.start()
         return True
+
+    def _apply_upscaled_image(self, img: QImage) -> None:
+        """Scales the image stack to the upscaled image's size and adds the image as a new layer, as one undo action.
+
+        With locked layers present, only the canvas is resized."""
+        with UndoStack().combining_actions('SDWebUIGenerator.upscale'):
+            if self._image_stack.confirm_no_locked_layers():
+                scale_all_layers_ungrouped(self._image_stack, img.width(), img.height())
+            else:
+                old_size = self._image_stack.size
+                scaled_size = img.size()
+
+                def _update_size(size=scaled_size) -> None:
+                    self._image_stack.size = size
+
+                def _revert_size(size=old_size) -> None:
+                    self._image_stack.size = size
+
+                UndoStack().commit_action(_update_size, _revert_size, 'SDWebUIGenerator.upscale_resize')
+            new_layer = self._image_stack.create_layer(layer_name=UPSCALED_LAYER_NAME,
+                                                       layer_parent=self._image_stack.layer_stack, image_data=img)
+            self._image_stack.active_layer = new_layer
 
     @menu_action(MENU_STABLE_DIFFUSION, 'lora_shortcut', 201, [APP_STATE_EDITING],
                  condition_check=_check_lora_available)

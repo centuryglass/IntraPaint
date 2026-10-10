@@ -3,11 +3,16 @@
 These are characterization tests: each one sets cached generation settings, runs a generator's request-building path
 synchronously against `FakeSdBackend`, and compares the POST requests it sent with a committed JSON snapshot under
 `SNAPSHOT_DIR`. A snapshot diff means a request changed, so a change that alters one must explain the diff.
+
+`run_upscale` also drives the full upscale path synchronously, so tests can check how the result is applied to the
+image stack and its undo history.
 """
 import os
 import sys
 from argparse import Namespace
 from typing import Any, Optional
+from unittest import mock
+from unittest.mock import MagicMock
 
 from PySide6.QtCore import QPoint, QRect, QSize, Qt
 from PySide6.QtGui import QImage, QPainter, QColor
@@ -21,6 +26,9 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.layers.image_stack import ImageStack
+from src.undo_stack import UndoStack
+from src.util.async_task import AsyncTask
+from src.util.shared_constants import UPSCALED_LAYER_NAME
 from test.base_test_case import IntraPaintTestCase, TEST_IMAGE_DIR, PROJECT_ROOT
 from test.controller.image_generation.fake_sd_backend import FakeSdBackend, RecordedRequest, snapshot_requests
 
@@ -116,6 +124,35 @@ class SdGeneratorTestCase(IntraPaintTestCase):
         assert self.generator is not None
         image, mask = self.generator.get_generation_inputs()
         self.generator.generate(self.status, image, mask)  # type: ignore
+
+    def run_upscale(self, new_size: QSize) -> None:
+        """Runs the generator's upscale method to completion in the calling thread, applying the result."""
+        assert self.generator is not None
+        self.generator._window = MagicMock()  # type: ignore # pylint: disable=protected-access
+        with mock.patch.object(AsyncTask, 'start', AsyncTask.run):
+            self.assertTrue(self.generator.upscale(new_size))
+
+    def assert_upscale_applied_as_one_undo_step(self) -> None:
+        """Upscaling resizes the image, adds the result as the active layer, and one undo reverts both."""
+        initial_size = self.image_stack.size
+        initial_layers = self.image_stack.all_layers()
+        source_layer = self.image_stack.active_layer
+        initial_transform = source_layer.transform
+        UndoStack().clear()
+        self.run_upscale(UPSCALE_SIZE)
+        self.assertEqual(self.image_stack.size, UPSCALE_SIZE)
+        active_layer = self.image_stack.active_layer
+        self.assertEqual(active_layer.name, UPSCALED_LAYER_NAME)
+        self.assertEqual(active_layer.size, UPSCALE_SIZE)
+        self.assertEqual(source_layer.transform.m11(), UPSCALE_SIZE.width() / initial_size.width())
+        self.assertEqual(UndoStack().undo_count(), 1)
+        UndoStack().undo()
+        self.assertEqual(self.image_stack.size, initial_size)
+        self.assertEqual(self.image_stack.all_layers(), initial_layers)
+        self.assertEqual(source_layer.transform, initial_transform)
+        UndoStack().redo()
+        self.assertEqual(self.image_stack.size, UPSCALE_SIZE)
+        self.assertEqual(len(self.image_stack.all_layers()), len(initial_layers) + 1)
 
     @staticmethod
     def controlnet_unit(key_type: ControlKeyType, model_name: str, preprocessor: ControlNetPreprocessor,

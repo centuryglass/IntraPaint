@@ -200,6 +200,12 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         self._run_upscale()
         self.assert_requests_match_snapshot('upscale_basic', replacements=self._replacements)
 
+    def test_upscale_applies_result(self) -> None:
+        """Upscaling loads the upscaled image into the image stack as one undo step."""
+        self._image_size = UPSCALE_SIZE
+        Cache().set(Cache.BATCH_SIZE, 1)
+        self.assert_upscale_applied_as_one_undo_step()
+
     def test_upscale_stable_diffusion(self) -> None:
         """Stable Diffusion upscaling queues a tiled Ultimate SD Upscale workflow with a tile ControlNet unit."""
         cache = Cache()
