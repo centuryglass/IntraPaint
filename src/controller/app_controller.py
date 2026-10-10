@@ -137,7 +137,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 APP_NAME = 'IntraPaint'
-APP_VERSION = 'v1.4.0'  # x-release-please-version
+APP_VERSION = 'v1.4.1'  # x-release-please-version
 
 UNDO_LIMIT_RESTART_TITLE = _tr('Restart required')
 UNDO_LIMIT_RESTART_MESSAGE = _tr('The new maximum undo count will apply after IntraPaint is restarted.')
