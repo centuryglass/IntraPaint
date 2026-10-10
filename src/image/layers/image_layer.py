@@ -124,7 +124,7 @@ class ImageLayer(TransformLayer):
         else:
             offset = None
             undo_offset = None
-        last_image = self.image
+        last_image = self._undo_snapshot()
 
         def _update_image(img=new_image, off=offset) -> None:
             self.set_image(img, off)
@@ -159,35 +159,52 @@ class ImageLayer(TransformLayer):
         if not self.bounds.contains(change_bounds):
             raise ValueError(f'Change bounds {change_bounds} not within layer bounds {self.bounds}')
 
-        initial_bounds_content = self._image.copy(change_bounds)
+        initial_bounds_content = self._content_copy(change_bounds)
         try:
-            yield self._image
+            yield self._borrow_target(change_bounds)
         finally:
+            self._commit_borrowed(change_bounds)
             self.invalidate_pixmap()
             self._handle_content_change(self._image, initial_bounds_content, change_bounds)
-            updated_content = self._image.copy(change_bounds)
-
-            def _apply_change(content: QImage, bounds: QRect) -> None:
-                init_image = QImage(self._image.size(), QImage.Format.Format_ARGB32_Premultiplied)
-                np_init_img = numpy_bounds_index(image_data_as_numpy_8bit(init_image), bounds)
-                np_layer_image = numpy_bounds_index(image_data_as_numpy_8bit(self._image), bounds)
-                np_content = image_data_as_numpy_8bit(content)
-                np.copyto(np_init_img, np_layer_image)
-                np.copyto(np_layer_image, np_content)
-                self.invalidate_pixmap()
-                self._handle_content_change(self._image, init_image, bounds)
-                self.signal_content_changed(bounds)
+            updated_content = self._content_copy(change_bounds)
 
             def _apply(c: QImage = updated_content, b: QRect = change_bounds) -> None:
-                _apply_change(c, b)
+                self._apply_borrowed_content(c, b)
 
             def _undo(c: QImage = initial_bounds_content, b: QRect = change_bounds) -> None:
-                _apply_change(c, b)
+                self._apply_borrowed_content(c, b)
                 self.signal_content_changed(change_bounds)
 
             UndoStack().commit_action(_apply, _undo, 'ImageLayer.borrow_image', skip_initial_call=True)
 
             self.signal_content_changed(change_bounds)
+
+    def _undo_snapshot(self) -> QImage:
+        """Returns a copy of the layer image to keep in undo history or saved state. `set_image` must accept it."""
+        return self.image
+
+    def _content_copy(self, bounds: QRect) -> QImage:
+        """Returns the layer content within bounds as an ARGB32_Premultiplied image, for undo history."""
+        return self._image.copy(bounds)
+
+    def _borrow_target(self, change_bounds: QRect) -> QImage:  # pylint: disable=unused-argument
+        """Returns the image `borrow_image` hands out. Only change_bounds is read back afterwards."""
+        return self._image
+
+    def _commit_borrowed(self, change_bounds: QRect) -> None:
+        """Called when a borrow ends, before change handling. Layers that borrow a copy copy changes back here."""
+
+    def _apply_borrowed_content(self, content: QImage, bounds: QRect) -> None:
+        """Replaces the layer content within bounds, as done when redoing or undoing a borrowed edit."""
+        init_image = QImage(self._image.size(), QImage.Format.Format_ARGB32_Premultiplied)
+        np_init_img = numpy_bounds_index(image_data_as_numpy_8bit(init_image), bounds)
+        np_layer_image = numpy_bounds_index(image_data_as_numpy_8bit(self._image), bounds)
+        np_content = image_data_as_numpy_8bit(content)
+        np.copyto(np_init_img, np_layer_image)
+        np.copyto(np_layer_image, np_content)
+        self.invalidate_pixmap()
+        self._handle_content_change(self._image, init_image, bounds)
+        self.signal_content_changed(bounds)
 
     def adjust_local_bounds(self, relative_bounds: QRect, register_to_undo_history: bool = True) -> None:
         """Changes local image bounds, cropping or extending the layer image.
@@ -212,7 +229,7 @@ class ImageLayer(TransformLayer):
         painter.end()
         offset = relative_bounds.topLeft()
         if register_to_undo_history:
-            source_image = self.image
+            source_image = self._undo_snapshot()
             source_offset = -offset
 
             def _resize(img=new_image, off=offset):
@@ -354,7 +371,7 @@ class ImageLayer(TransformLayer):
     def crop_to_content(self, show_warnings: bool = True):
         """Crops the layer to remove transparent areas."""
         full_bounds = QRect(QPoint(), self.size)
-        cropped_bounds = image_content_bounds(self._image)
+        cropped_bounds = image_content_bounds(self.get_qimage())
         if cropped_bounds.isNull():
             if show_warnings:
                 show_error_dialog(None, CROP_LAYER_ERROR_TITLE, CROP_LAYER_ERROR_MESSAGE_NO_CONTENT)
@@ -381,7 +398,7 @@ class ImageLayer(TransformLayer):
                                self.opacity,
                                self.composition_mode,
                                self.transform,
-                               self.image,
+                               self._undo_snapshot(),
                                self.locked,
                                self.alpha_locked)
 

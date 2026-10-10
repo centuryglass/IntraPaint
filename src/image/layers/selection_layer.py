@@ -13,8 +13,7 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.layers.image_layer import ImageLayer, ImageLayerState
 from src.undo_stack import UndoStack
-from src.util.visual.image_utils import (image_content_bounds, NpAnyArray, image_data_as_numpy_8bit,
-                                         image_is_fully_transparent)
+from src.util.visual.image_utils import NpAnyArray
 from src.util.visual.pil_image_utils import qimage_to_pil_image
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -35,13 +34,56 @@ DEFAULT_BRUSH_COLOR_STR = '#55ff0000'
 OUTLINE_RETRACE_MARGIN = 10
 
 
+def _mask_array(mask: QImage) -> NpAnyArray:
+    """Returns a writable (height, width) view of an Alpha8 image, without the padding at the end of each row.
+
+    The view doesn't keep the image alive, so the caller must hold a reference to it while using the view.
+    """
+    assert mask.format() == QImage.Format.Format_Alpha8
+    image_ptr = mask.bits()
+    assert image_ptr is not None, 'Selection mask was invalid'
+    return np.ndarray(shape=(mask.height(), mask.bytesPerLine()), dtype=np.uint8, buffer=image_ptr)[:, :mask.width()]
+
+
+def _binary_mask(image: QImage) -> QImage:
+    """Returns a new Alpha8 image that is 255 wherever the image has any alpha, and 0 elsewhere."""
+    if image.format() == QImage.Format.Format_Alpha8:
+        mask = image.copy()
+        array = _mask_array(mask)
+        array[array > 0] = 255
+        return mask
+    if image.format() not in (QImage.Format.Format_ARGB32_Premultiplied, QImage.Format.Format_ARGB32):
+        image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+    image_ptr = image.constBits()
+    assert image_ptr is not None, 'Selection image was invalid'
+    alpha = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)[:, :, 3]
+    mask = QImage(image.size(), QImage.Format.Format_Alpha8)
+    _mask_array(mask)[...] = np.where(alpha > 0, 255, 0)
+    return mask
+
+
+def _array_bounds(array: NpAnyArray) -> QRect:
+    """Returns the smallest rectangle containing every nonzero element of a 2D array, or a null QRect if none."""
+    rows = np.flatnonzero(array.any(axis=1))
+    if rows.size == 0:
+        return QRect()
+    cols = np.flatnonzero(array.any(axis=0))
+    return QRect(int(cols[0]), int(rows[0]), int(cols[-1] - cols[0] + 1), int(rows[-1] - rows[0] + 1))
+
+
+def _area(array: NpAnyArray, rect: QRect) -> NpAnyArray:
+    return array[rect.y():rect.y() + rect.height(), rect.x():rect.x() + rect.width()]
+
+
 class SelectionLayer(ImageLayer):
     """A layer used to select regions for editing or inpainting.
 
     The selection layer has the following properties:
 
     - Only one selection layer ever exists, and its size always matches the image size.
-    - Layer data is effectively 1-bit, with all pixels being either ARGB #00000000 or #FFFF0000
+    - Layer data is 1-bit, stored as an Alpha8 mask holding 0 or 255. `get_qimage`, `image` and `mask_image` build
+      ARGB32_Premultiplied images from it on each read, with pixels either #00000000 or the opaque selection color.
+      `set_image` and `borrow_image` accept any alpha content and keep every pixel with nonzero alpha.
     - The layer cannot be copied.
     - Selection bounds are available as polygons through the `outline` property
     - When the "inpaint selected area only" option is checked, the mask layer pixmap will track the masked area bounds.
@@ -68,9 +110,11 @@ class SelectionLayer(ImageLayer):
         self._outline_polygons: list[QPolygonF] = []
         self._generation_area = QRect()
         self._context_pins: list[QPoint] = []
-        super().__init__(size, SELECTION_LAYER_NAME)
         self._bounding_box: Optional[QRect] = None
         self._selection_color = QColor()
+        self._selected_count = 0  # Number of selected pixels in the mask
+        self._borrowed: Optional[QImage] = None  # Scratch image handed out by borrow_image
+        super().__init__(size, SELECTION_LAYER_NAME)
 
         def _update_color(color_str: str) -> None:
             if color_str == self._selection_color.name():
@@ -82,7 +126,7 @@ class SelectionLayer(ImageLayer):
                 self._selection_color = QColor(DEFAULT_BRUSH_COLOR_STR)
                 AppConfig().set(AppConfig.SELECTION_COLOR, DEFAULT_BRUSH_COLOR_STR)
             self.opacity = self._selection_color.alphaF()
-            self.image = self.get_qimage()  # Replace previous color
+            self.signal_content_changed(self.bounds)  # Images built from the mask use the new color
         _update_color(AppConfig().get(AppConfig.SELECTION_COLOR))
         AppConfig().connect(self, AppConfig.SELECTION_COLOR, _update_color)
 
@@ -105,23 +149,21 @@ class SelectionLayer(ImageLayer):
         """Access the selection outline polygons directly."""
         return [*self._outline_polygons]
 
-    def _update_bounds(self, np_image: Optional[np.ndarray] = None) -> None:
+    def _update_bounds(self) -> None:
         """Update saved selection bounds within the generation window."""
-        if np_image is None:
-            image = self.get_qimage()
-            if image.size().isEmpty():
-                return
-            image_ptr = image.bits()
-            assert image_ptr is not None, 'Selection layer image was invalid'
-            np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
+        if self._image.isNull() or self._image.size().isEmpty():
+            return
         pos = self.position
-        generation_area = QRect(self._generation_area).translated(-pos.x(), -pos.y())
-        bounds = image_content_bounds(np_image, generation_area)
-        bounds.translate(pos.x(), pos.y())
+        search_area = QRect(self._generation_area).translated(-pos.x(), -pos.y()).intersected(
+            QRect(QPoint(), self._image.size()))
+        if self._selected_count == 0 or search_area.isEmpty():
+            self._bounding_box = None
+            return
+        bounds = _array_bounds(_area(_mask_array(self._image), search_area))
         if bounds.isNull():
             self._bounding_box = None
         else:
-            self._bounding_box = bounds
+            self._bounding_box = bounds.translated(search_area.topLeft() + pos)
 
     @property
     def context_pins(self) -> list[QPoint]:
@@ -193,27 +235,22 @@ class SelectionLayer(ImageLayer):
 
     def generation_area_fully_selected(self) -> bool:
         """Returns whether the generation area is 100% selected."""
-        np_image = image_data_as_numpy_8bit(self.get_qimage())
         bounds = QRect(self._generation_area)
         pos = self.position
         bounds.translate(-pos.x(), -pos.y())
-        gen_area_np_image = np_image[bounds.y():bounds.y() + bounds.height(), bounds.x():bounds.x() + bounds.width(), :]
-        return bool(np.all(gen_area_np_image[:, :, 3] > 0))
+        return bool(np.all(_area(_mask_array(self._image), bounds) > 0))
 
     def select_all(self) -> None:
         """Selects the entire image."""
-        full_selection = QImage(self.size, QImage.Format.Format_ARGB32_Premultiplied)
-        full_selection.fill(self._selection_color)
+        full_selection = QImage(self.size, QImage.Format.Format_Alpha8)
+        full_selection.fill(255)
         self.image = full_selection
 
     def invert_selection(self) -> None:
         """Select all unselected areas, and unselect all selected areas."""
-        inverted = QImage(self.size, QImage.Format.Format_ARGB32_Premultiplied)
-        inverted.fill(self._selection_color)
-        painter = QPainter(inverted)
-        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
-        painter.drawImage(QRect(QPoint(), self.size), self.image)
-        painter.end()
+        inverted = self._image.copy()
+        mask = _mask_array(inverted)
+        np.bitwise_not(mask, out=mask)
         self.image = inverted
 
     def grow_or_shrink_selection(self, num_pixels: int) -> None:
@@ -221,88 +258,144 @@ class SelectionLayer(ImageLayer):
 
         Every edge moves by abs(num_pixels) pixels, and corners stay square.
         """
-        image = self.image
-        image_ptr = image.bits()
-        assert image_ptr is not None, 'Selection layer image was invalid'
-        np_image: NpAnyArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
-
-        masked = np_image[:, :, 3] > 0
-        mask_uint8 = masked.astype(np.uint8) * 255
         if num_pixels == 0:
-            adjusted_mask = masked
+            self.image = self._image.copy()
+            return
+        mask_uint8 = np.ascontiguousarray(_mask_array(self._image))
+        kernel_size = 2 * abs(num_pixels) + 1
+        kernel: NpAnyArray = np.ones((kernel_size, kernel_size), np.uint8)
+        if num_pixels > 0:
+            adjusted = cv2.dilate(mask_uint8, kernel, iterations=1)
         else:
-            kernel_size = 2 * abs(num_pixels) + 1
-            kernel: NpAnyArray = np.ones((kernel_size, kernel_size), np.uint8)
-            if num_pixels > 0:
-                adjusted_mask = cv2.dilate(mask_uint8, kernel, iterations=1)
-            else:
-                adjusted_mask = cv2.erode(mask_uint8, kernel, iterations=1)
-        adjusted_mask = adjusted_mask > 0
-        adjusted_image = np.zeros_like(np_image)
-        adjusted_image[adjusted_mask, 0] = 0  # blue
-        adjusted_image[adjusted_mask, 1] = 0  # green
-        adjusted_image[adjusted_mask, 2] = 255  # red
-        adjusted_image[adjusted_mask, 3] = 255
-        qimage = QImage(adjusted_image.data, adjusted_image.shape[1], adjusted_image.shape[0],
-                        QImage.Format.Format_ARGB32)
-        self.image = qimage
+            adjusted = cv2.erode(mask_uint8, kernel, iterations=1)
+        height, width = adjusted.shape
+        self.image = QImage(adjusted.data, width, height, width, QImage.Format.Format_Alpha8).copy()
+
+    def clear(self, save_to_undo_history: bool = True) -> None:
+        """Deselects everything."""
+        cleared = QImage(self.size, QImage.Format.Format_Alpha8)
+        cleared.fill(0)
+        if save_to_undo_history:
+            self.image = cleared
+        else:
+            self.set_image(cleared)
 
     @property
     def mask_image(self) -> QImage:
         """Gets the generation area mask content as a QImage"""
-        bounds = self.map_rect_from_image(self._generation_area)
-        return self.cropped_image_content(bounds)
+        return self.cropped_image_content(self.map_rect_from_image(self._generation_area))
 
     @property
     def pil_mask_image(self) -> Image.Image:
         """Gets the generation area mask content as a PIL image mask"""
         return qimage_to_pil_image(self.mask_image)
 
+    # Mask storage. `_image` is the Alpha8 mask, and every other image the layer exposes is built from it.
+
+    def get_qimage(self) -> QImage:
+        """Builds the whole selection as an ARGB32_Premultiplied image. Prefer `cropped_image_content` for a region."""
+        return self._argb_from_mask(QRect(QPoint(), self._image.size()))
+
+    def cropped_image_content(self, bounds_rect: QRect) -> QImage:
+        """Builds the selection within a rectangle as an ARGB32_Premultiplied image."""
+        return self._argb_from_mask(bounds_rect)
+
+    def is_empty(self, bounds: Optional[QRect] = None) -> bool:
+        """Returns whether nothing is selected, optionally within a rectangle in layer coordinates."""
+        if self._selected_count == 0:
+            return True
+        if bounds is None:
+            return False
+        area = bounds.intersected(QRect(QPoint(), self._image.size()))
+        return area.isEmpty() or not _area(_mask_array(self._image), area).any()
+
+    def _argb_from_mask(self, rect: QRect) -> QImage:
+        rect = rect.intersected(QRect(QPoint(), self._image.size()))
+        if rect.isEmpty():
+            return QImage()
+        image = QImage(rect.size(), QImage.Format.Format_ARGB32_Premultiplied)
+        image.fill(QColor(self._selection_color.red(), self._selection_color.green(), self._selection_color.blue()))
+        painter = QPainter(image)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+        painter.drawImage(0, 0, self._image.copy(rect))
+        painter.end()
+        return image
+
+    def set_qimage(self, image: QImage) -> None:
+        """Replaces the selection, keeping every pixel of the image that has nonzero alpha."""
+        assert not self.locked and not self.parent_locked, 'Tried to change image in a locked layer'
+        previous = self._image
+        mask = _binary_mask(image)
+        change_bounds: Optional[QRect] = None
+        if previous.size() == mask.size() and not previous.isNull():
+            change_bounds = _array_bounds(_mask_array(previous) != _mask_array(mask))
+        self._image = mask
+        self._selected_count = int(np.count_nonzero(_mask_array(mask)))
+        self._refresh_after_change(change_bounds)
+        if self.size != image.size():
+            self.set_size(image.size())
+
+    def _undo_snapshot(self) -> QImage:
+        return self._image.copy()
+
+    def _content_copy(self, bounds: QRect) -> QImage:
+        return self._argb_from_mask(bounds)
+
+    def _borrow_target(self, change_bounds: QRect) -> QImage:
+        """Hands out a full-size scratch image with only change_bounds filled in. Pixels elsewhere are not read."""
+        scratch = QImage(self._image.size(), QImage.Format.Format_ARGB32_Premultiplied)
+        painter = QPainter(scratch)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+        painter.drawImage(change_bounds.topLeft(), self._argb_from_mask(change_bounds))
+        painter.end()
+        self._borrowed = scratch
+        return scratch
+
+    def _commit_borrowed(self, change_bounds: QRect) -> None:
+        scratch = self._borrowed
+        self._borrowed = None
+        assert scratch is not None
+        self._ingest(scratch.copy(change_bounds), change_bounds)
+
+    def _apply_borrowed_content(self, content: QImage, bounds: QRect) -> None:
+        self._ingest(content, bounds)
+        self._refresh_after_change(bounds)
+        self.invalidate_pixmap()
+        self.signal_content_changed(bounds)
+
+    def _ingest(self, content: QImage, bounds: QRect) -> None:
+        """Replaces the mask within bounds with the thresholded content."""
+        region = _area(_mask_array(self._image), bounds)
+        new_mask = _binary_mask(content)  # The array doesn't keep its image alive
+        new_content = _mask_array(new_mask)
+        self._selected_count += int(np.count_nonzero(new_content)) - int(np.count_nonzero(region))
+        region[...] = new_content
+
     def _handle_content_change(self, image: QImage, last_bounds_content: QImage,
                                change_bounds: Optional[QRect] = None) -> None:
-        """When the image updates, ensure that it meets requirements, and recalculate bounds.
+        """Updates bounds and outline after `borrow_image` changed the mask within change_bounds."""
+        self._refresh_after_change(change_bounds)
+
+    def _refresh_after_change(self, change_bounds: Optional[QRect]) -> None:
+        """Updates the selection bounds and outline after the mask changed.
 
         Parameters:
-            image: QImage
-                The new image being applied, which this method may directly change.
-            last_bounds_content: QImage
-                Previous image state, not needed in this implementation.
-            change_bounds: Optional[QRect] = None
-                If not None, this indicates the area (in local coordinates) within the image where the content has
-                changed.
+            change_bounds: Optional[QRect]
+                The area (in local coordinates) where the mask changed. If None, the whole mask is treated as changed.
         """
-        super()._handle_content_change(image, last_bounds_content, change_bounds)
-        # Enforce fixed colors, alpha thresholds:
-        if image.size().isEmpty():
+        if self._image.isNull() or self._image.size().isEmpty():
             return
-        image_ptr = image.bits()
-        assert image_ptr is not None, 'Selection layer image was invalid'
-        np_image: NpAnyArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
-
-        # Update selection bounds, skip extra processing if selection is empty:
-        self._update_bounds(np_image)
-        if image_is_fully_transparent(np_image):
+        self._update_bounds()
+        if self._selected_count == 0:
             self._outline_polygons = []
             return
-
         if change_bounds is not None:
-            cropped_image = np_image[change_bounds.y():change_bounds.y() + change_bounds.height(),
-                                     change_bounds.x():change_bounds.x() + change_bounds.width(), :]
-        else:
-            cropped_image = np_image
-
-        # Areas under ALPHA_THRESHOLD set to (0, 0, 0, 0), areas within the threshold set to #FF0000:
-        masked = cropped_image[:, :, 3] > 0
-        unmasked = ~masked
-        for i in range(4):
-            cropped_image[unmasked, i] = 0
-        cropped_image[masked, 0] = self._selection_color.blue()
-        cropped_image[masked, 1] = self._selection_color.green()
-        cropped_image[masked, 2] = self._selection_color.red()
-        cropped_image[masked, 3] = 255
+            change_bounds = change_bounds.intersected(QRect(QPoint(), self._image.size()))
+            if change_bounds.isEmpty():
+                return
+        mask = _mask_array(self._image)
 
         # Find edge polygons, using image coordinates:
-        # Extra 0.5 offset puts lines through the center of pixels instead of on left edges.
         pos = self.position
         x_offset = pos.x()
         y_offset = pos.y()
@@ -327,15 +420,13 @@ class SelectionLayer(ImageLayer):
                 self._outline_polygons.remove(poly)
             final_local_bounds = final_image_bounds.translated(-pos.x(), -pos.y())\
                 .intersected(QRect(0, 0, self.width, self.height))
-            cropped_image = np_image[final_local_bounds.y():final_local_bounds.y() + final_local_bounds.height(),
-                                     final_local_bounds.x():final_local_bounds.x() + final_local_bounds.width(), :]
+            mask = _area(mask, final_local_bounds)
             x_offset += final_local_bounds.x()
             y_offset += final_local_bounds.y()
         else:
             self._outline_polygons = []
-            cropped_image = np_image
         # Edge detection needs to scale the mask by 3 for cv2 to avoid approximating away the pixel edges:
-        cv2_image = np.kron(cropped_image[:, :, 3], np.ones((3, 3), dtype=np.uint8))
+        cv2_image = np.kron(mask, np.ones((3, 3), dtype=np.uint8))
         contours, _ = cv2.findContours(cv2_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         for contour in contours:
             polygon = QPolygonF()
@@ -348,21 +439,17 @@ class SelectionLayer(ImageLayer):
 
         Returns None if nothing is selected.
         """
-        image = self.get_qimage()
-        if image.size().isEmpty():
-            return None
-        bounds = image_content_bounds(image)
-        if bounds.isEmpty():
-            return None
-        pos = self.position
-        return bounds.translated(pos.x(), pos.y())
+        bounds = self.get_content_bounds()
+        return None if bounds.isEmpty() else bounds
 
     def get_content_bounds(self) -> QRect:
         """Returns the smallest rectangle containing every selected pixel, in image coordinates.
 
         The result covers the whole layer, not just the generation area. It is an empty QRect when nothing is selected.
         """
-        bounds = image_content_bounds(self.get_qimage())
+        if self._selected_count == 0 or self._image.isNull():
+            return QRect()
+        bounds = _array_bounds(_mask_array(self._image))
         if bounds.isEmpty():
             return QRect()
         return bounds.translated(self.position)
