@@ -77,6 +77,8 @@ class LayerGraphicsItem(PixmapItem):
 
     # noinspection PyUnusedLocal
     def _update_pixmap(self, *args) -> None:
+        if isinstance(self._layer, SelectionLayer):
+            return  # Nothing is drawn for the selection layer, so building its full-size pixmap would be wasted.
         self.setPixmap(self._layer.pixmap)
         if not self._pending_bounds.isNull() and self._pending_bounds.size() == self.pixmap().size():
             self.setTransform(QTransform.fromTranslate(self._pending_bounds.x(), self._pending_bounds.y()))
@@ -89,7 +91,7 @@ class LayerGraphicsItem(PixmapItem):
 
     def _display_opacity(self) -> float:
         if isinstance(self._layer, SelectionLayer):
-            return 0.0  # The selection bitmap is never displayed. The visible selection is SelectionOutline.
+            return 0.0  # The mask is never displayed. SelectionOutline shows the selection.
         if isinstance(self._layer, LayerGroup):
             return 1.0
         return self._layer.opacity

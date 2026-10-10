@@ -599,3 +599,103 @@ class SelectionLayerUndoTest(SelectionLayerOperationTestCase):
         painter.end()
         layer = self.image_stack.create_layer('content', layer_image)
         self._assert_undo_redo(lambda: self.image_stack.select_layer_content(layer), rect_mask(QRect(1, 1, 3, 3)))
+
+
+class SelectionLayerStorageTest(SelectionLayerOperationTestCase):
+    """Tests the Alpha8 mask storage behind the layer's ARGB32 facade."""
+
+    def test_mask_is_stored_as_alpha8(self) -> None:
+        """The stored mask has one byte per pixel, while the images the layer hands out are ARGB32_Premultiplied."""
+        self._paint(QRect(4, 4, 8, 8))
+        self.assertEqual(self.selection_layer._image.format(), QImage.Format.Format_Alpha8)
+        self.assertEqual(self.selection_layer.image.format(), QImage.Format.Format_ARGB32_Premultiplied)
+        self.assertEqual(self.selection_layer.mask_image.format(), QImage.Format.Format_ARGB32_Premultiplied)
+
+    def test_images_use_selection_color_at_full_alpha(self) -> None:
+        """Selected pixels read back as the opaque selection color, and the rest as transparent black."""
+        AppConfig().set(AppConfig.SELECTION_COLOR, '#5500ff00')
+        self._paint(QRect(4, 4, 8, 8), QColor(0, 0, 0, 3))
+        image = self.selection_layer.image
+        self.assertEqual(image.pixelColor(5, 5), QColor(0, 255, 0, 255))
+        self.assertEqual(image.pixel(0, 0), 0)
+
+    def test_no_pixmap_is_built_for_the_layer_item(self) -> None:
+        """The selection layer's graphics item holds no pixmap."""
+        from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
+        item = LayerGraphicsItem(self.selection_layer)
+        self._paint(QRect(4, 4, 8, 8))
+        self.assertTrue(item.pixmap().isNull())
+        item.disconnect_layer()
+
+    def test_operations_keep_selected_count(self) -> None:
+        """Select-all, invert, grow, shrink and clear leave the running count matching the mask."""
+        def assert_count() -> None:
+            self.assertEqual(self.selection_layer._selected_count, int(selection_mask(self.selection_layer).sum()))
+            self.assertEqual(self.selection_layer.is_empty(), self.selection_layer._selected_count == 0)
+
+        self._paint(QRect(4, 4, 8, 8))
+        assert_count()
+        self.selection_layer.grow_or_shrink_selection(2)
+        assert_count()
+        self.selection_layer.grow_or_shrink_selection(-1)
+        assert_count()
+        self.selection_layer.invert_selection()
+        assert_count()
+        self._paint(QRect(0, 0, 3, 3), Qt.GlobalColor.transparent)
+        assert_count()
+        self.selection_layer.select_all()
+        assert_count()
+        self.assertTrue(self.selection_layer.generation_area_fully_selected())
+        self.selection_layer.clear()
+        assert_count()
+        self.assertTrue(self.selection_layer.is_empty())
+
+    def test_invert_twice_is_identity(self) -> None:
+        """Inverting twice restores the selection."""
+        self._paint(QRect(4, 4, 8, 8))
+        self._paint(QRect(20, 3, 5, 9))
+        before = selection_mask(self.selection_layer)
+        self.selection_layer.invert_selection()
+        self.assert_mask_equal(selection_mask(self.selection_layer), ~before)
+        self.selection_layer.invert_selection()
+        self.assert_selection(before)
+
+    def test_grow_then_shrink_contains_original(self) -> None:
+        """Shrinking a grown selection covers everything that was selected originally."""
+        self._paint(QRect(4, 4, 8, 8))
+        self._paint(QRect(14, 14, 3, 3))
+        before = selection_mask(self.selection_layer)
+        self.selection_layer.grow_or_shrink_selection(2)
+        self.selection_layer.grow_or_shrink_selection(-2)
+        self.assertTrue(np.all(selection_mask(self.selection_layer)[before]))
+
+    def test_is_empty_within_bounds(self) -> None:
+        """is_empty with bounds checks only that area."""
+        self._paint(QRect(4, 4, 8, 8))
+        self.assertFalse(self.selection_layer.is_empty(QRect(0, 0, 6, 6)))
+        self.assertTrue(self.selection_layer.is_empty(QRect(16, 16, 8, 8)))
+
+
+class SelectionLayerTimingTest(IntraPaintTestCase):
+    """Guards against edit costs that grow with the canvas, with thresholds loose enough not to flake."""
+
+    CANVAS_SIZE = QSize(4000, 4000)
+
+    def test_small_edit_and_select_all_on_large_canvas(self) -> None:
+        """A small brush edit and select-all each finish well within a second on a 4000x4000 canvas."""
+        import time
+        image_stack = ImageStack(self.CANVAS_SIZE, QSize(512, 512), QSize(8, 8), QSize(8000, 8000))
+        selection_layer = image_stack.selection_layer
+        start = time.monotonic()
+        for i in range(5):
+            bounds = QRect(100 + i * 40, 100, 30, 30)
+            with selection_layer.borrow_image(bounds) as image:
+                assert image is not None
+                painter = QPainter(image)
+                painter.fillRect(bounds, Qt.GlobalColor.black)
+                painter.end()
+        self.assertLess(time.monotonic() - start, 1.0)
+        start = time.monotonic()
+        selection_layer.select_all()
+        self.assertLess(time.monotonic() - start, 2.0)
+        self.assertTrue(selection_layer.generation_area_fully_selected())

@@ -7,29 +7,30 @@
 
 `SavedControlNetUnit.from_json` reads both formats, and `to_json` writes only the second.
 
-`legacy_preprocessor` and `preprocessor_from_legacy` convert preprocessors for the ControlNet panel, which still uses
-`src.api`'s preprocessor type (#39, step 5).
+`typedef_from_legacy`, `legacy_from_params` and `legacy_unit_from_saved` bridge to `src.api`, which the WebUI generator
+still uses (#39, step 4).
 """
 import json
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 from PIL import Image
 from PySide6.QtGui import QImage
 from sd_backend_client import CONTROLNET_MODEL_NONE, PREPROCESSOR_NONE, ControlNetModel, ControlNetPreprocessor, \
     ControlNetUnit, ParameterDef, PreprocessorParams
 
-from src.api.controlnet import controlnet_preprocessor as legacy
-from src.api.controlnet.control_parameter import ControlParameter, ControlParamTypeList
-from src.api.controlnet.controlnet_constants import CONTROLNET_REUSE_IMAGE_CODE
+from src.api.controlnet import controlnet_preprocessor as legacy, controlnet_unit as legacy_unit
 from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters.image_adapter import qimage_to_pil
-from src.util.parameter import get_parameter_type
 from src.util.visual.pil_image_utils import PIL_OPEN_FORMATS
 
 logger = logging.getLogger(__name__)
+
+# Image string meaning "use the generation area content". `src.api.controlnet.controlnet_constants` keeps a copy with
+# the same value until `src.api` is deleted (#39).
+CONTROLNET_REUSE_IMAGE_CODE = 'SELECTION'
 
 # Keys of the format `SavedControlNetUnit.to_json` writes:
 ENABLED_KEY = 'enabled'
@@ -110,9 +111,14 @@ def _preprocessor_from_legacy_json(data_str: str) -> Optional[PreprocessorParams
     in `name`.
     """
     data = json.loads(data_str)
-    name = data['name']
-    if name.lower() == PREPROCESSOR_NONE.lower():
+    if data['name'].lower() == PREPROCESSOR_NONE.lower():
         return None
+    typedef, parameter_values = _typedef_from_legacy_data(data)
+    return PreprocessorParams(typedef=typedef, parameter_values=parameter_values)
+
+
+def _typedef_from_legacy_data(data: dict[str, Any]) -> tuple[ControlNetPreprocessor, dict[str, Any]]:
+    """Converts parsed legacy preprocessor data into a library preprocessor and its parameter values."""
     parameters: list[ParameterDef] = []
     parameter_values: dict[str, Any] = {}
     for param_str in data['parameters_serialized']:
@@ -128,53 +134,51 @@ def _preprocessor_from_legacy_json(data_str: str) -> Optional[PreprocessorParams
                                        max_val=param_def.get('maximum'),
                                        step_val=param_def.get('step')))
         parameter_values[key] = value
-    typedef = ControlNetPreprocessor(name=name,
+    typedef = ControlNetPreprocessor(name=data['name'],
                                      category_name=data.get('category_name') or '',
                                      description=data.get('description') or data.get('display_name') or '',
                                      has_image_input=data['has_image'],
                                      has_mask_input=data['has_mask'],
                                      model_free=data['model_free'],
                                      parameters=parameters)
-    return PreprocessorParams(typedef=typedef, parameter_values=parameter_values)
+    return typedef, parameter_values
 
 
-def preprocessor_from_legacy(preprocessor: legacy.ControlNetPreprocessor) -> Optional[PreprocessorParams]:
-    """Converts a `src.api` preprocessor and its parameter values, returning None for the "None" preprocessor.
+def typedef_from_legacy(preprocessor: legacy.ControlNetPreprocessor) -> ControlNetPreprocessor:
+    """Converts a `src.api` preprocessor into the library's preprocessor definition, ignoring its values.
 
-    Raises
-    ------
-    ValueError
-        If a parameter value is one the library rejects.
+    The WebUI generator uses this until it moves to the library (#39, step 4).
     """
-    return _preprocessor_from_legacy_json(preprocessor.serialize())
+    return _typedef_from_legacy_data(json.loads(preprocessor.serialize()))[0]
 
 
-def legacy_preprocessor(preprocessor: ControlNetPreprocessor) -> legacy.ControlNetPreprocessor:
-    """Converts a ComfyUI preprocessor from the library into a `src.api` preprocessor set to its default values.
+def legacy_from_params(preprocessor: PreprocessorParams) -> legacy.ControlNetPreprocessor:
+    """Converts library preprocessor settings into a `src.api` preprocessor holding the same parameter values.
 
-    The library keeps a ComfyUI node's display name as the first line of `description`, and each parameter's tooltip
-    in its `description`. Each parameter's display name is its key, as `src.api` named ComfyUI parameters.
-
-    Raises
-    ------
-    TypeError
-        If a parameter's options don't all share its default value's type.
-    ValueError
-        If a parameter's options are outside its limits.
+    The WebUI generator uses this until it moves to the library (#39, step 4). See
+    `src.api.controlnet.controlnet_preprocessor.ControlNetPreprocessor.from_params`.
     """
-    display_name, _, description = preprocessor.description.partition('\n')
-    # ControlParameter raises TypeError for an option list whose types differ from the default's:
-    parameters = [ControlParameter(param.key, param.key, get_parameter_type(param.default_value), param.default_value,
-                                   param.description, param.min_val, param.max_val, param.step_val,
-                                   cast(Optional[ControlParamTypeList], param.option_list))
-                  for param in preprocessor.parameters]
-    converted = legacy.ControlNetPreprocessor(preprocessor.name, display_name or preprocessor.name, parameters)
-    converted.description = description
-    converted.category_name = preprocessor.category_name
-    converted.has_image_input = preprocessor.has_image_input
-    converted.has_mask_input = preprocessor.has_mask_input
-    converted.model_free = preprocessor.model_free
-    return converted
+    return legacy.ControlNetPreprocessor.from_params(preprocessor)
+
+
+def legacy_unit_from_saved(saved: SavedControlNetUnit, key_type: legacy_unit.ControlKeyType
+                           ) -> legacy_unit.ControlNetUnit:
+    """Converts a saved unit into a `src.api` unit, for the legacy WebUI request code that reads saved units."""
+    return legacy_unit.ControlNetUnit.from_library_unit(saved.enabled, saved.image_string, saved.unit, key_type)
+
+
+def select_preprocessor(typedef: ControlNetPreprocessor, previous: Optional[PreprocessorParams]
+                        ) -> PreprocessorParams:
+    """Returns settings for a selected preprocessor, keeping the previous values if they are for the same preprocessor.
+
+    Values the preprocessor rejects are replaced by its defaults.
+    """
+    values = {} if previous is None or previous.typedef.name != typedef.name else dict(previous.parameter_values)
+    try:
+        return PreprocessorParams(typedef=typedef, parameter_values=values)
+    except ValueError as err:
+        logger.warning(f'Resetting saved "{typedef.name}" preprocessor values: {err}')
+        return PreprocessorParams(typedef=typedef, parameter_values={})
 
 
 def to_request_unit(saved: SavedControlNetUnit, source_image: Optional[QImage],

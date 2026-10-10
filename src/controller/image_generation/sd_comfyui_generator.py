@@ -6,16 +6,14 @@ from typing import Optional, cast, Any
 from PySide6.QtCore import QSize, QRect, QPoint, SignalInstance
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
-from sd_backend_client import AuthError, BackendOption, BackendTimeoutError, ComfyUiWebservice, SDBackendError
+from sd_backend_client import AuthError, BackendOption, BackendTimeoutError, ComfyUiWebservice, \
+    PREPROCESSOR_NONE, SDBackendError, ControlNetPreprocessor, ControlTypeDef
 # Not in the library's public API. The model config list has no `Backend` equivalent.
 from sd_backend_client.api.comfyui_webservice import ComfyModelType
 
-from src.api.controlnet.controlnet_constants import ControlTypeDef, PREPROCESSOR_NONE
-from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.controller.image_generation.sd_adapters.controlnet_adapter import legacy_preprocessor
 from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qimage, qimage_to_pil
 from src.controller.image_generation.sd_adapters.params_adapter import build_comfy_params, build_upscale_params
 from src.controller.image_generation.sd_generator import SDGenerator, SD_BASE_DESCRIPTION, \
@@ -213,14 +211,9 @@ class SDComfyUIGenerator(SDGenerator):
         except SDBackendError as err:
             logger.error(f'Loading ControlNet preprocessors failed: {err}')
             return []
-        preprocessors: list[ControlNetPreprocessor] = []
-        for preprocessor in library_preprocessors:
-            try:
-                preprocessors.append(legacy_preprocessor(preprocessor))
-            except (TypeError, ValueError) as err:
-                logger.warning(f'Skipping ControlNet preprocessor "{preprocessor.name}": {err}')
+        preprocessors = list(library_preprocessors)
         if not any(preprocessor.name == PREPROCESSOR_NONE for preprocessor in preprocessors):
-            preprocessors.append(ControlNetPreprocessor(PREPROCESSOR_NONE, PREPROCESSOR_NONE, []))
+            preprocessors.append(ControlNetPreprocessor(name=PREPROCESSOR_NONE))
         return preprocessors
 
     def get_controlnet_models(self) -> list[str]:
@@ -236,7 +229,7 @@ class SDComfyUIGenerator(SDGenerator):
         """Return available ControlNet categories."""
         assert self._webservice is not None
         try:
-            return cast(dict[str, ControlTypeDef], self._webservice.get_controlnet_type_categories())
+            return self._webservice.get_controlnet_type_categories()
         except SDBackendError as err:
             logger.error(f'Loading ControlNet types failed: {err}')
             return {}

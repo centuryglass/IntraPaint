@@ -6,6 +6,7 @@ from enum import Enum
 from typing import TypedDict, cast, Optional
 
 from PySide6.QtWidgets import QApplication
+from sd_backend_client import ControlNetUnit as LibraryControlNetUnit
 
 import src.api.webui.controlnet_webui_constants as webui_constants
 from src.api.comfyui.nodes.controlnet.apply_controlnet_node import CONTROLNET_COMFTUI_CONTROL_WEIGHT_KEY, \
@@ -172,9 +173,39 @@ class ControlNetUnit:
         return json.dumps(data_dict)
 
     @staticmethod
+    def from_library_unit(enabled: bool, image_string: str, library_unit: LibraryControlNetUnit,
+                          key_type: ControlKeyType) -> 'ControlNetUnit':
+        """Converts an sd-backend-client unit into a unit, for request code that has not moved to the library yet.
+
+        Raises
+        ------
+        ValueError
+            If the preprocessor's options or values are outside its limits.
+        """
+        unit = ControlNetUnit(key_type)
+        unit.enabled = enabled
+        unit.image_string = image_string
+        if library_unit.model is not None:
+            unit.model = ControlNetModel(library_unit.model.full_model_name)
+        if library_unit.preprocessor is not None:
+            unit.preprocessor = ControlNetPreprocessor.from_params(library_unit.preprocessor)
+        unit.control_strength.value = library_unit.control_strength
+        unit.control_start.value = library_unit.control_start
+        unit.control_end.value = library_unit.control_end
+        unit.pixel_perfect = library_unit.pixel_perfect
+        unit.low_vram = library_unit.low_vram
+        return unit
+
+    @staticmethod
     def deserialize(data_str: str, key_type: Optional[ControlKeyType] = None) -> 'ControlNetUnit':
         """Loads a ControlNetUnit from serialized data."""
-        data_dict = cast(ControlNetUnit._SerializedDataFormat, json.loads(data_str))
+        raw_data = json.loads(data_str)
+        if isinstance(raw_data, dict) and 'unit' in raw_data:
+            # Saved by the ControlNet panel, in the format `SavedControlNetUnit.to_json` writes.
+            return ControlNetUnit.from_library_unit(bool(raw_data['enabled']), str(raw_data['image']),
+                                                    LibraryControlNetUnit.model_validate(raw_data['unit']),
+                                                    ControlKeyType.WEBUI if key_type is None else key_type)
+        data_dict = cast(ControlNetUnit._SerializedDataFormat, raw_data)
         if key_type is None:
             key_type = ControlKeyType(data_dict['key_type'])
         control_unit = ControlNetUnit(key_type)

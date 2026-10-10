@@ -102,6 +102,14 @@ Config is JSON-backed and typed, with `get()` / `set()` / `connect()` (signal on
 
 ## Conventions
 
+- **Model, config, undo and UI changes happen on the GUI thread.** Workers only produce data and hand it back through
+  signals delivered on the main thread. `Config.set` and `AsyncTask.__init__` raise off the main thread. A signal
+  connected to a plain closure runs the closure on the thread the sender `QObject` lives on, whatever the connection
+  type. A closure on a `moveToThread` worker's signal therefore runs on the worker thread, even with
+  `QueuedConnection`; connect it to a `QObject` slot instead, or have the closure call
+  `src.util.main_thread.run_on_main_thread`. `AsyncTask` signals are safe because the `AsyncTask` lives on the main
+  thread.
+
 - **Translate all user-facing strings.** Wrap them in the Qt translation helper: files define a `TR_ID` and a local
   `_tr()` wrapper around `QApplication.translate`. Follow the existing pattern in the file you're editing; don't emit
   raw user-visible text. Pass `_tr` a single-quoted or triple-double-quoted literal: `scripts/build_translations.py`

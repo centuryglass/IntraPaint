@@ -7,9 +7,8 @@ from PySide6.QtCore import QObject, Signal, QRect, QPoint, QSize, QRectF
 from PySide6.QtGui import QImage, QPixmap, QPainter, QTransform, QPainterPath, QPolygonF
 from PySide6.QtWidgets import QApplication
 
-from src.config.application_config import AppConfig
 from src.image.composite_mode import CompositeMode
-from src.undo_stack import UndoStack, _CallableCommand
+from src.undo_stack import UndoStack
 from src.util.cached_data import CachedData
 from src.util.visual.geometry_utils import map_rect_precise, transform_needs_smooth_sampling
 from src.util.visual.image_utils import (create_transparent_image, NpAnyArray, image_data_as_numpy_8bit_readonly,
@@ -611,15 +610,4 @@ class Layer(QObject):
         def _undo(value=last_value, setter=value_setter):
             setter(value)
 
-        prev_action: Optional[_CallableCommand]
-        timestamp = datetime.datetime.now().timestamp()
-        merge_interval = AppConfig().get(AppConfig.UNDO_MERGE_INTERVAL)
-        with UndoStack().last_action(change_type) as prev_action:
-            if prev_action is not None and prev_action.action_type == change_type \
-                    and prev_action.action_data is not None \
-                    and prev_action.action_data['layer'] == self \
-                    and timestamp - prev_action.action_data['timestamp'] < merge_interval:
-                prev_action.redo_fn = _update
-                prev_action.redo_fn()
-                return
-        UndoStack().commit_action(_update, _undo, change_type, {'layer': self, 'timestamp': timestamp})
+        UndoStack().commit_action(_update, _undo, change_type, merge_target=self)

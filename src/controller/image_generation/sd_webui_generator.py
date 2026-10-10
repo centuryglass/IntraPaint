@@ -8,16 +8,14 @@ from typing import Optional, Any, cast
 from PySide6.QtCore import Signal, QSize, SignalInstance, QRect
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
-from sd_backend_client import A1111Webservice, AuthError, BackendTimeoutError, SDBackendError
+from sd_backend_client import A1111Webservice, AuthError, BackendTimeoutError, ControlNetPreprocessor, ControlTypeDef, \
+    SDBackendError
 from sd_backend_client.api.webui.response_formats import GenerationInfoData
 
-from src.api.controlnet.controlnet_constants import ControlTypeDef
-from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.config.a1111_config import A1111Config
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.controller.image_generation.sd_adapters.controlnet_adapter import legacy_preprocessor
 from src.controller.image_generation.sd_adapters.credentials_adapter import create_webservice, login_without_prompt
 from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qimage, qimage_to_pil
 from src.controller.image_generation.sd_adapters.params_adapter import build_webui_body, build_upscale_params
@@ -258,17 +256,10 @@ class SDWebUIGenerator(SDGenerator):
         """Return the list of available Controlnet preprocessors."""
         assert self._webservice is not None
         try:
-            library_preprocessors = self._webservice.get_controlnet_preprocessors()
+            return list(self._webservice.get_controlnet_preprocessors())
         except SDBackendError as err:
             logger.error(f'Loading ControlNet preprocessors failed: {err}')
             return []
-        preprocessors: list[ControlNetPreprocessor] = []
-        for preprocessor in library_preprocessors:
-            try:
-                preprocessors.append(legacy_preprocessor(preprocessor))
-            except (TypeError, ValueError) as err:
-                logger.warning(f'Skipping ControlNet preprocessor "{preprocessor.name}": {err}')
-        return preprocessors
 
     def get_controlnet_models(self) -> list[str]:
         """Return the list of available ControlNet models."""

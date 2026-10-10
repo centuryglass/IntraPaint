@@ -17,14 +17,13 @@ from unittest.mock import MagicMock
 from PySide6.QtCore import QPoint, QRect, QSize, Qt
 from PySide6.QtGui import QImage, QPainter, QColor
 from PySide6.QtWidgets import QApplication
+from sd_backend_client import ControlNetModel, ControlNetPreprocessor, ControlNetUnit, PreprocessorParams
 
-from src.api.controlnet.controlnet_constants import CONTROLNET_REUSE_IMAGE_CODE
-from src.api.controlnet.controlnet_model import ControlNetModel
-from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
-from src.api.controlnet.controlnet_unit import ControlNetUnit, ControlKeyType
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.image_generator import ImageGenerator
+from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTROLNET_REUSE_IMAGE_CODE, \
+    SavedControlNetUnit
 from src.image.layers.image_stack import ImageStack
 from src.undo_stack import UndoStack
 from src.util.async_task import AsyncTask
@@ -155,18 +154,13 @@ class SdGeneratorTestCase(IntraPaintTestCase):
         self.assertEqual(len(self.image_stack.all_layers()), len(initial_layers) + 1)
 
     @staticmethod
-    def controlnet_unit(key_type: ControlKeyType, model_name: str, preprocessor: ControlNetPreprocessor,
+    def controlnet_unit(model_name: str, preprocessor: ControlNetPreprocessor,
                         image_string: str = CONTROLNET_REUSE_IMAGE_CODE) -> str:
-        """Returns a serialized, enabled ControlNet unit."""
-        unit = ControlNetUnit(key_type)
-        unit.enabled = True
-        unit.model = ControlNetModel(model_name)
-        unit.preprocessor = preprocessor
-        unit.image_string = image_string
-        unit.control_strength.value = 0.75
-        unit.control_start.value = 0.1
-        unit.control_end.value = 0.9
-        return unit.serialize()
+        """Returns a serialized, enabled ControlNet unit, in the format the ControlNet panel saves."""
+        unit = ControlNetUnit(model=ControlNetModel(model_name),
+                              preprocessor=PreprocessorParams(typedef=preprocessor, parameter_values={}),
+                              control_strength=0.75, control_start=0.1, control_end=0.9)
+        return SavedControlNetUnit(True, image_string, unit).to_json()
 
     def assert_requests_match_snapshot(self, name: str, requests: Optional[list[RecordedRequest]] = None,
                                        replacements: Optional[dict[str, str]] = None) -> None:

@@ -47,9 +47,7 @@ def crop_image_stack_to_bounds(image_stack: ImageStack, bounds: QRect) -> None:
 def crop_image_stack_to_selection(image_stack: ImageStack) -> None:
     """Crops the image stack to match its selection bounds"""
     selection_layer = image_stack.selection_layer
-    np_selection = selection_layer.image_bits_readonly
-    selection_pos = selection_layer.position
-    selection_bounds = image_content_bounds(np_selection).translated(selection_pos.x(), selection_pos.y())
+    selection_bounds = selection_layer.get_content_bounds()
     if selection_bounds.isEmpty():
         show_error_dialog(None, ERROR_TITLE_CROP_FAILED, ERROR_MESSAGE_CROP_FAILED_NO_SELECTION)
         return

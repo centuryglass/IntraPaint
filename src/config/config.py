@@ -12,7 +12,6 @@ import json
 import logging
 import os
 import tempfile
-import threading
 from inspect import signature
 from threading import Lock
 from typing import Optional, Any, Callable
@@ -24,6 +23,7 @@ from PySide6.QtWidgets import QApplication
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.combo_box import ComboBox
+from src.util.main_thread import assert_main_thread
 from src.util.parameter import ParamType, DynamicFieldWidget, ParamTypeList, get_parameter_type
 from src.util.signals_blocked import signals_blocked
 
@@ -347,7 +347,10 @@ class Config:
             save_change: bool = True,
             add_missing_options: bool = False,
             inner_key: Optional[str] = None) -> None:
-        """Updates a saved value.
+        """Updates a saved value. Must be called on the main thread.
+
+        Callbacks and the save timer run on the calling thread, and callbacks update widgets. Worker code stages the
+        value and applies it in a finish handler or through `run_on_main_thread`.
 
         Connected callbacks stop running for this change once one of them changes the value again.
 
@@ -375,7 +378,10 @@ class Config:
         RuntimeError
             If `key` has a list of associated valid options, `value` is not one of those options, and
             `add_missing_options` is false.
+        RuntimeError
+            If called from any thread other than the main thread.
         """
+        assert_main_thread('Config.set')
         if key not in self._entries:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         new_value = value
@@ -386,21 +392,15 @@ class Config:
             return
         # Schedule save to JSON file:
         if save_change:
-            write_now = False
             with self._lock:
                 if not self._save_timer.isActive():
-                    if threading.current_thread() is not threading.main_thread():
-                        write_now = True  # Timers can't be started from other threads.
-                    else:
-                        def write_change() -> None:
-                            """Copy changes to the file and disconnect the timer."""
-                            self._write_to_json()
-                            self._save_timer.timeout.disconnect(write_change)
+                    def write_change() -> None:
+                        """Copy changes to the file and disconnect the timer."""
+                        self._write_to_json()
+                        self._save_timer.timeout.disconnect(write_change)
 
-                        self._save_timer.timeout.connect(write_change)
-                        self._save_timer.start(10)
-            if write_now:
-                self._write_to_json()  # Takes `self._lock` itself, so it must run after the block above releases it.
+                    self._save_timer.timeout.connect(write_change)
+                    self._save_timer.start(10)
         # Pass change to connected callback functions:
         callbacks = [*self._connected[key].items()]  # <- So callbacks can disconnect or replace themselves
         for source, callback in callbacks:

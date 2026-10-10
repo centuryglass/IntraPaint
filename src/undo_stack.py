@@ -1,15 +1,25 @@
 """Global stack for tracking undo/redo state, as a thin wrapper over a QUndoStack."""
 import logging
+import time
 from contextlib import contextmanager
-from typing import Callable, Optional, Any, Generator
+from typing import Callable, Optional, Generator
 
 from PySide6.QtCore import QObject, Signal, SignalInstance, SIGNAL, QCoreApplication, QThread
 from PySide6.QtGui import QUndoStack, QUndoCommand
+from shiboken6 import isValid
 
 from src.config.application_config import AppConfig
 from src.util.singleton import Singleton
 
 logger = logging.getLogger(__name__)
+
+
+_merge_ids: dict[str, int] = {}
+
+
+def _merge_id(action_type: str) -> int:
+    """Returns the stable QUndoCommand id shared by every mergeable command of one action type."""
+    return _merge_ids.setdefault(action_type, len(_merge_ids) + 1)
 
 
 class _CallableCommand(QUndoCommand):
@@ -18,20 +28,40 @@ class _CallableCommand(QUndoCommand):
     PySide6 swallows exceptions raised in virtual overrides, so `redo` and `undo` hand them to `on_error` and the
     owning `UndoStack` re-raises the first one after Qt returns.
 
-    `action_data` and the `redo_fn` / `undo_fn` attributes are what `UndoStack.last_action` callers edit to coalesce a
-    continuous change into the previous entry.
+    A command with a `merge_target` absorbs the next command of the same action type and target that follows within
+    `merge_interval`: it takes over that command's redo and keeps its own undo, so a continuous change undoes back to
+    the value before it started. A command with `starts_entry` set never merges into the previous command.
     """
 
     def __init__(self, redo_fn: Callable[[], None], undo_fn: Callable[[], None], action_type: str,
-                 action_data: Optional[dict[str, Any]], first_redo_is_noop: bool,
-                 on_error: Callable[[BaseException], None]) -> None:
+                 merge_target: Optional[object], merge_interval: float, starts_entry: bool,
+                 first_redo_is_noop: bool, on_error: Callable[[BaseException], None]) -> None:
         super().__init__(action_type)
         self.redo_fn = redo_fn
         self.undo_fn = undo_fn
         self.action_type = action_type
-        self.action_data = action_data
+        self._merge_target = merge_target
+        self._merge_interval = merge_interval
+        self._starts_entry = starts_entry
+        self._merge_time = time.time()
         self._first_redo_is_noop = first_redo_is_noop
         self._on_error = on_error
+
+    def id(self) -> int:
+        """Returns the shared merge id for mergeable commands, or -1 to opt out of merging."""
+        return -1 if self._merge_target is None else _merge_id(self.action_type)
+
+    def mergeWith(self, other: QUndoCommand) -> bool:  # pylint: disable=invalid-name
+        """Absorbs a later change to the same target made within the merge interval."""
+        # pylint: disable=protected-access
+        if not isinstance(other, _CallableCommand) or self._merge_target is None or other._starts_entry \
+                or other._merge_target is not self._merge_target or other.action_type != self.action_type:
+            return False
+        if other._merge_time - self._merge_time >= self._merge_interval:
+            return False
+        self.redo_fn = other.redo_fn
+        self._merge_time = other._merge_time
+        return True
 
     def redo(self) -> None:
         """Re-applies the change, except for a first call that the committer already performed."""
@@ -102,7 +132,8 @@ class UndoStack(metaclass=Singleton):
         return self._stack.count() - self._stack.index()
 
     def commit_action(self, action: Callable[[], None], undo_action: Callable[[], None], action_type: str,
-                      action_data: Optional[dict[str, Any]] = None, skip_initial_call=False) -> bool:
+                      merge_target: Optional[object] = None, merge_interval: Optional[float] = None,
+                      starts_entry=False, skip_initial_call=False) -> bool:
         """Performs an action, then commits it to the undo stack.
 
         Each commit outside `combining_actions` is its own undo entry. The parameter functions must not call
@@ -122,9 +153,17 @@ class UndoStack(metaclass=Singleton):
                 action()
                 undo_action()
         action_type: str
-            An arbitrary label used to identify the action, to be used when attempting to merge actions in the stack.
-        action_data: dict
-            Arbitrary data to use for merging actions.
+            An arbitrary label used for logging and as the entry's text, and to match actions when merging.
+        merge_target: object, optional
+            If set, this action merges into the previous history entry when that entry has the same `action_type` and
+            `merge_target` (compared by identity) and was committed less than `merge_interval` seconds ago. The merged
+            entry runs the latest `action` and undoes back to before the first one. Inside `combining_actions`, it can
+            merge only with the group's previous action.
+        merge_interval: float, optional
+            Maximum seconds between merged actions. Defaults to `AppConfig.UNDO_MERGE_INTERVAL`; `math.inf` merges
+            regardless of timing. The interval of the entry being merged into applies.
+        starts_entry: bool, default=False
+            If true, this action never merges into the previous entry, but later actions can merge into it.
         skip_initial_call: bool, default=False
             If true, skip the initial action() call.
         """
@@ -137,23 +176,13 @@ class UndoStack(metaclass=Singleton):
             if self._open_group_depth > 0 and not self._group_started:
                 self._stack.beginMacro(self._group_type)
                 self._group_started = True
-            self._stack.push(_CallableCommand(action, undo_action, action_type, action_data, True, self._errors.append))
+            self._stack.push(_CallableCommand(action, undo_action, action_type, merge_target,
+                                               AppConfig().get(AppConfig.UNDO_MERGE_INTERVAL)
+                                               if merge_interval is None else merge_interval,
+                                               starts_entry, True, self._errors.append))
         finally:
             self._busy_change = ''
         return True
-
-    @contextmanager
-    def last_action(self, action_type: str) -> Generator[Optional[_CallableCommand], None, None]:
-        """Access the most recent action, potentially updating it to combine actions.
-
-        Yields None when the history is empty, the most recent entry is a group, or a group is open."""
-        self._assert_idle(action_type)
-        top_command = None
-        if self._open_group_depth == 0 and self._stack.index() > 0 and self._stack.index() == self._stack.count():
-            command = self._stack.command(self._stack.index() - 1)
-            if isinstance(command, _CallableCommand):
-                top_command = command
-        yield top_command
 
     @contextmanager
     def combining_actions(self, action_type: str) -> Generator[None, None, None]:
@@ -241,6 +270,10 @@ class UndoStack(metaclass=Singleton):
         self._stack.setUndoLimit(max(AppConfig().get(AppConfig.MAX_UNDO), 1))
 
     def _emit_count_changes(self, *_args) -> None:
+        # At interpreter exit Qt deletes the QUndoStack, and its destructor clears the history and emits indexChanged
+        # after the Python wrapper is already invalid.
+        if not isValid(self._stack):
+            return
         undo_count = self.undo_count()
         redo_count = self.redo_count()
         undo_changed = undo_count != self._last_undo_count
