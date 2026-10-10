@@ -136,21 +136,29 @@ def crop_layer_to_selection(image_stack: ImageStack, layer: Optional[Layer] = No
 
 def scale_all_layers(image_stack: ImageStack, width: int, height: int,
                      image_scale_mode: Optional[Image.Resampling] = None) -> None:
-    """Scale all layer content by applying PIL scaling or adjusting layer transformations."""
+    """Scale all layer content by applying PIL scaling or adjusting layer transformations, as one undo action."""
     initial_size = image_stack.size
     if width == initial_size.width() and height == initial_size.height():
         return
     if width <= 0 or height <= 0:
         raise ValueError(f'size must be greater than zero, got {width}x{height}')
-    x_scale = width / initial_size.width()
-    y_scale = height / initial_size.height()
-
     if not image_stack.confirm_no_locked_layers(ERROR_TITLE_IMAGE_SCALE_FAILED):
         return
+    with UndoStack().combining_actions('image_stack_utils.scale_all_layers'):
+        scale_all_layers_ungrouped(image_stack, width, height, image_scale_mode)
 
+
+def scale_all_layers_ungrouped(image_stack: ImageStack, width: int, height: int,
+                               image_scale_mode: Optional[Image.Resampling] = None) -> None:
+    """Scale all layer content and the canvas without grouping the changes, for callers that already hold an
+    UndoStack.combining_actions group.
+
+    The caller checks for locked layers first, and nothing here rejects a size of zero or below."""
+    initial_size = image_stack.size
+    x_scale = width / initial_size.width()
+    y_scale = height / initial_size.height()
     scale_transform = QTransform.fromScale(x_scale, y_scale)
-    action_id = 'image_stack_utils.scale_all_layers'
-    with UndoStack().combining_actions(action_id), image_stack.batching_content_updates():
+    with image_stack.batching_content_updates():
         for layer in image_stack.all_layers():
             if not isinstance(layer, TransformLayer):
                 continue
@@ -175,7 +183,7 @@ def scale_all_layers(image_stack: ImageStack, width: int, height: int,
         def _revert(size=initial_size) -> None:
             image_stack.size = size
 
-        UndoStack().commit_action(_final_size_update, _revert, action_id)
+        UndoStack().commit_action(_final_size_update, _revert, 'image_stack_utils.scale_all_layers')
 
 
 def image_stack_color_at_point(image_stack: ImageStack, image_point: QPoint) -> QColor:
