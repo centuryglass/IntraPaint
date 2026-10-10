@@ -3,9 +3,8 @@ import sys
 import unittest
 
 import numpy as np
-import pytest
 from PySide6.QtCore import QPoint, QRect, QSize
-from PySide6.QtGui import QImage, QTransform
+from PySide6.QtGui import QColor, QImage, QPainter, QTransform
 from PySide6.QtWidgets import QApplication
 
 from src.image.composite_mode import CompositeMode
@@ -16,7 +15,7 @@ from src.image.open_raster import read_ora_image
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.image_viewer import ImageViewer
 from src.util.visual.image_utils import image_data_as_numpy_8bit
-from test.base_test_case import IntraPaintTestCase
+from test.base_test_case import IntraPaintTestCase, assert_images_equal
 from test.render_assertions import (assert_region_renders_match, assert_tiled_render_matches, displayed_image,
                                     full_render)
 
@@ -27,9 +26,6 @@ LAYER_SIZE = QSize(90, 70)
 # One tile size aligned with libmypaint's TILE_DIM, one that doesn't divide the canvas evenly:
 TILE_SIZES = (64, 37)
 LAYER_MOVE_TEST_IMAGE = 'test/resources/test_images/layer_move_test.ora'
-
-ISSUE_147 = ('https://github.com/centuryglass/IntraPaint/issues/147: scaled and rotated layers sample differently in '
-             'a region render')
 
 
 def _gradient_image(size: QSize, seed: int) -> QImage:
@@ -215,19 +211,36 @@ class RegionRenderTest(RenderTestCase):
         self.add_layer('inner', QTransform.fromTranslate(30, 20), parent=group)
         self.assert_tiles_match()
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_147)
     def test_scaled_layer(self) -> None:
         """A scaled layer renders the same in tiles."""
         self.add_layer('scaled', QTransform.fromTranslate(11, 6).scale(1.3, 0.9))
         self.assert_tiles_match()
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_147)
     def test_rotated_layer(self) -> None:
         """A rotated layer renders the same in tiles."""
         self.add_layer('rotated', QTransform.fromTranslate(60, 10).rotate(30))
         self.assert_tiles_match()
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_147)
+    def test_edited_rotated_layer(self) -> None:
+        """Painting on a rotated layer redraws the changed part of its cached raster, matching a full re-raster."""
+        layer = self.add_layer('rotated', QTransform.fromTranslate(60, 10).rotate(30))
+        self.assert_tiles_match()
+        raster = layer._raster  # pylint: disable=protected-access
+        self.assertIsNotNone(raster)
+        with layer.borrow_image(QRect(10, 12, 20, 15)) as image:
+            assert image is not None
+            painter = QPainter(image)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+            painter.fillRect(QRect(10, 12, 20, 15), QColor(0x30, 0x70, 0xa0))
+            painter.end()
+        self.assertIs(layer._raster, raster)  # pylint: disable=protected-access
+        edited = full_render(self.image_stack)
+        self.assert_tiles_match()
+        layer.set_transform(QTransform.fromTranslate(61, 10).rotate(30))
+        layer.set_transform(QTransform.fromTranslate(60, 10).rotate(30))
+        self.assertIsNot(layer._raster, raster)  # pylint: disable=protected-access
+        assert_images_equal(full_render(self.image_stack), edited)
+
     def test_layer_move_test_image(self) -> None:
         """The nested, transformed groups in layer_move_test.ora render the same in tiles."""
         read_ora_image(self.image_stack, LAYER_MOVE_TEST_IMAGE)
