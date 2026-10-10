@@ -6,6 +6,7 @@ from typing import Callable, Optional, Generator
 
 from PySide6.QtCore import QObject, Signal, SignalInstance, SIGNAL, QCoreApplication, QThread
 from PySide6.QtGui import QUndoStack, QUndoCommand
+from shiboken6 import isValid
 
 from src.config.application_config import AppConfig
 from src.util.singleton import Singleton
@@ -269,6 +270,10 @@ class UndoStack(metaclass=Singleton):
         self._stack.setUndoLimit(max(AppConfig().get(AppConfig.MAX_UNDO), 1))
 
     def _emit_count_changes(self, *_args) -> None:
+        # At interpreter exit Qt deletes the QUndoStack, and its destructor clears the history and emits indexChanged
+        # after the Python wrapper is already invalid.
+        if not isValid(self._stack):
+            return
         undo_count = self.undo_count()
         redo_count = self.redo_count()
         undo_changed = undo_count != self._last_undo_count
