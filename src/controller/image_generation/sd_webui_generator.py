@@ -1,23 +1,26 @@
-"""Generates images through the Stable Diffusion WebUI (A1111 or Forge)"""
+"""Generates images through the Stable Diffusion WebUI (A1111 or Forge), using the `sd_backend_client` library's WebUI
+client."""
 import logging
 import os
 from argparse import Namespace
 from typing import Optional, Any, cast
 
-from PySide6.QtCore import Signal, QSize, QThread, SignalInstance, QRect
+from PySide6.QtCore import Signal, QSize, SignalInstance, QRect
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
-from requests import ReadTimeout
+from sd_backend_client import A1111Webservice, AuthError, BackendTimeoutError, SDBackendError
+from sd_backend_client.api.webui.response_formats import GenerationInfoData
 
-from src.api.a1111_webservice import A1111Webservice, AuthError, ULTIMATE_UPSCALE_SCRIPT
 from src.api.controlnet.controlnet_constants import ControlTypeDef
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.controlnet.controlnet_unit import ControlKeyType
-from src.api.webservice import WebService
-from src.api.webui.diffusion_request_body import DiffusionRequestBody
 from src.config.a1111_config import A1111Config
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.controller.image_generation.sd_adapters.controlnet_adapter import legacy_preprocessor
+from src.controller.image_generation.sd_adapters.credentials_adapter import create_webservice, login_without_prompt
+from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qimage, qimage_to_pil
+from src.controller.image_generation.sd_adapters.params_adapter import build_webui_body, build_upscale_params
 from src.controller.image_generation.sd_generator import SD_BASE_DESCRIPTION, STABLE_DIFFUSION_CONFIG_CATEGORY, \
     SDGenerator, INSTALLATION_STABILITY_MATRIX, GETTING_SD_MODELS, IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES, \
     MENU_STABLE_DIFFUSION
@@ -30,13 +33,12 @@ from src.ui.panel.generators.webui_extras_tab import WebUIExtrasTab
 from src.ui.window.main_window import MainWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
 from src.undo_stack import UndoStack
-from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING, APP_STATE_NO_IMAGE
+from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_NO_IMAGE
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, PROJECT_DIR, \
     AUTH_ERROR, AUTH_ERROR_MESSAGE, INTERROGATE_ERROR_TITLE, INTERROGATE_ERROR_MESSAGE_NO_IMAGE, \
-    ERROR_MESSAGE_TIMEOUT, \
-    GENERATE_ERROR_MESSAGE_EMPTY_MASK, ERROR_MESSAGE_EXISTING_OPERATION, MISC_CONNECTION_ERROR
+    ERROR_MESSAGE_TIMEOUT, GENERATE_ERROR_MESSAGE_EMPTY_MASK, GENERATE_ERROR_TITLE, MISC_CONNECTION_ERROR
 
 logger = logging.getLogger(__name__)
 
@@ -202,10 +204,6 @@ ERROR_MESSAGE_SETTINGS_LOAD_FAILED = _tr('The connection to the Stable Diffusion
 ERROR_MESSAGE_SETTINGS_SAVE_FAILED = _tr('The connection to the Stable Diffusion WebUI image generator was lost. '
                                          'Any changes to connected generator settings were not saved.')
 
-MAX_ERROR_COUNT = 10
-MIN_RETRY_US = 300000
-MAX_RETRY_US = 60000000
-
 
 def _check_prompt_styles_available(_) -> bool:
     cache = Cache()
@@ -222,9 +220,8 @@ class SDWebUIGenerator(SDGenerator):
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
         super().__init__(window, image_stack, args, Cache.SD_WEBUI_SERVER_URL, ControlKeyType.WEBUI, True)
-        self._webservice: Optional[A1111Webservice] = A1111Webservice(self.server_url)
+        self._webservice: Optional[A1111Webservice] = create_webservice(self.server_url)
         self._gen_extras_tab = WebUIExtrasTab()
-        self._active_task_id = 0
 
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
@@ -238,7 +235,7 @@ class SDWebUIGenerator(SDGenerator):
         """Returns an extended description of this generator."""
         return SD_WEBUI_GENERATOR_DESCRIPTION
 
-    def get_webservice(self) -> Optional[WebService]:
+    def get_webservice(self) -> Optional[A1111Webservice]:
         """Return the webservice object this module uses to connect to Stable Diffusion, if initialized."""
         return self._webservice
 
@@ -246,32 +243,39 @@ class SDWebUIGenerator(SDGenerator):
         """Destroy and remove any active webservice object."""
         self._webservice = None
 
-    def create_or_get_webservice(self, url: str) -> WebService:
+    def create_or_get_webservice(self, url: str) -> A1111Webservice:
         """Return the webservice object this module uses to connect to Stable Diffusion.  If the webservice already
            exists but the url doesn't match, a new webservice should replace the existing one, using the new url."""
         if self._webservice is not None:
-            if self._webservice.server_url == url:
+            if self._webservice.server_url == url.rstrip('/'):
                 return self._webservice
             self._webservice.disconnect()
             self._webservice = None
-        self._webservice = A1111Webservice(url)
+        self._webservice = create_webservice(url)
         return self._webservice
 
     def get_controlnet_preprocessors(self) -> list[ControlNetPreprocessor]:
         """Return the list of available Controlnet preprocessors."""
         assert self._webservice is not None
         try:
-            return self._webservice.get_controlnet_preprocessors()
-        except (RuntimeError, KeyError) as err:
+            library_preprocessors = self._webservice.get_controlnet_preprocessors()
+        except SDBackendError as err:
             logger.error(f'Loading ControlNet preprocessors failed: {err}')
             return []
+        preprocessors: list[ControlNetPreprocessor] = []
+        for preprocessor in library_preprocessors:
+            try:
+                preprocessors.append(legacy_preprocessor(preprocessor))
+            except (TypeError, ValueError) as err:
+                logger.warning(f'Skipping ControlNet preprocessor "{preprocessor.name}": {err}')
+        return preprocessors
 
     def get_controlnet_models(self) -> list[str]:
         """Return the list of available ControlNet models."""
         assert self._webservice is not None
         try:
-            return self._webservice.get_controlnet_models()['model_list']
-        except (RuntimeError, KeyError) as err:
+            return self._webservice.get_controlnet_models().model_list
+        except SDBackendError as err:
             logger.error(f'Loading ControlNet models failed: {err}')
             return []
 
@@ -279,8 +283,8 @@ class SDWebUIGenerator(SDGenerator):
         """Return available ControlNet categories."""
         assert self._webservice is not None
         try:
-            return self._webservice.get_controlnet_type_categories()
-        except (RuntimeError, KeyError) as err:
+            return cast(dict[str, ControlTypeDef], self._webservice.get_controlnet_type_categories())
+        except SDBackendError as err:
             logger.error(f'Loading ControlNet types failed: {err}')
             return {}
 
@@ -292,9 +296,8 @@ class SDWebUIGenerator(SDGenerator):
         """Return the list of available image generation models."""
         assert self._webservice is not None
         try:
-            models = self._webservice.get_models()
-            return [model['model_name'] for model in models]
-        except (RuntimeError, KeyError) as err:
+            return [model.model_name for model in self._webservice.get_models()]
+        except SDBackendError as err:
             logger.error(f'Loading Stable Diffusion model list failed: {err}')
             return []
 
@@ -302,8 +305,8 @@ class SDWebUIGenerator(SDGenerator):
         """Return available LoRA model extensions."""
         assert self._webservice is not None
         try:
-            return cast(list[dict[str, str]], self._webservice.get_loras())
-        except (RuntimeError, KeyError) as err:
+            return [cast(dict[str, str], lora.model_dump()) for lora in self._webservice.get_loras()]
+        except SDBackendError as err:
             logger.error(f'Loading Stable Diffusion LoRA model list failed: {err}')
             return []
 
@@ -311,9 +314,8 @@ class SDWebUIGenerator(SDGenerator):
         """Return the list of available samplers."""
         assert self._webservice is not None
         try:
-            sampler_info = self._webservice.get_samplers()
-            return [sampler['name'] for sampler in sampler_info]
-        except (RuntimeError, KeyError) as err:
+            return [sampler.name for sampler in self._webservice.get_samplers()]
+        except SDBackendError as err:
             logger.error(f'Loading Stable Diffusion sampler option list failed: {err}')
             return []
 
@@ -321,16 +323,19 @@ class SDWebUIGenerator(SDGenerator):
         """Return the list of available upscale methods."""
         assert self._webservice is not None
         try:
-            upscaler_info = self._webservice.get_upscalers()
-            return [upscaler['name'] for upscaler in upscaler_info]
-        except (RuntimeError, KeyError) as err:
-            logger.error(f'Loading Stable Diffusion LoRA model list failed: {err}')
+            return [upscaler.name for upscaler in self._webservice.get_upscalers()]
+        except SDBackendError as err:
+            logger.error(f'Loading Stable Diffusion upscaler list failed: {err}')
             return []
 
     def ultimate_upscale_script_available(self) -> bool:
         """Return whether the Stable Diffusion API will support the 'Ultimate SD Upscale' script."""
-        script_list = Cache().get(Cache.SCRIPTS_IMG2IMG)
-        return ULTIMATE_UPSCALE_SCRIPT in script_list
+        assert self._webservice is not None
+        try:
+            return self._webservice.get_capabilities().ultimate_upscale
+        except SDBackendError as err:
+            logger.error(f'Checking for Ultimate SD Upscale support failed: {err}')
+            return False
 
     def cache_generator_specific_data(self) -> None:
         """When activating the generator, after the webservice is connected, this method should be implemented to
@@ -350,8 +355,8 @@ class SDWebUIGenerator(SDGenerator):
             current_model_title = webui_config.get(A1111Config.SD_MODEL_CHECKPOINT)
             model_options = self._webservice.get_models()
             for model in model_options:
-                if model['title'] == current_model_title:
-                    cache.set(Cache.SD_MODEL, model['model_name'])
+                if model.title == current_model_title:
+                    cache.set(Cache.SD_MODEL, model.model_name)
                     break
 
             def _update_remote_model_selection(model_name: str) -> None:
@@ -360,9 +365,9 @@ class SDWebUIGenerator(SDGenerator):
                 assert self._webservice is not None
                 webui_config.load_all(self._webservice)
                 for model_option in model_options:
-                    if model_option['model_name'] == model_name:
-                        if model_option['title'] != webui_config.get(A1111Config.SD_MODEL_CHECKPOINT):
-                            remote_setting_change = {A1111Config.SD_MODEL_CHECKPOINT: model_option['title']}
+                    if model_option.model_name == model_name:
+                        if model_option.title != webui_config.get(A1111Config.SD_MODEL_CHECKPOINT):
+                            remote_setting_change = {A1111Config.SD_MODEL_CHECKPOINT: model_option.title}
                             self.update_settings(remote_setting_change)
                             assert self._webservice is not None
                             webui_config.load_all(self._webservice)
@@ -375,8 +380,8 @@ class SDWebUIGenerator(SDGenerator):
                 if not self._connected:
                     return
                 for model_option in model_options:
-                    if model_option['title'] == selected_model_title:
-                        cache.set(Cache.SD_MODEL, model_option['model_name'])
+                    if model_option.title == selected_model_title:
+                        cache.set(Cache.SD_MODEL, model_option.model_name)
                         return
                 raise RuntimeError(f'Selected model "{selected_model_title}" not found in available options.')
 
@@ -401,20 +406,18 @@ class SDWebUIGenerator(SDGenerator):
 
             webui_config.connect(self, A1111Config.CLIP_STOP_AT_LAST_LAYERS, _update_local_clip_skip)
 
-        except (RuntimeError, KeyError) as err:
+        except (RuntimeError, KeyError, SDBackendError) as err:
             logger.error(f'Loading WebUI model connection failed: {err}')
         try:
             scripts = self._webservice.get_scripts()
-            if 'txt2img' in scripts:
-                cache.set(Cache.SCRIPTS_TXT2IMG, scripts['txt2img'])
-            if 'img2img' in scripts:
-                cache.set(Cache.SCRIPTS_IMG2IMG, scripts['img2img'])
-        except (KeyError, RuntimeError) as err:
+            cache.set(Cache.SCRIPTS_TXT2IMG, scripts.txt2img)
+            cache.set(Cache.SCRIPTS_IMG2IMG, scripts.img2img)
+        except SDBackendError as err:
             logger.error(f'error loading scripts from {self._server_url}: {err}')
         try:
             styles = self._webservice.get_styles()
-            cache.set(Cache.STYLES, styles)
-        except (KeyError, RuntimeError) as err:
+            cache.set(Cache.STYLES, [style.model_dump_json() for style in styles])
+        except SDBackendError as err:
             logger.error(f'error loading prompt styles from {self._server_url}: {err}')
 
     def clear_cached_generator_data(self) -> None:
@@ -431,38 +434,30 @@ class SDWebUIGenerator(SDGenerator):
             assert self._webservice is not None
             path = lora_info['path']
             path = path[:path.rindex('.')] + '.png'
-            return self._webservice.get_thumbnail(path)
-        except (KeyError, RuntimeError) as err:
+            thumbnail = self._webservice.get_thumbnail(path)
+            return None if thumbnail is None else pil_to_qimage(thumbnail)
+        except (KeyError, SDBackendError) as err:
             logger.error(f'error loading LoRA thumbnail from {self._server_url}: {err}')
             return None
-
-    def load_preprocessor_preview(self, preprocessor: ControlNetPreprocessor,
-                                  image: QImage, mask: Optional[QImage],
-                                  status_signal: SignalInstance,
-                                  image_signal: SignalInstance) -> None:
-        """Requests a ControlNet preprocessor preview image."""
-        assert self._webservice is not None
-        preview_image = self._webservice.controlnet_preprocessor_preview(image, mask, preprocessor)
-        image_signal.emit(preview_image)
 
     def is_available(self) -> bool:
         """Returns whether the generator is supported on the current system."""
         if self._webservice is None:
-            self._webservice = A1111Webservice(self._server_url)
+            self._webservice = create_webservice(self._server_url)
         try:
             # Login automatically if username/password are defined as env variables.
             if 'SD_UNAME' in os.environ and 'SD_PASS' in os.environ:
-                self._webservice.login(os.environ['SD_UNAME'], os.environ['SD_PASS'])
+                login_without_prompt(self._webservice, os.environ['SD_UNAME'], os.environ['SD_PASS'])
                 self._webservice.set_auth((os.environ['SD_UNAME'], os.environ['SD_PASS']))
             health_check_res = self._webservice.login_check()
             if health_check_res.ok or (health_check_res.status_code == 401
                                        and health_check_res.json()[AUTH_ERROR_DETAIL_KEY] == AUTH_ERROR_MESSAGE):
                 return True
-        except RuntimeError as req_err:
-            self.status_signal.emit(MISC_CONNECTION_ERROR.format(url=self._server_url, error_text=str(req_err)))
-            logger.error(f'Login check connection failed: {req_err}')
         except AuthError:
             self.status_signal.emit(AUTH_ERROR.format(url=self.server_url))
+        except SDBackendError as req_err:
+            self.status_signal.emit(MISC_CONNECTION_ERROR.format(url=self._server_url, error_text=str(req_err)))
+            logger.error(f'Login check connection failed: {req_err}')
         return False
 
     def init_settings(self, settings_modal: SettingsModal) -> None:
@@ -472,7 +467,7 @@ class SDWebUIGenerator(SDGenerator):
         try:
             web_config.load_all(self._webservice)
             settings_modal.load_from_config(web_config)
-        except (KeyError, RuntimeError) as err:
+        except (KeyError, SDBackendError) as err:
             logger.error(f'Failed to init WebUI API settings: {err}')
             show_error_dialog(None, ERROR_TITLE_SETTINGS_LOAD_FAILED, ERROR_MESSAGE_SETTINGS_LOAD_FAILED)
         app_config = AppConfig()
@@ -483,7 +478,7 @@ class SDWebUIGenerator(SDGenerator):
         assert self._webservice is not None
         try:
             settings = self._webservice.get_config()
-        except (KeyError, RuntimeError) as err:
+        except (KeyError, SDBackendError) as err:
             logger.error(f'Failed to init WebUI API settings: {err}')
             show_error_dialog(None, ERROR_TITLE_SETTINGS_LOAD_FAILED, ERROR_MESSAGE_SETTINGS_LOAD_FAILED)
             settings = {}
@@ -518,7 +513,7 @@ class SDWebUIGenerator(SDGenerator):
                 assert self._webservice is not None
                 try:
                     self._webservice.set_config(changed_settings)
-                except (KeyError, RuntimeError) as err:
+                except (KeyError, SDBackendError) as err:
                     error_signal.emit(err)
 
             update_task = _SettingsUpdateTask(_update_config, True)
@@ -567,10 +562,10 @@ class SDWebUIGenerator(SDGenerator):
         def _interrogate(prompt_ready: SignalInstance, error_signal: SignalInstance) -> None:
             try:
                 assert self._webservice is not None
-                prompt_ready.emit(self._webservice.interrogate(image))
-            except ReadTimeout:
-                raise RuntimeError(ERROR_MESSAGE_TIMEOUT)
-            except (RuntimeError, AssertionError) as err:
+                prompt_ready.emit(self._webservice.interrogate(qimage_to_pil(image)))
+            except BackendTimeoutError as err:
+                raise RuntimeError(ERROR_MESSAGE_TIMEOUT) from err
+            except (SDBackendError, RuntimeError, AssertionError) as err:
                 logger.error(f'err:{err}')
                 error_signal.emit(err)
 
@@ -610,83 +605,6 @@ class SDWebUIGenerator(SDGenerator):
             self._control_panel.add_extras_tab(self._gen_extras_tab)
         return self._control_panel
 
-    def _async_progress_check(self, external_status_signal: Optional[SignalInstance] = None):
-        webservice = self._webservice
-        assert webservice is not None
-        self._active_task_id += 1
-        generator = self
-
-        class _ProgressTask(AsyncTask):
-            status_signal = Signal(dict)
-
-            def __init__(self, task_id: int) -> None:
-                super().__init__(self._check_progress)
-                self._id = task_id
-                self.should_stop = False
-
-            def signals(self) -> list[SignalInstance]:
-                return [external_status_signal if external_status_signal is not None else self.status_signal]
-
-            def _check_progress(self, status_signal) -> None:
-                error_count = 0
-                max_progress = 0
-                while not self.should_stop:
-                    sleep_time = min(MIN_RETRY_US * pow(2, error_count), MAX_RETRY_US)
-                    thread = QThread.currentThread()
-                    assert thread is not None
-                    thread.usleep(sleep_time)
-                    try:
-                        assert webservice is not None
-                        status = webservice.progress_check()
-                        progress_percent = int(status['progress'] * 100)
-                        if (progress_percent < max_progress or progress_percent >= 100
-                                or generator._active_task_id != self._id):
-                            break
-                        if progress_percent <= 1:
-                            continue
-                        status_text = f'{progress_percent}%'
-                        max_progress = progress_percent
-                        if 'eta_relative' in status and status['eta_relative'] != 0 \
-                                and 0 < progress_percent < 100:
-                            eta_sec = status['eta_relative']
-                            minutes = round(eta_sec // 60)
-                            seconds = round(eta_sec % 60)
-                            if minutes > 0:
-                                seconds_str = str(seconds)
-                                if len(seconds_str) == 1:
-                                    seconds_str = '0' + seconds_str
-                                status_text = f'{status_text} ETA: {minutes}:{seconds_str}'
-                            else:
-                                status_text = f'{status_text} ETA: {seconds}s'
-                        status_signal.emit({'progress': status_text})
-                    except ReadTimeout:
-                        error_count += 1
-                    except RuntimeError as err:
-                        error_count += 1
-                        logger.error(f'Error {error_count}: {err}')
-                        if error_count > MAX_ERROR_COUNT:
-                            logger.error('Inpainting failed, reached max retries.')
-                            break
-                        continue
-
-        task = _ProgressTask(self._active_task_id)
-        assert self._window is not None
-        if external_status_signal is None:
-            task.status_signal.connect(self._apply_status_update)
-
-            def _finish():
-                task.status_signal.disconnect(self._apply_status_update)
-                task.finish_signal.disconnect(_finish)
-
-            task.finish_signal.connect(_finish)
-        task.start()
-
-    def cancel_generation(self) -> None:
-        """Cancels image generation, if in-progress"""
-        assert self._webservice is not None
-        if AppStateTracker.app_state() == APP_STATE_LOADING:
-            self._webservice.interrupt()
-
     def generate(self,
                  status_signal: SignalInstance,
                  source_image: Optional[QImage] = None,
@@ -703,7 +621,8 @@ class SDWebUIGenerator(SDGenerator):
         mask_image : QImage, optional
             Mask marking the edited image region.
         """
-        assert self._webservice is not None
+        webservice = self._webservice
+        assert webservice is not None
         edit_mode = Cache().get(Cache.EDIT_MODE)
         if edit_mode == EDIT_MODE_INPAINT and self._image_stack.selection_layer.generation_area_fully_selected():
             edit_mode = EDIT_MODE_IMG2IMG
@@ -714,7 +633,6 @@ class SDWebUIGenerator(SDGenerator):
 
         # The WebUI computes its own inpaint full-res crop from the mask alone, so it can't see context pins. When pins
         # change the crop, crop on the client and send the crop with inpaint_full_res off.
-        request_body: Optional[DiffusionRequestBody] = None
         original_source_image: Optional[QImage] = None
         crop_bounds: Optional[QRect] = None
         if edit_mode == EDIT_MODE_INPAINT and source_image is not None and mask_image is not None \
@@ -723,59 +641,51 @@ class SDWebUIGenerator(SDGenerator):
             original_source_image = source_image
             source_image = self._scale_and_crop_gen_qimage(source_image)
             mask_image = self._scale_and_crop_gen_qimage(mask_image)
-            request_body = DiffusionRequestBody()
-            request_body.load_data(source_image, mask_image)
+
+        request_body = build_webui_body(edit_mode, source_image, mask_image)
+        if crop_bounds is not None:
             request_body.inpaint_full_res = False
             request_body.inpaint_full_res_padding = None
+        if edit_mode == EDIT_MODE_INPAINT:
+            submit = webservice.submit_inpaint
+        elif edit_mode == EDIT_MODE_IMG2IMG:
+            submit = webservice.submit_img2img
+        else:
+            assert edit_mode == EDIT_MODE_TXT2IMG
+            submit = webservice.submit_txt2img
 
-        # Check progress before starting:
-        assert self._webservice is not None
         try:
-            init_data = self._webservice.progress_check()
-            if init_data['current_image'] is not None:
-                raise RuntimeError(ERROR_MESSAGE_EXISTING_OPERATION)
-            self._async_progress_check(status_signal)
-            if edit_mode == EDIT_MODE_TXT2IMG:
-                image_response = self._webservice.txt2img(control_image=source_image)
-            else:
-                assert source_image is not None
-                image_response = self._webservice.img2img(source_image, mask=mask_image, request_body=request_body)
-            image_data = image_response['images']
+            result = self._wait_for_job(submit(request_body), status_signal)
+            if result is None:
+                return
+            image_data = [pil_to_qimage(image) for image in result.images]
             if crop_bounds is not None:
                 assert original_source_image is not None
                 image_data = self._restore_cropped_inpainting_images(original_source_image, crop_bounds, image_data)
-            info = image_response['info']
             for i, response_image in enumerate(image_data):
                 self._cache_generated_image(response_image, i)
-            if info is not None:
-                # logger.info(f'Image generation result info: {json.dumps(info, indent=2)}')
-                if isinstance(info, dict):
-                    status = {}
-                    if 'seed' in info:
-                        status['seed'] = str(info['seed'])
-                    if 'subseed' in info:
-                        status['subseed'] = str(info['subseed'])
-                    status_signal.emit(status)
-        except ReadTimeout:
-            raise RuntimeError(ERROR_MESSAGE_TIMEOUT)
-        except (RuntimeError, ConnectionError) as image_gen_error:
+            info = result.raw_info
+            if isinstance(info, GenerationInfoData):
+                status_signal.emit({'seed': str(info.seed), 'subseed': str(info.subseed)})
+        except BackendTimeoutError as err:
+            raise RuntimeError(ERROR_MESSAGE_TIMEOUT) from err
+        except SDBackendError as image_gen_error:
             logger.error(f'request failed: {image_gen_error}')
             raise RuntimeError(f'request failed: {image_gen_error}') from image_gen_error
-        except Exception as unexpected_err:
-            logger.error('Unexpected error:', unexpected_err)
-            raise RuntimeError(f'unexpected error: {unexpected_err}') from unexpected_err
 
     def upscale_image(self, image: QImage, new_size: QSize, status_signal: SignalInstance,
                       image_signal: SignalInstance) -> None:
         """Upscales an image using cached upscaling settings."""
         assert self._webservice is not None
-        image_response = self._webservice.upscale(self._image_stack.qimage(), new_size.width(),
-                                                  new_size.height())
-        images = image_response['images']
-        info = image_response['info']
-        if info is not None:
-            logger.debug(f'Upscaling result info: {info}')
-        image_signal.emit(images[-1])
+        upscale_params = build_upscale_params(build_webui_body(EDIT_MODE_TXT2IMG))
+        handle = self._webservice.submit_upscale(qimage_to_pil(image), new_size.width(), new_size.height(),
+                                                 upscale_params)
+        result = self._wait_for_job(handle, status_signal)
+        if result is None:
+            return
+        if len(result.images) == 0:
+            raise RuntimeError(GENERATE_ERROR_TITLE)
+        image_signal.emit(pil_to_qimage(result.images[-1]))
 
     @menu_action(MENU_STABLE_DIFFUSION, 'prompt_style_shortcut', 200, [APP_STATE_EDITING],
                  condition_check=_check_prompt_styles_available)

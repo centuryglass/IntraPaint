@@ -8,6 +8,7 @@
       "upscaling_resize_w": 1200
     },
     "endpoint": "/sdapi/v1/extra-single-image",
-    "method": "POST"
+    "method": "POST",
+    "timeout": 600.0
   }
 ]

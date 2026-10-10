@@ -4,11 +4,13 @@ See sd_generator_test_case.py for how the snapshots work.
 """
 import json
 from typing import Any
+from unittest import mock
 from unittest.mock import MagicMock
 
 from PySide6.QtCore import QSize, Qt
+from sd_backend_client import A1111Webservice
+from sd_backend_client.api.a1111_webservice import ULTIMATE_UPSCALE_SCRIPT
 
-from src.api.a1111_webservice import A1111Webservice, ULTIMATE_UPSCALE_SCRIPT
 from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.api.webui.controlnet_webui_utils import get_all_preprocessors
 from src.config.cache import Cache
@@ -36,30 +38,52 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         cache = Cache()
         cache.set(Cache.SAMPLING_METHOD, 'Euler a', add_missing_options=True)
         cache.set(Cache.MASKED_CONTENT, 'original')
+        cache.set(Cache.GENERATOR_SCALING_MODES, UPSCALER_NAMES)  # Set from the server's upscaler list on connecting.
+
+        # The library names each job with a random task id, which it sends as force_task_id:
+        task_id_patch = mock.patch.object(A1111Webservice, '_new_task_id',
+                                          staticmethod(lambda task_type: f'task({task_type}-TESTID1)'))
+        task_id_patch.start()
+        self.addCleanup(task_id_patch.stop)
 
         backend = self.backend
-        backend.route('GET', Endpoints.PROGRESS, {'progress': 0.0, 'eta_relative': 0.0, 'current_image': None})
+        backend.route('GET', Endpoints.PROGRESS, {
+            'progress': 0.0, 'eta_relative': 0.0, 'current_image': None, 'textinfo': None,
+            'state': {'skipped': False, 'interrupted': False, 'stopping_generation': False, 'job': '',
+                      'job_count': 0, 'job_timestamp': '0', 'job_no': 0, 'sampling_step': 0, 'sampling_steps': 0}})
         backend.route('POST', Endpoints.TXT2IMG, self._image_response)
         backend.route('POST', Endpoints.IMG2IMG, self._image_response)
         backend.route('POST', Endpoints.UPSCALE,
                       lambda _args: {'image': image_to_base64_png(solid_image(UPSCALE_SIZE, Qt.GlobalColor.green))})
         backend.route('GET', Endpoints.CONTROLNET_MODELS, {'model_list': [CANNY_MODEL, TILE_MODEL]})
         backend.route('GET', Endpoints.CONTROLNET_MODULES, {'module_list': ['none', 'canny', 'tile_resample']})
-        backend.route('GET', Endpoints.UPSCALERS, [{'name': name} for name in UPSCALER_NAMES])
+        backend.route('GET', Endpoints.UPSCALERS, [{'name': name, 'model_name': None, 'model_path': None, 'model_url': None, 'scale': 4.0}
+                                   for name in UPSCALER_NAMES])
 
         self.generator = SDWebUIGenerator(None, self.image_stack, self.server_args())  # type: ignore
         self.capture_generated_images(self.generator)
-        # Progress polling runs in its own thread and sends nothing but GET requests:
-        self.generator._async_progress_check = lambda *_args: None  # type: ignore # pylint: disable=protected-access
 
     @staticmethod
     def _image_response(arguments: dict[str, Any]) -> dict[str, Any]:
         body = arguments['body']
         image_count = body['batch_size'] * body['n_iter']
         size = QSize(body['width'], body['height'])
+        seeds = [body['seed'] + i for i in range(image_count)]
+        info = {
+            'prompt': body['prompt'], 'all_prompts': [body['prompt']] * image_count,
+            'negative_prompt': body['negative_prompt'], 'all_negative_prompts': [body['negative_prompt']] * image_count,
+            'seed': body['seed'], 'all_seeds': seeds, 'subseed': 5678, 'all_subseeds': [5678] * image_count,
+            'subseed_strength': 0.0, 'width': body['width'], 'height': body['height'],
+            'sampler_name': body['sampler_name'], 'cfg_scale': body['cfg_scale'], 'batch_size': body['batch_size'],
+            'restore_faces': False, 'sd_model_name': 'dreamshaper_8', 'sd_model_hash': 'abcdef0123',
+            'sd_vae_name': None, 'sd_vae_hash': None, 'seed_resize_from_w': -1, 'seed_resize_from_h': -1,
+            'denoising_strength': None, 'extra_generation_params': {}, 'index_of_first_image': 0, 'infotexts': [],
+            'styles': [], 'job_timestamp': '20240101000000', 'clip_skip': 1,
+            'is_using_inpainting_conditioning': False, 'version': 'test'
+        }
         return {
             'images': [image_to_base64_png(solid_image(size, Qt.GlobalColor.blue)) for _ in range(image_count)],
-            'info': json.dumps({'seed': body['seed'], 'subseed': 5678})
+            'info': json.dumps(info)
         }
 
     @staticmethod

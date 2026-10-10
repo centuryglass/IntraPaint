@@ -19,6 +19,10 @@ from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 # `Cache.COMFYUI_MODEL_CONFIG` value that lets the server pick a config file matching the model name.
 COMFYUI_MODEL_CONFIG_AUTO = 'auto'
 
+# WebUI scheduler value that lets the server choose a scheduler for the sampler. `DiffusionParams.scheduler` defaults to
+# 'normal', which would override the sampler's own default.
+WEBUI_SCHEDULER_AUTOMATIC = 'Automatic'
+
 # Seam-fix padding for WebUI "Ultimate SD Upscale" requests. ComfyUI requests use the library default.
 WEBUI_SEAM_FIX_PADDING = 32
 
@@ -112,7 +116,8 @@ def build_webui_body(edit_mode: str, source_image: Optional[QImage] = None,
                      mask: Optional[QImage] = None) -> DiffusionRequestBody:
     """Returns a WebUI request body for a txt2img, img2img or inpainting request.
 
-    The body leaves `sd_model_name` empty: the WebUI generator selects the model through the server's settings.
+    The body leaves `sd_model_name` empty, since the WebUI generator selects the model through the server's settings,
+    and sets the scheduler to `WEBUI_SCHEDULER_AUTOMATIC`.
 
     Parameters
     ----------
@@ -135,6 +140,7 @@ def build_webui_body(edit_mode: str, source_image: Optional[QImage] = None,
     cache = Cache()
     body = DiffusionRequestBody()
     _shared_params(body, edit_mode, source_image, mask, _webui_control_keys())
+    body.scheduler = WEBUI_SCHEDULER_AUTOMATIC
     body.n_iter = cache.get(Cache.BATCH_COUNT)
     body.restore_faces = cache.get(Cache.WEBUI_RESTORE_FACES)
     body.tiling = cache.get(Cache.WEBUI_TILING)

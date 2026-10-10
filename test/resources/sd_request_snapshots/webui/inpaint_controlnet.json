@@ -9,7 +9,6 @@
               "enabled": true,
               "guidance_end": 0.9,
               "guidance_start": 0.1,
-              "image": null,
               "low_vram": false,
               "model": "control_v11p_sd15_canny [d14c016b]",
               "module": "canny",
@@ -27,6 +26,7 @@
       "batch_size": 2,
       "cfg_scale": 6.5,
       "denoising_strength": 0.6,
+      "force_task_id": "task(img2img-TESTID1)",
       "height": 512,
       "include_init_images": false,
       "init_images": [
@@ -44,6 +44,7 @@
       "restore_faces": false,
       "sampler_name": "Euler a",
       "save_images": false,
+      "scheduler": "Automatic",
       "seed": 1234,
       "send_images": true,
       "steps": 20,
@@ -51,6 +52,7 @@
       "width": 512
     },
     "endpoint": "/sdapi/v1/img2img",
-    "method": "POST"
+    "method": "POST",
+    "timeout": 600.0
   }
 ]

@@ -120,6 +120,7 @@ class ParamsAdapterTest(IntraPaintTestCase):
         self.assertIsNone(body.mask_blur)
         self.assertIsNone(body.include_init_images)
         self.assertNotIn('denoising_strength', body.to_dict())
+        self.assertEqual(body.to_dict()['scheduler'], 'Automatic', 'the server picks the sampler default scheduler')
 
     def test_webui_inpaint(self) -> None:
         """WebUI inpainting sends the mask settings, with the server applying the configured mask blur."""

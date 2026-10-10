@@ -6,8 +6,7 @@ from typing import Optional, cast, Any
 from PySide6.QtCore import QSize, QRect, QPoint, SignalInstance
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
-from sd_backend_client import AuthError, BackendOption, BackendTimeoutError, ComfyUiWebservice, GenerationError, \
-    GenerationHandle, GenerationProgress, GenerationResult, GenerationStatus, SDBackendError
+from sd_backend_client import AuthError, BackendOption, BackendTimeoutError, ComfyUiWebservice, SDBackendError
 # Not in the library's public API. The model config list has no `Backend` equivalent.
 from sd_backend_client.api.comfyui_webservice import ComfyModelType
 
@@ -16,11 +15,9 @@ from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.controller.image_generation.sd_adapters.controlnet_adapter import legacy_preprocessor, \
-    preprocessor_from_legacy
+from src.controller.image_generation.sd_adapters.controlnet_adapter import legacy_preprocessor
 from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qimage, qimage_to_pil
 from src.controller.image_generation.sd_adapters.params_adapter import build_comfy_params, build_upscale_params
-from src.controller.image_generation.sd_adapters.progress_adapter import progress_status_update
 from src.controller.image_generation.sd_generator import SDGenerator, SD_BASE_DESCRIPTION, \
     STABLE_DIFFUSION_CONFIG_CATEGORY, GETTING_SD_MODELS, INSTALLATION_STABILITY_MATRIX
 from src.image.filter.blur import BlurFilter, MODE_GAUSSIAN
@@ -31,7 +28,6 @@ from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.window.extra_network_window import LORA_KEY_NAME, LORA_KEY_ALIAS, LORA_KEY_PATH
 from src.ui.window.main_window import MainWindow
-from src.util.application_state import AppStateTracker, APP_STATE_LOADING
 from src.util.parameter import TYPE_LIST, TYPE_STR
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, AUTH_ERROR, \
     GENERATE_ERROR_MESSAGE_EMPTY_MASK, GENERATE_ERROR_TITLE, ERROR_MESSAGE_TIMEOUT, MISC_CONNECTION_ERROR
@@ -173,7 +169,6 @@ class SDComfyUIGenerator(SDGenerator):
         self._webservice: Optional[ComfyUiWebservice] = ComfyUiWebservice(self.server_url)
         self._gen_extras_tab = ComfyUIExtrasTab()
         # The job the worker thread is waiting on, which `cancel_generation` cancels from the main thread:
-        self._active_handle: Optional[GenerationHandle] = None
 
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
@@ -357,38 +352,9 @@ class SDComfyUIGenerator(SDGenerator):
         """Clear any cached data specific to this image generator."""
         Cache().restore_default_options(Cache.COMFYUI_MODEL_CONFIG)
 
-    def cancel_generation(self) -> None:
-        """Cancels image generation, if in-progress"""
-        handle = self._active_handle
-        if AppStateTracker.app_state() == APP_STATE_LOADING and handle is not None:
-            try:
-                handle.cancel()
-            except SDBackendError as err:
-                logger.error(f'Cancelling ComfyUI job {handle.task_id} failed: {err}')
-
     def load_lora_thumbnail(self, lora_info: Optional[dict[str, str]]) -> Optional[QImage]:
         """Attempt to load a LoRA model thumbnail image from the API."""
         return None  # ComfyUI doesn't provide LoRA thumbnails.
-
-    def load_preprocessor_preview(self, preprocessor: ControlNetPreprocessor,
-                                  image: QImage, mask: Optional[QImage],
-                                  status_signal: SignalInstance,
-                                  image_signal: SignalInstance) -> None:
-        """Requests a ControlNet preprocessor preview image."""
-        assert self._webservice is not None
-        preprocessor_params = preprocessor_from_legacy(preprocessor)
-        if preprocessor_params is None:
-            image_signal.emit(image)
-            return
-        handle = self._webservice.submit_preprocessor_preview(qimage_to_pil(image), preprocessor_params,
-                                                              None if mask is None else qimage_to_pil(mask))
-        result = self._wait_for_job(handle, status_signal)
-        if result is None:
-            return
-        if len(result.images) != 1:
-            logger.warning(f'Expected one preprocessor preview image, got {len(result.images)}')
-        preview_image = image if len(result.images) == 0 else pil_to_qimage(result.images[0])
-        image_signal.emit(preview_image)
 
     def get_gen_area_image(self, init_image: Optional[QImage] = None) -> QImage:
         """Gets the contents of the image generation area, handling any necessary preprocessing."""
@@ -473,33 +439,6 @@ class SDComfyUIGenerator(SDGenerator):
             self._gen_extras_tab.clear_comfyui_memory_signal.connect(_clear_comfyui_memory)
             self._control_panel.add_extras_tab(self._gen_extras_tab)
         return self._control_panel
-
-    def _wait_for_job(self, handle: GenerationHandle, status_signal: Optional[SignalInstance],
-                      batch_index: int = 0, num_batches: int = 1) -> Optional[GenerationResult]:
-        """Blocks until a job finishes, emitting progress through `status_signal`. Call this outside the UI thread.
-
-        Returns None if the job was cancelled. `cancel_generation` cancels the job while this waits.
-
-        Raises
-        ------
-        SDBackendError
-            If the job fails, or a request made while waiting fails.
-        """
-
-        def _on_progress(progress: GenerationProgress) -> None:
-            if status_signal is not None:
-                status_signal.emit(progress_status_update(progress, batch_index, num_batches))
-
-        self._active_handle = handle
-        try:
-            return handle.wait(on_progress=_on_progress)
-        except GenerationError as err:
-            if err.status == GenerationStatus.CANCELLED:
-                logger.info(f'ComfyUI job {handle.task_id} was cancelled')
-                return None
-            raise
-        finally:
-            self._active_handle = None
 
     def generate(self,
                  status_signal: SignalInstance,
