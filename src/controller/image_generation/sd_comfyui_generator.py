@@ -7,17 +7,14 @@ from PySide6.QtCore import QSize, QRect, QPoint, SignalInstance
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 from sd_backend_client import AuthError, BackendOption, BackendTimeoutError, ComfyUiWebservice, GenerationError, \
-    GenerationHandle, GenerationProgress, GenerationResult, GenerationStatus, SDBackendError
+    GenerationHandle, GenerationProgress, GenerationResult, GenerationStatus, PREPROCESSOR_NONE, \
+    PreprocessorParams, SDBackendError, ControlNetPreprocessor, ControlTypeDef
 # Not in the library's public API. The model config list has no `Backend` equivalent.
 from sd_backend_client.api.comfyui_webservice import ComfyModelType
 
-from src.api.controlnet.controlnet_constants import ControlTypeDef, PREPROCESSOR_NONE
-from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.controller.image_generation.sd_adapters.controlnet_adapter import legacy_preprocessor, \
-    preprocessor_from_legacy
 from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qimage, qimage_to_pil
 from src.controller.image_generation.sd_adapters.params_adapter import build_comfy_params, build_upscale_params
 from src.controller.image_generation.sd_adapters.progress_adapter import progress_status_update
@@ -218,14 +215,9 @@ class SDComfyUIGenerator(SDGenerator):
         except SDBackendError as err:
             logger.error(f'Loading ControlNet preprocessors failed: {err}')
             return []
-        preprocessors: list[ControlNetPreprocessor] = []
-        for preprocessor in library_preprocessors:
-            try:
-                preprocessors.append(legacy_preprocessor(preprocessor))
-            except (TypeError, ValueError) as err:
-                logger.warning(f'Skipping ControlNet preprocessor "{preprocessor.name}": {err}')
+        preprocessors = list(library_preprocessors)
         if not any(preprocessor.name == PREPROCESSOR_NONE for preprocessor in preprocessors):
-            preprocessors.append(ControlNetPreprocessor(PREPROCESSOR_NONE, PREPROCESSOR_NONE, []))
+            preprocessors.append(ControlNetPreprocessor(name=PREPROCESSOR_NONE))
         return preprocessors
 
     def get_controlnet_models(self) -> list[str]:
@@ -241,7 +233,7 @@ class SDComfyUIGenerator(SDGenerator):
         """Return available ControlNet categories."""
         assert self._webservice is not None
         try:
-            return cast(dict[str, ControlTypeDef], self._webservice.get_controlnet_type_categories())
+            return self._webservice.get_controlnet_type_categories()
         except SDBackendError as err:
             logger.error(f'Loading ControlNet types failed: {err}')
             return {}
@@ -370,17 +362,13 @@ class SDComfyUIGenerator(SDGenerator):
         """Attempt to load a LoRA model thumbnail image from the API."""
         return None  # ComfyUI doesn't provide LoRA thumbnails.
 
-    def load_preprocessor_preview(self, preprocessor: ControlNetPreprocessor,
+    def load_preprocessor_preview(self, preprocessor: PreprocessorParams,
                                   image: QImage, mask: Optional[QImage],
                                   status_signal: SignalInstance,
                                   image_signal: SignalInstance) -> None:
         """Requests a ControlNet preprocessor preview image."""
         assert self._webservice is not None
-        preprocessor_params = preprocessor_from_legacy(preprocessor)
-        if preprocessor_params is None:
-            image_signal.emit(image)
-            return
-        handle = self._webservice.submit_preprocessor_preview(qimage_to_pil(image), preprocessor_params,
+        handle = self._webservice.submit_preprocessor_preview(qimage_to_pil(image), preprocessor,
                                                               None if mask is None else qimage_to_pil(mask))
         result = self._wait_for_job(handle, status_signal)
         if result is None:

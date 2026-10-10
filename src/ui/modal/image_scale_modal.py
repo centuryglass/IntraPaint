@@ -1,24 +1,24 @@
 """Popup modal window used for scaling the edited image."""
 import logging
-from copy import deepcopy
-from json import JSONDecodeError
-from typing import Optional, cast, TypeAlias
+from typing import Any, Optional, cast, TypeAlias
 
 from PySide6.QtCore import QSize, QTimer, SignalInstance
 from PySide6.QtGui import QIcon, Qt
 from PySide6.QtWidgets import QDialog, QFormLayout, QPushButton, QComboBox, QSpinBox, QHBoxLayout, QDoubleSpinBox, \
     QWidget, QApplication, QVBoxLayout, QLabel
 
-from src.api.controlnet.control_parameter import ControlParameter, DynamicControlFieldWidget
-from src.api.controlnet.controlnet_constants import CONTROLNET_MODEL_NONE
-from src.api.controlnet.controlnet_model import ControlNetModel
-from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
-from src.api.controlnet.controlnet_unit import ControlNetUnit
-from src.api.webui.controlnet_webui_constants import CONTROL_MODE_PARAM_KEY, PREPROCESSOR_RES_PARAM_KEY, \
-    RESIZE_MODE_PARAM_KEY
+from sd_backend_client import CONTROL_MODE_PARAM_KEY, CONTROLNET_MODEL_NONE, PREPROCESSOR_RES_PARAM_KEY, \
+    RESIZE_MODE_PARAM_KEY, ControlNetModel, ControlNetPreprocessor, ParameterDef
+
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.controller.image_generation.sd_adapters.controlnet_adapter import SavedControlNetUnit, select_preprocessor
 from src.ui.layout.divider import Divider
+from src.ui.panel.controlnet_panel import CONTROL_END_PARAM, CONTROL_END_FIELD, CONTROL_START_FIELD, \
+    CONTROL_START_PARAM, CONTROL_STRENGTH_FIELD, CONTROL_WEIGHT_PARAM, CONTROL_WEIGHT_TITLE, CONTROL_START_STEP_TITLE, \
+    CONTROL_END_STEP_TITLE, set_unit_value
+from src.ui.widget.parameter_def_widget import create_parameter_widget
+from src.util.parameter_def_labels import parameter_label, parameter_tooltip
 from src.util.parameter import DynamicFieldWidget
 from src.util.shared_constants import APP_ICON_PATH, PIL_SCALING_MODES, UPSCALE_OPTION_NONE
 from src.util.signals_blocked import signals_blocked
@@ -173,26 +173,25 @@ class ImageScaleModal(QDialog):
         self._sd_upscale_step_slider: Optional[DynamicFieldWidget] = None
         self._tile_model_dropdown: Optional[QComboBox] = None
         self._tile_preprocessor_dropdown: Optional[QComboBox] = None
-        self._tile_unit_param_controls: list[DynamicControlFieldWidget] = []
-        self._tile_preprocessor_param_controls: list[DynamicControlFieldWidget] = []
+        self._tile_unit_param_controls: dict[str, DynamicFieldWidget] = {}
+        self._tile_preprocessor_param_controls: list[DynamicFieldWidget] = []
 
         self._tile_model_options = cache.get(Cache.SD_UPSCALING_CONTROLNET_TILE_MODELS)
         if len(self._tile_model_options) > 0:
             assert CONTROLNET_MODEL_NONE in self._tile_model_options
         tile_preprocessor_text = cast(list[str], cache.get(Cache.SD_UPSCALING_CONTROLNET_TILE_PREPROCESSORS))
         try:
-            self._tile_preprocessors = [ControlNetPreprocessor.deserialize(processor_str)
+            self._tile_preprocessors = [ControlNetPreprocessor.model_validate_json(processor_str)
                                         for processor_str in tile_preprocessor_text]
-        except (KeyError, ValueError, RuntimeError, JSONDecodeError) as err:
+        except ValueError as err:
             logger.error(f'Error decoding tile preprocessors: {err}')
             self._tile_preprocessors = []
 
-        self._tile_control_unit: Optional[ControlNetUnit] = None
+        self._tile_saved: Optional[SavedControlNetUnit] = None
         try:
-            self._tile_control_unit = ControlNetUnit.deserialize(
-                cache.get(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS))
-        except (KeyError, ValueError, RuntimeError, JSONDecodeError):
-            self._tile_control_unit = None
+            self._tile_saved = SavedControlNetUnit.from_json(cache.get(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS))
+        except ValueError:
+            self._tile_saved = None
 
         self._form_layout.addRow(Divider(Qt.Orientation.Horizontal))
         self._first_sd_upscale_row = self._form_layout.rowCount()
@@ -274,11 +273,10 @@ class ImageScaleModal(QDialog):
     def _save_controlnet_to_cache(self) -> None:
         if self._controlnet_cache_timer.isActive():
             self._controlnet_cache_timer.stop()
-        if self._tile_control_unit is None:
+        if self._tile_saved is None:
             logger.warning('No ControlNet tile scaling unit to save.')
             return
-        serialized_control = self._tile_control_unit.serialize()
-        Cache().set(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS, serialized_control)
+        Cache().set(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS, self._tile_saved.to_json())
 
     def _schedule_controlnet_cache_save(self, _=None) -> None:
         if not self._controlnet_cache_timer.isActive():
@@ -299,26 +297,27 @@ class ImageScaleModal(QDialog):
 
     def _tile_model_update(self, model_name: str) -> None:
         assert self._tile_model_dropdown is not None and self._tile_model_dropdown.currentText() == model_name
-        assert self._tile_control_unit is not None
-        self._tile_control_unit.enabled = model_name != CONTROLNET_MODEL_NONE
-        self._tile_control_unit.model = ControlNetModel(model_name)
+        assert self._tile_saved is not None
+        self._tile_saved.enabled = model_name != CONTROLNET_MODEL_NONE
+        self._tile_saved.unit.model = None if model_name == CONTROLNET_MODEL_NONE else ControlNetModel(model_name)
         self._schedule_controlnet_cache_save()
         if model_name == CONTROLNET_MODEL_NONE:
             self._remove_controlnet_tile_inputs()
         else:
             if len(self._tile_unit_param_controls) == 0:
-                for unit_param in self._tile_unit_params():
-                    control_widget, _ = unit_param.get_input_widget(False)
-                    self._form_layout.insertRow(self._form_layout.rowCount(), unit_param.display_name,
-                                                control_widget)
-                    control_widget.valueChanged.connect(self._schedule_controlnet_cache_save)
-                    self._tile_unit_param_controls.append(control_widget)
+                unit = self._tile_saved.unit
+                for field, param, label in self._tile_unit_params():
+                    control_widget = create_parameter_widget(
+                        param, getattr(unit, field), lambda value, name=field: self._tile_unit_update(name, value))
+                    self._form_layout.insertRow(self._form_layout.rowCount(), label, control_widget)
+                    self._tile_unit_param_controls[field] = control_widget
             new_preprocessor_name: Optional[str] = None
             if self._tile_preprocessor_dropdown is None:
                 self._tile_preprocessor_dropdown = QComboBox()
                 preprocessor_names = [preprocessor.name for preprocessor in self._tile_preprocessors]
                 self._tile_preprocessor_dropdown.addItems(preprocessor_names)
-                selected_name = self._tile_control_unit.preprocessor.name
+                preprocessor = self._tile_saved.unit.preprocessor
+                selected_name = None if preprocessor is None else preprocessor.typedef.name
                 if selected_name not in preprocessor_names:
                     selected_name = preprocessor_names[0]
                 self._tile_preprocessor_dropdown.setCurrentText(selected_name)
@@ -329,61 +328,61 @@ class ImageScaleModal(QDialog):
             if new_preprocessor_name is not None:
                 self._tile_preprocessor_update(new_preprocessor_name)
 
-    def _tile_preprocessor_update(self, preprocessor_name: str) -> None:
-        assert self._tile_control_unit is not None
-        self._tile_control_unit.enabled = True
-        self._remove_controlnet_tile_preprocessor_inputs()
-        preprocessor: Optional[ControlNetPreprocessor] = None
-        for saved_preprocessor in self._tile_preprocessors:
-            if saved_preprocessor.name == preprocessor_name:
-                if self._tile_control_unit.preprocessor.name == saved_preprocessor.name:
-                    preprocessor = self._tile_control_unit.preprocessor
-                else:
-                    preprocessor = deepcopy(saved_preprocessor)
-                    self._tile_control_unit.preprocessor = preprocessor
-                break
-        assert preprocessor is not None
+    def _tile_unit_update(self, field: str, value: float) -> None:
+        """Sets a tile unit value, updating the other step input if it moved."""
+        assert self._tile_saved is not None
+        moved_field = set_unit_value(self._tile_saved.unit, field, value)
+        if moved_field is not None and moved_field in self._tile_unit_param_controls:
+            with signals_blocked(self._tile_unit_param_controls[moved_field]):
+                self._tile_unit_param_controls[moved_field].setValue(value)  # type: ignore[arg-type]
+        self._schedule_controlnet_cache_save()
 
-        for preprocessor_param in preprocessor.parameters:
+    def _tile_preprocessor_update(self, preprocessor_name: str) -> None:
+        assert self._tile_saved is not None
+        self._tile_saved.enabled = True
+        self._remove_controlnet_tile_preprocessor_inputs()
+        typedef = next(preprocessor for preprocessor in self._tile_preprocessors
+                       if preprocessor.name == preprocessor_name)
+        preprocessor = select_preprocessor(typedef, self._tile_saved.unit.preprocessor)
+        self._tile_saved.unit.preprocessor = preprocessor
+
+        for preprocessor_param in typedef.parameters:
             if preprocessor_param.key in EXCLUDED_PREPROCESSOR_PARAM_KEYS:
                 continue
-            control_widget, _ = preprocessor_param.get_input_widget(False)
-            self._form_layout.insertRow(self._form_layout.rowCount(), preprocessor_param.display_name, control_widget)
-            control_widget.valueChanged.connect(self._schedule_controlnet_cache_save)
+            control_widget = create_parameter_widget(
+                preprocessor_param, preprocessor.parameter_values[preprocessor_param.key],
+                lambda value, key=preprocessor_param.key: self._tile_preprocessor_value_update(key, value))
+            control_widget.setToolTip(parameter_tooltip(preprocessor_param))
+            self._form_layout.insertRow(self._form_layout.rowCount(), parameter_label(preprocessor_param),
+                                        control_widget)
             self._tile_preprocessor_param_controls.append(control_widget)
         self._schedule_controlnet_cache_save()
 
+    def _tile_preprocessor_value_update(self, key: str, value: Any) -> None:
+        assert self._tile_saved is not None
+        if self._tile_saved.unit.preprocessor is not None:
+            self._tile_saved.unit.preprocessor.parameter_values[key] = value
+        self._schedule_controlnet_cache_save()
+
     def _remove_controlnet_tile_preprocessor_inputs(self) -> None:
-        if self._tile_control_unit is None:
-            return
-        if len(self._tile_preprocessor_param_controls) > 0:
-            tile_preprocessor_params = [param for param in self._tile_control_unit.preprocessor.parameters
-                                        if param.key not in EXCLUDED_PREPROCESSOR_PARAM_KEYS]
-            assert len(tile_preprocessor_params) == len(self._tile_preprocessor_param_controls)
+        for preprocessor_widget in self._tile_preprocessor_param_controls:
+            preprocessor_widget.setHidden(True)
+            self._form_layout.removeRow(preprocessor_widget)
+        self._tile_preprocessor_param_controls.clear()
 
-            for preprocessor_widget, preprocessor_param in zip(self._tile_preprocessor_param_controls,
-                                                               tile_preprocessor_params):
-                preprocessor_widget.valueChanged.disconnect(self._schedule_controlnet_cache_save)
-                preprocessor_param.disconnect_input_widget(preprocessor_widget)
-                preprocessor_widget.setHidden(True)
-                self._form_layout.removeRow(preprocessor_widget)
-            self._tile_preprocessor_param_controls.clear()
-
-    def _tile_unit_params(self) -> list[ControlParameter]:
-        """Returns the tile unit's strength, start and end parameters, in the order their inputs appear."""
-        assert self._tile_control_unit is not None
-        return [self._tile_control_unit.control_strength, self._tile_control_unit.control_start,
-                self._tile_control_unit.control_end]
+    @staticmethod
+    def _tile_unit_params() -> list[tuple[str, ParameterDef, str]]:
+        """Returns the tile unit's strength, start and end fields, definitions and labels, in input order."""
+        return [(CONTROL_STRENGTH_FIELD, CONTROL_WEIGHT_PARAM, CONTROL_WEIGHT_TITLE),
+                (CONTROL_START_FIELD, CONTROL_START_PARAM, CONTROL_START_STEP_TITLE),
+                (CONTROL_END_FIELD, CONTROL_END_PARAM, CONTROL_END_STEP_TITLE)]
 
     def _remove_controlnet_tile_inputs(self) -> None:
         self._remove_controlnet_tile_preprocessor_inputs()
-        if len(self._tile_unit_param_controls) > 0:
-            for unit_widget, unit_param in zip(self._tile_unit_param_controls, self._tile_unit_params()):
-                unit_widget.valueChanged.disconnect(self._schedule_controlnet_cache_save)
-                unit_param.disconnect_input_widget(unit_widget)
-                unit_widget.setHidden(True)
-                self._form_layout.removeRow(unit_widget)
-            self._tile_unit_param_controls.clear()
+        for unit_widget in self._tile_unit_param_controls.values():
+            unit_widget.setHidden(True)
+            self._form_layout.removeRow(unit_widget)
+        self._tile_unit_param_controls.clear()
         if self._tile_preprocessor_dropdown is not None:
             self._tile_preprocessor_dropdown.currentTextChanged.disconnect(self._tile_preprocessor_update)
             self._tile_preprocessor_dropdown.setHidden(True)
@@ -423,15 +422,17 @@ class ImageScaleModal(QDialog):
 
         assert self._tile_model_dropdown is None
         if len(self._tile_model_options) > 0 and len(self._tile_preprocessors) > 0 \
-                and self._tile_control_unit is not None:
+                and self._tile_saved is not None:
             self._tile_model_dropdown = QComboBox()
             self._tile_model_dropdown.setToolTip(CONTROLNET_TILE_MODEL_TOOLTIP)
             self._tile_model_dropdown.addItems(self._tile_model_options)
-            if self._tile_control_unit.model.full_model_name in self._tile_model_options:
-                self._tile_model_dropdown.setCurrentText(self._tile_control_unit.model.full_model_name)
+            tile_model = self._tile_saved.unit.model
+            tile_model_name = CONTROLNET_MODEL_NONE if tile_model is None else tile_model.full_model_name
+            if tile_model_name in self._tile_model_options:
+                self._tile_model_dropdown.setCurrentText(tile_model_name)
             else:
                 self._tile_model_dropdown.setCurrentIndex(0)
-                self._tile_control_unit.model = ControlNetModel(self._tile_model_options[0])
+                self._tile_saved.unit.model = ControlNetModel(self._tile_model_options[0])
                 self._schedule_controlnet_cache_save()
             self._tile_model_dropdown.currentTextChanged.connect(self._tile_model_update)
             self._form_layout.insertRow(row_insert_idx, CONTROLNET_TILE_MODEL_LABEL,

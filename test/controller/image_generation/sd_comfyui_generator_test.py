@@ -6,12 +6,10 @@ from typing import Any, Optional
 from unittest import mock
 
 from PySide6.QtCore import Qt
-from sd_backend_client import ComfyUiWebservice, GenerationError, GenerationHandle, GenerationProgress, \
+from sd_backend_client import ControlNetPreprocessor, PreprocessorParams, ComfyUiWebservice, GenerationError, GenerationHandle, GenerationProgress, \
     GenerationResult, GenerationStatus
 from sd_backend_client.api.comfyui_webservice import ComfyEndpoints, ComfyModelType
 
-from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
-from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.config.cache import Cache
 from src.controller.image_generation.sd_comfyui_generator import SDComfyUIGenerator
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
@@ -153,7 +151,7 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
 
     def _set_canny_controlnet_unit(self) -> None:
         Cache().set(Cache.CONTROLNET_ARGS_0_COMFYUI,
-                    self.controlnet_unit(ControlKeyType.COMFYUI, CANNY_MODEL, self._preprocessor(CANNY_PREPROCESSOR)))
+                    self.controlnet_unit(CANNY_MODEL, self._preprocessor(CANNY_PREPROCESSOR)))
 
     def _generate_and_check(self, snapshot_name: str) -> None:
         self.run_generate()
@@ -230,7 +228,7 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         cache.set(Cache.SD_UPSCALING_DENOISING_STRENGTH, 0.25)
         cache.set(Cache.SD_UPSCALING_STEP_COUNT, 15)
         cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS,
-                  self.controlnet_unit(ControlKeyType.COMFYUI, TILE_MODEL, self._preprocessor(TILE_PREPROCESSOR)))
+                  self.controlnet_unit(TILE_MODEL, self._preprocessor(TILE_PREPROCESSOR)))
         self._run_upscale()
         self.assert_requests_match_snapshot('upscale_stable_diffusion', replacements=self._replacements)
 
@@ -238,8 +236,8 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         """A preview queues the preprocessor alone, with the panel's parameter values, and returns its one image."""
         assert isinstance(self.generator, SDComfyUIGenerator)
         Cache().set(Cache.BATCH_SIZE, 1)
-        preprocessor = self._preprocessor(CANNY_PREPROCESSOR)
-        preprocessor.set_value('low_threshold', 80)
+        preprocessor = PreprocessorParams(typedef=self._preprocessor(CANNY_PREPROCESSOR),
+                                          parameter_values={'low_threshold': 80})
         image, mask = self.generator.get_generation_inputs()
         self.generator.load_preprocessor_preview(preprocessor, self.generator.get_gen_area_image(image),
                                                  self.generator.get_gen_area_mask(mask), self.status, self.status)
