@@ -2,21 +2,21 @@
    support."""
 import logging
 from argparse import Namespace
-from json import JSONDecodeError
 from typing import Optional, cast, Any, Protocol
 
 from PySide6.QtCore import Signal, QSize, SignalInstance, QRect, QPoint
 from PySide6.QtGui import QImage, QIcon, QPainter, QTransform
 from PySide6.QtWidgets import QInputDialog, QApplication
+from sd_backend_client import CONTROLNET_MODEL_NONE, ControlNetModel, ControlNetPreprocessor, ControlNetUnit, \
+    ControlTypeDef, PreprocessorParams
 
 from src.api.a1111_webservice import AuthError
-from src.api.controlnet.controlnet_constants import ControlTypeDef, CONTROLNET_REUSE_IMAGE_CODE, CONTROLNET_MODEL_NONE
-from src.api.controlnet.controlnet_model import ControlNetModel
-from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
-from src.api.controlnet.controlnet_unit import ControlKeyType, ControlNetUnit
+from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.image_generation.image_generator import ImageGenerator
+from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTROLNET_REUSE_IMAGE_CODE, \
+    SavedControlNetUnit
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
 from src.ui.layout.draggable_tabs.tab import Tab
@@ -313,10 +313,10 @@ class SDGenerator(ImageGenerator):
         """Attempt to load a LoRA model thumbnail image from the API."""
         raise NotImplementedError()
 
-    def load_preprocessor_preview(self, preprocessor: ControlNetPreprocessor,
-                                     image: QImage, mask: Optional[QImage],
-                                     status_signal: SignalInstance,
-                                     image_signal: SignalInstance) -> None:
+    def load_preprocessor_preview(self, preprocessor: PreprocessorParams,
+                                  image: QImage, mask: Optional[QImage],
+                                  status_signal: SignalInstance,
+                                  image_signal: SignalInstance) -> None:
         """Requests a ControlNet preprocessor preview image."""
         raise NotImplementedError()
 
@@ -513,18 +513,18 @@ class SDGenerator(ImageGenerator):
             cache.set(Cache.ULTIMATE_UPSCALE_SCRIPT_AVAILABLE, ultimate_sd_upscale_found)
             cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_MODELS, tile_models)
             cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_PREPROCESSORS,
-                      [preprocessor.serialize() for preprocessor in tile_preprocessors])
+                      [preprocessor.model_dump_json() for preprocessor in tile_preprocessors])
 
             if tiled_upscaling_available:
                 try:
-                    upscale_tile_control_unit = ControlNetUnit.deserialize(
-                        cache.get(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS), self._controlnet_key_type)
-                    cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS, upscale_tile_control_unit.serialize())
-                except (KeyError, RuntimeError, JSONDecodeError):
-                    upscale_tile_control_unit = ControlNetUnit(self._controlnet_key_type)
-                    upscale_tile_control_unit.model = ControlNetModel(tile_models[0])
-                    upscale_tile_control_unit.preprocessor = tile_preprocessors[0]
-                    cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS, upscale_tile_control_unit.serialize())
+                    saved_tile_unit = SavedControlNetUnit.from_json(
+                        cache.get(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS))
+                except ValueError:
+                    saved_tile_unit = SavedControlNetUnit(
+                        False, '', ControlNetUnit(model=ControlNetModel(tile_models[0]),
+                                                  preprocessor=PreprocessorParams(typedef=tile_preprocessors[0],
+                                                                                  parameter_values={})))
+                cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS, saved_tile_unit.to_json())
 
             # Enable inpainting cropping and padding:
             cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, True)
@@ -578,7 +578,7 @@ class SDGenerator(ImageGenerator):
         self._window.cancel_generation.disconnect(self.cancel_generation)
         self.clear_menus()
 
-    def controlnet_preprocessor_preview(self, preprocessor: ControlNetPreprocessor, image_str: str) -> None:
+    def controlnet_preprocessor_preview(self, preprocessor: PreprocessorParams, image_str: str) -> None:
         """Generates a ControlNet preprocessor preview, displaying it in a new window."""
         if image_str == CONTROLNET_REUSE_IMAGE_CODE:
             image = self.get_gen_area_image()
@@ -612,7 +612,6 @@ class SDGenerator(ImageGenerator):
 
         def _load_preview(preview_image: QImage) -> None:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
-            print(f'LOADED PREVIEW: {preview_image}')
             assert self._controlnet_panel is not None
             self._controlnet_panel.set_preview(preview_image)
 
@@ -795,10 +794,12 @@ class SDGenerator(ImageGenerator):
             return
         active_control_index = index - expected_count
         control_index = -1
-        control_units = [ControlNetUnit.deserialize(cache.get(control_key))
-                         for control_key in self.get_controlnet_unit_cache_keys()]
-        for i, control_unit in enumerate(control_units):
-            if control_unit.enabled:
+        for i, control_key in enumerate(self.get_controlnet_unit_cache_keys()):
+            try:
+                enabled = SavedControlNetUnit.from_json(cache.get(control_key)).enabled
+            except ValueError:
+                enabled = False
+            if enabled:
                 active_control_index -= 1
                 if active_control_index < 0:
                     control_index = i

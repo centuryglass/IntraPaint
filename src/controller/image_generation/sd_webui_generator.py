@@ -8,16 +8,16 @@ from PySide6.QtCore import Signal, QSize, QThread, SignalInstance, QRect
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 from requests import ReadTimeout
+from sd_backend_client import ControlNetPreprocessor, ControlTypeDef, PreprocessorParams
 
 from src.api.a1111_webservice import A1111Webservice, AuthError, ULTIMATE_UPSCALE_SCRIPT
-from src.api.controlnet.controlnet_constants import ControlTypeDef
-from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.api.webservice import WebService
 from src.api.webui.diffusion_request_body import DiffusionRequestBody
 from src.config.a1111_config import A1111Config
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.controller.image_generation.sd_adapters.controlnet_adapter import legacy_from_params, typedef_from_legacy
 from src.controller.image_generation.sd_generator import SD_BASE_DESCRIPTION, STABLE_DIFFUSION_CONFIG_CATEGORY, \
     SDGenerator, INSTALLATION_STABILITY_MATRIX, GETTING_SD_MODELS, IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES, \
     MENU_STABLE_DIFFUSION
@@ -262,7 +262,8 @@ class SDWebUIGenerator(SDGenerator):
         """Return the list of available Controlnet preprocessors."""
         assert self._webservice is not None
         try:
-            return self._webservice.get_controlnet_preprocessors()
+            return [typedef_from_legacy(preprocessor)
+                    for preprocessor in self._webservice.get_controlnet_preprocessors()]
         except (RuntimeError, KeyError) as err:
             logger.error(f'Loading ControlNet preprocessors failed: {err}')
             return []
@@ -280,7 +281,7 @@ class SDWebUIGenerator(SDGenerator):
         """Return available ControlNet categories."""
         assert self._webservice is not None
         try:
-            return self._webservice.get_controlnet_type_categories()
+            return cast(dict[str, ControlTypeDef], self._webservice.get_controlnet_type_categories())
         except (RuntimeError, KeyError) as err:
             logger.error(f'Loading ControlNet types failed: {err}')
             return {}
@@ -437,13 +438,14 @@ class SDWebUIGenerator(SDGenerator):
             logger.error(f'error loading LoRA thumbnail from {self._server_url}: {err}')
             return None
 
-    def load_preprocessor_preview(self, preprocessor: ControlNetPreprocessor,
+    def load_preprocessor_preview(self, preprocessor: PreprocessorParams,
                                   image: QImage, mask: Optional[QImage],
                                   status_signal: SignalInstance,
                                   image_signal: SignalInstance) -> None:
         """Requests a ControlNet preprocessor preview image."""
         assert self._webservice is not None
-        preview_image = self._webservice.controlnet_preprocessor_preview(image, mask, preprocessor)
+        preview_image = self._webservice.controlnet_preprocessor_preview(image, mask,
+                                                                           legacy_from_params(preprocessor))
         image_signal.emit(preview_image)
 
     def is_available(self) -> bool:

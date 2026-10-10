@@ -10,9 +10,9 @@ from unittest.mock import MagicMock, patch
 from PySide6.QtCore import QSize, Qt
 
 from src.api.a1111_webservice import A1111Webservice, ULTIMATE_UPSCALE_SCRIPT
-from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.api.webui.controlnet_webui_utils import get_all_preprocessors
 from src.config.cache import Cache
+from src.controller.image_generation.sd_adapters.controlnet_adapter import typedef_from_legacy
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator
 from src.undo_stack import UndoStack
 from src.util.async_task import AsyncTask
@@ -66,9 +66,9 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
 
     @staticmethod
     def _set_canny_controlnet_unit() -> None:
-        canny = get_all_preprocessors(['canny'])[0]
+        canny = typedef_from_legacy(get_all_preprocessors(['canny'])[0])
         Cache().set(Cache.CONTROLNET_ARGS_0_WEBUI,
-                    SdGeneratorTestCase.controlnet_unit(ControlKeyType.WEBUI, CANNY_MODEL, canny))
+                    SdGeneratorTestCase.controlnet_unit(CANNY_MODEL, canny))
 
     def _generate_and_check(self, snapshot_name: str) -> None:
         self.run_generate()
@@ -206,9 +206,9 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         cache.set(Cache.SCRIPTS_IMG2IMG, [ULTIMATE_UPSCALE_SCRIPT])
         cache.set(Cache.SD_UPSCALING_DENOISING_STRENGTH, 0.25)
         cache.set(Cache.SD_UPSCALING_STEP_COUNT, 15)
-        tile = get_all_preprocessors(['tile_resample'])[0]
+        tile = typedef_from_legacy(get_all_preprocessors(['tile_resample'])[0])
         cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS,
-                  self.controlnet_unit(ControlKeyType.WEBUI, TILE_MODEL, tile))
+                  self.controlnet_unit(TILE_MODEL, tile))
         self.generator.upscale_image(self.image_stack.qimage(), UPSCALE_SIZE, self.status, self.status)
         self.assert_requests_match_snapshot('upscale_stable_diffusion')
         self.assertEqual(self.status.emitted[-1].size(), UPSCALE_SIZE)

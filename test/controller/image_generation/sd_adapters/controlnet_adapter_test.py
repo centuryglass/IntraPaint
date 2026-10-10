@@ -12,11 +12,11 @@ from PySide6.QtGui import QImage, QColor
 from sd_backend_client import ControlNetModel, ControlNetPreprocessor, ControlNetUnit, ParameterDef, \
     PreprocessorParams
 
-from src.api.controlnet.controlnet_constants import CONTROLNET_REUSE_IMAGE_CODE
+from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters import controlnet_adapter
 from src.controller.image_generation.sd_adapters.controlnet_adapter import SavedControlNetUnit, to_request_unit, \
-    load_request_units, legacy_preprocessor, preprocessor_from_legacy
+    load_request_units, legacy_from_params, legacy_unit_from_saved, typedef_from_legacy, CONTROLNET_REUSE_IMAGE_CODE
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
 
 UNIT_DIR = os.path.join(TEST_RESOURCE_DIR, 'controlnet_units')
@@ -106,7 +106,7 @@ class ControlNetAdapterTest(IntraPaintTestCase):
                 SavedControlNetUnit.from_json(data_str)
 
     def test_legacy_preprocessor_round_trip(self) -> None:
-        """A library preprocessor converts for the ControlNet panel and back without changing what a request sends."""
+        """Library preprocessor settings convert to a `src.api` preprocessor and back without losing a value."""
         typedef = ControlNetPreprocessor(
             name='CannyEdgePreprocessor', category_name='ControlNet Preprocessors/Line Extractors',
             description='Canny Edge\nFinds edges.', has_mask_input=False,
@@ -115,18 +115,14 @@ class ControlNetAdapterTest(IntraPaintTestCase):
                         ParameterDef(key='strength', default_value=0.5, min_val=0.0, max_val=1.0),
                         ParameterDef(key='safe', default_value=True),
                         ParameterDef(key='mode', default_value='fast', option_list=['fast', 'slow'])])
-        converted = legacy_preprocessor(typedef)
+        params = PreprocessorParams(typedef=typedef, parameter_values={'low_threshold': 80, 'mode': 'slow'})
+        converted = legacy_from_params(params)
         self.assertEqual(converted.name, 'CannyEdgePreprocessor')
-        self.assertEqual(converted.description, 'Finds edges.')
-        self.assertEqual([param.display_name for param in converted.parameters],
-                         ['low_threshold', 'strength', 'safe', 'mode'])
-        converted.set_value('low_threshold', 80)
-        converted.set_value('mode', 'slow')
+        self.assertEqual([param.key for param in converted.parameters], ['low_threshold', 'strength', 'safe', 'mode'])
+        self.assertEqual([converted.get_value(key) for key in ('low_threshold', 'strength', 'safe', 'mode')],
+                         [80, 0.5, True, 'slow'])
 
-        params = preprocessor_from_legacy(converted)
-        assert params is not None
-        self.assertEqual(params.parameter_values, {'low_threshold': 80, 'strength': 0.5, 'safe': True, 'mode': 'slow'})
-        round_trip = params.typedef
+        round_trip = typedef_from_legacy(converted)
         self.assertEqual((round_trip.name, round_trip.category_name, round_trip.has_image_input,
                           round_trip.has_mask_input, round_trip.model_free),
                          (typedef.name, typedef.category_name, True, False, False))
@@ -136,10 +132,23 @@ class ControlNetAdapterTest(IntraPaintTestCase):
                              (original.key, original.default_value, original.min_val, original.max_val,
                               original.step_val, original.option_list))
 
-    def test_legacy_none_preprocessor_converts_to_none(self) -> None:
-        """The "None" preprocessor has no library equivalent."""
-        converted = legacy_preprocessor(ControlNetPreprocessor(name='None'))
-        self.assertIsNone(preprocessor_from_legacy(converted))
+    def test_legacy_unit_from_saved(self) -> None:
+        """The legacy WebUI request code reads units in the new saved format through `legacy_unit_from_saved`."""
+        saved = _saved_unit()
+        converted = legacy_unit_from_saved(saved, ControlKeyType.WEBUI)
+        self.assertEqual(converted.enabled, saved.enabled)
+        self.assertEqual(converted.image_string, saved.image_string)
+        self.assertEqual(converted.control_strength.value, saved.unit.control_strength)
+        self.assertEqual(converted.control_start.value, saved.unit.control_start)
+        self.assertEqual(converted.control_end.value, saved.unit.control_end)
+        assert saved.unit.model is not None
+        self.assertEqual(converted.model.full_model_name, saved.unit.model.full_model_name)
+        assert saved.unit.preprocessor is not None
+        self.assertEqual(converted.preprocessor.name, saved.unit.preprocessor.typedef.name)
+        # Reading the new format through the legacy class goes through the same conversion:
+        from src.api.controlnet.controlnet_unit import ControlNetUnit as LegacyUnit
+        self.assertEqual(LegacyUnit.deserialize(saved.to_json()).serialize(),
+                         converted.serialize())
 
     def test_reuse_image_code(self) -> None:
         """The generation area image is sent only when the request doesn't already send it as the init image."""

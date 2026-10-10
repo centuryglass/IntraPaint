@@ -3,8 +3,12 @@ import json
 from copy import deepcopy
 from typing import Optional, cast, Any, TypedDict
 
-from src.api.controlnet.control_parameter import ControlParameter, ControlParamType
+from sd_backend_client import PreprocessorParams
+
+from src.api.controlnet.control_parameter import ControlParameter, ControlParamType, ControlParamTypeList
 from src.api.webui.controlnet_webui_constants import ControlNetSliderDef
+from src.util.parameter import get_parameter_type
+from src.util.parameter_def_labels import parameter_label, parameter_tooltip
 from src.util.parameter import TYPE_INT, TYPE_FLOAT
 
 
@@ -125,6 +129,32 @@ class ControlNetPreprocessor:
         preprocessor.model_free = data_dict['model_free']
         preprocessor.description = data_dict['description']
         return preprocessor
+
+    @staticmethod
+    def from_params(preprocessor: PreprocessorParams) -> 'ControlNetPreprocessor':
+        """Converts sd-backend-client preprocessor settings into a preprocessor holding the same parameter values.
+
+        Raises
+        ------
+        TypeError
+            If a parameter's options don't all share its default value's type.
+        ValueError
+            If a parameter's options or value are outside its limits.
+        """
+        typedef = preprocessor.typedef
+        parameters = [ControlParameter(param.key, parameter_label(param), get_parameter_type(param.default_value),
+                                       param.default_value, parameter_tooltip(param), param.min_val, param.max_val,
+                                       param.step_val, cast(Optional[ControlParamTypeList], param.option_list))
+                      for param in typedef.parameters]
+        converted = ControlNetPreprocessor(typedef.name, typedef.name, parameters)
+        converted.description = typedef.description
+        converted.category_name = typedef.category_name
+        converted.has_image_input = typedef.has_image_input
+        converted.has_mask_input = typedef.has_mask_input
+        converted.model_free = typedef.model_free
+        for key, value in preprocessor.parameter_values.items():
+            converted.set_value(key, value)
+        return converted
 
     @property
     def name(self) -> str:
