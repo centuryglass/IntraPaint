@@ -1,15 +1,14 @@
 [
   {
     "body": {
-      "overwrite": "1",
-      "subfolder": "IntraPaint",
+      "subfolder": "sd_backend_client",
       "type": "input"
     },
     "body_format": "multipart/form-data",
     "endpoint": "/upload/image",
     "files": {
       "image": [
-        "src_image.png",
+        "f49c44f3efb3f6220c8329424c314e63.png",
         "<image 600x400 Format_ARGB32 08e9ccbe7255b87b>",
         "image/png"
       ]
@@ -22,37 +21,50 @@
       "client_id": "<client id>",
       "prompt": {
         "3": {
-          "class_type": "ImageUpscaleWithModel",
-          "inputs": {
-            "image": [
-              "5",
-              0
-            ],
-            "upscale_model": [
-              "4",
-              0
-            ]
-          }
-        },
-        "4": {
           "class_type": "UpscaleModelLoader",
           "inputs": {
             "model_name": "4x-UltraSharp.pth"
           }
         },
-        "5": {
+        "4": {
           "class_type": "LoadImage",
           "inputs": {
-            "image": "IntraPaint/src_image.png",
+            "image": "sd_backend_client/f49c44f3efb3f6220c8329424c314e63.png",
             "upload": "image"
           }
         },
+        "5": {
+          "class_type": "ImageUpscaleWithModel",
+          "inputs": {
+            "image": [
+              "4",
+              0
+            ],
+            "upscale_model": [
+              "3",
+              0
+            ]
+          }
+        },
         "6": {
+          "class_type": "ImageScale",
+          "inputs": {
+            "crop": "disabled",
+            "height": 800,
+            "image": [
+              "5",
+              0
+            ],
+            "upscale_method": "lanczos",
+            "width": 1200
+          }
+        },
+        "7": {
           "class_type": "SaveImage",
           "inputs": {
-            "filename_prefix": "",
+            "filename_prefix": "sd_backend_client",
             "images": [
-              "3",
+              "6",
               0
             ]
           }
@@ -60,7 +72,6 @@
       }
     },
     "endpoint": "/prompt",
-    "method": "POST",
-    "timeout": 30
+    "method": "POST"
   }
 ]

@@ -3,7 +3,7 @@
 import logging
 from argparse import Namespace
 from json import JSONDecodeError
-from typing import Optional, cast, Any
+from typing import Optional, cast, Any, Protocol
 
 from PySide6.QtCore import Signal, QSize, SignalInstance, QRect, QPoint
 from PySide6.QtGui import QImage, QIcon, QPainter, QTransform
@@ -14,7 +14,6 @@ from src.api.controlnet.controlnet_constants import ControlTypeDef, CONTROLNET_R
 from src.api.controlnet.controlnet_model import ControlNetModel
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.controlnet.controlnet_unit import ControlKeyType, ControlNetUnit
-from src.api.webservice import WebService
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.image_generation.image_generator import ImageGenerator
@@ -180,6 +179,17 @@ LCM_LORA_1_5 = 'lcm-lora-sdv1-5'
 LCM_LORA_XL = 'lcm-lora-sdxl'
 
 
+class SDClient(Protocol):
+    """The client methods `SDGenerator` calls, shared by `src.api`'s clients and the `sd_backend_client` clients."""
+
+    @property
+    def server_url(self) -> str:
+        """Returns the server URL."""
+
+    def disconnect(self) -> None:
+        """Closes the client's connection. The client is unusable afterwards."""
+
+
 def _check_lcm_mode_available(_) -> bool:
     sampling_methods = [str(method).lower() for method in Cache().get_options(Cache.SAMPLING_METHOD)]
     if LCM_SAMPLER.lower() not in sampling_methods:
@@ -233,7 +243,7 @@ class SDGenerator(ImageGenerator):
             return [self._controlnet_tab]
         return []
 
-    def get_webservice(self) -> Optional[WebService]:
+    def get_webservice(self) -> Optional[SDClient]:
         """Return the webservice object this module uses to connect to Stable Diffusion, if initialized."""
         raise NotImplementedError()
 
@@ -241,7 +251,7 @@ class SDGenerator(ImageGenerator):
         """Destroy and remove any active webservice object."""
         raise NotImplementedError()
 
-    def create_or_get_webservice(self, url: str) -> WebService:
+    def create_or_get_webservice(self, url: str) -> SDClient:
         """Return the webservice object this module uses to connect to Stable Diffusion.  If the webservice already
            exists but the url doesn't match, a new webservice should replace the existing one, using the new url."""
         raise NotImplementedError()

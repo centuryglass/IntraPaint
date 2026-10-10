@@ -2,23 +2,23 @@
 
 See sd_generator_test_case.py for how the snapshots work.
 """
-from contextlib import contextmanager
-from typing import Any, Generator
+from typing import Any, Optional
 from unittest import mock
 
 from PySide6.QtCore import Qt
+from sd_backend_client import ComfyUiWebservice, GenerationError, GenerationHandle, GenerationProgress, \
+    GenerationResult, GenerationStatus
+from sd_backend_client.api.comfyui_webservice import ComfyEndpoints, ComfyModelType
 
-from src.controller.image_generation import sd_comfyui_generator
-from src.api.comfyui.controlnet_comfyui_utils import get_all_preprocessors
-from src.api.comfyui_webservice import ComfyEndpoints, ComfyModelType, ComfyUiWebservice
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.config.cache import Cache
 from src.controller.image_generation.sd_comfyui_generator import SDComfyUIGenerator
+from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT
 from test.controller.image_generation.fake_sd_backend import FakeResponse, image_to_png_bytes
 from test.controller.image_generation.sd_generator_test_case import SdGeneratorTestCase, TEST_SEED, UPSCALE_SIZE, \
-    solid_image, CONTEXT_PIN
+    LORA_FILE, solid_image, CONTEXT_PIN
 
 CANNY_PREPROCESSOR = 'CannyEdgePreprocessor'
 TILE_PREPROCESSOR = 'TilePreprocessor'
@@ -27,7 +27,7 @@ TILE_MODEL = 'control_v11f1e_sd15_tile_fp16.safetensors'
 UPSCALE_MODEL = '4x-UltraSharp.pth'
 MODEL_CONFIG = 'v1-inference.yaml'
 SAVE_IMAGE_NODE_ID = '9'
-PROGRESS_MESSAGE = '{"type": "progress", "data": {"value": 1, "max": 1}}'
+ULTIMATE_UPSCALE_NODE = 'UltimateSDUpscale'
 
 
 def _int_input(default: int, minimum: int, maximum: int, step: int) -> list[Any]:
@@ -64,18 +64,28 @@ OBJECT_INFO = {
 }
 
 
-class _FakeWebsocket:
-    """Reports one completed progress step for every receive call."""
+class _CancelledWhileWaitingHandle(GenerationHandle):
+    """A job that the generator cancels while waiting on it, reporting it as cancelled once it is."""
 
-    @staticmethod
-    def recv() -> str:
-        """Returns a progress message."""
-        return PROGRESS_MESSAGE
+    def __init__(self, generator: SDComfyUIGenerator) -> None:
+        super().__init__('cancelled-job')
+        self._generator = generator
+        self.cancelled = False
 
+    def poll(self) -> GenerationProgress:
+        return GenerationProgress(GenerationStatus.CANCELLED if self.cancelled else GenerationStatus.ACTIVE)
 
-@contextmanager
-def _open_fake_websocket(_webservice: ComfyUiWebservice) -> Generator[_FakeWebsocket, None, None]:
-    yield _FakeWebsocket()
+    def _build_result(self) -> GenerationResult:
+        raise AssertionError('a cancelled job has no result')
+
+    def cancel(self) -> bool:
+        self.cancelled = True
+        return True
+
+    def wait(self, timeout: Optional[float] = None, poll_interval: float = 0.5,
+             on_progress: Optional[Any] = None) -> GenerationResult:
+        self._generator.cancel_generation()
+        raise GenerationError(self.poll().status)
 
 
 class SDComfyUIGeneratorTest(SdGeneratorTestCase):
@@ -103,18 +113,18 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
                                                                                         Qt.GlobalColor.blue))))
         backend.route('GET', f'{ComfyEndpoints.MODELS}/{ComfyModelType.CONFIG.value}', [MODEL_CONFIG])
         backend.route('GET', f'{ComfyEndpoints.MODELS}/{ComfyModelType.CONTROLNET.value}', [CANNY_MODEL, TILE_MODEL])
+        backend.route('GET', f'{ComfyEndpoints.MODELS}/{ComfyModelType.LORA.value}', [LORA_FILE])
+        backend.route('GET', f'{ComfyEndpoints.MODELS}/{ComfyModelType.UPSCALING.value}', [UPSCALE_MODEL])
         backend.route('GET', ComfyEndpoints.OBJECT_INFO, OBJECT_INFO)
-
-        for patch in (mock.patch.object(ComfyUiWebservice, 'open_websocket', _open_fake_websocket),
-                      mock.patch.object(sd_comfyui_generator, 'MIN_RETRY_US', 0)):
-            patch.start()
-            self.addCleanup(patch.stop)
+        backend.route('GET', f'{ComfyEndpoints.OBJECT_INFO}/{ULTIMATE_UPSCALE_NODE}', {ULTIMATE_UPSCALE_NODE: {}})
 
         generator = SDComfyUIGenerator(None, self.image_stack, self.server_args())  # type: ignore
         self.capture_generated_images(generator)
         self.generator = generator
         webservice = generator.get_webservice()
         assert isinstance(webservice, ComfyUiWebservice)
+        # Live progress reads the websocket on a background thread:
+        webservice.progress_listener = None
         self._replacements = {webservice._client_id: '<client id>'}  # pylint: disable=protected-access
 
     @staticmethod
@@ -131,12 +141,15 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         prompt_id = self._queued_prompts[-1]
         batch_size = Cache().get(Cache.BATCH_SIZE)
         images = [{'filename': f'{prompt_id}_{i}.png', 'subfolder': '', 'type': 'output'} for i in range(batch_size)]
-        return {prompt_id: {'status': {'status_str': 'success', 'completed': True},
+        return {prompt_id: {'prompt': [len(self._queued_prompts), prompt_id, {}, {}, [SAVE_IMAGE_NODE_ID]],
+                            'status': {'status_str': 'success', 'completed': True, 'messages': []},
                             'outputs': {SAVE_IMAGE_NODE_ID: {'images': images}}}}
 
-    @staticmethod
-    def _preprocessor(name: str) -> ControlNetPreprocessor:
-        return next(preprocessor for preprocessor in get_all_preprocessors(OBJECT_INFO) if preprocessor.name == name)
+    def _preprocessor(self, name: str) -> ControlNetPreprocessor:
+        """Returns a preprocessor as the ControlNet panel receives it."""
+        assert isinstance(self.generator, SDComfyUIGenerator)
+        return next(preprocessor for preprocessor in self.generator.get_controlnet_preprocessors()
+                    if preprocessor.name == name)
 
     def _set_canny_controlnet_unit(self) -> None:
         Cache().set(Cache.CONTROLNET_ARGS_0_COMFYUI,
@@ -220,3 +233,31 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
                   self.controlnet_unit(ControlKeyType.COMFYUI, TILE_MODEL, self._preprocessor(TILE_PREPROCESSOR)))
         self._run_upscale()
         self.assert_requests_match_snapshot('upscale_stable_diffusion', replacements=self._replacements)
+
+    def test_preprocessor_preview(self) -> None:
+        """A preview queues the preprocessor alone, with the panel's parameter values, and returns its one image."""
+        assert isinstance(self.generator, SDComfyUIGenerator)
+        Cache().set(Cache.BATCH_SIZE, 1)
+        preprocessor = self._preprocessor(CANNY_PREPROCESSOR)
+        preprocessor.set_value('low_threshold', 80)
+        image, mask = self.generator.get_generation_inputs()
+        self.generator.load_preprocessor_preview(preprocessor, self.generator.get_gen_area_image(image),
+                                                 self.generator.get_gen_area_mask(mask), self.status, self.status)
+        self.assert_requests_match_snapshot('preprocessor_preview', replacements=self._replacements)
+        self.assertEqual(self.status.emitted[-1].size(), self._image_size)
+
+    def test_cancel_stops_generation(self) -> None:
+        """Cancelling while a batch runs cancels its job, and generation ends without images or an error."""
+        assert isinstance(self.generator, SDComfyUIGenerator)
+        webservice = self.generator.get_webservice()
+        assert webservice is not None
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_TXT2IMG)
+        handle = _CancelledWhileWaitingHandle(self.generator)
+        AppStateTracker.set_app_state(APP_STATE_LOADING)
+        self.addCleanup(AppStateTracker.set_app_state, APP_STATE_EDITING)
+        with mock.patch.object(webservice, 'submit_txt2img', return_value=handle) as submit:
+            self.run_generate()
+        submit.assert_called_once()
+        self.assertTrue(handle.cancelled)
+        self.assertEqual(self.generated_images, {})
+        self.assertNotIn({'seed': str(TEST_SEED)}, self.status.emitted)

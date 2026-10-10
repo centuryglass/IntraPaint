@@ -14,8 +14,9 @@ from sd_backend_client import ControlNetModel, ControlNetPreprocessor, ControlNe
 
 from src.api.controlnet.controlnet_constants import CONTROLNET_REUSE_IMAGE_CODE
 from src.config.cache import Cache
+from src.controller.image_generation.sd_adapters import controlnet_adapter
 from src.controller.image_generation.sd_adapters.controlnet_adapter import SavedControlNetUnit, to_request_unit, \
-    load_request_units
+    load_request_units, legacy_preprocessor, preprocessor_from_legacy
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
 
 UNIT_DIR = os.path.join(TEST_RESOURCE_DIR, 'controlnet_units')
@@ -104,6 +105,42 @@ class ControlNetAdapterTest(IntraPaintTestCase):
             with self.assertRaises(ValueError, msg=data_str):
                 SavedControlNetUnit.from_json(data_str)
 
+    def test_legacy_preprocessor_round_trip(self) -> None:
+        """A library preprocessor converts for the ControlNet panel and back without changing what a request sends."""
+        typedef = ControlNetPreprocessor(
+            name='CannyEdgePreprocessor', category_name='ControlNet Preprocessors/Line Extractors',
+            description='Canny Edge\nFinds edges.', has_mask_input=False,
+            parameters=[ParameterDef(key='low_threshold', default_value=100, description='Lower bound',
+                                     min_val=0, max_val=255, step_val=1),
+                        ParameterDef(key='strength', default_value=0.5, min_val=0.0, max_val=1.0),
+                        ParameterDef(key='safe', default_value=True),
+                        ParameterDef(key='mode', default_value='fast', option_list=['fast', 'slow'])])
+        converted = legacy_preprocessor(typedef)
+        self.assertEqual(converted.name, 'CannyEdgePreprocessor')
+        self.assertEqual(converted.description, 'Finds edges.')
+        self.assertEqual([param.display_name for param in converted.parameters],
+                         ['low_threshold', 'strength', 'safe', 'mode'])
+        converted.set_value('low_threshold', 80)
+        converted.set_value('mode', 'slow')
+
+        params = preprocessor_from_legacy(converted)
+        assert params is not None
+        self.assertEqual(params.parameter_values, {'low_threshold': 80, 'strength': 0.5, 'safe': True, 'mode': 'slow'})
+        round_trip = params.typedef
+        self.assertEqual((round_trip.name, round_trip.category_name, round_trip.has_image_input,
+                          round_trip.has_mask_input, round_trip.model_free),
+                         (typedef.name, typedef.category_name, True, False, False))
+        for original, returned in zip(typedef.parameters, round_trip.parameters):
+            self.assertEqual((returned.key, returned.default_value, returned.min_val, returned.max_val,
+                              returned.step_val, returned.option_list),
+                             (original.key, original.default_value, original.min_val, original.max_val,
+                              original.step_val, original.option_list))
+
+    def test_legacy_none_preprocessor_converts_to_none(self) -> None:
+        """The "None" preprocessor has no library equivalent."""
+        converted = legacy_preprocessor(ControlNetPreprocessor(name='None'))
+        self.assertIsNone(preprocessor_from_legacy(converted))
+
     def test_reuse_image_code(self) -> None:
         """The generation area image is sent only when the request doesn't already send it as the init image."""
         saved = _saved_unit()
@@ -146,3 +183,10 @@ class ControlNetAdapterTest(IntraPaintTestCase):
         self.assertEqual(len(units), 1)
         assert units[0].preprocessor is not None
         self.assertEqual(units[0].preprocessor.typedef.name, 'canny')
+
+    def test_load_request_units_skips_empty_entries_quietly(self) -> None:
+        """A unit the user never configured holds the empty default, which loads no unit and logs no error."""
+        Cache().set(Cache.CONTROLNET_ARGS_0_WEBUI, '')
+        with self.assertNoLogs(controlnet_adapter.logger):
+            units = load_request_units([Cache.CONTROLNET_ARGS_0_WEBUI], _source_image(), True)
+        self.assertEqual(units, [])

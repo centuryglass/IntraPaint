@@ -6,7 +6,7 @@
         "10": {
           "class_type": "SaveImage",
           "inputs": {
-            "filename_prefix": "",
+            "filename_prefix": "sd_backend_client",
             "images": [
               "9",
               0
@@ -14,6 +14,20 @@
           }
         },
         "3": {
+          "class_type": "EmptyLatentImage",
+          "inputs": {
+            "batch_size": 2,
+            "height": 512,
+            "width": 512
+          }
+        },
+        "4": {
+          "class_type": "CheckpointLoaderSimple",
+          "inputs": {
+            "ckpt_name": "dreamshaper_8.safetensors"
+          }
+        },
+        "5": {
           "class_type": "LoraLoader",
           "inputs": {
             "clip": [
@@ -29,43 +43,37 @@
             "strength_model": 0.8
           }
         },
-        "4": {
-          "class_type": "CheckpointLoaderSimple",
-          "inputs": {
-            "ckpt_name": "dreamshaper_8.safetensors"
-          }
-        },
-        "5": {
-          "class_type": "CLIPTextEncode",
-          "inputs": {
-            "clip": [
-              "3",
-              1
-            ],
-            "text": "a lighthouse on a cliff "
-          }
-        },
         "6": {
           "class_type": "CLIPTextEncode",
           "inputs": {
             "clip": [
-              "3",
+              "5",
               1
             ],
             "text": "blurry"
           }
         },
         "7": {
+          "class_type": "CLIPTextEncode",
+          "inputs": {
+            "clip": [
+              "5",
+              1
+            ],
+            "text": "a lighthouse on a cliff "
+          }
+        },
+        "8": {
           "class_type": "KSampler",
           "inputs": {
             "cfg": 6.5,
             "denoise": 1.0,
             "latent_image": [
-              "8",
+              "3",
               0
             ],
             "model": [
-              "3",
+              "5",
               0
             ],
             "negative": [
@@ -73,7 +81,7 @@
               0
             ],
             "positive": [
-              "5",
+              "7",
               0
             ],
             "sampler_name": "euler_ancestral",
@@ -82,19 +90,11 @@
             "steps": 20
           }
         },
-        "8": {
-          "class_type": "EmptyLatentImage",
-          "inputs": {
-            "batch_size": 2,
-            "height": 512,
-            "width": 512
-          }
-        },
         "9": {
           "class_type": "VAEDecode",
           "inputs": {
             "samples": [
-              "7",
+              "8",
               0
             ],
             "vae": [
@@ -106,8 +106,7 @@
       }
     },
     "endpoint": "/prompt",
-    "method": "POST",
-    "timeout": 30
+    "method": "POST"
   },
   {
     "body": {
@@ -116,7 +115,7 @@
         "10": {
           "class_type": "SaveImage",
           "inputs": {
-            "filename_prefix": "",
+            "filename_prefix": "sd_backend_client",
             "images": [
               "9",
               0
@@ -124,6 +123,20 @@
           }
         },
         "3": {
+          "class_type": "EmptyLatentImage",
+          "inputs": {
+            "batch_size": 2,
+            "height": 512,
+            "width": 512
+          }
+        },
+        "4": {
+          "class_type": "CheckpointLoaderSimple",
+          "inputs": {
+            "ckpt_name": "dreamshaper_8.safetensors"
+          }
+        },
+        "5": {
           "class_type": "LoraLoader",
           "inputs": {
             "clip": [
@@ -139,43 +152,37 @@
             "strength_model": 0.8
           }
         },
-        "4": {
-          "class_type": "CheckpointLoaderSimple",
-          "inputs": {
-            "ckpt_name": "dreamshaper_8.safetensors"
-          }
-        },
-        "5": {
-          "class_type": "CLIPTextEncode",
-          "inputs": {
-            "clip": [
-              "3",
-              1
-            ],
-            "text": "a lighthouse on a cliff "
-          }
-        },
         "6": {
           "class_type": "CLIPTextEncode",
           "inputs": {
             "clip": [
-              "3",
+              "5",
               1
             ],
             "text": "blurry"
           }
         },
         "7": {
+          "class_type": "CLIPTextEncode",
+          "inputs": {
+            "clip": [
+              "5",
+              1
+            ],
+            "text": "a lighthouse on a cliff "
+          }
+        },
+        "8": {
           "class_type": "KSampler",
           "inputs": {
             "cfg": 6.5,
             "denoise": 1.0,
             "latent_image": [
-              "8",
+              "3",
               0
             ],
             "model": [
-              "3",
+              "5",
               0
             ],
             "negative": [
@@ -183,7 +190,7 @@
               0
             ],
             "positive": [
-              "5",
+              "7",
               0
             ],
             "sampler_name": "euler_ancestral",
@@ -192,19 +199,11 @@
             "steps": 20
           }
         },
-        "8": {
-          "class_type": "EmptyLatentImage",
-          "inputs": {
-            "batch_size": 2,
-            "height": 512,
-            "width": 512
-          }
-        },
         "9": {
           "class_type": "VAEDecode",
           "inputs": {
             "samples": [
-              "7",
+              "8",
               0
             ],
             "vae": [
@@ -216,7 +215,6 @@
       }
     },
     "endpoint": "/prompt",
-    "method": "POST",
-    "timeout": 30
+    "method": "POST"
   }
 ]
