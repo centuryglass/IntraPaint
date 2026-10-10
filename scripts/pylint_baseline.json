@@ -1,6 +1,6 @@
 {
   "(repository)": {
-    "duplicate-code": 70
+    "duplicate-code": 69
   },
   "src/api/comfyui/comfyui_types.py": {
     "fixme": 1
@@ -54,7 +54,6 @@
   "src/controller/image_generation/sd_generator.py": {
     "broad-exception-caught": 2,
     "consider-iterating-dictionary": 1,
-    "fixme": 1,
     "too-many-nested-blocks": 1,
     "trailing-whitespace": 2
   },
