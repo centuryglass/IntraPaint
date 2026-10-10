@@ -310,7 +310,7 @@
     "max_undo": {
         "label": "Maximum undo count:",
         "category": "Editing",
-        "description": "Number of actions that can be reversed using the 'undo' option.",
+        "description": "Number of actions that can be reversed using the 'undo' option. Changes apply after restarting IntraPaint.",
         "type": "int",
         "default": 30,
         "saved": true
@@ -318,7 +318,7 @@
     "undo_merge_interval": {
         "label": "Undo merge interval (seconds):",
         "category": "Editing",
-        "description": "Similar actions will be combined in the undo history if the time between them is less than this.",
+        "description": "Continuous changes to the same layer property or the generation area are combined into one undo step if they happen less than this many seconds apart.",
         "type": "float",
         "default": 0.2,
         "saved": true

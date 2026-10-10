@@ -18,7 +18,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.layers.image_stack import ImageStack
-from src.image.layers.image_stack_utils import scale_all_layers_ungrouped
+from src.image.layers.image_stack_utils import scale_all_layers
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.panel.controlnet_panel import TabbedControlNetPanel, CONTROLNET_TITLE
@@ -699,7 +699,7 @@ class SDGenerator(ImageGenerator):
         With locked layers present, only the canvas is resized."""
         with UndoStack().combining_actions('SDWebUIGenerator.upscale'):
             if self._image_stack.confirm_no_locked_layers():
-                scale_all_layers_ungrouped(self._image_stack, img.width(), img.height())
+                scale_all_layers(self._image_stack, img.width(), img.height())
             else:
                 old_size = self._image_stack.size
                 scaled_size = img.size()

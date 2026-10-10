@@ -145,45 +145,36 @@ def scale_all_layers(image_stack: ImageStack, width: int, height: int,
     if not image_stack.confirm_no_locked_layers(ERROR_TITLE_IMAGE_SCALE_FAILED):
         return
     with UndoStack().combining_actions('image_stack_utils.scale_all_layers'):
-        scale_all_layers_ungrouped(image_stack, width, height, image_scale_mode)
-
-
-def scale_all_layers_ungrouped(image_stack: ImageStack, width: int, height: int,
-                               image_scale_mode: Optional[Image.Resampling] = None) -> None:
-    """Scale all layer content and the canvas without grouping the changes, for callers that already hold an
-    UndoStack.combining_actions group.
-
-    The caller checks for locked layers first, and nothing here rejects a size of zero or below."""
-    initial_size = image_stack.size
-    x_scale = width / initial_size.width()
-    y_scale = height / initial_size.height()
-    scale_transform = QTransform.fromScale(x_scale, y_scale)
-    with image_stack.batching_content_updates():
-        for layer in image_stack.all_layers():
-            if not isinstance(layer, TransformLayer):
-                continue
-            if isinstance(layer, ImageLayer) and image_scale_mode is not None:
-                image = layer.image
-                if image.size() == initial_size:
-                    new_size = QSize(width, height)
+        initial_size = image_stack.size
+        x_scale = width / initial_size.width()
+        y_scale = height / initial_size.height()
+        scale_transform = QTransform.fromScale(x_scale, y_scale)
+        with image_stack.batching_content_updates():
+            for layer in image_stack.all_layers():
+                if not isinstance(layer, TransformLayer):
+                    continue
+                if isinstance(layer, ImageLayer) and image_scale_mode is not None:
+                    image = layer.image
+                    if image.size() == initial_size:
+                        new_size = QSize(width, height)
+                    else:
+                        new_size = QSize(round(image.width() * x_scale), round(image.height() * y_scale))
+                    layer.image = pil_image_scaling(image, new_size, image_scale_mode)
                 else:
-                    new_size = QSize(round(image.width() * x_scale), round(image.height() * y_scale))
-                layer.image = pil_image_scaling(image, new_size, image_scale_mode)
-            else:
-                layer.transform = layer.transform * scale_transform
-        selection_layer = image_stack.selection_layer
-        selection_layer.set_context_pins([QPoint(min(int(pin.x() * x_scale), width - 1),
-                                                 min(int(pin.y() * y_scale), height - 1))
-                                          for pin in selection_layer.context_pins])
-        new_size = QSize(width, height)
+                    layer.transform = layer.transform * scale_transform
+            selection_layer = image_stack.selection_layer
+            selection_layer.set_context_pins([QPoint(min(int(pin.x() * x_scale), width - 1),
+                                                     min(int(pin.y() * y_scale), height - 1))
+                                              for pin in selection_layer.context_pins])
+            new_size = QSize(width, height)
 
-        def _final_size_update(size=new_size) -> None:
-            image_stack.size = size
+            def _final_size_update(size=new_size) -> None:
+                image_stack.size = size
 
-        def _revert(size=initial_size) -> None:
-            image_stack.size = size
+            def _revert(size=initial_size) -> None:
+                image_stack.size = size
 
-        UndoStack().commit_action(_final_size_update, _revert, 'image_stack_utils.scale_all_layers')
+            UndoStack().commit_action(_final_size_update, _revert, 'image_stack_utils.scale_all_layers')
 
 
 def image_stack_color_at_point(image_stack: ImageStack, image_point: QPoint) -> QColor:

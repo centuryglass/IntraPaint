@@ -24,7 +24,7 @@ from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.text_rect import TextRect
 from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog, request_confirmation
-from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
+from src.undo_stack import UndoStack, _CallableCommand
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
 from src.util.cached_data import CachedData
 from src.util.visual.geometry_utils import adjusted_placement_in_bounds, map_rect_precise, extract_transform_parameters
@@ -374,14 +374,14 @@ class ImageStack(QObject):
                         Cache().set(Cache.EDIT_SIZE, QSize(self._generation_area.size()))
 
             action_type = 'ImageStack.generation_area'
-            prev_action: Optional[_UndoAction | _UndoGroup]
+            prev_action: Optional[_CallableCommand]
             with UndoStack().last_action(action_type) as prev_action:
-                if merge_with_last and isinstance(prev_action, _UndoAction) and prev_action.type == action_type \
+                if merge_with_last and prev_action is not None and prev_action.action_type == action_type \
                         and prev_action.action_data is not None:
                     last_bounds = prev_action.action_data['prev_bounds']
-                    prev_action.redo = lambda: update_fn(bounds_rect)
-                    prev_action.undo = lambda: update_fn(last_bounds)
-                    prev_action.redo()
+                    prev_action.redo_fn = lambda: update_fn(bounds_rect)
+                    prev_action.undo_fn = lambda: update_fn(last_bounds)
+                    prev_action.redo_fn()
                     return
 
             UndoStack().commit_action(lambda: update_fn(bounds_rect),

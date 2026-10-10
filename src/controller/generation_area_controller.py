@@ -167,9 +167,7 @@ class GenerationAreaController(QObject):
         return selection_layer.get_selection_bounds(), selection_layer.context_pins
 
     def _start_follow_timer(self) -> None:
-        # The delay outlasts the undo merge interval, so the follow move doesn't merge into the selection edit's step.
-        merge_interval_ms = round(AppConfig().get(AppConfig.UNDO_MERGE_INTERVAL) * 1000)
-        self._follow_timer.start(max(FOLLOW_SELECTION_DELAY_MS, merge_interval_ms + 50))
+        self._follow_timer.start(FOLLOW_SELECTION_DELAY_MS)
 
     def _selection_changed(self, *_args) -> None:
         undo_stack = UndoStack()
