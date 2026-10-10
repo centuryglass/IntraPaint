@@ -1,5 +1,17 @@
 # Changelog and release notes
 
+## [1.4.1](https://github.com/centuryglass/IntraPaint/compare/v1.4.0...v1.4.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* **generation:** run WebUI generation through sd-backend-client ([#275](https://github.com/centuryglass/IntraPaint/issues/275)) ([8f637fb](https://github.com/centuryglass/IntraPaint/commit/8f637fb9bb4d192543837d7b77f24804dd0525c5))
+
+
+### Performance Improvements
+
+* **selection:** store the selection mask as Alpha8 and skip whole-image work per edit ([#272](https://github.com/centuryglass/IntraPaint/issues/272)) ([d657c00](https://github.com/centuryglass/IntraPaint/commit/d657c00b71a22797f26c7cdebf4a69c39f3b66ba))
+
 ## [1.4.0](https://github.com/centuryglass/IntraPaint/compare/v1.3.0...v1.4.0) (2026-10-10)
 
 
