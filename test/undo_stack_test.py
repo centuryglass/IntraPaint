@@ -1,6 +1,7 @@
 """Tests the UndoStack module."""
 import sys
 import unittest
+from typing import Optional
 from unittest.mock import MagicMock
 
 from PySide6.QtWidgets import QApplication
@@ -21,7 +22,8 @@ class UndoStackTest(IntraPaintTestCase):
         self.undo_stack.clear()
         self.value = 0
 
-    def commit_value(self, new_value: int, action_type: str = 'test.set_value') -> None:
+    def commit_value(self, new_value: int, action_type: str = 'test.set_value',
+                     merge_target: Optional[object] = None) -> None:
         """Commits an action that changes self.value, standing in for an edit to application state."""
         old_value = self.value
 
@@ -31,7 +33,7 @@ class UndoStackTest(IntraPaintTestCase):
         def _revert(value=old_value) -> None:
             self.value = value
 
-        self.undo_stack.commit_action(_apply, _revert, action_type)
+        self.undo_stack.commit_action(_apply, _revert, action_type, merge_target=merge_target)
 
     def test_commit_runs_and_records_action(self) -> None:
         """commit_action applies the change immediately and adds one undo entry."""
@@ -146,14 +148,45 @@ class UndoStackTest(IntraPaintTestCase):
         self.undo_stack.undo()
         self.assertEqual(self.value, 0)
 
-    def test_last_action_is_none_inside_group(self) -> None:
-        """last_action doesn't expose the history entry from before an open group."""
-        self.commit_value(1)
+    def test_merge_target_commits_merge_within_interval(self) -> None:
+        """Commits for one merge target within the interval become one entry that undoes to the first old value."""
+        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 60.0)
+        target = object()
+        for value in (1, 2, 3):
+            self.commit_value(value, 'test.drag', merge_target=target)
+        self.assertEqual(self.undo_stack.undo_count(), 1)
+        self.undo_stack.undo()
+        self.assertEqual(self.value, 0)
+        self.undo_stack.redo()
+        self.assertEqual(self.value, 3)
+
+    def test_merge_requires_same_target_and_type(self) -> None:
+        """A different merge target or action type starts a new entry."""
+        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 60.0)
+        self.commit_value(1, 'test.drag', merge_target=self)
+        self.commit_value(2, 'test.drag', merge_target=object())
+        self.commit_value(3, 'test.other_drag', merge_target=self)
+        self.commit_value(4, 'test.other_drag', merge_target=None)
+        self.assertEqual(self.undo_stack.undo_count(), 4)
+
+    def test_merge_does_not_cross_interval(self) -> None:
+        """With a zero interval, commits for one target stay separate."""
+        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
+        target = object()
+        self.commit_value(1, 'test.drag', merge_target=target)
+        self.commit_value(2, 'test.drag', merge_target=target)
+        self.assertEqual(self.undo_stack.undo_count(), 2)
+
+    def test_merge_does_not_reach_before_group(self) -> None:
+        """A mergeable commit inside a group never merges into the entry from before the group."""
+        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 60.0)
+        target = object()
+        self.commit_value(1, 'test.drag', merge_target=target)
         with self.undo_stack.combining_actions('test.group'):
-            with self.undo_stack.last_action('test.set_value') as prev_action:
-                self.assertIsNone(prev_action)
-        with self.undo_stack.last_action('test.set_value') as prev_action:
-            self.assertIsNotNone(prev_action)
+            self.commit_value(2, 'test.drag', merge_target=target)
+        self.assertEqual(self.undo_stack.undo_count(), 2)
+        self.undo_stack.undo()
+        self.assertEqual(self.value, 1)
 
     def test_commit_inside_action_raises(self) -> None:
         """An action that commits another action is rejected rather than corrupting the history."""
