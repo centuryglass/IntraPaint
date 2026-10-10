@@ -4,6 +4,7 @@ from typing import Callable, TypeAlias
 from PySide6.QtCore import QObject, Signal, QRunnable, QThreadPool
 
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING
+from src.util.main_thread import assert_main_thread
 
 ThreadAction: TypeAlias = Callable[..., None]
 
@@ -11,12 +12,13 @@ ThreadAction: TypeAlias = Callable[..., None]
 class AsyncTask(QObject):
     """Run an async task in another thread.
 
-    Construct it on the main thread. Closures connected to its signals run on the main thread only because the
-    AsyncTask object lives there.
+    Must be constructed on the main thread; __init__ raises RuntimeError otherwise. Closures connected to its signals
+    run on the main thread only because the AsyncTask object lives there.
     """
     finish_signal = Signal()
 
     def __init__(self, action: ThreadAction, set_loading_state: bool = False) -> None:
+        assert_main_thread('AsyncTask construction')
         super().__init__()
         self._action = action
         if QThreadPool.globalInstance().maxThreadCount() < 3:

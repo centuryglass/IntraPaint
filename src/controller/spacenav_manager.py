@@ -16,6 +16,7 @@ from PySide6.QtCore import QObject, QThread, QSize, QRect, Signal
 from src.image.layers.image_stack import ImageStack
 from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING
+from src.util.main_thread import run_on_main_thread
 
 logger = logging.getLogger(__name__)
 
@@ -184,8 +185,8 @@ class SpacenavManager:
 
         self._worker = SpacenavThreadWorker(self._thread_data)
 
-        def handle_nav_event(x_offset: int, y_offset: int) -> None:
-            """Move the image generation area when the thread worker requests."""
+        def move_generation_area(x_offset: int, y_offset: int) -> None:
+            """Move the image generation area when the thread worker requests. Main thread only."""
             with self._thread_data.lock:
                 self._thread_data.pending = False
             if self._window is None or AppStateTracker.app_state() != APP_STATE_EDITING:
@@ -194,6 +195,14 @@ class SpacenavManager:
             generation_area.moveTo(generation_area.x() + x_offset, generation_area.y() + y_offset)
             self._image_stack.generation_area = generation_area
             self._window.repaint()
+
+        def handle_nav_event(x_offset: int, y_offset: int) -> None:
+            """Forward a worker's move request to the main thread.
+
+            A closure connected to the worker's signal runs on the worker thread, and moving the generation area
+            changes config, undo history and the UI.
+            """
+            run_on_main_thread(lambda: move_generation_area(x_offset, y_offset))
 
         self._worker.nav_event_signal.connect(handle_nav_event)
 

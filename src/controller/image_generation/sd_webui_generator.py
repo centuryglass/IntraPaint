@@ -32,6 +32,7 @@ from src.ui.window.prompt_style_window import PromptStyleWindow
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING, APP_STATE_NO_IMAGE
 from src.util.async_task import AsyncTask
+from src.util.main_thread import is_main_thread, run_on_main_thread
 from src.util.menu_builder import menu_action
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, PROJECT_DIR, \
     AUTH_ERROR, AUTH_ERROR_MESSAGE, INTERROGATE_ERROR_TITLE, INTERROGATE_ERROR_MESSAGE_NO_IMAGE, \
@@ -611,6 +612,14 @@ class SDWebUIGenerator(SDGenerator):
         return self._control_panel
 
     def _async_progress_check(self, external_status_signal: Optional[SignalInstance] = None):
+        """Starts polling WebUI generation progress in another thread. Callable from any thread.
+
+        `generate` runs on a worker thread and calls this, and `AsyncTask` can only be constructed on the main thread,
+        so off-main calls re-run themselves there.
+        """
+        if not is_main_thread():
+            run_on_main_thread(lambda: self._async_progress_check(external_status_signal))
+            return
         webservice = self._webservice
         assert webservice is not None
         self._active_task_id += 1

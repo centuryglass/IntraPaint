@@ -3,8 +3,9 @@
 See sd_generator_test_case.py for how the snapshots work.
 """
 import json
+import threading
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from PySide6.QtCore import QSize, Qt
 
@@ -14,6 +15,7 @@ from src.api.webui.controlnet_webui_utils import get_all_preprocessors
 from src.config.cache import Cache
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator
 from src.undo_stack import UndoStack
+from src.util.async_task import AsyncTask
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT
 from test.controller.image_generation.fake_sd_backend import image_to_base64_png
 from test.controller.image_generation.sd_generator_test_case import SdGeneratorTestCase, TEST_SEED, \
@@ -118,6 +120,33 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         self._set_canny_controlnet_unit()
         self._generate_and_check('inpaint_controlnet')
+
+    def test_progress_check_from_worker_thread_starts_on_main_thread(self) -> None:
+        """`generate` runs on a worker thread, and the progress task it starts is constructed on the main thread."""
+        del self.generator._async_progress_check  # type: ignore # pylint: disable=protected-access
+        self.generator._window = MagicMock()  # pylint: disable=protected-access
+        deferred: list[Any] = []
+        started: list[AsyncTask] = []
+        errors: list[BaseException] = []
+
+        def run_on_worker() -> None:
+            try:
+                self.generator._async_progress_check(MagicMock())  # pylint: disable=protected-access
+            except BaseException as err:  # pylint: disable=broad-exception-caught
+                errors.append(err)
+
+        module = 'src.controller.image_generation.sd_webui_generator'
+        with patch(f'{module}.run_on_main_thread', side_effect=deferred.append), \
+                patch.object(AsyncTask, 'start', lambda task: started.append(task)):
+            worker = threading.Thread(target=run_on_worker, daemon=True)
+            worker.start()
+            worker.join(10)
+            self.assertFalse(worker.is_alive())
+            self.assertEqual([], errors)
+            self.assertEqual(1, len(deferred))
+            self.assertEqual([], started)
+            deferred[0]()
+            self.assertEqual(1, len(started))
 
     def test_connect_enables_inpaint_options(self) -> None:
         """Connecting enables the inpainting crop and padding controls, and disconnecting disables them again."""
