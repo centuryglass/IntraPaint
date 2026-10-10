@@ -137,7 +137,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 APP_NAME = 'IntraPaint'
-APP_VERSION = 'v1.3.0'  # x-release-please-version
+APP_VERSION = 'v1.4.0'  # x-release-please-version
 
 TOOL_PANEL_LAYER_TAB = _tr('Layers')
 TOOL_PANEL_COLOR_TAB = _tr('Color')

@@ -6,21 +6,27 @@
 - The format `SavedControlNetUnit.to_json` writes, which wraps the library's own `ControlNetUnit` dump.
 
 `SavedControlNetUnit.from_json` reads both formats, and `to_json` writes only the second.
+
+`legacy_preprocessor` and `preprocessor_from_legacy` convert preprocessors for the ControlNet panel, which still uses
+`src.api`'s preprocessor type (#39, step 5).
 """
 import json
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 from PIL import Image
 from PySide6.QtGui import QImage
 from sd_backend_client import CONTROLNET_MODEL_NONE, PREPROCESSOR_NONE, ControlNetModel, ControlNetPreprocessor, \
     ControlNetUnit, ParameterDef, PreprocessorParams
 
+from src.api.controlnet import controlnet_preprocessor as legacy
+from src.api.controlnet.control_parameter import ControlParameter, ControlParamTypeList
 from src.api.controlnet.controlnet_constants import CONTROLNET_REUSE_IMAGE_CODE
 from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters.image_adapter import qimage_to_pil
+from src.util.parameter import get_parameter_type
 from src.util.visual.pil_image_utils import PIL_OPEN_FORMATS
 
 logger = logging.getLogger(__name__)
@@ -132,6 +138,45 @@ def _preprocessor_from_legacy_json(data_str: str) -> Optional[PreprocessorParams
     return PreprocessorParams(typedef=typedef, parameter_values=parameter_values)
 
 
+def preprocessor_from_legacy(preprocessor: legacy.ControlNetPreprocessor) -> Optional[PreprocessorParams]:
+    """Converts a `src.api` preprocessor and its parameter values, returning None for the "None" preprocessor.
+
+    Raises
+    ------
+    ValueError
+        If a parameter value is one the library rejects.
+    """
+    return _preprocessor_from_legacy_json(preprocessor.serialize())
+
+
+def legacy_preprocessor(preprocessor: ControlNetPreprocessor) -> legacy.ControlNetPreprocessor:
+    """Converts a ComfyUI preprocessor from the library into a `src.api` preprocessor set to its default values.
+
+    The library keeps a ComfyUI node's display name as the first line of `description`, and each parameter's tooltip
+    in its `description`. Each parameter's display name is its key, as `src.api` named ComfyUI parameters.
+
+    Raises
+    ------
+    TypeError
+        If a parameter's options don't all share its default value's type.
+    ValueError
+        If a parameter's options are outside its limits.
+    """
+    display_name, _, description = preprocessor.description.partition('\n')
+    # ControlParameter raises TypeError for an option list whose types differ from the default's:
+    parameters = [ControlParameter(param.key, param.key, get_parameter_type(param.default_value), param.default_value,
+                                   param.description, param.min_val, param.max_val, param.step_val,
+                                   cast(Optional[ControlParamTypeList], param.option_list))
+                  for param in preprocessor.parameters]
+    converted = legacy.ControlNetPreprocessor(preprocessor.name, display_name or preprocessor.name, parameters)
+    converted.description = description
+    converted.category_name = preprocessor.category_name
+    converted.has_image_input = preprocessor.has_image_input
+    converted.has_mask_input = preprocessor.has_mask_input
+    converted.model_free = preprocessor.model_free
+    return converted
+
+
 def to_request_unit(saved: SavedControlNetUnit, source_image: Optional[QImage],
                     source_is_init_image: bool) -> Optional[ControlNetUnit]:
     """Returns the library unit to send for a saved unit, or None if the unit is disabled or unusable.
@@ -179,13 +224,17 @@ def load_request_units(cache_keys: list[str], source_image: Optional[QImage],
                        source_is_init_image: bool) -> list[ControlNetUnit]:
     """Returns the library units to send for the saved units under a list of cache keys, skipping unusable units.
 
-    See `to_request_unit` for the parameters.
+    An empty cached value, the default for a unit the user never configured, is skipped without logging an error. See
+    `to_request_unit` for the parameters.
     """
     cache = Cache()
     units: list[ControlNetUnit] = []
     for cache_key in cache_keys:
+        saved_json = cache.get(cache_key)
+        if saved_json == '':
+            continue
         try:
-            saved = SavedControlNetUnit.from_json(cache.get(cache_key))
+            saved = SavedControlNetUnit.from_json(saved_json)
         except (KeyError, ValueError) as err:
             logger.error(f'Skipping invalid ControlNet unit "{cache_key}": {err}')
             continue

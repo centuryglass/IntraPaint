@@ -18,6 +18,7 @@ class TransformLayer(Layer):
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self._transform = QTransform()
+        self._raster: Optional[tuple[QPoint, QImage]] = None
 
     # PROPERTY DEFINITIONS:
     # All changes made through property setters are registered in the undo history, and are broadcast through
@@ -47,6 +48,7 @@ class TransformLayer(Layer):
             assert transform.isInvertible(), f'layer {self.name}:{self.id} given non-invertible transform'
             old_transform = self._transform
             self._transform = transform
+            self._raster = None
             self.transform_changed.emit(self, transform)
             if self.visible and self.opacity > 0.0:
                 self.signal_content_changed(self.transform_change_bounds(old_transform))
@@ -160,11 +162,82 @@ class TransformLayer(Layer):
             If not None, draw the rendered bounds onto this image, to use when determining what parts of the base image
             were rendered onto.
         """
+        raster_offset = self._integer_translation(transform)
+        if raster_offset is not None and image_adjuster is None and transform_needs_smooth_sampling(self._transform):
+            raster = self._image_space_raster()
+            if raster is not None:
+                origin, raster_image = raster
+                self._render_image(raster_image, QRect(QPoint(), raster_image.size()), base_image,
+                                   QTransform.fromTranslate(origin.x() + raster_offset.x(),
+                                                            origin.y() + raster_offset.y()),
+                                   image_bounds, z_max, None, returned_mask)
+                return
         if transform is None:
             transform = self.transform
         else:
             transform = self.transform * transform
         super().render(base_image, transform, image_bounds, z_max, image_adjuster, returned_mask)
+
+    @staticmethod
+    def _integer_translation(transform: Optional[QTransform]) -> Optional[QPoint]:
+        """Returns the offset if transform is None or a whole-pixel translation, and None for anything else."""
+        if transform is None:
+            return QPoint()
+        if transform == QTransform.fromTranslate(transform.dx(), transform.dy()) \
+                and transform.dx() == round(transform.dx()) and transform.dy() == round(transform.dy()):
+            return QPoint(round(transform.dx()), round(transform.dy()))
+        return None
+
+    def signal_content_changed(self, change_bounds: QRect) -> None:
+        """Updates the cached raster to match the change before reporting it."""
+        self._update_raster(change_bounds)
+        super().signal_content_changed(change_bounds)
+
+    def _paint_raster(self, raster_image: QImage, origin: QPoint, area: QRect) -> None:
+        """Redraws the part of the raster inside area (in raster coordinates) from the layer image."""
+        painter = QPainter(raster_image)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+        painter.setClipRect(area)
+        painter.setTransform(self._transform * QTransform.fromTranslate(-origin.x(), -origin.y()))
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+        painter.drawImage(self.bounds, self.get_qimage())
+        painter.end()
+
+    def _image_space_raster(self) -> Optional[tuple[QPoint, QImage]]:
+        """Returns the layer image drawn through its transform, with the image position of its top left corner.
+
+        Scaled and rotated layers are composited from this image with whole-pixel translations, so every pixel is
+        sampled once from the layer image, whatever region of the canvas is being rendered. The raster is rebuilt
+        when the transform changes, and its changed area is redrawn when the layer content changes.
+        """
+        if self._raster is None:
+            layer_image = self.get_qimage()
+            if layer_image is None or layer_image.isNull():
+                return None
+            area = self._changed_image_area(self.bounds, self._transform)
+            if area.isEmpty():
+                return None
+            raster_image = create_transparent_image(area.size())
+            origin = area.topLeft()
+            self._paint_raster(raster_image, origin, QRect(QPoint(), area.size()))
+            self._raster = (origin, raster_image)
+        return self._raster
+
+    def _update_raster(self, layer_change_bounds: QRect) -> None:
+        """Redraws the part of the cached raster that a layer content change affects, dropping it if the layer
+           size changed."""
+        if self._raster is None:
+            return
+        origin, raster_image = self._raster
+        if self._changed_image_area(self.bounds, self._transform).size() != raster_image.size():
+            self._raster = None
+            return
+        area = self._changed_image_area(layer_change_bounds, self._transform).translated(-origin)
+        area = area.intersected(QRect(QPoint(), raster_image.size()))
+        # Qt's sampling depends on where each drawn span starts, so redraw whole rows to match a full redraw exactly.
+        area = QRect(0, area.y(), raster_image.width(), area.height())
+        if not area.isEmpty():
+            self._paint_raster(raster_image, origin, area)
 
     def render_to_new_image(self, transform: Optional[QTransform] = None,
                             inner_bounds: Optional[QRect] = None, z_max: Optional[int] = None,

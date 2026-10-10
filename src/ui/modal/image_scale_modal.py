@@ -9,7 +9,7 @@ from PySide6.QtGui import QIcon, Qt
 from PySide6.QtWidgets import QDialog, QFormLayout, QPushButton, QComboBox, QSpinBox, QHBoxLayout, QDoubleSpinBox, \
     QWidget, QApplication, QVBoxLayout, QLabel
 
-from src.api.controlnet.control_parameter import DynamicControlFieldWidget
+from src.api.controlnet.control_parameter import ControlParameter, DynamicControlFieldWidget
 from src.api.controlnet.controlnet_constants import CONTROLNET_MODEL_NONE
 from src.api.controlnet.controlnet_model import ControlNetModel
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
@@ -173,6 +173,7 @@ class ImageScaleModal(QDialog):
         self._sd_upscale_step_slider: Optional[DynamicFieldWidget] = None
         self._tile_model_dropdown: Optional[QComboBox] = None
         self._tile_preprocessor_dropdown: Optional[QComboBox] = None
+        self._tile_unit_param_controls: list[DynamicControlFieldWidget] = []
         self._tile_preprocessor_param_controls: list[DynamicControlFieldWidget] = []
 
         self._tile_model_options = cache.get(Cache.SD_UPSCALING_CONTROLNET_TILE_MODELS)
@@ -198,6 +199,8 @@ class ImageScaleModal(QDialog):
 
         def on_finish(should_scale: bool) -> None:
             """Cleanup, set choice, and close on 'scale image'/'cancel'."""
+            if self._controlnet_cache_timer.isActive():
+                self._save_controlnet_to_cache()
             if self._layer_handling_box is not None:
                 self._remove_widget(self._layer_handling_box)
             self._remove_sd_upscale_controls()
@@ -303,6 +306,13 @@ class ImageScaleModal(QDialog):
         if model_name == CONTROLNET_MODEL_NONE:
             self._remove_controlnet_tile_inputs()
         else:
+            if len(self._tile_unit_param_controls) == 0:
+                for unit_param in self._tile_unit_params():
+                    control_widget, _ = unit_param.get_input_widget(False)
+                    self._form_layout.insertRow(self._form_layout.rowCount(), unit_param.display_name,
+                                                control_widget)
+                    control_widget.valueChanged.connect(self._schedule_controlnet_cache_save)
+                    self._tile_unit_param_controls.append(control_widget)
             new_preprocessor_name: Optional[str] = None
             if self._tile_preprocessor_dropdown is None:
                 self._tile_preprocessor_dropdown = QComboBox()
@@ -359,8 +369,21 @@ class ImageScaleModal(QDialog):
                 self._form_layout.removeRow(preprocessor_widget)
             self._tile_preprocessor_param_controls.clear()
 
+    def _tile_unit_params(self) -> list[ControlParameter]:
+        """Returns the tile unit's strength, start and end parameters, in the order their inputs appear."""
+        assert self._tile_control_unit is not None
+        return [self._tile_control_unit.control_strength, self._tile_control_unit.control_start,
+                self._tile_control_unit.control_end]
+
     def _remove_controlnet_tile_inputs(self) -> None:
         self._remove_controlnet_tile_preprocessor_inputs()
+        if len(self._tile_unit_param_controls) > 0:
+            for unit_widget, unit_param in zip(self._tile_unit_param_controls, self._tile_unit_params()):
+                unit_widget.valueChanged.disconnect(self._schedule_controlnet_cache_save)
+                unit_param.disconnect_input_widget(unit_widget)
+                unit_widget.setHidden(True)
+                self._form_layout.removeRow(unit_widget)
+            self._tile_unit_param_controls.clear()
         if self._tile_preprocessor_dropdown is not None:
             self._tile_preprocessor_dropdown.currentTextChanged.disconnect(self._tile_preprocessor_update)
             self._tile_preprocessor_dropdown.setHidden(True)

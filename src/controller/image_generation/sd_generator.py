@@ -3,7 +3,7 @@
 import logging
 from argparse import Namespace
 from json import JSONDecodeError
-from typing import Optional, cast, Any
+from typing import Optional, cast, Any, Protocol
 
 from PySide6.QtCore import Signal, QSize, SignalInstance, QRect, QPoint
 from PySide6.QtGui import QImage, QIcon, QPainter, QTransform
@@ -14,12 +14,11 @@ from src.api.controlnet.controlnet_constants import ControlTypeDef, CONTROLNET_R
 from src.api.controlnet.controlnet_model import ControlNetModel
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.controlnet.controlnet_unit import ControlKeyType, ControlNetUnit
-from src.api.webservice import WebService
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.layers.image_stack import ImageStack
-from src.image.layers.image_stack_utils import scale_all_layers
+from src.image.layers.image_stack_utils import scale_all_layers_ungrouped
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.panel.controlnet_panel import TabbedControlNetPanel, CONTROLNET_TITLE
@@ -180,6 +179,17 @@ LCM_LORA_1_5 = 'lcm-lora-sdv1-5'
 LCM_LORA_XL = 'lcm-lora-sdxl'
 
 
+class SDClient(Protocol):
+    """The client methods `SDGenerator` calls, shared by `src.api`'s clients and the `sd_backend_client` clients."""
+
+    @property
+    def server_url(self) -> str:
+        """Returns the server URL."""
+
+    def disconnect(self) -> None:
+        """Closes the client's connection. The client is unusable afterwards."""
+
+
 def _check_lcm_mode_available(_) -> bool:
     sampling_methods = [str(method).lower() for method in Cache().get_options(Cache.SAMPLING_METHOD)]
     if LCM_SAMPLER.lower() not in sampling_methods:
@@ -233,7 +243,7 @@ class SDGenerator(ImageGenerator):
             return [self._controlnet_tab]
         return []
 
-    def get_webservice(self) -> Optional[WebService]:
+    def get_webservice(self) -> Optional[SDClient]:
         """Return the webservice object this module uses to connect to Stable Diffusion, if initialized."""
         raise NotImplementedError()
 
@@ -241,7 +251,7 @@ class SDGenerator(ImageGenerator):
         """Destroy and remove any active webservice object."""
         raise NotImplementedError()
 
-    def create_or_get_webservice(self, url: str) -> WebService:
+    def create_or_get_webservice(self, url: str) -> SDClient:
         """Return the webservice object this module uses to connect to Stable Diffusion.  If the webservice already
            exists but the url doesn't match, a new webservice should replace the existing one, using the new url."""
         raise NotImplementedError()
@@ -666,34 +676,14 @@ class SDGenerator(ImageGenerator):
 
         task.error_signal.connect(handle_error)
 
-        def apply_upscaled(img: QImage) -> None:
-            """Copy the upscaled image into the image stack."""
-            with UndoStack().combining_actions('SDWebUIGenerator.upscale'):
-                if self._image_stack.confirm_no_locked_layers():
-                    scale_all_layers(self._image_stack, img.width(), img.height())
-                else:
-                    old_size = self._image_stack.size
-                    scaled_size = img.size()
-
-                    def _update_size(size=scaled_size) -> None:
-                        self._image_stack.size = size
-
-                    def _revert_size(size=old_size) -> None:
-                        self._image_stack.size = size
-
-                    UndoStack().commit_action(_update_size, _revert_size, 'SDWebUIGenerator.upscale_resize')
-                new_layer = self._image_stack.create_layer(layer_name=UPSCALED_LAYER_NAME,
-                                                           layer_parent=self._image_stack.layer_stack, image_data=img)
-                self._image_stack.active_layer = new_layer
-
-        task.image_ready.connect(apply_upscaled)
+        task.image_ready.connect(self._apply_upscaled_image)
 
         def _on_finish() -> None:
             assert self._window is not None
             self._window.set_is_loading(False)
             task.status_signal.disconnect(_apply_status_update)
             task.error_signal.disconnect(handle_error)
-            task.image_ready.disconnect(apply_upscaled)
+            task.image_ready.disconnect(self._apply_upscaled_image)
             task.finish_signal.disconnect(_on_finish)
 
         task.finish_signal.connect(_on_finish)
@@ -702,6 +692,28 @@ class SDGenerator(ImageGenerator):
             self._async_progress_check()
         task.start()
         return True
+
+    def _apply_upscaled_image(self, img: QImage) -> None:
+        """Scales the image stack to the upscaled image's size and adds the image as a new layer, as one undo action.
+
+        With locked layers present, only the canvas is resized."""
+        with UndoStack().combining_actions('SDWebUIGenerator.upscale'):
+            if self._image_stack.confirm_no_locked_layers():
+                scale_all_layers_ungrouped(self._image_stack, img.width(), img.height())
+            else:
+                old_size = self._image_stack.size
+                scaled_size = img.size()
+
+                def _update_size(size=scaled_size) -> None:
+                    self._image_stack.size = size
+
+                def _revert_size(size=old_size) -> None:
+                    self._image_stack.size = size
+
+                UndoStack().commit_action(_update_size, _revert_size, 'SDWebUIGenerator.upscale_resize')
+            new_layer = self._image_stack.create_layer(layer_name=UPSCALED_LAYER_NAME,
+                                                       layer_parent=self._image_stack.layer_stack, image_data=img)
+            self._image_stack.active_layer = new_layer
 
     @menu_action(MENU_STABLE_DIFFUSION, 'lora_shortcut', 201, [APP_STATE_EDITING],
                  condition_check=_check_lora_available)

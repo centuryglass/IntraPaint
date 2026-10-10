@@ -1,5 +1,19 @@
 # Changelog and release notes
 
+## [1.4.0](https://github.com/centuryglass/IntraPaint/compare/v1.3.0...v1.4.0) (2026-10-10)
+
+
+### Features
+
+* **upscaling:** add tile ControlNet strength, start and end controls ([#267](https://github.com/centuryglass/IntraPaint/issues/267)) ([b7c1026](https://github.com/centuryglass/IntraPaint/commit/b7c10260f28db88efdd9709fb909a650adc52a76))
+
+
+### Bug Fixes
+
+* **generation:** run ComfyUI generation through sd-backend-client ([#250](https://github.com/centuryglass/IntraPaint/issues/250)) ([0f0aa09](https://github.com/centuryglass/IntraPaint/commit/0f0aa0944d90b71bc5795df72e28918e4079d571)), closes [#103](https://github.com/centuryglass/IntraPaint/issues/103)
+* **generation:** stop Stable Diffusion upscaling from crashing when it applies the result ([#264](https://github.com/centuryglass/IntraPaint/issues/264)) ([d590be4](https://github.com/centuryglass/IntraPaint/commit/d590be436d3b95eb8995e355588b809ff11e3c82))
+* **layers:** render scaled and rotated layers from an image-space raster ([#249](https://github.com/centuryglass/IntraPaint/issues/249)) ([22d2782](https://github.com/centuryglass/IntraPaint/commit/22d2782f3862dbc121c066367102e195ad354412))
+
 ## [1.3.0](https://github.com/centuryglass/IntraPaint/compare/v1.2.0...v1.3.0) (2026-10-09)
 
 

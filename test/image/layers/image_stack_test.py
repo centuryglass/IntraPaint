@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 from typing import cast
 
 from PySide6.QtCore import QSize, QRect, QPoint, Qt
-from PySide6.QtGui import QImage, QPainter
+from PySide6.QtGui import QImage, QPainter, QTransform
 from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
@@ -107,6 +107,53 @@ class ImageStackTest(IntraPaintTestCase):
         self.assertIsInstance(layer, ImageLayer)
         assert layer is not None
         self.assertEqual(layer.image, image)
+
+    def test_load_image_has_identity_transforms(self) -> None:
+        """A newly loaded image starts with no transformation, even over a transformed image."""
+        image = QImage(INIT_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        self.image_stack.load_image(image)
+        first_layer = self.image_stack.active_layer
+        assert isinstance(first_layer, TransformLayer)
+        self.assertTrue(first_layer.transform.isIdentity())
+        self.assertTrue(self.image_stack.selection_layer.transform.isIdentity())
+
+        first_layer.set_transform(QTransform().translate(40, 25).rotate(30).scale(0.5, 0.5))
+        self.image_stack.selection_layer.set_transform(QTransform().translate(7, 3))
+
+        self.image_stack.load_image(image)
+        second_layer = self.image_stack.active_layer
+        assert isinstance(second_layer, TransformLayer)
+        self.assertIsNot(first_layer, second_layer)
+        self.assertEqual(1, self.image_stack.count)
+        self.assertTrue(second_layer.transform.isIdentity())
+        self.assertEqual(QRect(QPoint(), image.size()), second_layer.transformed_bounds)
+        self.assertTrue(self.image_stack.selection_layer.transform.isIdentity())
+        self.image_stack.flush_render()
+        self.assertEqual(image, self.image_stack.qimage())
+
+    def test_load_image_undo_restores_transforms(self) -> None:
+        """Undoing an image load restores the previous image with its transformation."""
+        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)  # Keep the two loads as separate undo entries.
+        image = QImage(INIT_IMAGE)
+        self.image_stack.load_image(image)
+        first_layer = self.image_stack.active_layer
+        assert isinstance(first_layer, TransformLayer)
+        transform = QTransform().translate(40, 25).scale(0.5, 0.5)
+        first_layer.set_transform(transform)
+        self.image_stack.load_image(image)
+        UndoStack().undo()
+        restored = self.image_stack.active_layer
+        assert isinstance(restored, TransformLayer)
+        self.assertEqual(transform, restored.transform)
+
+    def test_load_layer_stack_resets_selection_transform(self) -> None:
+        """Loading a layer stack clears the selection layer's transformation."""
+        self.image_stack.load_image(QImage(INIT_IMAGE))
+        self.image_stack.selection_layer.set_transform(QTransform().translate(7, 3))
+        new_stack = LayerGroup('loaded')
+        new_stack.insert_layer(ImageLayer(QImage(INIT_IMAGE), 'loaded layer'), 0)
+        self.image_stack.load_layer_stack(new_stack, QImage(INIT_IMAGE).size())
+        self.assertTrue(self.image_stack.selection_layer.transform.isIdentity())
 
     def test_layer_create(self) -> None:
         """Test creating new layers and layer groups"""
