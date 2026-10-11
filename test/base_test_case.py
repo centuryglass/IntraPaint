@@ -13,6 +13,7 @@ to the committed file, then replace the committed file with it. A test that pass
 over from an earlier failure.
 """
 import difflib
+import gc
 import json
 import os
 import tempfile
@@ -212,8 +213,13 @@ class IntraPaintTestCase(unittest.TestCase):
     Config values, config connections, the undo history, app state and hotkey bindings are singletons that persist
     across tests. They're reset before each test, so it starts from the test config defaults, and again after it, so it
     can't leave state behind for tests that don't use this class. Widgets with no parent that the test created are
-    deleted after it, with their children, and the system clipboard is cleared. The working directory is the project root during every test, since resources
-    and the config definitions load from paths relative to it.
+    deleted after it, with their children, and the system clipboard is cleared. The working directory is the project root
+    during every test, since resources and the config definitions load from paths relative to it.
+
+    Python's cyclic garbage collector is disabled while a test runs and runs between tests. A collection triggered
+    inside a Qt call (constructing a widget, or an event filter or style override Qt calls back into) can free a
+    widget that Qt is still using, which fails intermittently with "already deleted" errors. A test that needs the
+    collector calls `gc.enable()` itself.
 
     Subclasses that override setUp or tearDown must call the superclass implementation: setUp first, tearDown last.
     """
@@ -223,6 +229,8 @@ class IntraPaintTestCase(unittest.TestCase):
         os.chdir(PROJECT_ROOT)
         reset_singletons()
         self._existing_widgets = parentless_widgets()
+        gc.collect()
+        gc.disable()
 
     def tearDown(self) -> None:
         reset_singletons()
@@ -231,6 +239,8 @@ class IntraPaintTestCase(unittest.TestCase):
         QApplication.clipboard().clear()
         delete_widgets_created_since(self._existing_widgets)
         del self._existing_widgets
+        gc.collect()
+        gc.enable()
         super().tearDown()
 
     def assert_image_matches_golden(self, actual: QImage, golden_path: str, msg: Optional[str] = None) -> None:
