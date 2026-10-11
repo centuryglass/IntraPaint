@@ -3,15 +3,14 @@
 import math
 
 import numpy as np
-from PySide6.QtCore import QPoint, QRectF, QSize, Qt
+from PySide6.QtCore import QPoint, QRect, QRectF, QSize, Qt
 from PySide6.QtGui import QImage, QPainter, QPen
 
 from src.config.cache import Cache
 from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.layers.selection_layer import SelectionLayer
 from src.tools.selection_brush_tool import SelectionBrushTool
-from src.ui.input_fields.dual_toggle import DualToggle
-from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_DESELECT
+from src.util.visual.selection_mode import SelectionMode
 from src.undo_stack import UndoStack
 from src.util.visual.image_utils import image_data_as_numpy_8bit
 from test.tools.tool_test_case import ToolTestCase
@@ -122,6 +121,67 @@ class SelectionBrushToolTest(ToolTestCase):
         self.assertEqual(self.selection_layer.context_pins, [])
         self.assertFalse(self.selection_layer.is_empty())
 
+    def _selection_mask(self) -> np.ndarray:
+        image = self.selection_layer.image.convertToFormat(QImage.Format.Format_ARGB32)
+        return image_data_as_numpy_8bit(image)[:, :, 3] > 0
+
+    def _preselect(self, rect: QRect) -> np.ndarray:
+        """Selects a rectangle outside the undo history, returning the selection mask."""
+        image = self.selection_layer.image
+        painter = QPainter(image)
+        painter.fillRect(rect, Qt.GlobalColor.red)
+        painter.end()
+        self.selection_layer.image = image
+        UndoStack().clear()
+        return self._selection_mask()
+
+    def _stroke_only_mask(self, points: list[QPoint]) -> np.ndarray:
+        """Returns the pixels one stroke selects on an empty selection, then restores the empty selection."""
+        self.selection_layer.clear(False)
+        UndoStack().clear()
+        self.mouse_drag(points)
+        mask = self._selection_mask()
+        self.selection_layer.clear(False)
+        UndoStack().clear()
+        return mask
+
+    def test_replace_mode_stroke_replaces_selection(self) -> None:
+        """A replace-mode stroke leaves only the stroke selected, as one undo step that restores the old selection."""
+        points = [QPoint(300, 300), QPoint(340, 320), QPoint(380, 300)]
+        stroke = self._stroke_only_mask(points)
+        existing = self._preselect(QRect(50, 50, 100, 100))
+        self.set_selection_mode(SelectionMode.REPLACE)
+        self.mouse_drag(points)
+        np.testing.assert_array_equal(self._selection_mask(), stroke)
+        self.assertEqual(UndoStack().undo_count(), 1)
+        UndoStack().undo()
+        np.testing.assert_array_equal(self._selection_mask(), existing)
+        UndoStack().redo()
+        np.testing.assert_array_equal(self._selection_mask(), stroke)
+
+    def test_intersect_mode_stroke_keeps_overlap(self) -> None:
+        """An intersect-mode stroke leaves the part of the old selection under the stroke, as one undo step."""
+        points = [QPoint(30, 100), QPoint(100, 100), QPoint(170, 100)]
+        stroke = self._stroke_only_mask(points)
+        existing = self._preselect(QRect(50, 50, 100, 100))
+        self.set_selection_mode(SelectionMode.INTERSECT)
+        self.mouse_drag(points)
+        expected = existing & stroke
+        self.assertTrue(expected.any())
+        self.assertFalse(np.array_equal(expected, stroke))
+        np.testing.assert_array_equal(self._selection_mask(), expected)
+        self.assertEqual(UndoStack().undo_count(), 1)
+        UndoStack().undo()
+        np.testing.assert_array_equal(self._selection_mask(), existing)
+
+    def test_add_mode_stroke_keeps_existing_selection(self) -> None:
+        """With the default add mode, a stroke keeps the old selection and adds to it."""
+        points = [QPoint(300, 300), QPoint(340, 320), QPoint(380, 300)]
+        stroke = self._stroke_only_mask(points)
+        existing = self._preselect(QRect(50, 50, 100, 100))
+        self.mouse_drag(points)
+        np.testing.assert_array_equal(self._selection_mask(), existing | stroke)
+
 
 SELECTION_BRUSH_GOLDEN_DIR = 'test/resources/test_images/selection_brush'
 SELECTED_ARGB = 0xffff0000  # Every selected pixel, with the test config's SELECTION_COLOR.
@@ -174,13 +234,8 @@ class SelectionBrushStrokeTest(ToolTestCase):
         UndoStack().clear()
 
     def _set_deselect_mode(self) -> None:
-        """Switches the tool to erasing selection through its control panel's select/deselect toggle."""
-        panel = self.tool.get_control_panel()
-        assert panel is not None
-        mode_toggle = panel.findChild(DualToggle)
-        assert isinstance(mode_toggle, DualToggle)
-        mode_toggle.setValue(TOOL_MODE_DESELECT)
-        self.assertTrue(self.brush.eraser)
+        """Switches the tool to erasing selection through the shared selection mode."""
+        self.set_selection_mode(SelectionMode.SUBTRACT)
 
     def _select_all(self) -> QImage:
         """Selects the whole image outside the undo history, and returns the selection layer image."""

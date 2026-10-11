@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QPointF, QLineF, QEvent
-from PySide6.QtGui import QKeySequence, QIcon, QMouseEvent, QPainter, QPainterPath, QTransform
+from PySide6.QtGui import QKeySequence, QIcon, QMouseEvent, QPainterPath
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.key_config import KeyConfig
@@ -12,10 +12,10 @@ from src.tools.base_tool import BaseTool
 from src.ui.graphics_items.path_creation_item import PathCreationItem
 from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_DESELECT
 from src.ui.panel.tool_control_panels.free_selection_panel import FreeSelectionPanel
 from src.undo_stack import UndoStack
 from src.util.shared_constants import PROJECT_DIR
+from src.util.visual.selection_mode import selection_mode_for_gesture, compose_selection_path
 from src.util.visual.text_drawing_utils import rich_text_key_hint, left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -49,11 +49,6 @@ class FreeSelectionTool(BaseTool):
         self._control_panel = FreeSelectionPanel(image_stack.selection_layer, self)
         self._path_item = PathCreationItem(self._scene)
         self._preview_line = TempDashedLineItem(scene)
-        self._clearing = False
-
-        def _update_clearing(mode: str) -> None:
-            self._clearing = mode == TOOL_MODE_DESELECT
-        self._control_panel.tool_mode_changed.connect(_update_clearing)
 
         def _close_on_enter() -> bool:
             if not self.is_active or self._path_item.count < 3:
@@ -80,19 +75,24 @@ class FreeSelectionTool(BaseTool):
         selection_hint = FREE_SELECTION_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
                                                             escape_key=rich_text_key_hint('Esc'),
                                                             enter_key=rich_text_key_hint('Enter'))
-        return f'{selection_hint}<br/>{super().get_input_hint()}'
+        return f'{selection_hint}<br/>{BaseTool.selection_modifier_hint()}<br/>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
         return self._control_panel
 
     def _close_and_select(self) -> None:
-        """Clears the polygon and selects or deselects its area, as one undo step that restores the open polygon."""
+        """Clears the polygon and combines its area with the selection using the selection mode, as one undo step that
+           restores the open polygon.
+
+        The add and subtract modifiers held when the polygon closes override the stored mode.
+        """
         polygon = self._path_item.get_path()
         if polygon is None:
             return
         self._preview_line.set_line(QLineF())
         self._preview_line.setVisible(False)
+        mode = selection_mode_for_gesture()
         layer = self._image_stack.selection_layer
         layer_pos = layer.transformed_bounds.topLeft()
         bounds = polygon.boundingRect().toAlignedRect()
@@ -100,17 +100,13 @@ class FreeSelectionTool(BaseTool):
         bounds = bounds.intersected(layer.bounds)
         with UndoStack().combining_actions('FreeSelectionTool._close_and_select'):
             self._path_item.clear_points()
-            if bounds.isEmpty():
+            if bounds.isEmpty() and mode.keeps_unrelated_content:
                 return
-            with layer.borrow_image(bounds) as selection_img:
-                painter = QPainter(selection_img)
-                if self._clearing:
-                    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
-                painter.setTransform(QTransform.fromTranslate(-layer_pos.x(), -layer_pos.y()))
+            with layer.borrow_image(bounds if mode.keeps_unrelated_content else None) as selection_img:
                 path = QPainterPath()
                 path.addPolygon(polygon)
-                painter.fillPath(path, Qt.GlobalColor.red)
-                painter.end()
+                compose_selection_path(selection_img, path.translated(-layer_pos.x(), -layer_pos.y()),
+                                       Qt.GlobalColor.red, mode)
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Start selecting on click."""

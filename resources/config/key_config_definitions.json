@@ -35,6 +35,24 @@
         "default": "Ctrl",
         "saved": true
     },
+    "selection_add_modifier": {
+        "label": "Selection Add Modifier:",
+        "category": "Keybindings",
+        "subcategory": "Modifiers",
+        "description": "When held as a selection gesture starts, the gesture adds to the selection whatever the selection mode is. Held together with the subtract modifier, the gesture intersects with the selection.",
+        "type": "string",
+        "default": "Shift",
+        "saved": true
+    },
+    "selection_subtract_modifier": {
+        "label": "Selection Subtract Modifier:",
+        "category": "Keybindings",
+        "subcategory": "Modifiers",
+        "description": "When held as a selection gesture starts, the gesture subtracts from the selection whatever the selection mode is. On Linux, many window managers (XFCE, Cinnamon, MATE, KDE Plasma 5) use Alt+drag to move windows, and the press never reaches IntraPaint. Either change the window manager's window-move modifier to Super, or bind this to another modifier such as Meta.",
+        "type": "string",
+        "default": "Alt",
+        "saved": true
+    },
     "fixed_aspect_modifier": {
         "label": "Fixed Aspect Ratio Modifier:",
         "category": "Keybindings",

@@ -206,6 +206,7 @@ class Cache(Config, metaclass=Singleton):
     SD_WEBUI_SERVER_URL: str
     SEED: str
     SELECTION_BRUSH_SIZE: str
+    SELECTION_MODE: str
     SHAPE_TOOL_ANTIALIAS: str
     SHAPE_TOOL_DASH_PATTERN: str
     SHAPE_TOOL_FILL_COLOR: str

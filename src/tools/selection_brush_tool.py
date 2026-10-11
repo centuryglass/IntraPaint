@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QPointF
-from PySide6.QtGui import QIcon, QColor, QMouseEvent
+from PySide6.QtGui import QIcon, QColor, QMouseEvent, QImage
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.application_config import AppConfig
@@ -16,8 +16,10 @@ from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
 from src.ui.graphics_items.context_pin_item import marker_screen_bounds
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_DESELECT, BrushSelectionPanel
+from src.ui.panel.tool_control_panels.brush_selection_panel import BrushSelectionPanel
 from src.util.shared_constants import PROJECT_DIR
+from src.undo_stack import UndoStack
+from src.util.visual.selection_mode import SelectionMode, stored_selection_mode, compose_selection_image
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -35,6 +37,9 @@ CONTROL_HINT_SELECTION_TOOL = _tr('{left_mouse_icon}: select - {right_mouse_icon
 
 ICON_PATH_SELECTION_TOOL = f'{PROJECT_DIR}/resources/icons/tools/selection_icon.svg'
 CURSOR_PATH_SELECTION_TOOL = f'{PROJECT_DIR}/resources/cursors/selection_cursor.svg'
+
+# Undo gesture that holds a REPLACE or INTERSECT stroke together with the clearing that precedes it:
+UNDO_GESTURE = 'SelectionBrushTool.stroke'
 
 # Screen distance a right-button drag must move before releasing it keeps a grabbed pin instead of removing it:
 PIN_DRAG_THRESHOLD_PX = 4
@@ -75,10 +80,11 @@ class SelectionBrushTool(BrushTool):
                          QIcon(ICON_PATH_SELECTION_TOOL), image_stack, image_viewer, brush, False, False)
         self._last_click = None
         self._control_panel = BrushSelectionPanel(image_stack.selection_layer, self)
-        self._control_panel.tool_mode_changed.connect(self._tool_toggle_slot)
         self._active = False
         self._drawing = False
         self._pin_drag: Optional[_PinDrag] = None
+        self._stroke_mode = SelectionMode.ADD
+        self._selection_before_stroke: Optional[QImage] = None  # Set only while an INTERSECT stroke is in progress.
         self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_SELECTION_TOOL))
 
         # Setup brush, load size from config
@@ -98,6 +104,11 @@ class SelectionBrushTool(BrushTool):
         self.layer = image_stack.selection_layer
         self.update_brush_cursor()
 
+        def _update_eraser(mode_str: str) -> None:
+            self._brush.eraser = mode_str == SelectionMode.SUBTRACT.value
+        _update_eraser(Cache().get(Cache.SELECTION_MODE))
+        Cache().connect(self, Cache.SELECTION_MODE, _update_eraser)
+
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
         select_hint = CONTROL_HINT_SELECTION_TOOL.format(left_mouse_icon=left_button_hint_text(),
@@ -108,9 +119,31 @@ class SelectionBrushTool(BrushTool):
         """Returns the selection control panel."""
         return self._control_panel
 
-    def _tool_toggle_slot(self, selected_tool_label: str):
-        """Switches the mask tool between draw and erase modes."""
-        self._brush.eraser = selected_tool_label == TOOL_MODE_DESELECT
+    def _before_stroke_start(self) -> None:
+        """Applies the selection mode to the stroke about to start.
+
+        The brush only adds or removes pixels as it draws. REPLACE clears the selection first, and INTERSECT clears it
+        while keeping a copy that `_after_stroke_end` intersects with the stroke. Both happen in the undo gesture that
+        the stroke's own changes join, so the whole stroke is one undo step.
+        """
+        self._stroke_mode = stored_selection_mode()
+        self._brush.eraser = self._stroke_mode == SelectionMode.SUBTRACT
+        if self._stroke_mode in (SelectionMode.REPLACE, SelectionMode.INTERSECT):
+            UndoStack().begin_gesture(UNDO_GESTURE)
+            if self._stroke_mode == SelectionMode.INTERSECT:
+                self._selection_before_stroke = self._image_stack.selection_layer.image
+            self._image_stack.selection_layer.clear()
+
+    def _after_stroke_end(self) -> None:
+        """Finishes an INTERSECT stroke, and closes the undo gesture opened for REPLACE and INTERSECT strokes."""
+        if self._stroke_mode not in (SelectionMode.REPLACE, SelectionMode.INTERSECT):
+            return
+        if self._selection_before_stroke is not None:
+            with self._image_stack.selection_layer.borrow_image() as selection_image:
+                compose_selection_image(selection_image, self._selection_before_stroke, SelectionMode.INTERSECT)
+            self._selection_before_stroke = None
+        UndoStack().end_gesture()
+        self._stroke_mode = SelectionMode.ADD
 
     def set_brush_size(self, new_size: int) -> None:
         """Update the brush size."""

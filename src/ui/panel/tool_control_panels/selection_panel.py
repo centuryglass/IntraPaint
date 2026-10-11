@@ -7,10 +7,13 @@ from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QPushButton, Q
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.selection_layer import SelectionLayer
 from src.tools.base_tool import BaseTool
 from src.ui.layout.reflowing_button_group import ReflowingButtonGroup
+from src.ui.widget.key_hint_label import KeyHintLabel
 from src.util.shared_constants import PROJECT_DIR, SMALL_ICON_SIZE, EDIT_MODE_INPAINT
+from src.util.visual.selection_mode import SelectionMode, stored_selection_mode
 from src.util.visual.text_drawing_utils import get_key_display_string
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -28,6 +31,7 @@ FILL_BUTTON_LABEL_WITH_KEY = _tr('Select All ({select_all_shortcut})')
 CLEAR_BUTTON_LABEL_WITH_KEY = _tr('Clear ({clear_shortcut})')
 CLEAR_PINS_BUTTON_LABEL = _tr('Clear Context Pins')
 CLEAR_PINS_BUTTON_LABEL_WITH_KEY = _tr('Clear Context Pins ({clear_pins_shortcut})')
+MODE_LABEL = _tr('Mode:')
 CLEAR_PINS_BUTTON_TOOLTIP = _tr('Remove all context pins. Right-click with the selection brush to add or remove pins.')
 ICON_PATH_CLEAR = f'{PROJECT_DIR}/resources/icons/tool_modes/clear_all.svg'
 ICON_PATH_FILL = f'{PROJECT_DIR}/resources/icons/tool_modes/fill.svg'
@@ -35,9 +39,13 @@ ICON_PATH_CLEAR_PINS = f'{PROJECT_DIR}/resources/icons/tool_modes/clear_context_
 
 
 class SelectionPanel(QWidget):
-    """Base control panel for selection editing tools."""
+    """Base control panel for selection editing tools.
 
-    def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool) -> None:
+    All selection panels show the shared `Cache.SELECTION_MODE` control. With `toggle_hotkey` set, the panel also
+    registers `KeyConfig.TOOL_ACTION_HOTKEY` to switch that mode between Add and Subtract while its tool is active.
+    """
+
+    def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool, toggle_hotkey=False) -> None:
         super().__init__()
         self._selection_layer = selection_layer
         self._selection_tool = selection_tool
@@ -144,6 +152,30 @@ class SelectionPanel(QWidget):
         cache.connect(self, Cache.INPAINT_OPTIONS_AVAILABLE, _update_clear_pins_visibility)
         cache.connect(self, Cache.EDIT_MODE, _update_clear_pins_visibility)
         _update_clear_pins_visibility()
+
+        # Selection mode, shared by every selection tool:
+        mode_row = QHBoxLayout()
+        mode_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        mode_label = QLabel(MODE_LABEL)
+        mode_combobox = cache.get_control_widget(Cache.SELECTION_MODE)
+        mode_label.setToolTip(cache.get_tooltip(Cache.SELECTION_MODE))
+        mode_combobox.setToolTip(cache.get_tooltip(Cache.SELECTION_MODE))
+        mode_row.addWidget(mode_label)
+        mode_row.addWidget(mode_combobox)
+        if toggle_hotkey:
+            mode_row.addWidget(KeyHintLabel(config_key=KeyConfig.TOOL_ACTION_HOTKEY, parent=self))
+
+            def _try_toggle() -> bool:
+                if not self.selection_tool_is_active:
+                    return False
+                if stored_selection_mode() == SelectionMode.SUBTRACT:
+                    cache.set(Cache.SELECTION_MODE, SelectionMode.ADD.value)
+                else:
+                    cache.set(Cache.SELECTION_MODE, SelectionMode.SUBTRACT.value)
+                return True
+            binding_id = f'SelectionPanel_{id(self)}_try_toggle'
+            HotkeyFilter.instance().register_config_keybinding(binding_id, _try_toggle, KeyConfig.TOOL_ACTION_HOTKEY)
+        self.insert_into_layout(mode_row)
 
     def minimumSizeHint(self) -> QSize:
         """Returns the layout's minimum width, and the height its contents need at that width.

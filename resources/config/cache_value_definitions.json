@@ -242,6 +242,21 @@
             "step": 1
         }
     },
+    "selection_mode": {
+        "label": "Selection mode:",
+        "category": "Cache",
+        "subcategory": "Selection",
+        "description": "How new selection shapes combine with the existing selection: 'Add' adds to it, 'Subtract' removes from it, 'Replace' discards it, and 'Intersect' keeps only the overlap. The selection add and subtract modifiers override this for one gesture.",
+        "type": "string",
+        "default": "Add",
+        "options": [
+            "Add",
+            "Subtract",
+            "Replace",
+            "Intersect"
+        ],
+        "saved": true
+    },
     "selection_brush_size": {
         "label": "Size:",
         "category": "Cache",

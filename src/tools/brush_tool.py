@@ -250,6 +250,7 @@ class BrushTool(BaseTool):
         if self._drawing:
             self._drawing = False
             self._brush.end_stroke()
+            self._after_stroke_end()
             self._tablet_input = None
             self._tablet_pressure = None
             self._tablet_x_tilt = None
@@ -319,6 +320,7 @@ class BrushTool(BaseTool):
         if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER) and not \
                 KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER):
             self._last_pos = image_coordinates  # Update so previous clicks don't constrain the angle
+        self._before_stroke_start()
         self._brush.start_stroke()
         self._stroke_to(image_coordinates)
         return True
@@ -350,6 +352,7 @@ class BrushTool(BaseTool):
         if self._drawing:
             self._drawing = False
             self._brush.end_stroke()
+            self._after_stroke_end()
             self._tablet_input = None
             self._tablet_pressure = None
             self._last_pressure = None
@@ -357,6 +360,13 @@ class BrushTool(BaseTool):
             self._tablet_y_tilt = None
             return True
         return False
+
+    def _before_stroke_start(self) -> None:
+        """Called once the stroke is allowed to start, before the brush begins it. Subclasses can prepare the layer."""
+
+    def _after_stroke_end(self) -> None:
+        """Called after the brush has drawn the last of a stroke. Subclasses can finish what
+           `_before_stroke_start` set up."""
 
     def mouse_enter(self, event: Optional[QEvent], image_coordinates: QPoint) -> bool:
         """Show the line preview on enter if in line mode."""

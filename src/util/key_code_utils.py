@@ -54,6 +54,8 @@ def get_modifiers(modifier_str: str | list[str]) -> Qt.KeyboardModifier:
                 modifiers = modifiers | Qt.KeyboardModifier.ShiftModifier
             case 'alt':
                 modifiers = modifiers | Qt.KeyboardModifier.AltModifier
+            case 'meta' | 'super':
+                modifiers = modifiers | Qt.KeyboardModifier.MetaModifier
             case _:
                 raise ValueError(f'Unexpected modifier key string {mod_str}')
     return modifiers

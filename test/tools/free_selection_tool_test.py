@@ -1,6 +1,7 @@
 """Tests FreeSelectionTool: clicks build a polygon, closing it selects or deselects its area as one undo step, and
    Escape cancels it."""
 from typing import Sequence
+from unittest import mock
 
 import numpy as np
 from PySide6.QtCore import QEvent, QPoint, QRect, Qt
@@ -9,9 +10,8 @@ from PySide6.QtWidgets import QApplication
 
 from src.hotkey_filter import HotkeyFilter
 from src.tools.free_selection_tool import FreeSelectionTool
-from src.ui.input_fields.dual_toggle import DualToggle
-from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_DESELECT
 from src.undo_stack import UndoStack
+from src.util.visual.selection_mode import SelectionMode
 from test.tools.selection_tool_test_case import SelectionToolTestCase, rect_mask
 
 # Polygon points sit on pixel corners, so this polygon covers the pixels of QRect(10, 8, 30, 22):
@@ -33,7 +33,7 @@ class FreeSelectionToolTest(SelectionToolTestCase):
         hotkey_filter = HotkeyFilter.instance()
         hotkey_filter.remove_keybinding('FreeSelectionTool._close_on_enter')
         hotkey_filter.remove_keybinding(f'FreeSelectionTool_{id(self.tool)}_cancel_on_escape')
-        hotkey_filter.remove_keybinding(f'FreeSelectionPanel_{id(self.tool.get_control_panel())}_try_toggle')
+        hotkey_filter.remove_keybinding(f'SelectionPanel_{id(self.tool.get_control_panel())}_try_toggle')
         super().tearDown()
 
     def _path_point_count(self) -> int:
@@ -48,12 +48,8 @@ class FreeSelectionToolTest(SelectionToolTestCase):
         QApplication.sendEvent(self.image_viewer, QKeyEvent(QEvent.Type.KeyPress, key, Qt.KeyboardModifier.NoModifier))
 
     def _set_deselect_mode(self) -> None:
-        """Switches the tool to deselecting through its control panel's select/deselect toggle."""
-        panel = self.tool.get_control_panel()
-        assert panel is not None
-        mode_toggle = panel.findChild(DualToggle)
-        assert isinstance(mode_toggle, DualToggle)
-        mode_toggle.setValue(TOOL_MODE_DESELECT)
+        """Switches the tool to deselecting through the shared selection mode."""
+        self.set_selection_mode(SelectionMode.SUBTRACT)
 
     def test_clicks_build_polygon_without_selecting(self) -> None:
         """Each click adds a polygon point as its own undo step, and selects nothing until the polygon closes."""
@@ -160,3 +156,54 @@ class FreeSelectionToolTest(SelectionToolTestCase):
         self._click_points(RECT_POINTS)
         self._press_key(Qt.Key.Key_Return)
         self.assert_selection(existing & ~rect_mask(self.IMAGE_SIZE, RECT_AREA))
+
+    def _close_with(self, modifiers: Qt.KeyboardModifier) -> None:
+        """Builds the rectangle polygon, then closes it by clicking its first point while the modifiers are held.
+
+        Enter can't carry the modifiers, since HotkeyFilter only runs a key binding whose modifiers match exactly.
+        """
+        self._click_points(RECT_POINTS)
+        UndoStack().clear()
+        with mock.patch.object(QApplication, 'keyboardModifiers', return_value=modifiers):
+            self.mouse_drag([RECT_POINTS[0]], modifiers=modifiers)
+
+    def _existing(self) -> np.ndarray:
+        existing = rect_mask(self.IMAGE_SIZE, QRect(0, 0, 32, 24))
+        self.set_selection_outside_history(existing)
+        return existing
+
+    def test_replace_mode(self) -> None:
+        """Replace mode leaves only the polygon selected."""
+        existing = self._existing()
+        self.set_selection_mode(SelectionMode.REPLACE)
+        self._close_with(Qt.KeyboardModifier.NoModifier)
+        self.assert_one_undo_step(existing, rect_mask(self.IMAGE_SIZE, RECT_AREA))
+
+    def test_replace_mode_with_polygon_outside_image_clears_selection(self) -> None:
+        """A replace polygon entirely outside the image still discards the old selection."""
+        existing = self._existing()
+        self.set_selection_mode(SelectionMode.REPLACE)
+        self._click_points([QPoint(70, 10), QPoint(90, 10), QPoint(90, 30)])
+        UndoStack().clear()
+        self._press_key(Qt.Key.Key_Return)
+        self.assert_one_undo_step(existing, self.empty)
+
+    def test_intersect_mode(self) -> None:
+        """Intersect mode keeps only the overlap of the polygon and the selection."""
+        existing = self._existing()
+        self.set_selection_mode(SelectionMode.INTERSECT)
+        self._close_with(Qt.KeyboardModifier.NoModifier)
+        self.assert_one_undo_step(existing, existing & rect_mask(self.IMAGE_SIZE, RECT_AREA))
+
+    def test_alt_subtracts(self) -> None:
+        """Alt held when the first point is clicked subtracts despite the default add mode."""
+        existing = self._existing()
+        self._close_with(Qt.KeyboardModifier.AltModifier)
+        self.assert_one_undo_step(existing, existing & ~rect_mask(self.IMAGE_SIZE, RECT_AREA))
+
+    def test_shift_adds_in_subtract_mode(self) -> None:
+        """Shift held when the first point is clicked adds despite a stored subtract mode."""
+        existing = self._existing()
+        self.set_selection_mode(SelectionMode.SUBTRACT)
+        self._close_with(Qt.KeyboardModifier.ShiftModifier)
+        self.assert_one_undo_step(existing, existing | rect_mask(self.IMAGE_SIZE, RECT_AREA))

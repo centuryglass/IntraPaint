@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint
-from PySide6.QtGui import QIcon, QMouseEvent, QPainter, QColor, QBrush, QPainterPath, QCursor
+from PySide6.QtGui import QIcon, QMouseEvent, QColor, QBrush, QPainterPath, QCursor
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.application_config import AppConfig
@@ -13,6 +13,7 @@ from src.ui.graphics_items.click_and_drag_selection import ClickAndDragSelection
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.shape_selection_panel import ShapeSelectionPanel
 from src.util.shared_constants import PROJECT_DIR
+from src.util.visual.selection_mode import SelectionMode, selection_mode_for_gesture, compose_selection_path
 from src.util.visual.shape_mode import ShapeMode
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
@@ -48,7 +49,7 @@ class ShapeSelectionTool(BaseTool):
         self._control_panel = ShapeSelectionPanel(image_stack.selection_layer, self)
         self._selection_handler = ClickAndDragSelection(scene)
         self._dragging = False
-        self._clearing = False
+        self._gesture_mode = SelectionMode.ADD
         self._icon = QIcon(ICON_PATH_SHAPE_SELECT_TOOL)
         self._color = QColor()
         self._selection_brush = QBrush(QColor(), Qt.BrushStyle.Dense5Pattern)
@@ -73,7 +74,8 @@ class ShapeSelectionTool(BaseTool):
         """Return text describing different input functionality."""
         shape_selection_hint = SHAPE_SELECTION_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
                                                                    right_mouse_icon=right_button_hint_text())
-        return f'{shape_selection_hint}<br/>{BaseTool.fixed_aspect_hint()}<br/>{super().get_input_hint()}'
+        return (f'{shape_selection_hint}<br/>{BaseTool.selection_modifier_hint()}<br/>'
+                f'{BaseTool.fixed_aspect_hint()}<br/>{super().get_input_hint()}')
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
@@ -94,12 +96,13 @@ class ShapeSelectionTool(BaseTool):
         if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True):
             return False
         if event.buttons() == Qt.MouseButton.RightButton:
-            self._clearing = True
+            self._gesture_mode = SelectionMode.SUBTRACT
         elif event.buttons() == Qt.MouseButton.LeftButton:
-            self._clearing = False
+            self._gesture_mode = selection_mode_for_gesture()
         else:
             return False
-        self._selection_handler.set_brush(self._erasing_brush if self._clearing else self._selection_brush)
+        subtracting = self._gesture_mode == SelectionMode.SUBTRACT
+        self._selection_handler.set_brush(self._erasing_brush if subtracting else self._selection_brush)
         self._selection_handler.start_selection(image_coordinates)
         self._dragging = True
         return True
@@ -125,22 +128,18 @@ class ShapeSelectionTool(BaseTool):
     def _end_drag(self, image_coordinates: QPoint) -> None:
         assert self._dragging and self._selection_handler.selecting
         selection = self._selection_handler.end_selection(image_coordinates)
-        if self._image_stack.merged_layer_bounds.intersects(selection.boundingRect().toAlignedRect()):
-            with self._image_stack.selection_layer.borrow_image() as selection_image:
-                selection.translate(-self._image_stack.selection_layer.position)
-                path = QPainterPath()
-                path.addPolygon(selection)
-                painter = QPainter(selection_image)
-                fill_color = self._color
-                if self._clearing:
-                    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
-                painter.fillPath(path, fill_color)
-                painter.end()
-        self._clearing = False
+        mode = self._gesture_mode
         self._dragging = False
+        if mode.keeps_unrelated_content and not self._image_stack.merged_layer_bounds.intersects(
+                selection.boundingRect().toAlignedRect()):
+            return
+        with self._image_stack.selection_layer.borrow_image() as selection_image:
+            selection.translate(-self._image_stack.selection_layer.position)
+            path = QPainterPath()
+            path.addPolygon(selection)
+            compose_selection_path(selection_image, path, self._color, mode)
 
     def _on_deactivate(self) -> None:
         if self._selection_handler.selecting:
             self._selection_handler.end_selection(QPoint())
-        self._clearing = False
         self._dragging = False

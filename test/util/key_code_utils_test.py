@@ -36,10 +36,12 @@ class TestKeyCodeUtils(IntraPaintTestCase):
         self.assertEqual(get_modifiers('control+SHIFT'), Mod.ControlModifier | Mod.ShiftModifier)
         self.assertEqual(get_modifiers(['alt', 'Ctrl']), Mod.AltModifier | Mod.ControlModifier)
         self.assertEqual(get_modifiers([]), Mod.NoModifier)
+        self.assertEqual(get_modifiers('Meta'), Mod.MetaModifier)
+        self.assertEqual(get_modifiers('super+Shift'), Mod.MetaModifier | Mod.ShiftModifier)
 
     def test_get_modifiers_rejects_unknown_names(self) -> None:
-        """Anything other than ctrl, control, shift or alt raises ValueError, including Meta and the empty string."""
-        for modifier_str in ('A', 'Meta', 'Ctrl+A', ''):
+        """Anything other than ctrl, control, shift, alt, meta or super raises ValueError, including the empty string."""
+        for modifier_str in ('A', 'Hyper', 'Ctrl+A', ''):
             with self.assertRaises(ValueError, msg=modifier_str):
                 get_modifiers(modifier_str)
 

@@ -2,28 +2,28 @@
   "minimum": {
     "problems": [],
     "size": [
-      239,
-      132
+      164,
+      119
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 101x30, minimum 126x70",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 101x10, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 101x10, minimum 126x30",
-      "squeezed: DualToggle/Label 'Select' is 38x29, minimum 84x29",
-      "squeezed: DualToggle/Label 'Deselect' is 38x29, minimum 98x29"
+      "squeezed: ReflowingButtonGroup is 64x30, minimum 126x70",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 64x10, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 64x10, minimum 126x30",
+      "squeezed: QLabel 'Mode:' is 18x25, minimum 37x17",
+      "squeezed: ComboBox is 17x25, minimum 80x25"
     ],
     "size": [
-      119,
-      92
+      82,
+      79
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
       256,
-      92
+      79
     ]
   },
   "short": {
@@ -31,13 +31,12 @@
       "squeezed: ReflowingButtonGroup is 238x17, minimum 126x30",
       "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 102x17, minimum 102x30",
       "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 126x17, minimum 126x30",
-      "squeezed: DualToggle/Label 'Select' is 106x17, minimum 84x29",
-      "squeezed: DualToggle/Label 'Deselect' is 106x17, minimum 98x29",
-      "squeezed: KeyHintLabel 'Q' is 17x17, minimum 17x22"
+      "squeezed: KeyHintLabel 'Q' is 17x18, minimum 17x22",
+      "squeezed: ComboBox is 80x18, minimum 80x25"
     ],
     "size": [
       256,
-      66
+      59
     ]
   },
   "tall": {
@@ -51,7 +50,7 @@
     "problems": [],
     "size": [
       1600,
-      92
+      79
     ]
   }
 }
