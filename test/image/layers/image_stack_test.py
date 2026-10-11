@@ -456,3 +456,21 @@ class ImageStackTest(IntraPaintTestCase):
 
         self.image_stack.merge_all_visible()
         self.assertEqual(self.image_stack.active_layer.name, 'Merged')
+
+    def test_batching_content_updates_nested(self) -> None:
+        """Nested batching blocks emit one content change signal, when the outermost block exits."""
+        with self.image_stack.batching_content_updates():
+            with self.image_stack.batching_content_updates():
+                self.image_stack.create_layer('inner')
+            self.content_changed_mock.assert_not_called()
+        self.content_changed_mock.assert_called_once()
+
+    def test_batching_content_updates_exception(self) -> None:
+        """An exception inside a batching block re-enables and emits content change signals."""
+        with self.assertRaises(ValueError):
+            with self.image_stack.batching_content_updates():
+                raise ValueError('test')
+        self.content_changed_mock.assert_called_once()
+        self.content_changed_mock.reset_mock()
+        self.image_stack.create_layer('after')
+        self.content_changed_mock.assert_called()
