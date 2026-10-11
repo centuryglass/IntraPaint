@@ -192,7 +192,7 @@ class ImageGenerator(MenuBuilder):
             except (IOError, ValueError, RuntimeError) as err:
                 error_signal.emit(err)
             except Exception as unexpected_err:
-                logger.error('Unexpected error:', unexpected_err)
+                logger.error(f'Unexpected error: {unexpected_err}')
                 error_signal.emit(unexpected_err)
 
         inpaint_task = _AsyncInpaintTask(_do_inpaint)

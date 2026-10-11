@@ -26,8 +26,7 @@
     "inconsistent-quotes": 1
   },
   "src/controller/image_generation/image_generator.py": {
-    "broad-exception-caught": 1,
-    "logging-too-many-args": 1
+    "broad-exception-caught": 1
   },
   "src/controller/image_generation/sd_comfyui_generator.py": {
     "fixme": 1
