@@ -133,7 +133,6 @@ class TestAppController(IntraPaintTestCase):
 
     def test_style_change_pauses_garbage_collection(self):
         """QApplication.setStyle runs after a collection, with collection paused (see gc_paused)."""
-        gc.enable()
         initial_style = AppConfig().get(AppConfig.STYLE)
         new_style = next(key for key in QStyleFactory.keys() if key.lower() != initial_style.lower())
         recorder = _GcStateRecorder()
@@ -150,7 +149,6 @@ class TestAppController(IntraPaintTestCase):
     @patch('src.ui.theme.qdarktheme')
     def test_theme_change_pauses_garbage_collection(self, mock_qdarktheme):
         """Theme stylesheets are applied after a collection, with collection paused (see gc_paused)."""
-        gc.enable()
         mock_qdarktheme.setup_theme.side_effect = lambda *_args: app.setStyleSheet('QWidget { margin: 1px; }')
         initial_theme = AppConfig().get(AppConfig.THEME)
         recorder = _GcStateRecorder()

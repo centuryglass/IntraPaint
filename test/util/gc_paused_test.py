@@ -13,10 +13,6 @@ class _Cycle:
 
 class GcPausedTest(IntraPaintTestCase):
 
-    def setUp(self):
-        super().setUp()
-        gc.enable()
-
     def test_disables_collection_inside_block(self):
         self.assertTrue(gc.isenabled())
         with gc_paused():
