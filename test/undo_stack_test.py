@@ -111,8 +111,7 @@ class UndoStackTest(IntraPaintTestCase):
         self.assertEqual(self.undo_stack.undo_count(), 0)
 
     def test_unrelated_commits_stay_separate(self) -> None:
-        """Commits close together in time stay separate entries, whatever the merge interval."""
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 60.0)
+        """Unrelated commits stay separate entries, however close together they are."""
         self.commit_value(1, 'test.first_type')
         self.commit_value(2, 'test.second_type')
         self.assertEqual(self.undo_stack.undo_count(), 2)
@@ -148,38 +147,39 @@ class UndoStackTest(IntraPaintTestCase):
         self.undo_stack.undo()
         self.assertEqual(self.value, 0)
 
-    def test_merge_target_commits_merge_within_interval(self) -> None:
-        """Commits for one merge target within the interval become one entry that undoes to the first old value."""
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 60.0)
+    def test_merge_target_commits_merge_inside_gesture(self) -> None:
+        """Commits for one merge target inside a gesture become one entry that undoes to the first old value."""
         target = object()
+        self.undo_stack.begin_gesture('test.drag')
         for value in (1, 2, 3):
             self.commit_value(value, 'test.drag', merge_target=target)
+        self.undo_stack.end_gesture()
         self.assertEqual(self.undo_stack.undo_count(), 1)
         self.undo_stack.undo()
         self.assertEqual(self.value, 0)
         self.undo_stack.redo()
         self.assertEqual(self.value, 3)
 
-    def test_merge_requires_same_target_and_type(self) -> None:
-        """A different merge target or action type starts a new entry."""
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 60.0)
-        self.commit_value(1, 'test.drag', merge_target=self)
-        self.commit_value(2, 'test.drag', merge_target=object())
-        self.commit_value(3, 'test.other_drag', merge_target=self)
-        self.commit_value(4, 'test.other_drag', merge_target=None)
-        self.assertEqual(self.undo_stack.undo_count(), 4)
-
-    def test_merge_does_not_cross_interval(self) -> None:
-        """With a zero interval, commits for one target stay separate."""
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
+    def test_merge_target_commits_stay_separate_outside_group(self) -> None:
+        """Commits with a merge target never merge when no group is open, however close together they are."""
         target = object()
         self.commit_value(1, 'test.drag', merge_target=target)
         self.commit_value(2, 'test.drag', merge_target=target)
         self.assertEqual(self.undo_stack.undo_count(), 2)
 
+    def test_merge_requires_same_target_and_type(self) -> None:
+        """Inside a group, a different merge target or action type is a separate child of the group's entry."""
+        with self.undo_stack.combining_actions('test.group'):
+            self.commit_value(1, 'test.drag', merge_target=self)
+            self.commit_value(2, 'test.drag', merge_target=object())
+            self.commit_value(3, 'test.other_drag', merge_target=self)
+            self.commit_value(4, 'test.other_drag', merge_target=None)
+        self.assertEqual(self.undo_stack.undo_count(), 1)
+        self.undo_stack.undo()
+        self.assertEqual(self.value, 0)
+
     def test_merge_does_not_reach_before_group(self) -> None:
         """A mergeable commit inside a group never merges into the entry from before the group."""
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 60.0)
         target = object()
         self.commit_value(1, 'test.drag', merge_target=target)
         with self.undo_stack.combining_actions('test.group'):
@@ -187,6 +187,47 @@ class UndoStackTest(IntraPaintTestCase):
         self.assertEqual(self.undo_stack.undo_count(), 2)
         self.undo_stack.undo()
         self.assertEqual(self.value, 1)
+
+    def test_gesture_is_one_entry(self) -> None:
+        """Every commit between begin_gesture and end_gesture is one undo entry, and later commits are separate."""
+        self.undo_stack.begin_gesture('test.gesture')
+        self.commit_value(1)
+        self.commit_value(2)
+        self.undo_stack.end_gesture()
+        self.commit_value(3)
+        self.assertEqual(self.undo_stack.undo_count(), 2)
+        self.undo_stack.undo()
+        self.assertEqual(self.value, 2)
+        self.undo_stack.undo()
+        self.assertEqual(self.value, 0)
+
+    def test_gesture_with_same_type_continues(self) -> None:
+        """Beginning a gesture of the open gesture's type continues it, and a different type starts a new entry."""
+        self.undo_stack.begin_gesture('test.typing')
+        self.commit_value(1)
+        self.undo_stack.begin_gesture('test.typing')
+        self.commit_value(2)
+        self.undo_stack.begin_gesture('test.drag')
+        self.commit_value(3)
+        self.undo_stack.end_gesture()
+        self.assertEqual(self.undo_stack.undo_count(), 2)
+
+    def test_undo_ends_open_gesture(self) -> None:
+        """Undo closes an open gesture first, so it undoes the gesture's whole entry."""
+        self.commit_value(1)
+        self.undo_stack.begin_gesture('test.gesture')
+        self.commit_value(2)
+        self.commit_value(3)
+        self.undo_stack.undo()
+        self.assertEqual(self.value, 1)
+        self.commit_value(4)
+        self.assertEqual(self.undo_stack.undo_count(), 2)
+
+    def test_end_gesture_without_gesture_does_nothing(self) -> None:
+        """Ending a gesture that was never begun leaves the history alone."""
+        self.undo_stack.end_gesture()
+        self.commit_value(1)
+        self.assertEqual(self.undo_stack.undo_count(), 1)
 
     def test_commit_inside_action_raises(self) -> None:
         """An action that commits another action is rejected rather than corrupting the history."""

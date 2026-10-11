@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, 
     QGraphicsSceneMouseEvent, QGraphicsTransform, \
     QGraphicsObject
 
+from src.undo_stack import UndoStack
 from src.ui.graphics_items.transform_handle import TransformHandle, TRANSFORM_MODE_SCALE, TRANSFORM_MODE_ROTATE
 from src.util.math_utils import clamp, avoiding_zero
 from src.util.shared_constants import MIN_NONZERO
@@ -334,6 +335,7 @@ class TransformOutline(QGraphicsObject):
     def mousePressEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
         """Start dragging the layer."""
         assert event is not None
+        UndoStack().begin_gesture('TransformOutline.drag')
         for handle in self._handles.values():
             # Ensure handles can still be selected during extreme transformations by passing off input to any handle
             # within approx. 10px of the click event:
@@ -379,6 +381,7 @@ class TransformOutline(QGraphicsObject):
             if handle.isSelected():
                 handle.mouseReleaseEvent(event)
         self.setSelected(False)
+        UndoStack().end_gesture()
 
     def move_transformation_handle(self, handle_id: str, pos: QPointF) -> None:
         """Perform required changes whenever one of the handles moves."""

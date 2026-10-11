@@ -5,7 +5,6 @@ import numpy as np
 from PySide6.QtCore import QRect, QRectF, QSize
 from PySide6.QtGui import QImage
 
-from src.config.application_config import AppConfig
 from src.undo_stack import UndoStack
 from src.util.visual.image_utils import image_data_as_numpy_8bit
 from test.tools.tool_test_case import ToolTestCase
@@ -44,7 +43,6 @@ class SelectionToolTestCase(ToolTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         self.layer = self.image_stack.create_layer()
         self.selection_layer = self.image_stack.selection_layer
         assert self.selection_layer.position.isNull()

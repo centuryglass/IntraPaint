@@ -5,7 +5,6 @@ import numpy as np
 from PySide6.QtCore import QPoint, QRect, QSize, Qt
 from PySide6.QtGui import QColor, QImage, QPainter, QTransform
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller import color_controller
 from src.image.layers.image_layer import ImageLayer
@@ -58,7 +57,6 @@ class FillToolTest(ToolTestCase):
     def setUp(self) -> None:
         super().setUp()
         # Keep separate fills in separate undo entries:
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         cache = Cache()
         cache.set(Cache.FILL_THRESHOLD, 0.0)
         cache.set(Cache.SAMPLE_MERGED, False)

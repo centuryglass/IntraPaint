@@ -7,7 +7,6 @@ from PySide6.QtCore import QPoint, QRect, QSize, Qt
 from PySide6.QtGui import QColor, QImage, QTransform
 from PySide6.QtWidgets import QApplication
 
-from src.config.application_config import AppConfig
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import image_stack_color_at_point, scale_all_layers
 from src.undo_stack import UndoStack
@@ -25,9 +24,6 @@ class ImageStackUtilsTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        # Without time-based merging, only explicit grouping can combine actions in the undo history. Scaling a large
-        # image takes long enough per layer that time-based merging doesn't combine the steps either.
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         UndoStack().clear()
         self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
         layer_image = QImage(IMG_SIZE, QImage.Format.Format_ARGB32_Premultiplied)

@@ -11,7 +11,6 @@ from PySide6 import QtTest
 from PySide6.QtCore import QSize, QEvent, Qt, QPoint, QPointF
 from PySide6.QtWidgets import QApplication, QWidget
 
-from src.config.application_config import AppConfig
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
@@ -45,7 +44,6 @@ class LayerPanelTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE)
         root = self.image_stack.layer_stack
         # Layer order, top to bottom: group [inner_top, nested [nested_child], inner_bottom], bottom

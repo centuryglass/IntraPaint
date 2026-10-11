@@ -6,7 +6,6 @@ import numpy as np
 from PySide6.QtCore import QPoint, QRectF, QSize, Qt
 from PySide6.QtGui import QImage, QPainter, QPen
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.layers.selection_layer import SelectionLayer
@@ -25,7 +24,6 @@ class SelectionBrushToolTest(ToolTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         self.image_stack.create_layer()
         self.tool = self.activate_tool(SelectionBrushTool(self.image_stack, self.image_viewer))
         self.selection_layer = self.image_stack.selection_layer
@@ -166,7 +164,6 @@ class SelectionBrushStrokeTest(ToolTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         Cache().set(Cache.SELECTION_BRUSH_SIZE, STROKE_BRUSH_SIZE)
         self.image_stack.create_layer()
         self.tool = self.activate_tool(SelectionBrushTool(self.image_stack, self.image_viewer))

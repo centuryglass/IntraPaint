@@ -7,6 +7,7 @@ from PySide6.QtGui import QFont, QFontDatabase, Qt, QImage, QColor, QPainter, QR
 from PySide6.QtWidgets import QApplication, QWidget, QGridLayout, QLabel, QSizePolicy, QComboBox, \
     QVBoxLayout, QScrollArea, QHBoxLayout, QListWidget
 
+from src.undo_stack import UndoStack
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
@@ -117,6 +118,7 @@ class TextToolPanel(QWidget):
         self._text_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._text_box.setValue(self._text_rect.text)
         self._text_box.valueChanged.connect(self._text_changed_slot)
+        self._text_box.focus_lost.connect(UndoStack().end_gesture)
 
         # Text size:
         font_size_format = OPTION_TEXT_PIXEL_SIZE_FORMAT

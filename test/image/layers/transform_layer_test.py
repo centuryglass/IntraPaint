@@ -12,7 +12,6 @@ from PySide6.QtCore import QSize, QRect, QPoint, QPointF
 from PySide6.QtGui import QTransform, QImage, QColor, QPainter, Qt
 from PySide6.QtWidgets import QApplication
 
-from src.config.application_config import AppConfig
 from src.image.layers.image_layer import ImageLayer
 from src.undo_stack import UndoStack
 from src.util.visual.geometry_utils import (extract_transform_parameters, combine_transform_parameters,
@@ -65,8 +64,6 @@ class TransformLayerTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        # Without time-based merging, each transform change is its own undo entry:
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         self.layer = ImageLayer(LAYER_SIZE, 'transform test layer')
 
     def assert_transforms_equal(self, actual: QTransform, expected: QTransform, msg: str = '') -> None:
@@ -317,12 +314,13 @@ class TransformLayerTest(IntraPaintTestCase):
         UndoStack().undo()
         self.assertEqual(self.layer.transform, QTransform())
 
-    def test_transform_changes_merge_within_interval(self) -> None:
-        """Transform changes closer together than UNDO_MERGE_INTERVAL merge into one entry that restores the
-        transform from before the first."""
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 60.0)
+    def test_transform_changes_merge_inside_gesture(self) -> None:
+        """Transform changes inside one gesture merge into one entry that restores the transform from before the
+        first."""
+        UndoStack().begin_gesture('test.drag')
         for x in range(1, 4):
             self.layer.transform = QTransform.fromTranslate(x, 0)
+        UndoStack().end_gesture()
         self.assertEqual(UndoStack().undo_count(), 1)
         UndoStack().undo()
         self.assertEqual(self.layer.transform, QTransform())

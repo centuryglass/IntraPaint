@@ -7,7 +7,6 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QTransform
 from PySide6.QtWidgets import QApplication
 
-from src.config.application_config import AppConfig
 from src.image.layers.image_stack import ImageStack
 from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
@@ -24,8 +23,6 @@ class LayerGroupTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        # Without time-based merging, only explicit grouping can combine actions in the undo history:
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         UndoStack().clear()
         self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
         self.group = self.image_stack.create_layer_group('group')

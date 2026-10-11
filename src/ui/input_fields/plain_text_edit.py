@@ -2,6 +2,7 @@
 from typing import Optional
 
 from PySide6.QtCore import Signal
+from PySide6.QtGui import QFocusEvent
 from PySide6.QtWidgets import QPlainTextEdit, QWidget
 
 
@@ -9,6 +10,7 @@ class PlainTextEdit(QPlainTextEdit):
     """A simple wrapper for QPlainTextEdit to give it an interface consistent with other input widgets."""
 
     valueChanged = Signal(str)
+    focus_lost = Signal()
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -23,3 +25,8 @@ class PlainTextEdit(QPlainTextEdit):
     def setValue(self, new_value: str) -> None:
         """Update the text value."""
         self.setPlainText(new_value)
+
+    def focusOutEvent(self, event: Optional[QFocusEvent]) -> None:  # pylint: disable=invalid-name
+        """Signals when the text box loses keyboard focus."""
+        super().focusOutEvent(event)
+        self.focus_lost.emit()

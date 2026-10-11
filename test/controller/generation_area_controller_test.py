@@ -123,7 +123,6 @@ class FollowSelectionTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         config = AppConfig()
-        config.set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
         config.restore_default_options(AppConfig.GENERATION_AREA_FOLLOW_SELECTION)
         config.set(AppConfig.GENERATION_AREA_FOLLOW_SELECTION, FOLLOW_SELECTION_MINIMAL)
         cache = Cache()

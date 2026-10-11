@@ -2,11 +2,9 @@
 import math
 import unittest
 
-import pytest
 from PySide6.QtCore import QPoint, QPointF, QRectF
 from PySide6.QtGui import QImage, QTransform, Qt
 
-from src.config.application_config import AppConfig
 from src.tools.layer_transform_tool import LayerTransformTool
 from src.ui.graphics_items.transform_outline import (TransformOutline, ORIGIN_HANDLE_ID, BR_HANDLE_ID,
                                                      TRANSFORM_MODE_ROTATE)
@@ -90,7 +88,6 @@ class LayerTransformToolTest(ToolTestCase):
 
     def test_drag_undo(self) -> None:
         """Undoing a drag merged into one undo entry restores the layer's original position."""
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 1000.0)
         original = self.layer.transform
         start = QPoint(LAYER_OFFSET.x() + 20, LAYER_OFFSET.y() + 20)
         self.mouse_drag([start, start + QPoint(10, 5), start + QPoint(30, 40)])
@@ -100,11 +97,8 @@ class LayerTransformToolTest(ToolTestCase):
         self.assertEqual(self.outline.transform(), original)
         self.assert_panel_matches_outline()
 
-    @pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/11: undo merges a '
-                                           'drag by elapsed time, not by gesture')
     def test_drag_is_one_undo_step(self) -> None:
-        """One drag adds one undo entry, however much time passes between its moves."""
-        AppConfig().set(AppConfig.UNDO_MERGE_INTERVAL, 0.0)
+        """One drag adds one undo entry."""
         start = QPoint(LAYER_OFFSET.x() + 20, LAYER_OFFSET.y() + 20)
         self.mouse_drag([start, start + QPoint(10, 5), start + QPoint(30, 40)])
         self.assertEqual(UndoStack().undo_count(), 1)
