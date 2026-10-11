@@ -1858,10 +1858,16 @@ class ImageStack(QObject):
 
     @contextmanager
     def batching_content_updates(self) -> Generator[None, None, None]:
-        """Combines content change signals within a contextmanager block."""
-        if self._content_change_signal_enabled:
-            self._content_change_signal_enabled = False
+        """Combines content change signals within a contextmanager block.
+
+        Nested blocks defer to the outermost one, which emits a single signal when it exits, even on an exception."""
+        if not self._content_change_signal_enabled:
             yield
+            return
+        self._content_change_signal_enabled = False
+        try:
+            yield
+        finally:
             self._content_change_signal_enabled = True
             self._emit_content_changed()
 
