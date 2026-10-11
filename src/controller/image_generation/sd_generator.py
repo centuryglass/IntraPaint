@@ -12,7 +12,6 @@ from sd_backend_client import AuthError, CONTROLNET_MODEL_NONE, ControlNetModel,
     ControlNetUnit, ControlTypeDef, GenerationError, GenerationHandle, GenerationProgress, GenerationResult, \
     GenerationStatus, PreprocessorParams, SDBackendError
 
-from src.api.controlnet.controlnet_unit import ControlKeyType
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.image_generation.image_generator import ImageGenerator
@@ -220,7 +219,7 @@ class SDGenerator(ImageGenerator):
        support."""
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace, url_cache_key: str,
-                 controlnet_key_type: ControlKeyType,
+                 scaling_mode_cache_key: str,
                  show_extended_controlnet_options=False) -> None:
         super().__init__(window, image_stack)
         self._image_stack = image_stack
@@ -232,7 +231,7 @@ class SDGenerator(ImageGenerator):
         self._preview = QImage(SD_PREVIEW_IMAGE)
         self._controlnet_tab: Optional[Tab] = None
         self._controlnet_panel: Optional[TabbedControlNetPanel] = None
-        self._controlnet_key_type = controlnet_key_type
+        self._scaling_mode_cache_key = scaling_mode_cache_key
         self._show_extended_controlnet_options = show_extended_controlnet_options
         self._active_handle: Optional[GenerationHandle] = None
 
@@ -687,10 +686,7 @@ class SDGenerator(ImageGenerator):
         upscale_method = str(cache.get(Cache.SCALING_MODE))
         generator_scaling_modes = cast(list[str], cache.get(Cache.GENERATOR_SCALING_MODES))
         if upscale_method in generator_scaling_modes and upscale_method != UPSCALE_OPTION_NONE:
-            if self._controlnet_key_type == ControlKeyType.WEBUI:
-                cache.set(Cache.WEBUI_CACHED_SCALING_MODE, upscale_method)
-            else:
-                cache.set(Cache.COMFYUI_CACHED_SCALING_MODE, upscale_method)
+            cache.set(self._scaling_mode_cache_key, upscale_method)
         if not (cache.get(Cache.SD_UPSCALING_AVAILABLE) and cache.get(Cache.USE_STABLE_DIFFUSION_UPSCALING)):
             if (upscale_method not in generator_scaling_modes and upscale_method in PIL_SCALING_MODES.keys()) \
                                                                   or upscale_method.lower() \

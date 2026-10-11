@@ -1,25 +1,6 @@
 {
   "(repository)": {
-    "duplicate-code": 69
-  },
-  "src/api/comfyui/comfyui_types.py": {
-    "fixme": 1
-  },
-  "src/api/comfyui/latent_upscale_workflow_builder.py": {
-    "fixme": 1
-  },
-  "src/api/comfyui/workflow_builder_utils.py": {
-    "inconsistent-quotes": 2
-  },
-  "src/api/comfyui_webservice.py": {
-    "inconsistent-quotes": 2
-  },
-  "src/api/controlnet/controlnet_model.py": {
-    "inconsistent-quotes": 1,
-    "line-too-long": 1
-  },
-  "src/api/webui/diffusion_request_body.py": {
-    "fixme": 1
+    "duplicate-code": 63
   },
   "src/config/a1111_config.py": {
     "line-too-long": 1

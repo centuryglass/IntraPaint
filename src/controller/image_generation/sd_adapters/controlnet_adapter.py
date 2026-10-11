@@ -1,14 +1,12 @@
 """Converts between saved ControlNet settings and the library's `ControlNetUnit`.
 
 `Cache.CONTROLNET_ARGS_*` and `Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS` hold JSON in one of two formats:
-- The legacy format written by `src.api.controlnet.controlnet_unit.ControlNetUnit.serialize`, with either
-  `ControlKeyType`. The key type only renames the strength, start and end parameters, so both read the same way.
+- The legacy format written by `ControlNetUnit.serialize` in the removed `src.api`, in either its WebUI or ComfyUI key
+  variant. The variants only rename the strength, start and end parameters, so both read the same way.
 - The format `SavedControlNetUnit.to_json` writes, which wraps the library's own `ControlNetUnit` dump.
 
 `SavedControlNetUnit.from_json` reads both formats, and `to_json` writes only the second.
 
-`typedef_from_legacy`, `legacy_from_params` and `legacy_unit_from_saved` bridge to `src.api`, which the WebUI generator
-still uses (#39, step 4).
 """
 import json
 import logging
@@ -21,15 +19,13 @@ from PySide6.QtGui import QImage
 from sd_backend_client import CONTROLNET_MODEL_NONE, PREPROCESSOR_NONE, ControlNetModel, ControlNetPreprocessor, \
     ControlNetUnit, ParameterDef, PreprocessorParams
 
-from src.api.controlnet import controlnet_preprocessor as legacy, controlnet_unit as legacy_unit
 from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters.image_adapter import qimage_to_pil
 from src.util.visual.pil_image_utils import PIL_OPEN_FORMATS
 
 logger = logging.getLogger(__name__)
 
-# Image string meaning "use the generation area content". `src.api.controlnet.controlnet_constants` keeps a copy with
-# the same value until `src.api` is deleted (#39).
+# Image string meaning "use the generation area content".
 CONTROLNET_REUSE_IMAGE_CODE = 'SELECTION'
 
 # Keys of the format `SavedControlNetUnit.to_json` writes:
@@ -142,29 +138,6 @@ def _typedef_from_legacy_data(data: dict[str, Any]) -> tuple[ControlNetPreproces
                                      model_free=data['model_free'],
                                      parameters=parameters)
     return typedef, parameter_values
-
-
-def typedef_from_legacy(preprocessor: legacy.ControlNetPreprocessor) -> ControlNetPreprocessor:
-    """Converts a `src.api` preprocessor into the library's preprocessor definition, ignoring its values.
-
-    The WebUI generator uses this until it moves to the library (#39, step 4).
-    """
-    return _typedef_from_legacy_data(json.loads(preprocessor.serialize()))[0]
-
-
-def legacy_from_params(preprocessor: PreprocessorParams) -> legacy.ControlNetPreprocessor:
-    """Converts library preprocessor settings into a `src.api` preprocessor holding the same parameter values.
-
-    The WebUI generator uses this until it moves to the library (#39, step 4). See
-    `src.api.controlnet.controlnet_preprocessor.ControlNetPreprocessor.from_params`.
-    """
-    return legacy.ControlNetPreprocessor.from_params(preprocessor)
-
-
-def legacy_unit_from_saved(saved: SavedControlNetUnit, key_type: legacy_unit.ControlKeyType
-                           ) -> legacy_unit.ControlNetUnit:
-    """Converts a saved unit into a `src.api` unit, for the legacy WebUI request code that reads saved units."""
-    return legacy_unit.ControlNetUnit.from_library_unit(saved.enabled, saved.image_string, saved.unit, key_type)
 
 
 def select_preprocessor(typedef: ControlNetPreprocessor, previous: Optional[PreprocessorParams]

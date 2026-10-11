@@ -74,7 +74,8 @@ pip install -r requirements-dev.txt   # for development: adds pytest, pylint, py
 - **`src/controller/image_generation/`:** pluggable image generator backends behind a common interface
   (`sd_comfyui_generator`, `sd_webui_generator`, `null_generator`, `test_generator`, the GLID ones). The active
   generator is chosen by availability and the `--mode` flag.
-- **`src/api/`:** client code for external backends: `comfyui/`, `webui/`, `controlnet/`.
+- **Backend clients:** the `sd-backend-client` package (`sd_backend_client`) talks to ComfyUI and Forge/A1111.
+  `src/controller/image_generation/sd_adapters/` converts between IntraPaint's Qt and `Cache` values and its types.
 - **`src/image/`:** image model: `layers/` (layer stack, groups, transforms), `mypaint/` (libmypaint brush engine
   bindings), `filter/`, `brush/`.
 - **`src/tools/`:** the editing tools (brush, selection, text, shapes, fill, etc.).
@@ -186,7 +187,7 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
   change to the style, theme, fonts or any panel's layout can fail them. `python scripts/capture_ui.py` saves the same
   renders as images. `test/ui/ui_capture.py` describes both.
 - **Stable Diffusion requests are pinned by snapshots.** `test/controller/image_generation/` compares what the WebUI
-  and ComfyUI generators send with `test/resources/sd_request_snapshots/`, so a change under `src/api/` or to those
+  and ComfyUI generators send with `test/resources/sd_request_snapshots/`, so a change under `sd_adapters/` or to those
   generators can fail it. A PR that changes a snapshot explains the diff.
 - **Tool tests extend `ToolTestCase`** (`test/tools/tool_test_case.py`), which drives tools with synthetic mouse
   events and no `AppController`.
