@@ -17,9 +17,11 @@ prepare the environment that the Qt-based tests rely on:
   tests that change settings can't rewrite the committed files.
 - Apply the style, theme and font size from the app config fixture, so text metrics and colors match on every
   machine instead of following the platform's default font and palette.
+- Flush C stdio after each test, so output native libraries print is captured with the test.
 - Fail any test that opens a modal dialog or menu. Under the offscreen platform nothing can close
   one, so it would block the whole run until the CI job times out.
 """
+import ctypes
 import os
 import shutil
 import sys
@@ -180,3 +182,18 @@ def _fail_on_swallowed_modal(request: pytest.FixtureRequest):
     yield
     if _blocked_modals and not request.node.stash.get(_CALL_FAILED, False):
         pytest.fail(f'Modal dialog blocked during the test: {"; ".join(_blocked_modals)}', pytrace=False)
+
+
+# The C runtime libmypaint writes through. The Windows libmypaint build links msvcrt, not Python's own C runtime.
+_libc = ctypes.cdll.msvcrt if sys.platform == 'win32' else ctypes.CDLL(None)
+
+
+@pytest.fixture(autouse=True)
+def _flush_c_stdout():
+    """Flush C stdio after each test, so pytest captures native libraries' output with the test that caused it.
+
+    libmypaint prints "Time is running backwards!" during some strokes, from rounding in its own dab interpolation.
+    C stdout is block-buffered when piped, so unflushed lines would otherwise appear after pytest's summary.
+    """
+    yield
+    _libc.fflush(None)
