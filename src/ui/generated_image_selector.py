@@ -430,6 +430,10 @@ class GeneratedImageSelector(QWidget):
         """Use horizontal scroll to move through selections, select items when clicked."""
         assert event is not None
         if event.type() == QEvent.Type.Wheel:
+            if source is not self._view:
+                # The view already handled this event. An ignored wheel event bubbles up to the main window,
+                # which installs this same filter; without this check it would step a second time.
+                return False
             event = cast(QWheelEvent, event)
             if event.angleDelta().x() > 0:
                 self._zoom_next()
@@ -572,6 +576,11 @@ class GeneratedImageSelector(QWidget):
         self._base_option_scale = self._view.scene_scale
         self._view.offset = self._base_option_offset + self._option_pos_offset
         self._view.scale_without_fixed_scene_point(self._base_option_scale * self._option_scale_ratio)
+        if not self._view.visible_scene_bounds.intersects(QRectF(bounds)):
+            # The carried-over pan/zoom leaves the new option entirely off-screen: discard it instead.
+            self._clear_manual_view()
+            self._view.offset = self._base_option_offset
+            self._view.scale_without_fixed_scene_point(self._base_option_scale)
         self._view.scale_changed.connect(self._scale_change_slot)
         self._view.offset_changed.connect(self._offset_change_slot)
         for i, option in enumerate(self._options):
