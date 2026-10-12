@@ -13,7 +13,9 @@ from src.image.composite_mode import CompositeMode
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer, LayerParent
 from src.image.layers.layer_group import LayerGroup
+from src.config.key_config import KeyConfig
 from src.ui.panel.layer_ui.layer_group_widget import LayerGroupWidget
+from src.ui.widget.shortcut_tooltip import set_shortcut_tooltip
 from src.util.shared_constants import PROJECT_DIR, APP_ICON_PATH, SMALL_ICON_SIZE
 from src.util.visual.palette_icon import palette_icon
 
@@ -143,10 +145,10 @@ class LayerPanel(QWidget):
         self._button_bar_layout.setSpacing(0)
         self._button_bar_layout.setContentsMargins(0, 0, 0, 0)
 
-        def _create_button(icon_path: str, tooltip: str, action: Callable[..., Any],
+        def _create_button(icon_path: str, tooltip: str, action: Callable[..., Any], shortcut_key: Optional[str] = None,
                            signal: bool = False, stretch=None) -> QToolButton:
             button = QToolButton()
-            button.setToolTip(tooltip)
+            set_shortcut_tooltip(button, tooltip, shortcut_key)
             button.setContentsMargins(2, 2, 2, 2)
             button.setIcon(palette_icon(icon_path, signal=signal))
             button.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
@@ -158,18 +160,23 @@ class LayerPanel(QWidget):
             return button
 
         self._add_button = _create_button(ICON_PATH_ADD_BUTTON, ADD_BUTTON_TOOLTIP, self._image_stack.create_layer,
-                                          stretch=1)
+                                          KeyConfig.NEW_LAYER_SHORTCUT, stretch=1)
         self._add_group_button = _create_button(ICON_PATH_ADD_GROUP_BUTTON, ADD_GROUP_BUTTON_TOOLTIP,
-                                                self._image_stack.create_layer_group, stretch=1)
+                                                self._image_stack.create_layer_group,
+                                                KeyConfig.NEW_LAYER_GROUP_SHORTCUT, stretch=1)
         self._move_up_button = _create_button(ICON_PATH_LAYER_UP_BUTTON, LAYER_UP_BUTTON_TOOLTIP,
-                                              lambda: self._image_stack.move_layer_by_offset(-1), stretch=1)
+                                              lambda: self._image_stack.move_layer_by_offset(-1),
+                                              KeyConfig.MOVE_LAYER_UP_SHORTCUT, stretch=1)
         self._move_down_button = _create_button(ICON_PATH_LAYER_DOWN_BUTTON, LAYER_DOWN_BUTTON_TOOLTIP,
-                                                lambda: self._image_stack.move_layer_by_offset(1), stretch=1)
+                                                lambda: self._image_stack.move_layer_by_offset(1),
+                                                KeyConfig.MOVE_LAYER_DOWN_SHORTCUT, stretch=1)
 
         self._merge_down_button = _create_button(ICON_PATH_MERGE_BUTTON, MERGE_DOWN_BUTTON_TOOLTIP,
-                                                 self._image_stack.merge_layer_down, stretch=10)
+                                                 self._image_stack.merge_layer_down,
+                                                 KeyConfig.MERGE_LAYER_DOWN_SHORTCUT, stretch=10)
         self._delete_button = _create_button(ICON_PATH_DELETE_BUTTON, DELETE_BUTTON_TOOLTIP,
-                                             self._image_stack.remove_layer, signal=True)
+                                             self._image_stack.remove_layer, KeyConfig.DELETE_LAYER_SHORTCUT,
+                                             signal=True)
 
         self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
         self._image_stack.layer_added.connect(self._layer_added_slot)

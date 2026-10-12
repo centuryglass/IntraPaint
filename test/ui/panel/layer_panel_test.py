@@ -11,6 +11,7 @@ from PySide6 import QtTest
 from PySide6.QtCore import QSize, QEvent, Qt, QPoint, QPointF
 from PySide6.QtWidgets import QApplication, QWidget
 
+from src.config.key_config import KeyConfig
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
@@ -26,6 +27,7 @@ from src.ui.panel.layer_ui.layer_visibility_button import LayerVisibilityButton
 from src.ui.panel.layer_ui.layer_widget import LayerWidget, MENU_OPTION_MOVE_UP, MENU_OPTION_MOVE_DOWN, \
     MENU_OPTION_DELETE, MENU_OPTION_MERGE_DOWN
 from src.undo_stack import UndoStack
+from src.util.visual.text_drawing_utils import get_key_display_string
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -63,6 +65,14 @@ class LayerPanelTest(IntraPaintTestCase):
     def tearDown(self) -> None:
         self.panel.close()
         super().tearDown()
+
+    def test_button_tooltips_show_key_bindings(self) -> None:
+        """Each layer button's tooltip ends with the key binding for its action."""
+        for button, key in ((self.panel._add_button, KeyConfig.NEW_LAYER_SHORTCUT),
+                            (self.panel._merge_down_button, KeyConfig.MERGE_LAYER_DOWN_SHORTCUT),
+                            (self.panel._delete_button, KeyConfig.DELETE_LAYER_SHORTCUT)):
+            keys = get_key_display_string(KeyConfig().get(key), rich_text=False)
+            self.assertTrue(button.toolTip().endswith(f'({keys})'), button.toolTip())
 
     @property
     def root_widget(self) -> LayerGroupWidget:
