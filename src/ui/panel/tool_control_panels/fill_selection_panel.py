@@ -11,7 +11,6 @@ from src.image.layers.selection_layer import SelectionLayer
 from src.tools.base_tool import BaseTool
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.slider_spinbox import FloatSliderSpinbox
-from src.ui.layout.divider import Divider
 from src.ui.panel.tool_control_panels.selection_panel import SelectionPanel
 from src.ui.widget.key_hint_label import KeyHintLabel
 
@@ -74,7 +73,6 @@ class FillSelectionPanel(SelectionPanel):
         cache.connect(self._fill_by_selection_checkbox, Cache.COLOR_SELECT_MODE, _color_fill_disables_selection_fill)
 
         self.insert_into_layout(checkbox_row)
-        self.insert_into_layout(Divider(Qt.Orientation.Horizontal))
 
     @property
     def fill_by_selection(self) -> bool:

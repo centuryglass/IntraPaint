@@ -2,51 +2,63 @@
   "minimum": {
     "problems": [],
     "size": [
-      255,
-      163
+      300,
+      182
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 109x30, minimum 126x70",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 109x10, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 109x10, minimum 126x30",
-      "squeezed: ComboBox is 66x25, minimum 80x25",
-      "squeezed: DualToggle/Label 'Rectangle' is 42x29, minimum 106x29",
-      "squeezed: DualToggle/Label 'Ellipse' is 42x29, minimum 86x29"
+      "squeezed: ReflowingButtonGroup is 132x43, minimum 126x70",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 132x17, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 132x16, minimum 126x30",
+      "squeezed: SelectionModeToggle/Label 'Add' is 65x20, minimum 88x27",
+      "squeezed: SelectionModeToggle/Label 'Subtract' is 65x20, minimum 118x27",
+      "squeezed: SelectionModeToggle/Label 'Replace' is 65x20, minimum 125x27",
+      "squeezed: SelectionModeToggle/Label 'Intersect' is 65x20, minimum 140x27",
+      "clipped: SelectionModeToggle/KeyHintLabel '\u2387'[0] shows 20x21 of 20x22",
+      "squeezed: DualToggle/Label 'Rectangle' is 53x29, minimum 106x29",
+      "squeezed: DualToggle/Label 'Ellipse' is 53x29, minimum 86x29",
+      "squeezed: CheckBox 'Fixed 1:1 aspect ratio' is 132x22, minimum 151x22"
     ],
     "size": [
-      127,
-      123
+      150,
+      182
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      256,
-      123
+      300,
+      182
     ]
   },
   "short": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 238x14, minimum 126x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 102x14, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 126x14, minimum 126x30",
-      "squeezed: QLabel 'Mode:' is 37x14, minimum 37x17",
-      "squeezed: ComboBox is 80x14, minimum 80x25",
-      "squeezed: DualToggle/Label 'Rectangle' is 106x14, minimum 106x29",
-      "squeezed: DualToggle/Label 'Ellipse' is 106x14, minimum 86x29",
-      "squeezed: KeyHintLabel 'Q' is 17x14, minimum 17x22"
+      "squeezed: ReflowingButtonGroup is 282x12, minimum 126x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 136x12, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 136x12, minimum 126x30",
+      "squeezed: SelectionModeToggle/Label 'Add' is 140x5, minimum 88x27",
+      "squeezed: SelectionModeToggle/Label 'Subtract' is 140x5, minimum 118x27",
+      "squeezed: SelectionModeToggle/Label 'Replace' is 140x5, minimum 125x27",
+      "squeezed: SelectionModeToggle/Label 'Intersect' is 140x5, minimum 140x27",
+      "clipped: SelectionModeToggle/KeyHintLabel '\u2387'[0] shows 20x12 of 20x22",
+      "clipped: SelectionModeToggle/KeyHintLabel '\u2303+\u21e7' shows 31x12 of 31x22",
+      "clipped: SelectionModeToggle/KeyHintLabel '\u2387'[1] shows 20x12 of 20x22",
+      "clipped: SelectionModeToggle/KeyHintLabel '\u21e7'[1] shows 17x12 of 17x22",
+      "squeezed: DualToggle/Label 'Rectangle' is 128x12, minimum 106x29",
+      "squeezed: DualToggle/Label 'Ellipse' is 128x12, minimum 86x29",
+      "squeezed: KeyHintLabel 'Q' is 17x12, minimum 17x22",
+      "squeezed: CheckBox 'Fixed 1:1 aspect ratio' is 282x11, minimum 151x22"
     ],
     "size": [
-      256,
-      81
+      300,
+      91
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      256,
+      300,
       1200
     ]
   },
@@ -54,7 +66,7 @@
     "problems": [],
     "size": [
       1600,
-      123
+      182
     ]
   }
 }

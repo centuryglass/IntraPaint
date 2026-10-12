@@ -8,6 +8,7 @@ from PySide6.QtCore import QEvent, QPoint, QRect, Qt
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import QApplication
 
+from src.config.cache import Cache
 from src.hotkey_filter import HotkeyFilter
 from src.tools.free_selection_tool import FreeSelectionTool
 from src.undo_stack import UndoStack
@@ -148,8 +149,14 @@ class FreeSelectionToolTest(SelectionToolTestCase):
         self._press_key(Qt.Key.Key_Return)
         self.assert_one_undo_step(existing, existing & ~rect_mask(self.IMAGE_SIZE, RECT_AREA))
 
+    def test_tool_action_hotkey_cycles_modes(self) -> None:
+        """The tool action hotkey (Q) steps through Add, Subtract, Replace and Intersect, then back to Add."""
+        for expected in (SelectionMode.SUBTRACT, SelectionMode.REPLACE, SelectionMode.INTERSECT, SelectionMode.ADD):
+            self._press_key(Qt.Key.Key_Q)
+            self.assertEqual(Cache().get(Cache.SELECTION_MODE), expected.value)
+
     def test_tool_action_hotkey_toggles_deselect(self) -> None:
-        """The tool action hotkey (Q) switches to deselect mode, so the next polygon subtracts."""
+        """The tool action hotkey (Q) switches from the default add mode to subtract, so the next polygon subtracts."""
         existing = rect_mask(self.IMAGE_SIZE, QRect(0, 0, 32, 24))
         self.set_selection_outside_history(existing)
         self._press_key(Qt.Key.Key_Q)

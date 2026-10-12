@@ -53,6 +53,15 @@
         "default": "Alt",
         "saved": true
     },
+    "selection_replace_modifier": {
+        "label": "Selection Replace Modifier:",
+        "category": "Keybindings",
+        "subcategory": "Modifiers",
+        "description": "When held as a selection gesture starts, the gesture replaces the selection whatever the selection mode is. It takes priority over the add and subtract modifiers.",
+        "type": "string",
+        "default": "Ctrl+Shift",
+        "saved": true
+    },
     "fixed_aspect_modifier": {
         "label": "Fixed Aspect Ratio Modifier:",
         "category": "Keybindings",

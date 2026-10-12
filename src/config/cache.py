@@ -207,6 +207,7 @@ class Cache(Config, metaclass=Singleton):
     SEED: str
     SELECTION_BRUSH_SIZE: str
     SELECTION_MODE: str
+    SHAPE_SELECTION_FIXED_ASPECT: str
     SHAPE_TOOL_ANTIALIAS: str
     SHAPE_TOOL_DASH_PATTERN: str
     SHAPE_TOOL_FILL_COLOR: str

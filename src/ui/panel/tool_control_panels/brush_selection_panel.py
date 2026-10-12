@@ -9,9 +9,9 @@ from src.config.key_config import KeyConfig
 from src.image.layers.selection_layer import SelectionLayer
 from src.tools.base_tool import BaseTool
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
-from src.ui.layout.divider import Divider
 from src.ui.panel.tool_control_panels.selection_panel import SelectionPanel
 from src.ui.widget.key_hint_label import KeyHintLabel
+from src.util.visual.selection_mode import SelectionModifiers
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.brush_selection_panel'
@@ -32,7 +32,8 @@ class BrushSelectionPanel(SelectionPanel):
     """Selection panel for the SelectionBrushTool class."""
 
     def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool) -> None:
-        super().__init__(selection_layer, selection_tool, toggle_hotkey=True)
+        super().__init__(selection_layer, selection_tool, toggle_hotkey=True,
+                         modifiers=SelectionModifiers.BRUSH)
 
         # Brush size:
         size_row = QHBoxLayout()
@@ -46,4 +47,3 @@ class BrushSelectionPanel(SelectionPanel):
         size_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_INCREASE, parent=self)
         size_row.addWidget(size_up_hint)
         self.insert_into_layout(size_row)
-        self.insert_into_layout(Divider(Qt.Orientation.Horizontal))

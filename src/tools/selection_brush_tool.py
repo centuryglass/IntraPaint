@@ -19,7 +19,7 @@ from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.brush_selection_panel import BrushSelectionPanel
 from src.util.shared_constants import PROJECT_DIR
 from src.undo_stack import UndoStack
-from src.util.visual.selection_mode import SelectionMode, stored_selection_mode, compose_selection_image
+from src.util.visual.selection_mode import SelectionMode, brush_selection_mode_for_gesture, compose_selection_image
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -119,14 +119,26 @@ class SelectionBrushTool(BrushTool):
         """Returns the selection control panel."""
         return self._control_panel
 
+    def _press_claims_fixed_angle_modifier(self) -> bool:
+        """Returns whether the press reads the subtract modifier, and that modifier shares a key with the fixed angle
+           modifier."""
+        if brush_selection_mode_for_gesture(SelectionMode.ADD) != SelectionMode.SUBTRACT:
+            return False
+        subtract_modifiers = KeyConfig().get_modifier(KeyConfig.SELECTION_SUBTRACT_MODIFIER)
+        fixed_angle_modifiers = KeyConfig().get_modifier(KeyConfig.FIXED_ANGLE_MODIFIER)
+        subtract_list = subtract_modifiers if isinstance(subtract_modifiers, list) else [subtract_modifiers]
+        angle_list = fixed_angle_modifiers if isinstance(fixed_angle_modifiers, list) else [fixed_angle_modifiers]
+        return any(subtract & angle != Qt.KeyboardModifier.NoModifier
+                   for subtract in subtract_list for angle in angle_list)
+
     def _before_stroke_start(self) -> None:
-        """Applies the selection mode to the stroke about to start.
+        """Applies the selection mode to the stroke about to start, with the subtract modifier read at the press.
 
         The brush only adds or removes pixels as it draws. REPLACE clears the selection first, and INTERSECT clears it
         while keeping a copy that `_after_stroke_end` intersects with the stroke. Both happen in the undo gesture that
         the stroke's own changes join, so the whole stroke is one undo step.
         """
-        self._stroke_mode = stored_selection_mode()
+        self._stroke_mode = brush_selection_mode_for_gesture()
         self._brush.eraser = self._stroke_mode == SelectionMode.SUBTRACT
         if self._stroke_mode in (SelectionMode.REPLACE, SelectionMode.INTERSECT):
             UndoStack().begin_gesture(UNDO_GESTURE)

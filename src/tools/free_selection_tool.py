@@ -75,7 +75,7 @@ class FreeSelectionTool(BaseTool):
         selection_hint = FREE_SELECTION_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
                                                             escape_key=rich_text_key_hint('Esc'),
                                                             enter_key=rich_text_key_hint('Enter'))
-        return f'{selection_hint}<br/>{BaseTool.selection_modifier_hint()}<br/>{super().get_input_hint()}'
+        return f'{selection_hint}<br/>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""

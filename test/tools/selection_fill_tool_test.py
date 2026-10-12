@@ -135,17 +135,18 @@ class SelectionFillToolTest(SelectionToolTestCase):
         self.mouse_drag([QPoint(4, 4)])
         self.assert_one_undo_step(existing, existing | self._mask(LEFT_OF_STRIPE))
 
-    def test_right_click_subtracts_from_selection(self) -> None:
-        """A right-click clears the filled area from the existing selection, as one undo step."""
+    def test_right_click_does_nothing(self) -> None:
+        """A right-click leaves the selection unchanged and records no undo step."""
         existing = self._mask(QRect(0, 0, 40, 30))
         self.set_selection_outside_history(existing)
         self.mouse_drag([QPoint(4, 4)], RIGHT)
-        self.assert_one_undo_step(existing, existing & ~self._mask(LEFT_OF_STRIPE))
+        self.assert_selection(existing)
+        self.assertEqual(UndoStack().undo_count(), 0)
 
     def test_other_modifiers_ignore_click(self) -> None:
-        """With a modifier that isn't the selection add or subtract modifier held, a click changes nothing."""
-        for modifier in (Qt.KeyboardModifier.ControlModifier, Qt.KeyboardModifier.ShiftModifier
-                         | Qt.KeyboardModifier.ControlModifier):
+        """With a modifier that isn't part of a selection modifier held, a click changes nothing."""
+        for modifier in (Qt.KeyboardModifier.ControlModifier, Qt.KeyboardModifier.MetaModifier
+                         | Qt.KeyboardModifier.ShiftModifier):
             with mock.patch.object(QApplication, 'keyboardModifiers', return_value=modifier):
                 self.mouse_drag([QPoint(4, 4)], modifiers=modifier)
             self.assert_selection(self.empty)
@@ -177,6 +178,13 @@ class SelectionFillToolTest(SelectionToolTestCase):
         self._click_with(Qt.KeyboardModifier.ShiftModifier | Qt.KeyboardModifier.AltModifier)
         self.assert_one_undo_step(existing, existing & self._mask(LEFT_OF_STRIPE))
 
+    def test_ctrl_shift_replaces(self) -> None:
+        """Ctrl+Shift replaces the selection with the filled area."""
+        existing = self._mask(QRect(40, 30, 24, 18))
+        self.set_selection_outside_history(existing)
+        self._click_with(Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier)
+        self.assert_one_undo_step(existing, self._mask(LEFT_OF_STRIPE))
+
     def test_replace_mode(self) -> None:
         """Replace mode leaves only the filled area selected."""
         existing = self._mask(QRect(40, 30, 24, 18))
@@ -192,6 +200,13 @@ class SelectionFillToolTest(SelectionToolTestCase):
         self.set_selection_mode(SelectionMode.INTERSECT)
         self.mouse_drag([QPoint(4, 4)])
         self.assert_one_undo_step(existing, existing & self._mask(LEFT_OF_STRIPE))
+
+    def test_ctrl_shift_replaces(self) -> None:
+        """Ctrl+Shift replaces the selection with the filled area."""
+        existing = self._mask(QRect(40, 30, 24, 18))
+        self.set_selection_outside_history(existing)
+        self._click_with(Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier)
+        self.assert_one_undo_step(existing, self._mask(LEFT_OF_STRIPE))
 
     def test_each_click_is_one_undo_step(self) -> None:
         """Two clicks record two undo steps, and undoing the second leaves the first."""

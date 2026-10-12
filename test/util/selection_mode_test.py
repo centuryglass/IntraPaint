@@ -1,4 +1,4 @@
-"""Tests selection mode resolution from the add and subtract modifiers, and how modes combine shapes with a
+"""Tests selection mode resolution from the add, subtract and replace modifiers, and how modes combine shapes with a
    selection."""
 import numpy as np
 from PySide6.QtCore import QRect, QSize, Qt
@@ -55,6 +55,14 @@ class SelectionModeTest(IntraPaintTestCase):
             self.assertEqual(selection_mode_for_gesture(stored, SHIFT), SelectionMode.ADD)
             self.assertEqual(selection_mode_for_gesture(stored, ALT), SelectionMode.SUBTRACT)
             self.assertEqual(selection_mode_for_gesture(stored, SHIFT | ALT), SelectionMode.INTERSECT)
+
+    def test_replace_modifier_takes_priority(self) -> None:
+        """Ctrl+Shift replaces, also with Alt held, and Ctrl alone or Ctrl+Alt don't."""
+        for stored in SelectionMode:
+            self.assertEqual(selection_mode_for_gesture(stored, CTRL | SHIFT), SelectionMode.REPLACE)
+            self.assertEqual(selection_mode_for_gesture(stored, CTRL | SHIFT | ALT), SelectionMode.REPLACE)
+        self.assertEqual(selection_mode_for_gesture(SelectionMode.ADD, CTRL), SelectionMode.ADD)
+        self.assertEqual(selection_mode_for_gesture(SelectionMode.ADD, CTRL | ALT), SelectionMode.SUBTRACT)
 
     def test_unrelated_modifiers_keep_stored_mode(self) -> None:
         """A modifier bound to neither selection modifier doesn't change the mode."""

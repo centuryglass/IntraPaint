@@ -1,10 +1,12 @@
 """Tests the selection brush: its left button and brush paint the selection layer, and its right button adds, moves
    and removes context pins."""
 import math
+from unittest import mock
 
 import numpy as np
 from PySide6.QtCore import QPoint, QRect, QRectF, QSize, Qt
 from PySide6.QtGui import QImage, QPainter, QPen
+from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
 from src.image.brush.qt_paint_brush import QtPaintBrush
@@ -16,6 +18,8 @@ from src.util.visual.image_utils import image_data_as_numpy_8bit
 from test.tools.tool_test_case import ToolTestCase
 
 RIGHT = Qt.MouseButton.RightButton
+SHIFT = Qt.KeyboardModifier.ShiftModifier
+ALT = Qt.KeyboardModifier.AltModifier
 
 
 class SelectionBrushToolTest(ToolTestCase):
@@ -181,6 +185,40 @@ class SelectionBrushToolTest(ToolTestCase):
         existing = self._preselect(QRect(50, 50, 100, 100))
         self.mouse_drag(points)
         np.testing.assert_array_equal(self._selection_mask(), existing | stroke)
+
+    def _with_modifiers(self, modifiers: Qt.KeyboardModifier) -> mock._patch:
+        return mock.patch.object(QApplication, 'keyboardModifiers', return_value=modifiers)
+
+    def test_alt_at_press_subtracts_without_fixing_angle(self) -> None:
+        """Alt held through a stroke subtracts it despite the default add mode, following the pointer freely."""
+        points = [QPoint(60, 60), QPoint(100, 75), QPoint(140, 110)]
+        stroke = self._stroke_only_mask(points)
+        existing = self._preselect(QRect(40, 40, 120, 90))
+        with self._with_modifiers(ALT):
+            self.mouse_drag(points, modifiers=ALT)
+        np.testing.assert_array_equal(self._selection_mask(), existing & ~stroke)
+        self.assertEqual(UndoStack().undo_count(), 1)
+
+    def test_alt_pressed_again_fixes_angle(self) -> None:
+        """Alt held at the press fixes the stroke's angle once it is released and pressed again during the stroke."""
+        expected_stroke = self._stroke_only_mask([QPoint(60, 60), QPoint(100, 75), QPoint(160, 75)])
+        existing = self._preselect(QRect(40, 40, 160, 90))
+        with self._with_modifiers(ALT):
+            self.mouse_press(QPoint(60, 60), modifiers=ALT)
+        self.mouse_move(QPoint(100, 75))
+        with self._with_modifiers(ALT):
+            self.mouse_move(QPoint(160, 85), modifiers=ALT)
+            self.mouse_release(QPoint(160, 85), modifiers=ALT)
+        np.testing.assert_array_equal(self._selection_mask(), existing & ~expected_stroke)
+
+    def test_shift_alt_line_keeps_stored_mode(self) -> None:
+        """A Shift+Alt click draws a fixed-angle line in the stored mode, without subtracting."""
+        self.mouse_drag([QPoint(60, 60)])
+        with self._with_modifiers(SHIFT | ALT):
+            self.mouse_drag([QPoint(160, 64)], modifiers=SHIFT | ALT)
+        mask = self._selection_mask()
+        self.assertTrue(mask[60, 110], 'Line midpoint not selected')
+        self.assertTrue(mask[60, 160], 'Line end not snapped to the horizontal')
 
 
 SELECTION_BRUSH_GOLDEN_DIR = 'test/resources/test_images/selection_brush'

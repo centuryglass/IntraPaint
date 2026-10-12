@@ -38,8 +38,6 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 PAN_HINT = _tr('{modifier_or_modifiers}+{left_mouse_icon} or {middle_mouse_icon}, drag: pan view')
 ZOOM_HINT = _tr('{v_scroll_icon}: zoom')
 FIXED_ASPECT_HINT = _tr('{modifier_or_modifiers}: Fixed aspect ratio')
-SELECTION_ADD_HINT = _tr('{modifier_or_modifiers}: add to selection')
-SELECTION_SUBTRACT_HINT = _tr('{modifier_or_modifiers}: subtract from selection')
 DEBUG_CURSOR_FILE_PREFIX = 'debug_'
 
 
@@ -121,13 +119,6 @@ class BaseTool(QObject):
     def fixed_aspect_hint() -> str:
         """Returns the hint for the fixed aspect ratio key, if set"""
         return f'{BaseTool.modifier_hint(KeyConfig.FIXED_ASPECT_MODIFIER, FIXED_ASPECT_HINT)}'
-
-    @staticmethod
-    def selection_modifier_hint() -> str:
-        """Returns the hints for the selection add and subtract modifier keys, if set."""
-        add_hint = BaseTool.modifier_hint(KeyConfig.SELECTION_ADD_MODIFIER, SELECTION_ADD_HINT)
-        subtract_hint = BaseTool.modifier_hint(KeyConfig.SELECTION_SUBTRACT_MODIFIER, SELECTION_SUBTRACT_HINT)
-        return '<br/>'.join(hint for hint in (add_hint, subtract_hint) if hint)
 
     @staticmethod
     def load_cursor_icon(cursor_path: str) -> QIcon:

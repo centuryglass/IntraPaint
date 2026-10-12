@@ -74,6 +74,8 @@ class BrushTool(BaseTool):
 
         self._last_pos: Optional[QPoint] = None
         self._fixed_angle: Optional[int] = None
+        # Set while a fixed angle modifier held at the stroke's press has another meaning there:
+        self._fixed_angle_suppressed = False
         scene = image_viewer.scene()
         assert scene is not None
         self._preview_line = TempDashedLineItem(scene)
@@ -275,8 +277,7 @@ class BrushTool(BaseTool):
         if self._tablet_input == QPointingDevice.PointerType.Eraser:
             self._brush.eraser = True
 
-        if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER) and self._last_pos is not None \
-                and self._last_pos != image_coordinates:
+        if self._fixed_angle_active() and self._last_pos is not None and self._last_pos != image_coordinates:
             last_pos = QPointF(self._last_pos)
             current_pos = QPointF(image_coordinates)
             if self._fixed_angle is None:
@@ -317,8 +318,8 @@ class BrushTool(BaseTool):
         self._drawing = True
         self._fixed_angle = None
         self._last_pressure = None
-        if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER) and not \
-                KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER):
+        self._fixed_angle_suppressed = self._press_claims_fixed_angle_modifier()
+        if self._fixed_angle_active() and not KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER):
             self._last_pos = image_coordinates  # Update so previous clicks don't constrain the angle
         self._before_stroke_start()
         self._brush.start_stroke()
@@ -359,6 +360,19 @@ class BrushTool(BaseTool):
             self._tablet_x_tilt = None
             self._tablet_y_tilt = None
             return True
+        return False
+
+    def _fixed_angle_active(self) -> bool:
+        """Returns whether the fixed angle modifier constrains the stroke: it is held, and if it was held at the press
+           with another meaning, it has been released and pressed again since."""
+        if not KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER):
+            self._fixed_angle_suppressed = False
+            return False
+        return not self._fixed_angle_suppressed
+
+    def _press_claims_fixed_angle_modifier(self) -> bool:
+        """Returns whether the modifiers held at a stroke's press give the fixed angle modifier another meaning, so it
+           constrains the stroke only once released and pressed again. Subclasses override this."""
         return False
 
     def _before_stroke_start(self) -> None:

@@ -257,6 +257,15 @@
         ],
         "saved": true
     },
+    "shape_selection_fixed_aspect": {
+        "label": "Fixed 1:1 aspect ratio",
+        "category": "Cache",
+        "subcategory": "Selection",
+        "description": "If checked, rectangle and ellipse selections are always square or circular, as if the fixed aspect ratio modifier were held.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
     "selection_brush_size": {
         "label": "Size:",
         "category": "Cache",

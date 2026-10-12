@@ -170,6 +170,8 @@ class ClickAndDragSelection(QObject):
         self._inner_radius_fraction = 0.5
         self._vertex_count = 5
         self._selecting = False
+        self._aspect_modifier_needs_fresh_press = False
+        self._aspect_modifier_suppressed = False
 
     @property
     def opacity(self) -> float:
@@ -228,6 +230,16 @@ class ClickAndDragSelection(QObject):
         self._aspect_ratio = aspect_ratio
 
     @property
+    def aspect_modifier_needs_fresh_press(self) -> bool:
+        """Whether a fixed aspect modifier held when a selection starts is ignored until it is released and pressed
+           again. Tools that give the modifier another meaning at the press set this."""
+        return self._aspect_modifier_needs_fresh_press
+
+    @aspect_modifier_needs_fresh_press.setter
+    def aspect_modifier_needs_fresh_press(self, needs_fresh_press: bool) -> None:
+        self._aspect_modifier_needs_fresh_press = needs_fresh_press
+
+    @property
     def selecting(self) -> bool:
         """Return whether a selection is currently in-progress."""
         return self._selecting
@@ -258,6 +270,8 @@ class ClickAndDragSelection(QObject):
         self._selection_shape.clear()
         self._selection_shape.set_start_point(QPointF(start_point))
         self._selection_shape.set_end_point(QPointF(start_point))
+        self._aspect_modifier_suppressed = self._aspect_modifier_needs_fresh_press \
+            and KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER)
         self._selecting = True
 
     def drag_to(self, drag_point: QPoint) -> None:
@@ -274,10 +288,13 @@ class ClickAndDragSelection(QObject):
             return
         assert self._selection_shape is not None
         rect = self._selection_shape.point_rect()
+        aspect_modifier_held = KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER)
+        if not aspect_modifier_held:
+            self._aspect_modifier_suppressed = False
         if self._aspect_ratio is not None:
             bottom_right = closest_point_keeping_aspect_ratio(QPointF(drag_point), rect.topLeft(),
                                                               self._aspect_ratio).toPoint()
-        elif KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER):
+        elif aspect_modifier_held and not self._aspect_modifier_suppressed:
             bottom_right = closest_point_keeping_aspect_ratio(QPointF(drag_point), rect.topLeft(),
                                                               1.0).toPoint()
         else:

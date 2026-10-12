@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="128mm" height="128mm" viewBox="0 0 128 128" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <rect x="1.09" y="1.09" width="125.82" height="125.82" ry="31.21"
+        style="fill:#f9f9f9;fill-rule:evenodd;stroke:#000000;stroke-width:2.18" />
+  <!-- The old selection, discarded: -->
+  <rect x="16" y="16" width="64" height="64"
+        style="fill:none;stroke:#8c8c8c;stroke-width:6;stroke-linejoin:bevel;stroke-dasharray:18,6" />
+  <!-- The new selection: -->
+  <rect x="44" y="44" width="68" height="68"
+        style="fill:#ff8080;fill-opacity:0.9;stroke:#000000;stroke-width:10;stroke-linejoin:bevel;stroke-dasharray:30,10" />
+</svg>

@@ -3,49 +3,60 @@
     "problems": [],
     "size": [
       431,
-      152
+      183
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 197x30, minimum 126x70",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 197x10, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 197x10, minimum 126x30",
+      "squeezed: ReflowingButtonGroup is 197x43, minimum 126x70",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 197x17, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 197x16, minimum 126x30",
+      "squeezed: SelectionModeToggle/Label 'Add' is 97x20, minimum 88x27",
+      "squeezed: SelectionModeToggle/Label 'Subtract' is 97x20, minimum 118x27",
+      "squeezed: SelectionModeToggle/Label 'Replace' is 97x20, minimum 125x27",
+      "squeezed: SelectionModeToggle/Label 'Intersect' is 97x20, minimum 140x27",
+      "clipped: SelectionModeToggle/KeyHintLabel '\u2387'[0] shows 20x21 of 20x22",
       "squeezed: CheckBox 'Sample Merged' is 54x22, minimum 116x22",
       "squeezed: CheckBox 'Select all by color' is 54x22, minimum 128x22",
       "squeezed: CheckBox 'Fill selection holes' is 54x22, minimum 134x22"
     ],
     "size": [
       215,
-      152
+      183
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
       431,
-      152
+      183
     ]
   },
   "short": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 413x8, minimum 126x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 202x8, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 201x8, minimum 126x30",
-      "squeezed: QLabel 'Mode:' is 37x8, minimum 37x17",
-      "squeezed: ComboBox is 80x8, minimum 80x25",
-      "squeezed: FloatSliderSpinbox is 413x8, minimum 180x30",
-      "squeezed: FloatSliderSpinbox/QLabel 'Color threshold:' is 94x4, minimum 94x17",
-      "squeezed: FloatSliderSpinbox/QSlider is 245x4, minimum 12x23",
-      "squeezed: FloatSliderSpinbox/QDoubleSpinBox is 62x4, minimum 62x26",
-      "squeezed: KeyHintLabel 'Q' is 17x8, minimum 17x22",
-      "squeezed: CheckBox 'Sample Merged' is 116x8, minimum 116x22",
-      "squeezed: CheckBox 'Select all by color' is 128x8, minimum 128x22",
-      "squeezed: CheckBox 'Fill selection holes' is 134x8, minimum 134x22"
+      "squeezed: ReflowingButtonGroup is 413x12, minimum 126x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 202x12, minimum 102x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 201x12, minimum 126x30",
+      "squeezed: SelectionModeToggle/Label 'Add' is 205x5, minimum 88x27",
+      "squeezed: SelectionModeToggle/Label 'Subtract' is 205x5, minimum 118x27",
+      "squeezed: SelectionModeToggle/Label 'Replace' is 205x5, minimum 125x27",
+      "squeezed: SelectionModeToggle/Label 'Intersect' is 205x5, minimum 140x27",
+      "clipped: SelectionModeToggle/KeyHintLabel '\u2387'[0] shows 20x12 of 20x22",
+      "clipped: SelectionModeToggle/KeyHintLabel '\u2303+\u21e7' shows 31x12 of 31x22",
+      "clipped: SelectionModeToggle/KeyHintLabel '\u2387'[1] shows 20x12 of 20x22",
+      "clipped: SelectionModeToggle/KeyHintLabel '\u21e7'[1] shows 17x12 of 17x22",
+      "squeezed: FloatSliderSpinbox is 413x12, minimum 180x30",
+      "squeezed: FloatSliderSpinbox/QLabel 'Color threshold:' is 94x8, minimum 94x17",
+      "squeezed: FloatSliderSpinbox/QSlider is 245x8, minimum 12x23",
+      "squeezed: FloatSliderSpinbox/QDoubleSpinBox is 62x8, minimum 62x26",
+      "squeezed: KeyHintLabel 'Q' is 17x11, minimum 17x22",
+      "squeezed: CheckBox 'Sample Merged' is 116x11, minimum 116x22",
+      "squeezed: CheckBox 'Select all by color' is 128x11, minimum 128x22",
+      "squeezed: CheckBox 'Fill selection holes' is 134x11, minimum 134x22"
     ],
     "size": [
       431,
-      76
+      91
     ]
   },
   "tall": {
@@ -59,7 +70,7 @@
     "problems": [],
     "size": [
       1600,
-      152
+      183
     ]
   }
 }

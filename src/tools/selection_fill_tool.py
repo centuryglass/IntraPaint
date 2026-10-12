@@ -14,8 +14,8 @@ from src.tools.base_tool import BaseTool
 from src.ui.panel.tool_control_panels.fill_selection_panel import FillSelectionPanel
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.image_fill import flood_fill, color_fill
-from src.util.visual.selection_mode import SelectionMode, selection_mode_for_gesture, compose_selection_image
-from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
+from src.util.visual.selection_mode import selection_mode_for_gesture, compose_selection_image
+from src.util.visual.text_drawing_utils import left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.selection_fill_tool'
@@ -32,13 +32,14 @@ CURSOR_SIZE = 25
 
 SELECTION_FILL_LABEL = _tr('Selection fill')
 SELECTION_FILL_TOOLTIP = _tr('Select areas with solid colors')
-SELECTION_FILL_CONTROL_HINT = _tr('{left_mouse_icon}: select, {right_mouse_icon}: deselect')
+SELECTION_FILL_CONTROL_HINT = _tr('{left_mouse_icon}: select')
 
 
 def _only_selection_modifiers(held_modifiers: Qt.KeyboardModifier) -> bool:
-    """Returns whether every held modifier is the selection add or subtract modifier."""
+    """Returns whether every held modifier belongs to a selection add, subtract or replace modifier."""
     remaining = held_modifiers
-    for modifier_key in (KeyConfig.SELECTION_ADD_MODIFIER, KeyConfig.SELECTION_SUBTRACT_MODIFIER):
+    for modifier_key in (KeyConfig.SELECTION_ADD_MODIFIER, KeyConfig.SELECTION_SUBTRACT_MODIFIER,
+                         KeyConfig.SELECTION_REPLACE_MODIFIER):
         if KeyConfig.modifier_held(modifier_key, held_modifiers=held_modifiers):
             remaining &= ~KeyConfig().get_modifier(modifier_key)
     return remaining == Qt.KeyboardModifier.NoModifier
@@ -66,25 +67,21 @@ class SelectionFillTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        selection_fill_hint = SELECTION_FILL_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
-                                                                 right_mouse_icon=right_button_hint_text())
-        return f'{selection_fill_hint}<br/>{BaseTool.selection_modifier_hint()}<br/>{super().get_input_hint()}'
+        selection_fill_hint = SELECTION_FILL_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
+        return f'{selection_fill_hint}<br/>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
         return self._control_panel
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Fill the region under the mouse on left-click, clear on right-click."""
+        """Combines the region under a left-click with the selection, using the selection mode."""
         assert event is not None
         held_modifiers = QApplication.keyboardModifiers()
         if held_modifiers != Qt.KeyboardModifier.NoModifier and not _only_selection_modifiers(held_modifiers):
             return True
-        if event.buttons() == Qt.MouseButton.LeftButton or event.buttons() == Qt.MouseButton.RightButton:
-            if event.buttons() == Qt.MouseButton.RightButton:
-                mode = SelectionMode.SUBTRACT
-            else:
-                mode = selection_mode_for_gesture(held_modifiers=held_modifiers)
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            mode = selection_mode_for_gesture(held_modifiers=held_modifiers)
             layer = self._image_stack.active_layer
             layer_bounds = layer.bounds
             mask_pos = self._image_stack.selection_layer.position

@@ -363,18 +363,19 @@ Selected content is marked with an animated outline and a transparent red overla
 - When the image generation mode is set to "Inpaint" (the default), image generation will only affect selected areas.
 
 ### Selection modes:
-Every selection tool has a **Mode** dropdown that sets how a new selection combines with the existing one. The setting is shared by all selection tools.
+Every selection tool has a **selection mode toggle**, four buttons that set how a new selection combines with the existing one. The setting is shared by all selection tools.
 - **Add** (the default): Add the new area to the selection.
 - **Subtract**: Remove the new area from the selection.
 - **Replace**: Discard the existing selection, and select only the new area.
 - **Intersect**: Keep only the part of the existing selection that overlaps the new area.
 
-Holding a modifier key when a selection starts overrides the dropdown for that one selection:
+Holding a modifier key when a selection starts overrides the toggle for that one selection. Each button shows the keys that select its mode, and while they are held, the toggle highlights the mode they select:
 - **Hold Shift**: Add.
 - **Hold Alt**: Subtract.
 - **Hold Shift+Alt**: Intersect.
+- **Hold Ctrl+Shift**: Replace.
 
-The rectangle/ellipse and free selection tools and the selection fill tool use these modifiers. The selection brush doesn't, because Shift and Alt already draw lines and fixed angles there; use the dropdown or the "Q" key instead. The modifiers can be changed in the Settings (F9) under the "Keybindings" tab.
+The rectangle/ellipse and free selection tools and the selection fill tool use all four. The selection brush uses only Alt to subtract, because Shift already draws lines there; use the toggle or the "Q" key for the other modes. The modifiers can be changed in the Settings (F9) under the "Keybindings" tab.
 
 **On Linux, Alt+drag may move the window instead.** Many window managers (including XFCE, Cinnamon, MATE and KDE Plasma 5) use Alt+drag to move windows, and IntraPaint never sees the press. Either change the window manager's window-move key to Super, or bind IntraPaint's **Selection Subtract Modifier** to a different key such as Meta. The same applies to the other Alt shortcuts, such as the fixed-angle drawing modifier.
 
@@ -384,15 +385,15 @@ Select areas by outlining them.
 
 #### Basic controls:
 - **Left-click**: Add a new point to the new selection outline.
-- **Return key, or click the first point**: Close the outline and apply it to the selection using the current [selection mode](#selection-modes), as long as there are at least two other points in the outline. Shift and Alt only count when held while clicking the first point.
+- **Return key, or click the first point**: Close the outline and apply it to the selection using the current [selection mode](#selection-modes), as long as there are at least two other points in the outline. The selection modifiers only count when held while clicking the first point.
 - **Click and drag any other point**: Points within the outline can be adjusted until the selection is closed.
 - **Escape key**: Cancel the selection, removing any pending selection points.
-- **"Q" key**: Switch the selection mode between Add and Subtract.
+- **"Q" key**: Cycle through the selection modes: Add, Subtract, Replace, then Intersect.
 
 #### User interface
 <img src="./labeled_screenshots/tools/free_select.png" alt="Screenshot of the free selection tool controls, with specific elements numbered."/>
 
-1. **Mode dropdown**: Choose the [selection mode](#selection-modes).
+1. **Selection mode toggle**: Choose the [selection mode](#selection-modes).
 2. **Clear button**: Remove all selections.
 3. **Select All button**: Select all image content. In inpainting mode, a **Clear Context Pins** button follows it, removing every [context pin](#-selection-brush-tool-s).
 4. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
@@ -408,17 +409,18 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 - **Left-click**: Select content within the image, using the current [selection mode](#selection-modes). In Replace and Intersect modes, each stroke starts from a cleared selection, and Intersect keeps the part of the old selection that the stroke covers.
 - **Right-click**: Add a context pin, or remove the pin under the cursor. A pin stretches the "Inpaint Full Resolution" crop to include its spot, without selecting it for inpainting. Pins stay until you remove them or use [Clear context pins](./menu_options.md#clear-context-pins-ctrlaltp).
 - **Right-click and drag**: Drag a new pin into place, or drag an existing pin to move it. Releasing a dragged pin outside the image removes it.
-- **Hold shift and left-click**: Select a line from the last place you clicked.
-- **Hold Alt while drawing**: Force the brush to follow a fixed angle.
+- **Hold Alt before pressing**: Subtract the stroke from the selection, whatever the mode is.
+- **Hold shift and left-click**: Select a line from the last place you clicked, using the current mode. Hold Alt too to keep the line at a fixed angle.
+- **Press Alt while drawing**: Force the brush to follow a fixed angle. If Alt was already held when the stroke started, release it and press it again.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size. **Hold shift** to change size faster.
 - **Hold Alt**: Increase speed when changing brush size using keyboard keys.
-- **"Q" key**: Switch the selection mode between Add and Subtract.
+- **"Q" key**: Cycle through the selection modes: Add, Subtract, Replace, then Intersect.
 
 #### User interface
 <img src="./labeled_screenshots/tools/brush_select.png" alt="Screenshot of the free selection tool controls, with specific elements numbered."/>
 
 1. **Brush size slider**: Change the size of the selection brush.
-2. **Mode dropdown**: Choose the [selection mode](#selection-modes).
+2. **Selection mode toggle**: Choose the [selection mode](#selection-modes).
 3. **Clear button**: Remove all selections.
 4. **Select All button**: Select all image content.
 5. **Clear Context Pins button**: Only visible in inpainting mode.  Removes every [context pin](#-selection-brush-tool-s).
@@ -435,16 +437,16 @@ Select or deselect rectangular or elliptical regions in the image.
 
 #### Basic controls
 - **Left-click and drag**: Apply a region to the selection using the current [selection mode](#selection-modes).
-- **Hold Shift or Alt before pressing**: Add to the selection, or subtract from it, whatever the mode is. Shift and Alt together intersect.
-- **Right-click and drag**: Subtract a region from the selection.
+- **Hold Shift, Alt or Ctrl+Shift before pressing**: Add to the selection, subtract from it, or replace it, whatever the mode is. Shift and Alt together intersect.
 - **"Q" key**: Toggle between rectangle and ellipse selection.
-- **Hold Shift while dragging**: Restricts new selections to a 1:1 aspect ratio. Shift held before pressing also adds, so release it before the drag to avoid both.
+- **Press Shift while dragging**: Restricts new selections to a 1:1 aspect ratio. Shift held before pressing only adds; release it and press it again during the drag to also fix the aspect ratio.
 
 #### User interface
 <img src="./labeled_screenshots/tools/shape_select.png"  alt="Screenshot of the shape selection tool controls, with specific elements numbered."/>
 
-1. **Mode dropdown**: Choose the [selection mode](#selection-modes).
+1. **Selection mode toggle**: Choose the [selection mode](#selection-modes).
 2. **Rectangle/ellipse toggle**: Switch between rectangular and elliptical regions.
+   - **"Fixed 1:1 aspect ratio" checkbox**: When checked, every new selection is a square or circle.
 3. **Clear button**: Remove all selections.
 4. **Select All button**: Select all image content. In inpainting mode, a **Clear Context Pins** button follows it, removing every [context pin](#-selection-brush-tool-s).
 5. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
@@ -457,13 +459,12 @@ Select content based on connected regions and color similarity.
 
 #### Basic controls
 - **Left-click**: Apply connected areas with colors that match the clicked spot to the selection, using the current [selection mode](#selection-modes).
-- **Hold Shift or Alt while clicking**: Add to the selection, or subtract from it, whatever the mode is. Shift and Alt together intersect.
-- **Right-click**: Subtract connected areas with colors that match the clicked spot from the selection.
+- **Hold Shift, Alt or Ctrl+Shift while clicking**: Add to the selection, subtract from it, or replace it, whatever the mode is. Shift and Alt together intersect.
 
 #### User interface
 <img src="./labeled_screenshots/tools/fill_select.png" alt="Screenshot of the fill selection tool controls, with specific elements numbered."/>
 
-0. **Mode dropdown**: Choose the [selection mode](#selection-modes).
+0. **Selection mode toggle**: Choose the [selection mode](#selection-modes).
 1. **Color threshold slider**: Controls how closely colors must match when filling connected areas.  At 0.0, only connected areas with the exact same color will be selected.  The accepted color range expands as the threshold value increases.
 2. **"Sample merged" checkbox**:  When checked, the fill selection tool will use all image layers to determine where to select.  When unchecked, content outside the active layer will be ignored.
 3. **"Select all by color" checkbox**:  When checked, color boundaries will be ignored, and the fill selection tool will instead select every point in the image where the color matches the clicked point.  Enabling this will un-check "Fill selection holes".
