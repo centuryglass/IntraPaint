@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QToolButton, QSizePolicy
 
 from src.tools.base_tool import BaseTool
 from src.ui.widget.key_hint_label import KeyHintLabel
+from src.ui.widget.shortcut_tooltip import set_shortcut_tooltip
 from src.util.visual.geometry_utils import get_scaled_placement
 
 TOOL_ICON_SIZE = 48
@@ -37,7 +38,7 @@ class ToolButton(QToolButton):
         self._key_hint.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         self._key_hint.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         self._key_hint.setMinimumSize(self._key_hint.sizeHint())
-        self.setToolTip(label_text)
+        set_shortcut_tooltip(self, label_text, connected_tool.get_activation_config_key())
         self._icon_bounds = QRect()
         self._active = False
         self.clicked.connect(self._activate_tool)
