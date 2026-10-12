@@ -153,7 +153,7 @@ class GeneratedImageSelector(QWidget):
 
         self._base_option_offset = QPointF(0.0, 0.0)
         self._base_option_scale = 0.0
-        self._option_scale_offset = 0.0
+        self._option_scale_ratio = 1.0
         self._option_pos_offset = QPointF(0.0, 0.0)
 
         self._layout = QVBoxLayout(self)
@@ -257,6 +257,7 @@ class GeneratedImageSelector(QWidget):
         """Remove all old options and prepare for new ones."""
         self._generation_area = self._image_stack.generation_area
         self._zoom_index = 0
+        self._clear_manual_view()
         cache = Cache()
         scene = self._view.scene()
         assert scene is not None
@@ -365,8 +366,7 @@ class GeneratedImageSelector(QWidget):
             if not self._scroll_debounce_finished():
                 return
             self._view.reset_scale()
-            self._option_pos_offset = QPointF(0.0, 0.0)
-            self._option_scale_offset = 0.0
+            self._clear_manual_view()
             for option in self._options:
                 option.setOpacity(1.0)
             self._status_label.setText(self._get_control_hint())
@@ -376,6 +376,7 @@ class GeneratedImageSelector(QWidget):
     def zoom_to_changes(self, should_zoom: bool) -> None:
         """Zoom in to the updated area when inpainting small sections."""
         self._zoom_to_changes = should_zoom
+        self._clear_manual_view()
         if self._zoom_to_changes:
             if not self._zoomed_in:
                 self.toggle_zoom()
@@ -429,6 +430,10 @@ class GeneratedImageSelector(QWidget):
         """Use horizontal scroll to move through selections, select items when clicked."""
         assert event is not None
         if event.type() == QEvent.Type.Wheel:
+            if source is not self._view:
+                # The view already handled this event. An ignored wheel event bubbles up to the main window,
+                # which installs this same filter; without this check it would step a second time.
+                return False
             event = cast(QWheelEvent, event)
             if event.angleDelta().x() > 0:
                 self._zoom_next()
@@ -494,7 +499,13 @@ class GeneratedImageSelector(QWidget):
     def _scale_change_slot(self, scale: float) -> None:
         if not self._zoomed_in:
             return
-        self._option_scale_offset = scale - self._base_option_scale
+        if self._base_option_scale > 0:
+            self._option_scale_ratio = scale / self._base_option_scale
+
+    def _clear_manual_view(self) -> None:
+        """Discards the manual pan and zoom, which are only meaningful in the frame they were made in."""
+        self._option_pos_offset = QPointF(0.0, 0.0)
+        self._option_scale_ratio = 1.0
 
     def _insert_option_into_layer(self, option_index: int, layer: Layer):
         """Apply an AI-generated image change to the edited image."""
@@ -564,7 +575,12 @@ class GeneratedImageSelector(QWidget):
         self._base_option_offset = self._view.offset
         self._base_option_scale = self._view.scene_scale
         self._view.offset = self._base_option_offset + self._option_pos_offset
-        self._view.scale_without_fixed_scene_point(self._view.scene_scale + self._option_scale_offset)
+        self._view.scale_without_fixed_scene_point(self._base_option_scale * self._option_scale_ratio)
+        if not self._view.visible_scene_bounds.intersects(QRectF(bounds)):
+            # The carried-over pan/zoom leaves the new option entirely off-screen: discard it instead.
+            self._clear_manual_view()
+            self._view.offset = self._base_option_offset
+            self._view.scale_without_fixed_scene_point(self._base_option_scale)
         self._view.scale_changed.connect(self._scale_change_slot)
         self._view.offset_changed.connect(self._offset_change_slot)
         for i, option in enumerate(self._options):
