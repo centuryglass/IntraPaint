@@ -2,12 +2,12 @@
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QHBoxLayout
 
+from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.selection_layer import SelectionLayer
 from src.tools.base_tool import BaseTool
 from src.ui.input_fields.dual_toggle import DualToggle
-from src.ui.layout.divider import Divider
 from src.ui.panel.tool_control_panels.selection_panel import SelectionPanel
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.util.shared_constants import PROJECT_DIR
@@ -18,7 +18,7 @@ ICON_PATH_ELLIPSE = f'{PROJECT_DIR}/resources/icons/tool_modes/ellipse_select.sv
 
 
 class ShapeSelectionPanel(SelectionPanel):
-    """Selection panel for the SelectionFillTool class."""
+    """Selection panel for the ShapeSelectionTool class."""
 
     tool_mode_changed = Signal(str)
 
@@ -46,5 +46,4 @@ class ShapeSelectionPanel(SelectionPanel):
         binding_id = f'ShapeSelectionPanel_{id(self)}_try_toggle'
         HotkeyFilter.instance().register_config_keybinding(binding_id, _try_toggle, KeyConfig.TOOL_ACTION_HOTKEY)
 
-        # TODO: fixed aspect ratio checkbox
-        self.insert_into_layout(Divider(Qt.Orientation.Horizontal))
+        self.insert_into_layout(Cache().get_control_widget(Cache.SHAPE_SELECTION_FIXED_ASPECT))

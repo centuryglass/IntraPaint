@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QRect
-from PySide6.QtGui import QIcon, QCursor, QMouseEvent, QColor, QPainter, QTransform
+from PySide6.QtGui import QIcon, QCursor, QMouseEvent, QColor, QPainter, QTransform, QImage
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.application_config import AppConfig
@@ -14,7 +14,8 @@ from src.tools.base_tool import BaseTool
 from src.ui.panel.tool_control_panels.fill_selection_panel import FillSelectionPanel
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.image_fill import flood_fill, color_fill
-from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
+from src.util.visual.selection_mode import selection_mode_for_gesture, compose_selection_image
+from src.util.visual.text_drawing_utils import left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.selection_fill_tool'
@@ -31,7 +32,17 @@ CURSOR_SIZE = 25
 
 SELECTION_FILL_LABEL = _tr('Selection fill')
 SELECTION_FILL_TOOLTIP = _tr('Select areas with solid colors')
-SELECTION_FILL_CONTROL_HINT = _tr('{left_mouse_icon}:select, {right_mouse_icon}: deselect')
+SELECTION_FILL_CONTROL_HINT = _tr('{left_mouse_icon}: select')
+
+
+def _only_selection_modifiers(held_modifiers: Qt.KeyboardModifier) -> bool:
+    """Returns whether every held modifier belongs to a selection add, subtract or replace modifier."""
+    remaining = held_modifiers
+    for modifier_key in (KeyConfig.SELECTION_ADD_MODIFIER, KeyConfig.SELECTION_SUBTRACT_MODIFIER,
+                         KeyConfig.SELECTION_REPLACE_MODIFIER):
+        if KeyConfig.modifier_held(modifier_key, held_modifiers=held_modifiers):
+            remaining &= ~KeyConfig().get_modifier(modifier_key)
+    return remaining == Qt.KeyboardModifier.NoModifier
 
 
 class SelectionFillTool(BaseTool):
@@ -56,8 +67,7 @@ class SelectionFillTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        selection_fill_hint = SELECTION_FILL_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
-                                                                 right_mouse_icon=right_button_hint_text())
+        selection_fill_hint = SELECTION_FILL_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
         return f'{selection_fill_hint}<br/>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
@@ -65,12 +75,13 @@ class SelectionFillTool(BaseTool):
         return self._control_panel
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Fill the region under the mouse on left-click, clear on right-click."""
+        """Combines the region under a left-click with the selection, using the selection mode."""
         assert event is not None
-        if QApplication.keyboardModifiers() != Qt.KeyboardModifier.NoModifier:
+        held_modifiers = QApplication.keyboardModifiers()
+        if held_modifiers != Qt.KeyboardModifier.NoModifier and not _only_selection_modifiers(held_modifiers):
             return True
-        if event.buttons() == Qt.MouseButton.LeftButton or event.buttons() == Qt.MouseButton.RightButton:
-            clear_mode = event.buttons() == Qt.MouseButton.RightButton
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            mode = selection_mode_for_gesture(held_modifiers=held_modifiers)
             layer = self._image_stack.active_layer
             layer_bounds = layer.bounds
             mask_pos = self._image_stack.selection_layer.position
@@ -111,12 +122,13 @@ class SelectionFillTool(BaseTool):
                 mask = flood_fill(image, sample_point, self._color, threshold, False)
             selection_image = self._image_stack.selection_layer.image
             assert mask is not None
-            painter = QPainter(selection_image)
-            if clear_mode:
-                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
-            painter.setTransform(paint_transform)
-            painter.drawImage(QRect(QPoint(), mask.size()), mask)
-            painter.end()
+            mask_image = QImage(selection_image.size(), QImage.Format.Format_ARGB32_Premultiplied)
+            mask_image.fill(Qt.GlobalColor.transparent)
+            mask_painter = QPainter(mask_image)
+            mask_painter.setTransform(paint_transform)
+            mask_painter.drawImage(QRect(QPoint(), mask.size()), mask)
+            mask_painter.end()
+            compose_selection_image(selection_image, mask_image, mode)
             self._image_stack.selection_layer.image = selection_image
             return True
         return False

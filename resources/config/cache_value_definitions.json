@@ -242,6 +242,30 @@
             "step": 1
         }
     },
+    "selection_mode": {
+        "label": "Selection mode:",
+        "category": "Cache",
+        "subcategory": "Selection",
+        "description": "How new selection shapes combine with the existing selection: 'Add' adds to it, 'Subtract' removes from it, 'Replace' discards it, and 'Intersect' keeps only the overlap. The selection add and subtract modifiers override this for one gesture.",
+        "type": "string",
+        "default": "Add",
+        "options": [
+            "Add",
+            "Subtract",
+            "Replace",
+            "Intersect"
+        ],
+        "saved": true
+    },
+    "shape_selection_fixed_aspect": {
+        "label": "Fixed 1:1 aspect ratio",
+        "category": "Cache",
+        "subcategory": "Selection",
+        "description": "If checked, rectangle and ellipse selections are always square or circular, as if the fixed aspect ratio modifier were held.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
     "selection_brush_size": {
         "label": "Size:",
         "category": "Cache",

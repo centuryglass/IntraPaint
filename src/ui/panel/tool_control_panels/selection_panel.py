@@ -7,10 +7,15 @@ from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QPushButton, Q
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.hotkey_filter import HotkeyFilter
 from src.image.layers.selection_layer import SelectionLayer
 from src.tools.base_tool import BaseTool
+from src.ui.input_fields.selection_mode_toggle import SelectionModeToggle
+from src.ui.layout.divider import Divider
 from src.ui.layout.reflowing_button_group import ReflowingButtonGroup
+from src.ui.widget.key_hint_label import KeyHintLabel
 from src.util.shared_constants import PROJECT_DIR, SMALL_ICON_SIZE, EDIT_MODE_INPAINT
+from src.util.visual.selection_mode import SelectionMode, SelectionModifiers, stored_selection_mode
 from src.util.visual.text_drawing_utils import get_key_display_string
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -35,9 +40,15 @@ ICON_PATH_CLEAR_PINS = f'{PROJECT_DIR}/resources/icons/tool_modes/clear_context_
 
 
 class SelectionPanel(QWidget):
-    """Base control panel for selection editing tools."""
+    """Base control panel for selection editing tools.
 
-    def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool) -> None:
+    All selection panels show the shared `Cache.SELECTION_MODE` toggle, which shows and previews the selection modifiers
+    under the tool's `modifiers` rule. With `toggle_hotkey` set, the panel also registers
+    `KeyConfig.TOOL_ACTION_HOTKEY` to cycle through the modes while its tool is active.
+    """
+
+    def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool, toggle_hotkey: bool = False,
+                 modifiers: SelectionModifiers = SelectionModifiers.ADD_AND_SUBTRACT) -> None:
         super().__init__()
         self._selection_layer = selection_layer
         self._selection_tool = selection_tool
@@ -145,6 +156,26 @@ class SelectionPanel(QWidget):
         cache.connect(self, Cache.EDIT_MODE, _update_clear_pins_visibility)
         _update_clear_pins_visibility()
 
+        # Selection mode, shared by every selection tool:
+        mode_row = QHBoxLayout()
+        mode_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        mode_row.addWidget(SelectionModeToggle(self, modifiers))
+        if toggle_hotkey:
+            mode_row.addWidget(KeyHintLabel(config_key=KeyConfig.TOOL_ACTION_HOTKEY, parent=self))
+
+            def _try_toggle() -> bool:
+                if not self.selection_tool_is_active:
+                    return False
+                modes = list(SelectionMode)
+                next_mode = modes[(modes.index(stored_selection_mode()) + 1) % len(modes)]
+                cache.set(Cache.SELECTION_MODE, next_mode.value)
+                return True
+            binding_id = f'SelectionPanel_{id(self)}_try_toggle'
+            HotkeyFilter.instance().register_config_keybinding(binding_id, _try_toggle, KeyConfig.TOOL_ACTION_HOTKEY)
+        # Above the default items, below anything `insert_into_layout` adds:
+        self._layout.insertLayout(0, mode_row)
+        self._layout.insertWidget(1, Divider(Qt.Orientation.Horizontal))
+
     def minimumSizeHint(self) -> QSize:
         """Returns the layout's minimum width, and the height its contents need at that width.
 
@@ -157,7 +188,8 @@ class SelectionPanel(QWidget):
         return hint
 
     def insert_into_layout(self, layout_item: QWidget | QLayout, stretch=0) -> None:
-        """Insert an item into the layout above all default items but below previously inserted content."""
+        """Insert an item into the layout above the selection mode row and all default items, but below previously
+           inserted content."""
         if isinstance(layout_item, QWidget):
             self._layout.insertWidget(self._insert_index, layout_item, stretch=stretch)
         else:

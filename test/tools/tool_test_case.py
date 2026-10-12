@@ -7,11 +7,13 @@ from PySide6.QtCore import QEvent, QPoint, QPointF, QSize, Qt
 from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QApplication
 
+from src.config.cache import Cache
 from src.controller.tool_controller import ToolController
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import MIN_OUTLINE_PIXEL_SIZE
 from src.ui.panel.image_panel import ImagePanel
+from src.util.visual.selection_mode import SelectionMode
 from test.base_test_case import IntraPaintTestCase
 
 ToolT = TypeVar('ToolT', bound=BaseTool)
@@ -33,6 +35,7 @@ class ToolTestCase(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
+        Cache().restore_default_options(Cache.SELECTION_MODE)
         self.image_stack = ImageStack(self.IMAGE_SIZE, self.IMAGE_SIZE, self.IMAGE_SIZE, self.IMAGE_SIZE)
         self.image_panel = ImagePanel(self.image_stack, include_zoom_controls=False, use_keybindings=False)
         self.image_viewer = self.image_panel.image_viewer
@@ -45,6 +48,11 @@ class ToolTestCase(IntraPaintTestCase):
     def tearDown(self) -> None:
         self.image_panel.close()
         super().tearDown()
+
+    @staticmethod
+    def set_selection_mode(mode: SelectionMode) -> None:
+        """Sets the shared selection mode that the selection tools read."""
+        Cache().set(Cache.SELECTION_MODE, mode.value)
 
     def activate_tool(self, tool: ToolT) -> ToolT:
         """Adds a tool to the tool controller if it isn't there already, makes it the active tool, and returns it."""

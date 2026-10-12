@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="128mm" height="128mm" viewBox="0 0 128 128" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <rect x="1.09" y="1.09" width="125.82" height="125.82" ry="31.21"
+        style="fill:#f9f9f9;fill-rule:evenodd;stroke:#000000;stroke-width:2.18" />
+  <!-- The overlap that stays selected: -->
+  <rect x="44" y="44" width="40" height="40" style="fill:#ff8080;stroke:none" />
+  <!-- The old and new selections: -->
+  <rect x="16" y="16" width="68" height="68"
+        style="fill:none;stroke:#000000;stroke-width:8;stroke-linejoin:bevel;stroke-dasharray:24,8" />
+  <rect x="44" y="44" width="68" height="68"
+        style="fill:none;stroke:#000000;stroke-width:8;stroke-linejoin:bevel;stroke-dasharray:24,8" />
+</svg>

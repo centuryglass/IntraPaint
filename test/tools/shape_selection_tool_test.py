@@ -1,4 +1,4 @@
-"""Tests ShapeSelectionTool: rectangle and ellipse drags select into the selection layer, a right-drag deselects,
+"""Tests ShapeSelectionTool: rectangle and ellipse drags select into the selection layer, a right-drag does nothing,
    and each drag is one undo step."""
 from unittest import mock
 
@@ -7,10 +7,12 @@ from PySide6.QtCore import QEvent, QPoint, QRect, Qt
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import QApplication
 
+from src.config.cache import Cache
 from src.hotkey_filter import HotkeyFilter
 from src.tools.shape_selection_tool import ShapeSelectionTool
 from src.ui.input_fields.dual_toggle import DualToggle
 from src.undo_stack import UndoStack
+from src.util.visual.selection_mode import SelectionMode
 from src.util.visual.shape_mode import SHAPE_MODE_ELLIPSE_LABEL
 from test.tools.selection_tool_test_case import SelectionToolTestCase, rect_mask, mask_bounds
 
@@ -79,15 +81,44 @@ class ShapeSelectionToolTest(SelectionToolTestCase):
         self.assert_selection(self.empty)
         self.assertEqual(UndoStack().undo_count(), 0)
 
-    def test_fixed_aspect_modifier_makes_square(self) -> None:
-        """Holding the fixed aspect modifier (Shift) during the drag selects a square anchored at the press point."""
-        with mock.patch.object(QApplication, 'keyboardModifiers', return_value=SHIFT):
-            self.mouse_drag([QPoint(10, 8), QPoint(25, 12), QPoint(40, 16)], modifiers=SHIFT)
+    def assert_square_from(self, corner: QPoint) -> None:
+        """Asserts the selection is one square anchored at a corner, added as one undo step."""
         bounds = mask_bounds(self.selection_mask())
         assert bounds is not None
-        self.assertEqual(bounds.topLeft(), QPoint(10, 8))
+        self.assertEqual(bounds.topLeft(), corner)
         self.assertEqual(bounds.width(), bounds.height())
         self.assert_one_undo_step(self.empty, rect_mask(self.IMAGE_SIZE, bounds))
+
+    def test_fixed_aspect_modifier_makes_square(self) -> None:
+        """Pressing the fixed aspect modifier (Shift) during the drag selects a square anchored at the press point."""
+        self.mouse_press(QPoint(10, 8))
+        with mock.patch.object(QApplication, 'keyboardModifiers', return_value=SHIFT):
+            self.mouse_move(QPoint(25, 12), modifiers=SHIFT)
+            self.mouse_move(QPoint(40, 16), modifiers=SHIFT)
+            self.mouse_release(QPoint(40, 16), modifiers=SHIFT)
+        self.assert_square_from(QPoint(10, 8))
+
+    def test_fixed_aspect_modifier_held_at_press_needs_fresh_press(self) -> None:
+        """Shift held from the press doesn't fix the aspect ratio, since the press reads it as add. Releasing it and
+           pressing it again during the drag does."""
+        with mock.patch.object(QApplication, 'keyboardModifiers', return_value=SHIFT):
+            self.mouse_drag([QPoint(10, 8), QPoint(25, 12), QPoint(40, 16)], modifiers=SHIFT)
+        self.assert_selection(rect_mask(self.IMAGE_SIZE, QRect(10, 8, 30, 8)))
+        UndoStack().clear()
+        self.set_selection_outside_history(self.empty)
+        with mock.patch.object(QApplication, 'keyboardModifiers', return_value=SHIFT):
+            self.mouse_press(QPoint(10, 8), modifiers=SHIFT)
+        self.mouse_move(QPoint(25, 12))
+        with mock.patch.object(QApplication, 'keyboardModifiers', return_value=SHIFT):
+            self.mouse_move(QPoint(40, 16), modifiers=SHIFT)
+            self.mouse_release(QPoint(40, 16), modifiers=SHIFT)
+        self.assert_square_from(QPoint(10, 8))
+
+    def test_fixed_aspect_checkbox(self) -> None:
+        """With the fixed aspect option checked, a drag with no modifiers selects a square."""
+        Cache().set(Cache.SHAPE_SELECTION_FIXED_ASPECT, True)
+        self.mouse_drag([QPoint(10, 8), QPoint(25, 12), QPoint(40, 16)])
+        self.assert_square_from(QPoint(10, 8))
 
     def test_pan_modifier_ignores_drag(self) -> None:
         """With the pan view modifier (Ctrl) held, a drag changes nothing."""
@@ -119,21 +150,19 @@ class ShapeSelectionToolTest(SelectionToolTestCase):
         self.assert_one_undo_step(self.empty, mask)
 
     def test_left_drag_adds_to_selection(self) -> None:
-        """A left-drag adds to the existing selection, without replacing it.
-
-        #140 adds replace and intersect modes; this pins the current add-only behavior.
-        """
+        """With the default add mode, a left-drag adds to the existing selection, without replacing it."""
         existing = rect_mask(self.IMAGE_SIZE, QRect(0, 0, 16, 16))
         self.set_selection_outside_history(existing)
         self.mouse_drag([QPoint(8, 8), QPoint(30, 20)])
         self.assert_one_undo_step(existing, existing | rect_mask(self.IMAGE_SIZE, QRect(8, 8, 22, 12)))
 
-    def test_right_drag_subtracts_from_selection(self) -> None:
-        """A right-drag clears its rectangle from the existing selection, as one undo step."""
+    def test_right_drag_does_nothing(self) -> None:
+        """A right-drag leaves the selection unchanged and records no undo step."""
         existing = rect_mask(self.IMAGE_SIZE, QRect(0, 0, 40, 30))
         self.set_selection_outside_history(existing)
         self.mouse_drag([QPoint(10, 8), QPoint(50, 20)], RIGHT)
-        self.assert_one_undo_step(existing, existing & ~rect_mask(self.IMAGE_SIZE, QRect(10, 8, 40, 12)))
+        self.assert_selection(existing)
+        self.assertEqual(UndoStack().undo_count(), 0)
 
     def test_each_drag_is_one_undo_step(self) -> None:
         """Two drags record two undo steps, and undoing the second leaves the first."""
@@ -157,3 +186,89 @@ class ShapeSelectionToolTest(SelectionToolTestCase):
         mask = self.selection_mask()
         self.assertEqual(mask_bounds(mask), rect)
         self.assertFalse(mask[rect.y(), rect.x()], 'Rectangle corner selected in ellipse mode')
+
+
+ALT = Qt.KeyboardModifier.AltModifier
+
+
+class ShapeSelectionModeTest(SelectionToolTestCase):
+    """Drives ShapeSelectionTool's selection modes and the add and subtract modifiers."""
+
+    EXISTING = QRect(0, 0, 40, 30)
+    DRAG = [QPoint(20, 15), QPoint(60, 40)]  # Selects QRect(20, 15, 40, 25), overlapping EXISTING in (20, 15, 20, 15)
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.tool = self.activate_tool(ShapeSelectionTool(self.image_stack, self.image_viewer))
+        self.empty = np.zeros((self.IMAGE_SIZE.height(), self.IMAGE_SIZE.width()), dtype=bool)
+        self.existing = rect_mask(self.IMAGE_SIZE, self.EXISTING)
+        self.dragged = rect_mask(self.IMAGE_SIZE, QRect(20, 15, 40, 25))
+        self.set_selection_outside_history(self.existing)
+
+    def tearDown(self) -> None:
+        HotkeyFilter.instance().remove_keybinding(f'ShapeSelectionPanel_{id(self.tool.get_control_panel())}_try_toggle')
+        super().tearDown()
+
+    def _drag_with(self, modifiers: Qt.KeyboardModifier) -> None:
+        with mock.patch.object(QApplication, 'keyboardModifiers', return_value=modifiers):
+            self.mouse_drag(self.DRAG, modifiers=modifiers)
+
+    def test_add_mode(self) -> None:
+        """Add mode unions the dragged rectangle with the selection."""
+        self.set_selection_mode(SelectionMode.ADD)
+        self.mouse_drag(self.DRAG)
+        self.assert_one_undo_step(self.existing, self.existing | self.dragged)
+
+    def test_subtract_mode(self) -> None:
+        """Subtract mode clears the dragged rectangle from the selection."""
+        self.set_selection_mode(SelectionMode.SUBTRACT)
+        self.mouse_drag(self.DRAG)
+        self.assert_one_undo_step(self.existing, self.existing & ~self.dragged)
+
+    def test_replace_mode(self) -> None:
+        """Replace mode leaves only the dragged rectangle selected, as one undo step."""
+        self.set_selection_mode(SelectionMode.REPLACE)
+        self.mouse_drag(self.DRAG)
+        self.assert_one_undo_step(self.existing, self.dragged)
+
+    def test_intersect_mode(self) -> None:
+        """Intersect mode keeps only the overlap between the selection and the dragged rectangle."""
+        self.set_selection_mode(SelectionMode.INTERSECT)
+        self.mouse_drag(self.DRAG)
+        self.assert_one_undo_step(self.existing, self.existing & self.dragged)
+
+    def test_replace_mode_outside_image_clears_selection(self) -> None:
+        """A replace drag that misses the image still discards the old selection."""
+        self.set_selection_mode(SelectionMode.REPLACE)
+        self.mouse_drag([QPoint(70, 10), QPoint(90, 30)])
+        self.assert_one_undo_step(self.existing, self.empty)
+
+    def test_shift_adds_for_one_gesture(self) -> None:
+        """Shift held through a drag adds despite a stored subtract mode, without fixing the aspect ratio, and the next
+           gesture uses the stored mode."""
+        self.set_selection_mode(SelectionMode.SUBTRACT)
+        self._drag_with(SHIFT)
+        self.assert_selection(self.existing | self.dragged)
+        self.mouse_drag([QPoint(0, 0), QPoint(64, 48)])
+        self.assert_selection(self.empty)
+
+    def test_alt_subtracts_in_add_mode(self) -> None:
+        """Alt held at the press subtracts despite the default add mode."""
+        self._drag_with(ALT)
+        self.assert_one_undo_step(self.existing, self.existing & ~self.dragged)
+
+    def test_alt_overrides_replace_mode(self) -> None:
+        """The subtract modifier beats a stored replace mode."""
+        self.set_selection_mode(SelectionMode.REPLACE)
+        self._drag_with(ALT)
+        self.assert_selection(self.existing & ~self.dragged)
+
+    def test_shift_and_alt_intersect(self) -> None:
+        """Shift and Alt together intersect with the selection."""
+        self._drag_with(SHIFT | ALT)
+        self.assert_one_undo_step(self.existing, self.existing & self.dragged)
+
+    def test_ctrl_shift_replaces(self) -> None:
+        """Ctrl+Shift replaces the selection despite the default add mode, and doesn't pan the view."""
+        self._drag_with(CTRL | SHIFT)
+        self.assert_one_undo_step(self.existing, self.dragged)
