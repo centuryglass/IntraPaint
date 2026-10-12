@@ -40,11 +40,12 @@ class _ThemeState:
         # The loaded IntraPaint Ink font, palette and style colors. Its font files register with Qt once, on first
         # load:
         self.ink_theme: Optional[tuple[Optional[QFont], QPalette, InkColors]] = None
-        # The configured Qt style name, the applied theme and the scroll bar option, which together pick the
+        # The configured Qt style name, the applied theme and the scroll bar and popup options, which together pick the
         # installed QStyle:
         self.style_name: Optional[str] = None
         self.theme: Optional[str] = None
         self.overlay_scroll_bars = True
+        self.rounded_popups = True
         # The installed InkStyle. QApplication owns it, and deletes it when another style replaces it:
         self.ink_style: Optional[InkStyle] = None
 
@@ -129,7 +130,7 @@ def _install_style() -> None:
             logger.error(f'Unknown Qt style {style_name}, using Fusion')
             style_name = 'Fusion'
         _, _, colors = _load_ink_theme()
-        _state.ink_style = InkStyle(style_name, colors, _state.overlay_scroll_bars)
+        _state.ink_style = InkStyle(style_name, colors, _state.overlay_scroll_bars, _state.rounded_popups)
         app.setStyle(_state.ink_style)
     else:
         _state.ink_style = None
@@ -196,6 +197,19 @@ def apply_overlay_scroll_bars(overlay: bool) -> None:
     if overlay == _state.overlay_scroll_bars:
         return
     _state.overlay_scroll_bars = overlay
+    if _state.theme == THEME_INK:
+        with gc_paused():
+            _install_style()
+
+
+def apply_rounded_popups(rounded: bool) -> None:
+    """Sets whether THEME_INK draws menus and tooltips with rounded corners and a shadow.
+
+    Menus and tooltips already open keep their old shape.
+    """
+    if rounded == _state.rounded_popups:
+        return
+    _state.rounded_popups = rounded
     if _state.theme == THEME_INK:
         with gc_paused():
             _install_style()

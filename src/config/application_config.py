@@ -97,6 +97,7 @@ class AppConfig(Config, metaclass=Singleton):
     OVERLAY_SCROLL_BARS: str
     PIL_DOWNSCALE_MODE: str
     PIL_UPSCALE_MODE: str
+    ROUNDED_POPUPS: str
     RULER_FONT_SIZE: str
     RULER_GENERATION_AREA_COLOR: str
     SAVED_COLORS: str

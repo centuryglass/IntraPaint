@@ -2,6 +2,7 @@
     "style": "Fusion",
     "theme": "intrapaint_ink",
     "overlay_scroll_bars": true,
+    "rounded_popups": true,
     "font_point_size": {
         "min": 1,
         "max": 100,
