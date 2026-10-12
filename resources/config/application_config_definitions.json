@@ -28,6 +28,15 @@
         "default": true,
         "saved": true
     },
+    "rounded_popups": {
+        "label": "Rounded menus and tooltips:",
+        "category": "Interface",
+        "subcategory": "Appearance",
+        "description": "With the IntraPaint Ink theme, draw menus and tooltips with rounded corners and a shadow. This needs a compositing window manager: turn it off if they show black corners on X11 (may require restart).",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
     "font_point_size": {
         "label": "Font size:",
         "category": "Interface",

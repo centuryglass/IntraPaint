@@ -7,15 +7,19 @@ plus the few `InkColors` that have no QPalette role, so a palette change restyle
 Only push buttons marked with `set_primary_button` get the raised accent "sticker" look. Check boxes, radio buttons
 and slider handles use a smaller version of the same raised shadow. `set_signal` draws a push button's text in the
 signal color, and fills a check box with it.
+
+With `rounded_popups`, menus and tooltips become translucent top-level windows, so they can have rounded corners and a
+hard offset shadow. A translucent window needs a compositing window system: on an X11 desktop with no compositor, Qt
+draws the transparent parts black, so the option can be turned off.
 """
 from dataclasses import dataclass, fields
 from typing import Optional
 
 from PySide6.QtCore import QPointF, QRect, QRectF, QSize, Qt
 from PySide6.QtGui import QBrush, QColor, QFont, QFontMetrics, QPainter, QPainterPath, QPalette, QPen, QPolygonF
-from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication, QCheckBox, QPlainTextEdit,
-                               QProxyStyle, QPushButton, QSlider, QStyle, QStyleOption, QStyleOptionButton,
-                               QStyleOptionComboBox, QStyleOptionMenuItem, QStyleOptionProgressBar,
+from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication, QCheckBox, QLabel, QMenu,
+                               QPlainTextEdit, QProxyStyle, QPushButton, QSlider, QStyle, QStyleOption,
+                               QStyleOptionButton, QStyleOptionComboBox, QStyleOptionMenuItem, QStyleOptionProgressBar,
                                QStyleOptionSlider, QStyleOptionSpinBox, QStyleOptionTab, QStyleOptionViewItem,
                                QTabBar, QTextEdit, QWidget)
 
@@ -37,6 +41,11 @@ RADIUS = 4.0
 TEXT_AREA_FRAME_WIDTH = 2
 STICKER_OFFSET = 3
 SMALL_STICKER_OFFSET = 2
+POPUP_RADIUS = 6.0
+POPUP_SHADOW_OFFSET = 3
+# Keeps menu items and tooltip text clear of the rounded corners:
+POPUP_TIP_PADDING = 5
+POPUP_MENU_VERTICAL_MARGIN = 4
 INDICATOR_SIZE = 15
 SLIDER_GROOVE_THICKNESS = 6
 SLIDER_HANDLE_LENGTH = 12
@@ -127,6 +136,13 @@ def signal_color() -> Optional[QColor]:
     return None if colors is None else colors.signal
 
 
+def _is_popup(widget: object) -> bool:
+    """Returns whether a widget is a menu or Qt's tooltip label, which are top-level windows."""
+    if isinstance(widget, QMenu):
+        return True
+    return isinstance(widget, QLabel) and widget.metaObject().className() == 'QTipLabel'
+
+
 def _is_primary(widget: Optional[QWidget]) -> bool:
     return isinstance(widget, QPushButton) and bool(widget.property(PRIMARY_BUTTON_PROPERTY))
 
@@ -205,15 +221,20 @@ class InkStyle(QProxyStyle):
     overlay_scroll_bars: bool
         If true, scroll bars are thin handles drawn over their scroll area's content, which grow when hovered. If
         false, they take their own space beside the content, with a track.
+    rounded_popups: bool
+        If true, menus and tooltips get rounded corners and a hard shadow, by drawing in a transparent margin of their
+        own top-level window. If false, they are plain rectangles.
     """
 
     # The QStyle overrides keep Qt's camelCase method names:
     # pylint: disable=invalid-name
 
-    def __init__(self, base_style_name: str, colors: InkColors, overlay_scroll_bars: bool = True) -> None:
+    def __init__(self, base_style_name: str, colors: InkColors, overlay_scroll_bars: bool = True,
+                 rounded_popups: bool = True) -> None:
         super().__init__(base_style_name)
         self._colors = colors
         self._overlay_scroll_bars = overlay_scroll_bars
+        self._rounded_popups = rounded_popups
 
     @property
     def colors(self) -> InkColors:
@@ -224,6 +245,48 @@ class InkStyle(QProxyStyle):
     def overlay_scroll_bars(self) -> bool:
         """Whether scroll bars are drawn over their scroll area's content."""
         return self._overlay_scroll_bars
+
+    @property
+    def rounded_popups(self) -> bool:
+        """Whether menus and tooltips are drawn with rounded corners and a shadow."""
+        return self._rounded_popups
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Popup windows
+    # -----------------------------------------------------------------------------------------------------------------
+
+    def polish(self, widget) -> None:  # type: ignore[override]
+        """Makes menus and tooltips translucent, with a margin at the right and bottom for their shadow.
+
+        `polish` also receives QApplication and QPalette, which pass through to the base style.
+        """
+        super().polish(widget)
+        if self._rounded_popups and _is_popup(widget):
+            widget.setWindowFlag(Qt.WindowType.FramelessWindowHint)
+            widget.setWindowFlag(Qt.WindowType.NoDropShadowWindowHint)
+            widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+            widget.setContentsMargins(0, 0, POPUP_SHADOW_OFFSET, POPUP_SHADOW_OFFSET)
+
+    def unpolish(self, widget) -> None:  # type: ignore[override]
+        """Restores a menu or tooltip that polish made translucent."""
+        if self._rounded_popups and _is_popup(widget):
+            widget.setContentsMargins(0, 0, 0, 0)
+            widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
+            widget.setWindowFlag(Qt.WindowType.NoDropShadowWindowHint, False)
+            widget.setWindowFlag(Qt.WindowType.FramelessWindowHint, False)
+        super().unpolish(widget)
+
+    def _draw_popup_panel(self, painter: QPainter, option: QStyleOption) -> None:
+        """Draws a menu or tooltip as a rounded ink-outlined panel over a hard offset shadow.
+
+        The panel covers the popup window's rect minus the shadow margin `polish` reserved. The rest stays
+        transparent.
+        """
+        palette = option.palette
+        panel = option.rect.adjusted(0, 0, -POPUP_SHADOW_OFFSET, -POPUP_SHADOW_OFFSET)
+        ink = palette.color(Role.Shadow)
+        _draw_box(painter, panel.translated(POPUP_SHADOW_OFFSET, POPUP_SHADOW_OFFSET), ink, ink, POPUP_RADIUS)
+        _draw_box(painter, panel, palette.color(Role.Window), ink, POPUP_RADIUS)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Metrics and hints
@@ -242,6 +305,10 @@ class InkStyle(QProxyStyle):
             return SLIDER_HANDLE_THICKNESS + SMALL_STICKER_OFFSET
         if metric == Metric.PM_DefaultFrameWidth and isinstance(widget, (QTextEdit, QPlainTextEdit)):
             return TEXT_AREA_FRAME_WIDTH
+        if self._rounded_popups and metric == Metric.PM_ToolTipLabelFrameWidth:
+            return POPUP_TIP_PADDING
+        if self._rounded_popups and metric == Metric.PM_MenuVMargin:
+            return POPUP_MENU_VERTICAL_MARGIN
         if metric == Metric.PM_ScrollBarExtent:
             if self._overlay_scroll_bars:
                 return OVERLAY_SCROLL_BAR_HOVER_WIDTH + OVERLAY_SCROLL_BAR_MARGIN
@@ -343,12 +410,18 @@ class InkStyle(QProxyStyle):
             self._draw_indicator(painter, option, round_indicator=False, signal=_is_signal(widget))
         elif element == Primitive.PE_IndicatorRadioButton:
             self._draw_indicator(painter, option, round_indicator=True)
+        elif element == Primitive.PE_PanelTipLabel and self._rounded_popups:
+            self._draw_popup_panel(painter, option)
         elif element == Primitive.PE_PanelTipLabel:
             painter.fillRect(option.rect, option.palette.toolTipBase())
             _draw_box(painter, option.rect, None, option.palette.color(Role.Mid), 0)
+        elif element == Primitive.PE_PanelMenu and self._rounded_popups:
+            self._draw_popup_panel(painter, option)
         elif element == Primitive.PE_PanelMenu:
             painter.fillRect(option.rect, option.palette.window())
             _draw_box(painter, option.rect, None, option.palette.color(Role.Shadow), 0)
+        elif element == Primitive.PE_FrameMenu and self._rounded_popups:
+            return
         elif element == Primitive.PE_FrameMenu:
             _draw_box(painter, option.rect, None, option.palette.color(Role.Shadow), 0)
         elif element == Primitive.PE_PanelItemViewItem and isinstance(option, QStyleOptionViewItem):
@@ -517,6 +590,8 @@ class InkStyle(QProxyStyle):
                                                                   DIM_TEXT_WINDOW_FRACTION))
                 label_option.palette = palette
             super().drawControl(element, label_option, painter, widget)
+        elif element == Control.CE_MenuEmptyArea and self._rounded_popups:
+            return
         elif element == Control.CE_MenuItem and isinstance(option, QStyleOptionMenuItem):
             self._draw_menu_item(painter, option, widget)
         elif element == Control.CE_MenuBarItem and isinstance(option, QStyleOptionMenuItem):

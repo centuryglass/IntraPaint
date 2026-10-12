@@ -6,8 +6,8 @@ from PySide6.QtGui import QFont, QFontInfo, QPalette
 from PySide6.QtWidgets import QApplication, QPushButton, QStyle
 
 from src.ui.ink_style import InkColors, InkStyle, STICKER_OFFSET, set_primary_button
-from src.ui.theme import (INK_THEME_PATH, THEME_INK, THEME_SYSTEM, apply_overlay_scroll_bars, apply_style, apply_theme,
-                          load_theme_palette)
+from src.ui.theme import (INK_THEME_PATH, THEME_INK, THEME_SYSTEM, apply_overlay_scroll_bars, apply_rounded_popups,
+                          apply_style, apply_theme, load_theme_palette)
 from src.util.gc_paused import gc_paused
 from test.base_test_case import IntraPaintTestCase
 
@@ -28,6 +28,7 @@ class ThemeTest(IntraPaintTestCase):
 
     def tearDown(self) -> None:
         apply_overlay_scroll_bars(True)
+        apply_rounded_popups(True)
         apply_style('Fusion')
         apply_theme(THEME_INK)
         super().tearDown()
