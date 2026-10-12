@@ -18,8 +18,8 @@ from typing import Optional
 from PySide6.QtCore import QPointF, QRect, QRectF, QSize, Qt
 from PySide6.QtGui import QBrush, QColor, QFont, QFontMetrics, QPainter, QPainterPath, QPalette, QPen, QPolygonF
 from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication, QCheckBox, QLabel, QMenu,
-                               QPlainTextEdit, QProxyStyle, QPushButton, QSlider, QStyle, QStyleOption, QStyleOptionButton,
-                               QStyleOptionComboBox, QStyleOptionMenuItem, QStyleOptionProgressBar,
+                               QPlainTextEdit, QProxyStyle, QPushButton, QSlider, QStyle, QStyleOption,
+                               QStyleOptionButton, QStyleOptionComboBox, QStyleOptionMenuItem, QStyleOptionProgressBar,
                                QStyleOptionSlider, QStyleOptionSpinBox, QStyleOptionTab, QStyleOptionViewItem,
                                QTabBar, QTextEdit, QWidget)
 
