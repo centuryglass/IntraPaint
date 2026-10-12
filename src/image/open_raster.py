@@ -26,6 +26,7 @@ from src.image.layers.layer_group import LayerGroup
 from src.image.layers.text_layer import TextLayer
 from src.image.text_rect import TextRect
 from src.util.visual.geometry_utils import get_scaled_placement
+from src.util.visual.image_utils import read_qimage
 
 logger = logging.getLogger(__name__)
 
@@ -334,7 +335,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
                 transform_image_path = _normalize_archive_path(transform_image_path)
                 transform_image_full_path = os.path.join(tmpdir, transform_image_path)
                 assert os.path.isfile(transform_image_full_path), f'missing file: {transform_image_full_path}'
-                transform_image = QImage(transform_image_full_path)
+                transform_image = read_qimage(transform_image_full_path)
                 assert not transform_image.isNull(), f'loading failed: {transform_image_full_path}'
                 extended_layer_data[TRANSFORM_SRC_TAG] = transform_image
                 matrix_elements = [float(elem) for elem in str(extended_layer.get(TRANSFORM_TAG)).split(',')]
@@ -402,7 +403,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
             layer = TextLayer(text_rect)
         else:
             if layer_image.isNull():
-                layer_image = QImage(os.path.join(tmpdir, base_image_path))
+                layer_image = read_qimage(os.path.join(tmpdir, base_image_path))
             layer = ImageLayer(layer_image, '')
         is_active = _parse_common_attributes(layer, element)
         if isinstance(layer, ImageLayer) and alpha_locked == BOOLEAN_TRUE_STR:

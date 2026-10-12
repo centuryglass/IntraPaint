@@ -6,7 +6,7 @@ from PIL.ExifTags import IFD
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImageReader, QImageWriter, QImage
 
-from src.util.visual.image_utils import logger
+from src.util.visual.image_utils import logger, EXCLUDED_QIMAGE_FORMATS, read_qimage
 from src.util.visual.pil_image_utils import qimage_to_pil_image, pil_image_to_qimage, EXCLUDED_PIL_FORMATS, \
     PIL_OPEN_FORMATS
 
@@ -16,9 +16,12 @@ TIFF_DESCRIPTION_TAG = 'ImageDescription'
 
 OPENRASTER_FORMAT = 'ORA'
 
-# Formats Qt's image plugins can read or write. Qt also picks a plugin from a file's contents when reading.
-QIMAGE_READ_FORMATS = {str(qba.data(), encoding='utf-8').upper() for qba in QImageReader.supportedImageFormats()}
-QIMAGE_WRITE_FORMATS = {str(qba.data(), encoding='utf-8').upper() for qba in QImageWriter.supportedImageFormats()}
+# Formats Qt's image plugins can read or write, minus EXCLUDED_QIMAGE_FORMATS. Qt also picks a plugin from a file's
+# contents when reading, so files go through read_qimage.
+QIMAGE_READ_FORMATS = {str(qba.data(), encoding='utf-8').upper() for qba in QImageReader.supportedImageFormats()} \
+    - EXCLUDED_QIMAGE_FORMATS
+QIMAGE_WRITE_FORMATS = {str(qba.data(), encoding='utf-8').upper() for qba in QImageWriter.supportedImageFormats()} \
+    - EXCLUDED_QIMAGE_FORMATS
 
 # File extensions of the Pillow formats IntraPaint uses, see pil_image_utils.EXCLUDED_PIL_FORMATS.
 PIL_READ_FORMATS = {ex[1:].upper() for ex, f in Image.registered_extensions().items()
@@ -233,4 +236,4 @@ def load_image(file_path: str) -> tuple[QImage, Optional[dict[str, Any]], Option
         return pil_image_to_qimage(image), info, exif
     if file_format not in QIMAGE_READ_FORMATS:
         raise ValueError(f'Unsupported image format {file_format}')
-    return QImage(file_path), None, None
+    return read_qimage(file_path), None, None

@@ -10,9 +10,9 @@ from typing import Optional, Any, TypeAlias, Callable
 import cv2
 # noinspection PyPackageRequirements
 import numpy as np
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from PySide6.QtCore import QBuffer, QRect, QSize, Qt, QPoint, QFile, QIODevice, QByteArray
-from PySide6.QtGui import QImage, QIcon, QPixmap, QPainter, QColor
+from PySide6.QtGui import QImage, QIcon, QPixmap, QPainter, QColor, QImageReader
 from PySide6.QtWidgets import QStyle, QWidget, QApplication
 from numpy import ndarray, dtype
 
@@ -24,6 +24,23 @@ NpAnyArray: TypeAlias = ndarray[Any, dtype[Any]]
 NpUInt8Array: TypeAlias = np.ndarray[Any, np.dtype[np.uint8]]
 
 temp_image_dir = ''
+
+# Qt image formats IntraPaint never opens or saves. KDE's kimageformats plugin, installed with many Linux system Qt
+# packages, decodes these by running them in Ghostscript, see pil_image_utils.EXCLUDED_PIL_FORMATS.
+EXCLUDED_QIMAGE_FORMATS = {'EPS', 'EPSF', 'EPSI'}
+
+
+def read_qimage(file_path: str) -> QImage:
+    """Loads an image file with Qt, raising UnidentifiedImageError if its contents are an excluded format.
+
+    Qt picks a plugin from a file's contents when its extension doesn't match, so the file name alone can't keep
+    EXCLUDED_QIMAGE_FORMATS out. Returns a null image if Qt can't read the file at all.
+    """
+    reader = QImageReader(file_path)
+    detected_format = str(reader.format().data(), encoding='utf-8').upper()
+    if detected_format in EXCLUDED_QIMAGE_FORMATS:
+        raise UnidentifiedImageError(f'Unsupported image format {detected_format} in {file_path}')
+    return reader.read()
 
 
 def create_transparent_image(size: QSize) -> QImage:
