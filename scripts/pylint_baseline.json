@@ -1,6 +1,6 @@
 {
   "(repository)": {
-    "duplicate-code": 62
+    "duplicate-code": 61
   },
   "src/config/a1111_config.py": {
     "line-too-long": 1
