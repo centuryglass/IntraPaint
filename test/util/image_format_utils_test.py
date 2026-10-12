@@ -7,7 +7,8 @@ import unittest
 from PIL import Image, UnidentifiedImageError
 from PySide6.QtWidgets import QApplication
 
-from src.util.visual.image_format_utils import IMAGE_READ_FORMATS, IMAGE_WRITE_FORMATS, load_image, save_image
+from src.util.visual.image_format_utils import IMAGE_READ_FORMATS, IMAGE_WRITE_FORMATS, \
+    IMAGE_FORMATS_SUPPORTING_METADATA, load_image, save_image
 
 
 app = QApplication.instance() or QApplication([])
@@ -27,8 +28,8 @@ class TestImageFormatUtils(unittest.TestCase):
     """Test which image formats IntraPaint can load and save."""
 
     def test_postscript_formats_unsupported(self) -> None:
-        """EPS and PS aren't offered for loading or saving, since Pillow reads them with Ghostscript."""
-        for file_format in ('EPS', 'PS'):
+        """EPS and PS aren't offered for loading or saving, since Pillow and kimageformats read them with Ghostscript."""
+        for file_format in ('EPS', 'EPSF', 'EPSI', 'PS'):
             self.assertNotIn(file_format, IMAGE_READ_FORMATS)
             self.assertNotIn(file_format, IMAGE_WRITE_FORMATS)
 
@@ -45,6 +46,20 @@ class TestImageFormatUtils(unittest.TestCase):
             for file_name in ('image.png', 'image.jpg'):
                 with self.assertRaises(UnidentifiedImageError, msg=file_name):
                     load_image(_write_eps_file(temp_dir, file_name))
+
+    def test_load_disguised_postscript_with_qt(self) -> None:
+        """PostScript files named like a format Qt loads are never decoded, since Qt also goes by file contents.
+
+        Qt raises if an installed plugin identifies the file as EPS, and returns a null image if none can read it.
+        """
+        self.assertNotIn('BMP', IMAGE_FORMATS_SUPPORTING_METADATA)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = _write_eps_file(temp_dir, 'image.bmp')
+            try:
+                loaded_image, _, _ = load_image(file_path)
+            except UnidentifiedImageError:
+                return
+            self.assertTrue(loaded_image.isNull())
 
     def test_save_postscript(self) -> None:
         """Saving as EPS or PS fails without writing a file."""
