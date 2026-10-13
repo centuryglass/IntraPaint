@@ -74,12 +74,14 @@ class ParamsAdapterTest(IntraPaintTestCase):
         self.assertEqual(params.sd_model_config, 'v1-inference.yaml')
 
     def test_comfy_inpaint(self) -> None:
-        """Inpainting sends the source image, the mask unchanged and the cached denoising strength."""
+        """Inpainting sends the source image, the unblurred mask, the configured mask blur and the denoising
+           strength."""
         params = build_comfy_params(EDIT_MODE_INPAINT, self.source, self.mask)
         assert params.init_images is not None and params.mask is not None
         self.assertEqual(params.init_images[0].getpixel((0, 0)), (10, 20, 30, 255))
         self.assertEqual(params.mask.getpixel((0, 0)), (255, 255, 255, 255))
         self.assertEqual(params.denoising_strength, 0.6)
+        self.assertEqual(params.mask_blur, 4)
 
     def test_missing_images_raise(self) -> None:
         """Img2img needs a source image, and inpainting also needs a mask."""

@@ -129,9 +129,9 @@ class ParameterDefWidgetTest(IntraPaintTestCase):
         widget = create_parameter_widget(param, 999, lambda _: None)
         self.assertEqual(widget.value(), 100)  # type: ignore[union-attr]
 
-    def test_webui_label_comes_from_description(self) -> None:
-        """WebUI parameters are labeled with their description, and ComfyUI parameters with their key."""
-        webui_param = ParameterDef(key='threshold_a', default_value=1.0, description='Low threshold')
+    def test_label_comes_from_display_name(self) -> None:
+        """Parameters are labeled with their display name when they have one and with their key otherwise."""
+        webui_param = ParameterDef(key='threshold_a', default_value=1.0, display_name='Low threshold')
         comfy_param = ParameterDef(key='low_threshold', default_value=1, description='Lower bound')
         self.assertEqual((parameter_label(webui_param), parameter_tooltip(webui_param)), ('Low threshold', ''))
         self.assertEqual((parameter_label(comfy_param), parameter_tooltip(comfy_param)),

@@ -26,8 +26,8 @@
     "endpoint": "/upload/mask",
     "files": {
       "image": [
-        "mask_e64de2376948b60291a076ae44a2ec64_34473f197609465c8017cebd93836f2c.png",
-        "<image 512x512 Format_ARGB32 b4bcd308252a1c90>",
+        "mask_92efa636c0361c119fb89208e677a49b_34473f197609465c8017cebd93836f2c.png",
+        "<image 512x512 Format_ARGB32 2995577845c4d5a0>",
         "image/png"
       ]
     },
@@ -167,7 +167,7 @@
           "class_type": "LoadImageMask",
           "inputs": {
             "channel": "alpha",
-            "image": "sd_backend_client/mask_e64de2376948b60291a076ae44a2ec64_34473f197609465c8017cebd93836f2c.png",
+            "image": "sd_backend_client/mask_92efa636c0361c119fb89208e677a49b_34473f197609465c8017cebd93836f2c.png",
             "upload": "image"
           }
         },
@@ -226,8 +226,8 @@
     "endpoint": "/upload/mask",
     "files": {
       "image": [
-        "mask_e64de2376948b60291a076ae44a2ec64_34473f197609465c8017cebd93836f2c.png",
-        "<image 512x512 Format_ARGB32 b4bcd308252a1c90>",
+        "mask_92efa636c0361c119fb89208e677a49b_34473f197609465c8017cebd93836f2c.png",
+        "<image 512x512 Format_ARGB32 2995577845c4d5a0>",
         "image/png"
       ]
     },
@@ -367,7 +367,7 @@
           "class_type": "LoadImageMask",
           "inputs": {
             "channel": "alpha",
-            "image": "sd_backend_client/mask_e64de2376948b60291a076ae44a2ec64_34473f197609465c8017cebd93836f2c.png",
+            "image": "sd_backend_client/mask_92efa636c0361c119fb89208e677a49b_34473f197609465c8017cebd93836f2c.png",
             "upload": "image"
           }
         },

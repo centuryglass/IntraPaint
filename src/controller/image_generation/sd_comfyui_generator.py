@@ -17,7 +17,6 @@ from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qim
 from src.controller.image_generation.sd_adapters.params_adapter import build_comfy_params, build_upscale_params
 from src.controller.image_generation.sd_generator import SDGenerator, SD_BASE_DESCRIPTION, \
     STABLE_DIFFUSION_CONFIG_CATEGORY, GETTING_SD_MODELS, INSTALLATION_STABILITY_MATRIX
-from src.image.filter.blur import BlurFilter, MODE_GAUSSIAN
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.generators.comfyui_extras_tab import ComfyUIExtrasTab
@@ -354,17 +353,13 @@ class SDComfyUIGenerator(SDGenerator):
         return self._scale_and_crop_gen_qimage(image)
 
     def get_gen_area_mask(self, init_mask: Optional[QImage] = None) -> QImage:
-        """Gets the inpainting mask for the image generation area, blurred by `AppConfig.MASK_BLUR`.
+        """Gets the unblurred inpainting mask for the image generation area, opaque where content changes.
 
-        ComfyUI doesn't blur masks, so the blur is applied here. The mask is opaque where content changes; the library
-        converts it to ComfyUI's format when uploading it.
+        The library applies `AppConfig.MASK_BLUR` and converts the mask to ComfyUI's format when uploading it.
         """
         selection_layer = self._image_stack.selection_layer
         mask = init_mask if init_mask is not None else selection_layer.mask_image
         mask = self._scale_and_crop_gen_qimage(mask)
-        blur_radius = AppConfig().get(AppConfig.MASK_BLUR)
-        if blur_radius > 0:
-            mask = BlurFilter.blur(mask, MODE_GAUSSIAN, blur_radius)
         return mask
 
     def is_available(self) -> bool:
