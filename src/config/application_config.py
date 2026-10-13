@@ -64,7 +64,7 @@ class AppConfig(Config, metaclass=Singleton):
         self.update_options(AppConfig.PIL_DOWNSCALE_MODE, scaling_options)
 
     # DYNAMIC PROPERTIES:
-    # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/application_config.py`
+    # Generate with `python scripts/dynamic_import_typing.py src/config/application_config.py`
 
     ADDED_FONT_DIR: str
     ADDED_MYPAINT_BRUSH_DIR: str

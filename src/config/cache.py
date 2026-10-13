@@ -97,14 +97,12 @@ class Cache(Config, metaclass=Singleton):
             self._geometry_timer.stop()
 
     # DYNAMIC PROPERTIES:
-    # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/cache.py`
+    # Generate with `python scripts/dynamic_import_typing.py src/config/cache.py`
 
     BACKGROUND_COLOR: str
     BATCH_COUNT: str
     BATCH_SIZE: str
     CANVAS_RESIZE_CROP_LAYERS: str
-    COLOR_SLIDER_MODE: str
-    COLOR_SLIDER_MODE_SECONDARY: str
     CANVAS_RESIZE_LAYER_MODE: str
     CLIP_SKIP: str
     CLONE_STAMP_TOOL_ANTIALIAS: str
@@ -114,7 +112,10 @@ class Cache(Config, metaclass=Singleton):
     CLONE_STAMP_TOOL_PRESSURE_HARDNESS: str
     CLONE_STAMP_TOOL_PRESSURE_OPACITY: str
     CLONE_STAMP_TOOL_PRESSURE_SIZE: str
+    CLONE_STAMP_TOOL_SOURCE_MODE: str
     COLOR_SELECT_MODE: str
+    COLOR_SLIDER_MODE: str
+    COLOR_SLIDER_MODE_SECONDARY: str
     COMFYUI_CACHED_SCALING_MODE: str
     COMFYUI_INPAINTING_MODEL: str
     COMFYUI_MODEL_CONFIG: str
@@ -242,8 +243,3 @@ class Cache(Config, metaclass=Singleton):
     WEBUI_SUBSEED: str
     WEBUI_SUBSEED_STRENGTH: str
     WEBUI_TILING: str
-
-    # DYNAMIC PROPERTIES:
-    # Generate with `python /home/anthony/Workspace/ML/IntraPaint/./scripts/dynamic_import_typing.py ./src/config/cache.py`
-
-    CLONE_STAMP_TOOL_SOURCE_MODE: str

@@ -87,7 +87,7 @@ class A1111Config(Config, metaclass=Singleton):
         webservice.set_config(settings)
 
     # DYNAMIC PROPERTIES:
-    # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/a1111_config.py`
+    # Generate with `python scripts/dynamic_import_typing.py src/config/a1111_config.py`
 
     CLIP_STOP_AT_LAST_LAYERS: str
     SD_CHECKPOINTS_KEEP_IN_CPU: str

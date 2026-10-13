@@ -1398,6 +1398,12 @@ class AppController(MenuBuilder):
             assert self._generator is not None
             self._generator.start_and_manage_image_generation()
 
+    @menu_action(MENU_IMAGE, 'restore_choices_shortcut', 207, valid_app_states=[APP_STATE_EDITING])
+    def restore_previous_image_choices(self) -> None:
+        """If possible, re-open the last set of generated image options."""
+        if self._window.can_restore_previous_options():
+            self._window.restore_previous_image_selection_options()
+
     # Selection menu:
     @menu_action(MENU_SELECTION, 'select_all_shortcut', 300, valid_app_states=[APP_STATE_EDITING])
     def select_all(self) -> None:

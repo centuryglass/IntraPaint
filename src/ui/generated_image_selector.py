@@ -130,7 +130,7 @@ VIEW_BACKGROUND = Qt.GlobalColor.black
 
 class _OptionData:
     """Holds all data related to a set of image options."""
-    def __init__(self, image_stack: ImageStack):
+    def __init__(self, image_stack: ImageStack) -> None:
         self.option_images: list[QImage] = [image_stack.qimage_generation_area_content()]
         self.generation_area = image_stack.generation_area
         self.selection_polys = image_stack.selection_layer.outline
@@ -588,6 +588,7 @@ class GeneratedImageSelector(QWidget):
             self._insert_option_into_layer(option_index, layer)
         AppStateTracker.set_app_state(APP_STATE_EDITING)
         self._close_selector()
+        self.reset()
 
     def _scroll_debounce_finished(self) -> bool:
         ms_time = time.time() * 1000

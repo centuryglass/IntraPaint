@@ -683,6 +683,15 @@
         "default": "F4",
         "saved": true
     },
+    "restore_choices_shortcut": {
+        "label": "Return to last generated images",
+        "category": "Menu Shortcuts",
+        "subcategory": "Image Menu",
+        "description": "Brings up the last set of generated images for re-selection.",
+        "type": "string",
+        "default": "Ctrl+G",
+        "saved": true
+    },
     "select_all_shortcut": {
         "label": "Select all",
         "category": "Menu Shortcuts",

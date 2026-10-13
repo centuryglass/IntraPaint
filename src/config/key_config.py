@@ -184,8 +184,10 @@ class KeyConfig(Config, metaclass=Singleton):
             error_message = '<b>' + KEY_CONFIG_ERROR_MESSAGE + '</b><br><ul>' + ''.join(lines) + '</ul>'
             show_warning_dialog(None, KEY_CONFIG_ERROR_TITLE, error_message, AppConfig.WARN_ON_KEY_ERROR)
 
+
+
     # DYNAMIC PROPERTIES:
-    # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/key_config.py`
+    # Generate with `python scripts/dynamic_import_typing.py src/config/key_config.py`
 
     BLUR_SHORTCUT: str
     BRIGHTNESS_CONTRAST_SHORTCUT: str
@@ -216,9 +218,6 @@ class KeyConfig(Config, metaclass=Singleton):
     FILTER_TOOL_KEY: str
     FIXED_ANGLE_MODIFIER: str
     FIXED_ASPECT_MODIFIER: str
-    SELECTION_ADD_MODIFIER: str
-    SELECTION_REPLACE_MODIFIER: str
-    SELECTION_SUBTRACT_MODIFIER: str
     FLATTEN_LAYER_SHORTCUT: str
     FREE_SELECTION_TOOL_KEY: str
     GENERATE_SHORTCUT: str
@@ -268,14 +267,18 @@ class KeyConfig(Config, metaclass=Singleton):
     RELOAD_SHORTCUT: str
     RESET_COLORS_SHORTCUT: str
     RESIZE_CANVAS_SHORTCUT: str
+    RESTORE_CHOICES_SHORTCUT: str
     ROTATE_CCW_KEY: str
     ROTATE_CW_KEY: str
     SATURATION_SHORTCUT: str
     SAVE_AS_SHORTCUT: str
     SAVE_SHORTCUT: str
     SCALE_IMAGE_SHORTCUT: str
+    SELECTION_ADD_MODIFIER: str
     SELECTION_BRUSH_TOOL_KEY: str
     SELECTION_FILL_TOOL_KEY: str
+    SELECTION_REPLACE_MODIFIER: str
+    SELECTION_SUBTRACT_MODIFIER: str
     SELECT_ALL_SHORTCUT: str
     SELECT_CONTROLNET_TAB: str
     SELECT_GENERATOR_TAB: str

@@ -392,6 +392,18 @@ class MainWindow(QMainWindow):
             self._central_widget.setCurrentWidget(self._main_widget)
             self._central_widget.removeWidget(self._image_selector)
 
+    def can_restore_previous_options(self) -> bool:
+        """Returns whether there are previous generated image options cached that can be brought up again."""
+        if self._image_selector is None:
+            return False
+        return not self.is_image_selector_visible() and self._image_selector.can_restore_previous()
+
+    def restore_previous_image_selection_options(self) -> None:
+        """Re-opens the generated image selection screen with the last set of available options"""
+        assert self._image_selector is not None
+        self._image_selector.restore_previous_choices()
+        self.set_image_selector_visible(True)
+
     def load_sample_preview(self, image: QImage, idx: int) -> None:
         """Adds an image to the generated image selection screen."""
         if self._image_selector is None:

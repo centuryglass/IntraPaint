@@ -142,7 +142,7 @@ class GeneratedImageSelectorTest(IntraPaintTestCase):
         self.assertEqual(self.selector._change_bounds, saved_change_bounds)
         self.assertNotEqual(self.selector._change_bounds, _OptionData(self.image_stack).change_bounds)
         # Restored batches don't get loading placeholders:
-        self.assertNotIn(self.selector._loading_image, self.selector._option_data.option_images)
+        self.assertNotIn(self.selector._option_data.loading_image, self.selector._option_data.option_images)
         self.assertEqual(len(self.selector._option_items), len(saved_images))
         self.assertEqual(self.selector._option_items[0].text, ORIGINAL_CONTENT_LABEL)
         for idx in range(1, len(saved_images)):
