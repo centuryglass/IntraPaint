@@ -1,0 +1,17 @@
+{
+  "description": "Refresh the GitHub issue cache and add its index to session context (AGENTS.md, \"Tracking open work\"). Codex trusts project hooks once reviewed in /hooks.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && bash .claude/hooks/session-start.sh",
+            "timeout": 60,
+            "statusMessage": "Refreshing the GitHub issue cache"
+          }
+        ]
+      }
+    ]
+  }
+}
