@@ -67,6 +67,7 @@ def _shared_params(params: DiffusionParams, edit_mode: str, source_image: Option
     if edit_mode == EDIT_MODE_INPAINT:
         assert mask is not None
         params.mask = qimage_to_pil(mask)
+        params.mask_blur = AppConfig().get(AppConfig.MASK_BLUR)
     params.controlnet_units = load_request_units(control_keys, source_image, uses_init_image)
 
 
@@ -83,8 +84,8 @@ def build_comfy_params(edit_mode: str, source_image: Optional[QImage] = None, ma
         Generation area content. Required except for txt2img, where it is used only as the control image of units set
         to `CONTROLNET_REUSE_IMAGE_CODE`.
     mask: Optional[QImage]
-        Inpainting mask, opaque where content changes. Required for inpainting. ComfyUI doesn't blur masks, so apply
-        `AppConfig.MASK_BLUR` before passing it. Don't invert it: the library converts it for ComfyUI.
+        Inpainting mask, opaque where content changes. Required for inpainting. The library applies
+        `AppConfig.MASK_BLUR`, so pass it unblurred. Don't invert it: the library converts it for ComfyUI.
     seed: Optional[int]
         Seed to use in place of `Cache.SEED`, such as the next seed of a multi-batch request.
 
@@ -150,7 +151,6 @@ def build_webui_body(edit_mode: str, source_image: Optional[QImage] = None,
         body.inpainting_mask_invert = 0
         body.inpaint_full_res = cache.get(Cache.INPAINT_FULL_RES)
         body.inpaint_full_res_padding = cache.get(Cache.INPAINT_FULL_RES_PADDING)
-        body.mask_blur = AppConfig().get(AppConfig.MASK_BLUR)
         body.inpainting_fill = InpaintFillOption(cache.get_option_index(Cache.MASKED_CONTENT))
     else:
         body.inpainting_fill = None
