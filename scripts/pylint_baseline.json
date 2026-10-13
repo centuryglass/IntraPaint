@@ -2,20 +2,8 @@
   "(repository)": {
     "duplicate-code": 61
   },
-  "src/config/a1111_config.py": {
-    "line-too-long": 1
-  },
-  "src/config/application_config.py": {
-    "line-too-long": 1
-  },
-  "src/config/cache.py": {
-    "line-too-long": 1
-  },
   "src/config/config.py": {
     "protected-access": 4
-  },
-  "src/config/key_config.py": {
-    "line-too-long": 1
   },
   "src/controller/app_controller.py": {
     "fixme": 2,

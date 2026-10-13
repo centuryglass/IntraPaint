@@ -408,6 +408,13 @@ class AppController(MenuBuilder):
             lambda _layer, _bounds: self._update_enabled_actions())
         UndoStack().undo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
         UndoStack().redo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
+        # "Reopen last generated options" depends on a stored batch as well as the app state, so both the batch's
+        # availability and every state change have to re-run the check:
+        self._window.previous_options_available.connect(lambda _available: self._update_enabled_actions())
+        # `AppStateTracker.set_enabled_states` enables every subscribed action when the app state becomes valid for
+        # it, which would leave this action enabled when no batch is stored. Connecting after `build_menus` put this
+        # slot after those subscriptions on the same signal, so the batch check has the last word.
+        AppStateTracker.signal().connect(lambda _state: self._update_enabled_actions())
 
         # ToolPanel/ToolController: Set up editing tools:
         self._tool_controller = ToolController(self._image_stack, self._image_viewer)
@@ -789,6 +796,12 @@ class AppController(MenuBuilder):
             merge_visible_action.setEnabled(can_merge_visible)
         else:
             merge_visible_action.setEnabled(False)
+
+        # "Reopen last generated options" additionally needs a stored batch that still fits the image:
+        restore_action = self.get_action_for_method(self.restore_previous_image_choices)
+        if restore_action is not None:
+            restore_action.setEnabled(_test_state(self.restore_previous_image_choices)
+                                      and self._window.can_restore_previous_options())
 
         self._can_clear_or_cut_image = not is_locked and not selection_is_empty
         self._can_copy_image = not selection_is_empty
@@ -1400,7 +1413,9 @@ class AppController(MenuBuilder):
 
     @menu_action(MENU_IMAGE, 'restore_choices_shortcut', 207, valid_app_states=[APP_STATE_EDITING])
     def restore_previous_image_choices(self) -> None:
-        """If possible, re-open the last set of generated image options."""
+        """Re-open the last batch of generated image options."""
+        # The action is only enabled when this holds; the check stays because a state change can enable a subscribed
+        # action before the next `_update_enabled_actions` run.
         if self._window.can_restore_previous_options():
             self._window.restore_previous_image_selection_options()
 

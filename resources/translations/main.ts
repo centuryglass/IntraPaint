@@ -3827,13 +3827,13 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="687"/>
-      <source>Return to last generated images</source>
-      <translation>Return to last generated images</translation>
+      <source>Reopen last generated options</source>
+      <translation>Reopen last generated options</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="690"/>
-      <source>Brings up the last set of generated images for re-selection.</source>
-      <translation>Brings up the last set of generated images for re-selection.</translation>
+      <source>Reopens the last batch of generated images so another option can be chosen.</source>
+      <translation>Reopens the last batch of generated images so another option can be chosen.</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="599"/>
@@ -6404,111 +6404,106 @@ Please remember to include the traceback from the Details expander.</translation
     </message>
     <message>
       <location filename="../../src/ui/generated_image_selector.py" line="52"/>
-      <source>Inpaint</source>
-      <translation>Inpaint</translation>
-    </message>
-    <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="53"/>
       <source>Cancel</source>
       <translation>Cancel</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="54"/>
-      <source>This will discard all generated images.</source>
-      <translation>This will discard all generated images.</translation>
+      <location filename="../../src/ui/generated_image_selector.py" line="53"/>
+      <source>Close without choosing. These options stay available to re-open.</source>
+      <translation>Close without choosing. These options stay available to re-open.</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="55"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="54"/>
       <source>Previous</source>
       <translation>Previous</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="56"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="55"/>
       <source>Toggle zoom</source>
       <translation>Toggle zoom</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="57"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="56"/>
       <source>Next</source>
       <translation>Next</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="59"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="58"/>
       <source>Original image content</source>
       <translation>Original image content</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="60"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="59"/>
       <source>Option {index}</source>
       <translation>Option {index}</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="61"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="60"/>
       <source>Loading...</source>
       <translation>Loading...</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="63"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="62"/>
       <source>Select this option</source>
       <translation>Select this option</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="64"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="63"/>
       <source>Save to new file</source>
       <translation>Save to new file</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="65"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="64"/>
       <source>Send to new layer</source>
       <translation>Send to new layer</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="67"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="66"/>
       <source>Saved image option to {image_path}</source>
       <translation>Saved image option to {image_path}</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="68"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="67"/>
       <source>Created new layer "{layer_name}"</source>
       <translation>Created new layer "{layer_name}"</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="69"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="68"/>
       <source>Cancelled saving image option to file.</source>
       <translation>Cancelled saving image option to file.</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="71"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="70"/>
       <source>Failed to insert into layer "{layer_name}"</source>
       <translation>Failed to insert into layer "{layer_name}"</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="72"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="71"/>
       <source>Changes were blocked because the layer is locked. </source>
       <translation>Changes were blocked because the layer is locked. </translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="73"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="72"/>
       <source>Changes were blocked because the layer is hidden. </source>
       <translation>Changes were blocked because the layer is hidden. </translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="74"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="73"/>
       <source>The active layer is not an image layer, image content cannot be inserted. </source>
       <translation>The active layer is not an image layer, image content cannot be inserted. </translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="75"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="74"/>
       <source>Image content was added as new layer "{new_layer_name}"</source>
       <translation>Image content was added as new layer "{new_layer_name}"</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="77"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="76"/>
       <source>Select from generated image options.</source>
       <translation>Select from generated image options.</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="83"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="82"/>
       <source>
                            &lt;table&gt;
                              &lt;tr&gt;
@@ -6526,7 +6521,7 @@ Please remember to include the traceback from the Details expander.</translation
                                &lt;/td&gt;
                                &lt;td&gt;&lt;pre&gt;    &lt;/pre&gt;&lt;/td&gt;
                                &lt;td&gt;
-                                 {escape_key_hint}: discard all options
+                                 {escape_key_hint}: close, options stay re-openable
                                &lt;/td&gt;
                               &lt;/tr&gt;
                             &lt;/table&gt;
@@ -6548,14 +6543,14 @@ Please remember to include the traceback from the Details expander.</translation
                                &lt;/td&gt;
                                &lt;td&gt;&lt;pre&gt;    &lt;/pre&gt;&lt;/td&gt;
                                &lt;td&gt;
-                                 {escape_key_hint}: discard all options
+                                 {escape_key_hint}: close, options stay re-openable
                                &lt;/td&gt;
                               &lt;/tr&gt;
                             &lt;/table&gt;
                            </translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="105"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="104"/>
       <source>
                            &lt;table&gt;
                              &lt;tr&gt;
