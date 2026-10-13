@@ -278,9 +278,8 @@ valid for the version it was generated with.
 - **Open issues are usually already in context.** The `SessionStart` hook (`.claude/hooks/session-start.sh`) runs
   `scripts/issues.py`, which writes `.claude/cache/issues/` (`index.md` plus one file per issue) and prints the index.
   OpenCode's counterpart, `.opencode/plugins/issue-cache.ts`, runs the same hook and injects the index into the
-  session's system prompt; Codex's `.codex/hooks.json` registers the hook as a `SessionStart` command hook, whose
-  stdout Codex adds to session context. The cache is generated and gitignored; never edit it or treat it as the
-  source of truth. `scripts/issues.py`'s docstring covers the fetch paths and `INTRAPAINT_ISSUES_TOKEN`.
+  session's system prompt. The cache is generated and gitignored; never edit it or treat it as the source of truth.
+  `scripts/issues.py`'s docstring covers the fetch paths and `INTRAPAINT_ISSUES_TOKEN`.
 - **When the hook produced nothing** (rate-limited, no token, or an agent that doesn't run Claude Code hooks), build
   the cache by hand before concluding no issue covers something: fetch the issue list with whatever tool you have
   (the GitHub MCP `list_issues`, `gh issue list --json ...`), save it as JSON, run
