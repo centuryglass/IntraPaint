@@ -38,9 +38,17 @@ GH_FIELDS = 'number,title,state,labels,body,createdAt,updatedAt,url,assignees,co
 
 
 def fetch_with_gh() -> str:
-    """Returns every issue as JSON from `gh issue list`."""
-    return subprocess.run(['gh', 'issue', 'list', '--state', 'all', '--limit', '500', '--json', GH_FIELDS],
-                          cwd=PROJECT_DIR, capture_output=True, text=True, check=True).stdout
+    """Returns every issue as JSON from `gh issue list`, pinned to the `origin` repo.
+
+    Without `--repo`, gh picks the base repo by remote-name priority (`upstream` ranks above `origin`)
+    unless a clone's git config carries a `gh-resolved` marker. Per-clone config can't be shipped in the
+    repo, so the pin is what keeps every clone fetching the same repository. `--fetch-api` parses `origin`
+    directly; both modes then target the same repo.
+    """
+    owner, repo = origin_repo()
+    command = ['gh', 'issue', 'list', '--repo', f'{owner}/{repo}', '--state', 'all', '--limit', '500',
+               '--json', GH_FIELDS]
+    return subprocess.run(command, cwd=PROJECT_DIR, capture_output=True, text=True, check=True).stdout
 
 
 def origin_repo() -> tuple[str, str]:
