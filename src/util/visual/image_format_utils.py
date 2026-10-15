@@ -1,5 +1,5 @@
 """Utility functions for saving and loading images across as many file formats as possible."""
-from typing import Optional, Any
+from typing import Optional, Any, NamedTuple
 
 from PIL import Image, ExifTags, PngImagePlugin, TiffImagePlugin, TiffTags, UnidentifiedImageError
 from PIL.ExifTags import IFD
@@ -67,6 +67,10 @@ IMAGE_FORMATS_WITH_FIXED_SIZE = {
     'ICNS': QSize(256, 256),
     'ICO': QSize(256, 192)
 }
+
+# Pillow formats whose files open as one layer per frame. Other multi-frame formats load only their first frame, so a
+# camera's MPO stereo pair opens as one photo.
+ANIMATION_READ_FORMATS = {'GIF', 'PNG', 'WEBP', 'AVIF', 'TIFF'}
 
 # File formats that need explicit conversion before save:
 PALETTE_FORMATS = {'BLP', 'PALM', 'XPM'}
@@ -237,3 +241,41 @@ def load_image(file_path: str) -> tuple[QImage, Optional[dict[str, Any]], Option
     if file_format not in QIMAGE_READ_FORMATS:
         raise ValueError(f'Unsupported image format {file_format}')
     return read_qimage(file_path), None, None
+
+
+class ImageFrame(NamedTuple):
+    """One frame of a multi-frame image file, with its display time in milliseconds if the file sets one."""
+    image: QImage
+    duration_ms: Optional[int]
+
+
+def _frame_count(image: Image.Image) -> int:
+    """Returns how many of an open Pillow image's frames load as layers."""
+    if image.format not in ANIMATION_READ_FORMATS:
+        return 1
+    return int(getattr(image, 'n_frames', 1))
+
+
+def count_image_frames(file_path: str) -> int:
+    """Returns how many layers load_image_frames would load from a file, or 1 if Pillow can't open it."""
+    try:
+        with Image.open(file_path, formats=PIL_OPEN_FORMATS) as image:
+            return _frame_count(image)
+    except OSError:  # Includes UnidentifiedImageError, for files only Qt can read.
+        return 1
+
+
+def load_image_frames(file_path: str) -> list[ImageFrame]:
+    """Loads every frame of an animation or multi-page image, in order. Other images load as a single frame.
+
+    Pillow composites GIF and APNG frames onto the previous ones, so each frame is a complete image. Use load_image for
+    metadata, and for formats only Qt can read.
+    """
+    frames: list[ImageFrame] = []
+    with Image.open(file_path, formats=PIL_OPEN_FORMATS) as image:
+        for frame_index in range(_frame_count(image)):
+            image.seek(frame_index)
+            image.load()  # WebP and AVIF set a frame's duration only once it loads.
+            duration = image.info.get('duration')
+            frames.append(ImageFrame(pil_image_to_qimage(image), None if duration is None else round(duration)))
+    return frames
