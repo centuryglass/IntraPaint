@@ -11,11 +11,13 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool
+from src.tools.context_pin_dragger import ContextPinDragger
+from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.fill_selection_panel import FillSelectionPanel
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.image_fill import flood_fill, color_fill
 from src.util.visual.selection_mode import selection_mode_for_gesture, compose_selection_image
-from src.util.visual.text_drawing_utils import left_button_hint_text
+from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.selection_fill_tool'
@@ -32,7 +34,7 @@ CURSOR_SIZE = 25
 
 SELECTION_FILL_LABEL = _tr('Selection fill')
 SELECTION_FILL_TOOLTIP = _tr('Select areas with solid colors')
-SELECTION_FILL_CONTROL_HINT = _tr('{left_mouse_icon}: select')
+SELECTION_FILL_CONTROL_HINT = _tr('{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin')
 
 
 def _only_selection_modifiers(held_modifiers: Qt.KeyboardModifier) -> bool:
@@ -48,11 +50,12 @@ def _only_selection_modifiers(held_modifiers: Qt.KeyboardModifier) -> bool:
 class SelectionFillTool(BaseTool):
     """Lets the user select image areas with solid colors."""
 
-    def __init__(self, image_stack: ImageStack) -> None:
+    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__(KeyConfig.SELECTION_FILL_TOOL_KEY, SELECTION_FILL_LABEL, SELECTION_FILL_TOOLTIP,
                          QIcon(ICON_PATH_SELECTION_FILL_TOOL))
         self._image_stack = image_stack
         self._control_panel = FillSelectionPanel(image_stack.selection_layer, self)
+        self._pin_dragger = ContextPinDragger(image_stack, image_viewer)
         self._color = QColor()
 
         def _update_color(color_str: str) -> None:
@@ -67,7 +70,8 @@ class SelectionFillTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        selection_fill_hint = SELECTION_FILL_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
+        selection_fill_hint = SELECTION_FILL_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
+                                                                right_mouse_icon=right_button_hint_text())
         return f'{selection_fill_hint}<br/>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
@@ -75,8 +79,11 @@ class SelectionFillTool(BaseTool):
         return self._control_panel
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Combines the region under a left-click with the selection, using the selection mode."""
+        """Combines the region under a left-click with the selection, using the selection mode, or starts a context
+           pin drag on right-click."""
         assert event is not None
+        if event.buttons() == Qt.MouseButton.RightButton:
+            return self._pin_dragger.press(event, image_coordinates)
         held_modifiers = QApplication.keyboardModifiers()
         if held_modifiers != Qt.KeyboardModifier.NoModifier and not _only_selection_modifiers(held_modifiers):
             return True
@@ -132,3 +139,15 @@ class SelectionFillTool(BaseTool):
             self._image_stack.selection_layer.image = selection_image
             return True
         return False
+
+    def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+        """Continues a context pin drag."""
+        return self._pin_dragger.move(event, image_coordinates)
+
+    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+        """Finishes a context pin drag."""
+        return self._pin_dragger.release(image_coordinates)
+
+    def _on_deactivate(self) -> None:
+        self._pin_dragger.finish()
+        super()._on_deactivate()

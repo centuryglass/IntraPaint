@@ -9,6 +9,7 @@ from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
+from src.tools.context_pin_dragger import ContextPinDragger
 from src.ui.graphics_items.path_creation_item import PathCreationItem
 from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
@@ -16,7 +17,7 @@ from src.ui.panel.tool_control_panels.free_selection_panel import FreeSelectionP
 from src.undo_stack import UndoStack
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.selection_mode import selection_mode_for_gesture, compose_selection_path
-from src.util.visual.text_drawing_utils import rich_text_key_hint, left_button_hint_text
+from src.util.visual.text_drawing_utils import rich_text_key_hint, left_button_hint_text, right_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.lasso_selection_tool'
@@ -33,7 +34,8 @@ FREE_SELECTION_LABEL = _tr('Free selection')
 FREE_SELECTION_TOOLTIP = _tr('Select or deselect polygonal areas')
 FREE_SELECTION_CONTROL_HINT = _tr('{left_mouse_icon}: add or move point<br/>{enter_key}'
                                   ' or {left_mouse_icon}+first point: finish selection<br/>'
-                                  '{escape_key}: cancel selection')
+                                  '{escape_key}: cancel selection<br/>'
+                                  '{right_mouse_icon}: add, move or remove context pin')
 
 
 class FreeSelectionTool(BaseTool):
@@ -47,6 +49,7 @@ class FreeSelectionTool(BaseTool):
         self._scene = scene
         self._image_stack = image_stack
         self._control_panel = FreeSelectionPanel(image_stack.selection_layer, self)
+        self._pin_dragger = ContextPinDragger(image_stack, image_viewer)
         self._path_item = PathCreationItem(self._scene)
         self._preview_line = TempDashedLineItem(scene)
 
@@ -73,6 +76,7 @@ class FreeSelectionTool(BaseTool):
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
         selection_hint = FREE_SELECTION_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
+                                                            right_mouse_icon=right_button_hint_text(),
                                                             escape_key=rich_text_key_hint('Esc'),
                                                             enter_key=rich_text_key_hint('Enter'))
         return f'{selection_hint}<br/>{super().get_input_hint()}'
@@ -109,8 +113,10 @@ class FreeSelectionTool(BaseTool):
                                        Qt.GlobalColor.red, mode)
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Start selecting on click."""
+        """Add a polygon point on left-click, or start a context pin drag on right-click."""
         assert event is not None
+        if event.buttons() == Qt.MouseButton.RightButton:
+            return self._pin_dragger.press(event, image_coordinates)
         if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True):
             return False
         point_idx = self._path_item.get_point_index(QPointF(image_coordinates))
@@ -125,15 +131,20 @@ class FreeSelectionTool(BaseTool):
         return False
 
     def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Move the line preview if at least one point has been added."""
+        """Continue a context pin drag, or move the line preview if at least one point has been added."""
+        if self._pin_dragger.move(event, image_coordinates):
+            return True
         if self._path_item.count > 0:
             line = QLineF(self._path_item.last_point(), QPointF(image_coordinates))
             self._preview_line.set_line(line)
             return True
         return False
 
-        # noinspection PyUnusedLocal
+    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+        """Finish a context pin drag."""
+        return self._pin_dragger.release(image_coordinates)
 
+    # noinspection PyUnusedLocal
     def mouse_enter(self, event: Optional[QEvent], image_coordinates: QPoint) -> bool:
         """Show the line preview on enter if selecting."""
         if self._path_item.count > 0:
@@ -151,6 +162,7 @@ class FreeSelectionTool(BaseTool):
         self._path_item.setVisible(True)
 
     def _on_deactivate(self) -> None:
+        self._pin_dragger.finish()
         self._path_item.setVisible(False)
         self._preview_line.setVisible(False)
 

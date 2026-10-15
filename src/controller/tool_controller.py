@@ -116,7 +116,7 @@ class ToolController(QObject):
         self.add_tool(SelectionBrushTool(image_stack, image_viewer))
         self.add_tool(ShapeSelectionTool(image_stack, image_viewer))
         if SelectionFillTool is not None:
-            self.add_tool(SelectionFillTool(image_stack))
+            self.add_tool(SelectionFillTool(image_stack, image_viewer))
         if FillTool is None or SelectionFillTool is None:
             logger.warning(FILL_TOOLS_UNAVAILABLE_LOG)
 

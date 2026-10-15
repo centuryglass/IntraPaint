@@ -33,7 +33,8 @@ FILL_BUTTON_LABEL_WITH_KEY = _tr('Select All ({select_all_shortcut})')
 CLEAR_BUTTON_LABEL_WITH_KEY = _tr('Clear ({clear_shortcut})')
 CLEAR_PINS_BUTTON_LABEL = _tr('Clear Context Pins')
 CLEAR_PINS_BUTTON_LABEL_WITH_KEY = _tr('Clear Context Pins ({clear_pins_shortcut})')
-CLEAR_PINS_BUTTON_TOOLTIP = _tr('Remove all context pins. Right-click with the selection brush to add or remove pins.')
+CLEAR_PINS_BUTTON_TOOLTIP = _tr('Remove all context pins. Right-click in the image with any selection tool to add, '
+                                'move or remove pins.')
 ICON_PATH_CLEAR = f'{PROJECT_DIR}/resources/icons/tool_modes/clear_all.svg'
 ICON_PATH_FILL = f'{PROJECT_DIR}/resources/icons/tool_modes/fill.svg'
 ICON_PATH_CLEAR_PINS = f'{PROJECT_DIR}/resources/icons/tool_modes/clear_context_pins.svg'

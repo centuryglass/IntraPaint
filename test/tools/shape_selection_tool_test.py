@@ -1,4 +1,4 @@
-"""Tests ShapeSelectionTool: rectangle and ellipse drags select into the selection layer, a right-drag does nothing,
+"""Tests ShapeSelectionTool: rectangle and ellipse drags select into the selection layer, a right-drag edits context pins,
    and each drag is one undo step."""
 from unittest import mock
 
@@ -14,6 +14,7 @@ from src.ui.input_fields.dual_toggle import DualToggle
 from src.undo_stack import UndoStack
 from src.util.visual.selection_mode import SelectionMode
 from src.util.visual.shape_mode import SHAPE_MODE_ELLIPSE_LABEL
+from test.tools.context_pin_gesture_tests import ContextPinGestureTests
 from test.tools.selection_tool_test_case import SelectionToolTestCase, rect_mask, mask_bounds
 
 RIGHT = Qt.MouseButton.RightButton
@@ -37,7 +38,7 @@ def _ellipse_mask(shape: tuple[int, int], rect: QRect) -> np.ndarray:
     return pixel_distance < 0, np.abs(pixel_distance) <= 1.0
 
 
-class ShapeSelectionToolTest(SelectionToolTestCase):
+class ShapeSelectionToolTest(ContextPinGestureTests, SelectionToolTestCase):
     """Drives ShapeSelectionTool with synthetic mouse input at 1:1 scale."""
 
     def setUp(self) -> None:
@@ -156,13 +157,12 @@ class ShapeSelectionToolTest(SelectionToolTestCase):
         self.mouse_drag([QPoint(8, 8), QPoint(30, 20)])
         self.assert_one_undo_step(existing, existing | rect_mask(self.IMAGE_SIZE, QRect(8, 8, 22, 12)))
 
-    def test_right_drag_does_nothing(self) -> None:
-        """A right-drag leaves the selection unchanged and records no undo step."""
+    def test_right_drag_does_not_change_selection(self) -> None:
+        """A right-drag edits context pins and leaves the selection unchanged."""
         existing = rect_mask(self.IMAGE_SIZE, QRect(0, 0, 40, 30))
         self.set_selection_outside_history(existing)
         self.mouse_drag([QPoint(10, 8), QPoint(50, 20)], RIGHT)
         self.assert_selection(existing)
-        self.assertEqual(UndoStack().undo_count(), 0)
 
     def test_each_drag_is_one_undo_step(self) -> None:
         """Two drags record two undo steps, and undoing the second leaves the first."""
