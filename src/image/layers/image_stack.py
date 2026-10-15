@@ -55,6 +55,11 @@ FLATTEN_ALPHA_SEARCH = 4
 FLATTEN_NEAR_OPAQUE_ALPHA = 250
 PASTE_LAYER_NAME = _tr('Paste layer')
 
+# `DEFAULT_LAYER_NAME_PATTERN` must match every name `DEFAULT_LAYER_NAME` formats:
+DEFAULT_LAYER_NAME = 'layer {number}'
+DEFAULT_LAYER_NAME_PATTERN = r'^layer (\d+)'
+FIRST_DEFAULT_LAYER_NUMBER = 1
+
 ERROR_TITLE_RESIZE_FAILED = _tr('Resizing image canvas failed')
 ERROR_TITLE_IMAGE_SCALE_FAILED = _tr('Image scaling failed')
 ERROR_MESSAGE_LOCK_CONFLICT_SINGULAR = _tr('Locked layer {layer_name} would be affected, unlock the layer '
@@ -1463,7 +1468,9 @@ class ImageStack(QObject):
         image_data: QImage
             Layer stack size will be adjusted to match image data size.
         """
-        new_layer = self._create_layer_internal(None, image_data)
+        # The replaced document's layers are still in the stack, so the default name would count past them:
+        new_layer = self._create_layer_internal(DEFAULT_LAYER_NAME.format(number=FIRST_DEFAULT_LAYER_NUMBER),
+                                                image_data)
         new_size = new_layer.size
         new_gen_area = self._get_closest_valid_generation_area(QRect(self._generation_area),
                                                                new_layer.transformed_bounds)
@@ -1528,13 +1535,14 @@ class ImageStack(QObject):
                 self._trigger_content_render()
 
     def _get_default_new_layer_name(self) -> str:
-        default_name_pattern = r'^layer (\d+)'
-        max_missing_layer = 0
+        """Returns "layer N", numbered one past the highest default-named layer, starting at
+        `FIRST_DEFAULT_LAYER_NUMBER`."""
+        next_number = FIRST_DEFAULT_LAYER_NUMBER
         for layer in self.all_layers():
-            match = re.match(default_name_pattern, layer.name)
+            match = re.match(DEFAULT_LAYER_NAME_PATTERN, layer.name)
             if match:
-                max_missing_layer = max(max_missing_layer, int(match.group(1)) + 1)
-        return f'layer {max_missing_layer}'
+                next_number = max(next_number, int(match.group(1)) + 1)
+        return DEFAULT_LAYER_NAME.format(number=next_number)
 
     def _get_new_layer_placement(self, layer_parent: Optional[LayerGroup] = None) -> tuple[LayerGroup, int]:
         """Default layer placement:
