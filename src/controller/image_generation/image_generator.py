@@ -232,6 +232,13 @@ class ImageGenerator(MenuBuilder):
         AppStateTracker.set_app_state(APP_STATE_LOADING)
         inpaint_task.start()
 
+    def get_paste_mask(self) -> QImage:
+        """Returns the generation-area mask whose alpha clips a generated image when it is applied.
+
+        Generators that blur the inpainting mask override this to return a soft mask.
+        """
+        return self._image_stack.selection_layer.mask_image
+
     def select_and_apply_sample(self, sample_image: Image.Image | QImage) -> None:
         """Apply an AI-generated image change to the edited image.
 
@@ -246,7 +253,7 @@ class ImageGenerator(MenuBuilder):
             else:
                 image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
             if Cache().get(Cache.EDIT_MODE) == 'Inpaint':
-                inpaint_mask = self._image_stack.selection_layer.mask_image
+                inpaint_mask = self.get_paste_mask()
                 painter = QPainter(image)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
                 painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)

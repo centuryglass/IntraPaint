@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QApplication
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.layers.image_layer import ImageLayer, ImageLayerState
+from src.controller.image_generation.mask_blur import blur_extent_in_image
 from src.undo_stack import UndoStack
 from src.util.visual.image_utils import NpAnyArray
 from src.util.visual.pil_image_utils import qimage_to_pil_image
@@ -32,6 +33,9 @@ DEFAULT_BRUSH_COLOR_STR = '#55ff0000'
 
 # Pixels around a bounded change whose outline polygons are re-traced, in addition to the change itself.
 OUTLINE_RETRACE_MARGIN = 10
+
+# Upper bound on the passes that grow the inpaint crop's padding to fit the mask blur band.
+MAX_BLUR_PADDING_PASSES = 4
 
 
 def _mask_array(mask: QImage) -> NpAnyArray:
@@ -434,6 +438,30 @@ class SelectionLayer(ImageLayer):
                 polygon.append(QPointF(round(point[0][0] / 3) + x_offset, round(point[0][1] / 3) + y_offset))
             self._outline_polygons.append(polygon)
 
+    def blur_band_outline(self, band_x: int, band_y: int) -> list[QPolygonF]:
+        """Returns outline polygons, in image coordinates, of the selection grown by the mask blur band.
+
+        The selection is grown by band_x and band_y pixels horizontally and vertically, and the result is clipped to
+        the generation area, where the backends' blur is clipped too. Only the generation area is traced.
+        """
+        area = QRect(self._generation_area).translated(-self.position.x(), -self.position.y()).intersected(
+            QRect(QPoint(), self._image.size()))
+        if self._selected_count == 0 or area.isEmpty() or (band_x <= 0 and band_y <= 0):
+            return []
+        mask = np.ascontiguousarray(_area(_mask_array(self._image), area))
+        kernel: NpAnyArray = np.ones((2 * band_y + 1, 2 * band_x + 1), np.uint8)
+        grown = cv2.dilate(mask, kernel, iterations=1)
+        contours, _ = cv2.findContours(np.kron(grown, np.ones((3, 3), dtype=np.uint8)), cv2.RETR_TREE,
+                                       cv2.CHAIN_APPROX_NONE)
+        offset = area.topLeft() + self.position
+        polygons: list[QPolygonF] = []
+        for contour in contours:
+            polygon = QPolygonF()
+            for point in contour:
+                polygon.append(QPointF(round(point[0][0] / 3) + offset.x(), round(point[0][1] / 3) + offset.y()))
+            polygons.append(polygon)
+        return polygons
+
     def get_selection_bounds(self) -> Optional[QRect]:
         """Returns the bounds of all selected pixels in image coordinates, inside or outside the generation area.
 
@@ -478,6 +506,26 @@ class SelectionLayer(ImageLayer):
         if (not ignore_config and not cache.get(Cache.INPAINT_FULL_RES)) or self._bounding_box is None:
             return None
         padding = cache.get(Cache.INPAINT_FULL_RES_PADDING)
+        pad_x, pad_y = padding, padding
+        selection_rect = self._padded_gen_area(pad_x, pad_y, include_context_pins)
+        # Grow the padding until the mask blur band fits inside the crop. The band's width in image pixels depends on
+        # the crop's size, so iterate; the generation area bounds the growth.
+        mask_blur = AppConfig().get(AppConfig.MASK_BLUR)
+        generation_size = cache.get(Cache.GENERATION_SIZE)
+        for _ in range(MAX_BLUR_PADDING_PASSES):
+            if selection_rect is None:
+                return None
+            band_x, band_y = blur_extent_in_image(mask_blur, selection_rect.size(), generation_size)
+            if band_x <= pad_x and band_y <= pad_y:
+                break
+            pad_x, pad_y = max(pad_x, band_x), max(pad_y, band_y)
+            selection_rect = self._padded_gen_area(pad_x, pad_y, include_context_pins)
+        return selection_rect
+
+    def _padded_gen_area(self, pad_x: int, pad_y: int, include_context_pins: bool) -> Optional[QRect]:
+        """Returns the selection and pin bounds padded by pad_x and pad_y, expanded to the generation area's aspect
+        ratio and clipped to the generation area. Returns None if the selection is empty."""
+        assert self._bounding_box is not None
         top: int = self._bounding_box.top()
         bottom: int = self._bounding_box.bottom()
         left: int = self._bounding_box.left()
@@ -497,10 +545,10 @@ class SelectionLayer(ImageLayer):
         area_right = area_left + generation_area.width() - 1
         area_top = generation_area.y()
         area_bottom = area_top + generation_area.height() - 1
-        top = max(area_top, top - padding)
-        bottom = min(area_bottom, bottom + padding)
-        left = max(area_left, left - padding)
-        right = min(area_right, right + padding)
+        top = max(area_top, top - pad_y)
+        bottom = min(area_bottom, bottom + pad_y)
+        left = max(area_left, left - pad_x)
+        right = min(area_right, right + pad_x)
         height = bottom - top
         width = right - left
 
