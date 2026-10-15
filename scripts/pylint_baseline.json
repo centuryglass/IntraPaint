@@ -78,7 +78,6 @@
     "unused-variable": 1
   },
   "src/tools/clone_stamp_tool.py": {
-    "inconsistent-quotes": 2,
     "no-else-return": 1
   },
   "src/tools/fill_tool.py": {

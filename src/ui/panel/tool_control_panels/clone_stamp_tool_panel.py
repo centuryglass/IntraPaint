@@ -21,7 +21,8 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 LABEL_TEXT_SELECTION_ONLY = _tr('Update selection only')
 LABEL_TEXT_OFFSET = _tr('Offset:')
 LABEL_TEXT_POSITION = _tr('Position:')
-SOURCE_MODE_STATIC = QApplication.translate('cache_value', 'Fixed position')
+# Stored value of the fixed-position mode; matches `SOURCE_MODE_STATIC` in `src.tools.clone_stamp_tool`.
+SOURCE_MODE_STATIC = 'Fixed position'
 
 
 class CloneStampToolPanel(BrushToolPanel):

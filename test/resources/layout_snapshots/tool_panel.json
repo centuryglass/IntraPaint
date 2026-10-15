@@ -1,6 +1,8 @@
 {
   "minimum": {
-    "problems": [],
+    "problems": [
+      "clipped: ToolButton[9]/KeyHintLabel 'Shift+S' shows 48x23 of 51x23"
+    ],
     "size": [
       402,
       469
@@ -8,12 +10,12 @@
   },
   "narrow": {
     "problems": [
-      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Size:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '[' share 3x30",
-      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/IntSliderSpinbox and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel ']' share 14x30",
-      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Opacity:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '<' share 3x30",
-      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[0] and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '>' share 14x30",
-      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Hardness:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '{' share 3x30",
-      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[1] and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '}' share 14x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Size:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '[' share 7x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/IntSliderSpinbox and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel ']' share 18x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Opacity:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '<' share 7x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[0] and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '>' share 18x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Hardness:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '{' share 7x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[1] and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '}' share 18x30",
       "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget is 184x220, minimum 327x220",
       "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel is 166x202, minimum 309x202",
       "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/IntSliderSpinbox shows 80x30 of 148x30",
@@ -40,7 +42,7 @@
       "squeezed: ToolButton[7] is 22x48, minimum 48x48",
       "squeezed: ToolButton[8] is 23x48, minimum 48x48",
       "squeezed: ToolButton[9] is 23x48, minimum 48x48",
-      "clipped: ToolButton[9]/KeyHintLabel '\u21e7+S' shows 23x22 of 31x22",
+      "clipped: ToolButton[9]/KeyHintLabel 'Shift+S' shows 23x23 of 51x23",
       "squeezed: ToolButton[10] is 23x48, minimum 48x48",
       "squeezed: ToolButton[11] is 23x48, minimum 48x48",
       "squeezed: ToolButton[12] is 23x48, minimum 48x48",
@@ -54,7 +56,9 @@
     ]
   },
   "preferred": {
-    "problems": [],
+    "problems": [
+      "clipped: ToolButton[9]/KeyHintLabel 'Shift+S' shows 48x23 of 51x23"
+    ],
     "size": [
       402,
       548
@@ -62,12 +66,12 @@
   },
   "short": {
     "problems": [
-      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Size:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '[' share 3x30",
-      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/IntSliderSpinbox and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel ']' share 14x30",
-      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Opacity:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '<' share 3x30",
-      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[0] and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '>' share 14x30",
-      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Hardness:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '{' share 3x30",
-      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[1] and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '}' share 14x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Size:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '[' share 7x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/IntSliderSpinbox and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel ']' share 18x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Opacity:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '<' share 7x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[0] and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '>' share 18x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/QLabel 'Hardness:' and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '{' share 7x30",
+      "overlap: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/FloatSliderSpinbox[1] and QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/KeyHintLabel '}' share 18x30",
       "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget is 184x220, minimum 327x220",
       "squeezed: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel is 166x202, minimum 309x202",
       "clipped: QScrollArea/QWidget[0]/ReactiveLayoutWidget/DrawToolPanel/IntSliderSpinbox shows 80x30 of 148x30",
@@ -94,6 +98,7 @@
       "squeezed: ToolButton[7] is 48x36, minimum 48x48",
       "squeezed: ToolButton[8] is 48x35, minimum 48x48",
       "squeezed: ToolButton[9] is 48x35, minimum 48x48",
+      "clipped: ToolButton[9]/KeyHintLabel 'Shift+S' shows 48x23 of 51x23",
       "squeezed: ToolButton[10] is 48x35, minimum 48x48",
       "squeezed: ToolButton[11] is 48x35, minimum 48x48",
       "squeezed: ToolButton[12] is 48x35, minimum 48x48",
@@ -107,14 +112,18 @@
     ]
   },
   "tall": {
-    "problems": [],
+    "problems": [
+      "clipped: ToolButton[9]/KeyHintLabel 'Shift+S' shows 48x23 of 51x23"
+    ],
     "size": [
       402,
       1644
     ]
   },
   "wide": {
-    "problems": [],
+    "problems": [
+      "clipped: ToolButton[9]/KeyHintLabel 'Shift+S' shows 48x23 of 51x23"
+    ],
     "size": [
       1600,
       548

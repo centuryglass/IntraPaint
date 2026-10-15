@@ -177,7 +177,8 @@ class GeneratedImageSelector(QWidget):
     """Shows all images from an image generation operation, allows the user to select one or discard all of them.
 
     Closing the selector stores the batch it showed if any images arrived, and `restore_previous_options` shows it
-    again. Callers pick the batch before showing the selector, with `start_new_options` or `restore_previous_options`.
+    again until another document is loaded. Callers pick the batch before showing the selector, with
+    `start_new_options` or `restore_previous_options`.
     """
 
     cancel_generation = Signal()
@@ -200,6 +201,7 @@ class GeneratedImageSelector(QWidget):
         # True once `archive_current_options` has stored the batch that is showing:
         self._showing_archived = False
         image_stack.size_changed.connect(self._on_image_stack_resized)
+        image_stack.document_changed.connect(self._on_document_changed)
 
         self._close_selector = close_selector
         self._option_items: list[_ImageOption] = []
@@ -416,6 +418,12 @@ class GeneratedImageSelector(QWidget):
         self._prev_option_items[0] = _ImageOption(batch.option_images[0], ORIGINAL_CONTENT_LABEL)
         self._option_data = batch
         self._rebuild_scene(include_loading_images=False, reused_items=self._prev_option_items)
+
+    def _on_document_changed(self) -> None:
+        """Drops the stored batch, which belongs to the replaced document."""
+        self._prev_options = None
+        self._prev_option_items = []
+        self._report_previous_options_available()
 
     def _on_image_stack_resized(self, _size: QSize) -> None:
         """Re-checks `can_restore_previous`, which a resize can change."""

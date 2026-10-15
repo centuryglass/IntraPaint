@@ -1,9 +1,9 @@
 """Base control panel for selection editing tools."""
 from typing import Optional
 
-from PySide6.QtCore import Qt, QSize, SignalInstance, QPoint
+from PySide6.QtCore import Qt, QSize, QPoint
 from PySide6.QtGui import QIcon, QPixmap
-from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QPushButton, QHBoxLayout, QLabel, QLayout
+from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QPushButton, QHBoxLayout, QLayout
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
@@ -102,53 +102,6 @@ class SelectionPanel(QWidget):
         self._layout.addWidget(button_group)
 
         cache = Cache()
-        padding_checkbox = cache.get_control_widget(Cache.INPAINT_FULL_RES)
-        self._layout.addWidget(padding_checkbox)
-        padding_line_layout = QHBoxLayout()
-        padding_line_layout.setContentsMargins(0, 0, 0, 0)
-        padding_line_layout.setSpacing(0)
-        padding_line_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-
-        padding_label = QLabel(cache.get_label(Cache.INPAINT_FULL_RES_PADDING))
-        padding_line_layout.addWidget(padding_label)
-        padding_spinbox = cache.get_control_widget(Cache.INPAINT_FULL_RES_PADDING)
-        padding_line_layout.addWidget(padding_spinbox)
-
-        def _set_inpaint_padding_visibility(should_show: bool) -> None:
-            """Toggle padding controls based on the inpaint full res checkbox state:"""
-            if should_show and cache.get(Cache.INPAINT_OPTIONS_AVAILABLE):
-                padding_label.show()
-                padding_spinbox.show()
-            else:
-                padding_label.hide()
-                padding_spinbox.hide()
-        assert isinstance(padding_checkbox.stateChanged, SignalInstance)
-        padding_checkbox.stateChanged.connect(lambda state: _set_inpaint_padding_visibility(bool(state)))
-
-        full_res_padding_tip = cache.get_tooltip(Cache.INPAINT_FULL_RES_PADDING)
-        for padding_widget in (padding_label, padding_spinbox):
-            padding_widget.setToolTip(full_res_padding_tip)
-        self._layout.addLayout(padding_line_layout)
-        _set_inpaint_padding_visibility(padding_checkbox.isChecked())
-
-        def _set_inpainting_control_visibility(should_show: bool) -> None:
-            """Toggle all inpainting controls based on available generator features:"""
-            assert should_show == cache.get(Cache.INPAINT_OPTIONS_AVAILABLE)
-            if should_show:
-                padding_checkbox.show()
-                if padding_checkbox.isChecked():
-                    padding_label.show()
-                    padding_spinbox.show()
-                else:
-                    padding_label.hide()
-                    padding_spinbox.hide()
-            else:
-                padding_checkbox.hide()
-                padding_label.hide()
-                padding_spinbox.hide()
-        cache.connect(self, Cache.INPAINT_OPTIONS_AVAILABLE, _set_inpainting_control_visibility)
-        _set_inpainting_control_visibility(cache.get(Cache.INPAINT_OPTIONS_AVAILABLE))
-
         def _update_clear_pins_visibility(_=None) -> None:
             """Show the clear context pins button only while inpainting is available and selected."""
             clear_pins_button.setVisible(cache.get(Cache.INPAINT_OPTIONS_AVAILABLE)

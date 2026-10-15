@@ -1,11 +1,12 @@
 """Options for resizing image layers when scaling the image canvas."""
 from enum import Enum
 
-from PySide6.QtWidgets import QApplication
 
-RESIZE_OPTION_ALL = QApplication.translate('config.cache', 'Expand all unlocked layers')
-RESIZE_OPTION_FULL_IMAGE = QApplication.translate('config.cache', 'Only expand full-image layers')
-RESIZE_OPTION_NONE = QApplication.translate('config.cache', 'Do not expand layers')
+# Stored `Cache.CANVAS_RESIZE_LAYER_MODE` values; they must match cache_value_definitions.json and must not be
+# translated.
+RESIZE_OPTION_ALL = 'Expand all unlocked layers'
+RESIZE_OPTION_FULL_IMAGE = 'Only expand full-image layers'
+RESIZE_OPTION_NONE = 'Do not expand layers'
 
 
 class LayerResizeMode(Enum):

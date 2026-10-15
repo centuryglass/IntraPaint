@@ -9,8 +9,9 @@ from typing import Callable, Optional
 
 from enum import StrEnum
 
-from PySide6.QtCore import Qt, QRect, QSize, Signal
-from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, QAction, QMoveEvent
+from PySide6.QtCore import Qt, QRect, QSize, QObject, QTimer, Signal
+from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, QAction, QMoveEvent, \
+    QScreen, QShowEvent
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget, QApplication, QSizePolicy
 
 from src.config.cache import Cache
@@ -27,6 +28,7 @@ from src.ui.panel.generators.generator_panel import GeneratorPanel
 
 from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.window.navigation_window import NavigationWindow
+from src.ui.window.window_geometry import capture_geometry
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
     APP_STATE_SELECTION
 from src.util.visual.display_size import get_screen_size
@@ -58,6 +60,7 @@ DEFAULT_LOADING_MESSAGE = _tr('Loading...')
 VERTICAL_STRETCH_SUM = 100
 AUTO_TAB_MOVE_THRESHOLD = 1200
 USE_LOWER_CONTROL_TAB_THRESHOLD = 1600
+CLAMP_DELAY_MS = 50
 
 
 class TabBoxID(StrEnum):
@@ -151,6 +154,13 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(QIcon(APP_ICON_PATH))
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
         self.setMinimumSize(QSize(0, 0))
+        # One coalesced re-clamp for every move, resize and display change:
+        self._clamp_timer = QTimer(self)
+        self._clamp_timer.setSingleShot(True)
+        self._clamp_timer.setInterval(CLAMP_DELAY_MS)
+        self._clamp_timer.timeout.connect(self._clamp_to_screen)
+        self._watched_displays: set[QObject] = set()
+        self._display_signals_connected = False
 
         if '--dev' in sys.argv:
             def _dbg_layout():
@@ -556,36 +566,56 @@ class MainWindow(QMainWindow):
         for tab_box in to_close:
             tab_box.is_open = False
 
-    def _size_and_bounds_updates(self) -> None:
-        """Keep the screen bounds up to date and cached"""
+    def _clamp_to_screen(self) -> None:
+        """Shrinks the window to the available size of the display it is on."""
         screen_size = get_screen_size(self, False)
+        if screen_size.isNull():
+            return
+        window_size = self.frameGeometry().size()
+        if window_size.width() > screen_size.width() or window_size.height() > screen_size.height():
+            self.resize(min(window_size.width(), screen_size.width()),
+                        min(window_size.height(), screen_size.height()))
 
-        if not screen_size.isNull():
-            window_size = self.frameGeometry().size()
-            if window_size.width() > screen_size.width() or window_size.height() > screen_size.height():
-                window_size.setWidth(min(window_size.width(), screen_size.width()))
-                window_size.setHeight(min(window_size.height(), screen_size.height()))
-                self.resize(window_size)
-        # Cache window placement:
-        if self.isVisible():
-            Cache().save_bounds(Cache.SAVED_MAIN_WINDOW_POS, self)
+    def _watch_displays(self) -> None:
+        """Schedules a re-clamp when the window changes screens or a display's usable area changes."""
+        window_handle = self.windowHandle()
+        if window_handle is not None and window_handle not in self._watched_displays:
+            self._watched_displays.add(window_handle)
+            window_handle.screenChanged.connect(self._clamp_timer.start)
+        for screen in QApplication.screens():
+            if screen not in self._watched_displays:
+                self._watched_displays.add(screen)
+                screen.availableGeometryChanged.connect(self._clamp_timer.start)
+        app = QApplication.instance()
+        if app is not None and not self._display_signals_connected:
+            self._display_signals_connected = True
+            app.screenAdded.connect(self._on_screens_changed)
+            app.screenRemoved.connect(self._on_screens_changed)
+
+    def _on_screens_changed(self, unused_screen: Optional[QScreen] = None) -> None:
+        self._watch_displays()
+        self._clamp_timer.start()
+
+    def showEvent(self, event: Optional[QShowEvent]) -> None:
+        """Starts watching display changes once the window has a native handle."""
+        super().showEvent(event)
+        self._watch_displays()
 
     def moveEvent(self, unused_event: Optional[QMoveEvent]) -> None:
-        """Makes sure the window size respects the current display as it moves."""
-        self._size_and_bounds_updates()
+        """Schedules a re-clamp as the window moves between displays."""
+        if self.isVisible():
+            self._clamp_timer.start()
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
-        """Applies the most appropriate layout when the window size changes."""
-        self._size_and_bounds_updates()
+        """Updates the loading indicator bounds and schedules a re-clamp."""
+        if self.isVisible():
+            self._clamp_timer.start()
         if hasattr(self, '_loading_widget') and TIMELAPSE_MODE_FLAG not in sys.argv:
             loading_widget_size = int(self.height() / 3)
             loading_bounds = QRect(self.width() // 2 - loading_widget_size // 2,
                                    self.height() // 2 - loading_widget_size // 2,
                                    loading_widget_size, loading_widget_size)
             self._loading_widget.setGeometry(loading_bounds)
-        # Cache window placement:
-        if self.isVisible():
-            Cache().save_bounds(Cache.SAVED_MAIN_WINDOW_POS, self)
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Suppresses mouse events when the loading spinner is active."""
@@ -598,6 +628,7 @@ class MainWindow(QMainWindow):
             if event is not None:
                 event.ignore()
             return
+        Cache().set(Cache.SAVED_MAIN_WINDOW_GEOMETRY, capture_geometry(self).to_json())
         QApplication.exit()
 
     def close_without_confirmation(self) -> None:

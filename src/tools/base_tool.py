@@ -24,7 +24,7 @@ from src.util.shared_constants import ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_LA
     DEBUG_CURSOR_ENV_VAR, LOCK_ERROR_MESSAGES
 from src.util.visual.image_utils import image_is_fully_transparent
 from src.util.visual.text_drawing_utils import left_button_hint_text, middle_button_hint_text, \
-    vertical_scroll_hint_text, get_key_display_string
+    vertical_scroll_hint_text, rich_text_key_hints
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.base_tool'
@@ -112,7 +112,7 @@ class BaseTool(QObject):
         if KeyConfig().get_modifier(modifier_key) == Qt.KeyboardModifier.NoModifier:
             return ''
         modifier = KeyConfig().get(modifier_key)
-        modifier = get_key_display_string(modifier)
+        modifier = rich_text_key_hints(modifier)
         return modifier_hint_str.format(modifier_or_modifiers=modifier)
 
     @staticmethod

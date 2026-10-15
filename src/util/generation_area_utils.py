@@ -11,18 +11,18 @@ import re
 from typing import Optional
 
 from PySide6.QtCore import QSize, QRect, QPoint, QPointF
-from PySide6.QtWidgets import QApplication
 
-# Values of Cache.GENERATION_RESOLUTION_RULE. They must match the options in cache_value_definitions.json.
-RESOLUTION_RULE_MATCH_AREA = QApplication.translate('cache_value', 'Match area')
-RESOLUTION_RULE_MATCH_AREA_UPSCALED = QApplication.translate('cache_value', 'Match area, upscale small areas')
-RESOLUTION_RULE_MANUAL = QApplication.translate('cache_value', 'Manual')
+# Values of Cache.GENERATION_RESOLUTION_RULE. They must match the options in cache_value_definitions.json and must not
+# be translated.
+RESOLUTION_RULE_MATCH_AREA = 'Match area'
+RESOLUTION_RULE_MATCH_AREA_UPSCALED = 'Match area, upscale small areas'
+RESOLUTION_RULE_MANUAL = 'Manual'
 
 # Values of AppConfig.GENERATION_AREA_FOLLOW_SELECTION. They must match the options in
-# application_config_definitions.json.
-FOLLOW_SELECTION_MINIMAL = QApplication.translate('application_config', 'Minimal move')
-FOLLOW_SELECTION_CENTER = QApplication.translate('application_config', 'Center on selection')
-FOLLOW_SELECTION_OFF = QApplication.translate('application_config', 'Off')
+# application_config_definitions.json and must not be translated.
+FOLLOW_SELECTION_MINIMAL = 'Minimal move'
+FOLLOW_SELECTION_CENTER = 'Center on selection'
+FOLLOW_SELECTION_OFF = 'Off'
 
 # Number of entries kept in Cache.RECENT_GENERATION_AREA_SIZES. It's larger than the number of recent frames shown, so
 # filtering out the full image and square frames still leaves enough to show.

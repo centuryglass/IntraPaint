@@ -2,23 +2,20 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt, QRect, QRectF, QPoint, QSize
-from PySide6.QtGui import QKeySequence, QPainter, QPaintEvent, QFont, QPalette, QPen
+from PySide6.QtGui import QKeySequence, QPainter, QPaintEvent, QFont, QPalette
 from PySide6.QtWidgets import QLabel, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.util.key_code_utils import get_key_with_modifiers, get_modifier_string, KEY_REQUIRES_SHIFT
+from src.util.visual.keycap import KEYCAP_PADDING, KEYCAP_DEPTH, draw_keycap, keycap_colors, keycap_font, keycap_size
 from src.util.visual.text_drawing_utils import find_text_size, get_key_display_string
-
-KEYCAP_RADIUS = 3.0
-# The keycap's ink shadow drops this far below it:
-KEYCAP_DEPTH = 1
 
 
 class KeyHintLabel(QLabel):
     """Shows formatted key suggestions to the user, drawn as raised keycaps.
 
-    The keycap takes the palette's `Button` fill and `Shadow` outline, and its text takes `ButtonText`.
+    The keycap is drawn by `src.util.visual.keycap`, in the palette's `Button`, `Shadow` and `ButtonText` colors.
     """
 
     def __init__(self, keys: Optional[QKeySequence | Qt.KeyboardModifier | str] = None,
@@ -32,7 +29,8 @@ class KeyHintLabel(QLabel):
         self.setFont(font)
         self.setTextFormat(Qt.TextFormat.RichText)
         self.setForegroundRole(QPalette.ColorRole.ButtonText)
-        self.setContentsMargins(3, 3, 3, 3)
+        self.setContentsMargins(KEYCAP_PADDING.left(), KEYCAP_PADDING.top(), KEYCAP_PADDING.right(),
+                                KEYCAP_PADDING.bottom() + KEYCAP_DEPTH)
         self._saved_size: Optional[QSize] = None
         self._config_key = config_key
         if keys is None and config_key is not None:
@@ -56,14 +54,12 @@ class KeyHintLabel(QLabel):
 
     def _key_font(self) -> QFont:
         """Returns the bold font the key text is drawn in."""
-        key_font = QFont(self.font())
-        key_font.setBold(True)
-        return key_font
+        return keycap_font(self.font())
 
     def sizeHint(self) -> QSize:
         """Returns the size of the key text in bold, plus the keycap's margins."""
         if self._saved_size is None:
-            self._saved_size = find_text_size(self._base_text, self._key_font(), exact=False) + QSize(6, 6)
+            self._saved_size = keycap_size(find_text_size(self._base_text, self._key_font(), exact=False))
         return QSize(self._saved_size)
 
     def minimumSizeHint(self) -> QSize:
@@ -86,7 +82,7 @@ class KeyHintLabel(QLabel):
             super().paintEvent(event)
             return
         own_bounds = QRect(QPoint(), self.size())
-        text_bounds = QRect(QPoint(), find_text_size(self._base_text, self._key_font())).adjusted(0, 0, 5, 5)
+        text_bounds = QRect(QPoint(), keycap_size(find_text_size(self._base_text, self._key_font(), exact=False)))
         alignment = self.alignment()
         if alignment & Qt.AlignmentFlag.AlignHCenter == Qt.AlignmentFlag.AlignHCenter:
             text_bounds.moveLeft((own_bounds.width() - text_bounds.width()) // 2)
@@ -97,16 +93,9 @@ class KeyHintLabel(QLabel):
         elif alignment & Qt.AlignmentFlag.AlignBottom == Qt.AlignmentFlag.AlignBottom:
             text_bounds.moveTop(own_bounds.height() - text_bounds.height())
         text_bounds = text_bounds.intersected(own_bounds)
-        palette = self.palette()
-        ink = palette.color(QPalette.ColorRole.Shadow)
-        keycap = QRectF(text_bounds).adjusted(0.5, 0.5, -0.5, -0.5 - KEYCAP_DEPTH)
+        fill, outline, _ = keycap_colors(self.palette())
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setPen(QPen(ink, 1))
-        painter.setBrush(ink)
-        painter.drawRoundedRect(keycap.translated(0, KEYCAP_DEPTH), KEYCAP_RADIUS, KEYCAP_RADIUS)
-        painter.setBrush(palette.color(QPalette.ColorRole.Button))
-        painter.drawRoundedRect(keycap, KEYCAP_RADIUS, KEYCAP_RADIUS)
+        draw_keycap(painter, QRectF(text_bounds), fill, outline)
         painter.end()
         super().paintEvent(event)
 

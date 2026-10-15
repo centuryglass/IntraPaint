@@ -130,19 +130,39 @@ class ImageStackTest(IntraPaintTestCase):
         self.image_stack.flush_render()
         self.assertEqual(image, self.image_stack.qimage())
 
-    def test_load_image_undo_restores_transforms(self) -> None:
-        """Undoing an image load restores the previous image with its transformation."""
+    def test_load_image_replaces_document(self) -> None:
+        """Loading an image clears the undo history and emits `document_changed`, even at the same size."""
+        document_changed = MagicMock()
+        self.image_stack.document_changed.connect(document_changed)
         image = QImage(INIT_IMAGE)
         self.image_stack.load_image(image)
-        first_layer = self.image_stack.active_layer
-        assert isinstance(first_layer, TransformLayer)
-        transform = QTransform().translate(40, 25).scale(0.5, 0.5)
-        first_layer.set_transform(transform)
+        self.image_stack.create_layer()
+        self.assertGreater(UndoStack().undo_count(), 0)
+        self.size_changed_mock.reset_mock()
         self.image_stack.load_image(image)
-        UndoStack().undo()
-        restored = self.image_stack.active_layer
-        assert isinstance(restored, TransformLayer)
-        self.assertEqual(transform, restored.transform)
+        self.size_changed_mock.assert_not_called()
+        self.assertEqual(document_changed.call_count, 2)
+        self.assertEqual(UndoStack().undo_count(), 0)
+
+    def test_load_image_restarts_layer_numbering(self) -> None:
+        """Each loaded image's layer gets the first default name, however many images were loaded before."""
+        image = QImage(INIT_IMAGE)
+        for _ in range(3):
+            self.image_stack.load_image(image)
+            self.assertEqual([layer.name for layer in self.image_stack.top_level_layers], ['layer 1'])
+        self.assertEqual(self.image_stack.create_layer().name, 'layer 2')
+
+    def test_load_layer_stack_replaces_document(self) -> None:
+        """Loading a layer stack clears the undo history and emits `document_changed`."""
+        self.image_stack.load_image(QImage(INIT_IMAGE))
+        self.image_stack.create_layer()
+        document_changed = MagicMock()
+        self.image_stack.document_changed.connect(document_changed)
+        new_stack = LayerGroup('loaded')
+        new_stack.insert_layer(ImageLayer(QImage(INIT_IMAGE), 'loaded layer'), 0)
+        self.image_stack.load_layer_stack(new_stack, QImage(INIT_IMAGE).size())
+        document_changed.assert_called_once()
+        self.assertEqual(UndoStack().undo_count(), 0)
 
     def test_load_layer_stack_resets_selection_transform(self) -> None:
         """Loading a layer stack clears the selection layer's transformation."""
@@ -169,7 +189,7 @@ class ImageStackTest(IntraPaintTestCase):
         # size wasn't updated, so image will be cropped to initial size:
         self.assertEqual(self.image_stack.qimage(), image.copy(QRect(QPoint(), IMG_SIZE)))
         self.assertEqual(layer_0.image, image)
-        self.assertEqual(layer_0.name, 'layer 0')
+        self.assertEqual(layer_0.name, 'layer 1')
         self.layer_added_mock.reset_mock()
         self.content_changed_mock.reset_mock()
 
@@ -179,7 +199,7 @@ class ImageStackTest(IntraPaintTestCase):
         # TODO: inserting a transparent layer shouldn't trigger content_changed
         self.content_changed_mock.assert_called_once()
         self.assertTrue(layer_1.empty)
-        self.assertEqual(layer_1.name, 'layer 1')
+        self.assertEqual(layer_1.name, 'layer 2')
         self.layer_added_mock.reset_mock()
         self.content_changed_mock.reset_mock()
 
@@ -188,7 +208,7 @@ class ImageStackTest(IntraPaintTestCase):
         self.layer_added_mock.assert_called_once()
         self.content_changed_mock.assert_not_called()
         self.assertTrue(layer_group.empty)
-        self.assertEqual(layer_group.name, 'layer 2')
+        self.assertEqual(layer_group.name, 'layer 3')
         self.layer_added_mock.reset_mock()
         self.content_changed_mock.reset_mock()
 

@@ -376,11 +376,16 @@ def temp_image_path(image_name: Optional[str], image_or_draw_fn: Callable[[], QI
     return img_path
 
 
+def rich_text_image_tag(image_path: str) -> str:
+    """Returns a rich-text inline image of a file, centered vertically on the surrounding text."""
+    return f'<img src="{image_path}" style="vertical-align: middle"/>'
+
+
 def temp_rich_text_image(image_name: str, image_draw_fn: Callable[[], QImage]) -> str:
     """Create a string that can embed an image into rich text by writing the image to temporary storage.  If called
        multiple times with the same image_name, the same image will be reused."""
     img_path = temp_image_path(image_name, image_draw_fn)
-    return f'<img src="{img_path}"/>'
+    return rich_text_image_tag(img_path)
 
 
 def numpy_source_over_composition(source: NpUInt8Array, destination: NpUInt8Array) -> None:

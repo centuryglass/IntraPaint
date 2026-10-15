@@ -12,7 +12,7 @@ from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
 from src.tools.qt_paint_brush_tool import QtPaintBrushTool
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.clone_stamp_tool_panel import CloneStampToolPanel, SOURCE_MODE_STATIC
+from src.ui.panel.tool_control_panels.clone_stamp_tool_panel import CloneStampToolPanel
 from src.util.shared_constants import PROJECT_DIR
 from src.util.signals_blocked import signals_blocked
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
@@ -35,10 +35,15 @@ CLONE_STAMP_TOOLTIP = _tr('Copy image content from one area to another')
 CLONE_STAMP_CONTROL_HINT = _tr('{right_mouse_icon}: set source - {left_mouse_icon}: draw')
 
 
+LABEL_TEXT_OFFSET = _tr('Offset:')
+LABEL_TEXT_POSITION = _tr('Position:')
 LABEL_TEXT_SELECTION_ONLY = _tr('Update selection only')
 
-SOURCE_MODE_FIXED_OFFSET = QApplication.translate('cache_value', "Fixed offset")
-SOURCE_MODE_DYNAMIC_OFFSET = QApplication.translate('cache_value', "Dynamic offset")
+# Stored `Cache.CLONE_STAMP_TOOL_SOURCE_MODE` values; they must match cache_value_definitions.json and must not be
+# translated.
+SOURCE_MODE_FIXED_OFFSET = 'Fixed offset'
+SOURCE_MODE_DYNAMIC_OFFSET = 'Dynamic offset'
+SOURCE_MODE_STATIC = 'Fixed position'
 
 
 class CloneStampTool(QtPaintBrushTool):
