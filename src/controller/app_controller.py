@@ -117,6 +117,7 @@ from src.util.qtexcepthook import QtExceptHook
 from src.util.shared_constants import PROJECT_DIR, PIL_SCALING_MODES
 from src.util.system_clipboard import clipboard_has_image, clipboard_image_is_own_copy, get_clipboard_image, \
     set_clipboard_image
+from src.ui.window.window_geometry import restore_window
 from src.util.visual.display_size import get_screen_size
 from src.util.visual.image_format_utils import save_image_with_metadata, save_image, load_image, \
     IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_FORMATS_SUPPORTING_ALPHA, IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA, \
@@ -300,13 +301,7 @@ class AppController(MenuBuilder):
             self._window.setMaximumSize(width, height)
             self._window.setMinimumSize(width, height)
         else:
-            if not Cache().load_bounds(Cache.SAVED_MAIN_WINDOW_POS, self._window):
-                size = get_screen_size(self._window)
-                x = 0
-                y = 0
-                width = size.width()
-                height = size.height()
-                self._window.setGeometry(x, y, width, height)
+            restore_window(self._window, Cache().get(Cache.SAVED_MAIN_WINDOW_GEOMETRY))
         if args.init_image is not None:
             self.load_image(file_path=args.init_image)
         if not self._image_stack.has_image:
