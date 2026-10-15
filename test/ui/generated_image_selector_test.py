@@ -162,6 +162,17 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
         self.image_stack.size = QSize(16, 16)
         self.assertFalse(self.selector.can_restore_previous())
 
+    def test_can_restore_previous_only_for_its_document(self) -> None:
+        """A same-size load hides the stored batch, and undoing the load brings it back."""
+        self._fill_batch()
+        self.selector.archive_current_options()
+        emissions = self._record_availability()
+        self.image_stack.load_image(_solid(QColor(0, 0, 255), self.image_stack.size))
+        self.assertFalse(self.selector.can_restore_previous())
+        UndoStack().undo()
+        self.assertTrue(self.selector.can_restore_previous())
+        self.assertEqual(emissions, [False, True])
+
     def test_restore_raises_without_a_stored_batch(self) -> None:
         """Re-opening with nothing stored raises rather than showing an empty screen."""
         with self.assertRaises(RuntimeError):

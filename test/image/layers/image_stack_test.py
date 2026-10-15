@@ -153,6 +153,36 @@ class ImageStackTest(IntraPaintTestCase):
         self.image_stack.load_layer_stack(new_stack, QImage(INIT_IMAGE).size())
         self.assertTrue(self.image_stack.selection_layer.transform.isIdentity())
 
+    def test_load_image_changes_document(self) -> None:
+        """Each load gets a new document id, even at the same size, and undo and redo switch between them."""
+        document_changed = MagicMock()
+        self.image_stack.document_changed.connect(document_changed)
+        image = QImage(INIT_IMAGE)
+        self.image_stack.load_image(image)
+        first_id = self.image_stack.document_id
+        self.image_stack.load_image(image)
+        second_id = self.image_stack.document_id
+        self.assertNotEqual(first_id, second_id)
+        self.assertEqual(document_changed.call_count, 2)
+        document_changed.assert_called_with(second_id)
+        UndoStack().undo()
+        self.assertEqual(self.image_stack.document_id, first_id)
+        document_changed.assert_called_with(first_id)
+        UndoStack().redo()
+        self.assertEqual(self.image_stack.document_id, second_id)
+        document_changed.assert_called_with(second_id)
+
+    def test_load_layer_stack_changes_document(self) -> None:
+        """Loading a layer stack gets a new document id, and undoing it restores the previous one."""
+        self.image_stack.load_image(QImage(INIT_IMAGE))
+        first_id = self.image_stack.document_id
+        new_stack = LayerGroup('loaded')
+        new_stack.insert_layer(ImageLayer(QImage(INIT_IMAGE), 'loaded layer'), 0)
+        self.image_stack.load_layer_stack(new_stack, QImage(INIT_IMAGE).size())
+        self.assertNotEqual(self.image_stack.document_id, first_id)
+        UndoStack().undo()
+        self.assertEqual(self.image_stack.document_id, first_id)
+
     def test_layer_create(self) -> None:
         """Test creating new layers and layer groups"""
 

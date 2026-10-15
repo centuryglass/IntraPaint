@@ -135,10 +135,11 @@ class _OptionData:
 
     Options are applied with the batch's own mask, generation area and edit mode, so changing the selection or edit
     mode after generating doesn't change what an option inserts. `edit_mode` is the untranslated value `Cache.EDIT_MODE`
-    holds.
+    holds. `document_id` is the `ImageStack.document_id` the batch was generated for.
     """
 
     def __init__(self, image_stack: ImageStack) -> None:
+        self.document_id = image_stack.document_id
         self.option_images: list[QImage] = [image_stack.qimage_generation_area_content()]
         self.generation_area = image_stack.generation_area
         self.selection_polys = image_stack.selection_layer.outline
@@ -199,7 +200,8 @@ class GeneratedImageSelector(QWidget):
         self._accepting_results = False
         # True once `archive_current_options` has stored the batch that is showing:
         self._showing_archived = False
-        image_stack.size_changed.connect(self._on_image_stack_resized)
+        image_stack.size_changed.connect(self._on_image_stack_changed)
+        image_stack.document_changed.connect(self._on_image_stack_changed)
 
         self._close_selector = close_selector
         self._option_items: list[_ImageOption] = []
@@ -399,8 +401,8 @@ class GeneratedImageSelector(QWidget):
         self._report_previous_options_available()
 
     def can_restore_previous(self) -> bool:
-        """Returns whether a batch is stored and its generation area is still within the image."""
-        if self._prev_options is None:
+        """Returns whether a batch is stored for the open document and its generation area is still within the image."""
+        if self._prev_options is None or self._prev_options.document_id != self._image_stack.document_id:
             return False
         return self._image_stack.bounds.contains(self._prev_options.generation_area)
 
@@ -417,8 +419,8 @@ class GeneratedImageSelector(QWidget):
         self._option_data = batch
         self._rebuild_scene(include_loading_images=False, reused_items=self._prev_option_items)
 
-    def _on_image_stack_resized(self, _size: QSize) -> None:
-        """Re-checks `can_restore_previous`, which a resize can change."""
+    def _on_image_stack_changed(self, _value: QSize | int) -> None:
+        """Re-checks `can_restore_previous`, which a resize or document change can change."""
         self._report_previous_options_available()
 
     def _report_previous_options_available(self) -> None:

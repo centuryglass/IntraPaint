@@ -104,6 +104,10 @@ class ImageStack(QObject):
     generation_area_bounds_changed = Signal(QRect)
     content_changed = Signal()
     size_changed = Signal(QSize)
+    document_changed = Signal(int)
+    """Emitted with the new `document_id` when loading an image, or undoing or redoing a load, swaps the document.
+
+    It is emitted from inside the load's undo action, so handlers must not commit undo actions of their own."""
     layer_added = Signal(Layer)
     layer_removed = Signal(Layer)
     active_layer_changed = Signal(Layer)
@@ -117,6 +121,8 @@ class ImageStack(QObject):
         """Initializes the image stack with an empty initial layer."""
         super().__init__()
         self._size = image_size
+        self._document_id = 0
+        self._next_document_id = 1
         self._min_generation_area_size = min_generation_area_size
         self._max_generation_area_size = max_generation_area_size
         self._generation_area = QRect(0, 0, generation_area_size.width(), generation_area_size.height())
@@ -304,6 +310,25 @@ class ImageStack(QObject):
         if not QRect(QPoint(0, 0), new_size).contains(self._generation_area):
             self._set_generation_area_internal(self._generation_area)
         self.size_changed.emit(self.size)
+
+    @property
+    def document_id(self) -> int:
+        """Identifies the open document. Each load assigns a new id, and undoing the load restores the previous one.
+
+        Per-document state outside the image stack records this id and checks it, or listens to `document_changed`.
+        A same-size load emits no `size_changed`.
+        """
+        return self._document_id
+
+    def _claim_document_id(self) -> tuple[int, int]:
+        """Returns the current document id and a new one for a load to switch to."""
+        new_id = self._next_document_id
+        self._next_document_id += 1
+        return self._document_id, new_id
+
+    def _set_document_id(self, document_id: int) -> None:
+        self._document_id = document_id
+        self.document_changed.emit(document_id)
 
     @property
     def width(self) -> int:
@@ -1438,6 +1463,8 @@ class ImageStack(QObject):
         else:
             new_active_id = self._layer_stack.id
 
+        old_document_id, new_document_id = self._claim_document_id()
+
         @self._with_batch_content_update
         def _load(loaded=layer_stack, size=new_size, next_active_id=new_active_id):
             self.selection_layer.clear(False)
@@ -1459,6 +1486,7 @@ class ImageStack(QObject):
             assert active_layer is not None, f'failed to find layer {next_active_id}'
             self._active_layer_id = next_active_id
             self.active_layer_changed.emit(active_layer)
+            self._set_document_id(new_document_id)
 
         @self._with_batch_content_update
         def _undo_load(selection_state=saved_selection_state, stack_state=saved_state, size=old_size,
@@ -1473,6 +1501,7 @@ class ImageStack(QObject):
             self._active_layer_id = active
             active_layer = self._layer_stack.get_layer_by_id(self._active_layer_id)
             self.active_layer_changed.emit(active_layer)
+            self._set_document_id(old_document_id)
 
         UndoStack().commit_action(_load, _undo_load, 'ImageStack.load_layer_stack')
 
@@ -1495,6 +1524,7 @@ class ImageStack(QObject):
         gen_area = QRect(self._generation_area)
         new_gen_area = self._get_closest_valid_generation_area(gen_area, new_layer.transformed_bounds)
         last_active_id = self.active_layer_id
+        old_document_id, new_document_id = self._claim_document_id()
 
         @self._with_batch_content_update
         def _load(loaded=new_layer, gen_rect=new_gen_area, size=new_size):
@@ -1514,6 +1544,7 @@ class ImageStack(QObject):
             self._set_generation_area_internal(gen_rect)
             self._set_active_layer_internal(loaded)
             self.size = size
+            self._set_document_id(new_document_id)
 
         # noinspection PyDefaultArgument
         @self._with_batch_content_update
@@ -1528,6 +1559,7 @@ class ImageStack(QObject):
             self._set_generation_area_internal(gen_rect)
             self._set_active_layer_internal(active_id)
             self.size = size
+            self._set_document_id(old_document_id)
 
         UndoStack().commit_action(_load, _undo_load, 'ImageStack.set_image')
 
