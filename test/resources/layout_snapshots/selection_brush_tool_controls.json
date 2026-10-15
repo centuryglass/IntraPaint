@@ -16,8 +16,8 @@
       "squeezed: SelectionModeToggle/Label 'Replace' is 51x20, minimum 92x27",
       "squeezed: SelectionModeToggle/Label 'Intersect' is 51x20, minimum 99x27",
       "clipped: SelectionModeToggle/KeyHintLabel 'Alt' shows 28x21 of 28x23",
-      "squeezed: IntSliderSpinbox[1] is 52x30, minimum 72x30",
-      "squeezed: IntSliderSpinbox[1]/QSpinBox is 30x26, minimum 50x26"
+      "squeezed: IntSliderSpinbox is 52x30, minimum 72x30",
+      "squeezed: IntSliderSpinbox/QSpinBox is 30x26, minimum 50x26"
     ],
     "size": [
       149,
@@ -45,9 +45,9 @@
       "squeezed: KeyHintLabel '[' is 17x13, minimum 17x23",
       "squeezed: KeyHintLabel ']' is 16x13, minimum 16x23",
       "squeezed: QLabel 'Size:' is 28x13, minimum 28x17",
-      "squeezed: IntSliderSpinbox[1] is 202x13, minimum 72x30",
-      "squeezed: IntSliderSpinbox[1]/QSlider is 142x9, minimum 12x23",
-      "squeezed: IntSliderSpinbox[1]/QSpinBox is 50x9, minimum 50x26"
+      "squeezed: IntSliderSpinbox is 202x13, minimum 72x30",
+      "squeezed: IntSliderSpinbox/QSlider is 142x9, minimum 12x23",
+      "squeezed: IntSliderSpinbox/QSpinBox is 50x9, minimum 50x26"
     ],
     "size": [
       299,

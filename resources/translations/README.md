@@ -8,3 +8,5 @@ If anyone feels like translating IntraPaint, I'd love to add your translations t
 4. Go through all the entries in the file, and add translations.
 5. Save the file, and also select "Release" in the File menu to create a final .qm file.
 6. Create a pull release to add the new .ts and .qm files to the project, or just send the files to me. I'll test them and merge them into the main codebase.
+
+Option names in the settings and tool panels (for example the edit modes) are shown translated, but IntraPaint always saves the original English option, so translating them is safe.

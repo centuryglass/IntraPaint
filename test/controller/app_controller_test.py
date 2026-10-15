@@ -378,6 +378,14 @@ class TestRestorePreviousChoicesAction(IntraPaintTestCase):
         self.image_stack.size = QSize(8, 8)
         self.assertFalse(self._action().isEnabled())
 
+    def test_disabled_after_opening_a_same_size_image(self) -> None:
+        """Opening another image of the same size takes the previous image's batch off the menu."""
+        self._complete_a_generation()
+        self.window.set_image_selector_visible(False)
+        self.assertTrue(self._action().isEnabled())
+        self.image_stack.load_image(self._image(QColor(200, 100, 0)))
+        self.assertFalse(self._action().isEnabled())
+
     def test_disabled_outside_the_editing_state(self) -> None:
         """A stored batch does not make the action available in another application state."""
         self._complete_a_generation()

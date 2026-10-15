@@ -55,6 +55,11 @@ FLATTEN_ALPHA_SEARCH = 4
 FLATTEN_NEAR_OPAQUE_ALPHA = 250
 PASTE_LAYER_NAME = _tr('Paste layer')
 
+# `DEFAULT_LAYER_NAME_PATTERN` must match every name `DEFAULT_LAYER_NAME` formats:
+DEFAULT_LAYER_NAME = 'layer {number}'
+DEFAULT_LAYER_NAME_PATTERN = r'^layer (\d+)'
+FIRST_DEFAULT_LAYER_NUMBER = 1
+
 ERROR_TITLE_RESIZE_FAILED = _tr('Resizing image canvas failed')
 ERROR_TITLE_IMAGE_SCALE_FAILED = _tr('Image scaling failed')
 ERROR_MESSAGE_LOCK_CONFLICT_SINGULAR = _tr('Locked layer {layer_name} would be affected, unlock the layer '
@@ -104,6 +109,10 @@ class ImageStack(QObject):
     generation_area_bounds_changed = Signal(QRect)
     content_changed = Signal()
     size_changed = Signal(QSize)
+    document_changed = Signal()
+    """Emitted after `load_image` or `load_layer_stack` replaces the document, even at the same size.
+
+    State that belongs to one document, outside the image stack, clears itself here."""
     layer_added = Signal(Layer)
     layer_removed = Signal(Layer)
     active_layer_changed = Signal(Layer)
@@ -1419,14 +1428,8 @@ class ImageStack(QObject):
 
     def load_layer_stack(self, layer_stack: LayerGroup, new_size: QSize,
                          new_active_layer: Optional[Layer] = None) -> None:
-        """Loads a new image from layer data."""
+        """Replaces the document with new layer data, clearing the undo history and emitting `document_changed`."""
         assert not self._layer_stack.contains_recursive(layer_stack)
-        saved_state = self._layer_stack.save_state()
-        saved_selection_state = self.selection_layer.save_state()
-        old_size = self.size
-        old_layers = self.layers
-        old_layers.remove(self._layer_stack)
-        active_id = self.active_layer_id
         new_layers: list[Layer] = []
         while layer_stack.count > 0:
             new_layers.append(layer_stack.get_layer_by_index(0))
@@ -1439,97 +1442,72 @@ class ImageStack(QObject):
             new_active_id = self._layer_stack.id
 
         @self._with_batch_content_update
-        def _load(loaded=layer_stack, size=new_size, next_active_id=new_active_id):
-            self.selection_layer.clear(False)
-            self.selection_layer.clear_context_pins(False)
-            self.selection_layer.adjust_local_bounds(QRect(QPoint(), size), False)
-            self.selection_layer.set_transform(QTransform())
-            assert self.selection_layer.transformed_bounds.size() == new_size
-            self._active_layer_id = self._layer_stack.id
-            while self._layer_stack.count > 0:
-                self._remove_layer_internal(self._layer_stack.child_layers[0])
-            self._layer_stack.set_name(loaded.name)
-            self._layer_stack.set_visible(loaded.visible)
-            self._layer_stack.set_composition_mode(loaded.composition_mode)
-            self._layer_stack.set_opacity(loaded.opacity)
-            self.size = size
+        def _load():
+            self._clear_for_load(new_size)
+            self._layer_stack.set_name(layer_stack.name)
+            self._layer_stack.set_visible(layer_stack.visible)
+            self._layer_stack.set_composition_mode(layer_stack.composition_mode)
+            self._layer_stack.set_opacity(layer_stack.opacity)
+            self.size = new_size
             for new_layer in new_layers:
                 self._insert_layer_internal(new_layer, self._layer_stack, self._layer_stack.count)
-            active_layer = self._layer_stack.get_layer_by_id(next_active_id)
-            assert active_layer is not None, f'failed to find layer {next_active_id}'
-            self._active_layer_id = next_active_id
+            active_layer = self._layer_stack.get_layer_by_id(new_active_id)
+            assert active_layer is not None, f'failed to find layer {new_active_id}'
+            self._active_layer_id = new_active_id
             self.active_layer_changed.emit(active_layer)
 
-        @self._with_batch_content_update
-        def _undo_load(selection_state=saved_selection_state, stack_state=saved_state, size=old_size,
-                       active=active_id):
-            self.size = size
-            self.selection_layer.restore_state(selection_state)
-            self._active_layer_id = self._layer_stack.id
-            while self._layer_stack.count > 0:
-                self._remove_layer_internal(self._layer_stack.child_layers[0])
-            self._layer_stack.restore_state(stack_state)
-            self._update_z_values()
-            self._active_layer_id = active
-            active_layer = self._layer_stack.get_layer_by_id(self._active_layer_id)
-            self.active_layer_changed.emit(active_layer)
-
-        UndoStack().commit_action(_load, _undo_load, 'ImageStack.load_layer_stack')
+        _load()
+        self._finish_load()
 
     def load_image(self, image_data: QImage):
         """
-        Loads a new image to be edited. This clears all layers, updates the image size, and inserts the image as a new
-        active layer.
+        Replaces the document with a single image layer, clearing the undo history and emitting `document_changed`.
 
         Parameters
         ----------
         image_data: QImage
             Layer stack size will be adjusted to match image data size.
         """
-        saved_state = self._layer_stack.save_state()
-        saved_selection_state = self.selection_layer.save_state()
-        old_size = self.size
-
-        new_layer = self._create_layer_internal(None, image_data)
+        # The replaced document's layers are still in the stack, so the default name would count past them:
+        new_layer = self._create_layer_internal(DEFAULT_LAYER_NAME.format(number=FIRST_DEFAULT_LAYER_NUMBER),
+                                                image_data)
         new_size = new_layer.size
-        gen_area = QRect(self._generation_area)
-        new_gen_area = self._get_closest_valid_generation_area(gen_area, new_layer.transformed_bounds)
-        last_active_id = self.active_layer_id
+        new_gen_area = self._get_closest_valid_generation_area(QRect(self._generation_area),
+                                                               new_layer.transformed_bounds)
 
         @self._with_batch_content_update
-        def _load(loaded=new_layer, gen_rect=new_gen_area, size=new_size):
-            self.selection_layer.clear(False)
-            self.selection_layer.clear_context_pins(False)
-            self.selection_layer.adjust_local_bounds(QRect(QPoint(), size), False)
-            self.selection_layer.set_transform(QTransform())
-            assert self.selection_layer.transformed_bounds.size() == new_size
-            self._active_layer_id = self._layer_stack.id
-            while self._layer_stack.count > 0:
-                self._remove_layer_internal(self._layer_stack.child_layers[0])
+        def _load():
+            self._clear_for_load(new_size)
             self._layer_stack.set_visible(True)
             self._layer_stack.set_opacity(1.0)
             self._layer_stack.set_composition_mode(CompositeMode.NORMAL)
             self._insert_layer_internal(new_layer, self._layer_stack, 0)
             assert self.has_image
-            self._set_generation_area_internal(gen_rect)
-            self._set_active_layer_internal(loaded)
-            self.size = size
+            self._set_generation_area_internal(new_gen_area)
+            self._set_active_layer_internal(new_layer)
+            self.size = new_size
 
-        # noinspection PyDefaultArgument
-        @self._with_batch_content_update
-        def _undo_load(unloaded=new_layer, state=saved_state, selection_state=saved_selection_state, gen_rect=gen_area,
-                       size=old_size, active_id=last_active_id):
-            assert self.count == 1, f'Unexpected layer count {self.count} when reversing image load!'
-            self._remove_layer_internal(unloaded)
-            self._active_layer_id = self._layer_stack.id
-            self._layer_stack.restore_state(state)
-            self._update_z_values()
-            self.selection_layer.restore_state(selection_state)
-            self._set_generation_area_internal(gen_rect)
-            self._set_active_layer_internal(active_id)
-            self.size = size
+        _load()
+        self._finish_load()
 
-        UndoStack().commit_action(_load, _undo_load, 'ImageStack.set_image')
+    def _clear_for_load(self, new_size: QSize) -> None:
+        """Removes every layer and resets the selection layer to cover `new_size`."""
+        self.selection_layer.clear(False)
+        self.selection_layer.clear_context_pins(False)
+        self.selection_layer.adjust_local_bounds(QRect(QPoint(), new_size), False)
+        self.selection_layer.set_transform(QTransform())
+        assert self.selection_layer.transformed_bounds.size() == new_size
+        self._active_layer_id = self._layer_stack.id
+        while self._layer_stack.count > 0:
+            self._remove_layer_internal(self._layer_stack.child_layers[0])
+
+    def _finish_load(self) -> None:
+        """Clears the undo history, which holds actions on the replaced document, and emits `document_changed`.
+
+        `UndoStack.clear` asserts that no undo group is open, so a load can't run inside `UndoStack.combining_actions`.
+        """
+        UndoStack().clear()
+        self.document_changed.emit()
 
     def flush_render(self) -> None:
         """Runs every scheduled layer group render and content_changed emission now, without waiting on the event
@@ -1557,13 +1535,14 @@ class ImageStack(QObject):
                 self._trigger_content_render()
 
     def _get_default_new_layer_name(self) -> str:
-        default_name_pattern = r'^layer (\d+)'
-        max_missing_layer = 0
+        """Returns "layer N", numbered one past the highest default-named layer, starting at
+        `FIRST_DEFAULT_LAYER_NUMBER`."""
+        next_number = FIRST_DEFAULT_LAYER_NUMBER
         for layer in self.all_layers():
-            match = re.match(default_name_pattern, layer.name)
+            match = re.match(DEFAULT_LAYER_NAME_PATTERN, layer.name)
             if match:
-                max_missing_layer = max(max_missing_layer, int(match.group(1)) + 1)
-        return f'layer {max_missing_layer}'
+                next_number = max(next_number, int(match.group(1)) + 1)
+        return DEFAULT_LAYER_NAME.format(number=next_number)
 
     def _get_new_layer_placement(self, layer_parent: Optional[LayerGroup] = None) -> tuple[LayerGroup, int]:
         """Default layer placement:

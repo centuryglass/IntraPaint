@@ -32,6 +32,7 @@ class ReactiveLayoutWidgetTest(IntraPaintTestCase):
         return lambda: self.activations.append(name)
 
     def _add_narrow_and_wide(self) -> None:
+        self.widget.add_default_layout_mode(self._setup_fn('default'))
         self.widget.add_layout_mode('narrow', self._setup_fn('narrow'), None, NARROW_MAX)
         self.widget.add_layout_mode('wide', self._setup_fn('wide'), WIDE_MIN, None)
 
@@ -59,28 +60,28 @@ class ReactiveLayoutWidgetTest(IntraPaintTestCase):
 
     def test_default_mode_covers_gaps(self) -> None:
         """When no sized mode is in range, the default mode activates."""
-        self.widget.add_layout_mode('small', self._setup_fn('small'), None, QSize(150, 150))
         self.widget.add_default_layout_mode(self._setup_fn('default'))
+        self.widget.add_layout_mode('small', self._setup_fn('small'), None, QSize(150, 150))
         self.widget.resize(300, 300)
         self.assertEqual(self.activations, ['small', 'default'])
         self.widget.resize(100, 100)
         self.assertEqual(self.activations, ['small', 'default', 'small'])
 
-    def test_no_mode_in_range_keeps_last_mode(self) -> None:
-        """Without a default mode, a size outside every range keeps the last mode and logs an error."""
-        self.widget.add_layout_mode('small', self._setup_fn('small'), None, QSize(150, 150))
-        with self.assertLogs('src.ui.layout.reactive_layout_widget', level='ERROR'):
-            self.widget.resize(300, 300)
-        self.assertEqual(self.activations, ['small'])
+    def test_sized_mode_requires_default_mode(self) -> None:
+        """Adding a sized mode before the default mode raises."""
+        with self.assertRaises(RuntimeError):
+            self.widget.add_layout_mode('small', self._setup_fn('small'), None, QSize(150, 150))
 
     def test_overlapping_corner_is_rejected(self) -> None:
         """A mode whose minimum falls inside an existing mode's range raises."""
+        self.widget.add_default_layout_mode(self._setup_fn('default'))
         self.widget.add_layout_mode('narrow', self._setup_fn('narrow'), None, NARROW_MAX)
         with self.assertRaises(RuntimeError):
             self.widget.add_layout_mode('overlap', self._setup_fn('overlap'), QSize(150, 0), None)
 
     def test_mode_enclosing_another_is_rejected(self) -> None:
         """A mode whose range encloses an existing one overlaps it, though neither of its corners is inside."""
+        self.widget.add_default_layout_mode(self._setup_fn('default'))
         self.widget.add_layout_mode('middle', self._setup_fn('middle'), QSize(300, 300), QSize(400, 400))
         with self.assertRaises(RuntimeError):
             self.widget.add_layout_mode('outer', self._setup_fn('outer'), QSize(200, 200), QSize(500, 500))
@@ -88,6 +89,7 @@ class ReactiveLayoutWidgetTest(IntraPaintTestCase):
     def test_open_ended_mode_ignores_current_size_in_overlap_check(self) -> None:
         """An omitted bound defaults to the widest range, never to the widget's current size."""
         self.widget.resize(300, 300)
+        self.widget.add_default_layout_mode(self._setup_fn('default'))
         self.widget.add_layout_mode('wide', self._setup_fn('wide'), WIDE_MIN, None)
         self.widget.add_layout_mode('narrow', self._setup_fn('narrow'), None, NARROW_MAX)
         self.assertEqual(self.activations, ['wide'])
