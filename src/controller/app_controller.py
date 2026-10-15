@@ -551,6 +551,9 @@ class AppController(MenuBuilder):
 
         AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
         app.exec()
+        # Saves scheduled in the last moments before exit never got an event loop to run them:
+        for config in (AppConfig(), Cache(), KeyConfig()):
+            config.save_pending_changes()
 
     def load_image_generator(self, generator: ImageGenerator) -> None:
         """Load an image generator, updating controls and settings."""
