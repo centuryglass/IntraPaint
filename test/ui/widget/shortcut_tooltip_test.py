@@ -4,7 +4,8 @@ import sys
 from PySide6.QtWidgets import QApplication, QToolButton
 
 from src.config.key_config import KeyConfig
-from src.ui.widget.shortcut_tooltip import set_shortcut_tooltip, shortcut_tooltip_text
+from src.ui.widget.shortcut_tooltip import set_shortcut_tooltip, set_step_shortcut_tooltip, shortcut_tooltip_text
+from src.util.visual.text_drawing_utils import get_key_display_string
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -37,3 +38,19 @@ class ShortcutTooltipTest(IntraPaintTestCase):
         self.assertEqual(button.toolTip(), 'Merge down (⌃⎇K)')
         KeyConfig().set(key, '')
         self.assertEqual(button.toolTip(), 'Merge down')
+
+    def test_step_keys_tooltip(self) -> None:
+        """A stepped input lists both step keys, drops an unbound one, and follows rebinding."""
+        decrease, increase = KeyConfig.PAN_LEFT, KeyConfig.PAN_RIGHT
+        button = QToolButton()
+        set_step_shortcut_tooltip(button, 'Size', decrease, increase)
+        both = (KeyConfig().get(decrease), KeyConfig().get(increase))
+        self.assertEqual(button.toolTip(), 'Size (' + ' / '.join(get_key_display_string(keys, rich_text=False)
+                                                                  for keys in both) + ')')
+        KeyConfig().set(increase, '')
+        self.assertEqual(button.toolTip(),
+                         f'Size ({get_key_display_string(both[0], rich_text=False)})')
+        KeyConfig().set(decrease, '')
+        self.assertEqual(button.toolTip(), 'Size')
+        set_step_shortcut_tooltip(button, 'Plain', None, None)
+        self.assertEqual(button.toolTip(), 'Plain')
