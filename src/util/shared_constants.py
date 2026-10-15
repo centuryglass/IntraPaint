@@ -40,10 +40,11 @@ FLOAT_MIN = -9999999.0
 FLOAT_MAX = 9999999.0
 MAX_WIDGET_SIZE = 16777215
 
-# Editing modes:
-EDIT_MODE_INPAINT = _tr('Inpaint')
-EDIT_MODE_TXT2IMG = _tr('Text to Image')
-EDIT_MODE_IMG2IMG = _tr('Image to Image')
+# Editing modes. These are the stored `Cache.EDIT_MODE` values, so they must match the options in
+# cache_value_definitions.json and must not be translated.
+EDIT_MODE_INPAINT = 'Inpaint'
+EDIT_MODE_TXT2IMG = 'Text to Image'
+EDIT_MODE_IMG2IMG = 'Image to Image'
 
 # Display text:
 BUTTON_TEXT_GENERATE = _tr('Generate')
