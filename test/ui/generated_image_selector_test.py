@@ -292,6 +292,20 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
         self.assertEqual(image.pixelColor(4, 4).alpha(), 255)
         self.assertEqual(image.pixelColor(40, 40).alpha(), 0)
 
+    def test_apply_clips_with_batch_paste_mask(self) -> None:
+        """An inpaint batch started with a paste mask applies options through it, not through the hard selection."""
+        select_rect(self.image_stack, QRect(QPoint(0, 0), QSize(16, 16)))
+        self.selector.start_new_options(_solid(QColor(0, 0, 0, 128)))
+        self._fill_batch()
+        select_rect(self.image_stack, QRect(QPoint(48, 48), QSize(16, 16)))
+
+        applied = Mock()
+        with patch.object(self.image_stack, 'set_generation_area_content', applied):
+            self.selector._insert_option_into_layer(1, self.image_stack.active_layer)
+        image = applied.call_args.args[0]
+        self.assertEqual(image.pixelColor(4, 4).alpha(), 128)
+        self.assertEqual(image.pixelColor(40, 40).alpha(), 128)
+
     def test_availability_signal_reports_each_change(self) -> None:
         """The signal reports when a batch becomes restorable, and again when it stops fitting the image."""
         emissions = self._record_availability()

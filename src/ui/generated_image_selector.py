@@ -135,14 +135,15 @@ class _OptionData:
 
     Options are applied with the batch's own mask, generation area and edit mode, so changing the selection or edit
     mode after generating doesn't change what an option inserts. `edit_mode` is the untranslated value `Cache.EDIT_MODE`
-    holds.
+    holds. `mask_image` is the generator's paste mask (`ImageGenerator.get_paste_mask`) when one is given, and the
+    selection mask otherwise.
     """
 
-    def __init__(self, image_stack: ImageStack) -> None:
+    def __init__(self, image_stack: ImageStack, paste_mask: Optional[QImage] = None) -> None:
         self.option_images: list[QImage] = [image_stack.qimage_generation_area_content()]
         self.generation_area = image_stack.generation_area
         self.selection_polys = image_stack.selection_layer.outline
-        self.mask_image = image_stack.selection_layer.mask_image
+        self.mask_image = paste_mask if paste_mask is not None else image_stack.selection_layer.mask_image
         self.edit_mode = Cache().get(Cache.EDIT_MODE)
         change_bounds = image_stack.selection_layer.get_selection_gen_area(True)
         if change_bounds is None or change_bounds == self.generation_area:
@@ -380,10 +381,13 @@ class GeneratedImageSelector(QWidget):
             self._page_top_label.setText(SELECTION_TITLE)
             self._status_label.setText(self._get_control_hint())
 
-    def start_new_options(self) -> None:
-        """Begins a batch: captures the current image content and shows placeholders for the images to come."""
+    def start_new_options(self, paste_mask: Optional[QImage] = None) -> None:
+        """Begins a batch: captures the current image content and shows placeholders for the images to come.
+
+        Inpainted options are clipped by paste_mask when they are applied, or by the selection if it is None.
+        """
         self._accepting_results = True
-        self._option_data = _OptionData(self._image_stack)
+        self._option_data = _OptionData(self._image_stack, paste_mask)
         self._rebuild_scene(include_loading_images=True)
 
     def archive_current_options(self) -> None:

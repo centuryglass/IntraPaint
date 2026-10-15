@@ -39,6 +39,7 @@ class SelectionLayerContextPinTest(IntraPaintTestCase):
         cache = Cache()
         cache.set(Cache.INPAINT_FULL_RES, True)
         cache.set(Cache.INPAINT_FULL_RES_PADDING, 0)
+        AppConfig().set(AppConfig.MASK_BLUR, 0)
         self.image_stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(1024, 1024))
         self.image_stack.generation_area = GENERATION_AREA
         self.selection_layer = self.image_stack.selection_layer
@@ -58,6 +59,19 @@ class SelectionLayerContextPinTest(IntraPaintTestCase):
         self._select(SELECTION_BOUNDS)
         self._select(QRect(400, 20, 10, 10))
         self.assertEqual(self.selection_layer.get_selection_bounds(), QRect(QPoint(150, 20), QPoint(409, 169)))
+
+    def test_crop_grows_to_fit_mask_blur_band(self) -> None:
+        """Padding below the blur band's width is raised to it, measured at the grown crop's scale."""
+        Cache().set(Cache.GENERATION_SIZE, QSize(100, 100))
+        AppConfig().set(AppConfig.MASK_BLUR, 4)  # Band reaches 10 generation px.
+        self._select(SELECTION_BOUNDS)
+        crop = self.selection_layer.get_selection_gen_area()
+        assert crop is not None
+        # The band is ceil(10 * crop width / 100) image pixels, and padding grows to match it.
+        margin = SELECTION_BOUNDS.left() - crop.left()
+        self.assertEqual(crop.width(), crop.height())
+        self.assertEqual(margin, 3)
+        self.assertLessEqual(-(-10 * crop.width() // 100), margin)
 
     def test_no_pins_crops_to_selection(self) -> None:
         """Without pins, a square selection inside a square area crops to the selection."""

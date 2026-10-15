@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt, Signal, SignalInstance
 from PySide6.QtWidgets import QSizePolicy, QLabel, QPushButton, \
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QComboBox
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.ink_style import set_primary_button
 from src.ui.input_fields.seed_value_spinbox import SeedValueSpinbox
@@ -77,10 +78,11 @@ class StableDiffusionPanel(GeneratorPanel):
 
         self._main_layout = QVBoxLayout(self._main_tab)
 
-        def _get_control_with_label(config_key: str, **kwargs) -> tuple[QLabel, DynamicFieldWidget]:
-            label = QLabel(cache.get_label(config_key), parent=self)
+        def _get_control_with_label(config_key: str, config: Cache | AppConfig = cache,
+                                    **kwargs) -> tuple[QLabel, DynamicFieldWidget]:
+            label = QLabel(config.get_label(config_key), parent=self)
             label.setWordWrap(True)
-            control = cache.get_control_widget(config_key, **kwargs)
+            control = config.get_control_widget(config_key, **kwargs)
             control.setParent(self)
             label.setToolTip(control.toolTip())
             label.setBuddy(control)
@@ -126,6 +128,7 @@ class StableDiffusionPanel(GeneratorPanel):
         self._full_res_checkbox.setText('')
         self._full_res_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
         self._padding_label, self._padding_slider = _get_control_with_label(Cache.INPAINT_FULL_RES_PADDING)
+        self._mask_blur_label, self._mask_blur_spinbox = _get_control_with_label(AppConfig.MASK_BLUR, AppConfig())
 
         self._seed_textbox = SeedValueSpinbox(Cache.SEED, Cache.LAST_SEED)
         self._seed_label = QLabel(Cache().get_label(Cache.SEED))
@@ -159,6 +162,8 @@ class StableDiffusionPanel(GeneratorPanel):
             self._denoising_strength_slider.setVisible(edit_mode != EDIT_MODE_TXT2IMG)
             self._full_res_label.setVisible(edit_mode == EDIT_MODE_INPAINT)
             self._full_res_checkbox.setVisible(edit_mode == EDIT_MODE_INPAINT)
+            self._mask_blur_label.setVisible(edit_mode == EDIT_MODE_INPAINT)
+            self._mask_blur_spinbox.setVisible(edit_mode == EDIT_MODE_INPAINT)
             self._padding_label.setVisible(edit_mode == EDIT_MODE_INPAINT and self._full_res_checkbox.isChecked())
             self._padding_slider.setVisible(edit_mode == EDIT_MODE_INPAINT and self._full_res_checkbox.isChecked())
             if self._masked_content_label is not None and self._masked_content_combobox is not None:
@@ -272,6 +277,7 @@ class StableDiffusionPanel(GeneratorPanel):
                                         (self._masked_content_label, self._masked_content_combobox),
                                         (self._full_res_label, self._full_res_checkbox),
                                         (self._padding_label, self._padding_slider),
+                                        (self._mask_blur_label, self._mask_blur_spinbox),
                                         (self._seed_label, self._seed_textbox),
                                         (self._last_seed_label, self._last_seed_textbox)):
                 if label is None or input_widget is None:
@@ -322,6 +328,7 @@ class StableDiffusionPanel(GeneratorPanel):
                                         (self._denoising_strength_label, self._denoising_strength_slider),
                                         (self._full_res_label, self._full_res_checkbox),
                                         (self._padding_label, self._padding_slider),
+                                        (self._mask_blur_label, self._mask_blur_spinbox),
                                         (self._seed_label, self._seed_textbox),
                                         (self._last_seed_label, self._last_seed_textbox)):
                 if input_widget is None:

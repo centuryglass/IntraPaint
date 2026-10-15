@@ -423,9 +423,12 @@ class MainWindow(QMainWindow):
             self._central_widget.removeWidget(self._image_selector)
         self._report_previous_options_available()
 
-    def show_generated_options(self) -> None:
-        """Shows the selection screen for a generation that is starting, with placeholders for the results."""
-        self._ensure_image_selector().start_new_options()
+    def show_generated_options(self, paste_mask: Optional[QImage] = None) -> None:
+        """Shows the selection screen for a generation that is starting, with placeholders for the results.
+
+        Inpainted results are clipped by paste_mask when applied, or by the selection if it is None.
+        """
+        self._ensure_image_selector().start_new_options(paste_mask)
         self.set_image_selector_visible(True)
 
     def can_restore_previous_options(self) -> bool:

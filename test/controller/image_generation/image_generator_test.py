@@ -159,6 +159,18 @@ class ImageGeneratorTest(IntraPaintTestCase):
         center = SELECTION_BOUNDS.center() - GENERATION_AREA.topLeft()
         self.assertEqual(preview.pixelColor(center), GENERATED_COLOR)
 
+    def test_inpaint_previews_and_selector_use_paste_mask(self) -> None:
+        """Previews blend into the source through `get_paste_mask`, and the selector gets the same mask to apply."""
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
+        paste_mask = _solid(GENERATION_AREA.size(), QColor(0, 0, 0, 0))
+        self.generator.get_paste_mask = MagicMock(return_value=paste_mask)  # type: ignore
+        self.generator.results = self._generated_images()
+        self.generator.start_and_manage_image_generation()
+        self.window.show_generated_options.assert_called_once_with(paste_mask)
+        center = SELECTION_BOUNDS.center() - GENERATION_AREA.topLeft()
+        # An empty paste mask keeps every source pixel, even inside the selection:
+        self.assertEqual(self._loaded_previews()[0].pixelColor(center), SOURCE_COLOR)
+
     def test_status_update_sets_seeds_and_progress(self) -> None:
         """Seed, subseed and progress entries update the cache and the loading message."""
         self.generator.status_updates = [{'seed': '1234', 'subseed': '56', 'progress': 'step 3'}]

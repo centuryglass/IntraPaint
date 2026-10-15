@@ -12,9 +12,11 @@ from sd_backend_client import AuthError, CONTROLNET_MODEL_NONE, ControlNetModel,
     ControlNetUnit, ControlTypeDef, GenerationError, GenerationHandle, GenerationProgress, GenerationResult, \
     GenerationStatus, PreprocessorParams, SDBackendError
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.image_generation.image_generator import ImageGenerator
+from src.controller.image_generation.mask_blur import blur_extent_in_image, grow_mask
 from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTROLNET_REUSE_IMAGE_CODE, \
     SavedControlNetUnit
 from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qimage, qimage_to_pil
@@ -413,6 +415,18 @@ class SDGenerator(ImageGenerator):
             transform = QTransform.fromScale(image_size.width()/gen_area.width(), image_size.height()/gen_area.height())
             bounds = map_rect_precise(bounds, transform).toAlignedRect()
         return bounds
+
+    def get_paste_mask(self) -> QImage:
+        """Returns the selection mask grown by the mask blur band's reach, still hard-edged.
+
+        Results come back already blended into the source through the blurred mask, so clipping them with a soft mask
+        would apply the blur twice. The reach is measured at the whole generation area's scale, the widest the backend
+        blurs at: the WebUI blurs the whole area before cropping, and a client-side crop is never larger.
+        """
+        reach_x, reach_y = blur_extent_in_image(AppConfig().get(AppConfig.MASK_BLUR),
+                                                self._image_stack.generation_area.size(),
+                                                Cache().get(Cache.GENERATION_SIZE))
+        return grow_mask(super().get_paste_mask(), reach_x, reach_y)
 
     def _scale_and_crop_gen_qimage(self, image: QImage) -> QImage:
         """Crops a generation area image (at area size or generation size) to the inpaint crop, then scales it to

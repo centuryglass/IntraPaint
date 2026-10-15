@@ -18,7 +18,7 @@ from src.undo_stack import UndoStack
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT
 from test.controller.image_generation.fake_sd_backend import image_to_base64_png
 from test.controller.image_generation.sd_generator_test_case import SdGeneratorTestCase, TEST_SEED, \
-    UPSCALE_SIZE, solid_image, CONTEXT_PIN, GENERATION_SIZE
+    UPSCALE_SIZE, solid_image, CONTEXT_PIN, GENERATION_SIZE, GENERATION_AREA, SELECTION_BOUNDS
 
 Endpoints = A1111Webservice.Endpoints
 
@@ -141,6 +141,17 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         self._set_canny_controlnet_unit()
         self._generate_and_check('inpaint_controlnet')
+
+    def test_paste_mask_covers_blur_reach(self) -> None:
+        """The paste mask is the selection grown by the blur band's reach at the generation area's scale, hard-edged."""
+        # Blur 4 reaches 10 generation px, ceil(10 * 300 / 512) = 6 image px:
+        mask = self.generator.get_paste_mask()
+        selection = SELECTION_BOUNDS.translated(-GENERATION_AREA.topLeft())
+        middle_y = selection.center().y()
+        self.assertEqual(mask.pixelColor(selection.left() - 6, middle_y).alpha(), 255)
+        self.assertEqual(mask.pixelColor(selection.left() - 7, middle_y).alpha(), 0)
+        self.assertEqual(mask.pixelColor(selection.center()).alpha(), 255)
+        self.assertEqual({mask.pixelColor(x, middle_y).alpha() for x in range(mask.width())}, {0, 255})
 
     def test_connect_enables_inpaint_options(self) -> None:
         """Connecting enables the inpainting crop and padding controls, and disconnecting disables them again."""
