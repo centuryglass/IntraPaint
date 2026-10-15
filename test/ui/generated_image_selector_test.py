@@ -167,23 +167,45 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
         with self.assertRaises(RuntimeError):
             self.selector.restore_previous_options()
 
-    def test_restore_returns_to_option_and_zoom_showing_at_close(self) -> None:
-        """Re-opening lands on the option, zoom state and manual view the batch closed with."""
+    def test_restore_starts_on_full_view(self) -> None:
+        """Re-opening shows every option unzoomed, whatever zoom state the batch closed with."""
         self._fill_batch()
         self.selector.toggle_zoom(2)
         self.selector._zoom_to_option(2, True)
-        view = self.selector._view
-        offset = view.offset - self.selector._base_option_offset
-        ratio = view.scene_scale / self.selector._base_option_scale
         self.selector.archive_current_options()
 
         self.selector.start_new_options()
-        self.assertFalse(self.selector._zoomed_in)
         self.selector.restore_previous_options()
-        self.assertTrue(self.selector._zoomed_in)
-        self.assertEqual(self.selector._zoom_index, 2)
-        self.assertAlmostEqual(self.selector._view.scene_scale / self.selector._base_option_scale, ratio, places=3)
-        self.assertEqual(self.selector._view.offset - self.selector._base_option_offset, offset)
+        self.assertFalse(self.selector._zoomed_in)
+        self.assertEqual(self.selector._zoom_index, 0)
+        self.assertEqual(self.selector._option_pos_offset, QPointF(0.0, 0.0))
+        self.assertEqual(self.selector._option_scale_ratio, 1.0)
+        for item in self.selector._option_items:
+            self.assertEqual(item.opacity(), 1.0)
+
+    def test_restore_reuses_option_items(self) -> None:
+        """Re-opening reuses the stored items for generated options, and only builds a new one for the first slot."""
+        self._fill_batch()
+        stored_items = list(self.selector._option_items)
+        self.selector.archive_current_options()
+        self.selector.start_new_options()
+
+        self.selector.restore_previous_options()
+        self.assertIsNot(self.selector._option_items[0], stored_items[0])
+        self.assertEqual(self.selector._option_items[1:], stored_items[1:])
+
+    def test_partial_batch_restores_without_placeholders(self) -> None:
+        """A batch closed before every image arrived re-opens with only the delivered images, under their labels."""
+        self.selector.add_image_option(_option_image(0), 0)
+        self.selector.add_image_option(_option_image(2), 2)
+        self.selector.toggle_zoom(OPTION_COUNT)  # A placeholder, dropped on archive.
+        self.selector.archive_current_options()
+
+        self.selector.restore_previous_options()
+        self.assertEqual([item.text for item in self.selector._option_items],
+                         [ORIGINAL_CONTENT_LABEL, LABEL_TEXT_IMAGE_OPTION.format(index=1),
+                          LABEL_TEXT_IMAGE_OPTION.format(index=3)])
+        self.assertEqual(self.selector._option_data.option_images[1:], [_option_image(0), _option_image(2)])
 
     def test_restore_shows_current_content_in_first_slot(self) -> None:
         """The first option of a re-opened batch is what is on the canvas now, not the batch's original."""
@@ -340,7 +362,7 @@ class GeneratedImageSelectorWindowTest(IntraPaintTestCase):
         self.assertTrue(self.window.can_restore_previous_options())
 
     def test_selecting_an_option_keeps_the_batch_reopenable(self) -> None:
-        """Applying an option stores the batch, and re-opening starts the comparison from what was applied."""
+        """Applying an option stores the batch, and re-opening shows the canvas it was applied to in the first slot."""
         select_rect(self.image_stack, QRect(QPoint(0, 0), QSize(16, 16)))
         self._run_completed_generation()
         self.selector._select_option_and_close(3)
@@ -348,8 +370,7 @@ class GeneratedImageSelectorWindowTest(IntraPaintTestCase):
         self.image_stack.flush_render()
 
         self.window.restore_previous_image_selection_options()
-        # Re-opening starts at the option that was applied, and its first slot is the canvas it was applied to:
-        self.assertEqual(self.selector._zoom_index, 3)
+        self.assertFalse(self.selector._zoomed_in)
         canvas = self.image_stack.qimage_generation_area_content()
         self.assertEqual(self.selector._option_items[0].full_image, canvas)
         # Option index 3 holds the image built for `_option_image(2)`, and its pixels reached the canvas inside the

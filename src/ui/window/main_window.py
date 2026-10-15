@@ -129,7 +129,7 @@ class MainWindow(QMainWindow):
     generate_signal = Signal()
     cancel_generation = Signal()
     previous_options_available = Signal(bool)
-    """Emitted when re-opening the last batch of generated options becomes possible or impossible."""
+    """Emitted when `can_restore_previous_options` changes."""
 
     def __init__(self, image_stack: ImageStack):
         """Initializes the main application window and sets up the default UI layout and menu options.
@@ -386,8 +386,8 @@ class MainWindow(QMainWindow):
     def set_image_selector_visible(self, visible: bool):
         """Shows or hides the generated image selection screen.
 
-        Which batch a showing displays is the caller's choice: `show_generated_options` starts a batch for a
-        generation that is beginning, and `restore_previous_image_selection_options` re-opens the stored batch.
+        Showing it displays whichever batch the selector holds. To pick the batch, call `show_generated_options` or
+        `restore_previous_image_selection_options` instead.
         """
         is_visible = self.is_image_selector_visible()
         if visible == is_visible:
@@ -400,8 +400,7 @@ class MainWindow(QMainWindow):
             self.installEventFilter(selector)
         else:
             assert self._image_selector is not None
-            # Covers hides that don't come from the selector's own select and cancel paths, such as a failed
-            # generation closing the screen: whatever was on show stays re-openable.
+            # Stores the batch for re-opening when the selector didn't close itself, as when a generation fails:
             self._image_selector.archive_current_options()
             AppStateTracker.set_app_state(APP_STATE_EDITING)
             self.removeEventFilter(self._image_selector)
@@ -415,23 +414,22 @@ class MainWindow(QMainWindow):
         self.set_image_selector_visible(True)
 
     def can_restore_previous_options(self) -> bool:
-        """Returns whether a stored batch of generated image options can be brought up again."""
+        """Returns whether the selection screen is hidden and has a stored batch it can show again."""
         if self._image_selector is None:
             return False
         return not self.is_image_selector_visible() and self._image_selector.can_restore_previous()
 
     def restore_previous_image_selection_options(self) -> None:
         """Re-opens the selection screen showing the last batch of generated options."""
-        # A stored batch means the selector already exists: it is the only place a batch is kept.
+        # Batches are only stored in the selector, so it exists if one is stored:
         assert self._image_selector is not None
         self._image_selector.restore_previous_options()
         self.set_image_selector_visible(True)
 
     def _report_previous_options_available(self, _available: Optional[bool] = None) -> None:
-        """Relays whether re-opening the last batch is possible, so menu enablement can follow it.
+        """Emits `previous_options_available` when `can_restore_previous_options` changes.
 
-        `_available` is the selector's answer, which doesn't know whether the selection screen is already showing, so
-        the window recomputes it from `can_restore_previous_options`.
+        `_available` is the selector's own value, which ignores whether the selection screen is showing.
         """
         available = self.can_restore_previous_options()
         if available != self._previous_options_available:
@@ -439,10 +437,9 @@ class MainWindow(QMainWindow):
             self.previous_options_available.emit(available)
 
     def load_sample_preview(self, image: QImage, idx: int) -> None:
-        """Adds an image to the generated image selection screen.
+        """Adds an image to the generated image selection screen, or drops it if the screen is hidden.
 
-        A result that arrives after the screen closed belongs to a run the user already left, and its batch no longer
-        has a slot for it, so it is dropped rather than written into whatever is showing now.
+        Closing the screen removes the batch's placeholders, so a result arriving after that has no slot to fill.
         """
         if self._image_selector is None:
             logger.error(f'Tried to load sample {idx} after sampleSelector was closed')

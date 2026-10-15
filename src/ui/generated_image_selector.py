@@ -131,12 +131,11 @@ VIEW_BACKGROUND = Qt.GlobalColor.black
 
 
 class _OptionData:
-    """One batch of generated options, with everything needed to apply or re-open them later.
+    """One batch of generated options, with the generation context needed to apply or re-open them later.
 
-    The batch carries the generation context it was made in, so applying an option after the selection, edit mode or
-    canvas changed still uses this batch's own mask and area. `Cache.EDIT_MODE` holds the raw option value the config
-    dropdown writes, and that is what `edit_mode` stores, so a batch means the same mode in every locale (issue #297
-    covers the comparisons made with translated constants).
+    Options are applied with the batch's own mask, generation area and edit mode, so changing the selection or edit
+    mode after generating doesn't change what an option inserts. `edit_mode` is the untranslated value `Cache.EDIT_MODE`
+    holds.
     """
 
     def __init__(self, image_stack: ImageStack) -> None:
@@ -147,17 +146,11 @@ class _OptionData:
         self.edit_mode = Cache().get(Cache.EDIT_MODE)
         change_bounds = image_stack.selection_layer.get_selection_gen_area(True)
         if change_bounds is None or change_bounds == self.generation_area:
-            # Nothing smaller than the whole generation area changed, so there is no sub-region to zoom to.
+            # The whole generation area changed, so "zoom to changes" has nothing smaller to zoom to.
             self.change_bounds: Optional[QRect] = None
         else:
-            # Option images are generation-area sized, so change bounds are stored relative to that area.
+            # Relative to the generation area, the coordinate space of the option images:
             self.change_bounds = change_bounds.translated(-self.generation_area.x(), -self.generation_area.y())
-
-        # View state showing when the batch's selector closed, restored when it is re-opened:
-        self.zoomed_in = False
-        self.zoom_index = 0
-        self.zoom_offset = QPointF(0.0, 0.0)
-        self.zoom_scale_ratio = 1.0
 
         self.loading_image = QImage(self.generation_area.size(),
                                      QImage.Format.Format_ARGB32_Premultiplied)
@@ -170,24 +163,26 @@ class _OptionData:
         painter.end()
 
     def has_results(self) -> bool:
-        """Whether at least one generated image arrived for this batch."""
-        return any(image != self.loading_image for image in self.option_images[1:])
+        """Returns whether at least one generated image has replaced its loading placeholder."""
+        return any(image is not self.loading_image for image in self.option_images[1:])
 
-    def discard_placeholders(self) -> None:
-        """Drops loading placeholders, keeping the batch's original content and every delivered image."""
-        self.option_images = [image for image in self.option_images if image != self.loading_image]
+    def discard_placeholders(self) -> list[int]:
+        """Removes loading placeholders from `option_images`, returning the indices of the images that remain."""
+        kept = [i for i, image in enumerate(self.option_images) if image is not self.loading_image]
+        self.option_images = [self.option_images[i] for i in kept]
+        return kept
 
 
 class GeneratedImageSelector(QWidget):
     """Shows all images from an image generation operation, allows the user to select one or discard all of them.
 
-    A completed batch is kept after the selector closes so `restore_previous_options` can bring it back; which batch a
-    showing displays is the caller's decision, made through `start_new_options` and `restore_previous_options`.
+    Closing the selector stores the batch it showed if any images arrived, and `restore_previous_options` shows it
+    again. Callers pick the batch before showing the selector, with `start_new_options` or `restore_previous_options`.
     """
 
     cancel_generation = Signal()
     previous_options_available = Signal(bool)
-    """Emitted when the stored batch becomes available or unavailable for re-opening."""
+    """Emitted when `can_restore_previous` changes."""
 
     def __init__(self,
                  image_stack: ImageStack,
@@ -196,10 +191,14 @@ class GeneratedImageSelector(QWidget):
         self._image_stack = image_stack
         self._option_data: _OptionData
         self._prev_options: Optional[_OptionData] = None
+        # Scene items for `_prev_options`, by option index. Re-opening reuses them, because building an item rescales
+        # its image.
+        self._prev_option_items: list['_ImageOption'] = []
         self._previous_options_available = False
-        # False while a completed, re-opened batch is showing: see `add_image_option`.
+        # False while a re-opened batch is showing, which has no placeholders left to fill:
         self._accepting_results = False
-        # The stored batch only fits while the image still contains its generation area:
+        # True once `archive_current_options` has stored the batch that is showing:
+        self._showing_archived = False
         image_stack.size_changed.connect(self._on_image_stack_resized)
 
         self._close_selector = close_selector
@@ -209,7 +208,7 @@ class GeneratedImageSelector(QWidget):
         self._zoomed_in = False
         self._zoom_to_changes = AppConfig().get(AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED)
         self._zoom_index = 0
-        # The region to zoom to when "zoom to changes" is on, from the batch showing; None hides the checkbox:
+        # The region "zoom to changes" zooms to in the batch showing, or None to hide that checkbox:
         self._change_bounds: Optional[QRect] = None
         self._last_scroll_time = time.time() * 1000
         self._toast_message: Optional[ToastMessageItem] = None
@@ -316,9 +315,17 @@ class GeneratedImageSelector(QWidget):
         self._button_bar_layout.addWidget(self._next_button)
         self.start_new_options()
 
+    def _rebuild_scene(self, include_loading_images: bool, reused_items: Optional[list['_ImageOption']] = None) -> None:
+        """Rebuilds the view's scene items, checkboxes and zoom state from the batch in `_option_data`.
 
-    def _rebuild_scene(self, include_loading_images: bool) -> None:
-        """Rebuilds the view's scene items, checkboxes and zoom state from the batch in `_option_data`."""
+        Parameters
+        ----------
+        include_loading_images : bool
+            Whether to add placeholders up to the expected batch size.
+        reused_items : list[_ImageOption], optional
+            Existing items for the batch's options, by index. An index without an item gets a new one.
+        """
+        self._showing_archived = False
         # Clear old scene:
         scene = self._view.scene()
         assert scene is not None
@@ -343,13 +350,15 @@ class GeneratedImageSelector(QWidget):
             self._change_zoom_checkbox.setVisible(False)
             self._change_bounds = None
 
-        # Create scene items for the batch. Stored option images are added directly instead of through
-        # add_image_option: the data already contains them, and add_image_option would assert on the length mismatch
-        # and append duplicates.
+        # Add an item for each image the batch already holds. `add_image_option` would also append the image to the
+        # batch, duplicating it.
         assert len(batch.option_images) > 0, 'option_data should always have an initial image!'
-        self._append_new_option(batch.option_images[0], ORIGINAL_CONTENT_LABEL)
-        for i in range(1, len(batch.option_images)):
-            self._append_new_option(batch.option_images[i], LABEL_TEXT_IMAGE_OPTION.format(index=i))
+        for i, image in enumerate(batch.option_images):
+            if reused_items is not None and i < len(reused_items):
+                self._add_option_item(reused_items[i])
+            else:
+                label = ORIGINAL_CONTENT_LABEL if i == 0 else LABEL_TEXT_IMAGE_OPTION.format(index=i)
+                self._add_option_item(_ImageOption(image, label))
 
         if include_loading_images:
             cache = Cache()
@@ -357,16 +366,13 @@ class GeneratedImageSelector(QWidget):
             for i in range(len(self._option_items), expected_count + 1):
                 self.add_image_option(batch.loading_image, i - 1)
 
-        self._zoom_index = batch.zoom_index
-        self._option_pos_offset = QPointF(batch.zoom_offset)
-        self._option_scale_ratio = batch.zoom_scale_ratio
+        # Every showing starts on the full view of all options:
+        self._zoom_index = 0
+        self._clear_manual_view()
         self._zoomed_in = False
         self._apply_ideal_image_arrangement()
         if TIMELAPSE_MODE_FLAG in sys.argv:
             self._zoom_to_option(0)
-        elif batch.zoomed_in:
-            self._zoomed_in = True
-            self._zoom_to_option(self._zoom_index, True)
         else:
             self._view.reset_scale()
             self._page_top_label.setText(SELECTION_TITLE)
@@ -379,41 +385,40 @@ class GeneratedImageSelector(QWidget):
         self._rebuild_scene(include_loading_images=True)
 
     def archive_current_options(self) -> None:
-        """Keeps the batch that is showing, so it can be re-opened after the selector closes.
+        """Stores the batch that is showing for `restore_previous_options`, if any of its images arrived.
 
-        Archiving twice stores the same batch: the selector's own close paths and `MainWindow`'s hide path both call
-        this, and neither needs to know whether the other already did.
+        Only the first call for each showing stores anything, so every path that closes the selector can call it.
         """
         batch = self._option_data
-        if batch.has_results():
-            batch.discard_placeholders()
-            batch.zoomed_in = self._zoomed_in
-            batch.zoom_index = self._zoom_index
-            batch.zoom_offset = QPointF(self._option_pos_offset)
-            batch.zoom_scale_ratio = self._option_scale_ratio
+        if not self._showing_archived and batch.has_results():
+            # `_option_items` still matches `option_images` index for index until the placeholders are dropped:
+            kept = batch.discard_placeholders()
+            self._prev_option_items = [self._option_items[i] for i in kept]
             self._prev_options = batch
+            self._showing_archived = True
         self._report_previous_options_available()
 
     def can_restore_previous(self) -> bool:
-        """Return whether a completed batch is stored and still fits within the image."""
+        """Returns whether a batch is stored and its generation area is still within the image."""
         if self._prev_options is None:
             return False
         return self._image_stack.bounds.contains(self._prev_options.generation_area)
 
     def restore_previous_options(self) -> None:
-        """Re-opens the stored batch, at the option and zoom state that were showing when the selector closed."""
+        """Shows the stored batch again."""
         if not self.can_restore_previous():
             raise RuntimeError('No previous options found!')
         batch = self._prev_options
         assert batch is not None
         self._accepting_results = False
-        # The first slot shows what is on the canvas now, so stepping to it compares each option with current content:
+        # The first option shows the current canvas content, so each option can be compared with it:
         batch.option_images[0] = self._image_stack.qimage_generation_area_content()
+        self._prev_option_items[0] = _ImageOption(batch.option_images[0], ORIGINAL_CONTENT_LABEL)
         self._option_data = batch
-        self._rebuild_scene(include_loading_images=False)
+        self._rebuild_scene(include_loading_images=False, reused_items=self._prev_option_items)
 
     def _on_image_stack_resized(self, _size: QSize) -> None:
-        """A resize can move the stored batch's generation area off the image, changing what can be re-opened."""
+        """Re-checks `can_restore_previous`, which a resize can change."""
         self._report_previous_options_available()
 
     def _report_previous_options_available(self) -> None:
@@ -424,7 +429,7 @@ class GeneratedImageSelector(QWidget):
             self.previous_options_available.emit(available)
 
     def _close_and_archive(self) -> None:
-        """Keeps the batch that is showing, then hands control back to the window."""
+        """Stores the batch that is showing, then closes the selector."""
         self.archive_current_options()
         self._close_selector()
 
@@ -445,10 +450,11 @@ class GeneratedImageSelector(QWidget):
         outline.setVisible(AppConfig().get(AppConfig.SHOW_SELECTIONS_IN_GENERATION_OPTIONS))
         self._selections.append(outline)
 
-    def _append_new_option(self, option_image: QImage, option_text: str) -> None:
+    def _add_option_item(self, new_option: '_ImageOption') -> None:
+        """Adds an option's item to the end of the scene's option list, with its outlines."""
         scene = self._view.scene()
         assert scene is not None, 'Scene should have been created automatically and never cleared'
-        new_option = _ImageOption(option_image, option_text)
+        new_option.setOpacity(1.0)
         scene.addItem(new_option)
         self._option_items.append(new_option)
         idx = len(self._option_items) - 1
@@ -462,15 +468,15 @@ class GeneratedImageSelector(QWidget):
     def add_image_option(self, image: QImage, idx: int) -> None:
         """Add an image to the list of generated image options."""
         if not self._accepting_results:
-            # A re-opened batch is already complete; a late result from an older run has no place in it.
-            logger.info(f'Ignored late image option {idx}: the batch showing is not accepting results')
+            # A re-opened batch has no placeholders, so this is a late result from an earlier run.
+            logger.info(f'Ignored image option {idx}: the batch showing was re-opened')
             return
         if not 0 <= idx < len(self._option_items):
             raise IndexError(f'invalid index {idx}, max is {len(self._option_items)}')
         idx += 1  # Original image gets index zero
         assert len(self._option_data.option_images) == len(self._option_items)
         if idx == len(self._option_items):
-            self._append_new_option(image, LABEL_TEXT_IMAGE_OPTION.format(index=idx))
+            self._add_option_item(_ImageOption(image, LABEL_TEXT_IMAGE_OPTION.format(index=idx)))
             self._option_data.option_images.append(image)
         else:
             self._option_items[idx].image = image
@@ -652,8 +658,7 @@ class GeneratedImageSelector(QWidget):
             warning_message = WARNING_MESSAGE_1_LAYER_HIDDEN
         if warning_message is not None:
             warning_title = WARNING_TITLE_INSERT_FAILED.format(layer_name=layer.name)
-            new_layer_name = ORIGINAL_CONTENT_LABEL if option_index == 0 \
-                else LABEL_TEXT_IMAGE_OPTION.format(index=option_index)
+            new_layer_name = self._option_items[option_index].text
             warning_message += WARNING_MESSAGE_2_CREATED_NEW.format(new_layer_name=new_layer_name)
             layer = self._image_stack.create_layer(layer_name=new_layer_name)
             assert warning_message is not None
@@ -668,8 +673,6 @@ class GeneratedImageSelector(QWidget):
         if option_index != 0:
             layer = self._image_stack.active_layer
             self._insert_option_into_layer(option_index, layer)
-        # The applied option is what was showing: re-opening starts the comparison from it.
-        self._zoom_index = option_index
         AppStateTracker.set_app_state(APP_STATE_EDITING)
         self._close_and_archive()
 
@@ -814,7 +817,9 @@ class _ImageOption(QGraphicsPixmapItem):
 
     def __init__(self, image: QImage, label_text: str) -> None:
         super().__init__()
-        self._full_image = image
+        # None until `full_image` first needs it, when `_scaled_image` is upscaled to `_full_size`:
+        self._full_image: Optional[QImage] = None
+        self._full_size = image.size()
         self._scaled_image = image
         self._label_text = label_text
         self._transparency_pixmap = get_transparency_tile_pixmap(image.size())
@@ -832,26 +837,23 @@ class _ImageOption(QGraphicsPixmapItem):
 
     @image.setter
     def image(self, new_image: QImage) -> None:
-        cache = Cache()
-        config = AppConfig()
-        full_size = cache.get(Cache.GENERATION_SIZE)
-        final_size = cache.get(Cache.EDIT_SIZE)
-        if new_image.size() != full_size:
-            self._full_image = new_image
-            self._scaled_image = pil_image_scaling(new_image, final_size)
+        self._full_size = Cache().get(Cache.GENERATION_SIZE)
+        final_size = Cache().get(Cache.EDIT_SIZE)
         if new_image.size() == final_size:
-            self._full_image = pil_image_scaling(new_image, full_size)
             self._scaled_image = new_image
+            self._full_image = None
         else:
             self._full_image = new_image
             self._scaled_image = pil_image_scaling(new_image, final_size)
-        self.setPixmap(QPixmap.fromImage(self._full_image if config.get(AppConfig.SHOW_OPTIONS_FULL_RESOLUTION)
+        self.setPixmap(QPixmap.fromImage(self.full_image if AppConfig().get(AppConfig.SHOW_OPTIONS_FULL_RESOLUTION)
                                          else self._scaled_image))
         self.update()
 
     @property
     def full_image(self) -> QImage:
         """Return the largest available version of this option's image."""
+        if self._full_image is None:
+            self._full_image = pil_image_scaling(self._scaled_image, self._full_size)
         return self._full_image
 
     @property

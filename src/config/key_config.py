@@ -184,8 +184,6 @@ class KeyConfig(Config, metaclass=Singleton):
             error_message = '<b>' + KEY_CONFIG_ERROR_MESSAGE + '</b><br><ul>' + ''.join(lines) + '</ul>'
             show_warning_dialog(None, KEY_CONFIG_ERROR_TITLE, error_message, AppConfig.WARN_ON_KEY_ERROR)
 
-
-
     # DYNAMIC PROPERTIES:
     # Generate with `python scripts/dynamic_import_typing.py src/config/key_config.py`
 
