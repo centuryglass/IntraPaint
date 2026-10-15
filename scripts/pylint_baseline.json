@@ -1,6 +1,6 @@
 {
   "(repository)": {
-    "duplicate-code": 60
+    "duplicate-code": 57
   },
   "src/config/config.py": {
     "protected-access": 4
@@ -98,9 +98,6 @@
   },
   "src/ui/graphics_items/layer_graphics_item.py": {
     "unused-argument": 3
-  },
-  "src/ui/graphics_items/loading_spinner.py": {
-    "inconsistent-quotes": 1
   },
   "src/ui/graphics_items/pixmap_item.py": {
     "unused-import": 1
