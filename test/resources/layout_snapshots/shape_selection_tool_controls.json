@@ -2,63 +2,64 @@
   "minimum": {
     "problems": [],
     "size": [
-      316,
-      182
+      272,
+      226
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 140x43, minimum 126x70",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 140x17, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 140x16, minimum 126x30",
-      "squeezed: SelectionModeToggle/Label 'Add' is 69x20, minimum 92x27",
-      "squeezed: SelectionModeToggle/Label 'Subtract' is 69x20, minimum 122x27",
-      "squeezed: SelectionModeToggle/Label 'Replace' is 69x20, minimum 129x27",
-      "squeezed: SelectionModeToggle/Label 'Intersect' is 69x20, minimum 148x27",
-      "clipped: SelectionModeToggle/KeyHintLabel '\u2387'[0] shows 24x21 of 24x23",
-      "squeezed: DualToggle/Label 'Rectangle' is 55x29, minimum 106x29",
-      "squeezed: DualToggle/Label 'Ellipse' is 55x29, minimum 86x29",
-      "squeezed: CheckBox 'Fixed 1:1 aspect ratio' is 140x22, minimum 151x22"
+      "squeezed: ReflowingButtonGroup is 118x45, minimum 146x70",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (Ctrl+D)' is 118x18, minimum 122x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (Ctrl+A)' is 118x17, minimum 146x30",
+      "squeezed: SelectionModeToggle/Label 'Add' is 58x21, minimum 109x27",
+      "squeezed: SelectionModeToggle/Label 'Subtract' is 58x21, minimum 126x27",
+      "squeezed: SelectionModeToggle/Label 'Replace' is 58x21, minimum 94x29",
+      "squeezed: SelectionModeToggle/Label 'Intersect' is 58x21, minimum 101x29",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[0] shows 28x22 of 28x23",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Ctrl+Shift' shows 56x23 of 63x23",
+      "squeezed: DualToggle/Label 'Rectangle' is 44x29, minimum 106x29",
+      "squeezed: DualToggle/Label 'Ellipse' is 44x29, minimum 86x29",
+      "squeezed: CheckBox 'Fixed 1:1 aspect ratio' is 118x22, minimum 151x22"
     ],
     "size": [
-      158,
-      182
+      136,
+      186
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      316,
-      182
+      296,
+      186
     ]
   },
   "short": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 298x12, minimum 126x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 144x12, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 144x12, minimum 126x30",
-      "squeezed: SelectionModeToggle/Label 'Add' is 148x5, minimum 92x27",
-      "squeezed: SelectionModeToggle/Label 'Subtract' is 148x5, minimum 122x27",
-      "squeezed: SelectionModeToggle/Label 'Replace' is 148x5, minimum 129x27",
-      "squeezed: SelectionModeToggle/Label 'Intersect' is 148x5, minimum 148x27",
-      "clipped: SelectionModeToggle/KeyHintLabel '\u2387'[0] shows 24x12 of 24x23",
-      "clipped: SelectionModeToggle/KeyHintLabel '\u2303+\u21e7' shows 35x12 of 35x23",
-      "clipped: SelectionModeToggle/KeyHintLabel '\u2387'[1] shows 24x12 of 24x23",
-      "clipped: SelectionModeToggle/KeyHintLabel '\u21e7'[1] shows 21x12 of 21x23",
-      "squeezed: DualToggle/Label 'Rectangle' is 134x12, minimum 106x29",
-      "squeezed: DualToggle/Label 'Ellipse' is 134x12, minimum 86x29",
-      "squeezed: KeyHintLabel 'Q' is 21x12, minimum 21x23",
-      "squeezed: CheckBox 'Fixed 1:1 aspect ratio' is 298x11, minimum 151x22"
+      "squeezed: ReflowingButtonGroup is 278x17, minimum 146x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (Ctrl+D)' is 122x17, minimum 122x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (Ctrl+A)' is 146x17, minimum 146x30",
+      "squeezed: SelectionModeToggle/Label 'Add' is 138x7, minimum 109x27",
+      "squeezed: SelectionModeToggle/Label 'Subtract' is 138x7, minimum 126x27",
+      "squeezed: SelectionModeToggle/Label 'Replace' is 138x7, minimum 94x29",
+      "squeezed: SelectionModeToggle/Label 'Intersect' is 138x7, minimum 101x29",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[0] shows 28x15 of 28x23",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Ctrl+Shift' shows 63x16 of 63x23",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[1] shows 28x16 of 28x23",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Shift'[1] shows 38x16 of 38x23",
+      "squeezed: DualToggle/Label 'Rectangle' is 124x17, minimum 106x29",
+      "squeezed: DualToggle/Label 'Ellipse' is 124x17, minimum 86x29",
+      "squeezed: KeyHintLabel 'Q' is 21x17, minimum 21x23",
+      "squeezed: CheckBox 'Fixed 1:1 aspect ratio' is 278x17, minimum 151x22"
     ],
     "size": [
-      316,
-      91
+      296,
+      113
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      316,
+      296,
       1200
     ]
   },
@@ -66,7 +67,7 @@
     "problems": [],
     "size": [
       1600,
-      182
+      186
     ]
   }
 }

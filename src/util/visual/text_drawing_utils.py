@@ -122,6 +122,12 @@ def draw_text_path(path: QPainterPath, painter: QPainter, text_color: Optional[Q
     painter.restore()
 
 
+def _keycap_height() -> int:
+    """Returns the height of the keycaps `rich_text_key_hint` draws, depth edge included. Mouse hint images take this
+       height, so they line up with the keycaps."""
+    return keycap_size(find_text_size('X', keycap_font(QApplication.font()), exact=False)).height()
+
+
 def rich_text_key_hint(key_str: str) -> str:
     """Returns an inline image of a single keycap labeled `key_str`, drawn in the application palette's colors."""
     palette = QApplication.palette()
@@ -168,43 +174,37 @@ def rich_text_code_block(code_string: str) -> str:
 
 def left_button_hint_text() -> str:
     """Returns a rich-text inline image representing the left mouse button."""
-    return palette_rich_text_image(ICON_LMB)
+    return palette_rich_text_image(ICON_LMB, _keycap_height())
 
 
 def middle_button_hint_text() -> str:
     """Returns a rich-text inline image representing the middle mouse button."""
-    return palette_rich_text_image(ICON_MMB)
+    return palette_rich_text_image(ICON_MMB, _keycap_height())
 
 
 def right_button_hint_text() -> str:
     """Returns a rich-text inline image representing the right mouse button."""
-    return palette_rich_text_image(ICON_RMB)
+    return palette_rich_text_image(ICON_RMB, _keycap_height())
 
 
 def vertical_scroll_hint_text() -> str:
     """Returns a rich-text inline image representing scroll wheel vertical scrolling."""
-    return palette_rich_text_image(ICON_V_SCROLL)
+    return palette_rich_text_image(ICON_V_SCROLL, _keycap_height())
 
 
 def horizontal_scroll_hint_text() -> str:
     """Returns a rich-text inline image representing scroll wheel horizontal scrolling."""
-    return palette_rich_text_image(ICON_H_SCROLL)
+    return palette_rich_text_image(ICON_H_SCROLL, _keycap_height())
 
 
 def get_key_display_string(keys: QKeySequence | Qt.Key | int | str, rich_text: bool = True) -> str:
-    """Creates a display string representing a set of keys, replacing common symbols with appropriate characters."""
+    """Creates a display string representing a set of keys, replacing Meta and navigation and editing key names with
+       symbols. Other modifier names stay as text."""
     if isinstance(keys, (Qt.Key, int)):
         keys = QKeySequence(keys)
     text = keys if isinstance(keys, str) else keys.toString()
     symbol_map = {
-        'Ctrl+': '⌃',
-        'Ctrl': '⌃',
-        'Alt+': '⎇',
-        'Alt': '⎇',
-        'Meta+': '⌘',
         'Meta': '⌘',
-        'Shift+': '⇧',
-        'Shift': '⇧',
         'Enter': '⏎',
         'Del': '⌫',
         'Home': '⇱',

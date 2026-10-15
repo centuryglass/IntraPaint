@@ -3,11 +3,13 @@
 Glyph metrics depend on the fonts installed, so these tests compare measurements with each other, never with fixed
 pixel sizes.
 """
+import re
+
 from PySide6.QtCore import QRect, QRectF, QSize, QMargins, Qt
-from PySide6.QtGui import QFont, QKeySequence
+from PySide6.QtGui import QFont, QImage, QKeySequence
 
 from src.util.visual.text_drawing_utils import find_text_size, max_font_size, MAX_FONT_PT, create_text_path, \
-    get_key_display_string, left_button_hint_text, ICON_LMB
+    get_key_display_string, left_button_hint_text, rich_text_key_hint, ICON_LMB
 from src.util.visual.palette_icon import palette_rich_text_image
 from test.base_test_case import IntraPaintTestCase
 
@@ -16,6 +18,12 @@ def _font(point_size: int = 12) -> QFont:
     font = QFont()
     font.setPointSize(point_size)
     return font
+
+
+def _image_source(rich_text: str) -> str:
+    match = re.search(r'src="([^"]*)"', rich_text)
+    assert match is not None
+    return match.group(1)
 
 
 def _fits(size: QSize, bounds: QSize) -> bool:
@@ -120,13 +128,17 @@ class TestTextDrawingUtils(IntraPaintTestCase):
         self.assertAlmostEqual(vertical.center().y(), QRectF(bounds).center().y(), delta=1)
 
     def test_key_display_string_symbols(self) -> None:
-        """Modifier and navigation key names become symbols, from strings, key codes and key sequences."""
-        self.assertEqual(get_key_display_string('Ctrl+Shift+PgDown', rich_text=False), '⌃⇧⇟')
-        self.assertEqual(get_key_display_string('Alt+Meta+Enter', rich_text=False), '⎇⌘⏎')
+        """Meta and navigation key names become symbols and other modifiers keep their names, from strings, key codes
+           and key sequences."""
+        self.assertEqual(get_key_display_string('Ctrl+Shift+PgDown', rich_text=False), 'Ctrl+Shift+⇟')
+        self.assertEqual(get_key_display_string('Alt+Meta+Enter', rich_text=False), 'Alt+⌘+⏎')
         self.assertEqual(get_key_display_string(Qt.Key.Key_Delete, rich_text=False), '⌫')
-        self.assertEqual(get_key_display_string(QKeySequence('Ctrl+Up'), rich_text=False), '⌃↑')
+        self.assertEqual(get_key_display_string(QKeySequence('Ctrl+Up'), rich_text=False), 'Ctrl+↑')
         self.assertEqual(get_key_display_string('A', rich_text=False), 'A')
 
     def test_mouse_hint_text(self) -> None:
-        """Mouse hints are rich-text images of the matching icon, recolored for the palette."""
-        self.assertEqual(left_button_hint_text(), palette_rich_text_image(ICON_LMB))
+        """Mouse hints are rich-text images of the matching icon, recolored for the palette, as tall as a keycap."""
+        hint = left_button_hint_text()
+        image_height = QImage(_image_source(hint)).height()
+        self.assertEqual(hint, palette_rich_text_image(ICON_LMB, image_height))
+        self.assertEqual(image_height, QImage(_image_source(rich_text_key_hint('A'))).height())

@@ -8,9 +8,9 @@
   },
   "hd": {
     "problems": [
-      "squeezed: QStackedWidget is 1280x698, minimum 585x766",
-      "squeezed: QStackedWidget/QWidget is 1280x698, minimum 585x766",
-      "squeezed: QStackedWidget/QWidget/ImagePanel is 1280x656, minimum 585x724",
+      "squeezed: QStackedWidget is 1280x698, minimum 614x766",
+      "squeezed: QStackedWidget/QWidget is 1280x698, minimum 614x766",
+      "squeezed: QStackedWidget/QWidget/ImagePanel is 1280x656, minimum 614x724",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1] is 67x654, minimum 67x722",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar is 61x648, minimum 61x716",
       "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/Tab 'Image Generation' is 52x141, minimum 33x209"
@@ -23,7 +23,7 @@
   "minimum": {
     "problems": [],
     "size": [
-      585,
+      614,
       788
     ]
   },

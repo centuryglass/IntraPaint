@@ -1,7 +1,7 @@
 """Adds a configurable key binding to a widget's tooltip, and keeps it current when the binding changes.
 
-Rich tooltips show a title, a dim description line, any input hints, and the binding as one keycap per key, drawn by
-`rich_text_key_hint`. Plain tooltips append the binding in parentheses, formatted by `get_key_display_string`.
+Rich tooltips show a title, a dim description line, and the binding as one keycap per key, drawn by
+`rich_text_key_hints`. Plain tooltips append the binding in parentheses, formatted by `get_key_display_string`.
 """
 from typing import Callable, Optional
 
@@ -23,10 +23,10 @@ def shortcut_tooltip_text(text: str, keys: str) -> str:
     return f'{text} ({get_key_display_string(keys, rich_text=False)})'
 
 
-def rich_shortcut_tooltip_text(title: str, keys: str, description: str = '', input_hint: str = '') -> str:
-    """Returns rich tooltip text with `title`, then an optional dim `description` and `input_hint`, then the keycaps
-       for `keys`. Returns `title` unchanged if there is nothing else to show."""
-    if description == '' and input_hint == '' and keys == '':
+def rich_shortcut_tooltip_text(title: str, keys: str, description: str = '') -> str:
+    """Returns rich tooltip text with `title`, then an optional dim `description`, then the keycaps for `keys`.
+       Returns `title` unchanged if there is nothing else to show."""
+    if description == '' and keys == '':
         return title
     palette = QApplication.palette()
     text_color = palette.color(QPalette.ColorRole.ToolTipText)
@@ -35,9 +35,9 @@ def rich_shortcut_tooltip_text(title: str, keys: str, description: str = '', inp
                             for i in range(3))).name()
     escaped_title = title.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
     lines = [f'<b>{escaped_title}</b>']
-    for line in (description.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;'), input_hint):
-        if line != '':
-            lines.append(f'<span style="color: {dim};">{line}</span>')
+    if description != '':
+        escaped_description = description.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        lines.append(f'<span style="color: {dim};">{escaped_description}</span>')
     if keys != '':
         lines.append(rich_text_key_hints(keys))
     return '<br/>'.join(lines)
@@ -59,7 +59,7 @@ class _PaletteWatcher(QObject):
 
 
 def set_shortcut_tooltip(widget: QWidget, text: str, config_key: Optional[str], description: str = '',
-                         input_hint: Optional[Callable[[], str]] = None, rich_text: bool = True) -> None:
+                         rich_text: bool = True) -> None:
     """Sets a widget's tooltip to `text` plus the key binding stored at `config_key`, updating it if the binding
        or the application palette changes.
 
@@ -73,9 +73,6 @@ def set_shortcut_tooltip(widget: QWidget, text: str, config_key: Optional[str], 
         The `KeyConfig` key holding the binding to show, or None to show none.
     description: str, default=''
         A sentence describing the widget, shown under the title. Ignored if `rich_text` is false.
-    input_hint: Optional[Callable[[], str]], default=None
-        Returns rich text describing mouse and modifier input, shown under the description. Ignored if `rich_text`
-        is false.
     rich_text: bool, default=True
         Whether to draw the binding as keycaps instead of a parenthesized suffix.
     """
@@ -86,8 +83,7 @@ def set_shortcut_tooltip(widget: QWidget, text: str, config_key: Optional[str], 
 
     def _refresh() -> None:
         if rich_text:
-            hint = '' if input_hint is None else input_hint()
-            widget.setToolTip(rich_shortcut_tooltip_text(text, _keys(), description, hint))
+            widget.setToolTip(rich_shortcut_tooltip_text(text, _keys(), description))
         else:
             widget.setToolTip(shortcut_tooltip_text(text, _keys()))
 

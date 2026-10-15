@@ -16,7 +16,7 @@ class ShortcutTooltipTest(IntraPaintTestCase):
 
     def test_text_appends_formatted_keys(self) -> None:
         """The binding follows the text in parentheses, formatted like the key hints."""
-        self.assertEqual(shortcut_tooltip_text('Merge down', 'Ctrl+Shift+M'), 'Merge down (⌃⇧M)')
+        self.assertEqual(shortcut_tooltip_text('Merge down', 'Ctrl+Shift+M'), 'Merge down (Ctrl+Shift+M)')
 
     def test_text_without_keys(self) -> None:
         """An empty binding leaves the text unchanged."""
@@ -37,7 +37,7 @@ class ShortcutTooltipTest(IntraPaintTestCase):
         set_shortcut_tooltip(button, 'Merge down', key, rich_text=False)
         self.assertEqual(button.toolTip(), shortcut_tooltip_text('Merge down', KeyConfig().get(key)))
         KeyConfig().set(key, 'Ctrl+Alt+K')
-        self.assertEqual(button.toolTip(), 'Merge down (⌃⎇K)')
+        self.assertEqual(button.toolTip(), 'Merge down (Ctrl+Alt+K)')
         KeyConfig().set(key, '')
         self.assertEqual(button.toolTip(), 'Merge down')
 
@@ -56,12 +56,12 @@ class RichShortcutTooltipTest(IntraPaintTestCase):
         self.assertEqual(rich_shortcut_tooltip_text('T', 'A, B').count('<img'), 2)
         self.assertEqual(rich_shortcut_tooltip_text('T', 'Ctrl++').count('<img'), 2)
 
-    def test_description_and_hint(self) -> None:
-        """The description and input hint follow the title, and the text is escaped."""
-        text = rich_shortcut_tooltip_text('A & B', '', 'Does <it>.', 'hint')
+    def test_description(self) -> None:
+        """The description follows the title, and the text is escaped."""
+        text = rich_shortcut_tooltip_text('A & B', '', 'Does <it>.')
         self.assertIn('A &amp; B', text)
         self.assertIn('Does &lt;it&gt;.', text)
-        self.assertLess(text.index('Does'), text.index('hint'))
+        self.assertLess(text.index('A &amp; B'), text.index('Does'))
         self.assertEqual(text.count('<img'), 0)
 
     def test_only_title(self) -> None:

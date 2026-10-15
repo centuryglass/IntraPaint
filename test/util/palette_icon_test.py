@@ -1,8 +1,9 @@
 """Tests recoloring line icons for a dark palette."""
 import os
+import re
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QColor, QImage, QPalette
+from PySide6.QtGui import QColor, QImage, QImageReader, QPalette
 from PySide6.QtWidgets import QApplication
 
 from src.ui.theme import THEME_INK, apply_theme
@@ -12,6 +13,18 @@ from test.base_test_case import IntraPaintTestCase
 
 TEXT_COLOR = QColor('#e5e5e2')
 INK_COLOR = QColor('#0d0e10')
+
+
+def _image_source(rich_text: str) -> str:
+    match = re.search(r'src="([^"]*)"', rich_text)
+    assert match is not None
+    return match.group(1)
+
+
+def _natural_image(icon_path: str) -> QImage:
+    reader = QImageReader(icon_path)
+    reader.setScaledSize(reader.size())
+    return reader.read()
 
 
 def _image_with_pixels(*colors: QColor) -> QImage:
@@ -67,18 +80,30 @@ class PaletteIconTest(IntraPaintTestCase):
 
     def test_dark_palette_rich_text_writes_scaled_images(self) -> None:
         """Under a dark palette, rich-text images point to recolored files at 1x and 2x scale."""
-        rich_text = palette_rich_text_image(ICON_LMB)
-        self.assertNotEqual(rich_text, f'<img src="{ICON_LMB}"/>')
-        image_path = rich_text[len('<img src="'):-len('"/>')]
+        image_path = _image_source(palette_rich_text_image(ICON_LMB))
         base_path, extension = os.path.splitext(image_path)
         image = QImage(image_path)
         image_2x = QImage(f'{base_path}@2x{extension}')
         self.assertFalse(image.isNull())
+        self.assertEqual(image.size(), QImageReader(ICON_LMB).size())
         self.assertEqual(image_2x.size(), image.size() * 2)
+        self.assertNotEqual(image, _natural_image(ICON_LMB))
+
+    def test_rich_text_image_height(self) -> None:
+        """A requested height scales the image to that height, keeping the icon's aspect ratio."""
+        natural_size = QImageReader(ICON_LMB).size()
+        image = QImage(_image_source(palette_rich_text_image(ICON_LMB, natural_size.height() * 3)))
+        self.assertEqual(image.size(), natural_size * 3)
+
+    def test_rich_text_image_centered(self) -> None:
+        """Rich-text images are centered vertically on the surrounding text."""
+        self.assertIn('vertical-align: middle', palette_rich_text_image(ICON_LMB))
 
     def test_light_palette_loads_unchanged(self) -> None:
-        """Under a light palette, rich-text images use the original file."""
+        """Under a light palette, rich-text images keep the icon's original colors."""
         palette = QPalette(QApplication.palette())
         palette.setColor(QPalette.ColorRole.Window, QColor('#eff0f1'))
         QApplication.setPalette(palette)
-        self.assertEqual(palette_rich_text_image(ICON_LMB), f'<img src="{ICON_LMB}"/>')
+        image = QImage(_image_source(palette_rich_text_image(ICON_LMB)))
+        self.assertEqual(image.convertToFormat(QImage.Format.Format_ARGB32),
+                         _natural_image(ICON_LMB).convertToFormat(QImage.Format.Format_ARGB32))

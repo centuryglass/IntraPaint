@@ -3,52 +3,52 @@
     "problems": [],
     "size": [
       435,
-      184
+      188
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 199x43, minimum 126x70",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 199x17, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 199x16, minimum 126x30",
-      "squeezed: SelectionModeToggle/Label 'Add' is 98x20, minimum 92x27",
-      "squeezed: SelectionModeToggle/Label 'Subtract' is 98x20, minimum 122x27",
-      "squeezed: SelectionModeToggle/Label 'Replace' is 98x20, minimum 129x27",
-      "squeezed: SelectionModeToggle/Label 'Intersect' is 98x20, minimum 148x27",
-      "clipped: SelectionModeToggle/KeyHintLabel '\u2387'[0] shows 24x21 of 24x23",
+      "squeezed: ReflowingButtonGroup is 199x45, minimum 146x70",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (Ctrl+D)' is 199x18, minimum 122x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (Ctrl+A)' is 199x17, minimum 146x30",
+      "squeezed: SelectionModeToggle/Label 'Add' is 98x21, minimum 109x27",
+      "squeezed: SelectionModeToggle/Label 'Subtract' is 98x21, minimum 126x27",
+      "squeezed: SelectionModeToggle/Label 'Replace' is 98x21, minimum 94x29",
+      "squeezed: SelectionModeToggle/Label 'Intersect' is 98x21, minimum 101x29",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[0] shows 28x22 of 28x23",
       "squeezed: CheckBox 'Sample Merged' is 54x22, minimum 116x22",
       "squeezed: CheckBox 'Select all by color' is 53x22, minimum 128x22",
       "squeezed: CheckBox 'Fill selection holes' is 54x22, minimum 134x22"
     ],
     "size": [
       217,
-      184
+      188
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
       435,
-      184
+      188
     ]
   },
   "short": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 417x12, minimum 126x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 204x12, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 203x12, minimum 126x30",
-      "squeezed: SelectionModeToggle/Label 'Add' is 207x5, minimum 92x27",
-      "squeezed: SelectionModeToggle/Label 'Subtract' is 207x5, minimum 122x27",
-      "squeezed: SelectionModeToggle/Label 'Replace' is 207x5, minimum 129x27",
-      "squeezed: SelectionModeToggle/Label 'Intersect' is 207x5, minimum 148x27",
-      "clipped: SelectionModeToggle/KeyHintLabel '\u2387'[0] shows 24x12 of 24x23",
-      "clipped: SelectionModeToggle/KeyHintLabel '\u2303+\u21e7' shows 35x12 of 35x23",
-      "clipped: SelectionModeToggle/KeyHintLabel '\u2387'[1] shows 24x12 of 24x23",
-      "clipped: SelectionModeToggle/KeyHintLabel '\u21e7'[1] shows 21x12 of 21x23",
-      "squeezed: FloatSliderSpinbox is 417x12, minimum 180x30",
-      "squeezed: FloatSliderSpinbox/QLabel 'Color threshold:' is 94x8, minimum 94x17",
-      "squeezed: FloatSliderSpinbox/QSlider is 249x8, minimum 12x23",
-      "squeezed: FloatSliderSpinbox/QDoubleSpinBox is 62x8, minimum 62x26",
+      "squeezed: ReflowingButtonGroup is 417x13, minimum 146x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (Ctrl+D)' is 204x13, minimum 122x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (Ctrl+A)' is 203x13, minimum 146x30",
+      "squeezed: SelectionModeToggle/Label 'Add' is 207x5, minimum 109x27",
+      "squeezed: SelectionModeToggle/Label 'Subtract' is 207x5, minimum 126x27",
+      "squeezed: SelectionModeToggle/Label 'Replace' is 207x5, minimum 94x29",
+      "squeezed: SelectionModeToggle/Label 'Intersect' is 207x5, minimum 101x29",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[0] shows 28x12 of 28x23",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Ctrl+Shift' shows 63x12 of 63x23",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[1] shows 28x12 of 28x23",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Shift'[1] shows 38x12 of 38x23",
+      "squeezed: FloatSliderSpinbox is 417x13, minimum 180x30",
+      "squeezed: FloatSliderSpinbox/QLabel 'Color threshold:' is 94x9, minimum 94x17",
+      "squeezed: FloatSliderSpinbox/QSlider is 249x9, minimum 12x23",
+      "squeezed: FloatSliderSpinbox/QDoubleSpinBox is 62x9, minimum 62x26",
       "squeezed: KeyHintLabel 'Q' is 21x12, minimum 21x23",
       "squeezed: CheckBox 'Sample Merged' is 116x12, minimum 116x22",
       "squeezed: CheckBox 'Select all by color' is 128x12, minimum 128x22",
@@ -56,7 +56,7 @@
     ],
     "size": [
       435,
-      92
+      94
     ]
   },
   "tall": {
@@ -70,7 +70,7 @@
     "problems": [],
     "size": [
       1600,
-      184
+      188
     ]
   }
 }

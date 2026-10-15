@@ -2,62 +2,62 @@
   "minimum": {
     "problems": [],
     "size": [
-      291,
+      299,
       155
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 127x43, minimum 126x70",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 127x17, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 127x16, minimum 126x30",
-      "squeezed: SelectionModeToggle/Label 'Add' is 49x20, minimum 69x27",
-      "squeezed: SelectionModeToggle/Label 'Subtract' is 49x20, minimum 122x27",
-      "squeezed: SelectionModeToggle/Label 'Replace' is 49x20, minimum 92x27",
-      "squeezed: SelectionModeToggle/Label 'Intersect' is 49x20, minimum 99x27",
-      "clipped: SelectionModeToggle/KeyHintLabel '\u2387' shows 24x21 of 24x23",
-      "squeezed: IntSliderSpinbox[1] is 48x30, minimum 72x30",
-      "squeezed: IntSliderSpinbox[1]/QSpinBox is 26x26, minimum 50x26"
+      "squeezed: ReflowingButtonGroup is 131x43, minimum 146x70",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (Ctrl+D)' is 131x17, minimum 122x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (Ctrl+A)' is 131x16, minimum 146x30",
+      "squeezed: SelectionModeToggle/Label 'Add' is 51x20, minimum 69x27",
+      "squeezed: SelectionModeToggle/Label 'Subtract' is 51x20, minimum 126x27",
+      "squeezed: SelectionModeToggle/Label 'Replace' is 51x20, minimum 92x27",
+      "squeezed: SelectionModeToggle/Label 'Intersect' is 51x20, minimum 99x27",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Alt' shows 28x21 of 28x23",
+      "squeezed: IntSliderSpinbox[1] is 52x30, minimum 72x30",
+      "squeezed: IntSliderSpinbox[1]/QSpinBox is 30x26, minimum 50x26"
     ],
     "size": [
-      145,
+      149,
       155
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      291,
+      299,
       155
     ]
   },
   "short": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 273x13, minimum 126x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 132x13, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 131x13, minimum 126x30",
-      "squeezed: SelectionModeToggle/Label 'Add' is 122x5, minimum 69x27",
-      "squeezed: SelectionModeToggle/Label 'Subtract' is 122x5, minimum 122x27",
-      "squeezed: SelectionModeToggle/Label 'Replace' is 122x5, minimum 92x27",
-      "squeezed: SelectionModeToggle/Label 'Intersect' is 122x5, minimum 99x27",
-      "clipped: SelectionModeToggle/KeyHintLabel '\u2387' shows 24x13 of 24x23",
+      "squeezed: ReflowingButtonGroup is 281x13, minimum 146x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (Ctrl+D)' is 125x13, minimum 122x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (Ctrl+A)' is 146x13, minimum 146x30",
+      "squeezed: SelectionModeToggle/Label 'Add' is 126x5, minimum 69x27",
+      "squeezed: SelectionModeToggle/Label 'Subtract' is 126x5, minimum 126x27",
+      "squeezed: SelectionModeToggle/Label 'Replace' is 126x5, minimum 92x27",
+      "squeezed: SelectionModeToggle/Label 'Intersect' is 126x5, minimum 99x27",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Alt' shows 28x13 of 28x23",
       "squeezed: KeyHintLabel 'Q' is 21x13, minimum 21x23",
       "squeezed: KeyHintLabel '[' is 17x13, minimum 17x23",
       "squeezed: KeyHintLabel ']' is 16x13, minimum 16x23",
       "squeezed: QLabel 'Size:' is 28x13, minimum 28x17",
-      "squeezed: IntSliderSpinbox[1] is 194x13, minimum 72x30",
-      "squeezed: IntSliderSpinbox[1]/QSlider is 134x9, minimum 12x23",
+      "squeezed: IntSliderSpinbox[1] is 202x13, minimum 72x30",
+      "squeezed: IntSliderSpinbox[1]/QSlider is 142x9, minimum 12x23",
       "squeezed: IntSliderSpinbox[1]/QSpinBox is 50x9, minimum 50x26"
     ],
     "size": [
-      291,
+      299,
       77
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      291,
+      299,
       1200
     ]
   },
