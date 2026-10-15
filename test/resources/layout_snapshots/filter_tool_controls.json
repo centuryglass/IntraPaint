@@ -8,12 +8,12 @@
   },
   "narrow": {
     "problems": [
-      "overlap: QLabel 'Size:' and KeyHintLabel '[' share 6x30",
-      "overlap: IntSliderSpinbox and KeyHintLabel ']' share 14x30",
-      "overlap: QLabel 'Opacity:' and KeyHintLabel '<' share 6x30",
-      "overlap: FloatSliderSpinbox[0] and KeyHintLabel '>' share 14x30",
-      "overlap: QLabel 'Hardness:' and KeyHintLabel '{' share 6x30",
-      "overlap: FloatSliderSpinbox[1] and KeyHintLabel '}' share 14x30",
+      "overlap: QLabel 'Size:' and KeyHintLabel '[' share 10x30",
+      "overlap: IntSliderSpinbox and KeyHintLabel ']' share 18x30",
+      "overlap: QLabel 'Opacity:' and KeyHintLabel '<' share 10x30",
+      "overlap: FloatSliderSpinbox[0] and KeyHintLabel '>' share 18x30",
+      "overlap: QLabel 'Hardness:' and KeyHintLabel '{' share 10x30",
+      "overlap: FloatSliderSpinbox[1] and KeyHintLabel '}' share 18x30",
       "overlap: QWidget/FloatSliderSpinbox[0]/QSlider and QWidget/FloatSliderSpinbox[0]/QDoubleSpinBox share 54x23",
       "overlap: QWidget/FloatSliderSpinbox[1]/QSlider and QWidget/FloatSliderSpinbox[1]/QDoubleSpinBox share 54x23",
       "overlap: QWidget/FloatSliderSpinbox[2]/QSlider and QWidget/FloatSliderSpinbox[2]/QDoubleSpinBox share 54x23",
@@ -79,7 +79,7 @@
       "squeezed: QWidget/FloatSliderSpinbox[3]/QLabel 'Alpha' is 36x0, minimum 34x17",
       "squeezed: QWidget/FloatSliderSpinbox[3]/QSlider is 180x0, minimum 12x23",
       "squeezed: QWidget/FloatSliderSpinbox[3]/QDoubleSpinBox is 54x0, minimum 54x26",
-      "squeezed: FloatSliderSpinbox[0] is 194x29, minimum 76x30",
+      "squeezed: FloatSliderSpinbox[0] is 186x29, minimum 76x30",
       "squeezed: FloatSliderSpinbox[0]/QDoubleSpinBox is 54x25, minimum 54x26"
     ],
     "size": [

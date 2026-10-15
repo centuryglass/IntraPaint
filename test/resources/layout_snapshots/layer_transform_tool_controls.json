@@ -2,14 +2,14 @@
   "minimum": {
     "problems": [],
     "size": [
-      249,
-      357
+      279,
+      358
     ]
   },
   "narrow": {
     "problems": [],
     "size": [
-      124,
+      139,
       300
     ]
   },
@@ -28,15 +28,15 @@
       "squeezed: FloatSliderSpinbox[1] is 382x14, minimum 150x30",
       "squeezed: FloatSliderSpinbox[1]/QLabel 'Y:' is 37x10, minimum 11x17",
       "squeezed: FloatSliderSpinbox[1]/QDoubleSpinBox is 339x10, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[2] is 382x14, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[2]/QLabel 'Angle:' is 37x10, minimum 37x17",
-      "squeezed: FloatSliderSpinbox[2]/QDoubleSpinBox is 339x10, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[3] is 382x14, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[3]/QLabel 'W:' is 37x10, minimum 16x17",
-      "squeezed: FloatSliderSpinbox[3]/QDoubleSpinBox is 339x10, minimum 102x26",
-      "squeezed: FloatSliderSpinbox[4] is 382x15, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[4]/QLabel 'H:' is 37x11, minimum 13x17",
-      "squeezed: FloatSliderSpinbox[4]/QDoubleSpinBox is 339x11, minimum 102x26",
+      "squeezed: FloatSliderSpinbox[2] is 382x15, minimum 150x30",
+      "squeezed: FloatSliderSpinbox[2]/QLabel 'Angle:' is 37x11, minimum 37x17",
+      "squeezed: FloatSliderSpinbox[2]/QDoubleSpinBox is 339x11, minimum 107x26",
+      "squeezed: FloatSliderSpinbox[3] is 382x15, minimum 150x30",
+      "squeezed: FloatSliderSpinbox[3]/QLabel 'W:' is 37x11, minimum 16x17",
+      "squeezed: FloatSliderSpinbox[3]/QDoubleSpinBox is 339x11, minimum 102x26",
+      "squeezed: FloatSliderSpinbox[4] is 382x14, minimum 150x30",
+      "squeezed: FloatSliderSpinbox[4]/QLabel 'H:' is 37x10, minimum 13x17",
+      "squeezed: FloatSliderSpinbox[4]/QDoubleSpinBox is 339x10, minimum 102x26",
       "squeezed: QWidget is 382x14, minimum 129x24",
       "squeezed: QWidget/CheckBox 'Keep aspect ratio' is 127x12, minimum 127x22",
       "clipped: QPushButton 'Clear' shows 186x23 of 186x25",
@@ -44,7 +44,7 @@
     ],
     "size": [
       400,
-      178
+      179
     ]
   },
   "tall": {

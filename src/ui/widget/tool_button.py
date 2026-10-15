@@ -38,7 +38,8 @@ class ToolButton(QToolButton):
         self._key_hint.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         self._key_hint.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         self._key_hint.setMinimumSize(self._key_hint.sizeHint())
-        set_shortcut_tooltip(self, label_text, connected_tool.get_activation_config_key())
+        set_shortcut_tooltip(self, label_text, connected_tool.get_activation_config_key(),
+                             description=connected_tool.get_tooltip_text())
         self._icon_bounds = QRect()
         self._active = False
         self.clicked.connect(self._activate_tool)

@@ -2,62 +2,62 @@
   "minimum": {
     "problems": [],
     "size": [
-      279,
+      299,
       155
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 121x43, minimum 126x70",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 121x17, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 121x16, minimum 126x30",
-      "squeezed: SelectionModeToggle/Label 'Add' is 48x20, minimum 69x27",
-      "squeezed: SelectionModeToggle/Label 'Subtract' is 48x20, minimum 118x27",
-      "squeezed: SelectionModeToggle/Label 'Replace' is 48x20, minimum 92x27",
-      "squeezed: SelectionModeToggle/Label 'Intersect' is 48x20, minimum 99x27",
-      "clipped: SelectionModeToggle/KeyHintLabel '\u2387' shows 20x21 of 20x22",
-      "squeezed: IntSliderSpinbox is 50x30, minimum 72x30",
-      "squeezed: IntSliderSpinbox/QSpinBox is 28x26, minimum 50x26"
+      "squeezed: ReflowingButtonGroup is 131x43, minimum 146x70",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (Ctrl+D)' is 131x17, minimum 122x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (Ctrl+A)' is 131x16, minimum 146x30",
+      "squeezed: SelectionModeToggle/Label 'Add' is 51x20, minimum 69x27",
+      "squeezed: SelectionModeToggle/Label 'Subtract' is 51x20, minimum 126x27",
+      "squeezed: SelectionModeToggle/Label 'Replace' is 51x20, minimum 92x27",
+      "squeezed: SelectionModeToggle/Label 'Intersect' is 51x20, minimum 99x27",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Alt' shows 28x21 of 28x23",
+      "squeezed: IntSliderSpinbox is 52x30, minimum 72x30",
+      "squeezed: IntSliderSpinbox/QSpinBox is 30x26, minimum 50x26"
     ],
     "size": [
-      139,
+      149,
       155
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      279,
+      299,
       155
     ]
   },
   "short": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 261x13, minimum 126x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (\u2303D)' is 125x13, minimum 102x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (\u2303A)' is 126x13, minimum 126x30",
-      "squeezed: SelectionModeToggle/Label 'Add' is 118x5, minimum 69x27",
-      "squeezed: SelectionModeToggle/Label 'Subtract' is 118x5, minimum 118x27",
-      "squeezed: SelectionModeToggle/Label 'Replace' is 118x5, minimum 92x27",
-      "squeezed: SelectionModeToggle/Label 'Intersect' is 118x5, minimum 99x27",
-      "clipped: SelectionModeToggle/KeyHintLabel '\u2387' shows 20x13 of 20x22",
-      "squeezed: KeyHintLabel 'Q' is 17x13, minimum 17x22",
-      "squeezed: KeyHintLabel '[' is 13x13, minimum 13x22",
-      "squeezed: KeyHintLabel ']' is 12x13, minimum 12x22",
+      "squeezed: ReflowingButtonGroup is 281x13, minimum 146x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (Ctrl+D)' is 125x13, minimum 122x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (Ctrl+A)' is 146x13, minimum 146x30",
+      "squeezed: SelectionModeToggle/Label 'Add' is 126x5, minimum 69x27",
+      "squeezed: SelectionModeToggle/Label 'Subtract' is 126x5, minimum 126x27",
+      "squeezed: SelectionModeToggle/Label 'Replace' is 126x5, minimum 92x27",
+      "squeezed: SelectionModeToggle/Label 'Intersect' is 126x5, minimum 99x27",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Alt' shows 28x13 of 28x23",
+      "squeezed: KeyHintLabel 'Q' is 21x13, minimum 21x23",
+      "squeezed: KeyHintLabel '[' is 17x13, minimum 17x23",
+      "squeezed: KeyHintLabel ']' is 16x13, minimum 16x23",
       "squeezed: QLabel 'Size:' is 28x13, minimum 28x17",
-      "squeezed: IntSliderSpinbox is 190x13, minimum 72x30",
-      "squeezed: IntSliderSpinbox/QSlider is 130x9, minimum 12x23",
+      "squeezed: IntSliderSpinbox is 202x13, minimum 72x30",
+      "squeezed: IntSliderSpinbox/QSlider is 142x9, minimum 12x23",
       "squeezed: IntSliderSpinbox/QSpinBox is 50x9, minimum 50x26"
     ],
     "size": [
-      279,
+      299,
       77
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      279,
+      299,
       1200
     ]
   },
