@@ -53,7 +53,7 @@ class ToolPanel(QWidget):
         self._tool_control_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._tool_control_label = QLabel()
         self._tool_control_label.setWordWrap(True)
-        self._tool_control_label.setStyleSheet('text-decoration: bold;')
+        self._tool_control_label.setStyleSheet('font-weight: bold;')
         self._tool_control_label.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignTop)
         self._tool_control_layout.addWidget(self._tool_control_label, stretch=2)
         self._tool_control_layout.addStretch(2)

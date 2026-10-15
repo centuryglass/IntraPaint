@@ -16,8 +16,8 @@
       "overlap: IntSliderSpinbox[3]/QSpinBox and IntSliderSpinbox[3]/KeyHintLabel '\u2193' share 33x26",
       "overlap: IntSliderSpinbox[4]/KeyHintLabel '\u2303+\u2190' and IntSliderSpinbox[4]/QSpinBox share 15x26",
       "overlap: IntSliderSpinbox[4]/QSpinBox and IntSliderSpinbox[4]/KeyHintLabel '\u2303+\u2192' share 33x26",
-      "overlap: IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2191' and IntSliderSpinbox[5]/QSpinBox share 15x26",
-      "overlap: IntSliderSpinbox[5]/QSpinBox and IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2193' share 33x26",
+      "overlap: IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2193' and IntSliderSpinbox[5]/QSpinBox share 15x26",
+      "overlap: IntSliderSpinbox[5]/QSpinBox and IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2191' share 33x26",
       "squeezed: QWidget[0] is 74x81, minimum 96x25",
       "squeezed: QWidget[0]/CheckBox is 34x21, minimum 45x21",
       "squeezed: QWidget[0]/QLabel 'Resize Bounds to Text' is 34x77, minimum 45x17",
@@ -43,7 +43,7 @@
       "clipped: IntSliderSpinbox[4]/KeyHintLabel '\u2303+\u2192' shows 18x74 of 33x74",
       "squeezed: IntSliderSpinbox[5] is 74x77, minimum 198x30",
       "clipped: IntSliderSpinbox[5]/QSpinBox shows 36x26 of 106x26",
-      "clipped: IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2193' shows 18x73 of 33x73"
+      "clipped: IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2191' shows 18x73 of 33x73"
     ],
     "size": [
       519,
@@ -96,8 +96,8 @@
       "squeezed: IntSliderSpinbox[5] is 198x19, minimum 198x30",
       "squeezed: IntSliderSpinbox[5]/QLabel 'H:' is 16x15, minimum 13x17",
       "squeezed: IntSliderSpinbox[5]/QSpinBox is 106x15, minimum 106x26",
-      "squeezed: IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2191' is 33x15, minimum 32x22",
-      "squeezed: IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2193' is 33x15, minimum 32x22"
+      "squeezed: IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2193' is 33x15, minimum 32x22",
+      "squeezed: IntSliderSpinbox[5]/KeyHintLabel '\u2303+\u2191' is 33x15, minimum 32x22"
     ],
     "size": [
       1298,

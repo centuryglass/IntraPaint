@@ -19,6 +19,9 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 LABEL_TEXT_SELECTION_ONLY = _tr('Update selection only')
+LABEL_TEXT_OFFSET = _tr('Offset:')
+LABEL_TEXT_POSITION = _tr('Position:')
+SOURCE_MODE_STATIC = QApplication.translate('cache_value', 'Fixed position')
 
 
 class CloneStampToolPanel(BrushToolPanel):
@@ -41,6 +44,8 @@ class CloneStampToolPanel(BrushToolPanel):
         self._source_xy = QPoint()
         self._source_xy_layout = QHBoxLayout(self._source_xy_row)
         self._source_xy_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self._source_xy_label = QLabel(LABEL_TEXT_POSITION)
+        self._source_xy_layout.addWidget(self._source_xy_label)
         self._source_xy_layout.addWidget(QLabel(SHORT_LABEL_X_POS))
         self._x_spinbox = QSpinBox()
         self._source_xy_layout.addWidget(self._x_spinbox, stretch=1)
@@ -58,6 +63,13 @@ class CloneStampToolPanel(BrushToolPanel):
         self._source_mode_combobox = cache.get_control_widget(Cache.CLONE_STAMP_TOOL_SOURCE_MODE)
         self._source_mode_layout.addWidget(self._source_mode_label)
         self._source_mode_layout.addWidget(self._source_mode_combobox)
+
+        def _update_xy_label(source_mode: str) -> None:
+            self._source_xy_label.setText(LABEL_TEXT_POSITION if source_mode == SOURCE_MODE_STATIC
+                                          else LABEL_TEXT_OFFSET)
+
+        cache.connect(self, Cache.CLONE_STAMP_TOOL_SOURCE_MODE, _update_xy_label)
+        _update_xy_label(cache.get(Cache.CLONE_STAMP_TOOL_SOURCE_MODE))
 
         def _update_x(new_x: int) -> None:
             if new_x == self._source_xy.x():
