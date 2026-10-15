@@ -79,14 +79,17 @@ class _Colors:
     """The colors and font a control paints with, read from the palette and the Ink theme."""
 
     def __init__(self, widget: QWidget) -> None:
-        palette = widget.palette()
         enabled = widget.isEnabled()
         group = QPalette.ColorGroup.Active if enabled else QPalette.ColorGroup.Disabled
+
+        def _color(role: QPalette.ColorRole) -> QColor:
+            return widget.palette().color(group, role)
+
         self.font = QFont(widget.font())
-        self.background = palette.color(group, QPalette.ColorRole.Base)
-        self.text = palette.color(group, QPalette.ColorRole.Text)
-        self.outline = palette.color(group, QPalette.ColorRole.Mid)
-        self.focus = palette.color(group, QPalette.ColorRole.Highlight)
+        self.background = _color(QPalette.ColorRole.Base)
+        self.text = _color(QPalette.ColorRole.Text)
+        self.outline = _color(QPalette.ColorRole.Mid)
+        self.focus = _color(QPalette.ColorRole.Highlight)
         colors = ink_colors()
         accent = colors.accent_hover if colors is not None else self.focus
         if colors is not None:
@@ -318,11 +321,11 @@ class SegmentedControl(QWidget):
         if self.uses_combo_fallback():
             return
         colors = self._colors
+        box = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        box = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
-        painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(colors.background)
+        painter.setPen(Qt.PenStyle.NoPen)
         painter.drawRoundedRect(box, RADIUS, RADIUS)
         painter.save()
         painter.setClipPath(self._box_path(box))
