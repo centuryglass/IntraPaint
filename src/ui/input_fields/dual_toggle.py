@@ -13,7 +13,8 @@ class DualToggle(OptionToggle):
     def __init__(self,
                  parent: Optional[QWidget],
                  options: list[str],
-                 orientation: Qt.Orientation = Qt.Orientation.Horizontal):
+                 orientation: Qt.Orientation = Qt.Orientation.Horizontal,
+                 display_names: Optional[list[str]] = None):
         """__init__.
 
         Parameters
@@ -24,10 +25,13 @@ class DualToggle(OptionToggle):
             Option names. Must be length 2, other lengths will raise ValueError.
         orientation : Qt.Orientation
             Horizontal or vertical orientation.
+        display_names : list of str, optional
+            Text to show on each button instead of the option string. The value is still the option string.
         """
         if len(options) != 2:
             raise ValueError(f"DualToggle expects two options, got {options}")
-        super().__init__(parent, options, 2 if orientation == Qt.Orientation.Horizontal else 1, orientation)
+        super().__init__(parent, options, 2 if orientation == Qt.Orientation.Horizontal else 1, orientation,
+                         display_names)
 
     def set_orientation(self, orientation: Qt.Orientation) -> None:
         """Choose between side-by-side buttons with horizontal text, and stacked buttons with vertical text."""

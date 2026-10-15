@@ -111,7 +111,9 @@ for content_key, json_prefix in (
     categories = set()
     subcategories = set()
     for entry in json_data.values():
-        if 'translate' in entry and entry['translate'] is False:
+        # "translate": false keeps an entry's options as stored values. They are still offered here, because widgets
+        # show their translation (Config.get_option_display) while saving the untranslated option.
+        if entry.get('translate') is False and not entry.get('options'):
             continue
         add_message(context_elem, saved_json_path, entry['label'], _find_line_num(entry['label']))
         add_message(context_elem, saved_json_path, entry['description'], _find_line_num(entry['description']))
