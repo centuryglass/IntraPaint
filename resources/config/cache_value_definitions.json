@@ -829,11 +829,11 @@
         "default": true,
         "saved": true
     },
-    "saved_main_window_pos": {
-        "label": "Saved main window placement",
+    "saved_main_window_geometry": {
+        "label": "Saved main window geometry",
         "category": "Cache",
         "subcategory": "Window placement",
-        "description": "display, position, and size where the main window last was.",
+        "description": "JSON with the main window's normal bounds, window state and display when it last closed.",
         "type": "string",
         "default": "",
         "saved": true

@@ -49,6 +49,8 @@ INVALID_OPTION_KEY_ERROR = _tr('Tried to track fixed options for key "{key}", wh
 INVALID_KEYCODE_ERROR = _tr('Tried to get key code "{key}", found "{code_string}"')
 DUPLICATE_KEY_ERROR = _tr('Tried to add duplicate config entry for key "{key}"')
 
+SAVE_DELAY_MS = 10
+
 
 class Config:
     """A shared resource to set inpainting configuration and to provide default values.
@@ -88,6 +90,8 @@ class Config:
         self._lock = Lock()
         self._save_timer = QTimer()
         self._save_timer.setSingleShot(True)
+        self._save_timer.setInterval(SAVE_DELAY_MS)
+        self._save_timer.timeout.connect(self._write_to_json)
 
         if not os.path.isfile(definition_path):
             raise RuntimeError(MISSING_DEF_ERROR.format(definition_path=definition_path))
@@ -394,13 +398,7 @@ class Config:
         if save_change:
             with self._lock:
                 if not self._save_timer.isActive():
-                    def write_change() -> None:
-                        """Copy changes to the file and disconnect the timer."""
-                        self._write_to_json()
-                        self._save_timer.timeout.disconnect(write_change)
-
-                    self._save_timer.timeout.connect(write_change)
-                    self._save_timer.start(10)
+                    self._save_timer.start()
         # Pass change to connected callback functions:
         callbacks = [*self._connected[key].items()]  # <- So callbacks can disconnect or replace themselves
         for source, callback in callbacks:
@@ -421,6 +419,16 @@ class Config:
             # A callback that set the value again already notified every callback of the newer value.
             if self.get(key, inner_key) != value:
                 break
+
+    def save_pending_changes(self) -> None:
+        """Writes changes `set` scheduled to the JSON file immediately.
+
+        Scheduled writes need the event loop, so a value set just before the application exits is lost unless this is
+        called first.
+        """
+        if self._save_timer.isActive():
+            self._save_timer.stop()
+            self._write_to_json()
 
     def connect(self,
                 connected_object: Any,

@@ -35,8 +35,11 @@ class ReactiveLayoutWidget(QWidget):
                         max_size: Optional[QSize] = None) -> None:
         """Add a new layout mode to reconfigure the widget when it enters a given size range.
 
-        Raises RuntimeError if the range shares any size with an existing mode's range. Range ends are inclusive.
+        Raises RuntimeError if no default mode was added first, or if the range shares any size with an existing
+        mode's range. Range ends are inclusive.
         """
+        if self._default_mode is None:
+            raise RuntimeError(f'Mode {name}: add_default_layout_mode must be called before add_layout_mode')
         mode = _LayoutMode(name, self, setup, min_size, max_size)
         for old_mode in self._layout_modes:
             if mode.overlaps(old_mode):
@@ -46,27 +49,21 @@ class ReactiveLayoutWidget(QWidget):
         self.resizeEvent(None)
 
     def add_default_layout_mode(self, setup: Callable[[], None]) -> None:
-        """Add a layout mode to use as a fallback if none of the size-specific modes apply."""
+        """Add the layout mode used when no size-specific mode applies. Required before `add_layout_mode`."""
         self._default_mode = _LayoutMode('default', self, setup, None, None)
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Apply visibility rules and switch layout modes if necessary.
 
-        When no mode range matches and there is no default mode, the last mode stays active and only an error is
-        logged. Callers need gap-free mode ranges or a default mode.
+        The default mode applies whenever no sized mode contains the current size.
         """
-        new_mode = None
+        new_mode = self._default_mode
         for mode in self._layout_modes:
             if mode.in_range():
                 new_mode = mode
-        if new_mode is None and self._default_mode is not None:
-            new_mode = self._default_mode
-        if new_mode is not None:
-            if new_mode.name != self._active_mode:
-                self._active_mode = new_mode.name
-                new_mode.activate()
-        elif len(self._layout_modes) > 0:
-            logger.error(f'no layout mode in range at {self.size()}')
+        if new_mode is not None and new_mode.name != self._active_mode:
+            self._active_mode = new_mode.name
+            new_mode.activate()
 
         for widget, size in self._visibility_limits.items():
             if not self._is_descendant(widget):
