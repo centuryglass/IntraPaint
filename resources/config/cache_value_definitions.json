@@ -26,7 +26,8 @@
             "Match area, upscale small areas",
             "Manual"
         ],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "recent_generation_area_sizes": {
         "label": "Recent generation area sizes:",
@@ -255,7 +256,8 @@
             "Replace",
             "Intersect"
         ],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "shape_selection_fixed_aspect": {
         "label": "Fixed 1:1 aspect ratio",
@@ -710,7 +712,8 @@
             "Dynamic offset",
             "Fixed position"
         ],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "shape_tool_mode": {
         "label": "Shape Type:",
@@ -925,7 +928,8 @@
             "Image to Image",
             "Text to Image"
         ],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "masked_content": {
         "label": "Masked content:",
@@ -940,7 +944,8 @@
             "latent noise",
             "latent nothing"
         ],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "sampling_steps": {
         "label": "Sampling steps:",
@@ -988,7 +993,8 @@
         "type": "string",
         "default": "default",
         "options": ["default"],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "canvas_resize_layer_mode": {
         "label": "Layer expand mode:",
@@ -1003,7 +1009,8 @@
             "Do not expand layers"
 
         ],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "canvas_resize_crop_layers": {
         "label": "Crop layers to new image bounds",
@@ -1275,7 +1282,8 @@
         "type": "string",
         "default": "auto",
         "options" : ["auto"],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "comfyui_inpainting_model": {
         "label": "Load checkpoint as inpainting model",
@@ -1434,7 +1442,8 @@
             "Scale merged, keep source layers",
             "Scale merged, discard source layers"
         ],
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "sd_upscaling_available": {
         "label": "Stable Diffusion upscaling available",
