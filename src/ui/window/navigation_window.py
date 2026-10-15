@@ -9,6 +9,7 @@ from src.config.cache import Cache
 from src.controller.tool_controller import ToolController
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
+from src.tools.context_pin_dragger import ContextPinDragger
 from src.tools.generation_area_tool import GenerationAreaTool, GEN_AREA_CONTROL_HINT
 from src.ui.graphics_items.click_and_drag_selection import ClickAndDragSelection
 from src.ui.graphics_items.outline import Outline
@@ -28,7 +29,8 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 WINDOW_TITLE = _tr('Navigate')
 ZOOM_LABEL = _tr('Move view')
-ZOOM_TOOLTIP = _tr('Left-click to pan, right-click to draw viewport')
+ZOOM_TOOLTIP = _tr('Left-click to pan, Shift + left-click to draw viewport, right-click to add, move or remove '
+                   'context pins')
 IMAGE_GEN_LABEL_SHORT = _tr('Move gen. area')
 BUTTON_TEXT_RESET_VIEW = _tr('Reset view')
 
@@ -39,13 +41,14 @@ MIN_AREA = 4
 class ZoomTool(BaseTool):
     """Tool used to control the zoom level of the primary image view from within the navigation window."""
 
-    def __init__(self, main_view: ImageViewer, controller_view: ImageViewer) -> None:
+    def __init__(self, image_stack: ImageStack, main_view: ImageViewer, controller_view: ImageViewer) -> None:
         super().__init__('', ZOOM_LABEL, ZOOM_TOOLTIP, QIcon(ICON_PATH_ZOOM_TOOL))
         self._main_view = main_view
         self._control_view = controller_view
         scene = controller_view.scene()
         self._selection_handler = ClickAndDragSelection(scene)
         self._dragging = False
+        self._pin_dragger = ContextPinDragger(image_stack, controller_view)
         self.cursor = QCursor(Qt.CursorShape.OpenHandCursor)
 
     def get_input_hint(self) -> str:
@@ -60,12 +63,15 @@ class ZoomTool(BaseTool):
         self._main_view.offset = final_offset
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Move the view on left-click, start resizing the view on right-click."""
+        """Move the view on left-click, start resizing the view on Shift + left-click, and edit context pins on
+           right-click."""
         assert event is not None
-        if event.buttons() == Qt.MouseButton.LeftButton:
-            self._move_view(image_coordinates)
-            return True
         if event.buttons() == Qt.MouseButton.RightButton:
+            return self._pin_dragger.press(event, image_coordinates)
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            if not QApplication.keyboardModifiers() & Qt.KeyboardModifier.ShiftModifier:
+                self._move_view(image_coordinates)
+                return True
             if self._selection_handler.selecting:
                 self._selection_handler.end_selection(image_coordinates)
             aspect_ratio = self._main_view.width() / self._main_view.height()
@@ -76,20 +82,22 @@ class ZoomTool(BaseTool):
         return False
 
     def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Continue moving or resizing the view if mouse buttons are down."""
+        """Continue moving or resizing the view or dragging a context pin if mouse buttons are down."""
         assert event is not None
-        if event.buttons() == Qt.MouseButton.LeftButton:
-            self._move_view(image_coordinates)
+        if self._pin_dragger.move(event, image_coordinates):
             return True
-        if event.buttons() == Qt.MouseButton.RightButton:
-            if not self._dragging:
-                return False
-            self._selection_handler.drag_to(image_coordinates)
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            if self._dragging:
+                self._selection_handler.drag_to(image_coordinates)
+            else:
+                self._move_view(image_coordinates)
             return True
         return False
 
     def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """If resizing, finish on mouse_release."""
+        if self._pin_dragger.release(image_coordinates):
+            return True
         if not self._dragging:
             return False
         self._dragging = False
@@ -97,6 +105,10 @@ class ZoomTool(BaseTool):
         if MIN_AREA <= final_bounds.width() * final_bounds.height():
             self._main_view.zoom_to_bounds(final_bounds)
         return True
+
+    def _on_deactivate(self) -> None:
+        self._pin_dragger.finish()
+        super()._on_deactivate()
 
 
 class NavigationWindow(ImagePanel):
@@ -113,7 +125,7 @@ class NavigationWindow(ImagePanel):
         self._tool_controller = ToolController(image_stack, self.image_viewer, False, False)
         self._tool_controller.active_tool_changed.connect(self._update_tool_slot)
         self._generation_area_tool = GenerationAreaTool(image_stack, self.image_viewer, show_handles=False)
-        self._zoom_tool = ZoomTool(main_image_view, self.image_viewer)
+        self._zoom_tool = ZoomTool(image_stack, main_image_view, self.image_viewer)
         self._tool_controller.active_tool = self._generation_area_tool
         self._tool_controller.active_tool = self._zoom_tool
 

@@ -13,6 +13,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.tools.free_selection_tool import FreeSelectionTool
 from src.undo_stack import UndoStack
 from src.util.visual.selection_mode import SelectionMode
+from test.tools.context_pin_gesture_tests import ContextPinGestureTests
 from test.tools.selection_tool_test_case import SelectionToolTestCase, rect_mask
 
 # Polygon points sit on pixel corners, so this polygon covers the pixels of QRect(10, 8, 30, 22):
@@ -20,7 +21,7 @@ RECT_POINTS = [QPoint(10, 8), QPoint(40, 8), QPoint(40, 30), QPoint(10, 30)]
 RECT_AREA = QRect(10, 8, 30, 22)
 
 
-class FreeSelectionToolTest(SelectionToolTestCase):
+class FreeSelectionToolTest(ContextPinGestureTests, SelectionToolTestCase):
     """Drives FreeSelectionTool with synthetic clicks and key presses at 1:1 scale."""
 
     def setUp(self) -> None:

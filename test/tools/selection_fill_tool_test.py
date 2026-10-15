@@ -14,6 +14,7 @@ from src.ui.panel.tool_control_panels.fill_selection_panel import FILL_BY_SELECT
 from src.undo_stack import UndoStack
 from src.util.visual.selection_mode import SelectionMode
 from src.util.visual.image_utils import image_data_as_numpy_8bit
+from test.tools.context_pin_gesture_tests import ContextPinGestureTests
 from test.tools.selection_tool_test_case import SelectionToolTestCase, rect_mask
 
 RIGHT = Qt.MouseButton.RightButton
@@ -45,7 +46,7 @@ def _pattern_image(width: int, height: int) -> QImage:
     return image
 
 
-class SelectionFillToolTest(SelectionToolTestCase):
+class SelectionFillToolTest(ContextPinGestureTests, SelectionToolTestCase):
     """Drives SelectionFillTool with synthetic clicks at 1:1 scale, on a layer holding the pattern image."""
 
     def setUp(self) -> None:
@@ -54,7 +55,7 @@ class SelectionFillToolTest(SelectionToolTestCase):
         Cache().set(Cache.FILL_THRESHOLD, 0.0)
         Cache().set(Cache.SAMPLE_MERGED, False)
         Cache().set(Cache.COLOR_SELECT_MODE, False)
-        self.tool = self.activate_tool(SelectionFillTool(self.image_stack))
+        self.tool = self.activate_tool(SelectionFillTool(self.image_stack, self.image_viewer))
         self.empty = np.zeros((self.IMAGE_SIZE.height(), self.IMAGE_SIZE.width()), dtype=bool)
         UndoStack().clear()
 
@@ -135,13 +136,12 @@ class SelectionFillToolTest(SelectionToolTestCase):
         self.mouse_drag([QPoint(4, 4)])
         self.assert_one_undo_step(existing, existing | self._mask(LEFT_OF_STRIPE))
 
-    def test_right_click_does_nothing(self) -> None:
-        """A right-click leaves the selection unchanged and records no undo step."""
+    def test_right_click_does_not_change_selection(self) -> None:
+        """A right-click edits context pins and leaves the selection unchanged."""
         existing = self._mask(QRect(0, 0, 40, 30))
         self.set_selection_outside_history(existing)
         self.mouse_drag([QPoint(4, 4)], RIGHT)
         self.assert_selection(existing)
-        self.assertEqual(UndoStack().undo_count(), 0)
 
     def test_other_modifiers_ignore_click(self) -> None:
         """With a modifier that isn't part of a selection modifier held, a click changes nothing."""

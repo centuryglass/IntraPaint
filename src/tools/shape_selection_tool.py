@@ -1,8 +1,8 @@
 """Select or deselect rectangular or ellipsoid areas."""
 from typing import Optional
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon, QColor, QBrush, QPainterPath, QPolygonF
+from PySide6.QtCore import Qt, QPoint
+from PySide6.QtGui import QIcon, QColor, QBrush, QPainterPath, QPolygonF, QMouseEvent
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.application_config import AppConfig
@@ -10,13 +10,14 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
+from src.tools.context_pin_dragger import ContextPinDragger
 from src.tools.shape_drag_tool import ShapeDragTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.shape_selection_panel import ShapeSelectionPanel
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.selection_mode import SelectionMode, selection_mode_for_gesture, compose_selection_path
 from src.util.visual.shape_mode import ShapeMode
-from src.util.visual.text_drawing_utils import left_button_hint_text
+from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.shape_selection_tool'
@@ -31,7 +32,8 @@ ICON_PATH_SHAPE_SELECT_TOOL = f'{PROJECT_DIR}/resources/icons/tools/shape_select
 
 SHAPE_SELECTION_LABEL = _tr('Rectangle/Ellipse selection')
 SHAPE_SELECTION_TOOLTIP = _tr('Select or deselect rectangles or ellipses')
-SHAPE_SELECTION_CONTROL_HINT = _tr('{left_mouse_icon}, drag: select')
+SHAPE_SELECTION_CONTROL_HINT = _tr('{left_mouse_icon}, drag: select - '
+                                      '{right_mouse_icon}: add, move or remove context pin')
 
 ERASING_COLOR = Qt.GlobalColor.white
 
@@ -44,6 +46,7 @@ class ShapeSelectionTool(ShapeDragTool):
                          QIcon(ICON_PATH_SHAPE_SELECT_TOOL), image_viewer)
         self._image_stack = image_stack
         self._control_panel = ShapeSelectionPanel(image_stack.selection_layer, self)
+        self._pin_dragger = ContextPinDragger(image_stack, image_viewer)
         # The fixed aspect and selection add modifiers share Shift by default, and the press reads it as add:
         self._selection_handler.aspect_modifier_needs_fresh_press = True
         self._gesture_mode = SelectionMode.ADD
@@ -74,7 +77,8 @@ class ShapeSelectionTool(ShapeDragTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        shape_selection_hint = SHAPE_SELECTION_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
+        shape_selection_hint = SHAPE_SELECTION_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
+                                                                  right_mouse_icon=right_button_hint_text())
         fixed_aspect_hint = BaseTool.fixed_aspect_hint()
         if fixed_aspect_hint:
             shape_selection_hint = f'{shape_selection_hint}, {fixed_aspect_hint}'
@@ -92,6 +96,28 @@ class ShapeSelectionTool(ShapeDragTool):
         if shape_mode not in (ShapeMode.RECTANGLE, ShapeMode.ELLIPSE):
             raise ValueError(f'Unexpected selection mode {mode}')
         self._selection_handler.mode = shape_mode
+
+    def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+        """Starts a selection drag on left-click, or a context pin drag on right-click."""
+        if event is not None and event.buttons() == Qt.MouseButton.RightButton:
+            return self._pin_dragger.press(event, image_coordinates)
+        return super().mouse_click(event, image_coordinates)
+
+    def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+        """Continues a context pin drag or selection drag."""
+        if self._pin_dragger.move(event, image_coordinates):
+            return True
+        return super().mouse_move(event, image_coordinates)
+
+    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+        """Finishes a context pin drag or selection drag."""
+        if self._pin_dragger.release(image_coordinates):
+            return True
+        return super().mouse_release(event, image_coordinates)
+
+    def _on_deactivate(self) -> None:
+        self._pin_dragger.finish()
+        super()._on_deactivate()
 
     def _prepare_drag(self) -> None:
         """Reads the selection mode for the drag, with the modifiers held at the press."""
