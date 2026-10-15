@@ -150,14 +150,12 @@ class SelectionLayerContextPinTest(IntraPaintTestCase):
         self.assertEqual(self.selection_layer.context_pins, pins)
 
     def test_load_image_clears_pins(self) -> None:
-        """Loading a new image removes pins, and undoing the load restores them."""
+        """Loading a new image removes pins."""
         self.selection_layer.set_context_pins([QPoint(10, 10)])
         new_image = QImage(QSize(256, 256), QImage.Format.Format_ARGB32_Premultiplied)
         new_image.fill(Qt.GlobalColor.white)
         self.image_stack.load_image(new_image)
         self.assertEqual(self.selection_layer.context_pins, [])
-        UndoStack().undo()
-        self.assertEqual(self.selection_layer.context_pins, [QPoint(10, 10)])
 
 
 class SelectionLayerContentBoundsTest(IntraPaintTestCase):

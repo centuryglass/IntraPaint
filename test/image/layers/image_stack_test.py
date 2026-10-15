@@ -130,19 +130,31 @@ class ImageStackTest(IntraPaintTestCase):
         self.image_stack.flush_render()
         self.assertEqual(image, self.image_stack.qimage())
 
-    def test_load_image_undo_restores_transforms(self) -> None:
-        """Undoing an image load restores the previous image with its transformation."""
+    def test_load_image_replaces_document(self) -> None:
+        """Loading an image clears the undo history and emits `document_changed`, even at the same size."""
+        document_changed = MagicMock()
+        self.image_stack.document_changed.connect(document_changed)
         image = QImage(INIT_IMAGE)
         self.image_stack.load_image(image)
-        first_layer = self.image_stack.active_layer
-        assert isinstance(first_layer, TransformLayer)
-        transform = QTransform().translate(40, 25).scale(0.5, 0.5)
-        first_layer.set_transform(transform)
+        self.image_stack.create_layer()
+        self.assertGreater(UndoStack().undo_count(), 0)
+        self.size_changed_mock.reset_mock()
         self.image_stack.load_image(image)
-        UndoStack().undo()
-        restored = self.image_stack.active_layer
-        assert isinstance(restored, TransformLayer)
-        self.assertEqual(transform, restored.transform)
+        self.size_changed_mock.assert_not_called()
+        self.assertEqual(document_changed.call_count, 2)
+        self.assertEqual(UndoStack().undo_count(), 0)
+
+    def test_load_layer_stack_replaces_document(self) -> None:
+        """Loading a layer stack clears the undo history and emits `document_changed`."""
+        self.image_stack.load_image(QImage(INIT_IMAGE))
+        self.image_stack.create_layer()
+        document_changed = MagicMock()
+        self.image_stack.document_changed.connect(document_changed)
+        new_stack = LayerGroup('loaded')
+        new_stack.insert_layer(ImageLayer(QImage(INIT_IMAGE), 'loaded layer'), 0)
+        self.image_stack.load_layer_stack(new_stack, QImage(INIT_IMAGE).size())
+        document_changed.assert_called_once()
+        self.assertEqual(UndoStack().undo_count(), 0)
 
     def test_load_layer_stack_resets_selection_transform(self) -> None:
         """Loading a layer stack clears the selection layer's transformation."""
@@ -152,36 +164,6 @@ class ImageStackTest(IntraPaintTestCase):
         new_stack.insert_layer(ImageLayer(QImage(INIT_IMAGE), 'loaded layer'), 0)
         self.image_stack.load_layer_stack(new_stack, QImage(INIT_IMAGE).size())
         self.assertTrue(self.image_stack.selection_layer.transform.isIdentity())
-
-    def test_load_image_changes_document(self) -> None:
-        """Each load gets a new document id, even at the same size, and undo and redo switch between them."""
-        document_changed = MagicMock()
-        self.image_stack.document_changed.connect(document_changed)
-        image = QImage(INIT_IMAGE)
-        self.image_stack.load_image(image)
-        first_id = self.image_stack.document_id
-        self.image_stack.load_image(image)
-        second_id = self.image_stack.document_id
-        self.assertNotEqual(first_id, second_id)
-        self.assertEqual(document_changed.call_count, 2)
-        document_changed.assert_called_with(second_id)
-        UndoStack().undo()
-        self.assertEqual(self.image_stack.document_id, first_id)
-        document_changed.assert_called_with(first_id)
-        UndoStack().redo()
-        self.assertEqual(self.image_stack.document_id, second_id)
-        document_changed.assert_called_with(second_id)
-
-    def test_load_layer_stack_changes_document(self) -> None:
-        """Loading a layer stack gets a new document id, and undoing it restores the previous one."""
-        self.image_stack.load_image(QImage(INIT_IMAGE))
-        first_id = self.image_stack.document_id
-        new_stack = LayerGroup('loaded')
-        new_stack.insert_layer(ImageLayer(QImage(INIT_IMAGE), 'loaded layer'), 0)
-        self.image_stack.load_layer_stack(new_stack, QImage(INIT_IMAGE).size())
-        self.assertNotEqual(self.image_stack.document_id, first_id)
-        UndoStack().undo()
-        self.assertEqual(self.image_stack.document_id, first_id)
 
     def test_layer_create(self) -> None:
         """Test creating new layers and layer groups"""

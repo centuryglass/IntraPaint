@@ -182,7 +182,7 @@ GENERATOR_LOAD_ERROR_MESSAGE = _tr('Unable to load the {generator_name} image ge
 CONFIRM_QUIT_TITLE = _tr('Quit now?')
 CONFIRM_QUIT_MESSAGE = _tr('All unsaved changes will be lost.')
 NEW_IMAGE_CONFIRMATION_TITLE = _tr('Create new image?')
-NEW_IMAGE_CONFIRMATION_MESSAGE = _tr('This replaces the current image. Undo brings it back.')
+NEW_IMAGE_CONFIRMATION_MESSAGE = _tr('This will discard all unsaved changes.')
 SAVE_ERROR_TITLE = _tr('Save failed')
 LOAD_ERROR_TITLE = _tr('Open failed')
 SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE = _tr('Saving as "{file_path}" failed due to an unknown error, try saving in a'
@@ -195,7 +195,7 @@ RELOAD_ERROR_TITLE = _tr('Reload failed')
 RELOAD_ERROR_MESSAGE_INVALID_FILE = _tr('Image path "{file_path}" is not a valid image file.')
 RELOAD_ERROR_MESSAGE_NO_IMAGE = _tr('Enter an image path or click "Open Image" first.')
 RELOAD_CONFIRMATION_TITLE = _tr('Reload image?')
-RELOAD_CONFIRMATION_MESSAGE = _tr('This replaces the current image. Undo brings it back.')
+RELOAD_CONFIRMATION_MESSAGE = _tr('This will discard all unsaved changes.')
 METADATA_UPDATE_TITLE = _tr('Metadata updated')
 METADATA_UPDATE_MESSAGE = _tr('On save, current image generation parameters will be stored within the image')
 LOAD_LAYER_ERROR_TITLE = _tr('Opening layers failed')
@@ -286,14 +286,8 @@ class AppController(MenuBuilder):
                                        config.get(AppConfig.MIN_EDIT_SIZE), config.get(AppConfig.MAX_EDIT_SIZE))
         self._generation_area_controller = GenerationAreaController(self._image_stack)
 
-        # `Cache.LAST_FILE_PATH`, `_metadata` and `_exif` describe the open document's file, and `_on_document_changed`
-        # swaps them when the document changes. Load paths assign them after the image stack loads.
         self._metadata: Optional[dict[str, Any]] = None
         self._exif: Optional[Image.Exif] = None
-        self._document_id = self._image_stack.document_id
-        # File info of documents an undo or redo can switch back to, by `ImageStack.document_id`:
-        self._closed_document_files: dict[int, tuple[str, Optional[dict[str, Any]], Optional[Image.Exif]]] = {}
-        self._image_stack.document_changed.connect(self._on_document_changed)
 
         # Initialize main window:
         self._window = MainWindow(self._image_stack)
@@ -856,7 +850,10 @@ class AppController(MenuBuilder):
                                                                                    discards_work=True)):
             new_image = QImage(image_size, QImage.Format.Format_ARGB32_Premultiplied)
             new_image.fill(Cache().get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, Qt.GlobalColor.white))
+            Cache().set(Cache.LAST_FILE_PATH, '')
             self._image_stack.load_image(new_image)
+            self._metadata = None
+            self._exif = None
             AppStateTracker.set_app_state(APP_STATE_EDITING)
 
     @menu_action(MENU_FILE, 'save_shortcut', priority=1,
@@ -1039,46 +1036,43 @@ class AppController(MenuBuilder):
                 logger.warning(f'Expected single image, got list with length {len(file_path)}')
             file_path = file_path[0]
         assert isinstance(file_path, str)
+        self._exif = Image.Exif()
+        self._metadata = None
         try:
             assert file_path is not None
             if file_path.lower().endswith('.ora'):
                 metadata = read_ora_image(self._image_stack, file_path)
-                self._exif = Image.Exif()
                 if metadata is not None and len(metadata) > 0:
                     self._metadata = json.loads(metadata)
             else:
                 image, exif, image_info = load_image(file_path)
                 # try and load metadata:
-                image_metadata: Optional[dict[str, Any]] = None
-                image_exif = Image.Exif()
                 if image_info is not None:
                     if METADATA_COMMENT_KEY in image_info and METADATA_PARAMETER_KEY not in image_info:
                         # noinspection PyTypeChecker
                         image_info[METADATA_PARAMETER_KEY] = image_info[METADATA_COMMENT_KEY]
-                    image_metadata = image_info
+                    self._metadata = image_info
                 if exif is not None:
                     if isinstance(exif, Image.Exif):
-                        image_exif = exif
-                    elif (image_metadata is None or METADATA_PARAMETER_KEY
-                          not in image_metadata) and isinstance(exif, dict):
-                        image_metadata = exif
+                        self._exif = exif
+                    elif (self._metadata is None or METADATA_PARAMETER_KEY
+                          not in self._metadata) and isinstance(exif, dict):
+                        self._metadata = exif
                         if 'exif' in exif:
-                            image_exif.load(exif['exif'])
-                if image_metadata is None or METADATA_PARAMETER_KEY not in image_metadata:
-                    exif_tags = image_exif.get_ifd(IFD.Exif)
+                            self._exif.load(exif['exif'])
+                if (self._metadata is None or METADATA_PARAMETER_KEY not in self._metadata) and self._exif is not None:
+                    exif_tags = self._exif.get_ifd(IFD.Exif)
                     description = exif_tags.get(ExifTags.Base.ImageDescription)
                     if description is None:
-                        description = image_exif.get(ExifTags.Base.ImageDescription)
+                        description = self._exif.get(ExifTags.Base.ImageDescription)
                     if description is not None:
-                        if image_metadata is None:
-                            image_metadata = {}
-                        image_metadata[METADATA_PARAMETER_KEY] = description
+                        if self._metadata is None:
+                            self._metadata = {}
+                        self._metadata[METADATA_PARAMETER_KEY] = description
                 if self._should_load_frames(file_path, image.size()):
                     load_frames_as_image(self._image_stack, load_image_frames(file_path))
                 else:
                     self._image_stack.load_image(image)
-                self._metadata = image_metadata
-                self._exif = image_exif
             cache.set(Cache.LAST_FILE_PATH, file_path)
 
             # File loaded, attempt to apply metadata:
@@ -1124,14 +1118,6 @@ class AppController(MenuBuilder):
             self._window.setUpdatesEnabled(True)
             self._window.update()
             self._window.repaint()
-
-    def _on_document_changed(self, document_id: int) -> None:
-        """Stores the closed document's save path and metadata, and restores the open document's."""
-        self._closed_document_files[self._document_id] = (Cache().get(Cache.LAST_FILE_PATH), self._metadata,
-                                                          self._exif)
-        self._document_id = document_id
-        file_path, self._metadata, self._exif = self._closed_document_files.pop(document_id, ('', None, None))
-        Cache().set(Cache.LAST_FILE_PATH, file_path)
 
     @menu_action(MENU_FILE, 'load_layers_shortcut', 4,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])

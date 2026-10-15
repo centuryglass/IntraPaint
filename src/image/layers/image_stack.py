@@ -104,10 +104,10 @@ class ImageStack(QObject):
     generation_area_bounds_changed = Signal(QRect)
     content_changed = Signal()
     size_changed = Signal(QSize)
-    document_changed = Signal(int)
-    """Emitted with the new `document_id` when loading an image, or undoing or redoing a load, swaps the document.
+    document_changed = Signal()
+    """Emitted after `load_image` or `load_layer_stack` replaces the document, even at the same size.
 
-    It is emitted from inside the load's undo action, so handlers must not commit undo actions of their own."""
+    State that belongs to one document, outside the image stack, clears itself here."""
     layer_added = Signal(Layer)
     layer_removed = Signal(Layer)
     active_layer_changed = Signal(Layer)
@@ -121,8 +121,6 @@ class ImageStack(QObject):
         """Initializes the image stack with an empty initial layer."""
         super().__init__()
         self._size = image_size
-        self._document_id = 0
-        self._next_document_id = 1
         self._min_generation_area_size = min_generation_area_size
         self._max_generation_area_size = max_generation_area_size
         self._generation_area = QRect(0, 0, generation_area_size.width(), generation_area_size.height())
@@ -310,25 +308,6 @@ class ImageStack(QObject):
         if not QRect(QPoint(0, 0), new_size).contains(self._generation_area):
             self._set_generation_area_internal(self._generation_area)
         self.size_changed.emit(self.size)
-
-    @property
-    def document_id(self) -> int:
-        """Identifies the open document. Each load assigns a new id, and undoing the load restores the previous one.
-
-        Per-document state outside the image stack records this id and checks it, or listens to `document_changed`.
-        A same-size load emits no `size_changed`.
-        """
-        return self._document_id
-
-    def _claim_document_id(self) -> tuple[int, int]:
-        """Returns the current document id and a new one for a load to switch to."""
-        new_id = self._next_document_id
-        self._next_document_id += 1
-        return self._document_id, new_id
-
-    def _set_document_id(self, document_id: int) -> None:
-        self._document_id = document_id
-        self.document_changed.emit(document_id)
 
     @property
     def width(self) -> int:
@@ -1444,14 +1423,8 @@ class ImageStack(QObject):
 
     def load_layer_stack(self, layer_stack: LayerGroup, new_size: QSize,
                          new_active_layer: Optional[Layer] = None) -> None:
-        """Loads a new image from layer data."""
+        """Replaces the document with new layer data, clearing the undo history and emitting `document_changed`."""
         assert not self._layer_stack.contains_recursive(layer_stack)
-        saved_state = self._layer_stack.save_state()
-        saved_selection_state = self.selection_layer.save_state()
-        old_size = self.size
-        old_layers = self.layers
-        old_layers.remove(self._layer_stack)
-        active_id = self.active_layer_id
         new_layers: list[Layer] = []
         while layer_stack.count > 0:
             new_layers.append(layer_stack.get_layer_by_index(0))
@@ -1463,105 +1436,71 @@ class ImageStack(QObject):
         else:
             new_active_id = self._layer_stack.id
 
-        old_document_id, new_document_id = self._claim_document_id()
-
         @self._with_batch_content_update
-        def _load(loaded=layer_stack, size=new_size, next_active_id=new_active_id):
-            self.selection_layer.clear(False)
-            self.selection_layer.clear_context_pins(False)
-            self.selection_layer.adjust_local_bounds(QRect(QPoint(), size), False)
-            self.selection_layer.set_transform(QTransform())
-            assert self.selection_layer.transformed_bounds.size() == new_size
-            self._active_layer_id = self._layer_stack.id
-            while self._layer_stack.count > 0:
-                self._remove_layer_internal(self._layer_stack.child_layers[0])
-            self._layer_stack.set_name(loaded.name)
-            self._layer_stack.set_visible(loaded.visible)
-            self._layer_stack.set_composition_mode(loaded.composition_mode)
-            self._layer_stack.set_opacity(loaded.opacity)
-            self.size = size
+        def _load():
+            self._clear_for_load(new_size)
+            self._layer_stack.set_name(layer_stack.name)
+            self._layer_stack.set_visible(layer_stack.visible)
+            self._layer_stack.set_composition_mode(layer_stack.composition_mode)
+            self._layer_stack.set_opacity(layer_stack.opacity)
+            self.size = new_size
             for new_layer in new_layers:
                 self._insert_layer_internal(new_layer, self._layer_stack, self._layer_stack.count)
-            active_layer = self._layer_stack.get_layer_by_id(next_active_id)
-            assert active_layer is not None, f'failed to find layer {next_active_id}'
-            self._active_layer_id = next_active_id
+            active_layer = self._layer_stack.get_layer_by_id(new_active_id)
+            assert active_layer is not None, f'failed to find layer {new_active_id}'
+            self._active_layer_id = new_active_id
             self.active_layer_changed.emit(active_layer)
-            self._set_document_id(new_document_id)
 
-        @self._with_batch_content_update
-        def _undo_load(selection_state=saved_selection_state, stack_state=saved_state, size=old_size,
-                       active=active_id):
-            self.size = size
-            self.selection_layer.restore_state(selection_state)
-            self._active_layer_id = self._layer_stack.id
-            while self._layer_stack.count > 0:
-                self._remove_layer_internal(self._layer_stack.child_layers[0])
-            self._layer_stack.restore_state(stack_state)
-            self._update_z_values()
-            self._active_layer_id = active
-            active_layer = self._layer_stack.get_layer_by_id(self._active_layer_id)
-            self.active_layer_changed.emit(active_layer)
-            self._set_document_id(old_document_id)
-
-        UndoStack().commit_action(_load, _undo_load, 'ImageStack.load_layer_stack')
+        _load()
+        self._finish_load()
 
     def load_image(self, image_data: QImage):
         """
-        Loads a new image to be edited. This clears all layers, updates the image size, and inserts the image as a new
-        active layer.
+        Replaces the document with a single image layer, clearing the undo history and emitting `document_changed`.
 
         Parameters
         ----------
         image_data: QImage
             Layer stack size will be adjusted to match image data size.
         """
-        saved_state = self._layer_stack.save_state()
-        saved_selection_state = self.selection_layer.save_state()
-        old_size = self.size
-
         new_layer = self._create_layer_internal(None, image_data)
         new_size = new_layer.size
-        gen_area = QRect(self._generation_area)
-        new_gen_area = self._get_closest_valid_generation_area(gen_area, new_layer.transformed_bounds)
-        last_active_id = self.active_layer_id
-        old_document_id, new_document_id = self._claim_document_id()
+        new_gen_area = self._get_closest_valid_generation_area(QRect(self._generation_area),
+                                                               new_layer.transformed_bounds)
 
         @self._with_batch_content_update
-        def _load(loaded=new_layer, gen_rect=new_gen_area, size=new_size):
-            self.selection_layer.clear(False)
-            self.selection_layer.clear_context_pins(False)
-            self.selection_layer.adjust_local_bounds(QRect(QPoint(), size), False)
-            self.selection_layer.set_transform(QTransform())
-            assert self.selection_layer.transformed_bounds.size() == new_size
-            self._active_layer_id = self._layer_stack.id
-            while self._layer_stack.count > 0:
-                self._remove_layer_internal(self._layer_stack.child_layers[0])
+        def _load():
+            self._clear_for_load(new_size)
             self._layer_stack.set_visible(True)
             self._layer_stack.set_opacity(1.0)
             self._layer_stack.set_composition_mode(CompositeMode.NORMAL)
             self._insert_layer_internal(new_layer, self._layer_stack, 0)
             assert self.has_image
-            self._set_generation_area_internal(gen_rect)
-            self._set_active_layer_internal(loaded)
-            self.size = size
-            self._set_document_id(new_document_id)
+            self._set_generation_area_internal(new_gen_area)
+            self._set_active_layer_internal(new_layer)
+            self.size = new_size
 
-        # noinspection PyDefaultArgument
-        @self._with_batch_content_update
-        def _undo_load(unloaded=new_layer, state=saved_state, selection_state=saved_selection_state, gen_rect=gen_area,
-                       size=old_size, active_id=last_active_id):
-            assert self.count == 1, f'Unexpected layer count {self.count} when reversing image load!'
-            self._remove_layer_internal(unloaded)
-            self._active_layer_id = self._layer_stack.id
-            self._layer_stack.restore_state(state)
-            self._update_z_values()
-            self.selection_layer.restore_state(selection_state)
-            self._set_generation_area_internal(gen_rect)
-            self._set_active_layer_internal(active_id)
-            self.size = size
-            self._set_document_id(old_document_id)
+        _load()
+        self._finish_load()
 
-        UndoStack().commit_action(_load, _undo_load, 'ImageStack.set_image')
+    def _clear_for_load(self, new_size: QSize) -> None:
+        """Removes every layer and resets the selection layer to cover `new_size`."""
+        self.selection_layer.clear(False)
+        self.selection_layer.clear_context_pins(False)
+        self.selection_layer.adjust_local_bounds(QRect(QPoint(), new_size), False)
+        self.selection_layer.set_transform(QTransform())
+        assert self.selection_layer.transformed_bounds.size() == new_size
+        self._active_layer_id = self._layer_stack.id
+        while self._layer_stack.count > 0:
+            self._remove_layer_internal(self._layer_stack.child_layers[0])
+
+    def _finish_load(self) -> None:
+        """Clears the undo history, which holds actions on the replaced document, and emits `document_changed`.
+
+        `UndoStack.clear` asserts that no undo group is open, so a load can't run inside `UndoStack.combining_actions`.
+        """
+        UndoStack().clear()
+        self.document_changed.emit()
 
     def flush_render(self) -> None:
         """Runs every scheduled layer group render and content_changed emission now, without waiting on the event

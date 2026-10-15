@@ -18,7 +18,6 @@ from src.controller.image_generation.test_generator import TestGenerator
 from src.image.layers.image_layer import ImageLayer
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
-from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
 from src.util.arg_parser import build_arg_parser
 from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_READ_FORMATS, \
@@ -261,63 +260,6 @@ class TestAppController(IntraPaintTestCase):
                                          f'Metadata expected but not found for format {file_format}')
 
 
-class TestUndoImageLoad(IntraPaintTestCase):
-    """Tests that undoing or redoing an image load also switches the save path and metadata."""
-
-    def setUp(self) -> None:
-        super().setUp()
-        args = build_arg_parser(include_edit_params=False).parse_args(['--window_size', '800x600', '--mode', 'mock'])
-        args.mode = 'mock'
-        args.server_url = ''
-        args.fast_ngrok_connection = False
-        self.controller = AppController(args)
-        for warning_key in (AppConfig.WARN_BEFORE_RGB_SAVE, AppConfig.WARN_BEFORE_LAYERLESS_SAVE,
-                            AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA, AppConfig.WARN_BEFORE_WRITE_ONLY_SAVE,
-                            AppConfig.WARN_BEFORE_COLOR_LOSS, AppConfig.WARN_BEFORE_FIXED_SIZE_SAVE):
-            AppConfig().set(warning_key, False)
-        self.temp_dir = tempfile.TemporaryDirectory()
-        self.first_path = self._write_image('first.png', QColor(255, 0, 0))
-        self.second_path = self._write_image('second.png', QColor(0, 0, 255))
-
-    def tearDown(self) -> None:
-        self.temp_dir.cleanup()
-        super().tearDown()
-
-    def _write_image(self, name: str, color: QColor) -> str:
-        path = os.path.join(self.temp_dir.name, name)
-        image = QImage(QSize(32, 32), QImage.Format.Format_ARGB32)
-        image.fill(color)
-        image.save(path)
-        return path
-
-    @patch('src.controller.app_controller.request_confirmation', return_value=False)
-    def test_save_after_undoing_open_writes_previous_file(self, _mock_confirm) -> None:
-        """Saving after undoing an open saves to the file that is showing again, leaving the undone file alone."""
-        self.controller.load_image(self.first_path)
-        self.controller._metadata = {'first': True}
-        self.controller.load_image(self.second_path)
-        UndoStack().undo()
-        self.assertEqual(Cache().get(Cache.LAST_FILE_PATH), self.first_path)
-        self.assertEqual(self.controller._metadata, {'first': True})
-        self.controller.save_image()
-        self.assertEqual(QImage(self.second_path).pixelColor(1, 1), QColor(0, 0, 255))
-        UndoStack().redo()
-        self.assertEqual(Cache().get(Cache.LAST_FILE_PATH), self.second_path)
-        self.assertNotEqual(self.controller._metadata, {'first': True})
-
-    @patch('src.controller.app_controller.request_confirmation', return_value=True)
-    @patch('src.controller.app_controller.NewImageModal')
-    def test_new_image_clears_save_path_until_undone(self, mock_modal, _mock_confirm) -> None:
-        """A new image has no save path, and undoing it restores the opened file's path."""
-        self.controller.load_image(self.first_path)
-        mock_modal.return_value.show_image_modal.return_value = QSize(32, 32)
-        self.controller.new_image()
-        self.assertEqual(Cache().get(Cache.LAST_FILE_PATH), '')
-        self.assertIsNone(self.controller._metadata)
-        UndoStack().undo()
-        self.assertEqual(Cache().get(Cache.LAST_FILE_PATH), self.first_path)
-
-
 class TestOpenAnimation(IntraPaintTestCase):
     """Tests opening animated images as one layer per frame."""
 
@@ -434,6 +376,14 @@ class TestRestorePreviousChoicesAction(IntraPaintTestCase):
         self.window.set_image_selector_visible(False)
         self.assertTrue(self._action().isEnabled())
         self.image_stack.size = QSize(8, 8)
+        self.assertFalse(self._action().isEnabled())
+
+    def test_disabled_after_opening_a_same_size_image(self) -> None:
+        """Opening another image of the same size takes the previous image's batch off the menu."""
+        self._complete_a_generation()
+        self.window.set_image_selector_visible(False)
+        self.assertTrue(self._action().isEnabled())
+        self.image_stack.load_image(self._image(QColor(200, 100, 0)))
         self.assertFalse(self._action().isEnabled())
 
     def test_disabled_outside_the_editing_state(self) -> None:
