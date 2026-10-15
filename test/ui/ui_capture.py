@@ -15,9 +15,10 @@ from dataclasses import dataclass
 from typing import Callable, Optional, TYPE_CHECKING
 from unittest.mock import patch
 
-from PySide6.QtCore import QEvent, QPoint, QRect, QSize, Qt
+from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, QSize, Qt
 from PySide6 import QtGui
-from PySide6.QtGui import QFocusEvent, QFontMetrics, QImage, QPainter, QPalette, QTextDocumentFragment
+from PySide6.QtGui import (QFocusEvent, QFontMetrics, QHoverEvent, QIcon, QImage, QPainter, QPalette, QPixmap,
+                           QTextDocumentFragment)
 from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QAbstractSpinBox, QApplication, QCheckBox,
                                QGroupBox, QLabel, QLayout, QPushButton, QSizePolicy, QStyle, QStyleOption,
                                QStyleOptionButton, QStyleOptionComboBox,
@@ -27,6 +28,7 @@ from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QAbstractSp
 
 from src.ui.ink_style import InkStyle, set_primary_button, set_signal
 from src.ui.input_fields.number_field import NumberField
+from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.input_fields.slider_field import SliderField
 
 if TYPE_CHECKING:
@@ -423,6 +425,48 @@ def _draw_number_field(painter: QPainter, rect: QRect, variant: str, state: Gall
     field.render(painter, QPoint())
 
 
+class _TextFreeSegmentedControl(SegmentedControl):
+    """A segmented control that draws no label text."""
+
+    def _paint_text(self, painter: QPainter, text: str, rect: QRect) -> None:
+        pass
+
+
+SEGMENTED_STATES = (GalleryState('normal', _ENABLED), GalleryState('hover', _ENABLED | State.State_MouseOver),
+                    GalleryState('focus', _FOCUSED), GalleryState('hint', _ENABLED),
+                    GalleryState('disabled', State.State_None))
+
+
+def _segment_icon() -> QIcon:
+    """Returns a plain square icon, so the gallery needs no icon files."""
+    pixmap = QPixmap(16, 16)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    painter.fillRect(3, 3, 10, 10, QApplication.palette().color(QPalette.ColorRole.Text))
+    painter.end()
+    return QIcon(pixmap)
+
+
+def _draw_segmented_control(painter: QPainter, rect: QRect, variant: str, state: GalleryState) -> None:
+    """Draws a real `SegmentedControl`. Variants are `<segment count>_<display mode>`; the second segment is checked
+    and the last is hinted in the hint state."""
+    count_text, mode_text = variant.split('_', 1)
+    count = int(count_text)
+    segments = [Segment(str(i), f'Option {i}', _segment_icon()) for i in range(count)]
+    control = _TextFreeSegmentedControl(segments, DisplayMode(mode_text))
+    control.set_value('1')
+    control.resize(rect.size())
+    control.setEnabled(state.enabled)
+    if state.state & State.State_MouseOver:
+        hover_pos = QPointF(control.segment_rect(0).center())
+        QApplication.sendEvent(control, QHoverEvent(QEvent.Type.HoverEnter, hover_pos, hover_pos, hover_pos))
+    if state.name == 'focus':
+        QApplication.sendEvent(control, QFocusEvent(QEvent.Type.FocusIn, Qt.FocusReason.TabFocusReason))
+    if state.name == 'hint':
+        control.set_hint_value(str(count - 1))
+    control.render(painter, QPoint())
+
+
 GALLERY_CONTROLS: tuple[GalleryControl, ...] = (
     GalleryControl('push_button', QSize(72, 28), ('plain', 'default', 'checked', 'flat', 'primary'), STANDARD_STATES,
                    _draw_push_button),
@@ -459,6 +503,10 @@ GALLERY_CONTROLS: tuple[GalleryControl, ...] = (
     GalleryControl('tooltip', QSize(100, 30), ('plain',), (STANDARD_STATES[0],), _draw_tooltip),
     GalleryControl('number_field', QSize(150, 24), ('slider', 'slider_pressure_off', 'slider_pressure_on', 'number'),
                    FIELD_STATES, _draw_number_field),
+    GalleryControl('segmented_control', QSize(200, 24),
+                   tuple(f'{count}_{mode.value}' for count in (2, 3, 4)
+                         for mode in (DisplayMode.ICON_AND_LABEL, DisplayMode.LABEL, DisplayMode.ICON)),
+                   SEGMENTED_STATES, _draw_segmented_control),
 )
 
 
