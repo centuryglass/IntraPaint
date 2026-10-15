@@ -98,7 +98,7 @@ class ImageGeneratorTest(IntraPaintTestCase):
         self.assertEqual(image.size(), GENERATION_AREA.size())
         self.assertEqual(image.pixelColor(10, 10), SOURCE_COLOR)
         self.assertIsNone(mask)
-        self.window.set_image_selector_visible.assert_called_once_with(True)
+        self.window.show_generated_options.assert_called_once()
 
     def test_finished_task_resets_state_and_loads_previews(self) -> None:
         """After the task finishes, loading ends, a new request is accepted, and each image reaches the window."""
@@ -128,7 +128,7 @@ class ImageGeneratorTest(IntraPaintTestCase):
         self.generator._generating = True  # pylint: disable=protected-access
         self.generator.start_and_manage_image_generation()
         self.assertEqual(self.generator.generate_calls, [])
-        self.window.set_image_selector_visible.assert_not_called()
+        self.window.show_generated_options.assert_not_called()
 
     def test_generate_error_closes_selector_and_shows_dialog(self) -> None:
         """Errors from `generate`, expected or not, close the selector, end loading and show an error dialog."""

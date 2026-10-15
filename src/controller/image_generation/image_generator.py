@@ -228,7 +228,7 @@ class ImageGenerator(MenuBuilder):
         inpaint_task.status_signal.connect(self._apply_status_update)
         inpaint_task.finish_signal.connect(_finished)
 
-        self._window.set_image_selector_visible(True)
+        self._window.show_generated_options()
         AppStateTracker.set_app_state(APP_STATE_LOADING)
         inpaint_task.start()
 

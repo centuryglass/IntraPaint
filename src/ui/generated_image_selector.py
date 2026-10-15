@@ -1,6 +1,7 @@
 """
 Provides an interface for choosing between AI-generated changes to selected image content.
 """
+import logging
 import math
 import sys
 import time
@@ -41,6 +42,8 @@ from src.util.visual.text_drawing_utils import max_font_size, get_key_display_st
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.generated_image_selector'
 
+logger = logging.getLogger(__name__)
+
 
 def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     """Helper to make `QCoreApplication.translate` more concise."""
@@ -49,9 +52,8 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 CHANGE_ZOOM_CHECKBOX_LABEL = _tr('Zoom to changes')
 SHOW_SELECTION_OUTLINES_LABEL = _tr('Show selection')
-MODE_INPAINT = _tr('Inpaint')
 CANCEL_BUTTON_TEXT = _tr('Cancel')
-CANCEL_BUTTON_TOOLTIP = _tr('This will discard all generated images.')
+CANCEL_BUTTON_TOOLTIP = _tr('Close without choosing. These options stay available to re-open.')
 PREVIOUS_BUTTON_TEXT = _tr('Previous')
 ZOOM_BUTTON_TEXT = _tr('Toggle zoom')
 NEXT_BUTTON_TEXT = _tr('Next')
@@ -97,7 +99,7 @@ DEFAULT_CONTROL_HINT = _tr("""
                                </td>
                                <td><pre>    </pre></td>
                                <td>
-                                 {escape_key_hint}: discard all options
+                                 {escape_key_hint}: close, options stay re-openable
                                </td>
                               </tr>
                             </table>
@@ -128,26 +130,86 @@ ZOOM_CONTROL_HINT = _tr("""
 VIEW_BACKGROUND = Qt.GlobalColor.black
 
 
+class _OptionData:
+    """One batch of generated options, with the generation context needed to apply or re-open them later.
+
+    Options are applied with the batch's own mask, generation area and edit mode, so changing the selection or edit
+    mode after generating doesn't change what an option inserts. `edit_mode` is the untranslated value `Cache.EDIT_MODE`
+    holds.
+    """
+
+    def __init__(self, image_stack: ImageStack) -> None:
+        self.option_images: list[QImage] = [image_stack.qimage_generation_area_content()]
+        self.generation_area = image_stack.generation_area
+        self.selection_polys = image_stack.selection_layer.outline
+        self.mask_image = image_stack.selection_layer.mask_image
+        self.edit_mode = Cache().get(Cache.EDIT_MODE)
+        change_bounds = image_stack.selection_layer.get_selection_gen_area(True)
+        if change_bounds is None or change_bounds == self.generation_area:
+            # The whole generation area changed, so "zoom to changes" has nothing smaller to zoom to.
+            self.change_bounds: Optional[QRect] = None
+        else:
+            # Relative to the generation area, the coordinate space of the option images:
+            self.change_bounds = change_bounds.translated(-self.generation_area.x(), -self.generation_area.y())
+
+        self.loading_image = QImage(self.generation_area.size(),
+                                     QImage.Format.Format_ARGB32_Premultiplied)
+        self.loading_image.fill(Qt.GlobalColor.black)
+        painter = QPainter(self.loading_image)
+        painter.setPen(Qt.GlobalColor.white)
+        painter.drawText(QRect(0, 0, self.loading_image.width(), self.loading_image.height()),
+                         Qt.AlignmentFlag.AlignCenter,
+                         LOADING_IMG_TEXT)
+        painter.end()
+
+    def has_results(self) -> bool:
+        """Returns whether at least one generated image has replaced its loading placeholder."""
+        return any(image is not self.loading_image for image in self.option_images[1:])
+
+    def discard_placeholders(self) -> list[int]:
+        """Removes loading placeholders from `option_images`, returning the indices of the images that remain."""
+        kept = [i for i, image in enumerate(self.option_images) if image is not self.loading_image]
+        self.option_images = [self.option_images[i] for i in kept]
+        return kept
+
+
 class GeneratedImageSelector(QWidget):
-    """Shows all images from an image generation operation, allows the user to select one or discard all of them."""
+    """Shows all images from an image generation operation, allows the user to select one or discard all of them.
+
+    Closing the selector stores the batch it showed if any images arrived, and `restore_previous_options` shows it
+    again. Callers pick the batch before showing the selector, with `start_new_options` or `restore_previous_options`.
+    """
 
     cancel_generation = Signal()
+    previous_options_available = Signal(bool)
+    """Emitted when `can_restore_previous` changes."""
 
     def __init__(self,
                  image_stack: ImageStack,
                  close_selector: Callable) -> None:
         super().__init__(None)
         self._image_stack = image_stack
-        self._generation_area = image_stack.generation_area
+        self._option_data: _OptionData
+        self._prev_options: Optional[_OptionData] = None
+        # Scene items for `_prev_options`, by option index. Re-opening reuses them, because building an item rescales
+        # its image.
+        self._prev_option_items: list['_ImageOption'] = []
+        self._previous_options_available = False
+        # False while a re-opened batch is showing, which has no placeholders left to fill:
+        self._accepting_results = False
+        # True once `archive_current_options` has stored the batch that is showing:
+        self._showing_archived = False
+        image_stack.size_changed.connect(self._on_image_stack_resized)
+
         self._close_selector = close_selector
-        self._options: list[_ImageOption] = []
+        self._option_items: list[_ImageOption] = []
         self._outlines: list[Outline] = []
         self._selections: list[SelectionOutline] = []
-        self._loading_image = QImage()
         self._zoomed_in = False
         self._zoom_to_changes = AppConfig().get(AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED)
-        self._change_bounds: Optional[QRect] = None
         self._zoom_index = 0
+        # The region "zoom to changes" zooms to in the batch showing, or None to hide that checkbox:
+        self._change_bounds: Optional[QRect] = None
         self._last_scroll_time = time.time() * 1000
         self._toast_message: Optional[ToastMessageItem] = None
 
@@ -215,7 +277,7 @@ class GeneratedImageSelector(QWidget):
         def _cancel() -> None:
             if AppStateTracker.app_state() == APP_STATE_LOADING:
                 self.cancel_generation.emit()
-            self._close_selector()
+            self._close_and_archive()
 
         self._cancel_button.clicked.connect(_cancel)
         self._button_bar_layout.addWidget(self._cancel_button)
@@ -251,18 +313,24 @@ class GeneratedImageSelector(QWidget):
         self._next_button.clicked.connect(self._zoom_next)
         _add_key_hint(self._next_button, KeyConfig.MOVE_RIGHT)
         self._button_bar_layout.addWidget(self._next_button)
-        self.reset()
+        self.start_new_options()
 
-    def reset(self) -> None:
-        """Remove all old options and prepare for new ones."""
-        self._generation_area = self._image_stack.generation_area
-        self._zoom_index = 0
-        self._clear_manual_view()
-        cache = Cache()
+    def _rebuild_scene(self, include_loading_images: bool, reused_items: Optional[list['_ImageOption']] = None) -> None:
+        """Rebuilds the view's scene items, checkboxes and zoom state from the batch in `_option_data`.
+
+        Parameters
+        ----------
+        include_loading_images : bool
+            Whether to add placeholders up to the expected batch size.
+        reused_items : list[_ImageOption], optional
+            Existing items for the batch's options, by index. An index without an item gets a new one.
+        """
+        self._showing_archived = False
+        # Clear old scene:
         scene = self._view.scene()
         assert scene is not None
-        # Clear the scene:
-        for scene_item_list in (self._selections, self._outlines, self._options):
+        batch = self._option_data
+        for scene_item_list in (self._selections, self._outlines, self._option_items):
             assert isinstance(scene_item_list, list)
             while len(scene_item_list) > 0:
                 scene_item = scene_item_list.pop()
@@ -272,87 +340,148 @@ class GeneratedImageSelector(QWidget):
                 if scene_item in scene.items():
                     scene.removeItem(scene_item)
 
-        # Configure checkboxes and change bounds:
-        if cache.get(Cache.EDIT_MODE) == MODE_INPAINT:
+        # Configure checkboxes and change bounds from the batch's own generation context:
+        if batch.edit_mode == EDIT_MODE_INPAINT:
             self._selection_outline_checkbox.setVisible(True)
-            change_bounds = self._image_stack.selection_layer.get_selection_gen_area(True)
-            if change_bounds != self._image_stack.generation_area and change_bounds is not None:
-                change_bounds.translate(-self._image_stack.generation_area.x(), -self._image_stack.generation_area.y())
-                self._change_bounds = change_bounds
-                self._change_zoom_checkbox.setVisible(True)
-            else:
-                self._change_bounds = None
-                self._change_zoom_checkbox.setVisible(False)
+            self._change_bounds = batch.change_bounds
+            self._change_zoom_checkbox.setVisible(batch.change_bounds is not None)
         else:
             self._selection_outline_checkbox.setVisible(False)
             self._change_zoom_checkbox.setVisible(False)
             self._change_bounds = None
 
-        # Add initial images, placeholders for expected images:
-        original_image = self._image_stack.qimage_generation_area_content()
-        original_option = _ImageOption(original_image, ORIGINAL_CONTENT_LABEL)
-        scene.addItem(original_option)
-        self._options.append(original_option)
-        self._outlines.append(Outline(scene, self._view))
-        self._outlines[0].outlined_region = self._options[0].bounds
-        if Cache().get(Cache.EDIT_MODE) == MODE_INPAINT:
-            self._add_option_selection_outline(0)
+        # Add an item for each image the batch already holds. `add_image_option` would also append the image to the
+        # batch, duplicating it.
+        assert len(batch.option_images) > 0, 'option_data should always have an initial image!'
+        for i, image in enumerate(batch.option_images):
+            if reused_items is not None and i < len(reused_items):
+                self._add_option_item(reused_items[i])
+            else:
+                label = ORIGINAL_CONTENT_LABEL if i == 0 else LABEL_TEXT_IMAGE_OPTION.format(index=i)
+                self._add_option_item(_ImageOption(image, label))
 
-        self._loading_image = QImage(original_image.size(), QImage.Format.Format_ARGB32_Premultiplied)
-        self._loading_image.fill(Qt.GlobalColor.black)
-        painter = QPainter(self._loading_image)
-        painter.setPen(Qt.GlobalColor.white)
-        painter.drawText(QRect(0, 0, self._loading_image.width(), self._loading_image.height()),
-                         Qt.AlignmentFlag.AlignCenter,
-                         LOADING_IMG_TEXT)
-        painter.end()
+        if include_loading_images:
+            cache = Cache()
+            expected_count = cache.get(Cache.BATCH_SIZE) * cache.get(Cache.BATCH_COUNT)
+            for i in range(len(self._option_items), expected_count + 1):
+                self.add_image_option(batch.loading_image, i - 1)
 
-        expected_count = cache.get(Cache.BATCH_SIZE) * cache.get(Cache.BATCH_COUNT)
-        for i in range(expected_count):
-            self.add_image_option(self._loading_image, i)
-
-        if self._zoomed_in and TIMELAPSE_MODE_FLAG not in sys.argv:
-            self.toggle_zoom()
-            self._view.reset_scale()
-        elif TIMELAPSE_MODE_FLAG in sys.argv:
-            self._zoom_to_option(0)
+        # Every showing starts on the full view of all options:
+        self._zoom_index = 0
+        self._clear_manual_view()
+        self._zoomed_in = False
         self._apply_ideal_image_arrangement()
+        if TIMELAPSE_MODE_FLAG in sys.argv:
+            self._zoom_to_option(0)
+        else:
+            self._view.reset_scale()
+            self._page_top_label.setText(SELECTION_TITLE)
+            self._status_label.setText(self._get_control_hint())
+
+    def start_new_options(self) -> None:
+        """Begins a batch: captures the current image content and shows placeholders for the images to come."""
+        self._accepting_results = True
+        self._option_data = _OptionData(self._image_stack)
+        self._rebuild_scene(include_loading_images=True)
+
+    def archive_current_options(self) -> None:
+        """Stores the batch that is showing for `restore_previous_options`, if any of its images arrived.
+
+        Only the first call for each showing stores anything, so every path that closes the selector can call it.
+        """
+        batch = self._option_data
+        if not self._showing_archived and batch.has_results():
+            # `_option_items` still matches `option_images` index for index until the placeholders are dropped:
+            kept = batch.discard_placeholders()
+            self._prev_option_items = [self._option_items[i] for i in kept]
+            self._prev_options = batch
+            self._showing_archived = True
+        self._report_previous_options_available()
+
+    def can_restore_previous(self) -> bool:
+        """Returns whether a batch is stored and its generation area is still within the image."""
+        if self._prev_options is None:
+            return False
+        return self._image_stack.bounds.contains(self._prev_options.generation_area)
+
+    def restore_previous_options(self) -> None:
+        """Shows the stored batch again."""
+        if not self.can_restore_previous():
+            raise RuntimeError('No previous options found!')
+        batch = self._prev_options
+        assert batch is not None
+        self._accepting_results = False
+        # The first option shows the current canvas content, so each option can be compared with it:
+        batch.option_images[0] = self._image_stack.qimage_generation_area_content()
+        self._prev_option_items[0] = _ImageOption(batch.option_images[0], ORIGINAL_CONTENT_LABEL)
+        self._option_data = batch
+        self._rebuild_scene(include_loading_images=False, reused_items=self._prev_option_items)
+
+    def _on_image_stack_resized(self, _size: QSize) -> None:
+        """Re-checks `can_restore_previous`, which a resize can change."""
+        self._report_previous_options_available()
+
+    def _report_previous_options_available(self) -> None:
+        """Emits `previous_options_available` when the answer changes."""
+        available = self.can_restore_previous()
+        if available != self._previous_options_available:
+            self._previous_options_available = available
+            self.previous_options_available.emit(available)
+
+    def _close_and_archive(self) -> None:
+        """Stores the batch that is showing, then closes the selector."""
+        self.archive_current_options()
+        self._close_selector()
 
     def _add_option_selection_outline(self, idx: int) -> None:
-        if len(self._options) <= idx:
+        if len(self._option_items) <= idx:
             raise IndexError(f'Invalid option index {idx}')
         if len(self._selections) != idx:
             raise RuntimeError(f'Generating selection outline {idx}, unexpected outline count {len(self._selections)}'
                                f' found.')
-        selection_crop = QPolygonF(QRectF(self._image_stack.generation_area))
-        origin = self._image_stack.generation_area.topLeft()
+        selection_crop = QPolygonF(QRectF(self._option_data.generation_area))
+        origin = self._option_data.generation_area.topLeft()
         selection_polys = (poly.intersected(selection_crop).translated(-origin.x(), -origin.y())
-                           for poly in self._image_stack.selection_layer.outline)
+                           for poly in self._option_data.selection_polys)
         polys = [QPolygonF(poly) for poly in selection_polys]
         outline = SelectionOutline(self._view, polys)
         outline.show_overlay = False
-        outline.setScale(self._image_stack.width / self._image_stack.generation_area.width())
+        outline.setScale(self._image_stack.width / self._option_data.generation_area.width())
         outline.setVisible(AppConfig().get(AppConfig.SHOW_SELECTIONS_IN_GENERATION_OPTIONS))
         self._selections.append(outline)
 
+    def _add_option_item(self, new_option: '_ImageOption') -> None:
+        """Adds an option's item to the end of the scene's option list, with its outlines."""
+        scene = self._view.scene()
+        assert scene is not None, 'Scene should have been created automatically and never cleared'
+        new_option.setOpacity(1.0)
+        scene.addItem(new_option)
+        self._option_items.append(new_option)
+        idx = len(self._option_items) - 1
+        # Add selections if the batch was inpainted:
+        if self._option_data.edit_mode == EDIT_MODE_INPAINT:
+            self._add_option_selection_outline(idx)
+        assert len(self._outlines) == len(self._option_items) - 1
+        self._outlines.append(Outline(scene, self._view))
+        self._outlines[idx].outlined_region = self._option_items[idx].bounds
+
     def add_image_option(self, image: QImage, idx: int) -> None:
         """Add an image to the list of generated image options."""
-        if not 0 <= idx < len(self._options):
-            raise IndexError(f'invalid index {idx}, max is {len(self._options)}')
+        if not self._accepting_results:
+            # A re-opened batch has no placeholders, so this is a late result from an earlier run.
+            logger.info(f'Ignored image option {idx}: the batch showing was re-opened')
+            return
+        if not 0 <= idx < len(self._option_items):
+            raise IndexError(f'invalid index {idx}, max is {len(self._option_items)}')
         idx += 1  # Original image gets index zero
-        if idx == len(self._options):
-            self._options.append(_ImageOption(image, LABEL_TEXT_IMAGE_OPTION.format(index=idx)))
-            scene = self._view.scene()
-            assert scene is not None, 'Scene should have been created automatically and never cleared'
-            scene.addItem(self._options[-1])
-            self._outlines.append(Outline(scene, self._view))
-            # Add selections if inpainting:
-            if Cache().get(Cache.EDIT_MODE) == MODE_INPAINT:
-                self._add_option_selection_outline(idx)
+        assert len(self._option_data.option_images) == len(self._option_items)
+        if idx == len(self._option_items):
+            self._add_option_item(_ImageOption(image, LABEL_TEXT_IMAGE_OPTION.format(index=idx)))
+            self._option_data.option_images.append(image)
         else:
-            self._options[idx].image = image
-        if 0 <= idx < len(self._outlines):
-            self._outlines[idx].outlined_region = self._options[idx].bounds
+            self._option_items[idx].image = image
+            self._option_data.option_images[idx] = image
+            self._outlines[idx].outlined_region = self._option_items[idx].bounds
         self._apply_ideal_image_arrangement()
 
     def toggle_zoom(self, zoom_index: Optional[int] = None) -> None:
@@ -367,7 +496,7 @@ class GeneratedImageSelector(QWidget):
                 return
             self._view.reset_scale()
             self._clear_manual_view()
-            for option in self._options:
+            for option in self._option_items:
                 option.setOpacity(1.0)
             self._status_label.setText(self._get_control_hint())
             self._page_top_label.setText(SELECTION_TITLE)
@@ -407,7 +536,7 @@ class GeneratedImageSelector(QWidget):
         _add_action(MENU_ACTION_SELECT, lambda: self._select_option_and_close(idx))
 
         def _save_to_file() -> None:
-            image = self._options[idx].full_image
+            image = self._option_items[idx].full_image
             self.setUpdatesEnabled(False)
             save_path = open_image_file(self, SAVE_IMAGE_MODE)
             self.setUpdatesEnabled(True)
@@ -446,13 +575,13 @@ class GeneratedImageSelector(QWidget):
                 if self._zoomed_in:
                     self.toggle_zoom()
                 else:
-                    self._close_selector()
+                    self._close_and_archive()
             elif (event.key() == Qt.Key.Key_Enter or event.key() == Qt.Key.Key_Return) and self._zoomed_in:
                 self._select_option_and_close(self._zoom_index)
             else:
                 try:
                     num_value = int(event.text())
-                    if 0 <= num_value < len(self._options):
+                    if 0 <= num_value < len(self._option_items):
                         self._zoom_to_option(num_value, True)
                         return True
                     return False
@@ -472,7 +601,7 @@ class GeneratedImageSelector(QWidget):
                     or AppStateTracker.app_state() == APP_STATE_LOADING):
                 return False
             scene_pos = self._view.widget_point_to_scene(view_pos).toPoint()
-            for i, option in enumerate(self._options):
+            for i, option in enumerate(self._option_items):
                 if option.bounds.contains(scene_pos):
                     if event.button() == Qt.MouseButton.LeftButton:
                         self._select_option_and_close(i)
@@ -509,13 +638,13 @@ class GeneratedImageSelector(QWidget):
 
     def _insert_option_into_layer(self, option_index: int, layer: Layer):
         """Apply an AI-generated image change to the edited image."""
-        sample_image = self._options[option_index].image
+        sample_image = self._option_items[option_index].image
         if isinstance(sample_image, Image.Image):
             image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         else:
             image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-        if Cache().get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT:
-            inpaint_mask = self._image_stack.selection_layer.mask_image
+        if self._option_data.edit_mode == EDIT_MODE_INPAINT:
+            inpaint_mask = self._option_data.mask_image
             painter = QPainter(image)
             painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
             painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)
@@ -528,14 +657,13 @@ class GeneratedImageSelector(QWidget):
         elif not layer.visible:
             warning_message = WARNING_MESSAGE_1_LAYER_HIDDEN
         if warning_message is not None:
-            warning_title = WARNING_MESSAGE_1_LAYER_HIDDEN.format(layer_name=layer.name)
-            new_layer_name = ORIGINAL_CONTENT_LABEL if option_index == 0 \
-                else LABEL_TEXT_IMAGE_OPTION.format(index=option_index)
+            warning_title = WARNING_TITLE_INSERT_FAILED.format(layer_name=layer.name)
+            new_layer_name = self._option_items[option_index].text
             warning_message += WARNING_MESSAGE_2_CREATED_NEW.format(new_layer_name=new_layer_name)
             layer = self._image_stack.create_layer(layer_name=new_layer_name)
             assert warning_message is not None
             show_warning_dialog(None, warning_title, warning_message, AppConfig.WARN_WHEN_LOCK_FORCES_LAYER_CREATE)
-        self._image_stack.generation_area = self._generation_area
+        self._image_stack.generation_area = self._option_data.generation_area
         self._image_stack.set_generation_area_content(image, layer)
         if self._image_stack.active_layer != layer:
             self._image_stack.active_layer = layer
@@ -546,7 +674,7 @@ class GeneratedImageSelector(QWidget):
             layer = self._image_stack.active_layer
             self._insert_option_into_layer(option_index, layer)
         AppStateTracker.set_app_state(APP_STATE_EDITING)
-        self._close_selector()
+        self._close_and_archive()
 
     def _scroll_debounce_finished(self) -> bool:
         ms_time = time.time() * 1000
@@ -556,7 +684,7 @@ class GeneratedImageSelector(QWidget):
         return False
 
     def _zoom_to_option(self, option_index: Optional[int] = None, ignore_debounce: bool = False) -> None:
-        assert_valid_index(option_index, self._options)
+        assert_valid_index(option_index, self._option_items)
         if not ignore_debounce and not self._scroll_debounce_finished():
             return
         if not self._zoomed_in:
@@ -567,10 +695,10 @@ class GeneratedImageSelector(QWidget):
         self._view.offset_changed.disconnect(self._offset_change_slot)
         if self._zoom_to_changes and self._change_bounds is not None:
             bounds = QRect(self._change_bounds)
-            offset = self._options[self._zoom_index].bounds.topLeft()
+            offset = self._option_items[self._zoom_index].bounds.topLeft()
             bounds.translate(offset.x(), offset.y())
         else:
-            bounds = self._options[self._zoom_index].bounds
+            bounds = self._option_items[self._zoom_index].bounds
         self._view.zoom_to_bounds(bounds)
         self._base_option_offset = self._view.offset
         self._base_option_scale = self._view.scene_scale
@@ -583,29 +711,29 @@ class GeneratedImageSelector(QWidget):
             self._view.scale_without_fixed_scene_point(self._base_option_scale)
         self._view.scale_changed.connect(self._scale_change_slot)
         self._view.offset_changed.connect(self._offset_change_slot)
-        for i, option in enumerate(self._options):
+        for i, option in enumerate(self._option_items):
             option.setOpacity(1.0 if not self._zoomed_in or i == self._zoom_index else 0.5)
         if option_index is not None:
-            self._page_top_label.setText(self._options[option_index].text)
+            self._page_top_label.setText(self._option_items[option_index].text)
         self._status_label.setText(self._get_control_hint())
 
     def _zoom_prev(self):
-        idx = len(self._options) - 1 if self._zoom_index <= 0 else self._zoom_index - 1
+        idx = len(self._option_items) - 1 if self._zoom_index <= 0 else self._zoom_index - 1
         self._zoom_to_option(idx)
 
     def _zoom_next(self):
-        idx = 0 if self._zoom_index >= len(self._options) - 1 else self._zoom_index + 1
+        idx = 0 if self._zoom_index >= len(self._option_items) - 1 else self._zoom_index + 1
         self._zoom_to_option(idx)
 
     def _apply_ideal_image_arrangement(self) -> None:
         """Arrange options in a grid within the scene, choosing grid dimensions to maximize use of available space."""
-        if len(self._options) == 0:
+        if len(self._option_items) == 0:
             return
         view_width = self._view.size().width()
         view_height = self._view.size().height()
         # All options should have matching sizes:
-        image_size = self._options[0].size
-        option_count = len(self._options)
+        image_size = self._option_items[0].size
+        option_count = len(self._option_items)
         image_margin = int(min(image_size.width(), image_size.height()) * IMAGE_MARGIN_FRACTION)
 
         def get_scale_factor_for_row_count(row_count: int):
@@ -647,12 +775,12 @@ class GeneratedImageSelector(QWidget):
             col = idx % num_columns
             x = scene_x0 + (image_size.width() + image_margin) * col
             y = scene_y0 + (image_size.height() + image_margin) * row
-            self._options[idx].setPos(x, y)
-            self._outlines[idx].outlined_region = self._options[idx].bounds
+            self._option_items[idx].setPos(x, y)
+            self._outlines[idx].outlined_region = self._option_items[idx].bounds
             if len(self._selections) > idx:
                 selection = self._selections[idx]
-                selection.setZValue(self._options[idx].zValue() + 1)
-                scale = self._options[idx].bounds.width() / self._image_stack.generation_area.width()
+                selection.setZValue(self._option_items[idx].zValue() + 1)
+                scale = self._option_items[idx].bounds.width() / self._option_data.generation_area.width()
                 selection.setScale(scale)
                 selection.move_to(QPointF(x / selection.scale(), y / selection.scale()))
 
@@ -689,7 +817,9 @@ class _ImageOption(QGraphicsPixmapItem):
 
     def __init__(self, image: QImage, label_text: str) -> None:
         super().__init__()
-        self._full_image = image
+        # None until `full_image` first needs it, when `_scaled_image` is upscaled to `_full_size`:
+        self._full_image: Optional[QImage] = None
+        self._full_size = image.size()
         self._scaled_image = image
         self._label_text = label_text
         self._transparency_pixmap = get_transparency_tile_pixmap(image.size())
@@ -707,26 +837,23 @@ class _ImageOption(QGraphicsPixmapItem):
 
     @image.setter
     def image(self, new_image: QImage) -> None:
-        cache = Cache()
-        config = AppConfig()
-        full_size = cache.get(Cache.GENERATION_SIZE)
-        final_size = cache.get(Cache.EDIT_SIZE)
-        if new_image.size() != full_size:
-            self._full_image = new_image
-            self._scaled_image = pil_image_scaling(new_image, final_size)
+        self._full_size = Cache().get(Cache.GENERATION_SIZE)
+        final_size = Cache().get(Cache.EDIT_SIZE)
         if new_image.size() == final_size:
-            self._full_image = pil_image_scaling(new_image, full_size)
             self._scaled_image = new_image
+            self._full_image = None
         else:
             self._full_image = new_image
             self._scaled_image = pil_image_scaling(new_image, final_size)
-        self.setPixmap(QPixmap.fromImage(self._full_image if config.get(AppConfig.SHOW_OPTIONS_FULL_RESOLUTION)
+        self.setPixmap(QPixmap.fromImage(self.full_image if AppConfig().get(AppConfig.SHOW_OPTIONS_FULL_RESOLUTION)
                                          else self._scaled_image))
         self.update()
 
     @property
     def full_image(self) -> QImage:
         """Return the largest available version of this option's image."""
+        if self._full_image is None:
+            self._full_image = pil_image_scaling(self._scaled_image, self._full_size)
         return self._full_image
 
     @property

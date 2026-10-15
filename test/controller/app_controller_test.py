@@ -6,6 +6,7 @@ import weakref
 from unittest.mock import patch, MagicMock
 
 from PySide6.QtCore import QEvent, QSize, QTimer
+from PySide6.QtGui import QAction, QColor, QImage
 from PySide6.QtWidgets import QApplication, QStyleFactory, QWidget
 
 from src.config.application_config import AppConfig
@@ -15,6 +16,7 @@ from src.controller.app_controller import AppController
 from src.controller.image_generation.test_generator import TestGenerator
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
+from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
 from src.util.arg_parser import build_arg_parser
 from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_READ_FORMATS, \
     IMAGE_WRITE_FORMATS
@@ -254,3 +256,75 @@ class TestAppController(IntraPaintTestCase):
                     else:
                         self.assertFalse(expected_metadata,
                                          f'Metadata expected but not found for format {file_format}')
+
+
+class TestRestorePreviousChoicesAction(IntraPaintTestCase):
+    """Tests that the "Reopen last generated options" action tracks whether a batch can be re-opened."""
+
+    IMAGE_SIZE = QSize(64, 64)
+
+    def setUp(self) -> None:
+        super().setUp()
+        args = build_arg_parser(include_edit_params=False).parse_args(['--window_size', '800x600', '--mode', 'mock'])
+        args.mode = 'mock'
+        args.server_url = ''
+        args.fast_ngrok_connection = False
+        self.controller = AppController(args)
+        self.window = self.controller._window
+        self.image_stack = self.controller._image_stack
+        self.image_stack.load_image(self._image(QColor(10, 20, 30)))
+        AppStateTracker.set_app_state(APP_STATE_EDITING)
+
+    def _image(self, color: QColor) -> QImage:
+        image = QImage(self.IMAGE_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
+        image.fill(color)
+        return image
+
+    def _action(self) -> QAction:
+        action = self.controller.get_action_for_method(self.controller.restore_previous_image_choices)
+        self.assertIsNotNone(action)
+        return action
+
+    def _complete_a_generation(self) -> None:
+        """Shows the selection screen for a generation and delivers every expected image."""
+        self.window.show_generated_options()
+        selector = self.window._image_selector
+        for idx in range(len(selector._option_items) - 1):
+            self.window.load_sample_preview(self._image(QColor(idx * 40, 128, 255 - idx * 40)), idx)
+
+    def test_disabled_without_a_stored_batch(self) -> None:
+        """Nothing is stored yet, so the action is disabled."""
+        self.assertFalse(self._action().isEnabled())
+
+    def test_disabled_while_the_selection_screen_is_showing(self) -> None:
+        """There is nothing to re-open while the options are already on screen."""
+        self._complete_a_generation()
+        self.assertFalse(self._action().isEnabled())
+
+    def test_enabled_once_a_batch_is_stored(self) -> None:
+        """Closing the screen after a completed generation makes the action available."""
+        self._complete_a_generation()
+        self.window.set_image_selector_visible(False)
+        self.assertTrue(self._action().isEnabled())
+
+    def test_disabled_again_for_a_new_generation(self) -> None:
+        """Starting a new generation takes the old batch off the menu until the new one completes."""
+        self._complete_a_generation()
+        self.window.set_image_selector_visible(False)
+        self.window.show_generated_options()
+        self.assertFalse(self._action().isEnabled())
+
+    def test_disabled_when_the_image_no_longer_fits_the_batch(self) -> None:
+        """Shrinking the image past the stored batch's generation area takes the action away again."""
+        self._complete_a_generation()
+        self.window.set_image_selector_visible(False)
+        self.assertTrue(self._action().isEnabled())
+        self.image_stack.size = QSize(8, 8)
+        self.assertFalse(self._action().isEnabled())
+
+    def test_disabled_outside_the_editing_state(self) -> None:
+        """A stored batch does not make the action available in another application state."""
+        self._complete_a_generation()
+        self.window.set_image_selector_visible(False)
+        AppStateTracker.set_app_state(APP_STATE_LOADING)
+        self.assertFalse(self._action().isEnabled())

@@ -408,6 +408,13 @@ class AppController(MenuBuilder):
             lambda _layer, _bounds: self._update_enabled_actions())
         UndoStack().undo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
         UndoStack().redo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
+        # "Reopen last generated options" also needs a stored batch, so `_update_enabled_actions` alone sets whether
+        # it is enabled, re-checking whenever either the app state or the batch changes:
+        restore_action = self.get_action_for_method(self.restore_previous_image_choices)
+        assert restore_action is not None
+        AppStateTracker.disconnect_from_state(restore_action)
+        self._window.previous_options_available.connect(lambda _available: self._update_enabled_actions())
+        AppStateTracker.signal().connect(lambda _state: self._update_enabled_actions())
 
         # ToolPanel/ToolController: Set up editing tools:
         self._tool_controller = ToolController(self._image_stack, self._image_viewer)
@@ -789,6 +796,11 @@ class AppController(MenuBuilder):
             merge_visible_action.setEnabled(can_merge_visible)
         else:
             merge_visible_action.setEnabled(False)
+
+        # "Reopen last generated options" also needs a stored batch that still fits the image:
+        restore_action = self.get_action_for_method(self.restore_previous_image_choices)
+        restore_action.setEnabled(_test_state(self.restore_previous_image_choices)
+                                  and self._window.can_restore_previous_options())
 
         self._can_clear_or_cut_image = not is_locked and not selection_is_empty
         self._can_copy_image = not selection_is_empty
@@ -1397,6 +1409,12 @@ class AppController(MenuBuilder):
         else:
             assert self._generator is not None
             self._generator.start_and_manage_image_generation()
+
+    @menu_action(MENU_IMAGE, 'restore_choices_shortcut', 207, valid_app_states=[APP_STATE_EDITING])
+    def restore_previous_image_choices(self) -> None:
+        """Re-open the last batch of generated image options."""
+        if self._window.can_restore_previous_options():
+            self._window.restore_previous_image_selection_options()
 
     # Selection menu:
     @menu_action(MENU_SELECTION, 'select_all_shortcut', 300, valid_app_states=[APP_STATE_EDITING])
