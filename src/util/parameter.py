@@ -1,7 +1,7 @@
 """Represents a value with a fixed type, descriptive metadata, and optional limitations and defaults."""
 import json
 from copy import copy, deepcopy
-from typing import Optional, TypeAlias, cast, Any, TypedDict, NotRequired
+from typing import Callable, Optional, TypeAlias, cast, Any, TypedDict, NotRequired
 
 from PySide6.QtCore import QSize
 
@@ -297,8 +297,15 @@ class Parameter:
             return False
         return True
 
-    def get_input_widget(self, multi_line=False, allow_dual_toggle=True) -> DynamicFieldWidget:
-        """Creates a widget that can be used to set this parameter."""
+    def get_input_widget(self,
+                         multi_line=False,
+                         allow_dual_toggle=True,
+                         option_display: Optional[Callable[[ParamType], str]] = None) -> DynamicFieldWidget:
+        """Creates a widget that can be used to set this parameter.
+
+        `option_display` maps an option to the text shown for it. The widget's value is always the option itself.
+        """
+        display = option_display if option_display is not None else str
         if multi_line and self._type != TYPE_STR:
             raise ValueError(f'multi_line=True is only valid for text parameters, value {self.name}'
                              f' is {self.type_name}')
@@ -307,16 +314,17 @@ class Parameter:
                 raise ValueError('multi_line=True is not valid for parameters with fixed option lists')
             assert self.type_name == TYPE_STR, 'Widget support for non-string option lists is not implemented'
             if len(self._options) == 2 and allow_dual_toggle:
-                toggle = DualToggle(parent=None, options=cast(list[str], self.options))
+                toggle = DualToggle(parent=None, options=cast(list[str], self.options),
+                                    display_names=[display(option) for option in self._options])
                 assert self._default_value is None or isinstance(self._default_value, str)
                 toggle.setValue(self._default_value)
                 input_field = cast(DynamicFieldWidget, toggle)
             else:
                 combo_box = ComboBox()
                 for option in self._options:
-                    combo_box.addItem(str(option), userData=option)
+                    combo_box.addItem(display(option), userData=option)
                 if self._default_value is not None:
-                    index = combo_box.findText(str(self._default_value))
+                    index = combo_box.findData(self._default_value)
                     assert index >= 0
                     combo_box.setCurrentIndex(index)
                 input_field = cast(DynamicFieldWidget, combo_box)

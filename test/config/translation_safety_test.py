@@ -6,7 +6,12 @@ compared against it silently breaks the comparison (AGENTS.md, "Conventions").
 import json
 import os
 import re
+from unittest.mock import patch
 
+from PySide6.QtWidgets import QApplication
+
+from src.config.cache import Cache
+from src.ui.input_fields.dual_toggle import DualToggle
 from test.base_test_case import IntraPaintTestCase, PROJECT_ROOT
 
 DEFINITION_FILES = ('a1111_setting', 'application_config', 'cache_value', 'key_config')
@@ -60,3 +65,39 @@ class TranslationSafetyTest(IntraPaintTestCase):
                             if match.group(2) in options:
                                 offenders.append(f'{relative}:{line_number}: {match.group(2)!r}')
         self.assertEqual([], offenders)
+
+
+class OptionDisplayTest(IntraPaintTestCase):
+    """Config widgets show translated option text while the stored value stays untranslated."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        Cache().restore_default_options(Cache.EDIT_MODE)
+        self._translate = QApplication.translate
+
+        def _shout(context: str, text: str, *args, **kwargs) -> str:
+            if context == 'config.cache' and text in Cache().get_options(Cache.EDIT_MODE):
+                return text.upper()
+            return self._translate(context, text, *args, **kwargs)
+        patcher = patch.object(QApplication, 'translate', side_effect=_shout)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_combo_box_displays_translation_and_keeps_stored_value(self) -> None:
+        """The dropdown text is translated, and its value and the saved config stay the raw option."""
+        cache = Cache()
+        combo_box = cache.get_control_widget(Cache.EDIT_MODE)
+        self.assertEqual(['INPAINT', 'IMAGE TO IMAGE', 'TEXT TO IMAGE'],
+                         [combo_box.itemText(i) for i in range(combo_box.count())])
+        self.assertEqual('Inpaint', combo_box.value())
+        combo_box.setCurrentIndex(2)
+        self.assertEqual('Text to Image', cache.get(Cache.EDIT_MODE))
+        cache.set(Cache.EDIT_MODE, 'Image to Image')
+        self.assertEqual('IMAGE TO IMAGE', combo_box.currentText())
+
+    def test_dual_toggle_displays_translation(self) -> None:
+        """A dual toggle shows the display names but reports the option strings."""
+        toggle = DualToggle(None, ['Add', 'Subtract'], display_names=['AGREGAR', 'RESTAR'])
+        toggle.setValue('Subtract')
+        self.assertEqual('Subtract', toggle.value())
+        self.assertEqual('RESTAR', toggle.option_label('Subtract').text())

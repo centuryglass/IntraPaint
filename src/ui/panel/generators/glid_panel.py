@@ -1,6 +1,8 @@
 """Control panel widget for GLID-3-XL inpainting."""
+from typing import Optional
+
 from PySide6.QtCore import Signal, Qt
-from PySide6.QtWidgets import QPushButton, QLabel, QGridLayout, QSizePolicy, QWidget
+from PySide6.QtWidgets import QApplication, QPushButton, QLabel, QGridLayout, QSizePolicy, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -10,7 +12,16 @@ from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.layout import clear_layout
 from src.util.shared_constants import BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENERATE
 
-INPAINT_BUTTON_TEXT = 'Start inpainting'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.panel.generators.glid_panel'
+
+
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, key, disambiguation, n)
+
+
+INPAINT_BUTTON_TEXT = _tr('Start inpainting')
 
 
 class GlidPanel(GeneratorPanel):

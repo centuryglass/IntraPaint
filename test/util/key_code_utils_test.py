@@ -70,6 +70,6 @@ class TestKeyCodeUtils(IntraPaintTestCase):
     def test_get_modifier_string(self) -> None:
         """Modifiers format as display symbols in Alt, Shift, Ctrl, Meta order."""
         self.assertEqual(get_modifier_string(Mod.NoModifier), '')
-        self.assertEqual(get_modifier_string(Mod.ControlModifier), '⌃')
+        self.assertEqual(get_modifier_string(Mod.ControlModifier), 'Ctrl')
         self.assertEqual(get_modifier_string(Mod.ControlModifier | Mod.ShiftModifier | Mod.AltModifier
-                                             | Mod.MetaModifier), '⎇+⇧+⌃+⌘')
+                                             | Mod.MetaModifier), 'Alt+Shift+Ctrl+⌘')

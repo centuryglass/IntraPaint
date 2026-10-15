@@ -30,7 +30,7 @@ GENERATION_AREA_HEIGHT_LABEL = _tr('H:')
 GENERATION_AREA_X_TOOLTIP = _tr('Set the left edge position of the image generation area.')
 GENERATION_AREA_Y_TOOLTIP = _tr('Set the top edge position of the image generation area.')
 GENERATION_AREA_WIDTH_TOOLTIP = _tr('Set the width of the image generation area.')
-GENERATION_AREA_HEIGHT_TOOLTIP = _tr('Set the top edge position of the image generation area.')
+GENERATION_AREA_HEIGHT_TOOLTIP = _tr('Set the height of the image generation area.')
 GEN_RESOLUTION_LABEL = _tr('Image generation resolution:')
 
 FRAMES_LABEL = _tr('Area size:')

@@ -435,7 +435,7 @@
         "label": "Rotate layer clockwise/text size up:",
         "category": "Keybindings",
         "subcategory": "Tool Shortcuts",
-        "description": "Rotates the layer when the layer transformation tool is active, or decrease font size in the text tool.",
+        "description": "Rotates the layer when the layer transformation tool is active, or increase font size in the text tool.",
         "type": "string",
         "default": "p",
         "saved": true

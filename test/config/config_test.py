@@ -320,6 +320,16 @@ class ConfigTest(IntraPaintTestCase):
             with self.subTest(key=key):
                 self.assertEqual(reloaded.get(key), DEFAULT_VALUES[key] if key == UNSAVED_KEY else expected)
 
+    def test_save_pending_changes_writes_without_event_loop(self) -> None:
+        """`save_pending_changes` writes a change `set` scheduled, without waiting for the save timer, and cancels
+        the timer."""
+        config = self._config()
+        config.set(STR_KEY, CHANGED_VALUES[STR_KEY])
+        self.assertEqual(self._read_saved_values()[STR_KEY], DEFAULT_VALUES[STR_KEY])
+        config.save_pending_changes()
+        self.assertEqual(self._read_saved_values()[STR_KEY], CHANGED_VALUES[STR_KEY])
+        self.assertFalse(config._save_timer.isActive())  # pylint: disable=protected-access
+
     def test_load_with_unknown_and_missing_keys(self) -> None:
         """Loading a file ignores keys the definitions don't have, and uses defaults for keys the file lacks. The next
         save drops the unknown keys and adds the missing ones."""
