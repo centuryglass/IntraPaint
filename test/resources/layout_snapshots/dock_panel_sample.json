@@ -1,0 +1,64 @@
+{
+  "side_compact": {
+    "more_button": true,
+    "overflow": [
+      "name",
+      "flag",
+      "extra",
+      "only_extra"
+    ],
+    "visible_sections": [
+      "Stroke"
+    ]
+  },
+  "side_regular": {
+    "more_button": true,
+    "overflow": [
+      "flag",
+      "extra",
+      "only_extra"
+    ],
+    "visible_sections": [
+      "Stroke"
+    ]
+  },
+  "side_wide": {
+    "more_button": false,
+    "overflow": [],
+    "visible_sections": [
+      "Stroke",
+      "Advanced"
+    ]
+  },
+  "strip_compact": {
+    "more_button": true,
+    "overflow": [
+      "name",
+      "flag",
+      "extra",
+      "only_extra"
+    ],
+    "visible_sections": [
+      "Stroke"
+    ]
+  },
+  "strip_regular": {
+    "more_button": true,
+    "overflow": [
+      "flag",
+      "extra",
+      "only_extra"
+    ],
+    "visible_sections": [
+      "Stroke"
+    ]
+  },
+  "strip_wide": {
+    "more_button": false,
+    "overflow": [],
+    "visible_sections": [
+      "Stroke",
+      "Advanced"
+    ]
+  }
+}
