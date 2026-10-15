@@ -5,7 +5,8 @@ from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication, QLabel, QToolButton
 
 from src.config.key_config import KeyConfig
-from src.ui.widget.shortcut_tooltip import set_shortcut_tooltip, shortcut_tooltip_text, rich_shortcut_tooltip_text
+from src.ui.widget.shortcut_tooltip import (set_shortcut_tooltip, set_step_shortcut_tooltip, shortcut_tooltip_text,
+                                            rich_shortcut_tooltip_text)
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -40,6 +41,21 @@ class ShortcutTooltipTest(IntraPaintTestCase):
         self.assertEqual(button.toolTip(), 'Merge down (Ctrl+Alt+K)')
         KeyConfig().set(key, '')
         self.assertEqual(button.toolTip(), 'Merge down')
+
+    def test_step_keys_tooltip(self) -> None:
+        """A stepped input shows a keycap for each bound step key, drops an unbound one, and follows rebinding."""
+        decrease, increase = KeyConfig.PAN_LEFT, KeyConfig.PAN_RIGHT
+        button = QToolButton()
+        set_step_shortcut_tooltip(button, 'Size', decrease, increase)
+        self.assertTrue(button.toolTip().startswith('<b>Size</b>'))
+        both = button.toolTip().count('<img')
+        self.assertGreaterEqual(both, 2)
+        KeyConfig().set(increase, '')
+        self.assertLess(button.toolTip().count('<img'), both)
+        KeyConfig().set(decrease, '')
+        self.assertEqual(button.toolTip(), 'Size')
+        set_step_shortcut_tooltip(button, 'Plain', None, None)
+        self.assertEqual(button.toolTip(), 'Plain')
 
 
 class RichShortcutTooltipTest(IntraPaintTestCase):

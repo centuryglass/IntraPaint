@@ -15,17 +15,19 @@ from dataclasses import dataclass
 from typing import Callable, Optional, TYPE_CHECKING
 from unittest.mock import patch
 
-from PySide6.QtCore import QPoint, QRect, QSize, Qt
+from PySide6.QtCore import QEvent, QPoint, QRect, QSize, Qt
 from PySide6 import QtGui
-from PySide6.QtGui import QFontMetrics, QImage, QPainter, QPalette, QTextDocumentFragment
+from PySide6.QtGui import QFocusEvent, QFontMetrics, QImage, QPainter, QPalette, QTextDocumentFragment
 from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QAbstractSpinBox, QApplication, QCheckBox,
                                QGroupBox, QLabel, QLayout, QPushButton, QSizePolicy, QStyle, QStyleOption,
                                QStyleOptionButton, QStyleOptionComboBox,
                                QStyleOptionComplex, QStyleOptionFrame, QStyleOptionGroupBox, QStyleOptionMenuItem,
                                QStyleOptionProgressBar, QStyleOptionSlider, QStyleOptionSpinBox, QStyleOptionTab,
-                               QStyleOptionToolButton, QStyleOptionViewItem, QSlider, QTabBar, QWidget)
+                               QStyleOptionToolButton, QStyleOptionViewItem, QSlider, QTabBar, QWidget, QLineEdit)
 
 from src.ui.ink_style import InkStyle, set_primary_button, set_signal
+from src.ui.input_fields.number_field import NumberField
+from src.ui.input_fields.slider_field import SliderField
 
 if TYPE_CHECKING:
     from src.controller.app_controller import AppController
@@ -375,6 +377,52 @@ def _draw_tooltip(painter: QPainter, rect: QRect, _variant: str, state: GalleryS
     _style().drawPrimitive(Primitive.PE_PanelTipLabel, option, painter, None)
 
 
+class _TextFreeNumberField(NumberField):
+    """A number field that draws no label or value, so its render doesn't depend on the system's text rasterizer."""
+
+    def _paint_text(self, painter: QPainter) -> None:
+        pass
+
+
+class _TextFreeSliderField(SliderField):
+    """A slider field that draws no label or value."""
+
+    def _paint_text(self, painter: QPainter) -> None:
+        pass
+
+
+FIELD_STATES = (GalleryState('normal', _ENABLED), GalleryState('hover', _ENABLED | State.State_MouseOver),
+                GalleryState('focus', _FOCUSED), GalleryState('editing', _FOCUSED),
+                GalleryState('disabled', State.State_None))
+
+
+def _draw_number_field(painter: QPainter, rect: QRect, variant: str, state: GalleryState) -> None:
+    """Draws a real `NumberField` or `SliderField` in a gallery state. Hover, focus and editing are put on the widget
+    with the events Qt would send."""
+    field: NumberField
+    if variant == 'number':
+        field = _TextFreeNumberField('', 25)
+    else:
+        field = _TextFreeSliderField('', 40, 0, 100)
+    if variant in ('slider_pressure_off', 'slider_pressure_on'):
+        field.set_pressure_link_available(True)
+        field.set_pressure_link_enabled(variant == 'slider_pressure_on')
+    field.resize(rect.size())
+    field.setEnabled(state.enabled)
+    if state.state & State.State_MouseOver:
+        QApplication.sendEvent(field, QEvent(QEvent.Type.HoverEnter))
+    if state.name == 'focus':
+        QApplication.sendEvent(field, QFocusEvent(QEvent.Type.FocusIn, Qt.FocusReason.TabFocusReason))
+    if state.name == 'editing':
+        field.begin_edit()
+        editor = field.findChild(QLineEdit)
+        if editor is not None:
+            editor.setText('')
+            editor.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            editor.clearFocus()
+    field.render(painter, QPoint())
+
+
 GALLERY_CONTROLS: tuple[GalleryControl, ...] = (
     GalleryControl('push_button', QSize(72, 28), ('plain', 'default', 'checked', 'flat', 'primary'), STANDARD_STATES,
                    _draw_push_button),
@@ -409,6 +457,8 @@ GALLERY_CONTROLS: tuple[GalleryControl, ...] = (
                    _draw_item_view_item),
     GalleryControl('splitter', QSize(40, 40), ('horizontal', 'vertical'), STANDARD_STATES, _draw_splitter),
     GalleryControl('tooltip', QSize(100, 30), ('plain',), (STANDARD_STATES[0],), _draw_tooltip),
+    GalleryControl('number_field', QSize(150, 24), ('slider', 'slider_pressure_off', 'slider_pressure_on', 'number'),
+                   FIELD_STATES, _draw_number_field),
 )
 
 

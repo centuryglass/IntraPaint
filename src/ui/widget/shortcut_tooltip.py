@@ -3,7 +3,7 @@
 Rich tooltips show a title, a dim description line, and the binding as one keycap per key, drawn by
 `rich_text_key_hints`. Plain tooltips append the binding in parentheses, formatted by `get_key_display_string`.
 """
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
 from PySide6.QtCore import QEvent, QObject
 from PySide6.QtGui import QColor, QPalette
@@ -23,10 +23,13 @@ def shortcut_tooltip_text(text: str, keys: str) -> str:
     return f'{text} ({get_key_display_string(keys, rich_text=False)})'
 
 
-def rich_shortcut_tooltip_text(title: str, keys: str, description: str = '') -> str:
+def rich_shortcut_tooltip_text(title: str, keys: str, description: str = '',
+                               extra_hints: Optional[List[str]] = None) -> str:
     """Returns rich tooltip text with `title`, then an optional dim `description`, then the keycaps for `keys`.
+       `extra_hints` are keycap strings from `rich_text_key_hints`, shown after `keys` and joined by slashes.
        Returns `title` unchanged if there is nothing else to show."""
-    if description == '' and keys == '':
+    extra_hints = [] if extra_hints is None else extra_hints
+    if description == '' and keys == '' and len(extra_hints) == 0:
         return title
     palette = QApplication.palette()
     text_color = palette.color(QPalette.ColorRole.ToolTipText)
@@ -40,6 +43,8 @@ def rich_shortcut_tooltip_text(title: str, keys: str, description: str = '') -> 
         lines.append(f'<span style="color: {dim};">{escaped_description}</span>')
     if keys != '':
         lines.append(rich_text_key_hints(keys))
+    if len(extra_hints) > 0:
+        lines.append('&nbsp;/&nbsp;'.join(extra_hints))
     return '<br/>'.join(lines)
 
 
@@ -94,3 +99,23 @@ def set_shortcut_tooltip(widget: QWidget, text: str, config_key: Optional[str], 
         return
     key_config.connect(widget, config_key, lambda _keys_value: _refresh())
     widget.destroyed.connect(lambda: KeyConfig().disconnect(widget, config_key))
+
+
+def set_step_shortcut_tooltip(widget: QWidget, text: str, decrease_config_key: Optional[str],
+                              increase_config_key: Optional[str], description: str = '') -> None:
+    """Sets a stepped input's tooltip to `text` plus keycaps for the keys that step its value down and up, updating it
+       if either binding or the application palette changes. A missing or empty binding is left out."""
+    key_config = KeyConfig()
+    config_keys = (decrease_config_key, increase_config_key)
+
+    def _refresh(_keys: Optional[str] = None) -> None:
+        bound = [key_config.get(key) for key in config_keys if key is not None and key_config.get(key) != '']
+        hints = [rich_text_key_hints(keys) for keys in bound]
+        widget.setToolTip(rich_shortcut_tooltip_text(text, '', description, hints))
+
+    _refresh()
+    _PaletteWatcher(widget, _refresh)
+    for key in config_keys:
+        if key is not None:
+            key_config.connect(widget, key, _refresh)
+    widget.destroyed.connect(lambda: [KeyConfig().disconnect(widget, key) for key in config_keys if key is not None])
