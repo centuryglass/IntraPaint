@@ -124,7 +124,7 @@ class ShapeToolPanel(QWidget):
         self._pen_join_style_label.setToolTip(self._pen_join_style_dropdown.toolTip())
 
         self._antialiasing_checkbox = cache.get_control_widget(Cache.SHAPE_TOOL_ANTIALIAS)
-        self._antialiasing_checkbox.setText(cache.get_label(Cache.SMUDGE_TOOL_ANTIALIAS))
+        self._antialiasing_checkbox.setText(cache.get_label(Cache.SHAPE_TOOL_ANTIALIAS))
 
         def _update_line_previews(color_str) -> None:
             if QColor(color_str).isValid():
@@ -138,7 +138,7 @@ class ShapeToolPanel(QWidget):
         self._dash_textbox = cache.get_control_widget(Cache.SHAPE_TOOL_DASH_PATTERN)
         self._dash_label.setBuddy(self._dash_textbox)
         self._dash_label.setToolTip(self._dash_textbox.toolTip())
-        dash_pattern_regex = QRegularExpression('(\\d+\\s+\\d+\\s+)+')
+        dash_pattern_regex = QRegularExpression('(\\d+\\s+\\d+\\s*)+')
         dash_pattern_validator = QRegularExpressionValidator(dash_pattern_regex, self)
         self._dash_textbox.setValidator(dash_pattern_validator)
         self._dash_textbox.setParent(self)

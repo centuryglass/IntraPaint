@@ -10,7 +10,8 @@ from src.image.layers.image_stack import ImageStack
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.layout.draggable_tabs.tab_box import TabBox
 from src.ui.window.main_window import MainWindow, TabBoxID, ACTION_NAME_MOVE_LEFT, ACTION_NAME_MOVE_RIGHT, \
-    ACTION_NAME_MOVE_UP, ACTION_NAME_MOVE_DOWN, ACTION_NAME_MOVE_ALL, AUTO_TAB_MOVE_THRESHOLD, \
+    ACTION_NAME_MOVE_UP, ACTION_NAME_MOVE_DOWN, ACTION_NAME_MOVE_UP_TO_TOP, ACTION_NAME_MOVE_DOWN_TO_BOTTOM, \
+    ACTION_NAME_MOVE_ALL, AUTO_TAB_MOVE_THRESHOLD, \
     USE_LOWER_CONTROL_TAB_THRESHOLD
 from test.base_test_case import IntraPaintTestCase
 
@@ -89,11 +90,11 @@ class MainWindowTabLayoutTest(IntraPaintTestCase):
     def test_move_actions_match_box(self) -> None:
         """Each box offers only the moves that lead somewhere else."""
         expected = {
-            TabBoxID.RIGHT_TAB_BOX_ID: {ACTION_NAME_MOVE_LEFT, ACTION_NAME_MOVE_UP, ACTION_NAME_MOVE_DOWN},
-            TabBoxID.LEFT_TAB_BOX_ID: {ACTION_NAME_MOVE_RIGHT, ACTION_NAME_MOVE_UP, ACTION_NAME_MOVE_DOWN},
+            TabBoxID.RIGHT_TAB_BOX_ID: {ACTION_NAME_MOVE_LEFT, ACTION_NAME_MOVE_UP_TO_TOP, ACTION_NAME_MOVE_DOWN},
+            TabBoxID.LEFT_TAB_BOX_ID: {ACTION_NAME_MOVE_RIGHT, ACTION_NAME_MOVE_UP_TO_TOP, ACTION_NAME_MOVE_DOWN},
             TabBoxID.TOP_TAB_BOX_ID: {ACTION_NAME_MOVE_LEFT, ACTION_NAME_MOVE_RIGHT, ACTION_NAME_MOVE_DOWN},
-            TabBoxID.LOWER_TAB_BOX_ID: {ACTION_NAME_MOVE_LEFT, ACTION_NAME_MOVE_RIGHT, ACTION_NAME_MOVE_UP,
-                                        ACTION_NAME_MOVE_DOWN},
+            TabBoxID.LOWER_TAB_BOX_ID: {ACTION_NAME_MOVE_LEFT, ACTION_NAME_MOVE_RIGHT,
+                                        ACTION_NAME_MOVE_UP_TO_TOP, ACTION_NAME_MOVE_DOWN_TO_BOTTOM},
             TabBoxID.BOTTOM_TAB_BOX_ID: {ACTION_NAME_MOVE_LEFT, ACTION_NAME_MOVE_RIGHT, ACTION_NAME_MOVE_UP},
         }
         for box_id, names in expected.items():
@@ -106,9 +107,9 @@ class MainWindowTabLayoutTest(IntraPaintTestCase):
         tab = Tab('tab', _content())
         self.window.add_tab(tab, TabBoxID.RIGHT_TAB_BOX_ID)
         steps = ((ACTION_NAME_MOVE_LEFT, TabBoxID.LEFT_TAB_BOX_ID),
-                 (ACTION_NAME_MOVE_UP, TabBoxID.TOP_TAB_BOX_ID),
+                 (ACTION_NAME_MOVE_UP_TO_TOP, TabBoxID.TOP_TAB_BOX_ID),
                  (ACTION_NAME_MOVE_DOWN, TabBoxID.LOWER_TAB_BOX_ID),
-                 (ACTION_NAME_MOVE_DOWN, TabBoxID.BOTTOM_TAB_BOX_ID),
+                 (ACTION_NAME_MOVE_DOWN_TO_BOTTOM, TabBoxID.BOTTOM_TAB_BOX_ID),
                  (ACTION_NAME_MOVE_UP, TabBoxID.LOWER_TAB_BOX_ID),
                  (ACTION_NAME_MOVE_RIGHT, TabBoxID.RIGHT_TAB_BOX_ID))
         for action_name, box_id in steps:

@@ -47,7 +47,9 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 ACTION_NAME_MOVE_UP = _tr('Move up')
+ACTION_NAME_MOVE_UP_TO_TOP = _tr('Move to top')
 ACTION_NAME_MOVE_DOWN = _tr('Move down')
+ACTION_NAME_MOVE_DOWN_TO_BOTTOM = _tr('Move to bottom')
 ACTION_NAME_MOVE_LEFT = _tr('Move left')
 ACTION_NAME_MOVE_RIGHT = _tr('Move right')
 ACTION_NAME_MOVE_ALL = _tr('Move all tabs here')
@@ -86,8 +88,12 @@ class TabMoveActions(Enum):
                 return ACTION_NAME_MOVE_LEFT
             case TabMoveActions.MOVE_RIGHT:
                 return ACTION_NAME_MOVE_RIGHT
-            case TabMoveActions.MOVE_UP_TO_LOWER | TabMoveActions.MOVE_UP_TO_TOP:
+            case TabMoveActions.MOVE_UP_TO_LOWER:
                 return ACTION_NAME_MOVE_UP
+            case TabMoveActions.MOVE_UP_TO_TOP:
+                return ACTION_NAME_MOVE_UP_TO_TOP
+            case TabMoveActions.MOVE_DOWN_TO_BOTTOM:
+                return ACTION_NAME_MOVE_DOWN_TO_BOTTOM
             case _:
                 return ACTION_NAME_MOVE_DOWN
 
@@ -196,7 +202,6 @@ class MainWindow(QMainWindow):
             AppStateTracker.signal().connect(_show_spinner_when_busy)
 
         # Main page contents:
-        self._last_open_box = TabBoxID.RIGHT_TAB_BOX_ID
         self._top_tab_box = TabBox(Qt.Orientation.Horizontal, True)
         self._layout.addWidget(self._top_tab_box, stretch=1)
         self._top_divider = DraggableDivider()
@@ -642,7 +647,6 @@ class MainWindow(QMainWindow):
 
     def _tab_open_slot(self, tab_box_id: TabBoxID):
         """If the screen is too small to fit perpendicular tabs, automatically close them when a new tab opens."""
-        self._last_open_box = tab_box_id
         opened_box = self._get_tab_box(tab_box_id)
         if not opened_box.is_open:
             opened_box.is_open = True

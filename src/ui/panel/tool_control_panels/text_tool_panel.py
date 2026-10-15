@@ -322,7 +322,7 @@ class TextToolPanel(QWidget):
         key_filter.bind_slider_controls(self._x_input, KeyConfig.MOVE_LEFT, KeyConfig.MOVE_RIGHT, _key_predicate)
         key_filter.bind_slider_controls(self._y_input, KeyConfig.MOVE_UP, KeyConfig.MOVE_DOWN, _key_predicate)
         key_filter.bind_slider_controls(self._width_input, KeyConfig.PAN_LEFT, KeyConfig.PAN_RIGHT, _key_predicate)
-        key_filter.bind_slider_controls(self._height_input, KeyConfig.PAN_UP, KeyConfig.PAN_DOWN, _key_predicate)
+        key_filter.bind_slider_controls(self._height_input, KeyConfig.PAN_DOWN, KeyConfig.PAN_UP, _key_predicate)
         key_filter.bind_slider_controls(self._font_size_slider, KeyConfig.ROTATE_CCW_KEY, KeyConfig.ROTATE_CW_KEY,
                                          _key_predicate)
 

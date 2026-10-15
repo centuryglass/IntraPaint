@@ -19,9 +19,9 @@
       "overlap: IntSliderSpinbox[4]/KeyHintLabel 'Ctrl+\u2190' and IntSliderSpinbox[4]/QSpinBox share 28x26",
       "overlap: IntSliderSpinbox[4]/KeyHintLabel 'Ctrl+\u2190' and IntSliderSpinbox[4]/KeyHintLabel 'Ctrl+\u2192' share 8x74",
       "overlap: IntSliderSpinbox[4]/QSpinBox and IntSliderSpinbox[4]/KeyHintLabel 'Ctrl+\u2192' share 48x26",
-      "overlap: IntSliderSpinbox[5]/KeyHintLabel 'Ctrl+\u2191' and IntSliderSpinbox[5]/QSpinBox share 28x26",
-      "overlap: IntSliderSpinbox[5]/KeyHintLabel 'Ctrl+\u2191' and IntSliderSpinbox[5]/KeyHintLabel 'Ctrl+\u2193' share 8x73",
-      "overlap: IntSliderSpinbox[5]/QSpinBox and IntSliderSpinbox[5]/KeyHintLabel 'Ctrl+\u2193' share 48x26",
+      "overlap: IntSliderSpinbox[5]/KeyHintLabel 'Ctrl+\u2193' and IntSliderSpinbox[5]/QSpinBox share 28x26",
+      "overlap: IntSliderSpinbox[5]/KeyHintLabel 'Ctrl+\u2193' and IntSliderSpinbox[5]/KeyHintLabel 'Ctrl+\u2191' share 8x73",
+      "overlap: IntSliderSpinbox[5]/QSpinBox and IntSliderSpinbox[5]/KeyHintLabel 'Ctrl+\u2191' share 48x26",
       "squeezed: QWidget[0] is 79x81, minimum 96x25",
       "squeezed: QWidget[0]/CheckBox is 37x21, minimum 45x21",
       "squeezed: QWidget[0]/QLabel 'Resize Bounds to Text' is 36x77, minimum 45x17",
@@ -48,7 +48,7 @@
       "clipped: IntSliderSpinbox[4]/KeyHintLabel 'Ctrl+\u2192' shows 20x74 of 48x74",
       "squeezed: IntSliderSpinbox[5] is 80x77, minimum 228x30",
       "clipped: IntSliderSpinbox[5]/QSpinBox shows 40x26 of 106x26",
-      "clipped: IntSliderSpinbox[5]/KeyHintLabel 'Ctrl+\u2193' shows 20x73 of 48x73"
+      "clipped: IntSliderSpinbox[5]/KeyHintLabel 'Ctrl+\u2191' shows 20x73 of 48x73"
     ],
     "size": [
       553,
@@ -101,8 +101,8 @@
       "squeezed: IntSliderSpinbox[5] is 228x19, minimum 228x30",
       "squeezed: IntSliderSpinbox[5]/QLabel 'H:' is 16x15, minimum 13x17",
       "squeezed: IntSliderSpinbox[5]/QSpinBox is 106x15, minimum 106x26",
-      "squeezed: IntSliderSpinbox[5]/KeyHintLabel 'Ctrl+\u2191' is 48x15, minimum 47x23",
-      "squeezed: IntSliderSpinbox[5]/KeyHintLabel 'Ctrl+\u2193' is 48x15, minimum 47x23"
+      "squeezed: IntSliderSpinbox[5]/KeyHintLabel 'Ctrl+\u2193' is 48x15, minimum 47x23",
+      "squeezed: IntSliderSpinbox[5]/KeyHintLabel 'Ctrl+\u2191' is 48x15, minimum 47x23"
     ],
     "size": [
       1358,

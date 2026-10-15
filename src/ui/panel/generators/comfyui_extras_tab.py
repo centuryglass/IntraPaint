@@ -21,7 +21,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 BUTTON_TEXT_CLEAR_MEMORY = _tr('Clear Memory')
-TOOLTIP_CLEAR_MEMORY = _tr('Removed cached models from GPU memory within ComfyUI.')
+TOOLTIP_CLEAR_MEMORY = _tr('Remove cached models from GPU memory within ComfyUI.')
 
 
 class ComfyUIExtrasTab(ExtrasTab):
