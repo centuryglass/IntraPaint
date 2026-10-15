@@ -24,7 +24,8 @@ class OptionToggle(QWidget):
                  parent: Optional[QWidget],
                  options: list[str],
                  columns: int,
-                 orientation: Qt.Orientation = Qt.Orientation.Horizontal):
+                 orientation: Qt.Orientation = Qt.Orientation.Horizontal,
+                 display_names: Optional[list[str]] = None):
         """__init__.
 
         Parameters
@@ -37,10 +38,14 @@ class OptionToggle(QWidget):
             Number of buttons in each row.
         orientation : Qt.Orientation
             Text orientation within each button.
+        display_names : list of str, optional
+            Button text for each option, in order. Defaults to the option strings.
         """
         super().__init__(parent)
         if len(options) == 0:
             raise ValueError('OptionToggle expects at least one option')
+        if display_names is not None and len(display_names) != len(options):
+            raise ValueError(f'Expected {len(options)} display names, got {display_names}')
         self._options = list(options)
         self._columns = max(1, columns)
         self._orientation: Optional[Qt.Orientation] = None
@@ -55,7 +60,8 @@ class OptionToggle(QWidget):
                 bg_color = app.palette().color(window.backgroundRole())
             else:
                 bg_color = QColor(Qt.GlobalColor.gray)  # Fallback, should only happen during unit testing.
-        self._labels = [Label(option, self, bg_color=bg_color, orientation=orientation) for option in options]
+        label_text = display_names if display_names is not None else options
+        self._labels = [Label(text, self, bg_color=bg_color, orientation=orientation) for text in label_text]
         self._label_orientation(orientation)
         self._apply_highlight(None)
 

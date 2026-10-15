@@ -1,7 +1,8 @@
 """Various utility functions for drawing and placing text."""
+import re
 from typing import Optional, cast
 
-from PySide6.QtCore import QRect, QMargins, QSize, QPoint, Qt
+from PySide6.QtCore import QRect, QRectF, QMargins, QSize, QPoint, Qt
 from PySide6.QtGui import QFont, QPainter, QFontMetrics, QPainterPath, QTransform, QColor, QPalette, QImage, \
     QKeySequence
 from PySide6.QtWidgets import QApplication
@@ -9,6 +10,7 @@ from PySide6.QtWidgets import QApplication
 from src.util.visual.display_size import logger
 from src.util.visual.geometry_utils import align_inner_bounds
 from src.util.visual.image_utils import create_transparent_image, temp_rich_text_image
+from src.util.visual.keycap import KEYCAP_PADDING, draw_keycap, keycap_colors, keycap_font, keycap_size
 from src.util.visual.palette_icon import palette_rich_text_image
 from src.util.shared_constants import PROJECT_DIR
 
@@ -120,43 +122,48 @@ def draw_text_path(path: QPainterPath, painter: QPainter, text_color: Optional[Q
     painter.restore()
 
 
-def rich_text_key_hint(key_str: str) -> str:
-    """Returns a styled key hint."""
+def _keycap_height() -> int:
+    """Returns the height of the keycaps `rich_text_key_hint` draws, depth edge included. Mouse hint images take this
+       height, so they line up with the keycaps."""
+    return keycap_size(find_text_size('X', keycap_font(QApplication.font()), exact=False)).height()
 
-    def _draw_text_image() -> QImage:
-        margins = QMargins(3, 3, 3, 3)
-        font = QApplication.font()
-        text_path = create_text_path(key_str, font, margins=margins)
-        text_bounds = text_path.boundingRect().toAlignedRect()
-        if len(key_str) < 2:
-            height = max(text_bounds.height(), text_bounds.width())
-            dy = height - text_bounds.height()
-            if dy > 0:
-                text_bounds.setHeight(height)
-                text_path = QTransform.fromTranslate(0, dy // 2).map(text_path)
-            else:
-                width = max(text_bounds.width(), text_bounds.height())
-                dx = width - text_bounds.width()
-                if dx > 0:
-                    text_bounds.setWidth(width)
-                    text_path = QTransform.fromTranslate(dx // 2, 0).map(text_path)
-        image_bounds = QRect(0, 0, text_bounds.width() + margins.left() + margins.right(),
-                             text_bounds.height() + margins.top() + margins.bottom())
-        image = create_transparent_image(image_bounds.size())
-        palette = QApplication.palette()
-        bg_color = palette.color(QPalette.ColorRole.Base)
-        text_color = palette.color(QPalette.ColorRole.Text)
-        key_rect_path = QPainterPath()
-        key_rect_path.addRoundedRect(image_bounds.adjusted(0, 0, -1, -1), 3, 3)
+
+def rich_text_key_hint(key_str: str) -> str:
+    """Returns an inline image of a single keycap labeled `key_str`, drawn in the application palette's colors."""
+    palette = QApplication.palette()
+    fill, outline, text_color = keycap_colors(palette)
+    font = keycap_font(QApplication.font())
+    # The colors are part of the image name, so a theme change renders new images instead of reusing old ones:
+    image_name = f'key_{font.pointSizeF()}_{fill.name()}_{outline.name()}_{text_color.name()}_{key_str.encode().hex()}'
+
+    def _draw_key_image() -> QImage:
+        text_size = find_text_size(key_str, font, exact=False)
+        image = create_transparent_image(keycap_size(text_size))
         painter = QPainter(image)
-        painter.fillPath(key_rect_path, bg_color)
+        bounds = QRectF(0, 0, image.width(), image.height())
+        draw_keycap(painter, bounds, fill, outline)
+        painter.setFont(font)
         painter.setPen(text_color)
-        painter.drawPath(key_rect_path)
-        draw_text_path(text_path, painter, text_color)
+        text_bounds = QRectF(KEYCAP_PADDING.left(), KEYCAP_PADDING.top(), text_size.width(), text_size.height())
+        painter.drawText(text_bounds, Qt.AlignmentFlag.AlignCenter, key_str)
         painter.end()
         return image
 
-    return temp_rich_text_image(key_str, _draw_text_image)
+    return temp_rich_text_image(image_name, _draw_key_image)
+
+
+_CHORD_SEPARATOR = re.compile(r'(?<=.),\s*(?=.)')
+_KEY_SEPARATOR = re.compile(r'\+(?=.)')
+
+
+def rich_text_key_hints(keys: str) -> str:
+    """Returns inline keycap images for a key binding, with one keycap per key and a comma between the chords of a
+       sequence. Returns the empty string for an empty binding."""
+    chords = []
+    for chord in _CHORD_SEPARATOR.split(keys):
+        chord_keys = [get_key_display_string(key, rich_text=False) for key in _KEY_SEPARATOR.split(chord) if key != '']
+        chords.append('&nbsp;'.join(rich_text_key_hint(key) for key in chord_keys))
+    return ',&nbsp;'.join(chord for chord in chords if chord != '')
 
 
 def rich_text_code_block(code_string: str) -> str:
@@ -167,43 +174,37 @@ def rich_text_code_block(code_string: str) -> str:
 
 def left_button_hint_text() -> str:
     """Returns a rich-text inline image representing the left mouse button."""
-    return palette_rich_text_image(ICON_LMB)
+    return palette_rich_text_image(ICON_LMB, _keycap_height())
 
 
 def middle_button_hint_text() -> str:
     """Returns a rich-text inline image representing the middle mouse button."""
-    return palette_rich_text_image(ICON_MMB)
+    return palette_rich_text_image(ICON_MMB, _keycap_height())
 
 
 def right_button_hint_text() -> str:
     """Returns a rich-text inline image representing the right mouse button."""
-    return palette_rich_text_image(ICON_RMB)
+    return palette_rich_text_image(ICON_RMB, _keycap_height())
 
 
 def vertical_scroll_hint_text() -> str:
     """Returns a rich-text inline image representing scroll wheel vertical scrolling."""
-    return palette_rich_text_image(ICON_V_SCROLL)
+    return palette_rich_text_image(ICON_V_SCROLL, _keycap_height())
 
 
 def horizontal_scroll_hint_text() -> str:
     """Returns a rich-text inline image representing scroll wheel horizontal scrolling."""
-    return palette_rich_text_image(ICON_H_SCROLL)
+    return palette_rich_text_image(ICON_H_SCROLL, _keycap_height())
 
 
 def get_key_display_string(keys: QKeySequence | Qt.Key | int | str, rich_text: bool = True) -> str:
-    """Creates a display string representing a set of keys, replacing common symbols with appropriate characters."""
+    """Creates a display string representing a set of keys, replacing Meta and navigation and editing key names with
+       symbols. Other modifier names stay as text."""
     if isinstance(keys, (Qt.Key, int)):
         keys = QKeySequence(keys)
     text = keys if isinstance(keys, str) else keys.toString()
     symbol_map = {
-        'Ctrl+': '⌃',
-        'Ctrl': '⌃',
-        'Alt+': '⎇',
-        'Alt': '⎇',
-        'Meta+': '⌘',
         'Meta': '⌘',
-        'Shift+': '⇧',
-        'Shift': '⇧',
         'Enter': '⏎',
         'Del': '⌫',
         'Home': '⇱',

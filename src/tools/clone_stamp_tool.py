@@ -39,9 +39,11 @@ LABEL_TEXT_OFFSET = _tr('Offset:')
 LABEL_TEXT_POSITION = _tr('Position:')
 LABEL_TEXT_SELECTION_ONLY = _tr('Update selection only')
 
-SOURCE_MODE_FIXED_OFFSET = QApplication.translate('cache_value', "Fixed offset")
-SOURCE_MODE_DYNAMIC_OFFSET = QApplication.translate('cache_value', "Dynamic offset")
-SOURCE_MODE_STATIC = QApplication.translate('cache_value', "Fixed position")
+# Stored `Cache.CLONE_STAMP_TOOL_SOURCE_MODE` values; they must match cache_value_definitions.json and must not be
+# translated.
+SOURCE_MODE_FIXED_OFFSET = 'Fixed offset'
+SOURCE_MODE_DYNAMIC_OFFSET = 'Dynamic offset'
+SOURCE_MODE_STATIC = 'Fixed position'
 
 
 class CloneStampTool(QtPaintBrushTool):

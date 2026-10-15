@@ -252,7 +252,7 @@ class ImageGenerator(MenuBuilder):
                 image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
             else:
                 image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-            if Cache().get(Cache.EDIT_MODE) == 'Inpaint':
+            if Cache().get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT:
                 inpaint_mask = self.get_paste_mask()
                 painter = QPainter(image)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
