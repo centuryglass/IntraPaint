@@ -3,7 +3,7 @@ import sys
 from unittest.mock import MagicMock
 
 from PySide6.QtCore import QPoint, QSize
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QCheckBox, QLabel, QSpinBox
 
 from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
@@ -51,3 +51,11 @@ class SelectionPanelTest(IntraPaintTestCase):
         self.button.click()
         self.assertEqual(self.selection_layer.context_pins, [])
         self.assertFalse(self.button.isEnabled())
+
+    def test_no_full_res_controls(self) -> None:
+        """The panel holds no checkbox or label for the inpaint full resolution and padding settings."""
+        cache = Cache()
+        names = {cache.get_label(Cache.INPAINT_FULL_RES), cache.get_label(Cache.INPAINT_FULL_RES_PADDING)}
+        texts = {widget.text() for widget in self.panel.findChildren(QCheckBox) + self.panel.findChildren(QLabel)}
+        self.assertEqual(texts & names, set())
+        self.assertEqual(self.panel.findChildren(QSpinBox), [])
