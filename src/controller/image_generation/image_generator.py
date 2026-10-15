@@ -2,7 +2,7 @@
 import logging
 from typing import Optional, Any
 
-from PIL import Image, ImageFilter
+from PIL import Image
 from PySide6.QtCore import QPoint, QRect, QSize, Signal, QTimer, QObject, SignalInstance
 from PySide6.QtGui import QImage, QPainter
 from PySide6.QtWidgets import QApplication
@@ -20,7 +20,7 @@ from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_S
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import MenuBuilder
 from src.util.shared_constants import EDIT_MODE_INPAINT, PIL_SCALING_MODES
-from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_image_scaling
+from src.util.visual.pil_image_utils import pil_image_to_qimage, pil_image_scaling
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = 'controller.image_generation.image_generator'
@@ -166,13 +166,13 @@ class ImageGenerator(MenuBuilder):
         self._generating = True
 
         inpaint_image, inpaint_mask = self.get_generation_inputs()
-        if inpaint_mask is not None:
-            blurred_mask = qimage_to_pil_image(inpaint_mask).filter(ImageFilter.GaussianBlur())
-            blurred_alpha_mask = pil_image_to_qimage(blurred_mask)
+        # Previews show the unscaled source outside the mask that clips them when applied, so they match the result.
+        paste_mask = self.get_paste_mask() if inpaint_mask is not None else None
+        if paste_mask is not None:
             composite_base = inpaint_image.copy()
             base_painter = QPainter(composite_base)
             base_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
-            base_painter.drawImage(QPoint(), blurred_alpha_mask)
+            base_painter.drawImage(QRect(QPoint(), composite_base.size()), paste_mask)
             base_painter.end()
         else:
             composite_base = None
@@ -228,14 +228,14 @@ class ImageGenerator(MenuBuilder):
         inpaint_task.status_signal.connect(self._apply_status_update)
         inpaint_task.finish_signal.connect(_finished)
 
-        self._window.show_generated_options()
+        self._window.show_generated_options(paste_mask)
         AppStateTracker.set_app_state(APP_STATE_LOADING)
         inpaint_task.start()
 
     def get_paste_mask(self) -> QImage:
         """Returns the generation-area mask whose alpha clips a generated image when it is applied.
 
-        Generators that blur the inpainting mask override this to return a soft mask.
+        Generators whose backend blends results through a blurred mask override this to cover the blur's reach.
         """
         return self._image_stack.selection_layer.mask_image
 

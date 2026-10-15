@@ -4,19 +4,19 @@
   <context>
     <name>application_config</name>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="241"/>
+      <location filename="../../src/controller/app_controller.py" line="242"/>
       <source>Stable Diffusion</source>
       <translation>Stable Diffusion</translation>
     </message>
     <message>
       <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="34"/>
       <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="50"/>
-      <location filename="../../src/controller/app_controller.py" line="242"/>
+      <location filename="../../src/controller/app_controller.py" line="243"/>
       <source>GLID-3-XL</source>
       <translation>GLID-3-XL</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="243"/>
+      <location filename="../../src/controller/app_controller.py" line="244"/>
       <source>Developer</source>
       <translation>Developer</translation>
     </message>
@@ -29,7 +29,7 @@
       <translation>Files</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_generator.py" line="174"/>
+      <location filename="../../src/controller/image_generation/sd_generator.py" line="176"/>
       <source>Stable Diffusion</source>
       <translation>Stable Diffusion</translation>
     </message>
@@ -570,8 +570,8 @@
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="383"/>
-      <source>Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.</source>
-      <translation>Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.</translation>
+      <source>How much to blur the inpainting mask, in pixels at the generation size, so generated content blends smoothly into the original image.</source>
+      <translation>How much to blur the inpainting mask, in pixels at the generation size, so generated content blends smoothly into the original image.</translation>
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="394"/>
@@ -1903,13 +1903,13 @@
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="833"/>
-      <source>Saved main window placement</source>
-      <translation>Saved main window placement</translation>
+      <source>Saved main window geometry</source>
+      <translation>Saved main window geometry</translation>
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="836"/>
-      <source>display, position, and size where the main window last was.</source>
-      <translation>display, position, and size where the main window last was.</translation>
+      <source>JSON with the main window's normal bounds, window state and display when it last closed.</source>
+      <translation>JSON with the main window's normal bounds, window state and display when it last closed.</translation>
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="835"/>
@@ -4461,184 +4461,184 @@
   <context>
     <name>controller.app_controller</name>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="145"/>
+      <location filename="../../src/controller/app_controller.py" line="146"/>
       <source>Restart required</source>
       <translation>Restart required</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="146"/>
+      <location filename="../../src/controller/app_controller.py" line="147"/>
       <source>The new maximum undo count will apply after IntraPaint is restarted.</source>
       <translation>The new maximum undo count will apply after IntraPaint is restarted.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="163"/>
-      <location filename="../../src/controller/app_controller.py" line="147"/>
+      <location filename="../../src/controller/app_controller.py" line="164"/>
+      <location filename="../../src/controller/app_controller.py" line="148"/>
       <source>Layers</source>
       <translation>Layers</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="148"/>
+      <location filename="../../src/controller/app_controller.py" line="149"/>
       <source>Color</source>
       <translation>Color</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="149"/>
+      <location filename="../../src/controller/app_controller.py" line="150"/>
       <source>Navigation</source>
       <translation>Navigation</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="159"/>
+      <location filename="../../src/controller/app_controller.py" line="160"/>
       <source>File</source>
       <translation>File</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="160"/>
+      <location filename="../../src/controller/app_controller.py" line="161"/>
       <source>Edit</source>
       <translation>Edit</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="161"/>
+      <location filename="../../src/controller/app_controller.py" line="162"/>
       <source>Image</source>
       <translation>Image</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="162"/>
+      <location filename="../../src/controller/app_controller.py" line="163"/>
       <source>Selection</source>
       <translation>Selection</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="164"/>
+      <location filename="../../src/controller/app_controller.py" line="165"/>
       <source>Filters</source>
       <translation>Filters</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="165"/>
+      <location filename="../../src/controller/app_controller.py" line="166"/>
       <source>Help</source>
       <translation>Help</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="167"/>
+      <location filename="../../src/controller/app_controller.py" line="168"/>
       <source>Move</source>
       <translation>Move</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="168"/>
+      <location filename="../../src/controller/app_controller.py" line="169"/>
       <source>Select</source>
       <translation>Select</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="169"/>
+      <location filename="../../src/controller/app_controller.py" line="170"/>
       <source>Transform</source>
       <translation>Transform</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="171"/>
+      <location filename="../../src/controller/app_controller.py" line="172"/>
       <source>Image Generation</source>
       <translation>Image Generation</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="179"/>
+      <location filename="../../src/controller/app_controller.py" line="180"/>
       <source>Loading image generator failed</source>
       <translation>Loading image generator failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="180"/>
+      <location filename="../../src/controller/app_controller.py" line="181"/>
       <source>Unable to load the {generator_name} image generator</source>
       <translation>Unable to load the {generator_name} image generator</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="181"/>
+      <location filename="../../src/controller/app_controller.py" line="182"/>
       <source>Quit now?</source>
       <translation>Quit now?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="182"/>
+      <location filename="../../src/controller/app_controller.py" line="183"/>
       <source>All unsaved changes will be lost.</source>
       <translation>All unsaved changes will be lost.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="183"/>
+      <location filename="../../src/controller/app_controller.py" line="184"/>
       <source>Create new image?</source>
       <translation>Create new image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="197"/>
-      <location filename="../../src/controller/app_controller.py" line="184"/>
+      <location filename="../../src/controller/app_controller.py" line="198"/>
+      <location filename="../../src/controller/app_controller.py" line="185"/>
       <source>This will discard all unsaved changes.</source>
       <translation>This will discard all unsaved changes.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="185"/>
+      <location filename="../../src/controller/app_controller.py" line="186"/>
       <source>Save failed</source>
       <translation>Save failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="186"/>
+      <location filename="../../src/controller/app_controller.py" line="187"/>
       <source>Open failed</source>
       <translation>Open failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="187"/>
+      <location filename="../../src/controller/app_controller.py" line="188"/>
       <source>Saving as "{file_path}" failed due to an unknown error, try saving in a different format or to a different disk.</source>
       <translation>Saving as "{file_path}" failed due to an unknown error, try saving in a different format or to a different disk.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="189"/>
+      <location filename="../../src/controller/app_controller.py" line="190"/>
       <source>Saving files with the  "{extension}" extension is not supported, try again with a supported image file format.</source>
       <translation>Saving files with the  "{extension}" extension is not supported, try again with a supported image file format.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="191"/>
+      <location filename="../../src/controller/app_controller.py" line="192"/>
       <source>Tried to save with no file extension as "{file_path}", add a valid image file extension and try again.</source>
       <translation>Tried to save with no file extension as "{file_path}", add a valid image file extension and try again.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="193"/>
+      <location filename="../../src/controller/app_controller.py" line="194"/>
       <source>Reload failed</source>
       <translation>Reload failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="194"/>
+      <location filename="../../src/controller/app_controller.py" line="195"/>
       <source>Image path "{file_path}" is not a valid image file.</source>
       <translation>Image path "{file_path}" is not a valid image file.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="195"/>
+      <location filename="../../src/controller/app_controller.py" line="196"/>
       <source>Enter an image path or click "Open Image" first.</source>
       <translation>Enter an image path or click "Open Image" first.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="196"/>
+      <location filename="../../src/controller/app_controller.py" line="197"/>
       <source>Reload image?</source>
       <translation>Reload image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="198"/>
+      <location filename="../../src/controller/app_controller.py" line="199"/>
       <source>Metadata updated</source>
       <translation>Metadata updated</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="199"/>
+      <location filename="../../src/controller/app_controller.py" line="200"/>
       <source>On save, current image generation parameters will be stored within the image</source>
       <translation>On save, current image generation parameters will be stored within the image</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="200"/>
+      <location filename="../../src/controller/app_controller.py" line="201"/>
       <source>Opening layers failed</source>
       <translation>Opening layers failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="201"/>
+      <location filename="../../src/controller/app_controller.py" line="202"/>
       <source>Could not open the following images: </source>
       <translation>Could not open the following images: </translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="202"/>
+      <location filename="../../src/controller/app_controller.py" line="203"/>
       <source>Open every frame?</source>
       <translation>Open every frame?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="203"/>
+      <location filename="../../src/controller/app_controller.py" line="204"/>
       <source>{file_name} has {frame_count} frames. Opening each one as a layer will use about {size_gb:.1f} GB of memory.
 
 Choose "No" to open only the first frame.</source>
@@ -4647,82 +4647,82 @@ Choose "No" to open only the first frame.</source>
 Choose "No" to open only the first frame.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="209"/>
+      <location filename="../../src/controller/app_controller.py" line="210"/>
       <source>Save image generation metadata?</source>
       <translation>Save image generation metadata?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="210"/>
+      <location filename="../../src/controller/app_controller.py" line="211"/>
       <source>No image metadata is cached, would you like to save image generation parameters to this image?</source>
       <translation>No image metadata is cached, would you like to save image generation parameters to this image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="212"/>
+      <location filename="../../src/controller/app_controller.py" line="213"/>
       <source>Update image generation metadata?</source>
       <translation>Update image generation metadata?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="213"/>
+      <location filename="../../src/controller/app_controller.py" line="214"/>
       <source>Image generation parameters have changed, would you like this image to be saved with the most recent values?</source>
       <translation>Image generation parameters have changed, would you like this image to be saved with the most recent values?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="217"/>
+      <location filename="../../src/controller/app_controller.py" line="218"/>
       <source>Image saved without layer data</source>
       <translation>Image saved without layer data</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="218"/>
+      <location filename="../../src/controller/app_controller.py" line="219"/>
       <source>To save layer data, images must be saved in .ora format.</source>
       <translation>To save layer data, images must be saved in .ora format.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="220"/>
+      <location filename="../../src/controller/app_controller.py" line="221"/>
       <source>Image saved without full transparency</source>
       <translation>Image saved without full transparency</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="221"/>
+      <location filename="../../src/controller/app_controller.py" line="222"/>
       <source>To preserve transparency, save using one of the following file formats: {alpha_formats}</source>
       <translation>To preserve transparency, save using one of the following file formats: {alpha_formats}</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="224"/>
+      <location filename="../../src/controller/app_controller.py" line="225"/>
       <source>Image saved without image generation metadata</source>
       <translation>Image saved without image generation metadata</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="225"/>
+      <location filename="../../src/controller/app_controller.py" line="226"/>
       <source>To preserve image generation metadata, save using one of the following file formats: {metadata_formats}</source>
       <translation>To preserve image generation metadata, save using one of the following file formats: {metadata_formats}</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="228"/>
+      <location filename="../../src/controller/app_controller.py" line="229"/>
       <source>Image saved in a write-only format</source>
       <translation>Image saved in a write-only format</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="229"/>
+      <location filename="../../src/controller/app_controller.py" line="230"/>
       <source>IntraPaint can write images in the {file_format} format, but cannot load them. Use another file format if you want to be able to load this image in IntraPaint again.</source>
       <translation>IntraPaint can write images in the {file_format} format, but cannot load them. Use another file format if you want to be able to load this image in IntraPaint again.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="232"/>
+      <location filename="../../src/controller/app_controller.py" line="233"/>
       <source>Image saved in a format that changes size</source>
       <translation>Image saved in a format that changes size</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="233"/>
+      <location filename="../../src/controller/app_controller.py" line="234"/>
       <source>The image is {width_px}x{height_px}, but the {file_format} format saves all images at {saved_width_px}x{saved_height_px} resolution. Use another file format if you want to preserve the original image size.</source>
       <translation>The image is {width_px}x{height_px}, but the {file_format} format saves all images at {saved_width_px}x{saved_height_px} resolution. Use another file format if you want to preserve the original image size.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="237"/>
+      <location filename="../../src/controller/app_controller.py" line="238"/>
       <source>Image saved without color</source>
       <translation>Image saved without color</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="238"/>
+      <location filename="../../src/controller/app_controller.py" line="239"/>
       <source>The {file_format} format saves the image without color. Use another format if you want to preserve image colors.</source>
       <translation>The {file_format} format saves the image without color. Use another format if you want to preserve image colors.</translation>
     </message>
@@ -5139,7 +5139,7 @@ Choose "No" to open only the first frame.</translation>
   <context>
     <name>controller.image_generation.sd_generator</name>
     <message>
-      <location filename="../../src/controller/image_generation/sd_generator.py" line="52"/>
+      <location filename="../../src/controller/image_generation/sd_generator.py" line="54"/>
       <source>
 &lt;p&gt;
     Released in August 2022, Stable Diffusion remains the most versatile and useful free image generation model.
@@ -5198,7 +5198,7 @@ Choose "No" to open only the first frame.</translation>
 </translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_generator.py" line="149"/>
+      <location filename="../../src/controller/image_generation/sd_generator.py" line="151"/>
       <source>
 &lt;h2&gt;Getting Stable Diffusion Model Files&lt;/h2&gt;
 &lt;p&gt;
@@ -5239,12 +5239,12 @@ Choose "No" to open only the first frame.</translation>
 </translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_generator.py" line="170"/>
+      <location filename="../../src/controller/image_generation/sd_generator.py" line="172"/>
       <source>ControlNet preview failed</source>
       <translation>ControlNet preview failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_generator.py" line="171"/>
+      <location filename="../../src/controller/image_generation/sd_generator.py" line="173"/>
       <source>Loading ControlNet preprocessor preview failed: {err}</source>
       <translation>Loading ControlNet preprocessor preview failed: {err}</translation>
     </message>
@@ -5957,117 +5957,117 @@ Please remember to include the traceback from the Details expander.</translation
       <translation>Paste layer</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="58"/>
+      <location filename="../../src/image/layers/image_stack.py" line="63"/>
       <source>Resizing image canvas failed</source>
       <translation>Resizing image canvas failed</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="59"/>
+      <location filename="../../src/image/layers/image_stack.py" line="64"/>
       <source>Image scaling failed</source>
       <translation>Image scaling failed</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="60"/>
+      <location filename="../../src/image/layers/image_stack.py" line="65"/>
       <source>Locked layer {layer_name} would be affected, unlock the layer before retrying</source>
       <translation>Locked layer {layer_name} would be affected, unlock the layer before retrying</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="62"/>
+      <location filename="../../src/image/layers/image_stack.py" line="67"/>
       <source>Locked layers {comma_separated_layer_names} would be affected, unlock these layers before retrying.</source>
       <translation>Locked layers {comma_separated_layer_names} would be affected, unlock these layers before retrying.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="65"/>
+      <location filename="../../src/image/layers/image_stack.py" line="70"/>
       <source>Crop to selection bounds failed</source>
       <translation>Crop to selection bounds failed</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="66"/>
+      <location filename="../../src/image/layers/image_stack.py" line="71"/>
       <source>Nothing is selected, select an area in the image first.</source>
       <translation>Nothing is selected, select an area in the image first.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="67"/>
+      <location filename="../../src/image/layers/image_stack.py" line="72"/>
       <source>The selection does not cover any part of the layer.</source>
       <translation>The selection does not cover any part of the layer.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="68"/>
+      <location filename="../../src/image/layers/image_stack.py" line="73"/>
       <source>The selection does not cut out any part of the layer.</source>
       <translation>The selection does not cut out any part of the layer.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="69"/>
+      <location filename="../../src/image/layers/image_stack.py" line="74"/>
       <source>All selected layers are either fully covered by the selection or do not intersect with it at all.</source>
       <translation>All selected layers are either fully covered by the selection or do not intersect with it at all.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="72"/>
+      <location filename="../../src/image/layers/image_stack.py" line="77"/>
       <source>Error: tried to change a locked layer</source>
       <translation>Error: tried to change a locked layer</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="73"/>
+      <location filename="../../src/image/layers/image_stack.py" line="78"/>
       <source>Unlock the layer before attempting any changes.</source>
       <translation>Unlock the layer before attempting any changes.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="75"/>
+      <location filename="../../src/image/layers/image_stack.py" line="80"/>
       <source>Merging layers failed</source>
       <translation>Merging layers failed</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="76"/>
+      <location filename="../../src/image/layers/image_stack.py" line="81"/>
       <source>Only visible layers can be merged.</source>
       <translation>Only visible layers can be merged.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="77"/>
+      <location filename="../../src/image/layers/image_stack.py" line="82"/>
       <source>Flattening layer failed</source>
       <translation>Flattening layer failed</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="78"/>
+      <location filename="../../src/image/layers/image_stack.py" line="83"/>
       <source>Only visible layers can be flattened.</source>
       <translation>Only visible layers can be flattened.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="79"/>
+      <location filename="../../src/image/layers/image_stack.py" line="84"/>
       <source>The layer below is a layer group, flatten the group into a single image layer first.</source>
       <translation>The layer below is a layer group, flatten the group into a single image layer first.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="82"/>
+      <location filename="../../src/image/layers/image_stack.py" line="87"/>
       <source>Layer "{layer_name}" is in a locked group</source>
       <translation>Layer "{layer_name}" is in a locked group</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="83"/>
+      <location filename="../../src/image/layers/image_stack.py" line="88"/>
       <source>Unlock the layer group before trying to change layers within the group.</source>
       <translation>Unlock the layer group before trying to change layers within the group.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="85"/>
+      <location filename="../../src/image/layers/image_stack.py" line="90"/>
       <source>Blocked action on main layer group</source>
       <translation>Blocked action on main layer group</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="86"/>
+      <location filename="../../src/image/layers/image_stack.py" line="91"/>
       <source>To edit the main layer group, edit its layers individually or use the options under the Image menu.</source>
       <translation>To edit the main layer group, edit its layers individually or use the options under the Image menu.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="89"/>
+      <location filename="../../src/image/layers/image_stack.py" line="94"/>
       <source>Warning: cropping deleted layer(s)</source>
       <translation>Warning: cropping deleted layer(s)</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="90"/>
+      <location filename="../../src/image/layers/image_stack.py" line="95"/>
       <source>&lt;p&gt;Cropping the image deleted the following layers:&lt;/p&gt;&lt;ul&gt;{layer_names}&lt;/ul&gt;</source>
       <translation>&lt;p&gt;Cropping the image deleted the following layers:&lt;/p&gt;&lt;ul&gt;{layer_names}&lt;/ul&gt;</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="92"/>
+      <location filename="../../src/image/layers/image_stack.py" line="97"/>
       <source>Hidden layers will be deleted</source>
       <translation>Hidden layers will be deleted</translation>
     </message>
@@ -6075,7 +6075,7 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>image.layers.selection_layer</name>
     <message>
-      <location filename="../../src/image/layers/selection_layer.py" line="30"/>
+      <location filename="../../src/image/layers/selection_layer.py" line="31"/>
       <source>Selection</source>
       <translation>Selection</translation>
     </message>
@@ -7342,22 +7342,22 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.panel.generators.sd_webui_panel</name>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="30"/>
+      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="31"/>
       <source>Interrogate</source>
       <translation>Interrogate</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="31"/>
+      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="32"/>
       <source>Attempt to generate a prompt that describes the current image generation area</source>
       <translation>Attempt to generate a prompt that describes the current image generation area</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="33"/>
+      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="34"/>
       <source>Main</source>
       <translation>Main</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="34"/>
+      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="35"/>
       <source>Extras</source>
       <translation>Extras</translation>
     </message>
@@ -7564,41 +7564,71 @@ Please remember to include the traceback from the Details expander.</translation
     </message>
     <message>
       <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="36"/>
+      <source>Add layer</source>
+      <translation>Add layer</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="37"/>
       <source>Create a new layer above the current active layer.</source>
       <translation>Create a new layer above the current active layer.</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="37"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="38"/>
+      <source>Add layer group</source>
+      <translation>Add layer group</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="39"/>
       <source>Create a new layer group above the current active layer.</source>
       <translation>Create a new layer group above the current active layer.</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="38"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="40"/>
+      <source>Delete layer</source>
+      <translation>Delete layer</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="41"/>
       <source>Delete the active layer.</source>
       <translation>Delete the active layer.</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="39"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="42"/>
+      <source>Move layer up</source>
+      <translation>Move layer up</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="43"/>
       <source>Move the active layer up.</source>
       <translation>Move the active layer up.</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="40"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="44"/>
+      <source>Move layer down</source>
+      <translation>Move layer down</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="45"/>
       <source>Move the active layer down.</source>
       <translation>Move the active layer down.</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="41"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="46"/>
+      <source>Merge down</source>
+      <translation>Merge down</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="47"/>
       <source>Merge the active layer with the one below it.</source>
       <translation>Merge the active layer with the one below it.</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="42"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="48"/>
       <source>Opacity:</source>
       <translation>Opacity:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="43"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="49"/>
       <source>Layer mode:</source>
       <translation>Layer mode:</translation>
     </message>
@@ -8433,32 +8463,32 @@ Click to pick, or press Esc to cancel</translation>
   <context>
     <name>ui.window.main_window</name>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="47"/>
+      <location filename="../../src/ui/window/main_window.py" line="49"/>
       <source>Move up</source>
       <translation>Move up</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="48"/>
+      <location filename="../../src/ui/window/main_window.py" line="50"/>
       <source>Move down</source>
       <translation>Move down</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="49"/>
+      <location filename="../../src/ui/window/main_window.py" line="51"/>
       <source>Move left</source>
       <translation>Move left</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="50"/>
+      <location filename="../../src/ui/window/main_window.py" line="52"/>
       <source>Move right</source>
       <translation>Move right</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="51"/>
+      <location filename="../../src/ui/window/main_window.py" line="53"/>
       <source>Move all tabs here</source>
       <translation>Move all tabs here</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="54"/>
+      <location filename="../../src/ui/window/main_window.py" line="56"/>
       <source>Loading...</source>
       <translation>Loading...</translation>
     </message>

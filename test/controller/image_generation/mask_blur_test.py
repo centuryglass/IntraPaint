@@ -1,8 +1,8 @@
-"""Tests the mask blur band geometry and the soft paste mask."""
+"""Tests the mask blur band geometry and growing a mask by the band's reach."""
 from PySide6.QtCore import QRect, QSize
 from PySide6.QtGui import QColor, QImage, QPainter
 
-from src.controller.image_generation.mask_blur import blur_extent, blur_extent_in_image, soft_paste_mask
+from src.controller.image_generation.mask_blur import blur_extent, blur_extent_in_image, grow_mask
 from test.base_test_case import IntraPaintTestCase
 
 
@@ -29,27 +29,18 @@ class MaskBlurTest(IntraPaintTestCase):
         self.assertEqual(blur_extent_in_image(4, QSize(256, 128), QSize(512, 512)), (5, 3))
         self.assertEqual(blur_extent_in_image(4, QSize(1024, 512), QSize(512, 512)), (20, 10))
 
-    def test_soft_mask_fades_through_the_edge(self) -> None:
-        """Blurring keeps the interior opaque and spreads alpha beyond the selection edge."""
-        size = QSize(100, 100)
-        soft = soft_paste_mask(_mask(size, QRect(30, 30, 40, 40)), size, size, 4)
-        self.assertEqual(soft.size(), size)
-        self.assertEqual(soft.pixelColor(50, 50).alpha(), 255)
-        self.assertEqual(soft.pixelColor(2, 2).alpha(), 0)
-        outside = soft.pixelColor(28, 50).alpha()
-        self.assertTrue(0 < outside < 128, outside)
+    def test_grow_mask_reaches_per_axis(self) -> None:
+        """Growing covers reach_x pixels across and reach_y pixels down, and stays hard-edged."""
+        mask = _mask(QSize(100, 100), QRect(40, 40, 20, 20))
+        grown = grow_mask(mask, 6, 3)
+        self.assertEqual(grown.pixelColor(34, 50).alpha(), 255)
+        self.assertEqual(grown.pixelColor(33, 50).alpha(), 0)
+        self.assertEqual(grown.pixelColor(50, 37).alpha(), 255)
+        self.assertEqual(grown.pixelColor(50, 36).alpha(), 0)
+        self.assertEqual({grown.pixelColor(x, 50).alpha() for x in range(100)}, {0, 255})
+        self.assertEqual(mask.pixelColor(34, 50).alpha(), 0, 'the source mask must not change')
 
-    def test_zero_blur_returns_the_mask(self) -> None:
-        """Without blur the mask is untouched."""
-        size = QSize(20, 20)
-        mask = _mask(size, QRect(5, 5, 10, 10))
-        self.assertEqual(soft_paste_mask(mask, size, size, 0), mask)
-
-    def test_non_square_scale_blurs_less_along_the_narrow_axis(self) -> None:
-        """Different scales per axis give different spread horizontally and vertically."""
-        size = QSize(100, 100)
-        selected = QRect(30, 30, 40, 40)
-        soft = soft_paste_mask(_mask(size, selected), QSize(100, 50), size, 8)  # sigma 8 across, 4 down
-        across = soft.pixelColor(26, 50).alpha()
-        down = soft.pixelColor(50, 26).alpha()
-        self.assertGreater(across, down)
+    def test_grow_mask_without_reach_copies(self) -> None:
+        """Without reach the result matches the mask."""
+        mask = _mask(QSize(20, 20), QRect(5, 5, 10, 10))
+        self.assertEqual(grow_mask(mask, 0, 0), mask)

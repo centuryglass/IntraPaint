@@ -380,7 +380,7 @@
     "mask_blur": {
         "label": "Mask blur:",
         "category": "Stable Diffusion",
-        "description": "Standard deviation, in generation-size pixels, of the blur applied to the inpainting mask to smoothly combine edited and original image content. The blur reaches about 2.5 times this far on each side of the selection edge.",
+        "description": "How much to blur the inpainting mask, in pixels at the generation size, so generated content blends smoothly into the original image.",
         "type": "int",
         "default": 4,
         "range_options": {

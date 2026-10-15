@@ -11,7 +11,6 @@ from PySide6.QtWidgets import QWidget, QSizePolicy
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.controller.image_generation.mask_blur import blur_extent_in_image
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
@@ -20,16 +19,13 @@ from src.ui.graphics_items.border import Border
 from src.ui.graphics_items.context_pin_item import ContextPinItem, marker_size_for_view, DEFAULT_MARKER_SIZE
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.graphics_items.outline import Outline
-from src.ui.graphics_items.polygon_outline import PolygonOutline
 from src.ui.graphics_items.selection_outline import SelectionOutline
 from src.ui.ink_style import ink_colors
 from src.ui.widget.image_graphics_view import ImageGraphicsView
-from src.util.shared_constants import EDIT_MODE_INPAINT
 from src.util.visual.graphics_scene_utils import get_view_bounds_of_scene_item_rect
 from src.util.visual.image_utils import get_transparency_tile_pixmap, tile_pattern_fill, TRANSPARENCY_PATTERN_TILE_DIM
 
 GENERATION_AREA_BORDER_OPACITY = 0.6
-BLUR_BAND_OUTLINE_OPACITY = 0.35
 IMAGE_BORDER_OPACITY = 0.2
 GENERATION_AREA_BORDER_COLOR = Qt.GlobalColor.black
 # The veil drawn over everything outside the image. The canvas surround theme color is the color that shows through it:
@@ -96,13 +92,7 @@ class ImageViewer(ImageGraphicsView):
         self._generation_area_selection_outline = Outline(scene, self)
         self._generation_area_selection_outline.setOpacity(GENERATION_AREA_BORDER_OPACITY)
         selection_layer = image_stack.selection_layer
-        self._blur_band_outline = PolygonOutline(self)
-        self._blur_band_outline.setOpacity(BLUR_BAND_OUTLINE_OPACITY)
-        self._blur_band_outline.setVisible(False)
         selection_layer.content_changed.connect(self._selection_content_change_slot)
-        Cache().connect(self, Cache.EDIT_MODE, self._selection_content_change_slot)
-        Cache().connect(self, Cache.GENERATION_SIZE, self._selection_content_change_slot)
-        AppConfig().connect(self, AppConfig.MASK_BLUR, self._selection_content_change_slot)
         self._context_pin_items: list[ContextPinItem] = []
         self._context_pin_marker_size = DEFAULT_MARKER_SIZE
         selection_layer.context_pins_changed.connect(self._context_pins_change_slot)
@@ -299,23 +289,6 @@ class ImageViewer(ImageGraphicsView):
             self._generation_area_selection_outline.setVisible(False)
         self._selection_poly_outline.setZValue(2)
         self._selection_poly_outline.load_polygons(selection_layer.outline)
-        self._update_blur_band_outline()
-
-    def _update_blur_band_outline(self) -> None:
-        """Outlines the extent of the inpainting mask blur while inpainting, clipped to the generation area."""
-        selection_layer = self._image_stack.selection_layer
-        mask_blur = AppConfig().get(AppConfig.MASK_BLUR)
-        if (Cache().get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT or not Cache().get(Cache.INPAINT_OPTIONS_AVAILABLE)
-                or mask_blur <= 0 or not selection_layer.visible):
-            self._blur_band_outline.setVisible(False)
-            return
-        crop = selection_layer.get_selection_gen_area(ignore_config=True)
-        full_res = Cache().get(Cache.INPAINT_FULL_RES)
-        crop_size = crop.size() if crop is not None and full_res else self._image_stack.generation_area.size()
-        band_x, band_y = blur_extent_in_image(mask_blur, crop_size, Cache().get(Cache.GENERATION_SIZE))
-        polygons = selection_layer.blur_band_outline(band_x, band_y)
-        self._blur_band_outline.load_polygons(polygons)
-        self._blur_band_outline.setVisible(bool(polygons))
 
     def _context_pins_change_slot(self, _pins: list[QPoint]) -> None:
         """Replace the pin markers, and sync the 'inpaint masked only' bounds that pins stretch."""
