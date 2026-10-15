@@ -67,6 +67,7 @@ from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator,
 from src.controller.image_generation.test_generator import TestGenerator
 from src.controller.tool_controller import ToolController
 from src.hotkey_filter import HotkeyFilter
+from src.image.animation import load_frames_as_image, add_frame_layers
 from src.image.filter.blur import BlurFilter
 from src.image.filter.brightness_contrast import BrightnessContrastFilter
 from src.image.filter.invert import InvertFilter
@@ -120,7 +121,8 @@ from src.util.visual.display_size import get_screen_size
 from src.util.visual.image_format_utils import save_image_with_metadata, save_image, load_image, \
     IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_FORMATS_SUPPORTING_ALPHA, IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA, \
     METADATA_PARAMETER_KEY, IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, IMAGE_FORMATS_WITH_FIXED_SIZE, \
-    GREYSCALE_IMAGE_FORMATS, METADATA_COMMENT_KEY, PIL_WRITE_FORMATS, QIMAGE_WRITE_FORMATS
+    GREYSCALE_IMAGE_FORMATS, METADATA_COMMENT_KEY, PIL_WRITE_FORMATS, QIMAGE_WRITE_FORMATS, count_image_frames, \
+    load_image_frames, ImageFrame
 from src.util.visual.image_utils import image_is_fully_opaque, image_has_partial_alpha, create_transparent_image
 
 # Optional spacenav support:
@@ -197,6 +199,12 @@ METADATA_UPDATE_TITLE = _tr('Metadata updated')
 METADATA_UPDATE_MESSAGE = _tr('On save, current image generation parameters will be stored within the image')
 LOAD_LAYER_ERROR_TITLE = _tr('Opening layers failed')
 LOAD_LAYER_ERROR_MESSAGE = _tr('Could not open the following images: ')
+LARGE_ANIMATION_TITLE = _tr('Open every frame?')
+LARGE_ANIMATION_MESSAGE = _tr('{file_name} has {frame_count} frames. Opening each one as a layer will use about'
+                              ' {size_gb:.1f} GB of memory.\n\nChoose "No" to open only the first frame.')
+
+# Decoded frame data, in bytes, above which opening an animation asks before loading every frame.
+LARGE_ANIMATION_BYTES = 1024 ** 3
 
 TITLE_CONFIRM_METADATA_INIT = _tr('Save image generation metadata?')
 MESSAGE_CONFIRM_METADATA_INIT = _tr('No image metadata is cached, would you like to save image generation parameters to'
@@ -1063,7 +1071,10 @@ class AppController(MenuBuilder):
                         if self._metadata is None:
                             self._metadata = {}
                         self._metadata[METADATA_PARAMETER_KEY] = description
-                self._image_stack.load_image(image)
+                if self._should_load_frames(file_path, image.size()):
+                    load_frames_as_image(self._image_stack, load_image_frames(file_path))
+                else:
+                    self._image_stack.load_image(image)
             cache.set(Cache.LAST_FILE_PATH, file_path)
 
             # File loaded, attempt to apply metadata:
@@ -1117,29 +1128,47 @@ class AppController(MenuBuilder):
         layer_paths, layers_selected = open_image_layers(self._window)
         if not layers_selected or not layer_paths or len(layer_paths) == 0:
             return
-        layers: list[tuple[QImage, str]] = []
+        layers: list[tuple[QImage, str, Optional[list[ImageFrame]]]] = []
         errors: list[str] = []
         for layer_path in layer_paths:
             try:
                 image, _, _ = load_image(layer_path)
-                layers.append((image, layer_path))
+                frames = load_image_frames(layer_path) if self._should_load_frames(layer_path, image.size()) else None
+                layers.append((image, layer_path, frames))
             except IOError:
                 errors.append(layer_path)
         if not self._image_stack.has_image:
             width = 0
             height = 0
-            for image, _ in layers:
-                width = max(width, image.width())
-                height = max(height, image.height())
+            for image, _, frames in layers:
+                for frame_image in [image] if frames is None else [frame.image for frame in frames]:
+                    width = max(width, frame_image.width())
+                    height = max(height, frame_image.height())
             base_layer = create_transparent_image(QSize(width, height))
             self._image_stack.load_image(base_layer)
-        for image, image_path in layers:
+        for image, image_path, frames in layers:
             name = os.path.basename(image_path)
-            self._image_stack.create_layer(name, image)
+            if frames is None:
+                self._image_stack.create_layer(name, image)
+            else:
+                add_frame_layers(self._image_stack, frames, f'{name}: ')
         if len(errors) > 0:
             show_error_dialog(self._window, LOAD_LAYER_ERROR_TITLE, LOAD_LAYER_ERROR_MESSAGE + ','.join(errors))
         if self._image_stack.has_image:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
+
+    def _should_load_frames(self, file_path: str, frame_size: QSize) -> bool:
+        """Returns whether to open each frame of a file as a layer, asking first if that would use a lot of memory."""
+        frame_count = count_image_frames(file_path)
+        if frame_count < 2:
+            return False
+        frame_bytes = frame_count * frame_size.width() * frame_size.height() * 4  # ARGB32 pixels
+        if frame_bytes <= LARGE_ANIMATION_BYTES:
+            return True
+        message = LARGE_ANIMATION_MESSAGE.format(file_name=os.path.basename(file_path), frame_count=frame_count,
+                                                 size_gb=frame_bytes / 1024 ** 3)
+        return request_confirmation(self._window, LARGE_ANIMATION_TITLE, message, None,
+                                    QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
 
     @menu_action(MENU_FILE, 'reload_shortcut', 5, valid_app_states=[APP_STATE_EDITING])
     def reload_image(self) -> None:

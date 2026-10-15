@@ -5,6 +5,7 @@ import tempfile
 import weakref
 from unittest.mock import patch, MagicMock
 
+from PIL import Image
 from PySide6.QtCore import QEvent, QSize, QTimer
 from PySide6.QtGui import QAction, QColor, QImage
 from PySide6.QtWidgets import QApplication, QStyleFactory, QWidget
@@ -14,6 +15,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.app_controller import AppController
 from src.controller.image_generation.test_generator import TestGenerator
+from src.image.layers.image_layer import ImageLayer
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
@@ -256,6 +258,60 @@ class TestAppController(IntraPaintTestCase):
                     else:
                         self.assertFalse(expected_metadata,
                                          f'Metadata expected but not found for format {file_format}')
+
+
+class TestOpenAnimation(IntraPaintTestCase):
+    """Tests opening animated images as one layer per frame."""
+
+    COLORS = [(255, 0, 0, 255), (0, 255, 0, 255), (0, 0, 255, 255)]
+
+    def setUp(self) -> None:
+        super().setUp()
+        args = build_arg_parser(include_edit_params=False).parse_args(['--window_size', '800x600', '--mode', 'mock'])
+        args.mode = 'mock'
+        args.server_url = ''
+        args.fast_ngrok_connection = False
+        self.controller = AppController(args)
+        self.image_stack = self.controller._image_stack
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.gif_path = os.path.join(self.temp_dir.name, 'anim.gif')
+        frames = [Image.new('RGBA', (16, 16), color) for color in self.COLORS]
+        frames[0].save(self.gif_path, save_all=True, append_images=frames[1:], duration=[100, 200, 50], loop=0)
+
+    def tearDown(self) -> None:
+        self.temp_dir.cleanup()
+        super().tearDown()
+
+    def _layer_names_bottom_up(self) -> list[str]:
+        return [layer.name for layer in sorted(self.image_stack.top_level_layers, key=lambda layer: layer.z_value)]
+
+    def test_open_animation(self) -> None:
+        """Opening an animated GIF loads one layer per frame and keeps the loop count in the metadata."""
+        self.controller.load_image(self.gif_path)
+        self.assertEqual(self._layer_names_bottom_up(), ['Frame 1 (100ms)', 'Frame 2 (200ms)', 'Frame 3 (50ms)'])
+        self.assertEqual(self.image_stack.size, QSize(16, 16))
+        assert self.controller._metadata is not None
+        self.assertEqual(self.controller._metadata.get('loop'), 0)
+
+    @patch('src.controller.app_controller.request_confirmation', return_value=False)
+    @patch('src.controller.app_controller.LARGE_ANIMATION_BYTES', 16)
+    def test_open_large_animation_first_frame_only(self, mock_confirm) -> None:
+        """Declining to open every frame of a large animation opens only its first frame."""
+        self.controller.load_image(self.gif_path)
+        mock_confirm.assert_called_once()
+        self.assertEqual(len(self.image_stack.top_level_layers), 1)
+        first_frame = self.image_stack.top_level_layers[0]
+        assert isinstance(first_frame, ImageLayer)
+        self.assertEqual(first_frame.image.pixelColor(8, 8), QColor(255, 0, 0))
+
+    @patch('src.controller.app_controller.open_image_layers')
+    def test_open_animation_as_layers(self, mock_open_layers) -> None:
+        """Opening an animated GIF as layers adds one layer per frame, named after the file."""
+        self.image_stack.load_image(QImage(QSize(16, 16), QImage.Format.Format_ARGB32_Premultiplied))
+        mock_open_layers.return_value = ([self.gif_path], 'filter')
+        self.controller.load_image_layers()
+        self.assertEqual(self._layer_names_bottom_up()[1:],
+                         ['anim.gif: Frame 1 (100ms)', 'anim.gif: Frame 2 (200ms)', 'anim.gif: Frame 3 (50ms)'])
 
 
 class TestRestorePreviousChoicesAction(IntraPaintTestCase):

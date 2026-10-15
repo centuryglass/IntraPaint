@@ -3,12 +3,13 @@ import io
 import os
 import tempfile
 import unittest
+from typing import Optional
 
 from PIL import Image, UnidentifiedImageError
 from PySide6.QtWidgets import QApplication
 
 from src.util.visual.image_format_utils import IMAGE_READ_FORMATS, IMAGE_WRITE_FORMATS, \
-    IMAGE_FORMATS_SUPPORTING_METADATA, load_image, save_image
+    IMAGE_FORMATS_SUPPORTING_METADATA, load_image, save_image, count_image_frames, load_image_frames
 
 
 app = QApplication.instance() or QApplication([])
@@ -93,3 +94,57 @@ class TestImageFormatUtils(unittest.TestCase):
                     if file_format in IMAGE_READ_FORMATS:
                         loaded_image, _, _ = load_image(file_path)
                         self.assertFalse(loaded_image.isNull())
+
+
+class TestImageFrames(unittest.TestCase):
+    """Test loading every frame of animations and multi-page images."""
+
+    COLORS = [(255, 0, 0, 255), (0, 255, 0, 255), (0, 0, 255, 255)]
+    DURATIONS = [100, 200, 50]
+
+    def _save_frames(self, directory: str, extension: str, pil_format: Optional[str] = None) -> str:
+        frames = [Image.new('RGBA', (16, 16), color) for color in self.COLORS]
+        file_path = os.path.join(directory, f'animation.{extension}')
+        frames[0].save(file_path, pil_format, save_all=True, append_images=frames[1:], duration=self.DURATIONS,
+                       loop=0)
+        return file_path
+
+    def test_load_animation_frames(self) -> None:
+        """Every frame of an animation loads in order, with its duration."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for extension, pil_format in (('gif', None), ('webp', None), ('png', None), ('apng', 'PNG'),
+                                          ('avif', None)):
+                with self.subTest(extension=extension):
+                    file_path = self._save_frames(temp_dir, extension, pil_format)
+                    self.assertEqual(count_image_frames(file_path), len(self.COLORS))
+                    frames = load_image_frames(file_path)
+                    self.assertEqual([frame.duration_ms for frame in frames], self.DURATIONS)
+                    for frame, color in zip(frames, self.COLORS):
+                        pixel = frame.image.pixelColor(8, 8)
+                        for actual, expected in zip(pixel.getRgb(), color):
+                            self.assertAlmostEqual(actual, expected, delta=8)
+
+    def test_load_tiff_pages(self) -> None:
+        """Each page of a multi-page TIFF loads as a frame with no duration."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = self._save_frames(temp_dir, 'tiff')
+            frames = load_image_frames(file_path)
+            self.assertEqual([frame.duration_ms for frame in frames], [None, None, None])
+
+    def test_single_frame_formats(self) -> None:
+        """Single images, multi-frame formats outside ANIMATION_READ_FORMATS and Qt-only files load one frame."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            png_path = os.path.join(temp_dir, 'still.png')
+            Image.new('RGBA', (16, 16)).save(png_path)
+            mpo_path = os.path.join(temp_dir, 'stereo.mpo')
+            Image.new('RGB', (16, 16)).save(mpo_path, 'MPO', save_all=True, append_images=[Image.new('RGB', (16, 16))])
+            with Image.open(mpo_path) as mpo_image:
+                self.assertGreater(getattr(mpo_image, 'n_frames', 1), 1)
+            svg_path = os.path.join(temp_dir, 'still.svg')
+            with open(svg_path, 'w', encoding='utf-8') as svg_file:
+                svg_file.write('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"/>')
+            for file_path in (png_path, mpo_path):
+                with self.subTest(file_path=file_path):
+                    self.assertEqual(count_image_frames(file_path), 1)
+                    self.assertEqual(len(load_image_frames(file_path)), 1)
+            self.assertEqual(count_image_frames(svg_path), 1)
