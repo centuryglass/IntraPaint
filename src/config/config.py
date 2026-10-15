@@ -52,6 +52,20 @@ DUPLICATE_KEY_ERROR = _tr('Tried to add duplicate config entry for key "{key}"')
 SAVE_DELAY_MS = 10
 
 
+# Keep in step with the file/context pairs in `scripts/build_translations.py`.
+_DEFINITION_TR_CONTEXTS = {
+    'a1111_setting_definitions.json': 'config.a1111_config',
+    'application_config_definitions.json': 'config.application_config',
+    'cache_value_definitions.json': 'config.cache',
+    'key_config_definitions.json': 'config.key_config',
+}
+
+
+def _definition_tr_context(definition_path: str) -> str:
+    """Returns the translation context `scripts/build_translations.py` writes a definition file's strings to."""
+    return _DEFINITION_TR_CONTEXTS.get(os.path.basename(definition_path), '')
+
+
 class Config:
     """A shared resource to set inpainting configuration and to provide default values.
 
@@ -87,6 +101,7 @@ class Config:
         self._connected: dict[str, dict[Any, Callable[..., None]]] = {}
         self._option_connected: dict[str, dict[Any, Callable[[ParamTypeList], None]]] = {}
         self._json_path = saved_value_path
+        self._tr_context = ''
         self._lock = Lock()
         self._save_timer = QTimer()
         self._save_timer.setSingleShot(True)
@@ -97,7 +112,8 @@ class Config:
             raise RuntimeError(MISSING_DEF_ERROR.format(definition_path=definition_path))
         try:
             with open(definition_path, encoding='utf-8') as file:
-                config_text_key = definition_path.replace('_definitions.json', '')
+                self._tr_context = _definition_tr_context(definition_path)
+                config_text_key = self._tr_context
 
                 def _tr_cfg(text: str) -> str:
                     return QApplication.translate(config_text_key, text)
@@ -278,7 +294,7 @@ class Config:
         will immediately propagate to the underlying config file."""
         with self._lock:
             entry = self._entries[key]
-            control_widget = entry.get_input_widget(multi_line, False)
+            control_widget = entry.get_input_widget(multi_line, False, self.get_option_display)
             control_widget.setValue(entry.get_value())
             if isinstance(control_widget, CheckBox):
                 control_widget.setText(entry.name)
@@ -295,13 +311,13 @@ class Config:
                     if control_widget.value() != new_value:
                         if isinstance(control_widget, ComboBox):
                             current_options = self.get_options(config_key)
-                            widget_options = [control_widget.itemText(i) for i in range(control_widget.count())]
+                            widget_options = [control_widget.itemData(i) for i in range(control_widget.count())]
                             if widget_options != current_options:
                                 with signals_blocked(control_widget):
                                     while control_widget.count() > 0:
                                         control_widget.removeItem(0)
                                     for new_option in current_options:
-                                        control_widget.addItem(str(new_option), userData=new_option)
+                                        control_widget.addItem(self.get_option_display(new_option), userData=new_option)
                         control_widget.setValue(new_value)
 
                 self.connect(control_widget, key, _update_control)
@@ -310,13 +326,13 @@ class Config:
                     combobox = control_widget
 
                     def _update_options(new_options: ParamTypeList) -> None:
-                        last_selected_text = combobox.currentText()
+                        last_selected = combobox.currentData()
                         with signals_blocked(combobox):
                             while combobox.count() > 0:
                                 combobox.removeItem(0)
                             for option in new_options:
-                                combobox.addItem(str(option), userData=option)
-                            new_index = combobox.findText(last_selected_text)
+                                combobox.addItem(self.get_option_display(option), userData=option)
+                            new_index = combobox.findData(last_selected)
                             if new_index >= 0:
                                 combobox.setCurrentIndex(new_index)
 
@@ -337,13 +353,24 @@ class Config:
         """Gets the label text assigned to a config value."""
         if key not in self._entries:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
-        return _tr(self._entries[key].name)
+        return self._entries[key].name
 
     def get_tooltip(self, key: str) -> str:
         """Gets the tooltip text assigned to a config value."""
         if key not in self._entries:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
-        return _tr(self._entries[key].description)
+        return self._entries[key].description
+
+    def get_option_display(self, option: Any) -> str:
+        """Returns the text to show for one of this config's options.
+
+        The stored value is always the untranslated option. This text is for display only, and widgets should keep the
+        option itself as item data. Options with no translation, including ones loaded from a backend, display as
+        written.
+        """
+        if not isinstance(option, str):
+            return str(option)
+        return QApplication.translate(self._tr_context, option)
 
     def set(self,
             key: str,
