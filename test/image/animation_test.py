@@ -65,13 +65,13 @@ class AnimationTest(IntraPaintTestCase):
         load_frames_as_image(self.image_stack, frames)
         self.assertEqual(self.image_stack.size, QSize(40, 50))
 
-    def test_load_frames_undo(self) -> None:
-        """Undoing a frame load restores the previous image."""
+    def test_load_frames_clears_undo_history(self) -> None:
+        """Loading frames replaces the document, so nothing from the previous image can be undone."""
         self.image_stack.load_image(QImage(QSize(10, 10), QImage.Format.Format_ARGB32_Premultiplied))
+        self.image_stack.create_layer()
+        self.assertGreater(UndoStack().undo_count(), 0)
         load_frames_as_image(self.image_stack, FRAMES)
-        UndoStack().undo()
-        self.assertEqual(len(self.image_stack.top_level_layers), 1)
-        self.assertEqual(self.image_stack.size, QSize(10, 10))
+        self.assertEqual(UndoStack().undo_count(), 0)
 
     def test_add_frame_layers(self) -> None:
         """Frames are added above the existing layer in frame order, with only the first frame visible."""
