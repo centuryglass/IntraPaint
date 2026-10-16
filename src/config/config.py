@@ -243,6 +243,18 @@ class Config:
         with self._lock:
             return self._entries[key].get_value(inner_key)
 
+    def get_default(self, key: str) -> Any:
+        """Returns the default value the definition file gives a key, or None if it has none.
+
+        Raises
+        ------
+        KeyError
+            If the key isn't tracked by this config file.
+        """
+        if key not in self._entries:
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
+        return self._entries[key].default_value
+
     def get_data_type(self, key: str) -> str:
         """Gets the data type associated with a config key, raising KeyError if the key isn't found."""
         if key not in self._entries:

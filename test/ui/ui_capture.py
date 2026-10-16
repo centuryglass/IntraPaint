@@ -26,7 +26,12 @@ from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QAbstractSp
                                QStyleOptionProgressBar, QStyleOptionSlider, QStyleOptionSpinBox, QStyleOptionTab,
                                QStyleOptionToolButton, QStyleOptionViewItem, QSlider, QTabBar, QWidget, QLineEdit)
 
+from src.ui.button_weight import ButtonWeight, set_button_weight
 from src.ui.ink_style import InkStyle, set_primary_button, set_signal
+from src.ui.widget.disabled_banner import DisabledBanner
+from src.ui.widget.keycap_badge import KeycapBadge
+from src.ui.widget.panel_header import PanelHeader
+from src.ui.widget.panel_section import PanelSection
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.input_fields.slider_field import SliderField
@@ -425,6 +430,69 @@ def _draw_number_field(painter: QPainter, rect: QRect, variant: str, state: Gall
     field.render(painter, QPoint())
 
 
+def _draw_button_weight(painter: QPainter, rect: QRect, variant: str, state: GalleryState) -> None:
+    """Draws a push button of one weight. Text-free, so a danger button is a bar in its text color where its label
+    would be."""
+    weight = ButtonWeight(variant)
+    button = QPushButton()
+    set_button_weight(button, weight)
+    option = QStyleOptionButton()
+    _init_option(option, rect, state)
+    if weight == ButtonWeight.FLAT:
+        option.features = QStyleOptionButton.ButtonFeature.Flat
+    _style().drawControl(Control.CE_PushButton, option, painter, button)
+    style = _style()
+    if weight == ButtonWeight.DANGER and isinstance(style, InkStyle) and state.enabled:
+        painter.fillRect(QRect(rect.center().x() - 14, rect.center().y() - 1, 28, 3),
+                         style.signal_text_color(state.state))
+
+
+class _TextFreeBadge(KeycapBadge):
+    """A keycap that draws no key text."""
+
+    def _paint_text(self, painter: QPainter, bounds) -> None:
+        pass
+
+
+class _TextFreeHeader(PanelHeader):
+    """A panel header whose keycap draws no text."""
+
+    def _make_key_badge(self) -> KeycapBadge:
+        return _TextFreeBadge()
+
+
+def _draw_widget(painter: QPainter, rect: QRect, widget: QWidget, state: GalleryState) -> None:
+    """Renders a real widget in an enabled or disabled state at the cell size."""
+    widget.resize(rect.size())
+    widget.setEnabled(state.enabled)
+    widget.render(painter, QPoint())
+
+
+def _draw_panel_section(painter: QPainter, rect: QRect, variant: str, state: GalleryState) -> None:
+    """Draws a section header: expanded, collapsed, or collapsed with a header keycap."""
+    body = QWidget()
+    body.setFixedHeight(10)
+    section = PanelSection('', body, expanded=variant == 'expanded')
+    section.set_summary('')
+    if variant == 'collapsed_keycap':
+        section.add_header_widget(_TextFreeBadge('Q'))
+    _draw_widget(painter, rect, section, state)
+
+
+def _draw_panel_header(painter: QPainter, rect: QRect, variant: str, state: GalleryState) -> None:
+    header = _TextFreeHeader('', None, 'Q' if variant == 'with_key' else '')
+    header.set_popover_content(QWidget())
+    _draw_widget(painter, rect, header, state)
+
+
+def _draw_disabled_banner(painter: QPainter, rect: QRect, variant: str, state: GalleryState) -> None:
+    banner = DisabledBanner('', '' if variant == 'no_fix' else ' ')
+    _draw_widget(painter, rect, banner, state)
+
+
+SECTION_STATES = (STANDARD_STATES[0], STANDARD_STATES[4])
+
+
 class _TextFreeSegmentedControl(SegmentedControl):
     """A segmented control that draws no label text."""
 
@@ -503,6 +571,14 @@ GALLERY_CONTROLS: tuple[GalleryControl, ...] = (
     GalleryControl('tooltip', QSize(100, 30), ('plain',), (STANDARD_STATES[0],), _draw_tooltip),
     GalleryControl('number_field', QSize(150, 24), ('slider', 'slider_pressure_off', 'slider_pressure_on', 'number'),
                    FIELD_STATES, _draw_number_field),
+    GalleryControl('button_weight', QSize(72, 28), tuple(weight.value for weight in ButtonWeight), STANDARD_STATES,
+                   _draw_button_weight),
+    GalleryControl('panel_section', QSize(200, 40), ('expanded', 'collapsed', 'collapsed_keycap'), SECTION_STATES,
+                   _draw_panel_section),
+    GalleryControl('panel_header', QSize(200, 28), ('with_key', 'without_key'), SECTION_STATES, _draw_panel_header),
+    GalleryControl('disabled_banner', QSize(200, 36), ('with_fix', 'no_fix'), SECTION_STATES,
+                   _draw_disabled_banner),
+
     GalleryControl('segmented_control', QSize(200, 24),
                    tuple(f'{count}_{mode.value}' for count in (2, 3, 4)
                          for mode in (DisplayMode.ICON_AND_LABEL, DisplayMode.LABEL, DisplayMode.ICON)),
