@@ -1,15 +1,43 @@
+"""Tests the Tools dock's panel: buttons, grouping and sizes per size class, the active tool header, and reset."""
 import sys
 
 from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QWidget
 
+from src.config.cache import Cache
+from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.tools.draw_tool import DrawTool
+from src.tools.eyedropper_tool import EyedropperTool
+from src.tools.free_selection_tool import FreeSelectionTool
+from src.tools.generation_area_tool import GenerationAreaTool
+from src.tools.text_tool import TextTool
+from src.ui.layout.panel_size_class import Orientation, SizeClass
 from src.ui.panel.image_panel import ImagePanel
-from src.ui.panel.tool_panel import ToolPanel
+from src.ui.panel.tool_panel import ToolPanel, BUTTON_LAYOUTS, BUTTON_SPACING, MAX_STRIP_EDGE_LENGTH, \
+    STRIP_NARROW_COLUMNS, strip_button_layout
+from src.util.visual.text_drawing_utils import get_key_display_string
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
+
+# A dock size inside each size class, away from the boundaries:
+HOST_SIZES = {
+    (Orientation.SIDE, SizeClass.COMPACT): QSize(200, 600),
+    (Orientation.SIDE, SizeClass.REGULAR): QSize(340, 600),
+    (Orientation.SIDE, SizeClass.WIDE): QSize(500, 600),
+    (Orientation.STRIP, SizeClass.COMPACT): QSize(1200, 120),
+    (Orientation.STRIP, SizeClass.REGULAR): QSize(1200, 240),
+    (Orientation.STRIP, SizeClass.WIDE): QSize(1200, 400),
+}
+
+
+def settle_layouts(root: QWidget) -> None:
+    """Activates every layout under root, parents first, so geometry is final without running the event loop."""
+    for widget in [root, *root.findChildren(QWidget)]:
+        layout = widget.layout()
+        if layout is not None and widget.isVisibleTo(root):
+            layout.activate()
 
 
 class ToolPanelTest(IntraPaintTestCase):
@@ -23,42 +51,204 @@ class ToolPanelTest(IntraPaintTestCase):
         self._tool_panel = ToolPanel()
         self._tool_panel.show()
 
+    def _tool(self, tool_class):
+        if tool_class is EyedropperTool:
+            return tool_class(self._image_stack)
+        return tool_class(self._image_stack, self._image_panel.image_viewer)
+
+    def _set_host(self, orientation: Orientation, size_class: SizeClass) -> None:
+        self._tool_panel.set_host_facts(orientation, HOST_SIZES[(orientation, size_class)])
+        self.assertEqual(self._tool_panel.size_class, size_class)
+
     def test_add_remove_tool_button(self) -> None:
         """It should be possible to add and remove a tool button"""
-        self.assertEqual(len(self._tool_panel._tool_widgets), 0)
+        self.assertEqual(len(self._tool_panel.tool_buttons), 0)
         test_tool = DrawTool(self._image_stack, self._image_panel.image_viewer)
         self._tool_panel.add_tool_button(test_tool)
-        self.assertEqual(len(self._tool_panel._tool_widgets), 1)
+        self.assertEqual(len(self._tool_panel.tool_buttons), 1)
         self._tool_panel.remove_tool_button(test_tool)
-        self.assertEqual(len(self._tool_panel._tool_widgets), 0)
+        self.assertEqual(len(self._tool_panel.tool_buttons), 0)
 
     def test_avoid_duplicate_tools(self) -> None:
         """Adding the same tool or type of tool more than once should be blocked."""
-        self.assertEqual(len(self._tool_panel._tool_widgets), 0)
         test_tool_1 = DrawTool(self._image_stack, self._image_panel.image_viewer)
         self._tool_panel.add_tool_button(test_tool_1)
-        self.assertEqual(len(self._tool_panel._tool_widgets), 1)
         self._tool_panel.add_tool_button(test_tool_1)
-        self.assertEqual(len(self._tool_panel._tool_widgets), 1)
+        self.assertEqual(len(self._tool_panel.tool_buttons), 1)
         test_tool_2 = DrawTool(self._image_stack, self._image_panel.image_viewer)
         self._tool_panel.add_tool_button(test_tool_2)
-        self.assertEqual(len(self._tool_panel._tool_widgets), 1)
+        self.assertEqual(len(self._tool_panel.tool_buttons), 1)
 
     def test_activate_tool(self) -> None:
-        """ToolPanel should show the panel widget and mark the button as active when a tool is activated."""
+        """Activating a tool shows its control panel, marks its button and names it in the header with its key."""
         test_tool = DrawTool(self._image_stack, self._image_panel.image_viewer)
         self._tool_panel.add_tool_button(test_tool)
-        tool_button = self._tool_panel._tool_widgets[test_tool.label]
-        self.assertEqual(self._tool_panel._tool_control_label.text(), '')
-        self.assertIsNone(self._tool_panel._active_tool_panel)
+        tool_button = self._tool_panel.tool_buttons[0]
+        self.assertEqual(self._tool_panel.header.name(), '')
         self.assertFalse(tool_button.is_active)
         control_panel = test_tool.get_control_panel()
         assert control_panel is not None
         self.assertFalse(control_panel.isVisible())
 
         self._tool_panel.setup_active_tool(test_tool)
-        self.assertEqual(self._tool_panel._tool_control_label.text(),
-                         f'{test_tool.label} - {test_tool.get_tooltip_text()}')
-        self.assertEqual(self._tool_panel._active_tool_panel, control_panel)
+        self.assertEqual(self._tool_panel.header.name(), test_tool.label)
+        keys = KeyConfig().get(test_tool.get_activation_config_key())
+        self.assertEqual(self._tool_panel.header.key_badge.text, get_key_display_string(keys, rich_text=False))
         self.assertTrue(tool_button.is_active)
         self.assertTrue(control_panel.isVisible())
+
+    def test_header_follows_tool_switch_in_every_size_class(self) -> None:
+        """After a tool switch, the header names the new tool and its key in every size class but Strip Short, where
+        a dim line under the buttons names it. The description shows in every class but Side Compact and Strip Short.
+        """
+        draw_tool = self._tool(DrawTool)
+        text_tool = self._tool(TextTool)
+        for tool in (draw_tool, text_tool):
+            self._tool_panel.add_tool_button(tool)
+        self._tool_panel.setup_active_tool(draw_tool)
+        text_keys = get_key_display_string(KeyConfig().get(text_tool.get_activation_config_key()), rich_text=False)
+        header = self._tool_panel.header
+        short_label = self._tool_panel._short_label  # pylint: disable=protected-access
+        for orientation, size_class in HOST_SIZES:
+            with self.subTest(orientation=orientation, size_class=size_class):
+                self._set_host(orientation, size_class)
+                self._tool_panel.setup_active_tool(text_tool)
+                strip_short = (orientation, size_class) == (Orientation.STRIP, SizeClass.COMPACT)
+                self.assertEqual(header.isVisibleTo(self._tool_panel), not strip_short)
+                self.assertEqual(short_label.isVisibleTo(self._tool_panel), strip_short)
+                self.assertEqual(header.name(), text_tool.label)
+                self.assertEqual(header.key_badge.text, text_keys)
+                self.assertIn(text_tool.label, short_label.text())
+                self.assertIn(text_keys, short_label.text())
+                expected_description = '' if size_class == SizeClass.COMPACT else text_tool.get_tooltip_text()
+                self.assertEqual(header.description(), expected_description)
+                self._tool_panel.setup_active_tool(draw_tool)
+
+    def test_buttons_are_grouped_with_generation_area_last(self) -> None:
+        """Buttons follow `BaseTool.TOOL_GROUP` order, keeping the order they were added in within a group."""
+        added = [self._tool(GenerationAreaTool), self._tool(FreeSelectionTool), self._tool(DrawTool),
+                 self._tool(TextTool), self._tool(EyedropperTool)]
+        for tool in added:
+            self._tool_panel.add_tool_button(tool)
+        shown = [type(button.connected_tool) for button in self._tool_panel.tool_buttons]
+        self.assertEqual(shown, [DrawTool, EyedropperTool, TextTool, FreeSelectionTool, GenerationAreaTool])
+
+    def _add_tools(self) -> list:
+        tools = [self._tool(DrawTool), self._tool(EyedropperTool), self._tool(TextTool), self._tool(FreeSelectionTool),
+                 self._tool(GenerationAreaTool)]
+        for tool in tools:
+            self._tool_panel.add_tool_button(tool)
+        return tools
+
+    def _grid_shape(self) -> tuple[int, int]:
+        """Returns the number of rows and columns the buttons fill."""
+        grid = self._tool_panel._button_grid_layout  # pylint: disable=protected-access
+        positions = [grid.getItemPosition(i)[:2] for i in range(grid.count())]
+        return max(row for row, _ in positions) + 1, max(column for _, column in positions) + 1
+
+    def test_button_size_and_grid_per_size_class(self) -> None:
+        """Each size class sets the button size and the number of buttons per row from `BUTTON_LAYOUTS`, at a height
+        too short for a three-column strip grid."""
+        tools = self._add_tools()
+        for (orientation, size_class), layout in BUTTON_LAYOUTS.items():
+            with self.subTest(orientation=orientation, size_class=size_class):
+                self._set_host(orientation, size_class)
+                if orientation == Orientation.STRIP and size_class != SizeClass.COMPACT:
+                    self._tool_panel.resize(QSize(1200, 60))
+                for button in self._tool_panel.tool_buttons:
+                    self.assertEqual(button.size(), QSize(layout.edge_length, layout.edge_length))
+                columns = min(layout.columns, len(tools))
+                self.assertEqual(self._grid_shape(), (-(-len(tools) // columns), columns))
+
+    def test_tall_strip_uses_three_larger_columns(self) -> None:
+        """A strip tall enough for three columns of buttons at least the default size uses them, growing the buttons
+        up to `MAX_STRIP_EDGE_LENGTH` with key hints at that size."""
+        tools = self._add_tools()
+        self._set_host(Orientation.STRIP, SizeClass.WIDE)
+        self._tool_panel.resize(QSize(1200, 400))
+        self.assertEqual(self._grid_shape(), (-(-len(tools) // STRIP_NARROW_COLUMNS), STRIP_NARROW_COLUMNS))
+        for button in self._tool_panel.tool_buttons:
+            self.assertEqual(button.width(), MAX_STRIP_EDGE_LENGTH)
+
+    def test_strip_button_layout(self) -> None:
+        """Three columns once their buttons are at least the default size, capped at `MAX_STRIP_EDGE_LENGTH`."""
+        default = BUTTON_LAYOUTS[(Orientation.STRIP, SizeClass.REGULAR)]
+        self.assertEqual(strip_button_layout(16, 100, default), default)
+        fitted = strip_button_layout(16, 6 * 30 + 5 * BUTTON_SPACING, default)
+        self.assertEqual((fitted.columns, fitted.edge_length, fitted.key_hints), (STRIP_NARROW_COLUMNS, 30, False))
+        tall = strip_button_layout(16, 1000, default)
+        self.assertEqual((tall.edge_length, tall.key_hints), (MAX_STRIP_EDGE_LENGTH, True))
+
+    def test_header_icon_lines_up_with_first_button_column(self) -> None:
+        """The header's icon is centered over the first column of buttons, in both orientations."""
+        self._add_tools()
+        self._tool_panel.setup_active_tool(self._tool_panel.tool_buttons[0].connected_tool)
+        header = self._tool_panel.header
+        icon_label = header._icon_label  # pylint: disable=protected-access
+        for orientation, size_class in ((Orientation.SIDE, SizeClass.REGULAR), (Orientation.STRIP, SizeClass.REGULAR)):
+            with self.subTest(orientation=orientation):
+                self._set_host(orientation, size_class)
+                self._tool_panel.resize(HOST_SIZES[(orientation, size_class)])
+                settle_layouts(self._tool_panel)
+                button = self._tool_panel.tool_buttons[0]
+                button_center = button.mapTo(self._tool_panel, button.rect().center()).x()
+                icon_center = icon_label.mapTo(self._tool_panel, icon_label.rect().center()).x()
+                self.assertLessEqual(abs(button_center - icon_center), 1)
+
+    def test_side_header_sits_under_buttons(self) -> None:
+        """Side panels show the header between the buttons and the controls, and strip panels above both."""
+        self._add_tools()
+        header = self._tool_panel.header
+        grid = self._tool_panel._button_grid  # pylint: disable=protected-access
+        for orientation, size_class in ((Orientation.SIDE, SizeClass.REGULAR), (Orientation.STRIP, SizeClass.REGULAR)):
+            with self.subTest(orientation=orientation):
+                self._set_host(orientation, size_class)
+                self._tool_panel.resize(HOST_SIZES[(orientation, size_class)])
+                settle_layouts(self._tool_panel)
+                header_top = header.mapTo(self._tool_panel, header.rect().topLeft()).y()
+                grid_top = grid.mapTo(self._tool_panel, grid.rect().topLeft()).y()
+                if orientation == Orientation.SIDE:
+                    self.assertGreater(header_top, grid_top)
+                else:
+                    self.assertLess(header_top, grid_top)
+
+    def test_reset_restores_active_tool_keys(self) -> None:
+        """Reset restores the active tool's declared keys, and leaves the shared brush color alone."""
+        draw_tool = self._tool(DrawTool)
+        self._tool_panel.add_tool_button(draw_tool)
+        self._tool_panel.setup_active_tool(draw_tool)
+        cache = Cache()
+        default_size = cache.get_default(Cache.DRAW_TOOL_BRUSH_SIZE)
+        cache.set(Cache.DRAW_TOOL_BRUSH_SIZE, default_size + 7)
+        color = cache.get(Cache.LAST_BRUSH_COLOR)
+        self.assertTrue(self._tool_panel.header.reset_button.isVisibleTo(self._tool_panel))
+        self._tool_panel.header.reset_button.click()
+        self.assertEqual(cache.get(Cache.DRAW_TOOL_BRUSH_SIZE), default_size)
+        self.assertEqual(cache.get(Cache.LAST_BRUSH_COLOR), color)
+
+    def test_reset_hidden_without_reset_keys(self) -> None:
+        """A tool that declares no reset keys hides the reset button."""
+        text_tool = self._tool(TextTool)
+        self._tool_panel.add_tool_button(text_tool)
+        self._tool_panel.setup_active_tool(text_tool)
+        self.assertFalse(self._tool_panel.header.reset_button.isVisibleTo(self._tool_panel))
+
+    def test_strip_short_moves_reset_into_more_popover(self) -> None:
+        """In Strip Short, the More button shows a popover with the reset button, which resets the active tool."""
+        draw_tool = self._tool(DrawTool)
+        self._tool_panel.add_tool_button(draw_tool)
+        self._tool_panel.setup_active_tool(draw_tool)
+        self._set_host(Orientation.STRIP, SizeClass.COMPACT)
+        header = self._tool_panel.header
+        self.assertTrue(header.more_button.isVisibleTo(self._tool_panel))
+        reset_button = self._tool_panel._short_reset_button  # pylint: disable=protected-access
+        self.assertIs(header.popover.content, reset_button.parentWidget())
+        cache = Cache()
+        default_size = cache.get_default(Cache.DRAW_TOOL_BRUSH_SIZE)
+        cache.set(Cache.DRAW_TOOL_BRUSH_SIZE, default_size + 3)
+        reset_button.click()
+        self.assertEqual(cache.get(Cache.DRAW_TOOL_BRUSH_SIZE), default_size)
+
+        self._set_host(Orientation.STRIP, SizeClass.REGULAR)
+        self.assertFalse(header.more_button.isVisibleTo(self._tool_panel))
+        self.assertTrue(header.reset_button.isVisibleTo(self._tool_panel))

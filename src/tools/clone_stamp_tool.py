@@ -86,11 +86,15 @@ class CloneStampTool(QtPaintBrushTool):
 
     # noinspection PyMethodMayBeStatic
     def get_control_panel(self) -> Optional[QWidget]:
-        """Returns the blur tool control panel."""
+        """Returns the clone stamp tool control panel."""
         if self._control_panel is None:
             self._control_panel = CloneStampToolPanel()
             self._control_panel.source_xy_change.connect(self.update_source_xy)
         return self._control_panel
+
+    def get_reset_config_keys(self) -> list[str]:
+        """Returns the brush keys and the source mode."""
+        return [*super().get_reset_config_keys(), Cache.CLONE_STAMP_TOOL_SOURCE_MODE]
 
     def _update_source_mode(self, new_mode: str) -> None:
         if self._source_mode == new_mode:

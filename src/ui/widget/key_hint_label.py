@@ -11,6 +11,30 @@ from src.util.key_code_utils import get_key_with_modifiers, get_modifier_string,
 from src.util.visual.keycap import KEYCAP_PADDING, KEYCAP_DEPTH, draw_keycap, keycap_colors, keycap_font, keycap_size
 from src.util.visual.text_drawing_utils import find_text_size, get_key_display_string
 
+# Modifier names and the symbols that replace them in compact key text, in the order they are tried:
+MODIFIER_SYMBOLS = (('Shift', '⇧'), ('Ctrl', '⌃'), ('Alt', '⎇'), ('⌘', '⌘'))
+
+
+def compact_key_text(text: str) -> str:
+    """Returns formatted key text with each modifier name replaced by its symbol and no "+" after it, so "Shift+S"
+    becomes "⇧S". Other key names are unchanged."""
+    compact_combos = []
+    for combo in text.split(', '):
+        prefix = ''
+        changed = True
+        while changed:
+            changed = False
+            for name, symbol in MODIFIER_SYMBOLS:
+                if combo == name:
+                    prefix += symbol
+                    combo = ''
+                elif combo.startswith(f'{name}+'):
+                    prefix += symbol
+                    combo = combo[len(name) + 1:]
+                    changed = True
+        compact_combos.append(prefix + combo)
+    return ', '.join(compact_combos)
+
 
 class KeyHintLabel(QLabel):
     """Shows formatted key suggestions to the user, drawn as raised keycaps.
@@ -32,6 +56,8 @@ class KeyHintLabel(QLabel):
         self.setContentsMargins(KEYCAP_PADDING.left(), KEYCAP_PADDING.top(), KEYCAP_PADDING.right(),
                                 KEYCAP_PADDING.bottom() + KEYCAP_DEPTH)
         self._saved_size: Optional[QSize] = None
+        self._compact = False
+        self._key_codes: Optional[QKeySequence | Qt.KeyboardModifier | str] = None
         self._config_key = config_key
         if keys is None and config_key is not None:
             keys = KeyConfig().get(config_key)
@@ -122,7 +148,19 @@ class KeyHintLabel(QLabel):
                 pass  # Invalid keys will be ignored
         return ', '.join(formatted)
 
+    @property
+    def compact(self) -> bool:
+        """Whether modifiers show as symbols, such as "⇧S" for "Shift+S"."""
+        return self._compact
+
+    def set_compact(self, compact: bool) -> None:
+        """Shows modifiers as symbols, or as names if `compact` is false."""
+        if compact != self._compact:
+            self._compact = compact
+            self._update_text(self._key_codes)
+
     def _update_text(self, key_codes: Optional[QKeySequence | Qt.KeyboardModifier | str]) -> None:
+        self._key_codes = key_codes
         if key_codes is None:
             self._base_text = ''
             self.setText(self._base_text)
@@ -135,6 +173,8 @@ class KeyHintLabel(QLabel):
             key_display_str = get_modifier_string(key_codes)
         else:
             raise TypeError(f'Unexpected key_codes value type {type(key_codes)} = {key_codes}')
+        if self._compact:
+            key_display_str = compact_key_text(key_display_str)
         key_substitutions = {
             '&': '&amp;',
             '<': '&lt;',

@@ -10,7 +10,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.transform_layer import TransformLayer
-from src.tools.base_tool import BaseTool
+from src.tools.base_tool import BaseTool, ToolGroup
 from src.tools.context_pin_dragger import ContextPinDragger
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.fill_selection_panel import FillSelectionPanel
@@ -49,6 +49,8 @@ def _only_selection_modifiers(held_modifiers: Qt.KeyboardModifier) -> bool:
 
 class SelectionFillTool(BaseTool):
     """Lets the user select image areas with solid colors."""
+
+    TOOL_GROUP = ToolGroup.SELECTION
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__(KeyConfig.SELECTION_FILL_TOOL_KEY, SELECTION_FILL_LABEL, SELECTION_FILL_TOOLTIP,

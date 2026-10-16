@@ -215,6 +215,6 @@ class DockPanel(QWidget):
         if strip_short:
             self._body_layout.addWidget(more_button)
         else:
-            self._header.layout().addWidget(more_button)
+            self._header.restore_more_button()
         # Reparenting hides a widget:
         more_button.setVisible(bool(self._overflow))

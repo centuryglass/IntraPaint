@@ -14,7 +14,7 @@ from src.image.layers.layer import Layer
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.text_rect import TextRect
-from src.tools.base_tool import BaseTool
+from src.tools.base_tool import BaseTool, ToolGroup
 from src.ui.graphics_items.click_and_drag_selection import ClickAndDragSelection
 from src.ui.graphics_items.layer_lock_alert_item import LayerLockAlertItem
 from src.ui.graphics_items.placement_outline import PlacementOutline
@@ -44,7 +44,9 @@ TEXT_CONTROL_HINT = _tr('{left_mouse_icon}: select text layer<br/>{left_mouse_ic
 
 
 class TextTool(BaseTool):
-    """Lets the user fill image areas with solid colors."""
+    """Lets the user create and edit text layers."""
+
+    TOOL_GROUP = ToolGroup.EDIT
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__(KeyConfig.TEXT_TOOL_KEY, TEXT_LABEL, TEXT_TOOLTIP, QIcon(ICON_PATH_TEXT_TOOL))

@@ -693,11 +693,15 @@ def panel_size(case: str, widget: QWidget) -> QSize:
 
 
 def _settle_layouts(root: QWidget) -> None:
-    """Activates every layout under root, parents first, so geometry is final without running the event loop."""
-    for widget in [root, *root.findChildren(QWidget)]:
-        layout = widget.layout()
-        if layout is not None and widget.isVisibleTo(root):
-            layout.activate()
+    """Activates every layout under root, parents first, so geometry is final without running the event loop.
+
+    A second pass applies size hints that changed during the first, such as a header that wrapped to fit its new width.
+    """
+    for _ in range(2):
+        for widget in [root, *root.findChildren(QWidget)]:
+            layout = widget.layout()
+            if layout is not None and widget.isVisibleTo(root):
+                layout.activate()
 
 
 class PanelHost(QWidget):
