@@ -50,15 +50,17 @@ def progress_percentage(progress: GenerationProgress, batch_index: int = 0, num_
         batch_fraction = 0.0
     else:
         batch_fraction = min(max(progress.progress, 0.0), 1.0)
-    return round((batch_index + batch_fraction) / num_batches * 100, ndigits=4)
+    return round((batch_index + batch_fraction) / num_batches * 100, ndigits=2)
 
 
 def _eta_text(eta_seconds: float) -> str:
     minutes = round(eta_seconds // 60)
     seconds = round(eta_seconds % 60)
     if minutes > 0:
-        return STATUS_ETA_MINUTES.format(minutes=minutes, seconds=f'{seconds:02d}')
-    return STATUS_ETA_SECONDS.format(seconds=seconds)
+        eta_text = STATUS_ETA_MINUTES.format(minutes=minutes, seconds=f'{seconds:02d}')
+    else:
+        eta_text = STATUS_ETA_SECONDS.format(seconds=seconds)
+    return eta_text.replace(" ", "\xa0")
 
 
 def progress_status_text(progress: GenerationProgress, batch_index: int = 0, num_batches: int = 1) -> str:

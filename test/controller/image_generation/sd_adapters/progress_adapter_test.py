@@ -30,10 +30,10 @@ class ProgressAdapterTest(IntraPaintTestCase):
         """Running jobs report the batch, the percentage and the ETA when known."""
         progress = GenerationProgress(GenerationStatus.ACTIVE, progress=0.5, eta_seconds=75)
         batch = STATUS_BATCH_NUMBER.format(batch_num=2, num_batches=2)
-        self.assertEqual(progress_status_text(progress, 1, 2), f'{batch} {STATUS_GENERATING}\n75.0% ETA: 1:15')
+        self.assertEqual(progress_status_text(progress, 1, 2), f'{batch} {STATUS_GENERATING}\n75.0% ETA:\xa01:15')
         self.assertEqual(progress_status_text(GenerationProgress(GenerationStatus.ACTIVE, progress=0.1,
                                                                  eta_seconds=9)),
-                         f'{STATUS_GENERATING}\n10.0% ETA: 9s')
+                         f'{STATUS_GENERATING}\n10.0% ETA:\xa09s')
         self.assertEqual(progress_status_update(GenerationProgress(GenerationStatus.ACTIVE)),
                          {PROGRESS_KEY: STATUS_GENERATING})
 
