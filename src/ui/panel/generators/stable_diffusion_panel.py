@@ -12,7 +12,6 @@ from src.ui.input_fields.seed_value_spinbox import SeedValueSpinbox
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.layout.divider import Divider
 from src.ui.panel.generators.generator_panel import GeneratorPanel
-from src.ui.widget.rotating_toolbar_button import RotatingToolbarButton
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.layout import clear_layout, synchronize_widths
 from src.util.parameter import DynamicFieldWidget
@@ -152,11 +151,6 @@ class StableDiffusionPanel(GeneratorPanel):
         set_primary_button(self._generate_button)
         self._generate_button.clicked.connect(self.generate_signal)
 
-        self._toolbar_generate_button = RotatingToolbarButton(BUTTON_TEXT_GENERATE)
-        self._toolbar_generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
-        self._toolbar_generate_button.clicked.connect(self.generate_signal)
-        self._toolbar_generate_button.hide()
-
         def _edit_mode_control_update(edit_mode: str) -> None:
             self._denoising_strength_label.setVisible(edit_mode != EDIT_MODE_TXT2IMG)
             self._denoising_strength_slider.setVisible(edit_mode != EDIT_MODE_TXT2IMG)
@@ -183,10 +177,6 @@ class StableDiffusionPanel(GeneratorPanel):
         padding_layout_update(cache.get(Cache.INPAINT_FULL_RES))
 
         self._build_layout()
-
-    def get_tab_bar_widgets(self) -> list[QWidget]:
-        """Returns the toolbar generate button as the only toolbar widget."""
-        return [self._toolbar_generate_button]
 
     def _build_layout(self) -> None:
         clear_layout(self._layout)

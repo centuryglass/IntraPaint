@@ -10,8 +10,9 @@ The primary image editing window: the canvas in the center, with every other pan
   once for that reason.
 - The Tools, Image Generation and ControlNet docks always exist, so a restore can place them even before their
   generator provides content. A dock without content stays hidden (see `PanelDock.set_content`).
-- While the generated image selector replaces the canvas, every dock hides, and the layout from before comes back
-  when it closes.
+- Icon rails along the window edges (`DockRails`) hold each dock's button, the recent tools and Generate.
+- While the generated image selector replaces the canvas, every dock and rail hides, and the layout from before comes
+  back when it closes.
 """
 import logging
 import sys
@@ -31,7 +32,9 @@ from src.ui.generated_image_selector import GeneratedImageSelector
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 
+from src.controller.tool_controller import ToolController
 from src.ui.widget.loading_widget import LoadingWidget
+from src.ui.window.dock_rail import DockGroup, DockRails
 from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.panel_dock import PanelDock
 from src.ui.window.window_geometry import capture_geometry
@@ -164,6 +167,12 @@ class MainWindow(QMainWindow):
                                           QIcon(ICON_PATH_GENERATION_DOCK), KeyConfig.SELECT_GENERATOR_TAB)
         self._controlnet_dock = PanelDock(CONTROLNET_DOCK_TITLE, DockID.CONTROLNET, self,
                                           QIcon(ICON_PATH_CONTROLNET_DOCK), KeyConfig.SELECT_CONTROLNET_TAB)
+        self._rails = DockRails(self)
+        for dock in self.docks:
+            self._rails.add_dock(dock, DockGroup.UPPER)
+        self._rails.set_tools_dock(self._tools_dock)
+        self._rails.set_generation_dock(self._generation_dock)
+        self._rails.generate_button.clicked.connect(self.generate_signal)
         self.reset_dock_layout()
 
         # Optional extra windows:
@@ -192,6 +201,15 @@ class MainWindow(QMainWindow):
     def controlnet_dock(self) -> PanelDock:
         """Returns the dock holding the ControlNet panel, empty unless the active generator supports ControlNet."""
         return self._controlnet_dock
+
+    def set_tool_controller(self, tool_controller: ToolController) -> None:
+        """Shows the controller's recent tools in the rail of the Tools dock."""
+        self._rails.set_tool_controller(tool_controller)
+
+    @property
+    def rails(self) -> DockRails:
+        """Returns the icon rails along the window edges."""
+        return self._rails
 
     def dock_toggle_actions(self) -> list[QAction]:
         """Returns each dock's show/hide action, for the menu. An action is hidden while its dock has no content."""
@@ -225,6 +243,7 @@ class MainWindow(QMainWindow):
         for dock in self.docks:
             dock.set_open(True)
             dock.sync_availability()
+        self._rails.sync()
 
     def save_dock_state(self) -> str:
         """Returns the dock layout as text for `restore_dock_state`, as it was before the image selector hid it."""
@@ -247,6 +266,7 @@ class MainWindow(QMainWindow):
             return False
         for dock in self.docks:
             dock.sync_availability()
+        self._rails.sync()
         return True
 
     def _save_state_with_waiting_docks(self) -> QByteArray:
@@ -303,6 +323,7 @@ class MainWindow(QMainWindow):
                                                    if dock.is_showing]
             for dock in self.docks:
                 dock.hide()
+            self._rails.set_suspended(True)
             self._central_widget.addWidget(selector)
             self._central_widget.setCurrentWidget(selector)
             self.installEventFilter(selector)
@@ -314,6 +335,7 @@ class MainWindow(QMainWindow):
             self.removeEventFilter(self._image_selector)
             self._central_widget.setCurrentWidget(self._main_widget)
             self._central_widget.removeWidget(self._image_selector)
+            self._rails.set_suspended(False)
             # Hidden docks keep their place, so showing them again brings the layout back without rebuilding it:
             for dock in self._docks_open_before_selector:
                 if dock.is_available:
