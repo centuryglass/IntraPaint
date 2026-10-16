@@ -71,3 +71,15 @@ class LoadingWidgetTest(IntraPaintTestCase):
                 image.fill(Qt.GlobalColor.transparent)
                 self.widget.render(image, QPoint())
                 self.assert_image_matches_golden(image, f'{GOLDEN_DIR}/loading_widget_{theme}.png')
+
+    def test_font_size_depends_only_on_bounds(self) -> None:
+        """The message size scales with the widget's bounds and doesn't change with the message."""
+        def drawn_size() -> int:
+            return self.widget._font_pixel_size  # pylint: disable=protected-access
+
+        self.widget.show()
+        small = drawn_size()
+        self.widget.message = 'A much longer loading message than before'
+        self.assertEqual(drawn_size(), small)
+        self.widget.resize(WIDGET_SIZE * 4, WIDGET_SIZE * 4)
+        self.assertEqual(drawn_size(), small * 4)
