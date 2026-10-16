@@ -20,6 +20,9 @@ BOTTOM_WIDE_MIN_WIDTH = 1100
 BOTTOM_WIDE_MIN_HEIGHT = 260
 BOTTOM_SHORT_MAX_HEIGHT = 240
 
+# The most times one resize re-chooses the layout because switching layouts changed the panel's size.
+MAX_LAYOUT_PASSES = 3
+
 # The next layout to try when a layout's minimum size doesn't fit the panel. SIDE_COMPACT is the last resort.
 FALLBACK_LAYOUTS = {
     ColorPickerLayout.BOTTOM_WIDE: ColorPickerLayout.BOTTOM_MEDIUM,
@@ -65,6 +68,7 @@ class ColorControlPanel(TabbedColorPicker):
         swatch_widget = ColorPairWidget() if config_key == Cache.LAST_BRUSH_COLOR else None
         super().__init__(swatch_widget)
         self._orientation: Optional[Qt.Orientation] = None
+        self._updating_layout = False
         self._config_key = config_key
         self.set_picker_layout(ColorPickerLayout.BOTTOM_SHORT)
         self._short_minimum = super().minimumSizeHint()
@@ -112,16 +116,29 @@ class ColorControlPanel(TabbedColorPicker):
         super().resizeEvent(event)
 
     def _update_layout(self) -> None:
-        """Uses the preferred layout for the panel's size, or the first fallback whose minimum size fits."""
-        size = self.size()
-        picker_layout = choose_layout(size, self._orientation)
-        while True:
-            self.set_picker_layout(picker_layout)
-            minimum = super().minimumSizeHint()
-            fits = minimum.width() <= size.width() and minimum.height() <= size.height()
-            if fits or picker_layout not in FALLBACK_LAYOUTS:
-                break
-            picker_layout = FALLBACK_LAYOUTS[picker_layout]
+        """Uses the preferred layout for the panel's size, or the first fallback whose minimum size fits.
+
+        Switching layouts can resize the panel through its dock. A resize during a switch is ignored, and the layout is
+        chosen again afterwards for the size the panel ended up with.
+        """
+        if self._updating_layout:
+            return
+        self._updating_layout = True
+        try:
+            for _ in range(MAX_LAYOUT_PASSES):
+                size = self.size()
+                picker_layout = choose_layout(size, self._orientation)
+                while True:
+                    self.set_picker_layout(picker_layout)
+                    minimum = super().minimumSizeHint()
+                    fits = minimum.width() <= size.width() and minimum.height() <= size.height()
+                    if fits or picker_layout not in FALLBACK_LAYOUTS:
+                        break
+                    picker_layout = FALLBACK_LAYOUTS[picker_layout]
+                if self.size() == size:
+                    break
+        finally:
+            self._updating_layout = False
 
     def _update_config_color(self, color: QColor) -> None:
         if self._config_key is not None:

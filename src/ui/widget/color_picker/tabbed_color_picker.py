@@ -210,12 +210,14 @@ class TabbedColorPicker(ScreenColorWidget):
             ColorPickerLayout.DIALOG: self._build_dialog_layout,
         }
         placed = builders[picker_layout](container)
+        self._outer_layout.addWidget(container)
+        self._layout_container = container
+        # The ring keeps the previous layout's fixed size until refitted. Showing first would report that stale size as
+        # the minimum, and a dock that grows to fit it resizes the panel again mid-switch.
+        self._fit_ring()
         for part in placed:
             part.show()
-        self._outer_layout.addWidget(container)
         container.show()
-        self._layout_container = container
-        self._fit_ring()
 
     def resizeEvent(self, event) -> None:
         """Sizes the ring to the new picker size."""
