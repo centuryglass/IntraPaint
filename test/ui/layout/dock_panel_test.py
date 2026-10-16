@@ -69,20 +69,22 @@ class DockPanelTest(IntraPaintTestCase):
         self.panel.set_host_facts(Orientation.SIDE, SIDE_SIZES[SizeClass.COMPACT])
         self.panel.name_field.setText('kept')
         self.panel.show()
-        self.assertTrue(self.panel.more_button.isVisible())
-        self.assertFalse(self.panel.name_field.isVisibleTo(self.panel))
-        self.panel.more_button.click()
-        self.assertTrue(self.panel.name_field.isVisibleTo(self.panel))
+        more_button = self.panel.header.more_button
+        content = self.panel.header.popover.content
+        self.assertFalse(more_button.isHidden())
+        self.assertIsNotNone(content)
+        self.assertTrue(content.isAncestorOf(self.panel.name_field))
+        self.assertFalse(self.panel.name_field.isHidden())
         self.assertTrue(self.panel.name_field.isEnabled())
-        self.assertTrue(self.panel.isAncestorOf(self.panel.name_field))
         self.panel.name_field.setText('edited')
         self.assertEqual(self.panel.name_field.text(), 'edited')
 
     def test_no_more_button_without_overflow(self) -> None:
-        """When every control fits, the More button is hidden and the section with only P3 controls is shown."""
+        """When every control fits, the More button and popover content are gone."""
         self.panel.set_host_facts(Orientation.SIDE, SIDE_SIZES[SizeClass.WIDE])
         self.panel.show()
-        self.assertFalse(self.panel.more_button.isVisible())
+        self.assertFalse(self.panel.header.more_button.isVisible())
+        self.assertIsNone(self.panel.header.popover.content)
         self.assertEqual(self.panel.overflow_widgets, [])
 
     def test_section_with_no_shown_controls_is_hidden(self) -> None:
@@ -90,8 +92,8 @@ class DockPanelTest(IntraPaintTestCase):
         self.panel.set_host_facts(Orientation.SIDE, SIDE_SIZES[SizeClass.COMPACT])
         self.panel.show()
         advanced = self.panel.sections[1]
-        self.assertFalse(advanced.frame.isVisibleTo(self.panel))
-        self.assertTrue(advanced.overflow_title.isVisibleTo(self.panel) or not self.panel.more_button.isChecked())
+        self.assertFalse(advanced.widget.isVisibleTo(self.panel))
+        self.assertFalse(advanced.overflow_title.isHidden())
         self.assertEqual(len(self.panel.overflow_widgets), 4)
 
     def test_host_change_keeps_widgets_and_state(self) -> None:
@@ -119,6 +121,19 @@ class DockPanelTest(IntraPaintTestCase):
         self.panel.set_host_facts(Orientation.SIDE, QSize(310, 500))
         self.assertEqual(len(calls), 1)
 
+    def test_strip_short_moves_more_button_out_of_hidden_header(self) -> None:
+        """In Strip Short the header is hidden and the More button moves to the end of the row, and returns later."""
+        self.panel.set_host_facts(Orientation.STRIP, STRIP_SIZES[SizeClass.COMPACT])
+        self.panel.show()
+        more_button = self.panel.header.more_button
+        self.assertTrue(self.panel.header.isHidden())
+        self.assertFalse(self.panel.header.isAncestorOf(more_button))
+        self.assertTrue(more_button.isVisible())
+        self.panel.set_host_facts(Orientation.STRIP, STRIP_SIZES[SizeClass.REGULAR])
+        self.assertFalse(self.panel.header.isHidden())
+        self.assertTrue(self.panel.header.isAncestorOf(more_button))
+        self.assertTrue(more_button.isVisible())
+
     def test_invalid_priority(self) -> None:
         """Priorities other than P1-P3 raise ValueError."""
         with self.assertRaises(ValueError):
@@ -134,7 +149,7 @@ class DockPanelTest(IntraPaintTestCase):
                 self.panel.set_host_facts(orientation, size)
                 result[f'{orientation.value}_{size_class.name.lower()}'] = {
                     'overflow': [names[id(w)] for w in self.panel.overflow_widgets],
-                    'visible_sections': [s.title for s in self.panel.sections if not s.frame.isHidden()],
-                    'more_button': not self.panel.more_button.isHidden(),
+                    'visible_sections': [s.title for s in self.panel.sections if not s.widget.isHidden()],
+                    'more_button': not self.panel.header.more_button.isHidden(),
                 }
         self.assert_json_matches_snapshot(result, os.path.join(SNAPSHOT_DIR, 'dock_panel_sample.json'))

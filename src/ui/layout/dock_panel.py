@@ -5,7 +5,11 @@ whenever the dock's orientation or size changes. The panel then moves controls b
 area without rebuilding them, so their state survives.
 
 - Priority `P1` controls are always shown, `P2` from `SizeClass.REGULAR` up, `P3` only at `SizeClass.WIDE`.
-- A control that doesn't fit moves into the "More" area. It is never removed or hidden outright.
+- A control that doesn't fit moves into the popover of the header's "More" button (`PanelHeader`). It is never removed
+  or hidden outright. In the strip's `SizeClass.COMPACT` ("Short") the header is hidden and its More button moves to
+  the end of the row.
+- Each section is a `src.ui.widget.panel_section.PanelSection`, available as `DockSection.widget` for summaries,
+  header actions and remembered expansion.
 - Side panels stack sections in one column and scroll vertically. Strip panels put sections in fixed-width columns and
   scroll horizontally.
 - Subclasses override `arrange` for a different arrangement. Call `super().arrange` to keep the default placement.
@@ -14,26 +18,19 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtWidgets import (QApplication, QBoxLayout, QFrame, QLabel, QScrollArea, QSizePolicy,
-                               QToolButton, QVBoxLayout, QWidget)
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QBoxLayout, QFrame, QLabel, QScrollArea, QSizePolicy, QVBoxLayout, QWidget
 
-from src.ui.layout.panel_size_class import (Orientation, SizeClass, SizeClassTracker,
-                                            STRIP_SECTION_MAX_WIDTH, STRIP_SECTION_MIN_WIDTH)
-
-# The `QCoreApplication.translate` context for strings in this file
-TR_ID = 'ui.layout.dock_panel'
-
-
-def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
-    """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, key, disambiguation, n)
-
-
-MORE_LABEL = _tr('More')
+from src.ui.layout.panel_size_class import (Orientation, SizeClass, SizeClassTracker, STRIP_SECTION_MAX_WIDTH,
+                                            STRIP_SECTION_MIN_WIDTH)
+from src.ui.widget.panel_header import PanelHeader
+from src.ui.widget.panel_section import PanelSection
 
 P1 = 1
 P2 = 2
 P3 = 3
+
+QWIDGETSIZE_MAX = 16777215
 
 # The highest priority shown in each size class:
 _MAX_VISIBLE_PRIORITY = {SizeClass.COMPACT: P1, SizeClass.REGULAR: P2, SizeClass.WIDE: P3}
@@ -50,18 +47,19 @@ class _Entry:
     priority: int
 
 
-class PanelSection:
-    """A titled group of controls, each with a priority. Created through `PanelLayout.section`."""
+class DockSection:
+    """A titled group of controls, each with a priority. Created through `PanelLayout.section`.
+
+    `widget` is the `PanelSection` the panel shows, for summaries, header actions and remembered expansion.
+    """
 
     def __init__(self, title: str) -> None:
         self.title = title
-        self.frame = QFrame()
-        self.frame.setObjectName('panel_section')
-        self._layout = QVBoxLayout(self.frame)
+        self._body = QWidget()
+        self._layout = QVBoxLayout(self._body)
         self._layout.setContentsMargins(0, 0, 0, 0)
-        self._title_label = QLabel(title)
-        self._layout.addWidget(self._title_label)
-        # Heading shown above this section's controls while they sit in the "More" area:
+        self.widget = PanelSection(title, self._body)
+        # Heading shown above this section's controls while they sit in the More popover:
         self.overflow_title = QLabel(title)
         self.overflow_title.hide()
         self._entries: list[_Entry] = []
@@ -95,18 +93,18 @@ class PanelSection:
             entry.widget.show()
         if not overflowed:
             self.overflow_title.hide()
-        self.frame.setVisible(any(is_shown(e.priority, size_class) for e in self._entries))
+        self.widget.setVisible(any(is_shown(e.priority, size_class) for e in self._entries))
         return moved
 
 
 @dataclass
 class PanelLayout:
     """Collects the sections a `DockPanel` declares in `build`."""
-    sections: list[PanelSection] = field(default_factory=list)
+    sections: list[DockSection] = field(default_factory=list)
 
-    def section(self, title: str) -> PanelSection:
+    def section(self, title: str) -> DockSection:
         """Adds and returns a new section."""
-        new_section = PanelSection(title)
+        new_section = DockSection(title)
         self.sections.append(new_section)
         return new_section
 
@@ -114,43 +112,47 @@ class PanelLayout:
 class DockPanel(QWidget):
     """A panel that arranges its sections for a dock's orientation and size class."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, name: str = '', icon: Optional[QIcon] = None, key_text: str = '',
+                 parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._tracker = SizeClassTracker()
         self._layout_model = PanelLayout()
         self._arranged = False
         self._overflow: list[QWidget] = []
 
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
+        self._header = PanelHeader(name, icon, key_text)
         self._scroll = QScrollArea()
         self._scroll.setWidgetResizable(True)
         self._scroll.setFrameShape(QFrame.Shape.NoFrame)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(self._header)
         outer.addWidget(self._scroll)
+
         self._body = QWidget()
         self._body_layout = QBoxLayout(QBoxLayout.Direction.TopToBottom, self._body)
         self._scroll.setWidget(self._body)
-
         self._section_holder = QWidget()
         self._section_layout = QBoxLayout(QBoxLayout.Direction.TopToBottom, self._section_holder)
         self._section_layout.setContentsMargins(0, 0, 0, 0)
+        self._body_layout.addWidget(self._section_holder)
+        self._body_layout.addStretch()
 
-        self._more_button = QToolButton()
-        self._more_button.setText(MORE_LABEL)
-        self._more_button.setCheckable(True)
-        self._more_button.toggled.connect(self._update_overflow_visibility)
-        self._overflow_area = QFrame()
-        self._overflow_area.setObjectName('panel_overflow')
-        self._overflow_layout = QVBoxLayout(self._overflow_area)
+        self._overflow_content = QWidget()
+        self._overflow_layout = QVBoxLayout(self._overflow_content)
         self._overflow_layout.setContentsMargins(0, 0, 0, 0)
-        self._overflow_area.hide()
 
         self.build(self._layout_model)
         for section in self._layout_model.sections:
-            self._section_layout.addWidget(section.frame)
+            self._section_layout.addWidget(section.widget)
 
     def build(self, ui: PanelLayout) -> None:
         """Declares sections and controls. Subclasses override it. Called once, from the constructor."""
+
+    @property
+    def header(self) -> PanelHeader:
+        """The panel's header, which hosts the More button."""
+        return self._header
 
     @property
     def orientation(self) -> Orientation:
@@ -163,18 +165,13 @@ class DockPanel(QWidget):
         return self._tracker.size_class
 
     @property
-    def sections(self) -> list[PanelSection]:
+    def sections(self) -> list[DockSection]:
         """The sections declared in `build`."""
         return list(self._layout_model.sections)
 
     @property
-    def more_button(self) -> QToolButton:
-        """The button that reveals the controls moved out of their sections. Hidden when nothing overflowed."""
-        return self._more_button
-
-    @property
     def overflow_widgets(self) -> list[QWidget]:
-        """The controls currently in the "More" area."""
+        """The controls currently in the More popover's content."""
         return list(self._overflow)
 
     def set_host_facts(self, orientation: Orientation, size: QSize) -> None:
@@ -187,7 +184,7 @@ class DockPanel(QWidget):
             self.arrange(orientation, size_class)
 
     def arrange(self, orientation: Orientation, size_class: SizeClass) -> None:
-        """Moves controls between sections and the "More" area, and lays sections out for the orientation.
+        """Moves controls between sections and the More popover, and lays sections out for the orientation.
 
         Overrides should call this and then adjust. No widget is created or destroyed here.
         """
@@ -195,28 +192,32 @@ class DockPanel(QWidget):
         direction = QBoxLayout.Direction.LeftToRight if horizontal else QBoxLayout.Direction.TopToBottom
         self._section_layout.setDirection(direction)
         self._body_layout.setDirection(direction)
-        self._scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded if horizontal
-                                                  else Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff if horizontal
-                                                else Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        h_policy = Qt.ScrollBarPolicy.ScrollBarAsNeeded if horizontal else Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        v_policy = Qt.ScrollBarPolicy.ScrollBarAlwaysOff if horizontal else Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        self._scroll.setHorizontalScrollBarPolicy(h_policy)
+        self._scroll.setVerticalScrollBarPolicy(v_policy)
         for section in self._layout_model.sections:
             if horizontal:
-                section.frame.setMinimumWidth(STRIP_SECTION_MIN_WIDTH)
-                section.frame.setMaximumWidth(STRIP_SECTION_MAX_WIDTH)
-                section.frame.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+                section.widget.setMinimumWidth(STRIP_SECTION_MIN_WIDTH)
+                section.widget.setMaximumWidth(STRIP_SECTION_MAX_WIDTH)
+                section.widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
             else:
-                section.frame.setMinimumWidth(0)
-                section.frame.setMaximumWidth(16777215)
-                section.frame.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        # Re-add the holder, the More button and the overflow area in order:
-        for widget in (self._section_holder, self._more_button, self._overflow_area):
-            self._body_layout.addWidget(widget)
+                section.widget.setMinimumWidth(0)
+                section.widget.setMaximumWidth(QWIDGETSIZE_MAX)
+                section.widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         self._overflow = []
         for section in self._layout_model.sections:
             self._overflow.extend(section.arrange(size_class, self._overflow_layout))
-        self._update_overflow_visibility()
+        self._header.set_popover_content(self._overflow_content if self._overflow else None)
+        self._place_header(orientation == Orientation.STRIP and size_class == SizeClass.COMPACT)
 
-    def _update_overflow_visibility(self) -> None:
-        has_overflow = bool(self.overflow_widgets)
-        self._more_button.setVisible(has_overflow)
-        self._overflow_area.setVisible(has_overflow and self._more_button.isChecked())
+    def _place_header(self, strip_short: bool) -> None:
+        """In Strip Short, hides the header and moves its More button to the end of the row. Otherwise restores both."""
+        more_button = self._header.more_button
+        self._header.setVisible(not strip_short)
+        if strip_short:
+            self._body_layout.addWidget(more_button)
+        else:
+            self._header.layout().addWidget(more_button)
+        # Reparenting hides a widget:
+        more_button.setVisible(bool(self._overflow))
