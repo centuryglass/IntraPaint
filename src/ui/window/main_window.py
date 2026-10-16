@@ -19,10 +19,11 @@ import sys
 from enum import StrEnum
 from typing import Callable, Optional
 
-from PySide6.QtCore import Qt, QRect, QSize, QObject, QTimer, Signal, QByteArray
-from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, QAction, QMoveEvent, \
-    QScreen, QShowEvent
-from PySide6.QtWidgets import QMainWindow, QStackedWidget, QApplication, QSizePolicy, QTabWidget
+from PySide6.QtCore import Qt, QPoint, QRect, QSize, QObject, QTimer, Signal, QByteArray
+from PySide6.QtGui import QContextMenuEvent, QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, \
+    QAction, QMoveEvent, QScreen, QShowEvent
+from PySide6.QtWidgets import QMainWindow, QStackedWidget, QApplication, QSizePolicy, QMenu, QTabBar, QTabWidget, \
+    QWidget
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
@@ -35,6 +36,7 @@ from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.controller.tool_controller import ToolController
 from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.window.dock_rail import DockGroup, DockRails
+from src.ui.window.dock_zones import DockZone, build_dock_menu, move_docks_to_zone
 from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.panel_dock import PanelDock
 from src.ui.window.window_geometry import capture_geometry
@@ -257,6 +259,41 @@ class MainWindow(QMainWindow):
     def dock_toggle_actions(self) -> list[QAction]:
         """Returns each dock's show/hide action, for the menu. An action is hidden while its dock has no content."""
         return [dock.toggleViewAction() for dock in self.docks]
+
+    def move_all_docks_to_zone(self, zone: DockZone) -> None:
+        """Moves every dock that has content into one tab group in a named zone."""
+        move_docks_to_zone(self, self.docks, zone)
+
+    def dock_menu(self, dock: PanelDock) -> QMenu:
+        """Builds the context menu for a dock: moving it to a zone or group, moving every tab, and hiding it."""
+        return build_dock_menu(self, dock, self.docks)
+
+    def _dock_at(self, global_pos: QPoint) -> Optional[PanelDock]:
+        """Returns the dock whose title area or tab is at a screen position, if any."""
+        widget: Optional[QWidget] = QApplication.widgetAt(global_pos)
+        while widget is not None and widget is not self:
+            if isinstance(widget, QTabBar) and widget.parent() is self:
+                tab_index = widget.tabAt(widget.mapFromGlobal(global_pos))
+                if tab_index < 0:
+                    return None
+                tab_text = widget.tabText(tab_index)
+                return next((dock for dock in self.docks if dock.windowTitle() == tab_text), None)
+            if isinstance(widget, PanelDock):
+                content = widget.content
+                if content is not None and widget.mapFromGlobal(global_pos).y() >= content.geometry().top():
+                    return None
+                return widget
+            widget = widget.parentWidget()
+        return None
+
+    def contextMenuEvent(self, event: Optional[QContextMenuEvent]) -> None:  # pylint: disable=invalid-name
+        """Shows the dock menu over a dock's title area or tab. Elsewhere, the event is ignored."""
+        dock = self._dock_at(event.globalPos()) if event is not None else None
+        if dock is None:
+            if event is not None:
+                event.ignore()
+            return
+        self.dock_menu(dock).exec(event.globalPos())
 
     def reset_dock_layout(self) -> None:
         """Puts every dock back in the first-run layout and opens it.
