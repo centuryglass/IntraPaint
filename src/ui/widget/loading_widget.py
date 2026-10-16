@@ -10,7 +10,6 @@ from PySide6.QtWidgets import QWidget
 
 from src.ui.loading.loading_design import LoadingDesign, MESSAGE_ZONE
 from src.ui.loading.loading_designs import default_loading_designs, pick_design
-from src.util.visual.text_drawing_utils import max_font_size
 
 # Behind the message, as a fraction of the indicator's side.
 SCRIM_RADIUS = 0.31
@@ -18,6 +17,8 @@ SCRIM_DARK = QColor(12, 14, 18)
 SCRIM_LIGHT = QColor(246, 247, 249)
 TEXT_DARK = QColor('#f5f3ee')
 TEXT_LIGHT = QColor('#16181e')
+# Message line height as a fraction of the message zone's height. Messages wrap, so up to about three lines fit.
+LINE_HEIGHT_FRACTION = 0.25
 
 
 class LoadingWidget(QWidget):
@@ -36,7 +37,8 @@ class LoadingWidget(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self._message = message
         self._phase = 0.0
-        self._font_size: Optional[int] = None
+        self._font_pixel_size = 1
+        self._update_font_size()
         self._designs = tuple(designs) if designs is not None else default_loading_designs()
         self._design = self._designs[0]
         # noinspection PyTypeChecker
@@ -108,7 +110,6 @@ class LoadingWidget(QWidget):
     def message(self, message: str) -> None:
         """Sets the loading message displayed, resuming the animation if paused."""
         self._message = message
-        self._font_size = None
         self.paused = False
         self.update()
 
@@ -133,8 +134,13 @@ class LoadingWidget(QWidget):
         self._anim.stop()
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
-        """Clear cached font size on resize."""
-        self._font_size = None
+        """Rescales the message text to the new bounds. The size depends only on the bounds, so it stays fixed as the
+        message changes."""
+        self._update_font_size()
+
+    def _update_font_size(self) -> None:
+        side = min(self.width(), self.height())
+        self._font_pixel_size = max(1, round(side * MESSAGE_ZONE[1] * LINE_HEIGHT_FRACTION))
 
     def _is_dark(self) -> bool:
         return self.palette().color(QPalette.ColorRole.Window).lightness() < 128
@@ -163,10 +169,8 @@ class LoadingWidget(QWidget):
         text_bounds = QRectF(center.x() - side * zone_width / 2, center.y() - side * zone_height / 2,
                              side * zone_width, side * zone_height).toRect()
         font = painter.font()
-        if self._font_size is None:
-            self._font_size = max(1, min(font.pointSize(), max_font_size(self._message, font, text_bounds.size())))
-        font.setPointSize(self._font_size)
+        font.setPixelSize(self._font_pixel_size)
         painter.setFont(font)
         painter.setPen(TEXT_DARK if dark else TEXT_LIGHT)
-        painter.drawText(text_bounds, Qt.AlignmentFlag.AlignCenter, self._message)
+        painter.drawText(text_bounds, Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, self._message)
         painter.end()
