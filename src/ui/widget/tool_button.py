@@ -41,6 +41,7 @@ class ToolButton(QToolButton):
         set_shortcut_tooltip(self, label_text, connected_tool.get_activation_config_key(),
                              description=connected_tool.get_tooltip_text())
         self._icon_bounds = QRect()
+        self._edge_length = TOOL_ICON_SIZE
         self._active = False
         self.clicked.connect(self._activate_tool)
 
@@ -49,12 +50,18 @@ class ToolButton(QToolButton):
         """Accesses the tool connected to this button."""
         return self._tool
 
+    def set_edge_length(self, length: int) -> None:
+        """Sets the side of the square the button's size hints return, which is `TOOL_ICON_SIZE` by default."""
+        self._edge_length = length
+        self.setFixedSize(length, length)
+        self.updateGeometry()
+
     def sizeHint(self) -> QSize:
-        """Returns ideal size as TOOL_ICON_SIZExTOOL_ICON_SIZE."""
-        return QSize(TOOL_ICON_SIZE, TOOL_ICON_SIZE)
+        """Returns a square of the button's edge length, `TOOL_ICON_SIZE` unless `set_edge_length` changed it."""
+        return QSize(self._edge_length, self._edge_length)
 
     def minimumSizeHint(self) -> QSize:
-        """Returns ideal size as TOOL_ICON_SIZExTOOL_ICON_SIZE."""
+        """Returns the same size as `sizeHint`."""
         return self.sizeHint()
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]):

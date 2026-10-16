@@ -61,6 +61,24 @@ RECENT_TOOL_SIZE = SIDE_RAIL_WIDTH
 RAIL_SPACING = 2
 
 
+class _GenerateButton(QPushButton):
+    """The rail's Generate button. In a side rail it shows only its icon, at the rail's width."""
+
+    def __init__(self, text: str) -> None:
+        super().__init__(text)
+        self.icon_only = False
+
+    def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the icon in a square a rail wide while icon-only."""
+        if self.icon_only:
+            return QSize(SIDE_RAIL_WIDTH - 2 * BUTTON_MARGIN, SIDE_ICON_SIZE + 2 * BUTTON_MARGIN + 2)
+        return super().sizeHint()
+
+    def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns `sizeHint` while icon-only."""
+        return self.sizeHint() if self.icon_only else super().minimumSizeHint()
+
+
 class DockGroup(IntEnum):
     """Which part of a rail a dock's button is in. A rule separates the groups."""
     UPPER = 0
@@ -273,7 +291,7 @@ class RecentToolStrip(QWidget):
         else:
             self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         for button in self._buttons.values():
-            button.setFixedSize(self._button_extent(), self._button_extent())
+            button.set_edge_length(self._button_extent())
         self._layout_buttons()
 
     def set_side(self, side: bool) -> None:
@@ -296,7 +314,7 @@ class RecentToolStrip(QWidget):
             return
         button = ToolButton(tool)
         button.setParent(self)
-        button.setFixedSize(self._button_extent(), self._button_extent())
+        button.set_edge_length(self._button_extent())
         button.tool_selected.connect(self._tool_controller.set_active_tool)
         button.hide()
         self._buttons[tool] = button
@@ -492,7 +510,7 @@ class DockRails:
         self._generation_dock: Optional[PanelDock] = None
         self._recent_strip: Optional[RecentToolStrip] = None
         self._suspended = False
-        self._generate_button = QPushButton(GENERATE_BUTTON_TEXT)
+        self._generate_button = _GenerateButton(GENERATE_BUTTON_TEXT)
         self._generate_button.setIcon(QIcon(ICON_PATH_GENERATE))
         self._generate_button.setIconSize(QSize(SIDE_ICON_SIZE, SIDE_ICON_SIZE))
         set_primary_button(self._generate_button)
@@ -578,12 +596,10 @@ class DockRails:
         if self._generation_dock is not None:
             dock = self._generation_dock
             self._generate_button.setVisible(dock.is_available and not dock.is_showing)
-            self._generate_button.setText('' if self.rail_for(dock).is_side else GENERATE_BUTTON_TEXT)
-            if self.rail_for(dock).is_side:
-                self._generate_button.setFixedWidth(SIDE_RAIL_WIDTH - 2 * BUTTON_MARGIN)
-            else:
-                self._generate_button.setMinimumWidth(0)
-                self._generate_button.setMaximumWidth(16777215)
+            icon_only = self.rail_for(dock).is_side
+            self._generate_button.icon_only = icon_only
+            self._generate_button.setText('' if icon_only else GENERATE_BUTTON_TEXT)
+            self._generate_button.updateGeometry()
         for rail in self._rails.values():
             rail.refresh_visibility(self._suspended)
 
