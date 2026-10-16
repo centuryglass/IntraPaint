@@ -1,4 +1,5 @@
-"""A panel header: the panel or active tool's icon, name and key, a reset-to-defaults button and a More button.
+"""A panel header: the panel or active tool's icon, name and key, an optional dim description, a reset-to-defaults
+button and a More button.
 
 - The header holds no config. `reset_requested` fires when the reset button is clicked, and the owner restores its
   declared keys (see `src.ui.panel.panel_reset`).
@@ -142,6 +143,11 @@ class PanelHeader(QWidget):
         self._name_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         self._name_label.setMinimumWidth(1)
         self._key_badge = self._make_key_badge()
+        self._description_label = QLabel()
+        self._description_label.setForegroundRole(QPalette.ColorRole.PlaceholderText)
+        self._description_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self._description_label.setMinimumWidth(1)
+        self._description_label.hide()
         self._reset_button = _GlyphButton(_GlyphButton.RESET, RESET_TOOLTIP)
         self._more_button = _GlyphButton(_GlyphButton.MORE, MORE_TOOLTIP)
         self._more_button.hide()
@@ -152,6 +158,7 @@ class PanelHeader(QWidget):
         layout.addWidget(self._icon_label)
         layout.addWidget(self._name_label, stretch=1)
         layout.addWidget(self._key_badge)
+        layout.addWidget(self._description_label, stretch=2)
         layout.addWidget(self._reset_button)
         layout.addWidget(self._more_button)
         self._reset_button.clicked.connect(self.reset_requested)
@@ -199,6 +206,15 @@ class PanelHeader(QWidget):
         """Shows `key_text` on a keycap after the name, or hides the keycap if it is empty."""
         self._key_badge.set_text(key_text)
         self._key_badge.setVisible(key_text != '')
+
+    def description(self) -> str:
+        """Returns the description shown after the key, or the empty string if none is shown."""
+        return self._description_label.text()
+
+    def set_description(self, description: str) -> None:
+        """Shows a dim description after the key, or hides it if `description` is empty."""
+        self._description_label.setText(description)
+        self._description_label.setVisible(description != '')
 
     def set_reset_tooltip(self, key_text: str = '') -> None:
         """Adds a key binding to the reset button's tooltip, or restores the plain tooltip if `key_text` is empty."""

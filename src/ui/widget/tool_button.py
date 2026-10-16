@@ -14,7 +14,10 @@ from src.ui.widget.shortcut_tooltip import set_shortcut_tooltip
 from src.util.visual.geometry_utils import get_scaled_placement
 
 TOOL_ICON_SIZE = 48
-# Space between the icon and the edge of the plate drawn behind it:
+# Space between the icon and the button's edge at `TOOL_ICON_SIZE`, and the least space at smaller sizes:
+ICON_MARGIN = 8
+MIN_ICON_MARGIN = 4
+# Space between the icon and the edge of the plate drawn behind it, at most:
 PLATE_MARGIN = 4
 PLATE_RADIUS = 7.0
 # The active plate's ink shadow drops this far below it. It has to fit inside the button's margin around the icon:
@@ -41,7 +44,9 @@ class ToolButton(QToolButton):
         set_shortcut_tooltip(self, label_text, connected_tool.get_activation_config_key(),
                              description=connected_tool.get_tooltip_text())
         self._icon_bounds = QRect()
+        self._plate_margin = PLATE_MARGIN
         self._edge_length = TOOL_ICON_SIZE
+        self._show_key_hint = True
         self._active = False
         self.clicked.connect(self._activate_tool)
 
@@ -50,13 +55,18 @@ class ToolButton(QToolButton):
         """Accesses the tool connected to this button."""
         return self._tool
 
-    def set_edge_length(self, length: int) -> None:
-        """Sets the side of the square the button's size hints return, which is `TOOL_ICON_SIZE` by default. Below
-        that size the key hint is hidden, since it would cover the icon."""
+    def set_edge_length(self, length: int, show_key_hint: bool = False) -> None:
+        """Sets the side of the square the button's size hints return, which is `TOOL_ICON_SIZE` by default, and
+        whether the key hint shows in its corner.
+
+        Below `TOOL_ICON_SIZE`, the icon moves toward the opposite corner to make room for the key hint, and a key hint
+        too wide for the button stays hidden.
+        """
         self._edge_length = length
-        self._key_hint.setVisible(length >= TOOL_ICON_SIZE)
+        self._show_key_hint = show_key_hint
         self.setFixedSize(length, length)
         self.updateGeometry()
+        self.resizeEvent(None)
 
     def sizeHint(self) -> QSize:
         """Returns a square of the button's edge length, `TOOL_ICON_SIZE` unless `set_edge_length` changed it."""
@@ -68,13 +78,24 @@ class ToolButton(QToolButton):
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]):
         """Recalculate and cache icon bounds on size change."""
-        self._icon_bounds = get_scaled_placement(self.size(), QSize(1, 1), 8)
+        edge = min(self.width(), self.height())
+        margin = ICON_MARGIN if edge >= TOOL_ICON_SIZE else max(MIN_ICON_MARGIN, edge // 6 + 1)
+        self._plate_margin = min(PLATE_MARGIN, margin - 1)
+        self._icon_bounds = get_scaled_placement(self.size(), QSize(1, 1), margin)
         hint_size = self._key_hint.sizeHint()
-        width = hint_size.width()
-        height = hint_size.height()
-        x = self.width() - width
-        y = self.height() - height
+        x = self.width() - hint_size.width()
+        y = self.height() - hint_size.height()
         self._key_hint.setGeometry(QRect(QPoint(x, y), hint_size))
+        if edge >= TOOL_ICON_SIZE:
+            self._key_hint.setVisible(self._show_key_hint)
+            return
+        hint_fits = hint_size.width() <= edge // 2 + MIN_ICON_MARGIN
+        self._key_hint.setVisible(self._show_key_hint and hint_fits)
+        if self._key_hint.isVisibleTo(self):
+            # The icon overlaps at most the top left quarter of the key hint:
+            side = edge - MIN_ICON_MARGIN - hint_size.height() // 2
+            self._plate_margin = MIN_ICON_MARGIN - 1
+            self._icon_bounds = QRect(MIN_ICON_MARGIN, MIN_ICON_MARGIN, side, side)
 
     @property
     def is_active(self) -> bool:
@@ -97,7 +118,8 @@ class ToolButton(QToolButton):
         painter = QPainter(self)
         palette = self.palette()
         ink = palette.color(QPalette.ColorRole.Shadow)
-        plate = QRectF(self._icon_bounds.adjusted(-PLATE_MARGIN, -PLATE_MARGIN, PLATE_MARGIN, PLATE_MARGIN))
+        margin = self._plate_margin
+        plate = QRectF(self._icon_bounds.adjusted(-margin, -margin, margin, margin))
         if self.is_active:
             self._draw_plate(painter, plate.translated(0, PLATE_SHADOW_OFFSET), ink, ink)
             self._draw_plate(painter, plate, palette.color(QPalette.ColorRole.Highlight), ink)

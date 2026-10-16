@@ -81,6 +81,10 @@ DOCK_STATE_VERSION = 2
 DEFAULT_SIDE_DOCK_WIDTH = 340
 DEFAULT_STRIP_DOCK_HEIGHT = 240
 
+# The canvas never shrinks below this. Docks shrink toward their minimum sizes first, and the window's minimum size
+# grows if they can't shrink enough. Opening a dock never closes another one to make room.
+MIN_CANVAS_SIZE = QSize(320, 240)
+
 # First-run share of a side area's height (or a strip area's width) that the upper dock group takes:
 UPPER_GROUP_SHARE = 0.6
 
@@ -139,6 +143,7 @@ class MainWindow(QMainWindow):
         self._image_panel.setContentsMargins(1, 1, 1, 1)
         self._main_widget = self._image_panel
         self._central_widget = QStackedWidget(self)
+        self._central_widget.setMinimumSize(MIN_CANVAS_SIZE)
         self._central_widget.addWidget(self._main_widget)
         self.setCentralWidget(self._central_widget)
         self._central_widget.setCurrentWidget(self._main_widget)

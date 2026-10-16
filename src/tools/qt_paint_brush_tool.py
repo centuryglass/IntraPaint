@@ -39,6 +39,10 @@ class QtPaintBrushTool(BrushTool):
         self._size_key = size_key
         self._opacity_key = opacity_key
         self._hardness_key = hardness_key
+        # The color is shared between tools, so reset leaves it alone:
+        self._reset_keys = [key for key in (size_key, pressure_size_key, opacity_key, pressure_opacity_key,
+                                            hardness_key, pressure_hardness_key, pattern_key, antialias_key)
+                            if key is not None]
 
         # Connect and load all provided cache keys:
         cache = Cache()
@@ -150,6 +154,10 @@ class QtPaintBrushTool(BrushTool):
             control_panel = self.get_control_panel()
             if isinstance(control_panel, BrushToolPanel):
                 control_panel.show_pressure_checkboxes()
+
+    def get_reset_config_keys(self) -> list[str]:
+        """Returns the brush's own keys, leaving out the shared color."""
+        return list(self._reset_keys)
 
     @property
     def opacity(self) -> float:

@@ -11,6 +11,7 @@ from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
 from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.layers.image_stack import ImageStack
+from src.tools.base_tool import ToolGroup
 from src.tools.brush_tool import BrushTool
 from src.tools.context_pin_dragger import ContextPinDragger
 from src.ui.image_viewer import ImageViewer
@@ -41,6 +42,8 @@ UNDO_GESTURE = 'SelectionBrushTool.stroke'
 
 class SelectionBrushTool(BrushTool):
     """Selects image content for image generation or editing."""
+
+    TOOL_GROUP = ToolGroup.SELECTION
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         brush = QtPaintBrush(None)

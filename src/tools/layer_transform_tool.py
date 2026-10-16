@@ -12,7 +12,7 @@ from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
-from src.tools.base_tool import BaseTool
+from src.tools.base_tool import BaseTool, ToolGroup
 from src.ui.graphics_items.layer_lock_alert_item import LayerLockAlertItem
 from src.ui.graphics_items.transform_outline import TransformOutline
 from src.ui.image_viewer import ImageViewer
@@ -40,6 +40,8 @@ ICON_PATH_TRANSFORM_TOOL = f'{PROJECT_DIR}/resources/icons/tools/layer_transform
 
 class LayerTransformTool(BaseTool):
     """Applies transformations to the active layer."""
+
+    TOOL_GROUP = ToolGroup.EDIT
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__(KeyConfig.TRANSFORM_TOOL_KEY, TRANSFORM_LABEL, TRANSFORM_TOOLTIP,
