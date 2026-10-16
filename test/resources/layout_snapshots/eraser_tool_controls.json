@@ -2,77 +2,51 @@
   "minimum": {
     "problems": [],
     "size": [
-      287,
-      148
+      164,
+      154
     ]
   },
   "narrow": {
     "problems": [
-      "overlap: QLabel 'Eraser size:' and KeyHintLabel '[' share 18x30",
-      "overlap: QLabel 'Eraser size:' and IntSliderSpinbox share 1x30",
-      "overlap: IntSliderSpinbox and KeyHintLabel ']' share 18x30",
-      "overlap: QLabel 'Opacity:' and KeyHintLabel '<' share 18x30",
-      "overlap: QLabel 'Opacity:' and FloatSliderSpinbox[0] share 1x30",
-      "overlap: FloatSliderSpinbox[0] and KeyHintLabel '>' share 18x30",
-      "overlap: QLabel 'Hardness:' and KeyHintLabel '{' share 18x30",
-      "overlap: QLabel 'Hardness:' and FloatSliderSpinbox[1] share 1x30",
-      "overlap: FloatSliderSpinbox[1] and KeyHintLabel '}' share 18x30",
-      "clipped: IntSliderSpinbox shows 68x30 of 148x30",
-      "clipped: IntSliderSpinbox/QSlider shows 64x23 of 88x23",
-      "clipped: IntSliderSpinbox/QSpinBox shows 0x0 of 50x26",
-      "clipped: FloatSliderSpinbox[0] shows 68x30 of 148x30",
-      "clipped: FloatSliderSpinbox[0]/QSlider shows 64x23 of 84x23",
-      "clipped: FloatSliderSpinbox[0]/QDoubleSpinBox shows 0x0 of 54x26",
-      "clipped: FloatSliderSpinbox[1] shows 68x30 of 148x30",
-      "clipped: FloatSliderSpinbox[1]/QSlider shows 64x23 of 84x23",
-      "clipped: FloatSliderSpinbox[1]/QDoubleSpinBox shows 0x0 of 54x26",
-      "squeezed: CheckBox 'Antialiasing' is 60x22, minimum 93x22",
-      "squeezed: CheckBox 'Erase in selection only' is 59x22, minimum 157x22"
+      "squeezed: StrokeBlock is 64x136, minimum 146x136",
+      "squeezed: StrokeBlock/QWidget[0] is 54x80, minimum 110x80",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[0] shows 54x24 of 110x24",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[1] shows 54x24 of 110x24",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[2] shows 54x24 of 110x24",
+      "squeezed: StrokeBlock/QWidget[1] is 64x50, minimum 146x50",
+      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Antialiasing' is 64x22, minimum 93x22",
+      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Only inside selection' is 64x22, minimum 146x22"
     ],
     "size": [
-      143,
-      148
+      82,
+      154
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      287,
-      148
+      278,
+      154
     ]
   },
   "short": {
     "problems": [
-      "squeezed: KeyHintLabel '[' is 18x10, minimum 17x23",
-      "squeezed: KeyHintLabel ']' is 18x10, minimum 16x23",
-      "squeezed: QLabel 'Eraser size:' is 67x10, minimum 67x17",
-      "squeezed: IntSliderSpinbox is 148x10, minimum 72x30",
-      "squeezed: IntSliderSpinbox/QSlider is 88x6, minimum 12x23",
-      "squeezed: IntSliderSpinbox/QSpinBox is 50x6, minimum 50x26",
-      "squeezed: KeyHintLabel '<' is 18x9, minimum 18x23",
-      "squeezed: KeyHintLabel '>' is 18x9, minimum 18x23",
-      "squeezed: QLabel 'Opacity:' is 67x9, minimum 49x17",
-      "squeezed: FloatSliderSpinbox[0] is 148x9, minimum 76x30",
-      "squeezed: FloatSliderSpinbox[0]/QSlider is 84x5, minimum 12x23",
-      "squeezed: FloatSliderSpinbox[0]/QDoubleSpinBox is 54x5, minimum 54x26",
-      "squeezed: KeyHintLabel '{' is 18x10, minimum 17x23",
-      "squeezed: KeyHintLabel '}' is 18x10, minimum 17x23",
-      "squeezed: QLabel 'Hardness:' is 67x10, minimum 60x17",
-      "squeezed: FloatSliderSpinbox[1] is 148x10, minimum 76x30",
-      "squeezed: FloatSliderSpinbox[1]/QSlider is 84x6, minimum 12x23",
-      "squeezed: FloatSliderSpinbox[1]/QDoubleSpinBox is 54x6, minimum 54x26",
-      "squeezed: CheckBox 'Antialiasing' is 93x9, minimum 93x22",
-      "squeezed: CheckBox 'Erase in selection only' is 157x9, minimum 157x22"
+      "overlap: StrokeBlock/QWidget[0]/SliderField[0] and StrokeBlock/QWidget[0]/SliderField[1] share 250x12",
+      "overlap: StrokeBlock/QWidget[0]/SliderField[1] and StrokeBlock/QWidget[0]/SliderField[2] share 250x12",
+      "squeezed: StrokeBlock is 260x59, minimum 146x136",
+      "squeezed: StrokeBlock/QWidget[0] is 250x31, minimum 110x80",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[1] shows 250x19 of 250x24",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[2] shows 250x7 of 250x24"
     ],
     "size": [
-      287,
-      74
+      278,
+      77
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      287,
+      278,
       1200
     ]
   },
@@ -80,7 +54,7 @@
     "problems": [],
     "size": [
       1600,
-      148
+      154
     ]
   }
 }
