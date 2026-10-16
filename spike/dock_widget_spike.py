@@ -60,8 +60,9 @@ title = dock.titleBarWidget()
 press = QMouseEvent(QEvent.Type.MouseButtonPress, QPointF(5, 5), title.mapToGlobal(QPointF(5, 5)),
                     Qt.MouseButton.LeftButton, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
 QApplication.sendEvent(title, press)
-print('MANUAL: mouse-dragging a dock by its hidden title bar needs a real desktop;'
-      ' the blank title widget is a plain QWidget.')
+print('MANUAL checks need a real mouse: run spike/dock_widget_manual.py.')
+print('(this run covers only the automated checks;'
+      ' the manual window is a separate script)')
 win.close()
 
 # 2. Tabified docks: tab bars exist at North, titles of tabified docks are hidden
