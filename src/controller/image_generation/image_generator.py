@@ -5,13 +5,12 @@ from typing import Optional, Any
 from PIL import Image
 from PySide6.QtCore import QPoint, QRect, QSize, Signal, QTimer, QObject, SignalInstance
 from PySide6.QtGui import QImage, QPainter
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
-from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.generators.generator_panel import GeneratorPanel
@@ -85,9 +84,9 @@ class ImageGenerator(MenuBuilder):
            connect to required external services, returning whether the process completed correctly."""
         raise NotImplementedError()
 
-    def get_extra_tabs(self) -> list[Tab]:
-        """Returns any extra tabs that the generator will add to the main window."""
-        return []
+    def get_controlnet_panel(self) -> Optional[QWidget]:
+        """Returns the panel the main window's ControlNet dock shows, or None if the generator has no ControlNet."""
+        return None
 
     def disconnect_or_disable(self) -> None:
         """Closes any connections, unloads models, or otherwise turns off this generator."""

@@ -22,6 +22,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Settings](#settings-f9)
        * [Settings window](#settings-window)
 3. [Image menu](#image-menu)
+   - [Panels](#panels)
    - [Show navigation window](#show-navigation-window-ctrlaltw)
        * [Navigation window](#navigation-window)
    - [Resize canvas](#resize-canvas-f2)
@@ -192,6 +193,12 @@ Opens a window where you can edit IntraPaint's saved settings. Hold your mouse o
 ---
 
 ## Image menu
+
+### Panels
+Lists each panel docked around the image: Tools, Image Generation, and ControlNet. Select one to show or hide it. A panel only appears in the list while it has something to show, so Image Generation needs a configured image generator and ControlNet needs a generator that supports it.
+
+#### Reset panel layout (Ctrl+Alt+Shift+P)
+Puts every panel back where it starts on first run, tabbed together on the right side of the window (or at the bottom on a screen taller than it is wide), and opens all of them.
 
 ### Show navigation window (Ctrl+Alt+W)
 Opens another window with a view of the entire edited image. This can be used to adjust the image viewport within the main window, and to move the image generation area.  The Navigation tab on the tool panel behaves identically to this window.

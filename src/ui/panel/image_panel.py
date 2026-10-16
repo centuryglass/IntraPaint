@@ -9,8 +9,6 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDouble
 from src.config.application_config import AppConfig
 from src.image.layers.image_stack import ImageStack
 from src.ui.image_viewer import ImageViewer
-from src.ui.layout.draggable_divider import DraggableDivider
-from src.ui.layout.draggable_tabs.tab_box import TabBox
 from src.ui.widget.image_graphics_view import MIN_IMAGE_ZOOM, MAX_IMAGE_ZOOM
 from src.ui.widget.ruler import Ruler, RulerHighlight
 
@@ -41,54 +39,17 @@ RULER_HIGHLIGHT_LANES = 2
 
 MIN_WIDTH_SHOWING_SCALE_SLIDER = 600
 MIN_WIDTH_SHOWING_HINT_TEXT = 900
-MAIN_CONTENT_STRETCH = 100
 
 
 class ImagePanel(QWidget):
     """Displays the image panel with zoom controls and input hints."""
 
-    def __init__(self, image_stack: ImageStack, include_tab_boxes: bool = False, include_zoom_controls: bool = True,
-                 use_keybindings=True, include_rulers: bool = False) -> None:
+    def __init__(self, image_stack: ImageStack, include_zoom_controls: bool = True, use_keybindings=True,
+                 include_rulers: bool = False) -> None:
         super().__init__()
         self._image_stack = image_stack
         self._showing_image_gen_controls = True
-        if include_tab_boxes:
-            self._outer_layout = QHBoxLayout(self)
-            self.setContentsMargins(0, 0, 0, 0)
-            self._outer_layout.setContentsMargins(0, 0, 0, 0)
-            self._outer_layout.setSpacing(2)
-            self._left_tab_box: Optional[TabBox] = TabBox(Qt.Orientation.Vertical, True, parent=self)
-            self._outer_layout.addWidget(self._left_tab_box, stretch=1)
-            self._left_divider = DraggableDivider()
-            self._outer_layout.addWidget(self._left_divider)
-            self._inner_content = QWidget(self)
-            self._layout = QVBoxLayout(self._inner_content)
-            self._outer_layout.addWidget(self._inner_content, stretch=MAIN_CONTENT_STRETCH)
-            self._right_divider = DraggableDivider()
-            self._outer_layout.addWidget(self._right_divider)
-            self._right_tab_box: Optional[TabBox] = TabBox(Qt.Orientation.Vertical, False, parent=self)
-            self._outer_layout.addWidget(self._right_tab_box, stretch=1)
-
-            def _show_or_hide_left_divider(_=None) -> None:
-                assert self._left_tab_box is not None
-                self._left_divider.setVisible(self._left_tab_box.count > 0 and self._left_tab_box.is_open)
-            for signal in (self._left_tab_box.box_toggled, self._left_tab_box.tab_added,
-                           self._left_tab_box.tab_removed):
-                signal.connect(_show_or_hide_left_divider)
-            _show_or_hide_left_divider()
-
-            def _show_or_hide_right_divider(_=None) -> None:
-                assert self._right_tab_box is not None
-                self._right_divider.setVisible(self._right_tab_box.count > 0 and self._right_tab_box.is_open)
-            for signal in (self._right_tab_box.box_toggled, self._right_tab_box.tab_added,
-                           self._right_tab_box.tab_removed):
-                signal.connect(_show_or_hide_right_divider)
-            _show_or_hide_right_divider()
-
-        else:
-            self._layout = QVBoxLayout(self)
-            self._left_tab_box = None
-            self._right_tab_box = None
+        self._layout = QVBoxLayout(self)
 
         self._image_viewer = ImageViewer(None, image_stack, use_keybindings)
         self._horizontal_ruler: Optional[Ruler] = None
@@ -330,16 +291,6 @@ class ImagePanel(QWidget):
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Hide non-essential UI elements if there's not enough space."""
         self._update_widget_visibility()
-
-    @property
-    def left_tab_box(self) -> Optional[TabBox]:
-        """Returns the left tab box, if used."""
-        return self._left_tab_box
-
-    @property
-    def right_tab_box(self) -> Optional[TabBox]:
-        """Returns the right tab box, if used."""
-        return self._right_tab_box
 
     def _show_control_hint_config_slot(self, show_hints: bool):
         if self._control_bar is not None:

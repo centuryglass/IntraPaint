@@ -24,7 +24,8 @@ from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QAbstractSp
                                QStyleOptionButton, QStyleOptionComboBox,
                                QStyleOptionComplex, QStyleOptionFrame, QStyleOptionGroupBox, QStyleOptionMenuItem,
                                QStyleOptionProgressBar, QStyleOptionSlider, QStyleOptionSpinBox, QStyleOptionTab,
-                               QStyleOptionToolButton, QStyleOptionViewItem, QSlider, QTabBar, QWidget, QLineEdit)
+                               QStyleOptionToolButton, QStyleOptionViewItem, QSlider, QTabBar, QWidget, QLineEdit,
+                               QDockWidget, QMainWindow)
 
 from src.ui.button_weight import ButtonWeight, set_button_weight
 from src.ui.ink_style import InkStyle, set_primary_button, set_signal
@@ -737,6 +738,20 @@ def _is_qt_internal(widget: QWidget, root: QWidget) -> bool:
     return False
 
 
+def _is_parked(widget: QWidget, root: QWidget) -> bool:
+    """Returns whether a widget is, or is inside, a dock or tab bar that a `QMainWindow` keeps outside itself.
+
+    Qt moves the docks behind a tab, and spare dock tab bars, out of the window instead of hiding them.
+    """
+    while widget is not None and widget is not root:
+        parent = widget.parentWidget()
+        if isinstance(parent, QMainWindow) and isinstance(widget, (QDockWidget, QTabBar)) \
+                and not widget.geometry().intersects(parent.rect()):
+            return True
+        widget = parent
+    return False
+
+
 def _rect_in(widget: QWidget, root: QWidget) -> QRect:
     return QRect(widget.mapTo(root, QPoint()), widget.size())
 
@@ -782,17 +797,19 @@ def find_layout_problems(root: QWidget) -> list[str]:
     - squeezed: a widget narrower or shorter than its minimum size hint, unless its size policy ignores hints in that
       direction.
 
-    Parts Qt builds into composite widgets are left out, as _is_qt_internal describes.
+    Parts Qt builds into composite widgets are left out, as _is_qt_internal describes, and so are widgets a main
+    window parks outside itself, as _is_parked describes.
     """
     problems = []
     widgets = [widget for widget in root.findChildren(QWidget)
-               if widget.isVisibleTo(root) and not widget.isWindow() and not _is_qt_internal(widget, root)]
+               if widget.isVisibleTo(root) and not widget.isWindow() and not _is_qt_internal(widget, root)
+               and not _is_parked(widget, root)]
     for widget in [root, *widgets]:
         layout = widget.layout()
         if layout is None:
             continue
         managed = [child for child in _layout_widgets(layout)
-                   if child.isVisibleTo(root) and not _is_qt_internal(child, root)]
+                   if child.isVisibleTo(root) and not _is_qt_internal(child, root) and not _is_parked(child, root)]
         for i, first in enumerate(managed):
             for second in managed[i + 1:]:
                 overlap = first.geometry().intersected(second.geometry())

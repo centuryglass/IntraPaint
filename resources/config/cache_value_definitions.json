@@ -38,33 +38,6 @@
         "saved": true,
         "translate": false
     },
-    "tool_tab_bar": {
-        "label": "Tool tab bar:",
-        "category": "Cache",
-        "description": "Toolbar where the tool tab is placed by default (TOP|BOTTOM|LEFT|RIGHT|LOWER or empty)",
-        "type": "string",
-        "default": "",
-        "saved": true,
-        "translate": false
-    },
-    "generation_tab_bar": {
-        "label": "Image generation tab bar:",
-        "category": "Cache",
-        "description": "Toolbar where the image generation tab is placed by default (TOP|BOTTOM|LEFT|RIGHT|LOWER or empty)",
-        "type": "string",
-        "default": "",
-        "saved": true,
-        "translate": false
-    },
-    "controlnet_tab_bar": {
-        "label": "ControlNet tab bar:",
-        "category": "Cache",
-        "description": "Toolbar where the ControlNet tab is placed by default (TOP|BOTTOM|LEFT|RIGHT|LOWER or empty)",
-        "type": "string",
-        "default": "",
-        "saved": true,
-        "translate": false
-    },
     "last_file_path": {
         "label": "Last file path:",
         "category": "Cache",
@@ -834,6 +807,15 @@
         "category": "Cache",
         "subcategory": "Window placement",
         "description": "JSON with the main window's normal bounds, window state and display when it last closed.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "saved_main_window_state": {
+        "label": "Saved panel layout",
+        "category": "Cache",
+        "subcategory": "Window placement",
+        "description": "Base64 QMainWindow.saveState data with the panel docks' placement when the window last closed.",
         "type": "string",
         "default": "",
         "saved": true

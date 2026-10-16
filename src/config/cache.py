@@ -127,7 +127,6 @@ class Cache(Config, metaclass=Singleton):
     CONTROLNET_ARGS_1_WEBUI: str
     CONTROLNET_ARGS_2_COMFYUI: str
     CONTROLNET_ARGS_2_WEBUI: str
-    CONTROLNET_TAB_BAR: str
     CUTN: str
     DENOISING_STRENGTH: str
     DRAW_TOOL_ANTIALIAS: str
@@ -161,7 +160,6 @@ class Cache(Config, metaclass=Singleton):
     FILTER_TOOL_SELECTED_FILTER: str
     GENERATION_RESOLUTION_RULE: str
     GENERATION_SIZE: str
-    GENERATION_TAB_BAR: str
     GENERATOR_SCALING_MODES: str
     GLID_SERVER_URL: str
     GUIDANCE_SCALE: str
@@ -191,6 +189,7 @@ class Cache(Config, metaclass=Singleton):
     SAMPLING_STEPS: str
     SAVED_LAYER_WINDOW_POS: str
     SAVED_MAIN_WINDOW_GEOMETRY: str
+    SAVED_MAIN_WINDOW_STATE: str
     SAVED_NAVIGATION_WINDOW_POS: str
     SCALING_MODE: str
     SCHEDULER: str
@@ -231,7 +230,6 @@ class Cache(Config, metaclass=Singleton):
     STYLES: str
     TEXT_BACKGROUND_COLOR: str
     TEXT_TOOL_PARAMS: str
-    TOOL_TAB_BAR: str
     ULTIMATE_UPSCALE_SCRIPT_AVAILABLE: str
     USE_STABLE_DIFFUSION_UPSCALING: str
     USE_ULTIMATE_UPSCALE_SCRIPT: str

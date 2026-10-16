@@ -1,6 +1,6 @@
 {
   "(repository)": {
-    "duplicate-code": 57
+    "duplicate-code": 56
   },
   "src/config/config.py": {
     "protected-access": 4
@@ -121,12 +121,6 @@
   "src/ui/input_fields/pressure_curve_input.py": {
     "unused-argument": 2
   },
-  "src/ui/layout/draggable_tabs/tab.py": {
-    "unused-argument": 1
-  },
-  "src/ui/layout/draggable_tabs/tab_bar.py": {
-    "unused-argument": 2
-  },
   "src/ui/modal/color_dialog.py": {
     "invalid-name": 1
   },
@@ -183,10 +177,6 @@
   },
   "src/ui/window/generator_setup_window.py": {
     "unused-argument": 2
-  },
-  "src/ui/window/main_window.py": {
-    "protected-access": 1,
-    "ungrouped-imports": 1
   },
   "src/ui/window/navigation_window.py": {
     "unused-argument": 4
