@@ -5,9 +5,10 @@ The primary image editing window: the canvas in the center, with every other pan
   once at startup with `restore_dock_state`. `__init__` lays out the first-run layout, which stays when nothing is
   saved or a restore fails.
 - Qt retires a dock group's old tab bar only when a dock is dropped by mouse, so each layout built in code leaves a
-  stale bar. One `restoreState` and any number of `reset_dock_layout` calls leave theirs parked outside the window,
-  but a second layout built before the window is first shown leaves one drawn over it. `__init__` lays docks out
-  once for that reason.
+  stale bar. Any number of `reset_dock_layout` calls leave theirs parked outside the window, but a second layout built
+  before the window is first shown leaves one drawn over it. `__init__` lays docks out once for that reason.
+- `restoreState` leaves every old tab bar drawn where it was, so layouts are restored through
+  `restore_state_without_stale_tab_bars`.
 - The Tools, Image Generation and ControlNet docks always exist, so a restore can place them even before their
   generator provides content. A dock without content stays hidden (see `PanelDock.set_content`).
 - Icon rails along the window edges (`DockRails`) hold each dock's button, the recent tools and Generate.
@@ -38,6 +39,7 @@ from src.controller.tool_controller import ToolController
 from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.window.dock_menu import DockEdge, build_dock_menu, move_all_to_edge
 from src.ui.window.dock_rail import DockGroup, DockRails
+from src.ui.window.dock_state import restore_state_without_stale_tab_bars
 from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.panel_dock import PanelDock
 from src.ui.window.window_geometry import capture_geometry
@@ -374,7 +376,8 @@ class MainWindow(QMainWindow):
         if saved_state == '':
             return False
         # A failed restore changes nothing, so the first-run layout from __init__ stays:
-        if not self.restoreState(QByteArray.fromBase64(saved_state.encode()), DOCK_STATE_VERSION):
+        if not restore_state_without_stale_tab_bars(self, QByteArray.fromBase64(saved_state.encode()),
+                                                    DOCK_STATE_VERSION):
             logger.warning('Could not restore the saved panel layout, using the default layout')
             return False
         for dock in self.docks:
@@ -455,7 +458,7 @@ class MainWindow(QMainWindow):
                     dock.show()
             # Qt forgets split sizes while every dock in an area is hidden, so the saved sizes are put back:
             if self._dock_state_before_selector is not None:
-                self.restoreState(self._dock_state_before_selector, DOCK_STATE_VERSION)
+                restore_state_without_stale_tab_bars(self, self._dock_state_before_selector, DOCK_STATE_VERSION)
                 for dock in self.docks:
                     dock.sync_availability()
             for dock in self._docks_showing_before_selector:

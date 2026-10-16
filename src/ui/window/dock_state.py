@@ -126,12 +126,18 @@ def move_dock_to_area_start(state: bytes, area: Qt.DockWidgetArea, orientation: 
     return None
 
 
-def restore_state_without_stale_tab_bars(window: QMainWindow, state: bytes) -> bool:
-    """Restores a saved layout, returning whether it did.
+def restore_state_without_stale_tab_bars(window: QMainWindow, state: bytes | QByteArray, version: int = 0) -> bool:
+    """Restores a saved layout with `QMainWindow.restoreState`, returning whether it did.
 
     `restoreState` gives each tab group a new tab bar and leaves the old bars drawn where they were. The old bars are
-    hidden first, and Qt shows the new ones.
+    hidden first, and Qt shows the new ones. A failed restore changes nothing, so the hidden bars are shown again.
     """
-    for tab_bar in window.findChildren(QTabBar, options=Qt.FindChildOption.FindDirectChildrenOnly):
+    hidden = [tab_bar for tab_bar in window.findChildren(QTabBar, options=Qt.FindChildOption.FindDirectChildrenOnly)
+              if not tab_bar.isHidden()]
+    for tab_bar in hidden:
         tab_bar.hide()
-    return window.restoreState(QByteArray(state))
+    if window.restoreState(QByteArray(state), version):
+        return True
+    for tab_bar in hidden:
+        tab_bar.show()
+    return False
