@@ -7,6 +7,15 @@
       "extra",
       "only_extra"
     ],
+    "problems": [],
+    "section_geometry": {
+      "Stroke": [
+        0,
+        0,
+        182,
+        276
+      ]
+    },
     "visible_sections": [
       "Stroke"
     ]
@@ -18,6 +27,15 @@
       "extra",
       "only_extra"
     ],
+    "problems": [],
+    "section_geometry": {
+      "Stroke": [
+        0,
+        0,
+        322,
+        276
+      ]
+    },
     "visible_sections": [
       "Stroke"
     ]
@@ -25,6 +43,21 @@
   "side_wide": {
     "more_button": false,
     "overflow": [],
+    "problems": [],
+    "section_geometry": {
+      "Advanced": [
+        0,
+        197,
+        482,
+        79
+      ],
+      "Stroke": [
+        0,
+        0,
+        482,
+        191
+      ]
+    },
     "visible_sections": [
       "Stroke",
       "Advanced"
@@ -38,6 +71,15 @@
       "extra",
       "only_extra"
     ],
+    "problems": [],
+    "section_geometry": {
+      "Stroke": [
+        0,
+        0,
+        240,
+        102
+      ]
+    },
     "visible_sections": [
       "Stroke"
     ]
@@ -49,6 +91,15 @@
       "extra",
       "only_extra"
     ],
+    "problems": [],
+    "section_geometry": {
+      "Stroke": [
+        0,
+        0,
+        240,
+        192
+      ]
+    },
     "visible_sections": [
       "Stroke"
     ]
@@ -56,6 +107,21 @@
   "strip_wide": {
     "more_button": false,
     "overflow": [],
+    "problems": [],
+    "section_geometry": {
+      "Advanced": [
+        246,
+        0,
+        240,
+        352
+      ],
+      "Stroke": [
+        0,
+        0,
+        240,
+        352
+      ]
+    },
     "visible_sections": [
       "Stroke",
       "Advanced"

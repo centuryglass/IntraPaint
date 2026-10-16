@@ -1,14 +1,16 @@
 """Tests DockPanel: priority placement in every size class, the "More" overflow, re-arranging without rebuilding
-widgets, and a layout snapshot at each class."""
+widgets, scrolling, and a layout snapshot at each class."""
 import os
 import sys
 
-from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QApplication, QCheckBox, QLineEdit, QSlider, QWidget
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtWidgets import QApplication, QCheckBox, QLineEdit, QPushButton, QScrollArea, QSlider, QWidget
 
 from src.ui.layout.dock_panel import P1, P2, P3, DockPanel, PanelLayout
-from src.ui.layout.panel_size_class import Orientation, SizeClass
+from src.ui.layout.panel_size_class import (Orientation, SizeClass, STRIP_SECTION_MAX_WIDTH,
+                                            STRIP_SECTION_MIN_WIDTH)
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
+from test.ui.ui_capture import PanelHost, find_layout_problems
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -34,6 +36,16 @@ class SamplePanel(DockPanel):
         advanced = ui.section('Advanced')
         advanced.add(self.extra, P3)
         advanced.add(self.only_extra, P3)
+
+
+class OversizedPanel(DockPanel):
+    """A tall column of P1 fields and a P1 button wider than a compact side panel, so neither fits by priority alone."""
+
+    def build(self, ui: PanelLayout) -> None:
+        fields = ui.section('Fields')
+        for i in range(6):
+            fields.add(QLineEdit(str(i)), P1)
+        ui.section('Wide').add(QPushButton('A button label far wider than a compact side panel'), P1)
 
 
 class DockPanelTest(IntraPaintTestCase):
@@ -139,17 +151,52 @@ class DockPanelTest(IntraPaintTestCase):
         with self.assertRaises(ValueError):
             self.panel.sections[0].add(QCheckBox(), 4)
 
+    def test_content_that_cannot_shrink_scrolls_on_both_axes(self) -> None:
+        """Content taller than a strip or wider than a side panel gets a scroll bar on that axis, so none is cut off."""
+        panel = OversizedPanel()
+        host = PanelHost(panel)
+        try:
+            for orientation, size in ((Orientation.STRIP, STRIP_SIZES[SizeClass.COMPACT]),
+                                      (Orientation.SIDE, QSize(150, 600))):
+                with self.subTest(orientation=orientation):
+                    panel.set_host_facts(orientation, size)
+                    host.capture(size)
+                    scroll_area = panel.findChild(QScrollArea)
+                    cross_bar = scroll_area.verticalScrollBar() if orientation == Orientation.STRIP \
+                        else scroll_area.horizontalScrollBar()
+                    # The bar's visibility updates on a posted event, so check what decides it: a scroll range, and
+                    # a policy that lets Qt show the bar for it.
+                    self.assertGreater(cross_bar.maximum(), 0)
+                    policy = scroll_area.verticalScrollBarPolicy() if orientation == Orientation.STRIP \
+                        else scroll_area.horizontalScrollBarPolicy()
+                    self.assertNotEqual(policy, Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        finally:
+            host.release()
+
     def test_layout_snapshots(self) -> None:
-        """Where each control sits, and which sections show, at each class in both orientations."""
+        """Where each control sits, which sections show, their geometry and any layout problems, at each class in
+        both orientations."""
         result: dict[str, dict] = {}
         names = {id(self.panel.size_slider): 'size', id(self.panel.name_field): 'name', id(self.panel.flag): 'flag',
                  id(self.panel.extra): 'extra', id(self.panel.only_extra): 'only_extra'}
-        for orientation, sizes in ((Orientation.SIDE, SIDE_SIZES), (Orientation.STRIP, STRIP_SIZES)):
-            for size_class, size in sizes.items():
-                self.panel.set_host_facts(orientation, size)
-                result[f'{orientation.value}_{size_class.name.lower()}'] = {
-                    'overflow': [names[id(w)] for w in self.panel.overflow_widgets],
-                    'visible_sections': [s.title for s in self.panel.sections if not s.widget.isHidden()],
-                    'more_button': not self.panel.header.more_button.isHidden(),
-                }
+        host = PanelHost(self.panel)
+        try:
+            for orientation, sizes in ((Orientation.SIDE, SIDE_SIZES), (Orientation.STRIP, STRIP_SIZES)):
+                for size_class, size in sizes.items():
+                    self.panel.set_host_facts(orientation, size)
+                    host.capture(size)
+                    shown = [s for s in self.panel.sections if not s.widget.isHidden()]
+                    result[f'{orientation.value}_{size_class.name.lower()}'] = {
+                        'overflow': [names[id(w)] for w in self.panel.overflow_widgets],
+                        'visible_sections': [s.title for s in shown],
+                        'section_geometry': {s.title: list(s.widget.geometry().getRect()) for s in shown},
+                        'more_button': not self.panel.header.more_button.isHidden(),
+                        'problems': find_layout_problems(self.panel),
+                    }
+                    if orientation == Orientation.STRIP:
+                        for section in shown:
+                            self.assertGreaterEqual(section.widget.width(), STRIP_SECTION_MIN_WIDTH)
+                            self.assertLessEqual(section.widget.width(), STRIP_SECTION_MAX_WIDTH)
+        finally:
+            host.release()
         self.assert_json_matches_snapshot(result, os.path.join(SNAPSHOT_DIR, 'dock_panel_sample.json'))

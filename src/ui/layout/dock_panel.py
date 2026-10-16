@@ -11,13 +11,14 @@ area without rebuilding them, so their state survives.
 - Each section is a `src.ui.widget.panel_section.PanelSection`, available as `DockSection.widget` for summaries,
   header actions and remembered expansion.
 - Side panels stack sections in one column and scroll vertically. Strip panels put sections in fixed-width columns and
-  scroll horizontally.
+  scroll horizontally. Both also scroll along the other axis when content can't shrink to fit, so nothing is cut off
+  out of reach.
 - Subclasses override `arrange` for a different arrangement. Call `super().arrange` to keep the default placement.
 """
 from dataclasses import dataclass, field
 from typing import Optional
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QSize
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QBoxLayout, QFrame, QLabel, QScrollArea, QSizePolicy, QVBoxLayout, QWidget
 
@@ -192,10 +193,6 @@ class DockPanel(QWidget):
         direction = QBoxLayout.Direction.LeftToRight if horizontal else QBoxLayout.Direction.TopToBottom
         self._section_layout.setDirection(direction)
         self._body_layout.setDirection(direction)
-        h_policy = Qt.ScrollBarPolicy.ScrollBarAsNeeded if horizontal else Qt.ScrollBarPolicy.ScrollBarAlwaysOff
-        v_policy = Qt.ScrollBarPolicy.ScrollBarAlwaysOff if horizontal else Qt.ScrollBarPolicy.ScrollBarAsNeeded
-        self._scroll.setHorizontalScrollBarPolicy(h_policy)
-        self._scroll.setVerticalScrollBarPolicy(v_policy)
         for section in self._layout_model.sections:
             if horizontal:
                 section.widget.setMinimumWidth(STRIP_SECTION_MIN_WIDTH)
