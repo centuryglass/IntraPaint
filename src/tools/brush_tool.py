@@ -19,7 +19,6 @@ from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
 from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
 from src.ui.panel.tool_control_panels.stroke_block import StrokeToolPanel
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.geometry_utils import closest_point_keeping_angle, closest_point_at_angle_option
@@ -400,7 +399,7 @@ class BrushTool(BaseTool):
         """Cache tablet data when received."""
         assert event is not None
         control_panel = self.get_control_panel()
-        if isinstance(control_panel, (BrushToolPanel, StrokeToolPanel)):
+        if isinstance(control_panel, StrokeToolPanel):
             control_panel.show_pressure_checkboxes()
             Cache().set(Cache.EXPECT_TABLET_INPUT, True)
         if event.pointerType() is not None:
@@ -428,7 +427,7 @@ class BrushTool(BaseTool):
         self._tablet_y_tilt = event.yTilt()
         self._tablet_event_timestamp = datetime.datetime.now().timestamp()
         control_panel = self.get_control_panel()
-        if isinstance(control_panel, (BrushToolPanel, StrokeToolPanel)):
+        if isinstance(control_panel, StrokeToolPanel):
             control_panel.show_pressure_checkboxes()
         return True
 

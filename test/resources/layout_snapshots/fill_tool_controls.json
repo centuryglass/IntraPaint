@@ -2,51 +2,62 @@
   "minimum": {
     "problems": [],
     "size": [
-      302,
-      196
+      224,
+      204
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: QLabel 'Pattern:' is 0x29, minimum 47x17",
-      "squeezed: FillStyleComboBox is 127x32, minimum 184x32",
-      "squeezed: QLabel 'Color threshold:' is 0x29, minimum 94x17",
-      "squeezed: CheckBox 'Paint selection only' is 133x22, minimum 140x22"
+      "overlap: PanelSection[0]/QWidget/QWidget/ColorPairWidget and PanelSection[0]/QWidget/QWidget/QLabel 'Pattern' share 14x48",
+      "squeezed: PanelSection[0] is 94x102, minimum 206x102",
+      "squeezed: PanelSection[0]/QWidget is 94x76, minimum 206x76",
+      "squeezed: PanelSection[0]/QWidget/QWidget is 94x48, minimum 206x48",
+      "squeezed: PanelSection[0]/QWidget/QWidget/QLabel 'Pattern' is 27x48, minimum 43x17",
+      "squeezed: PanelSection[0]/QWidget/QWidget/FillStyleComboBox is 27x32, minimum 103x32",
+      "squeezed: PanelSection[0]/QWidget/CheckBox 'Only inside selection' is 94x22, minimum 146x22",
+      "squeezed: PanelSection[1] is 94x78, minimum 116x78",
+      "squeezed: PanelSection[1]/QWidget is 94x52, minimum 116x52",
+      "clipped: PanelSection[1]/QWidget/SliderField shows 94x24 of 110x24",
+      "squeezed: PanelSection[1]/QWidget/CheckBox 'Sample Merged' is 94x22, minimum 116x22"
     ],
     "size": [
-      151,
-      196
+      112,
+      204
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      302,
-      196
+      224,
+      204
     ]
   },
   "short": {
     "problems": [
-      "overlap: ColorPairWidget and QLabel 'Pattern:' share 47x11",
-      "overlap: ColorPairWidget and QLabel 'Color threshold:' share 48x11",
-      "squeezed: QLabel 'Pattern:' is 47x11, minimum 47x17",
-      "squeezed: FillStyleComboBox is 184x11, minimum 184x32",
-      "squeezed: QLabel 'Color threshold:' is 94x11, minimum 94x17",
-      "squeezed: FloatSliderSpinbox is 184x11, minimum 84x30",
-      "squeezed: FloatSliderSpinbox/QSlider is 112x7, minimum 12x23",
-      "squeezed: FloatSliderSpinbox/QDoubleSpinBox is 62x7, minimum 62x26",
-      "squeezed: CheckBox 'Sample Merged' is 284x11, minimum 116x22",
-      "squeezed: CheckBox 'Paint selection only' is 284x12, minimum 140x22"
+      "overlap: PanelSection[1]/QWidget/SliderField and PanelSection[1]/QWidget/CheckBox 'Sample Merged' share 206x6",
+      "squeezed: PanelSection[0] is 206x39, minimum 206x102",
+      "squeezed: PanelSection[0]/_HeaderButton 'Paint' is 202x20, minimum 16x26",
+      "squeezed: PanelSection[0]/QWidget is 206x19, minimum 206x76",
+      "squeezed: PanelSection[0]/QWidget/QWidget is 206x7, minimum 206x48",
+      "clipped: PanelSection[0]/QWidget/QWidget/ColorPairWidget shows 48x7 of 48x48",
+      "squeezed: PanelSection[0]/QWidget/QWidget/QLabel 'Pattern' is 43x7, minimum 43x17",
+      "squeezed: PanelSection[0]/QWidget/QWidget/FillStyleComboBox is 103x7, minimum 103x32",
+      "squeezed: PanelSection[0]/QWidget/CheckBox 'Only inside selection' is 206x6, minimum 146x22",
+      "squeezed: PanelSection[1] is 206x39, minimum 116x78",
+      "squeezed: PanelSection[1]/_HeaderButton 'Region' is 202x20, minimum 16x26",
+      "squeezed: PanelSection[1]/QWidget is 206x19, minimum 116x52",
+      "clipped: PanelSection[1]/QWidget/SliderField shows 206x19 of 206x24",
+      "squeezed: PanelSection[1]/QWidget/CheckBox 'Sample Merged' is 206x6, minimum 116x22"
     ],
     "size": [
-      302,
-      98
+      224,
+      102
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      302,
+      224,
       1200
     ]
   },
@@ -54,7 +65,7 @@
     "problems": [],
     "size": [
       1600,
-      196
+      204
     ]
   }
 }
