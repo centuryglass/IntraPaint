@@ -58,6 +58,9 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 TOOLS_DOCK_TITLE = _tr('Tools')
 GENERATION_DOCK_TITLE = _tr('Image Generation')
 CONTROLNET_DOCK_TITLE = _tr('ControlNet')
+LAYERS_DOCK_TITLE = _tr('Layers')
+COLOR_DOCK_TITLE = _tr('Color')
+NAVIGATION_DOCK_TITLE = _tr('Navigation')
 
 DEFAULT_LOADING_MESSAGE = _tr('Loading...')
 
@@ -66,14 +69,20 @@ CLAMP_DELAY_MS = 50
 ICON_PATH_TOOLS_DOCK = f'{PROJECT_DIR}/resources/icons/tabs/wrench.svg'
 ICON_PATH_GENERATION_DOCK = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
 ICON_PATH_CONTROLNET_DOCK = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
+ICON_PATH_LAYERS_DOCK = f'{PROJECT_DIR}/resources/icons/tabs/layers.svg'
+ICON_PATH_COLOR_DOCK = f'{PROJECT_DIR}/resources/icons/tabs/colors.svg'
+ICON_PATH_NAVIGATION_DOCK = f'{PROJECT_DIR}/resources/icons/tabs/navigation.svg'
 
 # A saved dock layout carries this version, and `restore_dock_state` rejects any other. Increase it when the docks
 # change in a way an older layout can't describe.
-DOCK_STATE_VERSION = 1
+DOCK_STATE_VERSION = 2
 
 # First-run dock sizes, across the dock area: width for a side area, height for a strip area.
 DEFAULT_SIDE_DOCK_WIDTH = 340
 DEFAULT_STRIP_DOCK_HEIGHT = 240
+
+# First-run share of a side area's height (or a strip area's width) that the upper dock group takes:
+UPPER_GROUP_SHARE = 0.6
 
 
 class DockID(StrEnum):
@@ -81,6 +90,9 @@ class DockID(StrEnum):
     TOOLS = 'tools_dock'
     GENERATION = 'generation_dock'
     CONTROLNET = 'controlnet_dock'
+    LAYERS = 'layers_dock'
+    COLOR = 'color_dock'
+    NAVIGATION = 'navigation_dock'
 
 
 class MainWindow(QMainWindow):
@@ -167,9 +179,15 @@ class MainWindow(QMainWindow):
                                           QIcon(ICON_PATH_GENERATION_DOCK), KeyConfig.SELECT_GENERATOR_TAB)
         self._controlnet_dock = PanelDock(CONTROLNET_DOCK_TITLE, DockID.CONTROLNET, self,
                                           QIcon(ICON_PATH_CONTROLNET_DOCK), KeyConfig.SELECT_CONTROLNET_TAB)
+        self._layers_dock = PanelDock(LAYERS_DOCK_TITLE, DockID.LAYERS, self, QIcon(ICON_PATH_LAYERS_DOCK))
+        self._color_dock = PanelDock(COLOR_DOCK_TITLE, DockID.COLOR, self, QIcon(ICON_PATH_COLOR_DOCK))
+        self._navigation_dock = PanelDock(NAVIGATION_DOCK_TITLE, DockID.NAVIGATION, self,
+                                          QIcon(ICON_PATH_NAVIGATION_DOCK))
         self._rails = DockRails(self)
-        for dock in self.docks:
+        for dock in self.upper_docks:
             self._rails.add_dock(dock, DockGroup.UPPER)
+        for dock in self.lower_docks:
+            self._rails.add_dock(dock, DockGroup.LOWER)
         self._rails.set_tools_dock(self._tools_dock)
         self._rails.set_generation_dock(self._generation_dock)
         self._rails.generate_button.clicked.connect(self.generate_signal)
@@ -183,9 +201,34 @@ class MainWindow(QMainWindow):
         self.resizeEvent(None)
 
     @property
-    def docks(self) -> list[PanelDock]:
-        """Returns every dock, in the order they are tabified in the first-run layout."""
+    def upper_docks(self) -> list[PanelDock]:
+        """Returns the docks tabified in the upper group of the first-run layout, in tab order."""
         return [self._tools_dock, self._generation_dock, self._controlnet_dock]
+
+    @property
+    def lower_docks(self) -> list[PanelDock]:
+        """Returns the docks tabified in the lower group of the first-run layout, in tab order."""
+        return [self._layers_dock, self._color_dock, self._navigation_dock]
+
+    @property
+    def docks(self) -> list[PanelDock]:
+        """Returns every dock, upper group first."""
+        return [*self.upper_docks, *self.lower_docks]
+
+    @property
+    def layers_dock(self) -> PanelDock:
+        """Returns the dock holding the layer panel."""
+        return self._layers_dock
+
+    @property
+    def color_dock(self) -> PanelDock:
+        """Returns the dock holding the color picker."""
+        return self._color_dock
+
+    @property
+    def navigation_dock(self) -> PanelDock:
+        """Returns the dock holding the navigation panel."""
+        return self._navigation_dock
 
     @property
     def tools_dock(self) -> PanelDock:
@@ -218,27 +261,43 @@ class MainWindow(QMainWindow):
     def reset_dock_layout(self) -> None:
         """Puts every dock back in the first-run layout and opens it.
 
-        The docks are tabified in the right area, or in the bottom area on a screen taller than wide, with Tools in
-        front.
+        The upper docks (Tools, Image generation, ControlNet) are tabified in the right area, or in the bottom area
+        on a screen taller than wide, with Tools in front. The lower docks (Layers, Color, Navigation) are tabified
+        in a second group under it, or beside it in the bottom area, with Layers in front. Any dock can be dragged
+        into either group.
         """
         self.set_image_selector_visible(False)
         screen_size = get_screen_size(self)
         portrait = screen_size.height() > screen_size.width()
         area = Qt.DockWidgetArea.BottomDockWidgetArea if portrait else Qt.DockWidgetArea.RightDockWidgetArea
-        first_dock = self.docks[0]
+        group_split = Qt.Orientation.Horizontal if portrait else Qt.Orientation.Vertical
+        first_dock = self.upper_docks[0]
+        first_lower_dock = self.lower_docks[0]
         # Each dock is shown while it is placed, and docks are moved without removeDockWidget. Tabifying hidden docks,
-        # or removing and re-adding tabified ones, leaves stale tab bars drawn over the window.
+        # or removing and re-adding tabified ones, leaves stale tab bars drawn over the window. The upper group is
+        # placed first, then the lower group after it in the split direction. Without that direction, or when
+        # splitting after tabifying, Qt merges the groups into one tab bar.
         for dock in self.docks:
-            dock.setFloating(False)
-            self.addDockWidget(area, dock)
-            dock.show()
-        for dock in self.docks:
-            if dock is not first_dock:
-                self.tabifyDockWidget(first_dock, dock)
+            dock.hide()
+        for docks in (self.upper_docks, self.lower_docks):
+            for dock in docks:
+                dock.setFloating(False)
+                self.addDockWidget(area, dock, group_split)
+                dock.show()
+            for dock in docks[1:]:
+                dock.hide()
+            for dock in docks[1:]:
+                self.tabifyDockWidget(docks[0], dock)
+                dock.show()
+        group_docks = [first_dock, first_lower_dock]
+        group_sizes = [UPPER_GROUP_SHARE, 1 - UPPER_GROUP_SHARE]
         if portrait:
             self.resizeDocks([first_dock], [DEFAULT_STRIP_DOCK_HEIGHT], Qt.Orientation.Vertical)
+            self.resizeDocks(group_docks, [round(size * 1000) for size in group_sizes], Qt.Orientation.Horizontal)
         else:
             self.resizeDocks([first_dock], [DEFAULT_SIDE_DOCK_WIDTH], Qt.Orientation.Horizontal)
+            self.resizeDocks(group_docks, [round(size * 1000) for size in group_sizes], Qt.Orientation.Vertical)
+        first_lower_dock.raise_()
         first_dock.raise_()
         for dock in self.docks:
             dock.set_open(True)
@@ -340,6 +399,11 @@ class MainWindow(QMainWindow):
             for dock in self._docks_open_before_selector:
                 if dock.is_available:
                     dock.show()
+            # Qt forgets split sizes while every dock in an area is hidden, so the saved sizes are put back:
+            if self._dock_state_before_selector is not None:
+                self.restoreState(self._dock_state_before_selector, DOCK_STATE_VERSION)
+                for dock in self.docks:
+                    dock.sync_availability()
             for dock in self._docks_showing_before_selector:
                 dock.raise_()
             self._dock_state_before_selector = None

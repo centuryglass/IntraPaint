@@ -1,28 +1,24 @@
-"""Provides buttons to select between tools, renders the active tool's control panel, and renders an extra tabbed
-   area with layer, navigation, and color picking interfaces."""
+"""Provides buttons to select between tools and renders the active tool's control panel."""
 from typing import Optional
 
 from PySide6.QtCore import Qt, Signal, QSize, QMargins, QObject
-from PySide6.QtGui import QResizeEvent, QIcon
+from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import (QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QScrollArea, QGridLayout,
-                               QLayout, QTabWidget)
+                               QLayout)
 
 from src.tools.base_tool import BaseTool
-from src.ui.layout.draggable_divider import DraggableDivider
 from src.ui.layout.reactive_layout_widget import ReactiveLayoutWidget
 from src.ui.widget.tool_button import ToolButton
 from src.util.layout import clear_layout
 
 TOOL_LIST_STRETCH = 0
 TOOL_PANEL_STRETCH = 50
-LAYER_PANEL_STRETCH = 30
 
 MIN_SIZE_FOR_TOOL_LABEL = QSize(300, 300)
 
 
 class ToolPanel(QWidget):
-    """Provides buttons to select between tools, renders the active tool's control panel, and renders an extra tabbed
-       area with where additional small panels can be added."""
+    """Provides buttons to select between tools and renders the active tool's control panel."""
 
     panel_toggled = Signal(bool)
     tool_selected = Signal(QObject)
@@ -32,10 +28,6 @@ class ToolPanel(QWidget):
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
         self._orientation = Qt.Orientation.Vertical
         self._layout = QVBoxLayout(self)
-        self._divider = DraggableDivider()
-
-        self._utility_tab_panel = QTabWidget()
-        self._utility_tab_panels: list[QWidget] = []
 
         # Setup tool list:
         self._tool_button_layout = QGridLayout()
@@ -102,16 +94,6 @@ class ToolPanel(QWidget):
             button.setParent(None)
         self._build_tool_button_layout()
 
-    def add_utility_widget_tab(self, widget: QWidget, tab_name: str, icon: Optional[QIcon] = None) -> None:
-        """Adds a tabbed utility widget to the tabs at the end of the panel."""
-        self._utility_tab_panels.append(widget)
-        if hasattr(widget, 'set_orientation'):
-            widget.set_orientation(self._orientation)
-        if icon is not None:
-            self._utility_tab_panel.addTab(widget, icon, tab_name)
-        else:
-            self._utility_tab_panel.addTab(widget, tab_name)
-
     @property
     def orientation(self) -> Qt.Orientation:
         """Gets the current panel orientation."""
@@ -129,7 +111,6 @@ class ToolPanel(QWidget):
             return self._layout.stretch(idx)
         tool_list_stretch = _get_stretch(self._tool_button_layout, TOOL_LIST_STRETCH)
         tool_panel_stretch = _get_stretch(self._tool_scroll_area, TOOL_PANEL_STRETCH)
-        layer_panel_stretch = _get_stretch(self._utility_tab_panel, LAYER_PANEL_STRETCH)
 
         # Replace layout if orientation changed:
         layout_class = QHBoxLayout if self._orientation == Qt.Orientation.Horizontal else QVBoxLayout
@@ -144,10 +125,7 @@ class ToolPanel(QWidget):
         if self._layout.count() == 0:
             self._layout.addLayout(self._tool_button_layout, stretch=tool_list_stretch)
             self._layout.addWidget(self._tool_scroll_area, stretch=tool_panel_stretch)
-            self._layout.addWidget(self._divider)
-            self._layout.addWidget(self._utility_tab_panel, stretch=layer_panel_stretch)
-            for widget in (self._tool_scroll_area, self._divider, self._utility_tab_panel):
-                widget.show()
+            self._tool_scroll_area.show()
             if self._active_tool_panel is not None and hasattr(self._active_tool_panel, 'set_orientation'):
                 self._active_tool_panel.set_orientation(self._orientation)
         self._build_tool_button_layout()
@@ -159,9 +137,6 @@ class ToolPanel(QWidget):
         if self._orientation == orientation:
             return
         self._orientation = orientation
-        for tab in self._utility_tab_panels:
-            if hasattr(tab, 'set_orientation'):
-                tab.set_orientation(orientation)
         self._build_layout()
 
     def setup_active_tool(self, active_tool: Optional[QObject]) -> None:

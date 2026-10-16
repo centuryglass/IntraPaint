@@ -65,6 +65,9 @@ class MainWindowDockTest(IntraPaintTestCase):
         if fill:
             window.tools_dock.set_content(QLabel('tools'))
             window.generation_dock.set_content(QLabel('generation'))
+            window.layers_dock.set_content(QLabel('layers'))
+            window.color_dock.set_content(QLabel('color'))
+            window.navigation_dock.set_content(QLabel('navigation'))
         window.resize(size)
         window.show()
         window.layout().activate()
@@ -83,17 +86,23 @@ class MainWindowDockTest(IntraPaintTestCase):
         return [[tab_bar.tabText(i) for i in range(tab_bar.count())] for tab_bar in bars]
 
     def test_first_run_layout(self) -> None:
-        """Every dock starts in the right area, tabified behind Tools, which is showing at its default width."""
+        """Every dock starts in the right area. Tools and Layers lead the upper and lower groups, and Tools shows at its
+        default width above Layers."""
         window = self.window
         for dock in window.docks:
             self.assertEqual(window.dockWidgetArea(dock), Area.RightDockWidgetArea)
+        self.assertEqual(self._group(window, window.layers_dock),
+                         {dock.objectName() for dock in window.lower_docks})
+        self.assertTrue(window.layers_dock.is_showing)
+        self.assertLess(window.tools_dock.geometry().bottom(), window.layers_dock.geometry().top())
         self.assertEqual(self._group(window, window.tools_dock),
                          {window.tools_dock.objectName(), window.generation_dock.objectName()})
         self.assertTrue(window.tools_dock.is_showing)
         self.assertFalse(window.generation_dock.is_showing)
         self.assertGreaterEqual(window.tools_dock.width(), DEFAULT_SIDE_DOCK_WIDTH)
-        self.assertEqual(self._tab_bar_texts(window),
-                         [[window.tools_dock.windowTitle(), window.generation_dock.windowTitle()]])
+        self.assertEqual(sorted(self._tab_bar_texts(window)),
+                         sorted([[window.tools_dock.windowTitle(), window.generation_dock.windowTitle()],
+                                 [dock.windowTitle() for dock in window.lower_docks]]))
 
     def test_first_run_layout_on_portrait_screen(self) -> None:
         """On a screen taller than wide, the first-run layout uses the bottom area."""
@@ -162,10 +171,12 @@ class MainWindowDockTest(IntraPaintTestCase):
         source.removeDockWidget(source.tools_dock)
         source.addDockWidget(Area.BottomDockWidgetArea, source.tools_dock)
         source.tools_dock.show()
+        source.controlnet_dock.set_content(QLabel('controlnet'))
         source.layout().activate()
         saved = source.save_dock_state()
 
         restored = self._new_window()
+        restored.controlnet_dock.set_content(QLabel('controlnet'))
         self.assertTrue(restored.restore_dock_state(saved))
         restored.layout().activate()
         for source_dock, restored_dock in zip(source.docks, restored.docks):
@@ -190,8 +201,8 @@ class MainWindowDockTest(IntraPaintTestCase):
         restored.layout().activate()
         self.assertTrue(restored.generation_dock.is_showing)
         self.assertFalse(restored.tools_dock.is_showing)
-        self.assertEqual(self._tab_bar_texts(restored),
-                         [[restored.tools_dock.windowTitle(), restored.generation_dock.windowTitle()]])
+        self.assertIn([restored.tools_dock.windowTitle(), restored.generation_dock.windowTitle()],
+                      self._tab_bar_texts(restored))
 
     def test_invalid_saved_layout_uses_first_run_layout(self) -> None:
         """Garbage text, an empty state and a state with another version restore nothing and keep the default."""
@@ -226,7 +237,7 @@ class MainWindowDockTest(IntraPaintTestCase):
         small.layout().activate()
         window_rect = small.rect()
         for dock in small.docks:
-            if not dock.isHidden():
+            if dock.is_showing:
                 self.assertTrue(window_rect.contains(dock.geometry()), dock.objectName())
         self.assertFalse(small.centralWidget().geometry().isEmpty())
 
@@ -279,8 +290,8 @@ class MainWindowDockTest(IntraPaintTestCase):
         self.assertTrue(window.tools_dock.is_showing)
 
     def test_no_stray_tab_bars_after_reset(self) -> None:
-        """After moving docks around and resetting, the only tab bar inside the window is the one for the right
-        area's group."""
+        """After moving docks around and resetting, the only tab bars inside the window are the two for the right
+        area's groups."""
         window = self.window
         window.removeDockWidget(window.generation_dock)
         window.addDockWidget(Area.LeftDockWidgetArea, window.generation_dock)
@@ -289,8 +300,9 @@ class MainWindowDockTest(IntraPaintTestCase):
         window.reset_dock_layout()
         window.reset_dock_layout()
         window.layout().activate()
-        self.assertEqual(self._tab_bar_texts(window),
-                         [[window.tools_dock.windowTitle(), window.generation_dock.windowTitle()]])
+        self.assertEqual(sorted(self._tab_bar_texts(window)),
+                         sorted([[window.tools_dock.windowTitle(), window.generation_dock.windowTitle()],
+                                 [dock.windowTitle() for dock in window.lower_docks]]))
 
     def test_offscreen_floating_dock_moves_on_screen(self) -> None:
         """A restored floating dock that no display shows moves onto the window's display."""
