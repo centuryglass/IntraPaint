@@ -597,18 +597,18 @@
         "label": "Zoom in",
         "category": "Menu Shortcuts",
         "subcategory": "View Menu",
-        "description": "Zoom in on image content. The Zoom in key under Navigation also works without this shortcut.",
+        "description": "Zoom in on image content.",
         "type": "string",
-        "default": "",
+        "default": "Ctrl+Shift+=",
         "saved": true
     },
     "zoom_out_shortcut": {
         "label": "Zoom out",
         "category": "Menu Shortcuts",
         "subcategory": "View Menu",
-        "description": "Zoom out from image content. The Zoom out key under Navigation also works without this shortcut.",
+        "description": "Zoom out from image content.",
         "type": "string",
-        "default": "",
+        "default": "Ctrl+Shift+-",
         "saved": true
     },
     "reset_view_shortcut": {
@@ -617,7 +617,7 @@
         "subcategory": "View Menu",
         "description": "Fit the whole image in the view and center it.",
         "type": "string",
-        "default": "",
+        "default": "Ctrl+Alt+0",
         "saved": true
     },
     "zoom_to_gen_area_shortcut": {
@@ -626,7 +626,7 @@
         "subcategory": "View Menu",
         "description": "Center the view on the image generation area and zoom to fit it.",
         "type": "string",
-        "default": "",
+        "default": "Ctrl+Alt+Z",
         "saved": true
     },
     "toggle_control_hints_shortcut": {
@@ -635,7 +635,7 @@
         "subcategory": "View Menu",
         "description": "Show or hide the active tool control hints below the image.",
         "type": "string",
-        "default": "",
+        "default": "Ctrl+Alt+H",
         "saved": true
     },
     "navigation_window_shortcut": {

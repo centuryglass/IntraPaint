@@ -266,6 +266,7 @@ class KeyConfig(Config, metaclass=Singleton):
     REDO_SHORTCUT: str
     RELOAD_SHORTCUT: str
     RESET_COLORS_SHORTCUT: str
+    RESET_VIEW_SHORTCUT: str
     RESIZE_CANVAS_SHORTCUT: str
     RESTORE_CHOICES_SHORTCUT: str
     ROTATE_CCW_KEY: str
@@ -297,11 +298,15 @@ class KeyConfig(Config, metaclass=Singleton):
     SPEED_MODIFIER: str
     SWAP_COLORS_SHORTCUT: str
     TEXT_TOOL_KEY: str
+    TOGGLE_CONTROL_HINTS_SHORTCUT: str
     TOGGLE_RULERS_SHORTCUT: str
     TOOL_ACTION_HOTKEY: str
     TRANSFORM_TOOL_KEY: str
     UNDO_SHORTCUT: str
     UPDATE_METADATA_SHORTCUT: str
     ZOOM_IN: str
+    ZOOM_IN_SHORTCUT: str
     ZOOM_OUT: str
+    ZOOM_OUT_SHORTCUT: str
     ZOOM_TOGGLE: str
+    ZOOM_TO_GEN_AREA_SHORTCUT: str
