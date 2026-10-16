@@ -4,8 +4,8 @@
   last docked in, so it follows the dock between edges. A floating dock's button stays where it was.
 - Side rails (left and right) are `SIDE_RAIL_WIDTH` wide, with an icon and keycap per button. Strip rails (top and
   bottom) show icon, name and keycap.
-- Clicking a button shows and raises its dock, or hides it if it is showing (`PanelDock.toggle_from_key`). A dock with
-  no content has no button.
+- The buttons act as the docks' tabs. Clicking a button opens its dock in place of the open dock of its tab group, or
+  closes it if it is showing (`PanelDock.toggle_from_key`). A dock with no content has no button.
 - The recent tools and the Generate button sit in the rail of the Tools dock and of the Image Generation dock. The
   recent tools fill only the space the other buttons leave, so they never raise the window's minimum size. Their
   maximum count is `AppConfig.TOOLBAR_TOOL_BUTTON_COUNT`.

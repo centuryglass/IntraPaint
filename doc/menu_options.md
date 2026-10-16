@@ -212,7 +212,7 @@ Lists each panel docked around the image: Tools, Image Generation, ControlNet, L
 Puts every panel back where it starts on first run, in two tabbed groups on the right side of the window (or at the bottom on a screen taller than it is wide), and opens all of them.
 
 #### Move all panels to edge
-Stacks every panel as tabs in one group along the chosen window edge: Left, Right, Top, or Bottom. Hidden panels move too, and stay hidden.
+Stacks every panel in one group along the chosen window edge: Left, Right, Top, or Bottom. The first open panel stays open, and the others are closed until you open them from their icons.
 
 ### Show navigation window (Ctrl+Alt+W)
 Opens another window with a view of the entire edited image. This can be used to adjust the image viewport within the main window, and to move the image generation area.  The Navigation tab on the tool panel behaves identically to this window.

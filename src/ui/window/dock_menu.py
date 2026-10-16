@@ -2,18 +2,19 @@
 
 - The menu names its targets: another tab group to join, or a window edge. Directions relative to a dock are not
   offered, because the nested dock layout gives them no single meaning.
-- A moved dock opens. "Move all panels to edge" keeps closed docks closed.
-- Docks are shown while they are placed, and every move ends with `_settle`, which hides the tab bars Qt leaves
-  drawn over the window. `_settle` relies on `MainWindow` putting tabs above docks.
+- A moved dock opens in front of its group. "Move all panels to edge" keeps the first open dock open and closes the
+  rest, since a group shows one dock at a time (see `src.ui.window.dock_groups`).
+- Moves run inside `PanelDock.placing_docks`, so docking a floating dock along the way closes nothing.
 """
 import logging
 from enum import Enum
 from typing import Optional
 
-from PySide6.QtCore import Qt, QRect
-from PySide6.QtWidgets import QApplication, QMainWindow, QMenu, QTabBar, QWidget
+from PySide6.QtCore import QByteArray, Qt
+from PySide6.QtWidgets import QApplication, QMainWindow, QMenu, QWidget
 
-from src.ui.window.dock_state import move_dock_to_area_start, restore_state_without_stale_tab_bars
+from src.ui.window.dock_groups import tab_groups
+from src.ui.window.dock_state import move_dock_to_area_start
 from src.ui.window.panel_dock import PanelDock
 
 logger = logging.getLogger(__name__)
@@ -58,56 +59,11 @@ def edge_title(edge: DockEdge) -> str:
     return _EDGE_TITLES[edge]
 
 
-def _is_open(dock: PanelDock) -> bool:
-    return dock.is_available and not dock.isHidden()
-
-
-def tab_groups(window: QMainWindow, docks: list[PanelDock]) -> list[list[PanelDock]]:
-    """Returns the docked tab groups among the open docks, each with its front dock first. Floating docks are left
-    out."""
-    groups: list[list[PanelDock]] = []
-    grouped: set[str] = set()
-    for dock in docks:
-        if not _is_open(dock) or dock.isFloating() or dock.objectName() in grouped:
-            continue
-        group = [dock] + [other for other in window.tabifiedDockWidgets(dock)
-                          if isinstance(other, PanelDock) and _is_open(other)]
-        grouped.update(member.objectName() for member in group)
-        group.sort(key=lambda member: not member.is_showing)
-        groups.append(group)
-    return groups
-
-
 def group_label(group: list[PanelDock]) -> str:
     """Returns a tab group's menu label: its front dock's title, with a count of the others."""
     if len(group) == 1:
         return group[0].windowTitle()
     return GROUP_LABEL.format(front_title=group[0].windowTitle(), count=len(group) - 1)
-
-
-def _settle(window: QMainWindow) -> None:
-    """Hides the tab bars a move left drawn over the window.
-
-    A tab group whose open docks all moved away keeps its closed docks, and Qt keeps drawing that group's last tab bar
-    until the group shows a dock again. A bar is kept only where it sits on top of the front dock of a docked group and
-    lists that group's open docks.
-    """
-    layout = window.layout()
-    if layout is not None:
-        layout.activate()
-    docks = window.findChildren(PanelDock, options=Qt.FindChildOption.FindDirectChildrenOnly)
-    live: list[tuple[QRect, set[str]]] = []
-    for group in tab_groups(window, docks):
-        if len(group) > 1 and group[0].isVisible():
-            live.append((group[0].geometry(), {dock.windowTitle() for dock in group}))
-    for tab_bar in window.findChildren(QTabBar, options=Qt.FindChildOption.FindDirectChildrenOnly):
-        if tab_bar.isHidden():
-            continue
-        bounds = tab_bar.geometry()
-        titles = {tab_bar.tabText(i) for i in range(tab_bar.count())}
-        if not any(dock_bounds.top() == bounds.bottom() + 1 and dock_bounds.left() == bounds.left()
-                   and titles == group_titles for dock_bounds, group_titles in live):
-            tab_bar.hide()
 
 
 def _show_for_placement(dock: PanelDock) -> None:
@@ -116,50 +72,44 @@ def _show_for_placement(dock: PanelDock) -> None:
 
 
 def tab_with(window: QMainWindow, dock: PanelDock, target: PanelDock) -> None:
-    """Moves a dock into a docked target's tab group, in front."""
-    _show_for_placement(dock)
-    window.tabifyDockWidget(target, dock)
-    dock.show()
-    _settle(window)
-    dock.raise_()
+    """Moves a dock into a docked target's tab group, open in front."""
+    with PanelDock.placing_docks():
+        _show_for_placement(dock)
+        window.tabifyDockWidget(target, dock)
+    dock.open_in_group()
 
 
 def move_to_edge(window: QMainWindow, dock: PanelDock, edge: DockEdge) -> None:
     """Moves a dock into a new strip running the full length of a window edge, outside every other strip there: a
     column for Left and Right, a row for Top and Bottom."""
-    _show_for_placement(dock)
-    across = Qt.Orientation.Horizontal if edge in (DockEdge.LEFT, DockEdge.RIGHT) else Qt.Orientation.Vertical
-    window.addDockWidget(edge.value, dock, across)
-    dock.show()
-    if edge in (DockEdge.LEFT, DockEdge.TOP):
-        # addDockWidget appends, which is the side nearest the canvas for Left and Top:
-        reordered = move_dock_to_area_start(window.saveState().data(), edge.value, across, dock.objectName())
-        if reordered is None:
-            logger.warning(f'Could not move {dock.objectName()} to the outer side of its area')
-        else:
-            restore_state_without_stale_tab_bars(window, reordered)
-    _settle(window)
-    dock.raise_()
+    with PanelDock.placing_docks():
+        _show_for_placement(dock)
+        across = Qt.Orientation.Horizontal if edge in (DockEdge.LEFT, DockEdge.RIGHT) else Qt.Orientation.Vertical
+        window.addDockWidget(edge.value, dock, across)
+        dock.show()
+        if edge in (DockEdge.LEFT, DockEdge.TOP):
+            # addDockWidget appends, which is the side nearest the canvas for Left and Top:
+            reordered = move_dock_to_area_start(window.saveState().data(), edge.value, across, dock.objectName())
+            if reordered is None:
+                logger.warning(f'Could not move {dock.objectName()} to the outer side of its area')
+            else:
+                window.restoreState(QByteArray(reordered))
 
 
 def move_all_to_edge(window: QMainWindow, docks: list[PanelDock], edge: DockEdge) -> None:
-    """Moves every dock with content into one tab group along a window edge. The dock in front of the first open
-    group stays in front, and closed docks stay closed."""
+    """Moves every dock with content into one tab group along a window edge. The first open dock stays open in front,
+    or the first dock if none is open, and the others close."""
     docks = [dock for dock in docks if dock.is_available]
     if len(docks) == 0:
         return
-    hidden = [dock for dock in docks if dock.isHidden()]
-    front = next((dock for dock in docks if dock.is_showing), docks[0])
+    front = next((dock for dock in docks if not dock.isHidden()), docks[0])
     leader = docks[0]
     move_to_edge(window, leader, edge)
-    for dock in docks[1:]:
-        _show_for_placement(dock)
-        window.tabifyDockWidget(leader, dock)
-        dock.show()
-    for dock in hidden:
-        dock.hide()
-    _settle(window)
-    front.raise_()
+    with PanelDock.placing_docks():
+        for dock in docks[1:]:
+            dock.setFloating(False)
+            window.tabifyDockWidget(leader, dock)
+    front.open_in_group()
 
 
 def add_move_all_actions(menu: QMenu, window: QMainWindow, docks: list[PanelDock]) -> None:
@@ -171,9 +121,9 @@ def add_move_all_actions(menu: QMenu, window: QMainWindow, docks: list[PanelDock
 
 def build_dock_menu(window: QMainWindow, dock: PanelDock, docks: list[PanelDock],
                     parent: Optional[QWidget] = None) -> QMenu:
-    """Builds the context menu for a dock's tab, title area or rail button.
+    """Builds the context menu for a dock's title area or rail button.
 
-    - "Tab with" lists every other docked tab group, and is disabled when there is none.
+    - "Tab with" lists every other docked tab group, open or closed, and is disabled when there is none.
     - "Move to edge" has one entry per window edge.
     - "Float" or "Dock" toggles floating.
     - "Hide panel" closes the dock, and is left out while it is closed.

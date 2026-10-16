@@ -1,16 +1,19 @@
-"""Edits to the byte layout of `QMainWindow.saveState`, for dock placements Qt has no API for.
+"""Reads and edits the byte layout of `QMainWindow.saveState`, for dock facts and placements Qt has no API for.
 
+- `QMainWindow.tabifiedDockWidgets` leaves out closed docks, so tab group membership is read from the saved layout
+  (`read_dock_groups`).
 - `QMainWindow.addDockWidget` always appends to its area, and `splitDockWidget` only places after. Placing a dock
   first in an area means saving the layout, reordering the area's top-level items, and restoring it.
 - The layout follows Qt's `QDockAreaLayout::saveState` and `QDockAreaLayoutInfo::saveState`, written with
   `QDataStream` version Qt_5_0: big-endian 32-bit ints, one-byte markers, and UTF-16 strings with a byte-length prefix.
-  Any part that doesn't parse as expected makes the edit return None, so a changed format leaves the layout as it was.
+  Any part that doesn't parse as expected makes a read or edit return None, so a changed format leaves the layout as it
+  was.
 """
 import struct
+from dataclasses import dataclass
 from typing import Optional
 
-from PySide6.QtCore import QByteArray, Qt
-from PySide6.QtWidgets import QMainWindow, QTabBar
+from PySide6.QtCore import Qt
 
 _VERSION_HEADER_SIZE = 8  # An int marker, then the caller's version int.
 _DOCK_STATE_MARKER = 0xfd
@@ -22,6 +25,9 @@ _WIDGET_FIELDS_SIZE = 16
 # A nested sequence's marker is followed by the same four ints, then the nested group's own state:
 _SEQUENCE_FIELDS_SIZE = 16
 _AREA_SIZE_SIZE = 8
+# Bits of a widget item's flags byte:
+_STATE_FLAG_VISIBLE = 1
+_STATE_FLAG_FLOATING = 2
 
 # Qt's internal `QInternal::DockPosition` numbering, used for each area in the saved layout.
 _DOCK_POSITIONS = {
@@ -66,35 +72,88 @@ class _Reader:
         return self._take(size).decode('utf-16-be')
 
 
-def _read_item(reader: _Reader) -> Optional[str]:
-    """Reads one item of a dock group, returning a widget item's object name, or None for a nested group."""
+@dataclass(frozen=True)
+class SavedDock:
+    """One dock's entry in a saved layout. A floating dock keeps an entry where it was docked."""
+    name: str
+    visible: bool
+    floating: bool
+
+
+@dataclass(frozen=True)
+class SavedGroup:
+    """A tab group in a saved layout, or a dock alone in its place.
+
+    `current` is the index in `docks` of the dock in front, or -1 if no dock in the group is open.
+    """
+    docks: list[SavedDock]
+    current: int
+
+
+def _read_item(reader: _Reader, groups: Optional[list[SavedGroup]]) -> Optional[SavedDock]:
+    """Reads one item of a dock group, returning a widget item's dock, or None for a nested group."""
     marker = reader.byte()
     if marker == _WIDGET_MARKER:
         name = reader.string()
-        reader.skip(1 + _WIDGET_FIELDS_SIZE)
-        return name if name is not None else ''
+        flags = reader.byte()
+        reader.skip(_WIDGET_FIELDS_SIZE)
+        return SavedDock(name if name is not None else '', bool(flags & _STATE_FLAG_VISIBLE),
+                         bool(flags & _STATE_FLAG_FLOATING))
     if marker != _SEQUENCE_MARKER:
         raise ValueError(f'unexpected dock item marker {marker:#x}')
     reader.skip(_SEQUENCE_FIELDS_SIZE)
-    _read_group(reader)
+    _read_group(reader, groups)
     return None
 
 
-def _read_group(reader: _Reader) -> tuple[int, list[tuple[int, int, Optional[str]]]]:
-    """Reads a dock group, returning its orientation and each item's start, end and widget name."""
+def _read_group(reader: _Reader, groups: Optional[list[SavedGroup]] = None) \
+        -> tuple[int, list[tuple[int, int, Optional[str]]]]:
+    """Reads a dock group, returning its orientation and each item's start, end and widget name.
+
+    With `groups`, also appends each tab group and lone dock found, in layout order.
+    """
     marker = reader.byte()
-    if marker == _TAB_MARKER:
-        reader.int32()
+    tabbed = marker == _TAB_MARKER
+    current = -1
+    if tabbed:
+        current = reader.int32()
     elif marker != _SEQUENCE_MARKER:
         raise ValueError(f'unexpected dock group marker {marker:#x}')
     orientation = reader.byte()
     count = reader.int32()
     items = []
+    tab_docks: list[SavedDock] = []
     for _ in range(count):
         start = reader.pos
-        name = _read_item(reader)
-        items.append((start, reader.pos, name))
+        dock = _read_item(reader, groups)
+        items.append((start, reader.pos, None if dock is None else dock.name))
+        if dock is None:
+            continue
+        if tabbed:
+            tab_docks.append(dock)
+        elif groups is not None:
+            groups.append(SavedGroup([dock], 0 if dock.visible else -1))
+    if tabbed and groups is not None:
+        groups.append(SavedGroup(tab_docks, current if 0 <= current < len(tab_docks) else -1))
     return orientation, items
+
+
+def read_dock_groups(state: bytes) -> Optional[list[SavedGroup]]:
+    """Returns every tab group and lone dock in a saved layout's dock areas, in layout order, or None if the layout
+    doesn't parse."""
+    groups: list[SavedGroup] = []
+    try:
+        reader = _Reader(state, _VERSION_HEADER_SIZE)
+        if reader.byte() != _DOCK_STATE_MARKER:
+            return None
+        area_count = reader.int32()
+        for _ in range(area_count):
+            reader.int32()
+            reader.skip(_AREA_SIZE_SIZE)
+            _read_group(reader, groups)
+    except (ValueError, struct.error, UnicodeDecodeError):
+        return None
+    return groups
 
 
 def move_dock_to_area_start(state: bytes, area: Qt.DockWidgetArea, orientation: Qt.Orientation,
@@ -124,20 +183,3 @@ def move_dock_to_area_start(state: bytes, area: Qt.DockWidgetArea, orientation: 
     except (ValueError, struct.error, UnicodeDecodeError):
         return None
     return None
-
-
-def restore_state_without_stale_tab_bars(window: QMainWindow, state: bytes | QByteArray, version: int = 0) -> bool:
-    """Restores a saved layout with `QMainWindow.restoreState`, returning whether it did.
-
-    `restoreState` gives each tab group a new tab bar and leaves the old bars drawn where they were. The old bars are
-    hidden first, and Qt shows the new ones. A failed restore changes nothing, so the hidden bars are shown again.
-    """
-    hidden = [tab_bar for tab_bar in window.findChildren(QTabBar, options=Qt.FindChildOption.FindDirectChildrenOnly)
-              if not tab_bar.isHidden()]
-    for tab_bar in hidden:
-        tab_bar.hide()
-    if window.restoreState(QByteArray(state), version):
-        return True
-    for tab_bar in hidden:
-        tab_bar.show()
-    return False
