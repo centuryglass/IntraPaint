@@ -5,10 +5,10 @@ button and a More button.
   description wraps. A name that still doesn't fit ends with an ellipsis.
 - The header holds no config. `reset_requested` fires when the reset button is clicked, and the owner restores its
   declared keys (see `src.ui.panel.panel_reset`).
-- The More button opens a popover holding the controls a size class moved out of the panel, plus panel commands. The
-  owner supplies them with `set_popover_content` and refreshes them in a `more_requested` handler.
-- In the Strip Short size class the owner hides the header and places `more_button` at the end of the panel's row, and
-  `restore_more_button` puts it back.
+- The More button opens a popover holding the controls a small grid size moved out of the panel, plus panel
+  commands. The owner supplies them with `set_popover_content` and refreshes them in a `more_requested` handler.
+- In a strip one row tall (Strip Short) the owner hides the header and places `more_button` at the end of the panel's
+  row, and `restore_more_button` puts it back.
 """
 from typing import Optional
 

@@ -1,4 +1,4 @@
-"""Tests the Tools dock's panel: buttons, grouping and sizes per size class, the active tool header, and reset."""
+"""Tests the Tools dock's panel: buttons, grouping and sizes per grid size, the active tool header, and reset."""
 import sys
 
 from PySide6.QtCore import QSize
@@ -12,7 +12,7 @@ from src.tools.eyedropper_tool import EyedropperTool
 from src.tools.free_selection_tool import FreeSelectionTool
 from src.tools.generation_area_tool import GenerationAreaTool
 from src.tools.text_tool import TextTool
-from src.ui.layout.panel_size_class import GridSize, Orientation, SizeClass, choose_layout
+from src.ui.layout.panel_size_class import GridSize, Orientation, choose_layout
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.tool_panel import ToolPanel, BUTTON_LAYOUTS, BUTTON_SPACING, MAX_STRIP_EDGE_LENGTH, \
     STRIP_NARROW_COLUMNS, strip_button_layout
@@ -39,14 +39,14 @@ class GridLayoutControlPanel(QWidget):
         """Records the layout."""
         self.received.append((orientation, layout))
 
-# A dock size inside each size class, away from the boundaries:
+# A dock size at each count along the constrained axis, away from the boundaries:
 HOST_SIZES = {
-    (Orientation.SIDE, SizeClass.COMPACT): QSize(200, 600),
-    (Orientation.SIDE, SizeClass.REGULAR): QSize(340, 600),
-    (Orientation.SIDE, SizeClass.WIDE): QSize(500, 600),
-    (Orientation.STRIP, SizeClass.COMPACT): QSize(1200, 120),
-    (Orientation.STRIP, SizeClass.REGULAR): QSize(1200, 240),
-    (Orientation.STRIP, SizeClass.WIDE): QSize(1200, 400),
+    (Orientation.SIDE, 1): QSize(200, 600),
+    (Orientation.SIDE, 2): QSize(340, 600),
+    (Orientation.SIDE, 3): QSize(500, 600),
+    (Orientation.STRIP, 1): QSize(1200, 120),
+    (Orientation.STRIP, 2): QSize(1200, 240),
+    (Orientation.STRIP, 3): QSize(1200, 400),
 }
 
 
@@ -74,9 +74,12 @@ class ToolPanelTest(IntraPaintTestCase):
             return tool_class(self._image_stack)
         return tool_class(self._image_stack, self._image_panel.image_viewer)
 
-    def _set_host(self, orientation: Orientation, size_class: SizeClass) -> None:
-        self._tool_panel.set_host_facts(orientation, HOST_SIZES[(orientation, size_class)])
-        self.assertEqual(self._tool_panel.size_class, size_class)
+    def _set_host(self, orientation: Orientation, count: int) -> None:
+        """Hosts the panel at the `HOST_SIZES` size with `count` cells along the constrained axis."""
+        self._tool_panel.set_host_facts(orientation, HOST_SIZES[(orientation, count)])
+        grid_size = self._tool_panel.grid_size
+        assert grid_size is not None
+        self.assertEqual(grid_size.constrained(orientation), count)
 
     def _activate_grid_layout_tool(self) -> GridLayoutControlPanel:
         tool = self._tool(DrawTool)
@@ -92,10 +95,11 @@ class ToolPanelTest(IntraPaintTestCase):
         settle_layouts(self._tool_panel)
 
     def test_grid_layout_measures_tool_control_area(self) -> None:
-        """The grid size comes from the tool control area, so a strip wide enough for three columns at the dock is
+        """The grid size comes from the tool control area, so a strip three columns wide at the dock is
         two columns once the buttons take their share."""
         self._activate_grid_layout_tool()
-        self._host_and_settle(Orientation.STRIP, QSize(800, 240))
+        self._host_and_settle(Orientation.STRIP, QSize(450, 240))
+        self.assertEqual(self._tool_panel.grid_size, GridSize(3, 2))
         grid_size = self._tool_panel.tool_control_grid_size
         assert grid_size is not None
         self.assertEqual(grid_size.columns, 2)
@@ -154,9 +158,9 @@ class ToolPanelTest(IntraPaintTestCase):
         self.assertTrue(tool_button.is_active)
         self.assertTrue(control_panel.isVisible())
 
-    def test_header_follows_tool_switch_in_every_size_class(self) -> None:
-        """After a tool switch, the header names the new tool and its key in every size class but Strip Short, where
-        a dim line under the buttons names it. The description shows in every class but Side Compact and Strip Short.
+    def test_header_follows_tool_switch_at_every_named_size(self) -> None:
+        """After a tool switch, the header names the new tool and its key at every named size but Strip Short, where
+        a dim line under the buttons names it. The description shows at every size but Side Compact and Strip Short.
         """
         draw_tool = self._tool(DrawTool)
         text_tool = self._tool(TextTool)
@@ -166,18 +170,18 @@ class ToolPanelTest(IntraPaintTestCase):
         text_keys = get_key_display_string(KeyConfig().get(text_tool.get_activation_config_key()), rich_text=False)
         header = self._tool_panel.header
         short_label = self._tool_panel._short_label  # pylint: disable=protected-access
-        for orientation, size_class in HOST_SIZES:
-            with self.subTest(orientation=orientation, size_class=size_class):
-                self._set_host(orientation, size_class)
+        for orientation, count in HOST_SIZES:
+            with self.subTest(orientation=orientation, count=count):
+                self._set_host(orientation, count)
                 self._tool_panel.setup_active_tool(text_tool)
-                strip_short = (orientation, size_class) == (Orientation.STRIP, SizeClass.COMPACT)
+                strip_short = (orientation, count) == (Orientation.STRIP, 1)
                 self.assertEqual(header.isVisibleTo(self._tool_panel), not strip_short)
                 self.assertEqual(short_label.isVisibleTo(self._tool_panel), strip_short)
                 self.assertEqual(header.name(), text_tool.label)
                 self.assertEqual(header.key_badge.text, text_keys)
                 self.assertIn(text_tool.label, short_label.text())
                 self.assertIn(text_keys, short_label.text())
-                expected_description = '' if size_class == SizeClass.COMPACT else text_tool.get_tooltip_text()
+                expected_description = '' if count == 1 else text_tool.get_tooltip_text()
                 self.assertEqual(header.description(), expected_description)
                 self._tool_panel.setup_active_tool(draw_tool)
 
@@ -203,14 +207,14 @@ class ToolPanelTest(IntraPaintTestCase):
         positions = [grid.getItemPosition(i)[:2] for i in range(grid.count())]
         return max(row for row, _ in positions) + 1, max(column for _, column in positions) + 1
 
-    def test_button_size_and_grid_per_size_class(self) -> None:
-        """Each size class sets the button size and the number of buttons per row from `BUTTON_LAYOUTS`, at a height
-        too short for a three-column strip grid."""
+    def test_button_size_and_grid_per_constrained_count(self) -> None:
+        """Each count along the constrained axis sets the button size and buttons per row from `BUTTON_LAYOUTS`, at a
+        height too short for a three-column strip grid."""
         tools = self._add_tools()
-        for (orientation, size_class), layout in BUTTON_LAYOUTS.items():
-            with self.subTest(orientation=orientation, size_class=size_class):
-                self._set_host(orientation, size_class)
-                if orientation == Orientation.STRIP and size_class != SizeClass.COMPACT:
+        for (orientation, count), layout in BUTTON_LAYOUTS.items():
+            with self.subTest(orientation=orientation, count=count):
+                self._set_host(orientation, count)
+                if orientation == Orientation.STRIP and count != 1:
                     self._tool_panel.resize(QSize(1200, 60))
                 for button in self._tool_panel.tool_buttons:
                     self.assertEqual(button.size(), QSize(layout.edge_length, layout.edge_length))
@@ -221,7 +225,7 @@ class ToolPanelTest(IntraPaintTestCase):
         """A strip tall enough for three columns of buttons at least the default size uses them, growing the buttons
         up to `MAX_STRIP_EDGE_LENGTH` with key hints at that size."""
         tools = self._add_tools()
-        self._set_host(Orientation.STRIP, SizeClass.WIDE)
+        self._set_host(Orientation.STRIP, 3)
         self._tool_panel.resize(QSize(1200, 400))
         self.assertEqual(self._grid_shape(), (-(-len(tools) // STRIP_NARROW_COLUMNS), STRIP_NARROW_COLUMNS))
         for button in self._tool_panel.tool_buttons:
@@ -229,7 +233,7 @@ class ToolPanelTest(IntraPaintTestCase):
 
     def test_strip_button_layout(self) -> None:
         """Three columns once their buttons are at least the default size, capped at `MAX_STRIP_EDGE_LENGTH`."""
-        default = BUTTON_LAYOUTS[(Orientation.STRIP, SizeClass.REGULAR)]
+        default = BUTTON_LAYOUTS[(Orientation.STRIP, 2)]
         self.assertEqual(strip_button_layout(16, 100, default), default)
         fitted = strip_button_layout(16, 6 * 30 + 5 * BUTTON_SPACING, default)
         self.assertEqual((fitted.columns, fitted.edge_length, fitted.key_hints), (STRIP_NARROW_COLUMNS, 30, False))
@@ -242,10 +246,10 @@ class ToolPanelTest(IntraPaintTestCase):
         self._tool_panel.setup_active_tool(self._tool_panel.tool_buttons[0].connected_tool)
         header = self._tool_panel.header
         icon_label = header._icon_label  # pylint: disable=protected-access
-        for orientation, size_class in ((Orientation.SIDE, SizeClass.REGULAR), (Orientation.STRIP, SizeClass.REGULAR)):
+        for orientation, count in ((Orientation.SIDE, 2), (Orientation.STRIP, 2)):
             with self.subTest(orientation=orientation):
-                self._set_host(orientation, size_class)
-                self._tool_panel.resize(HOST_SIZES[(orientation, size_class)])
+                self._set_host(orientation, count)
+                self._tool_panel.resize(HOST_SIZES[(orientation, count)])
                 settle_layouts(self._tool_panel)
                 button = self._tool_panel.tool_buttons[0]
                 button_center = button.mapTo(self._tool_panel, button.rect().center()).x()
@@ -257,10 +261,10 @@ class ToolPanelTest(IntraPaintTestCase):
         self._add_tools()
         header = self._tool_panel.header
         grid = self._tool_panel._button_grid  # pylint: disable=protected-access
-        for orientation, size_class in ((Orientation.SIDE, SizeClass.REGULAR), (Orientation.STRIP, SizeClass.REGULAR)):
+        for orientation, count in ((Orientation.SIDE, 2), (Orientation.STRIP, 2)):
             with self.subTest(orientation=orientation):
-                self._set_host(orientation, size_class)
-                self._tool_panel.resize(HOST_SIZES[(orientation, size_class)])
+                self._set_host(orientation, count)
+                self._tool_panel.resize(HOST_SIZES[(orientation, count)])
                 settle_layouts(self._tool_panel)
                 header_top = header.mapTo(self._tool_panel, header.rect().topLeft()).y()
                 grid_top = grid.mapTo(self._tool_panel, grid.rect().topLeft()).y()
@@ -295,7 +299,7 @@ class ToolPanelTest(IntraPaintTestCase):
         draw_tool = self._tool(DrawTool)
         self._tool_panel.add_tool_button(draw_tool)
         self._tool_panel.setup_active_tool(draw_tool)
-        self._set_host(Orientation.STRIP, SizeClass.COMPACT)
+        self._set_host(Orientation.STRIP, 1)
         header = self._tool_panel.header
         self.assertTrue(header.more_button.isVisibleTo(self._tool_panel))
         reset_button = self._tool_panel._short_reset_button  # pylint: disable=protected-access
@@ -306,6 +310,6 @@ class ToolPanelTest(IntraPaintTestCase):
         reset_button.click()
         self.assertEqual(cache.get(Cache.DRAW_TOOL_BRUSH_SIZE), default_size)
 
-        self._set_host(Orientation.STRIP, SizeClass.REGULAR)
+        self._set_host(Orientation.STRIP, 2)
         self.assertFalse(header.more_button.isVisibleTo(self._tool_panel))
         self.assertTrue(header.reset_button.isVisibleTo(self._tool_panel))

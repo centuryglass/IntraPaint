@@ -184,7 +184,7 @@ class SegmentedControl(QWidget):
         return self._display_mode
 
     def set_display_mode(self, display_mode: DisplayMode) -> None:
-        """Changes what each segment shows, so a panel can pick the mode that fits its size class."""
+        """Changes what each segment shows, so a panel can pick the mode that fits its grid size."""
         if display_mode == self._display_mode:
             return
         self._check_icons(display_mode)

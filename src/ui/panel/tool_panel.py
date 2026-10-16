@@ -1,9 +1,10 @@
 """The Tools dock's panel: a grid of tool buttons, a header naming the active tool, and the tool's controls.
 
-- Orientation and size class come from the dock (`DockPanel.set_host_facts`). They pick the button size and grid from
-  `BUTTON_LAYOUTS`. Side panels show rows of eight with the header under them, then the controls. Strip panels put
-  the header across the top, with the grid left of the controls. A strip grid has three columns when the panel is tall
-  enough for them (`strip_button_layout`), and four otherwise.
+- Orientation and grid size come from the dock (`DockPanel.set_host_facts`). The orientation and the cells along the
+  constrained axis (`GridSize.constrained`) pick the button size and grid from `BUTTON_LAYOUTS`. Side panels show
+  rows of eight with the header under them, then the controls. Strip panels put the header across the top, with the
+  grid left of the controls. A strip grid has three columns when the panel is tall enough for them
+  (`strip_button_layout`), and four otherwise.
 - Buttons are ordered by `BaseTool.TOOL_GROUP`, keeping the order tools were added within a group, and always line up
   in columns.
 - The header names the active tool with its icon, key and description, and its icon is centered over the first
@@ -24,9 +25,8 @@ from PySide6.QtWidgets import QWidget, QLabel, QGridLayout, QVBoxLayout, QSizePo
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.tools.base_tool import BaseTool
-from src.ui.layout.dock_panel import DockPanel
-from src.ui.layout.panel_size_class import (GridLayoutPanel, GridSize, GridSizeTracker, Orientation, SizeClass,
-                                            choose_layout)
+from src.ui.layout.dock_panel import DockPanel, is_strip_short
+from src.ui.layout.panel_size_class import GridLayoutPanel, GridSize, GridSizeTracker, Orientation, choose_layout
 from src.ui.panel.panel_reset import reset_config_keys
 from src.ui.widget.panel_header import RESET_TOOLTIP
 from src.ui.widget.shortcut_tooltip import shortcut_tooltip_text
@@ -44,13 +44,14 @@ class ButtonLayout:
     key_hints: bool = False
 
 
+# Keyed by orientation and the cells along the constrained axis:
 BUTTON_LAYOUTS = {
-    (Orientation.SIDE, SizeClass.COMPACT): ButtonLayout(22, 8),
-    (Orientation.SIDE, SizeClass.REGULAR): ButtonLayout(28, 8),
-    (Orientation.SIDE, SizeClass.WIDE): ButtonLayout(40, 8, key_hints=True),
-    (Orientation.STRIP, SizeClass.COMPACT): ButtonLayout(22, 8),
-    (Orientation.STRIP, SizeClass.REGULAR): ButtonLayout(28, 4),
-    (Orientation.STRIP, SizeClass.WIDE): ButtonLayout(28, 4),
+    (Orientation.SIDE, 1): ButtonLayout(22, 8),
+    (Orientation.SIDE, 2): ButtonLayout(28, 8),
+    (Orientation.SIDE, 3): ButtonLayout(40, 8, key_hints=True),
+    (Orientation.STRIP, 1): ButtonLayout(22, 8),
+    (Orientation.STRIP, 2): ButtonLayout(28, 4),
+    (Orientation.STRIP, 3): ButtonLayout(28, 4),
 }
 
 # Strip grids switch to this many columns when buttons of at least `BUTTON_LAYOUTS`' size fit the height:
@@ -80,12 +81,12 @@ class ToolPanel(DockPanel):
         self._tool_widgets: dict[str, ToolButton] = {}
         self._active_tool: Optional[BaseTool] = None
         self._active_tool_panel: Optional[QWidget] = None
-        self._layout_key = (Orientation.SIDE, SizeClass.REGULAR)
+        self._layout_key = (Orientation.SIDE, GridSize(2, 3))
         self._grid_tracker = GridSizeTracker()
         # The orientation and layout last sent to the active tool control panel's `set_grid_layout`:
         self._forwarded_grid_layout: Optional[tuple[Orientation, GridSize]] = None
 
-        self._button_layout = BUTTON_LAYOUTS[self._layout_key]
+        self._button_layout = self._default_button_layout()
 
         self._strip_column = QWidget()
         strip_column_layout = QVBoxLayout(self._strip_column)
@@ -193,10 +194,10 @@ class ToolPanel(DockPanel):
             return False
         return reset_config_keys(Cache(), self._active_tool.get_reset_config_keys())
 
-    def arrange(self, orientation: Orientation, size_class: SizeClass) -> None:
-        """Lays out the buttons, header and controls for the orientation and size class."""
-        super().arrange(orientation, size_class)
-        self._layout_key = (orientation, size_class)
+    def arrange(self, orientation: Orientation, grid_size: GridSize) -> None:
+        """Lays out the buttons, header and controls for the orientation and grid size."""
+        super().arrange(orientation, grid_size)
+        self._layout_key = (orientation, grid_size)
         for widget in (self._strip_column, self.header, self._tool_control_box):
             self._content_layout.removeWidget(widget)
         for index in range(3):
@@ -243,8 +244,8 @@ class ToolPanel(DockPanel):
             self._build_button_rows()
 
     def _current_button_layout(self) -> ButtonLayout:
-        """Returns the button layout for the size class, fitted to the height in Strip Regular and Strip Tall."""
-        default = BUTTON_LAYOUTS[self._layout_key]
+        """Returns the button layout for the grid size, fitted to the height in strips more than one row tall."""
+        default = self._default_button_layout()
         if self._layout_key[0] == Orientation.SIDE or self._is_strip_short():
             return default
         margins = self._body_layout.contentsMargins()
@@ -253,7 +254,15 @@ class ToolPanel(DockPanel):
         return strip_button_layout(len(self._tool_widgets), grid_height, default)
 
     def _is_strip_short(self) -> bool:
-        return self._layout_key == (Orientation.STRIP, SizeClass.COMPACT)
+        return is_strip_short(*self._layout_key)
+
+    def _is_side_compact(self) -> bool:
+        orientation, grid_size = self._layout_key
+        return orientation == Orientation.SIDE and grid_size.columns == 1
+
+    def _default_button_layout(self) -> ButtonLayout:
+        orientation, grid_size = self._layout_key
+        return BUTTON_LAYOUTS[(orientation, grid_size.constrained(orientation))]
 
     def _forward_orientation(self) -> None:
         """Passes the orientation to an active tool panel that hasn't migrated to `DockPanel`."""
@@ -292,7 +301,7 @@ class ToolPanel(DockPanel):
         keys = KeyConfig().get(tool.get_activation_config_key())
         self.header.set_name(tool.label, tool.get_icon())
         self.header.set_key_text(get_key_display_string(keys, rich_text=False) if keys != '' else '')
-        show_description = self._layout_key != (Orientation.SIDE, SizeClass.COMPACT) and not self._is_strip_short()
+        show_description = not self._is_side_compact() and not self._is_strip_short()
         self.header.set_description(tool.get_tooltip_text() if show_description else '')
         self._short_label.setText(shortcut_tooltip_text(tool.label, keys))
         self._short_label.setVisible(self._is_strip_short())
