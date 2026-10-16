@@ -39,6 +39,7 @@ class PanelDock(QDockWidget):
         self.setFeatures(QDockWidget.DockWidgetFeature.DockWidgetClosable
                          | QDockWidget.DockWidgetFeature.DockWidgetMovable
                          | QDockWidget.DockWidgetFeature.DockWidgetFloatable)
+        self._shortcut_config_key = shortcut_config_key
         self._content: Optional[QWidget] = None
         self._open_when_available = True
         self._showing = False
@@ -51,6 +52,11 @@ class PanelDock(QDockWidget):
         if shortcut_config_key is not None:
             HotkeyFilter.instance().register_config_keybinding(f'PanelDock_{id(self)}_shortcut',
                                                                self.toggle_from_key, shortcut_config_key)
+
+    @property
+    def shortcut_config_key(self) -> Optional[str]:
+        """The `KeyConfig` key that toggles the dock, if it has one."""
+        return self._shortcut_config_key
 
     @property
     def content(self) -> Optional[QWidget]:

@@ -466,6 +466,7 @@ class AppController(MenuBuilder):
         self._tool_panel.setup_active_tool(active_tool)
 
         self._window.tools_dock.set_content(self._tool_panel)
+        self._window.set_tool_controller(self._tool_controller)
         self._generator_control_panel: Optional[GeneratorPanel] = None
 
         # Prepare image generator options, and select one based on availability and command line arguments.

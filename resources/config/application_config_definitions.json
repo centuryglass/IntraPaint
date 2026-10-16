@@ -57,7 +57,7 @@
         "label": "Tab font size:",
         "category": "Interface",
         "subcategory": "Appearance",
-        "description": "Font point size to use for user interface tab labels (may require restart)",
+        "description": "Font point size to use for panel rail labels (may require restart)",
         "type": "int",
         "default": 12,
         "saved": true,
@@ -82,10 +82,10 @@
         }
     },
     "toolbar_tool_button_count": {
-        "label": "Recent tool toolbar icon count:",
+        "label": "Maximum recent tool icons:",
         "category": "Interface",
         "subcategory": "Layout",
-        "description": "Number of tool selection buttons to show on the toolbar when the tool tab is closed or inactive.",
+        "description": "Most recent-tool buttons to show in the panel rail. Fewer show when the window is too short for them.",
         "type": "int",
         "default": 4,
         "saved": true,

@@ -172,9 +172,6 @@
   "src/ui/widget/label.py": {
     "unused-argument": 1
   },
-  "src/ui/widget/rotating_toolbar_button.py": {
-    "unused-argument": 1
-  },
   "src/ui/window/generator_setup_window.py": {
     "unused-argument": 2
   },

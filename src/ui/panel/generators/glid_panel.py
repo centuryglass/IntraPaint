@@ -2,15 +2,13 @@
 from typing import Optional
 
 from PySide6.QtCore import Signal, Qt
-from PySide6.QtWidgets import QApplication, QPushButton, QLabel, QGridLayout, QSizePolicy, QWidget
+from PySide6.QtWidgets import QApplication, QPushButton, QLabel, QGridLayout, QSizePolicy
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.panel.generators.generator_panel import GeneratorPanel
-from src.ui.widget.rotating_toolbar_button import RotatingToolbarButton
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.layout import clear_layout
-from src.util.shared_constants import BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENERATE
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.generators.glid_panel'
@@ -74,10 +72,6 @@ class GlidPanel(GeneratorPanel):
         self._inpaint_button.setText(INPAINT_BUTTON_TEXT)
         self._inpaint_button.clicked.connect(self.generate_signal)
 
-        self._toolbar_generate_button = RotatingToolbarButton(BUTTON_TEXT_GENERATE)
-        self._toolbar_generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
-        self._toolbar_generate_button.clicked.connect(self.generate_signal)
-        self._toolbar_generate_button.hide()
         self._build_layout()
 
     def _build_layout(self) -> None:
@@ -143,7 +137,3 @@ class GlidPanel(GeneratorPanel):
     @orientation.setter
     def orientation(self, new_orientation: Qt.Orientation) -> None:
         self.set_orientation(new_orientation)
-
-    def get_tab_bar_widgets(self) -> list[QWidget]:
-        """Returns the toolbar generate button as the only toolbar widget."""
-        return [self._toolbar_generate_button]
