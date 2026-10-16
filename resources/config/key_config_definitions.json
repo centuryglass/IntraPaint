@@ -593,10 +593,55 @@
         "default": "F9",
         "saved": true
     },
+    "zoom_in_shortcut": {
+        "label": "Zoom in",
+        "category": "Menu Shortcuts",
+        "subcategory": "View Menu",
+        "description": "Zoom in on image content.",
+        "type": "string",
+        "default": "Ctrl+Shift+=",
+        "saved": true
+    },
+    "zoom_out_shortcut": {
+        "label": "Zoom out",
+        "category": "Menu Shortcuts",
+        "subcategory": "View Menu",
+        "description": "Zoom out from image content.",
+        "type": "string",
+        "default": "Ctrl+Shift+-",
+        "saved": true
+    },
+    "reset_view_shortcut": {
+        "label": "Reset view",
+        "category": "Menu Shortcuts",
+        "subcategory": "View Menu",
+        "description": "Fit the whole image in the view and center it.",
+        "type": "string",
+        "default": "Ctrl+Alt+0",
+        "saved": true
+    },
+    "zoom_to_gen_area_shortcut": {
+        "label": "Zoom to generation area",
+        "category": "Menu Shortcuts",
+        "subcategory": "View Menu",
+        "description": "Center the view on the image generation area and zoom to fit it.",
+        "type": "string",
+        "default": "Ctrl+Alt+Z",
+        "saved": true
+    },
+    "toggle_control_hints_shortcut": {
+        "label": "Show/hide tool control hints",
+        "category": "Menu Shortcuts",
+        "subcategory": "View Menu",
+        "description": "Show or hide the active tool control hints below the image.",
+        "type": "string",
+        "default": "Ctrl+Alt+H",
+        "saved": true
+    },
     "navigation_window_shortcut": {
         "label": "Show navigation window",
         "category": "Menu Shortcuts",
-        "subcategory": "Image Menu",
+        "subcategory": "View Menu",
         "description": "Open a navigation window showing the entire edited image.",
         "type": "string",
         "default": "Ctrl+Alt+W",
@@ -605,7 +650,7 @@
     "reset_dock_layout_shortcut": {
         "label": "Reset panel layout",
         "category": "Menu Shortcuts",
-        "subcategory": "Image Menu",
+        "subcategory": "View Menu",
         "description": "Put every panel back where it starts on first run, and open it.",
         "type": "string",
         "default": "Ctrl+Alt+Shift+P",
@@ -614,7 +659,7 @@
     "toggle_rulers_shortcut": {
         "label": "Show/hide rulers",
         "category": "Menu Shortcuts",
-        "subcategory": "Image Menu",
+        "subcategory": "View Menu",
         "description": "Show or hide the rulers beside the image.",
         "type": "string",
         "default": "Ctrl+Alt+Shift+R",

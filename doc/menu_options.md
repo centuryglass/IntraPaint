@@ -21,10 +21,12 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Clear](#clear-delete)
    - [Settings](#settings-f9)
        * [Settings window](#settings-window)
-3. [Image menu](#image-menu)
+3. [View menu](#view-menu)
+   - [Zoom and view](#zoom-and-view)
    - [Panels](#panels)
    - [Show navigation window](#show-navigation-window-ctrlaltw)
        * [Navigation window](#navigation-window)
+4. [Image menu](#image-menu)
    - [Resize canvas](#resize-canvas-f2)
        * [Resize image canvas window](#resize-image-canvas-window)
    - [Scale image](#scale-image-f3)
@@ -192,7 +194,16 @@ Opens a window where you can edit IntraPaint's saved settings. Hold your mouse o
 
 ---
 
-## Image menu
+## View menu
+
+Actions that change how the image is shown, without changing the image.
+
+### Zoom and view
+- **Zoom in** and **Zoom out**: Change the zoom one step, with Ctrl+Shift+= and Ctrl+Shift+-. The Page Up and Page Down keys (configurable under Navigation) also zoom.
+- **Reset view** (Ctrl+Alt+0): Fit the whole image in the view and center it.
+- **Zoom to generation area** (Ctrl+Alt+Z): Center the view on the image generation area. Does nothing while the generation area is hidden.
+- **Show/hide tool control hints** (Ctrl+Alt+H): Show or hide the active tool's control hints below the image.
+- **Show/hide rulers** (Ctrl+Alt+Shift+R): Show or hide the rulers beside the image.
 
 ### Panels
 Lists each panel docked around the image: Tools, Image Generation, and ControlNet. Select one to show or hide it. A panel only appears in the list while it has something to show, so Image Generation needs a configured image generator and ControlNet needs a generator that supports it.
@@ -233,6 +244,8 @@ When **"Move gen. area"** is active, mouse controls match the [image generation 
 7. **"Inpaint full resolution" outline**: This inner rectangle shows the reduced area within the image generation area that will be used for inpainting if "inpaint full resolution" is selected.  This won't be visible if nothing is selected, if "inpaint full resolution" is unchecked, or if AI image generation is unavailable.
 8. **Selected image content**: All selected areas are also visible within the navigation window.
 
+
+## Image menu
 
 ### Resize canvas (F2)
 
