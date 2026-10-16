@@ -11,6 +11,7 @@ The primary image editing window: the canvas in the center, with every other pan
 - The Tools, Image Generation and ControlNet docks always exist, so a restore can place them even before their
   generator provides content. A dock without content stays hidden (see `PanelDock.set_content`).
 - Icon rails along the window edges (`DockRails`) hold each dock's button, the recent tools and Generate.
+- Right-clicking a dock's tab, title area or rail button opens its menu (`build_dock_menu`).
 - While the generated image selector replaces the canvas, every dock and rail hides, and the layout from before comes
   back when it closes.
 """
@@ -35,8 +36,8 @@ from src.ui.panel.layer_ui.layer_panel import LayerPanel
 
 from src.controller.tool_controller import ToolController
 from src.ui.widget.loading_widget import LoadingWidget
-from src.ui.window.dock_rail import DockGroup, DockRails
-from src.ui.window.dock_zones import DockZone, build_dock_menu, move_docks_to_zone
+from src.ui.window.dock_menu import DockEdge, build_dock_menu, move_all_to_edge
+from src.ui.window.dock_rail import DockGroup, DockRails, RailButton
 from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.panel_dock import PanelDock
 from src.ui.window.window_geometry import capture_geometry
@@ -169,6 +170,7 @@ class MainWindow(QMainWindow):
 
         # Docks:
         self.setDockNestingEnabled(True)
+        # `dock_menu._settle` finds each group's tab bar above its docks, so it changes with this:
         self.setTabPosition(Qt.DockWidgetArea.AllDockWidgetAreas, QTabWidget.TabPosition.North)
         # Top and bottom areas span the full window width:
         self.setCorner(Qt.Corner.TopLeftCorner, Qt.DockWidgetArea.TopDockWidgetArea)
@@ -260,18 +262,19 @@ class MainWindow(QMainWindow):
         """Returns each dock's show/hide action, for the menu. An action is hidden while its dock has no content."""
         return [dock.toggleViewAction() for dock in self.docks]
 
-    def move_all_docks_to_zone(self, zone: DockZone) -> None:
-        """Moves every dock that has content into one tab group in a named zone."""
-        move_docks_to_zone(self, self.docks, zone)
+    def move_all_docks_to_edge(self, edge: DockEdge) -> None:
+        """Moves every dock that has content into one tab group along a window edge."""
+        move_all_to_edge(self, self.docks, edge)
 
     def dock_menu(self, dock: PanelDock) -> QMenu:
-        """Builds the context menu for a dock: moving it to a zone or group, moving every tab, and hiding it."""
+        """Builds the context menu for a dock (see `build_dock_menu`)."""
         return build_dock_menu(self, dock, self.docks)
 
-    def _dock_at(self, global_pos: QPoint) -> Optional[PanelDock]:
-        """Returns the dock whose title area or tab is at a screen position, if any."""
-        widget: Optional[QWidget] = QApplication.widgetAt(global_pos)
+    def dock_at(self, widget: Optional[QWidget], global_pos: QPoint) -> Optional[PanelDock]:
+        """Returns the dock whose tab, title area or rail button is at a screen position, given the widget there."""
         while widget is not None and widget is not self:
+            if isinstance(widget, RailButton):
+                return widget.dock
             if isinstance(widget, QTabBar) and widget.parent() is self:
                 tab_index = widget.tabAt(widget.mapFromGlobal(global_pos))
                 if tab_index < 0:
@@ -287,13 +290,16 @@ class MainWindow(QMainWindow):
         return None
 
     def contextMenuEvent(self, event: Optional[QContextMenuEvent]) -> None:  # pylint: disable=invalid-name
-        """Shows the dock menu over a dock's title area or tab. Elsewhere, the event is ignored."""
-        dock = self._dock_at(event.globalPos()) if event is not None else None
-        if dock is None:
-            if event is not None:
-                event.ignore()
+        """Shows the dock menu over a dock's tab, title area or rail button, and Qt's own menu elsewhere."""
+        if event is None:
             return
-        self.dock_menu(dock).exec(event.globalPos())
+        dock = self.dock_at(QApplication.widgetAt(event.globalPos()), event.globalPos())
+        if dock is None:
+            super().contextMenuEvent(event)
+            return
+        menu = self.dock_menu(dock)
+        menu.exec(event.globalPos())
+        menu.deleteLater()
 
     def reset_dock_layout(self) -> None:
         """Puts every dock back in the first-run layout and opens it.
