@@ -37,7 +37,7 @@ from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.controller.tool_controller import ToolController
 from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.window.dock_menu import DockEdge, build_dock_menu, move_all_to_edge
-from src.ui.window.dock_rail import DockGroup, DockRails, RailButton
+from src.ui.window.dock_rail import DockGroup, DockRails
 from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.panel_dock import PanelDock
 from src.ui.window.window_geometry import capture_geometry
@@ -193,10 +193,14 @@ class MainWindow(QMainWindow):
         self._navigation_dock = PanelDock(NAVIGATION_DOCK_TITLE, DockID.NAVIGATION, self,
                                           QIcon(ICON_PATH_NAVIGATION_DOCK))
         self._rails = DockRails(self)
-        for dock in self.upper_docks:
-            self._rails.add_dock(dock, DockGroup.UPPER)
-        for dock in self.lower_docks:
-            self._rails.add_dock(dock, DockGroup.LOWER)
+        for docks, group in ((self.upper_docks, DockGroup.UPPER), (self.lower_docks, DockGroup.LOWER)):
+            for dock in docks:
+                button = self._rails.add_dock(dock, group)
+                # The rail blocks context menus, so each button opens the dock menu itself:
+                button.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+                button.customContextMenuRequested.connect(
+                    lambda pos, rail_button=button: self._show_dock_menu(rail_button.dock,
+                                                                         rail_button.mapToGlobal(pos)))
         self._rails.set_tools_dock(self._tools_dock)
         self._rails.set_generation_dock(self._generation_dock)
         self._rails.generate_button.clicked.connect(self.generate_signal)
@@ -276,10 +280,8 @@ class MainWindow(QMainWindow):
         return build_dock_menu(self, dock, self.docks)
 
     def dock_at(self, widget: Optional[QWidget], global_pos: QPoint) -> Optional[PanelDock]:
-        """Returns the dock whose tab, title area or rail button is at a screen position, given the widget there."""
+        """Returns the dock whose tab or title area is at a screen position, given the widget there."""
         while widget is not None and widget is not self:
-            if isinstance(widget, RailButton):
-                return widget.dock
             if isinstance(widget, QTabBar) and widget.parent() is self:
                 tab_index = widget.tabAt(widget.mapFromGlobal(global_pos))
                 if tab_index < 0:
@@ -294,17 +296,21 @@ class MainWindow(QMainWindow):
             widget = widget.parentWidget()
         return None
 
+    def _show_dock_menu(self, dock: PanelDock, global_pos: QPoint) -> None:
+        """Shows a dock's menu at a screen position, then deletes it."""
+        menu = self.dock_menu(dock)
+        menu.exec(global_pos)
+        menu.deleteLater()
+
     def contextMenuEvent(self, event: Optional[QContextMenuEvent]) -> None:  # pylint: disable=invalid-name
-        """Shows the dock menu over a dock's tab, title area or rail button, and Qt's own menu elsewhere."""
+        """Shows the dock menu over a dock's tab or title area, and Qt's own menu elsewhere."""
         if event is None:
             return
         dock = self.dock_at(QApplication.widgetAt(event.globalPos()), event.globalPos())
         if dock is None:
             super().contextMenuEvent(event)
             return
-        menu = self.dock_menu(dock)
-        menu.exec(event.globalPos())
-        menu.deleteLater()
+        self._show_dock_menu(dock, event.globalPos())
 
     def reset_dock_layout(self) -> None:
         """Puts every dock back in the first-run layout and opens it.

@@ -3,7 +3,7 @@ import sys
 from unittest.mock import patch
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QContextMenuEvent
 from PySide6.QtWidgets import QApplication, QLabel, QMenu, QTabBar
 
 from src.image.layers.image_stack import ImageStack
@@ -136,6 +136,28 @@ class DockMenuTest(IntraPaintTestCase):
         self.assertGreater(window.navigation_dock.height(), window.color_dock.height())
         self.assertGreater(window.navigation_dock.height(), window.generation_dock.height())
 
+    def test_move_to_edge_goes_outermost(self) -> None:
+        """A dock moved to an edge that holds docks lands on that edge's outer side, away from the canvas."""
+        window = self.window
+        moved = window.navigation_dock
+        others = [window.tools_dock, window.layers_dock]
+        outermost = {
+            DockEdge.LEFT: lambda dock: -dock.geometry().left(),
+            DockEdge.RIGHT: lambda dock: dock.geometry().right(),
+            DockEdge.TOP: lambda dock: -dock.geometry().top(),
+            DockEdge.BOTTOM: lambda dock: dock.geometry().bottom()
+        }
+        for edge, extent in outermost.items():
+            for dock in others:
+                self._trigger(dock, MENU_MOVE_TO_EDGE, edge_title(edge))
+            self._trigger(moved, MENU_MOVE_TO_EDGE, edge_title(edge))
+            self.assertEqual(window.dockWidgetArea(moved), edge.value, edge)
+            for dock in others:
+                self.assertEqual(window.dockWidgetArea(dock), edge.value, edge)
+                self.assertGreater(extent(moved), extent(dock), (edge, dock.objectName()))
+            self.assertTrue(moved.is_showing, edge)
+            self.assertNotIn(moved.windowTitle(), self._drawn_tab_texts(), edge)
+
     def test_move_to_edge_opens_closed_dock(self) -> None:
         """A closed dock opens when moved, as from its rail button."""
         window = self.window
@@ -191,12 +213,20 @@ class DockMenuTest(IntraPaintTestCase):
             self.assertEqual(window.dockWidgetArea(dock), Area.BottomDockWidgetArea, dock.objectName())
         self.assertEqual(sorted(self._drawn_tab_texts()), sorted(dock.windowTitle() for dock in available))
 
-    def test_dock_at_rail_button_and_tab(self) -> None:
-        """Right-click lookup finds the dock for a rail button and for a dock tab, and none over dock content."""
+    def test_rail_button_right_click_opens_menu(self) -> None:
+        """Right-clicking a rail button opens its dock's menu, though the rail blocks context menus."""
         window = self.window
         rail = window.rails.rail_for(window.layers_dock)
         button = next(button for button in rail.buttons if button.dock is window.layers_dock)
-        self.assertIs(window.dock_at(button, button.mapToGlobal(button.rect().center())), window.layers_dock)
+        center = button.rect().center()
+        event = QContextMenuEvent(QContextMenuEvent.Reason.Mouse, center, button.mapToGlobal(center))
+        with patch.object(MainWindow, '_show_dock_menu') as show_menu:
+            QApplication.sendEvent(button, event)
+        show_menu.assert_called_once_with(window.layers_dock, button.mapToGlobal(center))
+
+    def test_dock_at_tab_and_title(self) -> None:
+        """Right-click lookup finds the dock for a dock tab, and none over dock content."""
+        window = self.window
         bar = next(bar for bar in window.findChildren(QTabBar, options=Qt.FindChildOption.FindDirectChildrenOnly)
                    if not bar.isHidden() and window.color_dock.windowTitle() in
                    [bar.tabText(i) for i in range(bar.count())])

@@ -6,13 +6,17 @@
 - Docks are shown while they are placed, and every move ends with `_settle`, which hides the tab bars Qt leaves
   drawn over the window. `_settle` relies on `MainWindow` putting tabs above docks.
 """
+import logging
 from enum import Enum
 from typing import Optional
 
 from PySide6.QtCore import Qt, QRect
 from PySide6.QtWidgets import QApplication, QMainWindow, QMenu, QTabBar, QWidget
 
+from src.ui.window.dock_state import move_dock_to_area_start, restore_state_without_stale_tab_bars
 from src.ui.window.panel_dock import PanelDock
+
+logger = logging.getLogger(__name__)
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.window.dock_menu'
@@ -121,12 +125,19 @@ def tab_with(window: QMainWindow, dock: PanelDock, target: PanelDock) -> None:
 
 
 def move_to_edge(window: QMainWindow, dock: PanelDock, edge: DockEdge) -> None:
-    """Moves a dock into a new strip running the full length of a window edge: a column for Left and Right, a row for
-    Top and Bottom."""
+    """Moves a dock into a new strip running the full length of a window edge, outside every other strip there: a
+    column for Left and Right, a row for Top and Bottom."""
     _show_for_placement(dock)
     across = Qt.Orientation.Horizontal if edge in (DockEdge.LEFT, DockEdge.RIGHT) else Qt.Orientation.Vertical
     window.addDockWidget(edge.value, dock, across)
     dock.show()
+    if edge in (DockEdge.LEFT, DockEdge.TOP):
+        # addDockWidget appends, which is the side nearest the canvas for Left and Top:
+        reordered = move_dock_to_area_start(window.saveState().data(), edge.value, across, dock.objectName())
+        if reordered is None:
+            logger.warning(f'Could not move {dock.objectName()} to the outer side of its area')
+        else:
+            restore_state_without_stale_tab_bars(window, reordered)
     _settle(window)
     dock.raise_()
 
