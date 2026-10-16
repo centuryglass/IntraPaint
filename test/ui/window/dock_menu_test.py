@@ -2,7 +2,7 @@
 import sys
 from unittest.mock import patch
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtGui import QAction, QContextMenuEvent
 from PySide6.QtWidgets import QApplication, QLabel, QMenu, QTabBar
 
@@ -65,15 +65,16 @@ class DockMenuTest(IntraPaintTestCase):
         self._entries(menu)[path[-1]].trigger()
         self._activate()
 
-    def _group(self, dock: PanelDock) -> set[PanelDock]:
-        return {dock, *self.window.tabifiedDockWidgets(dock)}
+    @staticmethod
+    def _group(dock: PanelDock) -> set[PanelDock]:
+        return {dock, *dock.group_mates()}
 
-    def _drawn_tab_texts(self) -> list[str]:
-        """Returns the tab texts of every dock tab bar drawn inside the window. Qt parks spare bars outside it."""
-        window = self.window
-        bars = [bar for bar in window.findChildren(QTabBar, options=Qt.FindChildOption.FindDirectChildrenOnly)
-                if not bar.isHidden() and bar.geometry().intersects(window.rect())]
-        return [bar.tabText(i) for bar in bars for i in range(bar.count())]
+    def _open_docks(self) -> set[PanelDock]:
+        return {dock for dock in self.window.docks if not dock.isHidden()}
+
+    def _shown_tab_bars(self) -> list[QTabBar]:
+        return [bar for bar in self.window.findChildren(QTabBar, options=Qt.FindChildOption.FindDirectChildrenOnly)
+                if not bar.isHidden()]
 
     def test_menu_entries(self) -> None:
         """An open docked dock's menu has every entry in order, with one edge per Move to edge entry."""
@@ -85,24 +86,32 @@ class DockMenuTest(IntraPaintTestCase):
                              [edge_title(edge) for edge in DockEdge])
 
     def test_tab_with_lists_other_groups(self) -> None:
-        """Tab with lists each other docked group by its front dock, and leaves out the dock's own group."""
+        """Tab with lists each other docked group by its open dock, counting its closed docks with content, and leaves
+        out the dock's own group."""
         window = self.window
         expected_lower = group_label([window.layers_dock, window.color_dock, window.navigation_dock])
         self.assertEqual(list(self._entries(self._submenu(window.tools_dock, MENU_TAB_WITH))), [expected_lower])
         expected_upper = group_label([window.tools_dock, window.generation_dock])
         self.assertEqual(list(self._entries(self._submenu(window.color_dock, MENU_TAB_WITH))), [expected_upper])
 
+    def test_tab_with_lists_a_group_with_no_open_dock(self) -> None:
+        """A group whose docks are all closed is still a Tab with target, labeled by its first dock."""
+        window = self.window
+        window.layers_dock.hide()
+        self._trigger(window.tools_dock, MENU_TAB_WITH,
+                      group_label([window.layers_dock, window.color_dock, window.navigation_dock]))
+        self.assertIn(window.layers_dock, self._group(window.tools_dock))
+        self.assertTrue(window.tools_dock.is_showing)
+
     def test_tab_with_joins_group(self) -> None:
-        """Tab with moves the dock into the target's group, in front."""
+        """Tab with moves the dock into the target's group as its open dock, and closes the dock that was open."""
         window = self.window
         self._trigger(window.color_dock, MENU_TAB_WITH, group_label([window.tools_dock, window.generation_dock]))
         self.assertIn(window.tools_dock, self._group(window.color_dock))
         self.assertNotIn(window.layers_dock, self._group(window.color_dock))
         self.assertTrue(window.color_dock.is_showing)
-        self.assertEqual(sorted(self._drawn_tab_texts()),
-                         sorted(dock.windowTitle() for dock in (window.tools_dock, window.generation_dock,
-                                                                window.color_dock, window.layers_dock,
-                                                                window.navigation_dock)))
+        self.assertEqual(self._open_docks(), {window.color_dock, window.layers_dock})
+        self.assertEqual(self._shown_tab_bars(), [])
 
     def test_tab_with_disabled_without_other_groups(self) -> None:
         """With every dock in one group, Tab with is disabled."""
@@ -121,7 +130,7 @@ class DockMenuTest(IntraPaintTestCase):
             self.assertEqual(window.dockWidgetArea(dock), edge.value, edge)
             self.assertTrue(dock.is_showing, edge)
             self.assertEqual(self._group(dock), {dock}, edge)
-            self.assertNotIn(dock.windowTitle(), self._drawn_tab_texts(), edge)
+            self.assertEqual(self._shown_tab_bars(), [], edge)
 
     def test_move_to_edge_spans_the_edge(self) -> None:
         """Moving to an edge that holds docks adds a strip running the full length of that edge."""
@@ -156,7 +165,6 @@ class DockMenuTest(IntraPaintTestCase):
                 self.assertEqual(window.dockWidgetArea(dock), edge.value, edge)
                 self.assertGreater(extent(moved), extent(dock), (edge, dock.objectName()))
             self.assertTrue(moved.is_showing, edge)
-            self.assertNotIn(moved.windowTitle(), self._drawn_tab_texts(), edge)
 
     def test_move_to_edge_opens_closed_dock(self) -> None:
         """A closed dock opens when moved, as from its rail button."""
@@ -178,40 +186,36 @@ class DockMenuTest(IntraPaintTestCase):
         self._trigger(window.navigation_dock, MENU_DOCK)
         self.assertFalse(window.navigation_dock.isFloating())
 
-    def test_emptied_group_draws_no_tab_bar(self) -> None:
-        """Moving every open dock out of a group that still holds a closed dock leaves no tab bar behind."""
+    def test_moving_a_floating_dock_closes_nothing(self) -> None:
+        """Moving a floating dock to an edge leaves the open dock of the group it floated from open."""
         window = self.window
-        self._trigger(window.tools_dock, MENU_MOVE_TO_EDGE, edge_title(DockEdge.LEFT))
-        self._trigger(window.generation_dock, MENU_MOVE_TO_EDGE, edge_title(DockEdge.LEFT))
-        self.assertEqual(sorted(self._drawn_tab_texts()),
-                         sorted(dock.windowTitle() for dock in window.lower_docks))
+        self._trigger(window.color_dock, MENU_FLOAT)
+        self.assertFalse(window.layers_dock.isHidden())
+        self._trigger(window.color_dock, MENU_MOVE_TO_EDGE, edge_title(DockEdge.LEFT))
+        self.assertEqual(self._open_docks(), {window.tools_dock, window.layers_dock, window.color_dock})
 
     def test_hide_panel(self) -> None:
         """Hide panel closes the dock."""
-        self._trigger(self.window.navigation_dock, MENU_HIDE_PANEL)
-        self.assertTrue(self.window.navigation_dock.isHidden())
+        self._trigger(self.window.layers_dock, MENU_HIDE_PANEL)
+        self.assertTrue(self.window.layers_dock.isHidden())
 
     def test_move_all_to_edge(self) -> None:
-        """Move all panels to edge puts every dock with content in one group on that edge, and closed docks stay
-        closed."""
+        """Move all panels to edge puts every dock with content in one group on that edge, with the first open dock
+        open and the rest closed."""
         window = self.window
-        window.color_dock.hide()
-        self._trigger(window.tools_dock, MENU_MOVE_ALL_TO_EDGE, edge_title(DockEdge.LEFT))
+        window.tools_dock.hide()
+        self._trigger(window.layers_dock, MENU_MOVE_ALL_TO_EDGE, edge_title(DockEdge.LEFT))
         available = [dock for dock in window.docks if dock.is_available]
         for dock in available:
             self.assertEqual(window.dockWidgetArea(dock), Area.LeftDockWidgetArea, dock.objectName())
-        self.assertTrue(window.color_dock.isHidden())
-        self.assertTrue(window.controlnet_dock.isHidden())
-        # tabifiedDockWidgets leaves out closed docks, so the closed dock is checked once reopened:
-        window.color_dock.show()
-        self._activate()
-        for dock in available:
-            self.assertIn(dock, self._group(window.tools_dock))
+        self.assertEqual(self._group(window.tools_dock), set(available))
+        self.assertEqual(self._open_docks(), {window.layers_dock})
         window.move_all_docks_to_edge(DockEdge.BOTTOM)
         self._activate()
         for dock in available:
             self.assertEqual(window.dockWidgetArea(dock), Area.BottomDockWidgetArea, dock.objectName())
-        self.assertEqual(sorted(self._drawn_tab_texts()), sorted(dock.windowTitle() for dock in available))
+        self.assertEqual(self._open_docks(), {window.layers_dock})
+        self.assertEqual(self._shown_tab_bars(), [])
 
     def test_rail_button_right_click_opens_menu(self) -> None:
         """Right-clicking a rail button opens its dock's menu, though the rail blocks context menus."""
@@ -224,14 +228,12 @@ class DockMenuTest(IntraPaintTestCase):
             QApplication.sendEvent(button, event)
         show_menu.assert_called_once_with(window.layers_dock, button.mapToGlobal(center))
 
-    def test_dock_at_tab_and_title(self) -> None:
-        """Right-click lookup finds the dock for a dock tab, and none over dock content."""
+    def test_dock_at_title(self) -> None:
+        """Right-click lookup finds the dock for its title area, and none over dock content."""
         window = self.window
-        bar = next(bar for bar in window.findChildren(QTabBar, options=Qt.FindChildOption.FindDirectChildrenOnly)
-                   if not bar.isHidden() and window.color_dock.windowTitle() in
-                   [bar.tabText(i) for i in range(bar.count())])
-        index = [bar.tabText(i) for i in range(bar.count())].index(window.color_dock.windowTitle())
-        self.assertIs(window.dock_at(bar, bar.mapToGlobal(bar.tabRect(index).center())), window.color_dock)
+        dock = window.layers_dock
+        title_point = QPoint(dock.width() // 2, 2)
+        self.assertIs(window.dock_at(dock, dock.mapToGlobal(title_point)), dock)
         content = window.layers_dock.content
         assert content is not None
         self.assertIsNone(window.dock_at(content, content.mapToGlobal(content.rect().center())))

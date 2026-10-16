@@ -74,35 +74,34 @@ class MainWindowDockTest(IntraPaintTestCase):
         return window
 
     @staticmethod
-    def _group(window: MainWindow, dock: PanelDock) -> set[str]:
-        """Returns the object names of a dock and every dock tabified with it."""
-        return {dock.objectName(), *(other.objectName() for other in window.tabifiedDockWidgets(dock))}
+    def _group(dock: PanelDock) -> set[str]:
+        """Returns the object names of a dock and every dock tabified with it, open or closed."""
+        return {dock.objectName(), *(other.objectName() for other in dock.group_mates())}
 
     @staticmethod
-    def _tab_bar_texts(window: MainWindow) -> list[list[str]]:
-        """Returns the tab texts of each shown dock tab bar inside the window. Qt parks spare bars outside it."""
-        bars = [tab_bar for tab_bar in window.findChildren(QTabBar, options=Qt.FindChildOption.FindDirectChildrenOnly)
-                if not tab_bar.isHidden() and tab_bar.geometry().intersects(window.rect())]
-        return [[tab_bar.tabText(i) for i in range(tab_bar.count())] for tab_bar in bars]
+    def _shown_tab_bars(window: MainWindow) -> list[QTabBar]:
+        """Returns the window's dock tab bars that aren't hidden."""
+        return [tab_bar for tab_bar in window.findChildren(QTabBar, options=Qt.FindChildOption.FindDirectChildrenOnly)
+                if not tab_bar.isHidden()]
+
+    @staticmethod
+    def _open_docks(window: MainWindow) -> set[str]:
+        return {dock.objectName() for dock in window.docks if not dock.isHidden()}
 
     def test_first_run_layout(self) -> None:
-        """Every dock starts in the right area. Tools and Layers lead the upper and lower groups, and Tools shows at its
-        default width above Layers."""
+        """Every dock starts in the right area. Tools and Layers are the open docks of the upper and lower groups, and
+        Tools shows at its default width above Layers, with no tab bar drawn."""
         window = self.window
         for dock in window.docks:
             self.assertEqual(window.dockWidgetArea(dock), Area.RightDockWidgetArea)
-        self.assertEqual(self._group(window, window.layers_dock),
-                         {dock.objectName() for dock in window.lower_docks})
+        self.assertEqual(self._group(window.layers_dock), {dock.objectName() for dock in window.lower_docks})
+        self.assertEqual(self._group(window.tools_dock), {dock.objectName() for dock in window.upper_docks})
+        self.assertEqual(self._open_docks(window), {window.tools_dock.objectName(), window.layers_dock.objectName()})
         self.assertTrue(window.layers_dock.is_showing)
-        self.assertLess(window.tools_dock.geometry().bottom(), window.layers_dock.geometry().top())
-        self.assertEqual(self._group(window, window.tools_dock),
-                         {window.tools_dock.objectName(), window.generation_dock.objectName()})
         self.assertTrue(window.tools_dock.is_showing)
-        self.assertFalse(window.generation_dock.is_showing)
+        self.assertLess(window.tools_dock.geometry().bottom(), window.layers_dock.geometry().top())
         self.assertGreaterEqual(window.tools_dock.width(), DEFAULT_SIDE_DOCK_WIDTH)
-        self.assertEqual(sorted(self._tab_bar_texts(window)),
-                         sorted([[window.tools_dock.windowTitle(), window.generation_dock.windowTitle()],
-                                 [dock.windowTitle() for dock in window.lower_docks]]))
+        self.assertEqual(self._shown_tab_bars(window), [])
 
     def test_first_run_layout_on_portrait_screen(self) -> None:
         """On a screen taller than wide, the first-run layout uses the bottom area."""
@@ -111,16 +110,60 @@ class MainWindowDockTest(IntraPaintTestCase):
         for dock in window.docks:
             self.assertEqual(window.dockWidgetArea(dock), Area.BottomDockWidgetArea)
 
-    def test_empty_dock_is_hidden_and_opens_in_its_group(self) -> None:
-        """A dock without content hides with its toggle action, and joins its tab group when content arrives."""
+    def test_empty_dock_is_hidden_and_stays_closed_behind_its_group(self) -> None:
+        """A dock without content hides with its toggle action. Content arriving while another dock of its group is
+        open leaves it closed in that group."""
         controlnet = self.window.controlnet_dock
         self.assertTrue(controlnet.isHidden())
         self.assertFalse(controlnet.toggleViewAction().isVisible())
+        controlnet.set_open(True)
         controlnet.set_content(QLabel('controlnet'))
-        self.assertFalse(controlnet.isHidden())
+        self.assertTrue(controlnet.isHidden())
+        self.assertFalse(controlnet.open_when_available)
         self.assertTrue(controlnet.toggleViewAction().isVisible())
-        self.assertIn(controlnet.objectName(), self._group(self.window, self.window.tools_dock))
-        self.assertTrue(self.window.tools_dock.is_showing, 'arriving content stays behind the current tab')
+        self.assertIn(controlnet.objectName(), self._group(self.window.tools_dock))
+        self.assertTrue(self.window.tools_dock.is_showing)
+
+    def test_empty_dock_opens_when_its_group_has_no_open_dock(self) -> None:
+        """Content arriving for a dock that should open, in a group with no open dock, opens it."""
+        controlnet = self.window.controlnet_dock
+        self.window.tools_dock.hide()
+        controlnet.set_open(True)
+        controlnet.set_content(QLabel('controlnet'))
+        self.assertTrue(controlnet.is_showing)
+
+    def test_opening_a_dock_closes_the_rest_of_its_group(self) -> None:
+        """Opening a closed dock by key, toggle action or `set_open` takes the place of its group's open dock, at the
+        same size, and leaves the other group alone."""
+        window = self.window
+        tools, generation = window.tools_dock, window.generation_dock
+        tools_geometry = tools.geometry()
+        openers = {
+            'key': lambda dock: dock.toggle_from_key(),
+            'toggle action': lambda dock: dock.toggleViewAction().trigger(),
+            'set_open': lambda dock: dock.set_open(True)
+        }
+        for name, open_dock in openers.items():
+            with self.subTest(opener=name):
+                open_dock(generation)
+                window.layout().activate()
+                self.assertEqual(self._open_docks(window), {generation.objectName(), window.layers_dock.objectName()})
+                self.assertEqual(generation.geometry(), tools_geometry)
+                self.assertEqual(self._shown_tab_bars(window), [])
+                open_dock(tools)
+                window.layout().activate()
+                self.assertEqual(self._open_docks(window), {tools.objectName(), window.layers_dock.objectName()})
+
+    def test_docking_a_floating_dock_into_its_group_closes_the_rest(self) -> None:
+        """A floating dock that docks back into its tab group, as after a mouse drop, is the group's open dock."""
+        window = self.window
+        window.generation_dock.toggle_from_key()
+        window.generation_dock.setFloating(True)
+        window.tools_dock.toggle_from_key()
+        self.assertFalse(window.tools_dock.isHidden())
+        window.generation_dock.setFloating(False)
+        self.assertTrue(window.tools_dock.isHidden())
+        self.assertFalse(window.generation_dock.isHidden())
 
     def test_closed_dock_stays_closed_across_content_changes(self) -> None:
         """Losing and regaining content keeps a closed dock closed, and an open dock open."""
@@ -129,7 +172,7 @@ class MainWindowDockTest(IntraPaintTestCase):
         generation.set_content(None)
         generation.set_content(QLabel('other generator'))
         self.assertTrue(generation.isHidden())
-        generation.show()
+        generation.open_in_group()
         generation.set_content(None)
         self.assertTrue(generation.isHidden())
         generation.set_content(QLabel('third generator'))
@@ -146,12 +189,12 @@ class MainWindowDockTest(IntraPaintTestCase):
         old_content.deleteLater()
 
     def test_key_toggles_dock(self) -> None:
-        """The dock key shows and raises a dock behind another tab, and hides the dock that is showing."""
+        """The dock key opens a closed dock in place of its group's open dock, and closes the dock that is showing."""
         generation = self.window.generation_dock
         self.assertFalse(generation.is_showing)
         self.assertTrue(generation.toggle_from_key())
         self.assertTrue(generation.is_showing)
-        self.assertFalse(self.window.tools_dock.is_showing)
+        self.assertTrue(self.window.tools_dock.isHidden())
         self.assertTrue(generation.toggle_from_key())
         self.assertTrue(generation.isHidden())
         self.assertTrue(generation.toggle_from_key())
@@ -187,9 +230,9 @@ class MainWindowDockTest(IntraPaintTestCase):
                     self.assertEqual(restored_dock.geometry(), source_dock.geometry())
 
     def test_restored_front_tab_survives_late_content(self) -> None:
-        """The dock in front of its tab group when the layout was saved is in front again once a restored window
-        gets content, in the order AppController provides it."""
-        self.window.generation_dock.raise_()
+        """The dock open in its tab group when the layout was saved opens again once a restored window gets content,
+        in the order AppController provides it."""
+        self.window.generation_dock.open_in_group()
         saved = self.window.save_dock_state()
         restored = MainWindow(self.image_stack)
         self.windows.append(restored)
@@ -200,9 +243,31 @@ class MainWindowDockTest(IntraPaintTestCase):
         restored.show()
         restored.layout().activate()
         self.assertTrue(restored.generation_dock.is_showing)
-        self.assertFalse(restored.tools_dock.is_showing)
-        self.assertIn([restored.tools_dock.windowTitle(), restored.generation_dock.windowTitle()],
-                      self._tab_bar_texts(restored))
+        self.assertTrue(restored.tools_dock.isHidden())
+        self.assertEqual(self._shown_tab_bars(restored), [])
+
+    def test_restoring_a_group_with_two_open_docks_keeps_its_front_dock(self) -> None:
+        """A saved layout with more than one open dock in a group, as older versions saved, restores with only the
+        group's front dock open, whether the docks have content yet or not."""
+        window = self.window
+        with PanelDock.placing_docks():
+            window.generation_dock.show()
+            window.color_dock.show()
+        window.generation_dock.raise_()
+        window.color_dock.raise_()
+        saved = window.saveState(DOCK_STATE_VERSION).toBase64().data().decode()
+        expected = {window.generation_dock.objectName(), window.color_dock.objectName()}
+
+        filled = self._new_window()
+        self.assertTrue(filled.restore_dock_state(saved))
+        self.assertEqual(self._open_docks(filled), expected)
+
+        late = MainWindow(self.image_stack)
+        self.windows.append(late)
+        late.restore_dock_state(saved)
+        for dock in late.docks:
+            dock.set_content(QLabel(dock.windowTitle()))
+        self.assertEqual(self._open_docks(late), expected)
 
     def test_invalid_saved_layout_uses_first_run_layout(self) -> None:
         """Garbage text, an empty state and a state with another version restore nothing and keep the default."""
@@ -218,8 +283,6 @@ class MainWindowDockTest(IntraPaintTestCase):
                 window.show()
                 self.assertEqual(window.dockWidgetArea(window.tools_dock), Area.RightDockWidgetArea)
                 self.assertFalse(window.tools_dock.isHidden())
-                # Tools is the only open dock, so its group shows no tab bar:
-                self.assertEqual(self._tab_bar_texts(window), [], 'a failed restore leaves no tab bar behind')
 
     def test_large_layout_restores_inside_small_window(self) -> None:
         """A layout saved in a 2400x1400 window keeps every dock inside a 1024x600 window, leaving the canvas room."""
@@ -243,6 +306,7 @@ class MainWindowDockTest(IntraPaintTestCase):
 
     def test_empty_dock_open_at_exit_reopens_after_restore(self) -> None:
         """A dock that was open but empty when the layout was saved opens once a restored window gives it content."""
+        self.window.tools_dock.hide()
         self.window.controlnet_dock.set_open(True)
         saved = self.window.save_dock_state()
         self.assertTrue(self.window.controlnet_dock.isHidden())
@@ -256,7 +320,7 @@ class MainWindowDockTest(IntraPaintTestCase):
     def test_image_selector_hides_docks_and_restores_layout(self) -> None:
         """The image selector hides every dock, and closing it brings back the layout from before."""
         window = self.window
-        window.generation_dock.raise_()
+        window.generation_dock.open_in_group()
         window.layout().activate()
         showing_geometry = window.generation_dock.geometry()
         window.set_image_selector_visible(True)
@@ -265,28 +329,27 @@ class MainWindowDockTest(IntraPaintTestCase):
         self.assertTrue(window.controlnet_dock.isHidden())
         window.set_image_selector_visible(False)
         window.layout().activate()
-        self.assertFalse(window.tools_dock.isHidden())
+        self.assertEqual(self._open_docks(window),
+                         {window.generation_dock.objectName(), window.layers_dock.objectName()})
         self.assertTrue(window.generation_dock.is_showing)
-        self.assertTrue(window.controlnet_dock.isHidden())
         self.assertEqual(window.generation_dock.geometry(), showing_geometry)
 
-    def test_closing_image_selector_leaves_no_stale_tab_bars(self) -> None:
-        """Each tab group draws one tab bar after the image selector opens and closes, however many times."""
+    def test_closing_image_selector_draws_no_tab_bars(self) -> None:
+        """No dock tab bar is drawn after the image selector opens and closes, however many times."""
         window = self.window
-        expected = sorted(self._tab_bar_texts(window))
         for _ in range(2):
             window.set_image_selector_visible(True)
             window.set_image_selector_visible(False)
             window.layout().activate()
-            self.assertEqual(sorted(self._tab_bar_texts(window)), expected)
+            self.assertEqual(self._shown_tab_bars(window), [])
 
-    def test_failed_restore_keeps_tab_bars(self) -> None:
-        """A saved layout of another version is refused, and the first-run tab bars stay drawn."""
+    def test_failed_restore_keeps_layout(self) -> None:
+        """A saved layout of another version is refused, and the open docks stay open."""
         window = self.window
-        expected = sorted(self._tab_bar_texts(window))
+        expected = self._open_docks(window)
         state = window.saveState(DOCK_STATE_VERSION + 1).toBase64().data().decode()
         self.assertFalse(window.restore_dock_state(state))
-        self.assertEqual(sorted(self._tab_bar_texts(window)), expected)
+        self.assertEqual(self._open_docks(window), expected)
 
     def test_saving_while_selector_shows_saves_previous_layout(self) -> None:
         """Saving while the image selector hides the docks saves the layout from before it opened."""
@@ -296,20 +359,20 @@ class MainWindowDockTest(IntraPaintTestCase):
         self.window.set_image_selector_visible(False)
 
     def test_reset_layout_brings_back_moved_and_closed_docks(self) -> None:
-        """Reset docks a floating dock, closes nothing, reopens closed docks and returns all of them to the right."""
+        """Reset docks a floating dock, returns every dock to the right, and opens only Tools and Layers."""
         window = self.window
         window.generation_dock.setFloating(True)
         window.tools_dock.hide()
+        window.layers_dock.hide()
         window.reset_dock_layout()
         for dock in (window.tools_dock, window.generation_dock):
             self.assertFalse(dock.isFloating())
-            self.assertFalse(dock.isHidden())
             self.assertEqual(window.dockWidgetArea(dock), Area.RightDockWidgetArea)
+        self.assertEqual(self._open_docks(window), {window.tools_dock.objectName(), window.layers_dock.objectName()})
         self.assertTrue(window.tools_dock.is_showing)
 
-    def test_no_stray_tab_bars_after_reset(self) -> None:
-        """After moving docks around and resetting, the only tab bars inside the window are the two for the right
-        area's groups."""
+    def test_no_tab_bars_after_reset(self) -> None:
+        """After moving docks around and resetting, no dock tab bar is drawn."""
         window = self.window
         window.removeDockWidget(window.generation_dock)
         window.addDockWidget(Area.LeftDockWidgetArea, window.generation_dock)
@@ -318,9 +381,7 @@ class MainWindowDockTest(IntraPaintTestCase):
         window.reset_dock_layout()
         window.reset_dock_layout()
         window.layout().activate()
-        self.assertEqual(sorted(self._tab_bar_texts(window)),
-                         sorted([[window.tools_dock.windowTitle(), window.generation_dock.windowTitle()],
-                                 [dock.windowTitle() for dock in window.lower_docks]]))
+        self.assertEqual(self._shown_tab_bars(window), [])
 
     def test_offscreen_floating_dock_moves_on_screen(self) -> None:
         """A restored floating dock that no display shows moves onto the window's display."""

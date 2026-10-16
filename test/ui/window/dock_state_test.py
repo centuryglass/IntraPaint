@@ -1,10 +1,11 @@
-"""Tests editing saved dock layouts: moving a dock to the start of its area, and refusing layouts of another shape."""
+"""Tests reading and editing saved dock layouts: tab groups, moving a dock to the start of its area, and refusing
+layouts of another shape."""
 import sys
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QDockWidget, QLabel, QMainWindow
 
-from src.ui.window.dock_state import move_dock_to_area_start
+from src.ui.window.dock_state import SavedDock, SavedGroup, move_dock_to_area_start, read_dock_groups
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -72,3 +73,30 @@ class DockStateTest(IntraPaintTestCase):
         self._activate()
         state = window.saveState().data()
         self.assertEqual(move_dock_to_area_start(state, top, Qt.Orientation.Vertical, 'moved'), state)
+
+    def test_reads_lone_docks_in_layout_order(self) -> None:
+        """Each untabbed dock is a group of one, in front while open."""
+        self.docks['second'].hide()
+        groups = read_dock_groups(self.window.saveState().data())
+        self.assertEqual(groups, [SavedGroup([SavedDock('first', True, False)], 0),
+                                  SavedGroup([SavedDock('second', False, False)], -1),
+                                  SavedGroup([SavedDock('moved', True, False)], 0)])
+
+    def test_reads_tab_groups_with_closed_and_floating_docks(self) -> None:
+        """A tab group lists every dock in tab order, closed and floating ones included, and the dock in front."""
+        window = self.window
+        window.tabifyDockWidget(self.docks['first'], self.docks['second'])
+        window.tabifyDockWidget(self.docks['first'], self.docks['moved'])
+        self.docks['second'].raise_()
+        self.docks['moved'].setFloating(True)
+        self.docks['first'].hide()
+        self._activate()
+        groups = read_dock_groups(window.saveState().data())
+        self.assertEqual(groups, [SavedGroup([SavedDock('first', False, False), SavedDock('second', True, False),
+                                              SavedDock('moved', True, True)], 1)])
+
+    def test_unreadable_layout_gives_none(self) -> None:
+        """Broken or empty bytes give None."""
+        state = self.window.saveState().data()
+        self.assertIsNone(read_dock_groups(state[:40]))
+        self.assertIsNone(read_dock_groups(b''))
