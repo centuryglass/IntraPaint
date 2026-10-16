@@ -577,7 +577,7 @@ class DockRails:
 
     def sync(self) -> None:
         """Moves each button to the rail of its dock's current area. Call after a layout change Qt doesn't report with
-        `dockLocationChanged`, such as `restoreState`."""
+        `dockLocationChanged`, such as `addDockWidget` or `restoreState`."""
         for _group, dock, _button in self._docks:
             area = self._window.dockWidgetArea(dock)
             if area in self._rails:
