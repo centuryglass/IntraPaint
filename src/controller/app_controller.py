@@ -101,6 +101,7 @@ from src.ui.panel.tool_panel import ToolPanel
 from src.ui.theme import (apply_font_point_size, apply_overlay_scroll_bars, apply_rounded_popups, apply_style,
                           apply_theme)
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
+from src.ui.window.dock_menu import DockEdge, MENU_MOVE_ALL_TO_EDGE, edge_title
 from src.ui.window.main_window import MainWindow
 from src.ui.window.navigation_window import NavigationWindow
 from src.undo_stack import UndoStack
@@ -157,6 +158,7 @@ MENU_EDIT = _tr('Edit')
 MENU_IMAGE = _tr('Image')
 MENU_VIEW = _tr('View')
 MENU_VIEW_PANELS = MENU_VIEW + '.' + _tr('Panels')
+MENU_VIEW_MOVE_ALL_PANELS = MENU_VIEW_PANELS + '.' + MENU_MOVE_ALL_TO_EDGE
 MENU_SELECTION = _tr('Selection')
 MENU_LAYERS = _tr('Layers')
 MENU_FILTERS = _tr('Filters')
@@ -336,6 +338,9 @@ class AppController(MenuBuilder):
         # Set up menus:
         self.build_menus()
         self.insert_menu_actions(MENU_VIEW_PANELS, self._window.dock_toggle_actions())
+        for edge in DockEdge:
+            self.add_menu_action(MENU_VIEW_MOVE_ALL_PANELS, lambda e=edge: self._window.move_all_docks_to_edge(e),
+                                 title=edge_title(edge))
 
         # Since image filter menus follow a very simple pattern, add them here instead of using @menu_action.
         # At the same time, make sure the filter tool's list of available options contains all filters.

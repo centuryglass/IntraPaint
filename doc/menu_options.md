@@ -206,10 +206,13 @@ Actions that change how the image is shown, without changing the image.
 - **Show/hide rulers** (Ctrl+Alt+Shift+R): Show or hide the rulers beside the image.
 
 ### Panels
-Lists each panel docked around the image: Tools, Image Generation, and ControlNet. Select one to show or hide it. A panel only appears in the list while it has something to show, so Image Generation needs a configured image generator and ControlNet needs a generator that supports it.
+Lists each panel docked around the image: Tools, Image Generation, ControlNet, Layers, Color, and Navigation. Select one to show or hide it. A panel only appears in the list while it has something to show, so Image Generation needs a configured image generator and ControlNet needs a generator that supports it.
 
 #### Reset panel layout (Ctrl+Alt+Shift+P)
-Puts every panel back where it starts on first run, tabbed together on the right side of the window (or at the bottom on a screen taller than it is wide), and opens all of them.
+Puts every panel back where it starts on first run, in two tabbed groups on the right side of the window (or at the bottom on a screen taller than it is wide), and opens all of them.
+
+#### Move all panels to edge
+Stacks every panel as tabs in one group along the chosen window edge: Left, Right, Top, or Bottom. Hidden panels move too, and stay hidden.
 
 ### Show navigation window (Ctrl+Alt+W)
 Opens another window with a view of the entire edited image. This can be used to adjust the image viewport within the main window, and to move the image generation area.  The Navigation tab on the tool panel behaves identically to this window.
