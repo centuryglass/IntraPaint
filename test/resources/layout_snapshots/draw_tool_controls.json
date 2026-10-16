@@ -2,80 +2,62 @@
   "minimum": {
     "problems": [],
     "size": [
-      309,
-      202
+      164,
+      269
     ]
   },
   "narrow": {
     "problems": [
-      "overlap: QLabel 'Size:' and KeyHintLabel '[' share 13x30",
-      "overlap: IntSliderSpinbox and KeyHintLabel ']' share 18x30",
-      "overlap: QLabel 'Opacity:' and KeyHintLabel '<' share 13x30",
-      "overlap: FloatSliderSpinbox[0] and KeyHintLabel '>' share 18x30",
-      "overlap: QLabel 'Hardness:' and KeyHintLabel '{' share 13x30",
-      "overlap: FloatSliderSpinbox[1] and KeyHintLabel '}' share 18x30",
-      "clipped: IntSliderSpinbox shows 74x30 of 148x30",
-      "clipped: IntSliderSpinbox/QSlider shows 70x23 of 88x23",
-      "clipped: IntSliderSpinbox/QSpinBox shows 0x0 of 50x26",
-      "clipped: FloatSliderSpinbox[0] shows 74x30 of 148x30",
-      "clipped: FloatSliderSpinbox[0]/QSlider shows 70x23 of 84x23",
-      "clipped: FloatSliderSpinbox[0]/QDoubleSpinBox shows 0x0 of 54x26",
-      "clipped: FloatSliderSpinbox[1] shows 74x30 of 148x30",
-      "clipped: FloatSliderSpinbox[1]/QSlider shows 70x23 of 84x23",
-      "clipped: FloatSliderSpinbox[1]/QDoubleSpinBox shows 0x0 of 54x26",
-      "squeezed: QLabel 'Pattern:' is 41x48, minimum 47x17",
-      "squeezed: FillStyleComboBox is 41x32, minimum 184x32",
-      "squeezed: CheckBox 'Antialiasing' is 65x22, minimum 93x22",
-      "squeezed: CheckBox 'Draw in selection only' is 65x22, minimum 154x22"
+      "squeezed: StrokeBlock is 64x251, minimum 146x251",
+      "squeezed: StrokeBlock/QWidget[0] is 54x80, minimum 110x80",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[0] shows 54x24 of 110x24",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[1] shows 54x24 of 110x24",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[2] shows 54x24 of 110x24",
+      "squeezed: StrokeBlock/QWidget[1] is 64x109, minimum 103x109",
+      "squeezed: StrokeBlock/QWidget[1]/FillStyleComboBox is 64x32, minimum 103x32",
+      "squeezed: StrokeBlock/QWidget[2] is 64x50, minimum 146x50",
+      "squeezed: StrokeBlock/QWidget[2]/CheckBox 'Antialiasing' is 64x22, minimum 93x22",
+      "squeezed: StrokeBlock/QWidget[2]/CheckBox 'Only inside selection' is 64x22, minimum 146x22"
     ],
     "size": [
-      154,
-      202
+      82,
+      269
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      309,
-      202
+      178,
+      269
     ]
   },
   "short": {
     "problems": [
-      "overlap: ColorPairWidget and CheckBox 'Antialiasing' share 48x12",
-      "squeezed: KeyHintLabel '[' is 18x12, minimum 17x23",
-      "squeezed: KeyHintLabel ']' is 18x12, minimum 16x23",
-      "squeezed: QLabel 'Size:' is 60x12, minimum 28x17",
-      "squeezed: IntSliderSpinbox is 177x12, minimum 72x30",
-      "squeezed: IntSliderSpinbox/QSlider is 117x8, minimum 12x23",
-      "squeezed: IntSliderSpinbox/QSpinBox is 50x8, minimum 50x26",
-      "squeezed: KeyHintLabel '<' is 18x12, minimum 18x23",
-      "squeezed: KeyHintLabel '>' is 18x12, minimum 18x23",
-      "squeezed: QLabel 'Opacity:' is 60x12, minimum 49x17",
-      "squeezed: FloatSliderSpinbox[0] is 177x12, minimum 76x30",
-      "squeezed: FloatSliderSpinbox[0]/QSlider is 113x8, minimum 12x23",
-      "squeezed: FloatSliderSpinbox[0]/QDoubleSpinBox is 54x8, minimum 54x26",
-      "squeezed: KeyHintLabel '{' is 18x12, minimum 17x23",
-      "squeezed: KeyHintLabel '}' is 18x12, minimum 17x23",
-      "squeezed: QLabel 'Hardness:' is 60x12, minimum 60x17",
-      "squeezed: FloatSliderSpinbox[1] is 177x12, minimum 76x30",
-      "squeezed: FloatSliderSpinbox[1]/QSlider is 113x8, minimum 12x23",
-      "squeezed: FloatSliderSpinbox[1]/QDoubleSpinBox is 54x8, minimum 54x26",
-      "clipped: ColorPairWidget shows 48x38 of 48x48",
-      "squeezed: QLabel 'Pattern:' is 47x12, minimum 47x17",
-      "squeezed: FillStyleComboBox is 184x12, minimum 184x32",
-      "squeezed: CheckBox 'Antialiasing' is 93x12, minimum 93x22",
-      "squeezed: CheckBox 'Draw in selection only' is 154x12, minimum 154x22"
+      "overlap: StrokeBlock/QWidget[0]/SliderField[0] and StrokeBlock/QWidget[0]/SliderField[1] share 150x11",
+      "overlap: StrokeBlock/QWidget[0]/SliderField[1] and StrokeBlock/QWidget[0]/SliderField[2] share 150x11",
+      "overlap: StrokeBlock/QWidget[1]/ColorPairWidget and StrokeBlock/QWidget[1]/QLabel 'Pattern' share 48x8",
+      "overlap: StrokeBlock/QWidget[1]/ColorPairWidget and StrokeBlock/QWidget[1]/FillStyleComboBox share 48x7",
+      "squeezed: StrokeBlock is 160x116, minimum 146x251",
+      "squeezed: StrokeBlock/QWidget[0] is 150x35, minimum 110x80",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[1] shows 150x22 of 150x24",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[2] shows 150x9 of 150x24",
+      "squeezed: StrokeBlock/QWidget[1] is 160x35, minimum 103x109",
+      "clipped: StrokeBlock/QWidget[1]/ColorPairWidget shows 48x35 of 48x48",
+      "squeezed: StrokeBlock/QWidget[1]/QLabel 'Pattern' is 160x8, minimum 43x17",
+      "squeezed: StrokeBlock/QWidget[1]/FillStyleComboBox is 160x7, minimum 103x32",
+      "squeezed: StrokeBlock/QWidget[2] is 160x34, minimum 146x50",
+      "squeezed: StrokeBlock/QWidget[2]/CheckBox 'Antialiasing' is 146x14, minimum 93x22",
+      "squeezed: StrokeBlock/QWidget[2]/CheckBox 'Only inside selection' is 146x14, minimum 146x22"
     ],
     "size": [
-      309,
-      101
+      178,
+      134
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      309,
+      178,
       1200
     ]
   },
@@ -83,7 +65,7 @@
     "problems": [],
     "size": [
       1600,
-      202
+      269
     ]
   }
 }

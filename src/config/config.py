@@ -367,6 +367,11 @@ class Config:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         return self._entries[key].name
 
+    def get_range(self, key: str) -> tuple[Optional[int | float], Optional[int | float], Optional[int | float]]:
+        """Returns the minimum, maximum and step defined for a numeric key, with None for any that isn't defined."""
+        entry = self._entries[key]
+        return entry.minimum, entry.maximum, entry.single_step
+
     def get_tooltip(self, key: str) -> str:
         """Gets the tooltip text assigned to a config value."""
         if key not in self._entries:
