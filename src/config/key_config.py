@@ -145,7 +145,8 @@ class KeyConfig(Config, metaclass=Singleton):
                     if speed_modifier in key_value:
                         errors.append(SPEED_MODIFIER_CONFLICT_ERROR.format(key_binding_name=key_binding_name,
                                                                            key_value=key_value,
-                                                                           speed_modifier=speed_modifier))
+                                                                           speed_modifier=speed_modifier,
+                                                                           key_str=standardized_key))
                     else:
                         speed_value = _standardize_key_str(f'{speed_modifier}+{standardized_key}')
                         speed_key = SPEED_MODIFIED_KEY_DESCRIPTION.format(key_binding_name=key_binding_name)
@@ -161,7 +162,8 @@ class KeyConfig(Config, metaclass=Singleton):
                     duplicate_map[standardized_key].append(config_key)
         for key_str, config_keys in duplicate_map.items():
             if len(config_keys) > 1:
-                key_names = [self.get_label(key) for key in config_keys]
+                # Speed-modified entries are keyed by description text, not by a config key.
+                key_names = [self.get_label(key) if key in key_binding_options else key for key in config_keys]
                 if key_str in modifiers:
                     modifier_conflict_lists = [[KeyConfig.LINE_MODIFIER,
                                                 KeyConfig.PAN_VIEW_MODIFIER,
