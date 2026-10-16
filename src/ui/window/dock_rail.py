@@ -56,6 +56,8 @@ BUTTON_MARGIN = 2
 SIDE_BUTTON_ICON_TOP = 3
 SIDE_BUTTON_GAP = 2
 STRIP_BUTTON_SPACING = 6
+# Space between a strip button's plate edge and its icon, and between its keycap and the opposite edge:
+STRIP_BUTTON_PADDING = 6
 # Smallest tool button the recent tools strip draws in a side rail:
 RECENT_TOOL_SIZE = SIDE_RAIL_WIDTH
 RAIL_SPACING = 2
@@ -167,7 +169,7 @@ class RailButton(QToolButton):
             height = SIDE_BUTTON_ICON_TOP + SIDE_ICON_SIZE + SIDE_BUTTON_GAP + key_size.height() + BUTTON_MARGIN
             return QSize(SIDE_RAIL_WIDTH, height)
         metrics = QFontMetrics(self.font())
-        width = BUTTON_MARGIN * 2 + STRIP_ICON_SIZE + STRIP_BUTTON_SPACING \
+        width = BUTTON_MARGIN * 2 + STRIP_BUTTON_PADDING * 2 + STRIP_ICON_SIZE + STRIP_BUTTON_SPACING \
             + metrics.horizontalAdvance(self._dock.windowTitle())
         if key_size.width() > 0:
             width += STRIP_BUTTON_SPACING + key_size.width()
@@ -222,8 +224,8 @@ class RailButton(QToolButton):
                                   key_size.height())
                 self._draw_keycap(painter, key_rect, key_text, fill, outline, key_color)
         else:
-            icon_rect = QRect(BUTTON_MARGIN + 2, (self.height() - STRIP_ICON_SIZE) // 2, STRIP_ICON_SIZE,
-                              STRIP_ICON_SIZE)
+            icon_rect = QRect(BUTTON_MARGIN + STRIP_BUTTON_PADDING, (self.height() - STRIP_ICON_SIZE) // 2,
+                              STRIP_ICON_SIZE, STRIP_ICON_SIZE)
             self.icon().paint(painter, icon_rect)
             text_color = palette.color(QPalette.ColorRole.HighlightedText if self.isChecked()
                                        else QPalette.ColorRole.ButtonText)

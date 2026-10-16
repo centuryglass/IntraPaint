@@ -11,6 +11,8 @@ from src.config.key_config import KeyConfig
 from src.controller.tool_controller import ToolController
 from src.image.layers.image_stack import ImageStack
 from src.ui.ink_style import PRIMARY_BUTTON_PROPERTY
+from src.ui.widget.key_hint_label import KeyHintLabel
+from src.ui.widget.tool_button import ToolButton
 from src.ui.window.dock_rail import SIDE_RAIL_WIDTH
 from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING
@@ -128,6 +130,14 @@ class DockRailTest(IntraPaintTestCase):
         self.window.resize(1280, 900)
         self.window.layout().activate()
         self.assertGreater(len(strip.shown_tools), fit)
+
+    def test_recent_tool_buttons_hide_their_key_hints(self) -> None:
+        """The 32 px recent tool buttons show no key hint, which would cover the icon."""
+        strip = self.window.rails.recent_tools
+        assert strip is not None
+        for button in strip.findChildren(ToolButton):
+            self.assertTrue(button.isHidden() or button.width() == SIDE_RAIL_WIDTH)
+            self.assertTrue(button.findChild(KeyHintLabel).isHidden())
 
     def test_rails_hide_while_the_image_selector_is_showing(self) -> None:
         """Every rail hides with the docks, and comes back with them."""

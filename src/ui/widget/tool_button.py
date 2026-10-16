@@ -51,8 +51,10 @@ class ToolButton(QToolButton):
         return self._tool
 
     def set_edge_length(self, length: int) -> None:
-        """Sets the side of the square the button's size hints return, which is `TOOL_ICON_SIZE` by default."""
+        """Sets the side of the square the button's size hints return, which is `TOOL_ICON_SIZE` by default. Below
+        that size the key hint is hidden, since it would cover the icon."""
         self._edge_length = length
+        self._key_hint.setVisible(length >= TOOL_ICON_SIZE)
         self.setFixedSize(length, length)
         self.updateGeometry()
 
