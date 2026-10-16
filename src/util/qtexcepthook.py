@@ -133,6 +133,7 @@ class QtExceptHook(object):
         show up as early as possible.)
         """
         self._extra_info = ''
+        self._showing = False
         self._reporting_cb = reporting_cb
 
         self._dialog = ResizableMessageBox(QMessageBox.Icon.Warning,
@@ -186,6 +187,16 @@ class QtExceptHook(object):
         if threading.current_thread() is not threading.main_thread():
             return  # Qt UI actions outside the main thread cause segfaults, let threading code handle it.
 
+        # Always reach the console: Qt prints only "Error calling Python override of ..." for exceptions raised in
+        # virtual overrides such as QStyle.styleHint, and the dialog is the only other place the traceback appears.
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+
+        # Showing the dialog runs style and paint callbacks. If one of them raises, it re-enters this hook while
+        # the dialog is open, and a nested exec() call fails with "Recursive call detected", so the first dialog's
+        # details are kept and the repeat is only logged.
+        if self._showing:
+            return
+
         # Construct the text of the bug report
         t_exception = traceback.TracebackException(
             exc_type, exc_value, exc_traceback, capture_locals=True)
@@ -197,7 +208,11 @@ class QtExceptHook(object):
         self._dialog.setDetailedText(traceback_text)
 
         # Show the dialog
-        self._dialog.exec()
+        self._showing = True
+        try:
+            self._dialog.exec()
+        finally:
+            self._showing = False
         if self._dialog.clickedButton() == self.b_quit:
             QApplication.instance().quit()
 
