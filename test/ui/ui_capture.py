@@ -935,7 +935,7 @@ def panel_scenes(controller: 'AppController') -> list[PanelScene]:
     return [
         PanelScene('main_window', lambda c: c._window, WINDOW_SIZES, _large_screen),
         PanelScene('tool_panel', lambda c: c._tool_panel),
-        PanelScene('layer_panel', lambda c: c._tool_panel.findChild(LayerPanel)),
+        PanelScene('layer_panel', lambda c: c._window.layers_dock.content),
         PanelScene('color_panel', lambda c: c._tool_panel_color_picker),
         PanelScene('navigation_panel', lambda c: c._tool_panel_navigation_panel),
         PanelScene('sd_webui_panel', lambda _c: StableDiffusionPanel(True, True)),

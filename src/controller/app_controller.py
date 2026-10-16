@@ -49,7 +49,7 @@ from typing import Optional, Any, Callable
 from PIL import Image, UnidentifiedImageError, ExifTags
 from PIL.ExifTags import IFD
 from PySide6.QtCore import QSize
-from PySide6.QtGui import QImage, Qt, QIcon, QTransform
+from PySide6.QtGui import QImage, Qt, QTransform
 from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
 
 from src.config.application_config import AppConfig
@@ -112,7 +112,7 @@ from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, Menu
 from src.util.optional_import import optional_import
 from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.qtexcepthook import QtExceptHook
-from src.util.shared_constants import PROJECT_DIR, PIL_SCALING_MODES
+from src.util.shared_constants import PIL_SCALING_MODES
 from src.util.system_clipboard import clipboard_has_image, clipboard_image_is_own_copy, get_clipboard_image, \
     set_clipboard_image
 from src.ui.window.window_geometry import restore_window
@@ -143,9 +143,6 @@ APP_VERSION = 'v1.4.0'  # x-release-please-version
 
 UNDO_LIMIT_RESTART_TITLE = _tr('Restart required')
 UNDO_LIMIT_RESTART_MESSAGE = _tr('The new maximum undo count will apply after IntraPaint is restarted.')
-TOOL_PANEL_LAYER_TAB = _tr('Layers')
-TOOL_PANEL_COLOR_TAB = _tr('Color')
-TOOL_PANEL_NAV_TAB = _tr('Navigation')
 
 GENERATION_MODE_SD_WEBUI = 'stable-diffusion-webui'
 GENERATION_MODE_COMFYUI = 'comfyui'
@@ -168,9 +165,6 @@ SUBMENU_MOVE = _tr('Move')
 SUBMENU_SELECT = _tr('Select')
 SUBMENU_TRANSFORM = _tr('Transform')
 
-ICON_PATH_LAYER_TAB = f'{PROJECT_DIR}/resources/icons/tabs/layers.svg'
-ICON_PATH_NAVIGATION_TAB = f'{PROJECT_DIR}/resources/icons/tabs/navigation.svg'
-ICON_PATH_COLOR_TAB = f'{PROJECT_DIR}/resources/icons/tabs/colors.svg'
 HELP_INDEX_LINK = 'https://github.com/centuryglass/IntraPaint/blob/master/doc/help_index.md'
 
 GENERATOR_LOAD_ERROR_TITLE = _tr('Loading image generator failed')
@@ -424,17 +418,14 @@ class AppController(MenuBuilder):
         self._generation_area_tool = GenerationAreaTool(self._image_stack, self._image_viewer)
         self._last_active_tool: Optional[BaseTool] = None
 
-        # Add utility widgets to the tool panel:
+        # Fill the lower dock group:
         self._tool_panel_navigation_panel = NavigationWindow(self._image_stack, self._image_viewer,
                                                              include_zoom_controls=False, use_keybindings=False)
         self._tool_panel_navigation_panel.mouse_navigation_enabled = False
-        self._tool_panel.add_utility_widget_tab(LayerPanel(self._image_stack), TOOL_PANEL_LAYER_TAB,
-                                                QIcon(ICON_PATH_LAYER_TAB))
         self._tool_panel_color_picker = ColorControlPanel()
-        self._tool_panel.add_utility_widget_tab(self._tool_panel_color_picker, TOOL_PANEL_COLOR_TAB,
-                                                QIcon(ICON_PATH_COLOR_TAB))
-        self._tool_panel.add_utility_widget_tab(self._tool_panel_navigation_panel, TOOL_PANEL_NAV_TAB,
-                                                QIcon(ICON_PATH_NAVIGATION_TAB))
+        self._window.layers_dock.set_content(LayerPanel(self._image_stack))
+        self._window.color_dock.set_content(self._tool_panel_color_picker)
+        self._window.navigation_dock.set_content(self._tool_panel_navigation_panel)
 
         # Add all tools to the panel except for the generation area tool:
         for tool in self._tool_controller.tools:

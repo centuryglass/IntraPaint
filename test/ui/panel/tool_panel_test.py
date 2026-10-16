@@ -1,7 +1,7 @@
 import sys
 
 from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication
 
 from src.image.layers.image_stack import ImageStack
 from src.tools.draw_tool import DrawTool
@@ -43,19 +43,6 @@ class ToolPanelTest(IntraPaintTestCase):
         test_tool_2 = DrawTool(self._image_stack, self._image_panel.image_viewer)
         self._tool_panel.add_tool_button(test_tool_2)
         self.assertEqual(len(self._tool_panel._tool_widgets), 1)
-
-    def test_add_utility_widget_tab(self) -> None:
-        """ToolPanel should accept arbitrary panel widgets for the utility tab box."""
-        self.assertEqual(len(self._tool_panel._utility_tab_panels), 0)
-        self.assertEqual(self._tool_panel._utility_tab_panel.count(), 0)
-        panel = QWidget()
-        panel_name = 'test panel'
-        self.assertFalse(panel.isVisible())
-        self._tool_panel.add_utility_widget_tab(panel, panel_name)
-        self.assertTrue(panel.isVisible())
-        self.assertEqual(len(self._tool_panel._utility_tab_panels), 1)
-        self.assertEqual(self._tool_panel._utility_tab_panel.count(), 1)
-        self.assertEqual(self._tool_panel._utility_tab_panel.currentWidget(), panel)
 
     def test_activate_tool(self) -> None:
         """ToolPanel should show the panel widget and mark the button as active when a tool is activated."""
