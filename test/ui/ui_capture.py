@@ -33,6 +33,7 @@ from src.ui.widget.disabled_banner import DisabledBanner
 from src.ui.widget.keycap_badge import KeycapBadge
 from src.ui.widget.panel_header import PanelHeader
 from src.ui.widget.panel_section import PanelSection
+from src.ui.input_fields.geometry_block import GeometryBlock, _GeometryField
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.input_fields.slider_field import SliderField
@@ -536,6 +537,40 @@ def _draw_segmented_control(painter: QPainter, rect: QRect, variant: str, state:
     control.render(painter, QPoint())
 
 
+class _TextFreeGeometryField(_GeometryField):
+    """A geometry field that draws no label or value."""
+
+    def _paint_text(self, painter: QPainter) -> None:
+        pass
+
+
+class _TextFreeGeometryBlock(GeometryBlock):
+    """A geometry block whose fields draw no text."""
+
+    def _make_field(self, *args, **kwargs) -> NumberField:
+        return _TextFreeGeometryField(*args, **kwargs)
+
+
+def _draw_geometry_block(painter: QPainter, rect: QRect, variant: str, state: GalleryState) -> None:
+    """Draws a real `GeometryBlock`. Variants: `base`, `locked`, `temporary_lock` and `scale_angle` (stacked, with the
+    scale and angle rows and a locked ratio), and `strip_short` (the one-line form). Fields are set to varied
+    fractions of their ranges so each fill is visible."""
+    full = variant == 'scale_angle'
+    block = _TextFreeGeometryBlock(show_scale=full, show_angle=full, integer=True)
+    block.set_image_size(QSize(100, 100))
+    block.set_values(x=40, y=-30, w=120, h=60)
+    if full:
+        block.set_values(scale_x=1, scale_y=1, angle=45)
+    block.set_horizontal(variant == 'strip_short')
+    if variant in ('locked', 'scale_angle'):
+        block.set_ratio_locked(True)
+    if variant == 'temporary_lock':
+        block.set_temporary_lock(True)
+    block.resize(rect.size())
+    block.setEnabled(state.enabled)
+    block.render(painter, QPoint())
+
+
 GALLERY_CONTROLS: tuple[GalleryControl, ...] = (
     GalleryControl('push_button', QSize(72, 28), ('plain', 'default', 'checked', 'flat', 'primary'), STANDARD_STATES,
                    _draw_push_button),
@@ -584,6 +619,10 @@ GALLERY_CONTROLS: tuple[GalleryControl, ...] = (
                    tuple(f'{count}_{mode.value}' for count in (2, 3, 4)
                          for mode in (DisplayMode.ICON_AND_LABEL, DisplayMode.LABEL, DisplayMode.ICON)),
                    SEGMENTED_STATES, _draw_segmented_control),
+    GalleryControl('geometry_block', QSize(280, 130), ('base', 'locked', 'temporary_lock', 'scale_angle'),
+                   SECTION_STATES, _draw_geometry_block),
+    GalleryControl('geometry_block_strip_short', QSize(560, 24), ('strip_short',), SECTION_STATES,
+                   _draw_geometry_block),
 )
 
 
