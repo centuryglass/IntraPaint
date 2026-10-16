@@ -101,7 +101,8 @@ from src.ui.panel.tool_panel import ToolPanel
 from src.ui.theme import (apply_font_point_size, apply_overlay_scroll_bars, apply_rounded_popups, apply_style,
                           apply_theme)
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
-from src.ui.window.dock_menu import DockEdge, MENU_MOVE_ALL_TO_EDGE, edge_title
+from src.ui.window.dock_menu import MENU_MOVE_ALL_TO_EDGE, edge_title
+from src.ui.window.dock_placement import DockEdge
 from src.ui.window.main_window import MainWindow
 from src.ui.window.navigation_window import NavigationWindow
 from src.undo_stack import UndoStack

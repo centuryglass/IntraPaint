@@ -33,7 +33,8 @@ from src.ui.panel.layer_ui.layer_panel import LayerPanel
 
 from src.controller.tool_controller import ToolController
 from src.ui.widget.loading_widget import LoadingWidget
-from src.ui.window.dock_menu import DockEdge, build_dock_menu, move_all_to_edge
+from src.ui.window.dock_menu import build_dock_menu
+from src.ui.window.dock_placement import DockEdge, move_all_to_edge
 from src.ui.window.dock_rail import DockRails
 from src.ui.window.dock_groups import close_background_docks, hide_dock_tab_bars
 from src.ui.window.navigation_window import NavigationWindow
