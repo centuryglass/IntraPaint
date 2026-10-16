@@ -1,7 +1,6 @@
 """Control panel for the basic drawing tool."""
 from typing import Optional
 
-from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
@@ -21,8 +20,6 @@ SELECTION_ONLY_LABEL = _tr('Draw in selection only')
 
 class DrawToolPanel(BrushToolPanel):
     """Control panel for the basic drawing tool."""
-
-    tool_mode_changed = Signal(str)
 
     def __init__(self):
         super().__init__(size_key=Cache.DRAW_TOOL_BRUSH_SIZE,
