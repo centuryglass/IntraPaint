@@ -4,7 +4,9 @@
 every control it doesn't override come from the base style. Colors come from the palette the control is drawn with,
 plus the few `InkColors` that have no QPalette role, so a palette change restyles every control.
 
-Only push buttons marked with `set_primary_button` get the raised accent "sticker" look. Check boxes, radio buttons
+Push buttons come in four weights, set with `src.ui.button_weight.set_button_weight`: primary (the raised accent
+"sticker" look, at most one per panel), standard, flat, and danger (signal-colored text). Only push buttons marked with
+`set_primary_button` get the sticker look. Check boxes, radio buttons
 and slider handles use a smaller version of the same raised shadow. `set_signal` draws a push button's text in the
 signal color, and fills a check box with it.
 
@@ -646,19 +648,21 @@ class InkStyle(QProxyStyle):
         super().drawControl(Control.CE_PushButtonLabel, label_option, painter, widget)
         painter.restore()
 
+    def signal_text_color(self, state: State) -> QColor:
+        """Returns the color a signal button's text is drawn in for the given style state flags."""
+        if state & State.State_Sunken:
+            return self._colors.signal_pressed
+        if state & State.State_MouseOver:
+            return self._colors.signal_hover
+        return self._colors.signal
+
     def _draw_signal_label(self, painter: QPainter, option: QStyleOptionButton, widget: QWidget) -> None:
         """Draws a signal button's label in the signal color, lightened on hover and darkened while pressed."""
         label_option = QStyleOptionButton(option)
         if option.state & State.State_Enabled:
-            if option.state & State.State_Sunken:
-                text_color = self._colors.signal_pressed
-            elif option.state & State.State_MouseOver:
-                text_color = self._colors.signal_hover
-            else:
-                text_color = self._colors.signal
             palette = QPalette(option.palette)
             for group in (Group.Active, Group.Inactive):
-                palette.setColor(group, Role.ButtonText, text_color)
+                palette.setColor(group, Role.ButtonText, self.signal_text_color(option.state))
             label_option.palette = palette
         super().drawControl(Control.CE_PushButtonLabel, label_option, painter, widget)
 
