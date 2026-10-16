@@ -141,6 +141,20 @@ class MenuBuilder:
         menu.addAction(action)
         return action
 
+    def insert_menu_actions(self, menu_name: str, actions: list[QAction]) -> None:
+        """Adds existing actions at the start of a menu, above a separator, creating the menu if needed.
+
+        The menu doesn't own the actions, so their owner keeps them alive and decides when they are visible.
+        """
+        menu = self._find_or_add_menu(menu_name)
+        assert menu is not None
+        existing = menu.actions()
+        if len(existing) == 0:
+            menu.addActions(actions)
+            return
+        menu.insertActions(existing[0], actions)
+        menu.insertSeparator(existing[0])
+
     def set_action_enabled(self, menu_name: str, action_name: str, enabled: bool) -> None:
         """Enables or disables a menu action."""
         action = self._find_action(menu_name, action_name)

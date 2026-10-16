@@ -1,15 +1,14 @@
-"""Builds the main window (from a mock-mode AppController, so it has its default tabs) at a matrix of sizes and checks that layout never fails or overflows."""
+"""Builds the main window (from a mock-mode AppController, so it has its default docks) at a matrix of sizes and checks
+that layout never fails or overflows."""
 import sys
 from unittest.mock import patch
 
-import pytest
-from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QApplication, QLabel
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtWidgets import QApplication
 
-from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.layout.reactive_layout_widget import ReactiveLayoutWidget
 from src.ui.panel.tool_panel import MIN_SIZE_FOR_TOOL_LABEL
-from src.ui.window.main_window import MainWindow, TabBoxID, AUTO_TAB_MOVE_THRESHOLD, USE_LOWER_CONTROL_TAB_THRESHOLD
+from src.ui.window.main_window import MainWindow
 from test.base_test_case import IntraPaintTestCase
 from test.ui.ui_capture import mock_app_controller
 
@@ -17,13 +16,13 @@ app = QApplication.instance() or QApplication(sys.argv)
 
 TARGET_SIZE = QSize(1024, 600)
 LARGE_SCREEN = QSize(4000, 4000)
+DOCK_AREAS = (Qt.DockWidgetArea.LeftDockWidgetArea, Qt.DockWidgetArea.RightDockWidgetArea,
+              Qt.DockWidgetArea.TopDockWidgetArea, Qt.DockWidgetArea.BottomDockWidgetArea)
 
 
 def _sweep_sizes() -> list[QSize]:
     """The target size, plus sizes just below, at and above every threshold that changes the layout."""
     sizes = [TARGET_SIZE]
-    for height in (AUTO_TAB_MOVE_THRESHOLD, USE_LOWER_CONTROL_TAB_THRESHOLD):
-        sizes.extend(QSize(TARGET_SIZE.width(), height + offset) for offset in (-1, 0, 1))
     for offset in (-1, 0, 1):
         sizes.append(QSize(MIN_SIZE_FOR_TOOL_LABEL.width() + offset + TARGET_SIZE.width(), TARGET_SIZE.height()))
     return sizes
@@ -45,10 +44,8 @@ class MainWindowSizeSweepTest(IntraPaintTestCase):
         self.window.hide()
         super().tearDown()
 
-    @pytest.mark.xfail(strict=True, reason='default layout needs 752 px of height until the icon rail lands, '
-                                           'https://github.com/centuryglass/IntraPaint/issues/13')
     def test_minimum_size_hint_fits_target(self) -> None:
-        """The default layout should fit 1024x600; it needs more height until the icon rail lands (#13)."""
+        """The default layout fits 1024x600."""
         hint = self.window.minimumSizeHint()
         self.assertLessEqual(hint.width(), TARGET_SIZE.width())
         self.assertLessEqual(hint.height(), TARGET_SIZE.height())
@@ -64,20 +61,20 @@ class MainWindowSizeSweepTest(IntraPaintTestCase):
                         if widget._layout_modes:  # pylint: disable=protected-access
                             self.assertIsNotNone(widget._active_mode)  # pylint: disable=protected-access
 
-    def test_opening_a_tab_box_fits_the_window(self) -> None:
-        """Opening any tab box never leaves the window's minimum size larger than the window."""
+    def test_every_dock_area_fits_the_window(self) -> None:
+        """With the docks in any one area, the window's minimum size stays within the window."""
         for size in _sweep_sizes():
-            for box_id in TabBoxID:
-                with self.subTest(size=size, box=box_id):
+            for area in DOCK_AREAS:
+                with self.subTest(size=size, area=area):
                     self.window.resize(size)
-                    box = self.window._get_tab_box(box_id)  # pylint: disable=protected-access
-                    content = QLabel('content')
-                    content.setMinimumSize(100, 100)
-                    tab = Tab('tab', content)
-                    self.window.add_tab(tab, box_id)
-                    box._tab_bar._finish_tab_open()  # pylint: disable=protected-access
+                    first = self.window.docks[0]
+                    for dock in self.window.docks:
+                        self.window.removeDockWidget(dock)
+                        self.window.addDockWidget(area, dock)
+                        if dock is not first:
+                            self.window.tabifyDockWidget(first, dock)
+                        if dock.is_available:
+                            dock.show()
                     hint = self.window.minimumSizeHint()
                     self.assertLessEqual(hint.height(), self.window.height())
                     self.assertLessEqual(hint.width(), self.window.width())
-                    box._tab_bar._tab_open_timer.stop()  # pylint: disable=protected-access
-                    self.window.remove_tab(tab)

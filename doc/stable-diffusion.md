@@ -26,7 +26,7 @@ This panel is the main place where you'll control image generation.
 
 <img src="./labeled_screenshots/gen_panel.png" alt="Screenshot of the image generation panel, with specific elements numbered."/>
 
-1. **Image generation tab**: Show or hide the generate panel, or move it to any of the window tab bars.  When inactive or minimized, a smaller generate button will be added to the toolbar.
+1. **Image generation tab**: Brings the image generation panel to the front. Drag the tab or the panel's title bar to move the panel to another edge of the window or float it, and press 2 to show or hide it.
 2. **Main/Extras inner tabs**: The WebUI and ComfyUI Stable Diffusion image generators each provide a few bonus features that the other lacks. Controls for these features are found within the "Extras" tab.
 3. **"Edit mode" dropdown**: Switch between the three main image generation modes:
    - **Inpaint**: Only selected content in the image generation area is changed.
@@ -103,7 +103,7 @@ The wide variety of ControlNet preprocessors and models available can be challen
 
 <img src="./labeled_screenshots/controlnet_panel.png" alt="Screenshot of the ControlNet panel, with specific elements numbered."/>
 
-1. **ControlNet tab**: Show or hide the generate panel, or move it to any of the window tab bars.
+1. **ControlNet tab**: Brings the ControlNet panel to the front. Drag the tab or the panel's title bar to move the panel to another edge of the window or float it, and press 3 to show or hide it.
 2. **ControlNet unit tabs**: Up to three different ControlNet units can be used at once. These tabs let you switch between the three and configure them independently.
 3. **"Enable ControlNet Unit" checkbox**: Enable or disable the current ControlNet unit.
 4. **"Low VRAM" checkbox** (WebUI generator only): Systems with limited VRAM might fail to generate images with ControlNet active. Selecting this option will fix some of these issues, but may also slow down image generation.

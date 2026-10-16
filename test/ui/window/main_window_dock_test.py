@@ -1,0 +1,348 @@
+"""Tests MainWindow's docks: the first-run layout, docks without content, keys, saved layouts, the image selector,
+and the orientation and size class each dock reports to its panel."""
+import sys
+from unittest.mock import patch
+
+from PySide6.QtCore import QPoint, QRect, QSize, Qt
+from PySide6.QtWidgets import QApplication, QLabel, QTabBar
+
+from src.config.cache import Cache
+from src.image.layers.image_stack import ImageStack
+from src.ui.layout.dock_panel import DockPanel, P1, PanelLayout
+from src.ui.layout.panel_size_class import Orientation, SizeClass
+from src.ui.window.main_window import MainWindow, DEFAULT_SIDE_DOCK_WIDTH
+from src.ui.window.panel_dock import PanelDock
+from test.base_test_case import IntraPaintTestCase
+
+app = QApplication.instance() or QApplication(sys.argv)
+
+LANDSCAPE_SCREEN = QSize(4000, 3000)
+PORTRAIT_SCREEN = QSize(3000, 4000)
+Area = Qt.DockWidgetArea
+
+
+class _OrientedContent(QLabel):
+    """Content with an unmigrated panel's `set_orientation`, recording each call."""
+
+    def __init__(self) -> None:
+        super().__init__('content')
+        self.orientations: list[Qt.Orientation] = []
+
+    def set_orientation(self, orientation: Qt.Orientation) -> None:
+        """Records the orientation."""
+        self.orientations.append(orientation)
+
+
+class _SamplePanel(DockPanel):
+    """A migrated panel with one control."""
+
+    def build(self, ui: PanelLayout) -> None:
+        ui.section('Sample').add(QLabel('control'), P1)
+
+
+class MainWindowDockTest(IntraPaintTestCase):
+    """Builds MainWindows without AppController, on a screen large enough for any window size used."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._screen_size = LANDSCAPE_SCREEN
+        screen_patch = patch('src.ui.window.main_window.get_screen_size', side_effect=lambda *_: self._screen_size)
+        screen_patch.start()
+        self.addCleanup(screen_patch.stop)
+        test_size = QSize(64, 64)
+        self.image_stack = ImageStack(test_size, test_size, test_size, test_size)
+        self.windows: list[MainWindow] = []
+        self.window = self._new_window()
+
+    def tearDown(self) -> None:
+        for window in self.windows:
+            window.hide()
+        super().tearDown()
+
+    def _new_window(self, size: QSize = QSize(1280, 720), fill: bool = True) -> MainWindow:
+        window = MainWindow(self.image_stack)
+        self.windows.append(window)
+        if fill:
+            window.tools_dock.set_content(QLabel('tools'))
+            window.generation_dock.set_content(QLabel('generation'))
+        window.resize(size)
+        window.show()
+        window.layout().activate()
+        return window
+
+    @staticmethod
+    def _group(window: MainWindow, dock: PanelDock) -> set[str]:
+        """Returns the object names of a dock and every dock tabified with it."""
+        return {dock.objectName(), *(other.objectName() for other in window.tabifiedDockWidgets(dock))}
+
+    @staticmethod
+    def _tab_bar_texts(window: MainWindow) -> list[list[str]]:
+        """Returns the tab texts of each shown dock tab bar inside the window. Qt parks spare bars outside it."""
+        bars = [tab_bar for tab_bar in window.findChildren(QTabBar, options=Qt.FindChildOption.FindDirectChildrenOnly)
+                if not tab_bar.isHidden() and tab_bar.geometry().intersects(window.rect())]
+        return [[tab_bar.tabText(i) for i in range(tab_bar.count())] for tab_bar in bars]
+
+    def test_first_run_layout(self) -> None:
+        """Every dock starts in the right area, tabified behind Tools, which is showing at its default width."""
+        window = self.window
+        for dock in window.docks:
+            self.assertEqual(window.dockWidgetArea(dock), Area.RightDockWidgetArea)
+        self.assertEqual(self._group(window, window.tools_dock),
+                         {window.tools_dock.objectName(), window.generation_dock.objectName()})
+        self.assertTrue(window.tools_dock.is_showing)
+        self.assertFalse(window.generation_dock.is_showing)
+        self.assertGreaterEqual(window.tools_dock.width(), DEFAULT_SIDE_DOCK_WIDTH)
+        self.assertEqual(self._tab_bar_texts(window),
+                         [[window.tools_dock.windowTitle(), window.generation_dock.windowTitle()]])
+
+    def test_first_run_layout_on_portrait_screen(self) -> None:
+        """On a screen taller than wide, the first-run layout uses the bottom area."""
+        self._screen_size = PORTRAIT_SCREEN
+        window = self._new_window(QSize(1080, 1700))
+        for dock in window.docks:
+            self.assertEqual(window.dockWidgetArea(dock), Area.BottomDockWidgetArea)
+
+    def test_empty_dock_is_hidden_and_opens_in_its_group(self) -> None:
+        """A dock without content hides with its toggle action, and joins its tab group when content arrives."""
+        controlnet = self.window.controlnet_dock
+        self.assertTrue(controlnet.isHidden())
+        self.assertFalse(controlnet.toggleViewAction().isVisible())
+        controlnet.set_content(QLabel('controlnet'))
+        self.assertFalse(controlnet.isHidden())
+        self.assertTrue(controlnet.toggleViewAction().isVisible())
+        self.assertIn(controlnet.objectName(), self._group(self.window, self.window.tools_dock))
+        self.assertTrue(self.window.tools_dock.is_showing, 'arriving content stays behind the current tab')
+
+    def test_closed_dock_stays_closed_across_content_changes(self) -> None:
+        """Losing and regaining content keeps a closed dock closed, and an open dock open."""
+        generation = self.window.generation_dock
+        generation.hide()
+        generation.set_content(None)
+        generation.set_content(QLabel('other generator'))
+        self.assertTrue(generation.isHidden())
+        generation.show()
+        generation.set_content(None)
+        self.assertTrue(generation.isHidden())
+        generation.set_content(QLabel('third generator'))
+        self.assertFalse(generation.isHidden())
+
+    def test_replaced_content_is_detached(self) -> None:
+        """Replacing content takes the old panel out of the dock without deleting it."""
+        old_content = self.window.generation_dock.content
+        assert old_content is not None
+        new_content = QLabel('new')
+        self.window.generation_dock.set_content(new_content)
+        self.assertIsNone(old_content.parentWidget())
+        self.assertIs(self.window.generation_dock.widget(), new_content)
+        old_content.deleteLater()
+
+    def test_key_toggles_dock(self) -> None:
+        """The dock key shows and raises a dock behind another tab, and hides the dock that is showing."""
+        generation = self.window.generation_dock
+        self.assertFalse(generation.is_showing)
+        self.assertTrue(generation.toggle_from_key())
+        self.assertTrue(generation.is_showing)
+        self.assertFalse(self.window.tools_dock.is_showing)
+        self.assertTrue(generation.toggle_from_key())
+        self.assertTrue(generation.isHidden())
+        self.assertTrue(generation.toggle_from_key())
+        self.assertTrue(generation.is_showing)
+
+    def test_key_does_nothing_without_content(self) -> None:
+        """An empty dock leaves its key unused, so the key event can go elsewhere."""
+        self.assertFalse(self.window.controlnet_dock.toggle_from_key())
+        self.assertTrue(self.window.controlnet_dock.isHidden())
+
+    def test_saved_layout_round_trip(self) -> None:
+        """A layout saved from one window restores the same areas, groups and dock sizes in another."""
+        source = self.window
+        source.removeDockWidget(source.generation_dock)
+        source.addDockWidget(Area.LeftDockWidgetArea, source.generation_dock)
+        source.generation_dock.show()
+        source.removeDockWidget(source.tools_dock)
+        source.addDockWidget(Area.BottomDockWidgetArea, source.tools_dock)
+        source.tools_dock.show()
+        source.layout().activate()
+        saved = source.save_dock_state()
+
+        restored = self._new_window()
+        self.assertTrue(restored.restore_dock_state(saved))
+        restored.layout().activate()
+        for source_dock, restored_dock in zip(source.docks, restored.docks):
+            with self.subTest(dock=source_dock.objectName()):
+                self.assertEqual(restored.dockWidgetArea(restored_dock), source.dockWidgetArea(source_dock))
+                self.assertEqual(restored_dock.isHidden(), source_dock.isHidden())
+                if not source_dock.isHidden():
+                    self.assertEqual(restored_dock.geometry(), source_dock.geometry())
+
+    def test_restored_front_tab_survives_late_content(self) -> None:
+        """The dock in front of its tab group when the layout was saved is in front again once a restored window
+        gets content, in the order AppController provides it."""
+        self.window.generation_dock.raise_()
+        saved = self.window.save_dock_state()
+        restored = MainWindow(self.image_stack)
+        self.windows.append(restored)
+        restored.restore_dock_state(saved)
+        restored.tools_dock.set_content(QLabel('tools'))
+        restored.generation_dock.set_content(QLabel('generation'))
+        restored.resize(1280, 720)
+        restored.show()
+        restored.layout().activate()
+        self.assertTrue(restored.generation_dock.is_showing)
+        self.assertFalse(restored.tools_dock.is_showing)
+        self.assertEqual(self._tab_bar_texts(restored),
+                         [[restored.tools_dock.windowTitle(), restored.generation_dock.windowTitle()]])
+
+    def test_invalid_saved_layout_uses_first_run_layout(self) -> None:
+        """Garbage text, an empty state and a state with another version restore nothing and keep the default."""
+        self.window.removeDockWidget(self.window.tools_dock)
+        self.window.addDockWidget(Area.LeftDockWidgetArea, self.window.tools_dock)
+        wrong_version = self.window.saveState(99).toBase64().data().decode()
+        for saved in ('', 'not a saved state', wrong_version):
+            with self.subTest(saved=saved[:12]):
+                window = MainWindow(self.image_stack)
+                self.windows.append(window)
+                self.assertFalse(window.restore_dock_state(saved))
+                window.tools_dock.set_content(QLabel('tools'))
+                window.show()
+                self.assertEqual(window.dockWidgetArea(window.tools_dock), Area.RightDockWidgetArea)
+                self.assertFalse(window.tools_dock.isHidden())
+                # Tools is the only open dock, so its group shows no tab bar:
+                self.assertEqual(self._tab_bar_texts(window), [], 'a failed restore leaves no tab bar behind')
+
+    def test_large_layout_restores_inside_small_window(self) -> None:
+        """A layout saved in a 2400x1400 window keeps every dock inside a 1024x600 window, leaving the canvas room."""
+        large = self._new_window(QSize(2400, 1400))
+        large.removeDockWidget(large.generation_dock)
+        large.addDockWidget(Area.BottomDockWidgetArea, large.generation_dock)
+        large.generation_dock.show()
+        large.resizeDocks([large.tools_dock], [1200], Qt.Orientation.Horizontal)
+        large.resizeDocks([large.generation_dock], [700], Qt.Orientation.Vertical)
+        large.layout().activate()
+        saved = large.save_dock_state()
+
+        small = self._new_window(QSize(1024, 600))
+        self.assertTrue(small.restore_dock_state(saved))
+        small.layout().activate()
+        window_rect = small.rect()
+        for dock in small.docks:
+            if not dock.isHidden():
+                self.assertTrue(window_rect.contains(dock.geometry()), dock.objectName())
+        self.assertFalse(small.centralWidget().geometry().isEmpty())
+
+    def test_empty_dock_open_at_exit_reopens_after_restore(self) -> None:
+        """A dock that was open but empty when the layout was saved opens once a restored window gives it content."""
+        self.window.controlnet_dock.set_open(True)
+        saved = self.window.save_dock_state()
+        self.assertTrue(self.window.controlnet_dock.isHidden())
+
+        restored = self._new_window()
+        restored.restore_dock_state(saved)
+        self.assertTrue(restored.controlnet_dock.isHidden())
+        restored.controlnet_dock.set_content(QLabel('controlnet'))
+        self.assertFalse(restored.controlnet_dock.isHidden())
+
+    def test_image_selector_hides_docks_and_restores_layout(self) -> None:
+        """The image selector hides every dock, and closing it brings back the layout from before."""
+        window = self.window
+        window.generation_dock.raise_()
+        window.layout().activate()
+        showing_geometry = window.generation_dock.geometry()
+        window.set_image_selector_visible(True)
+        for dock in window.docks:
+            self.assertTrue(dock.isHidden(), dock.objectName())
+        self.assertTrue(window.controlnet_dock.isHidden())
+        window.set_image_selector_visible(False)
+        window.layout().activate()
+        self.assertFalse(window.tools_dock.isHidden())
+        self.assertTrue(window.generation_dock.is_showing)
+        self.assertTrue(window.controlnet_dock.isHidden())
+        self.assertEqual(window.generation_dock.geometry(), showing_geometry)
+
+    def test_saving_while_selector_shows_saves_previous_layout(self) -> None:
+        """Saving while the image selector hides the docks saves the layout from before it opened."""
+        before = self.window.save_dock_state()
+        self.window.set_image_selector_visible(True)
+        self.assertEqual(self.window.save_dock_state(), before)
+        self.window.set_image_selector_visible(False)
+
+    def test_reset_layout_brings_back_moved_and_closed_docks(self) -> None:
+        """Reset docks a floating dock, closes nothing, reopens closed docks and returns all of them to the right."""
+        window = self.window
+        window.generation_dock.setFloating(True)
+        window.tools_dock.hide()
+        window.reset_dock_layout()
+        for dock in (window.tools_dock, window.generation_dock):
+            self.assertFalse(dock.isFloating())
+            self.assertFalse(dock.isHidden())
+            self.assertEqual(window.dockWidgetArea(dock), Area.RightDockWidgetArea)
+        self.assertTrue(window.tools_dock.is_showing)
+
+    def test_no_stray_tab_bars_after_reset(self) -> None:
+        """After moving docks around and resetting, the only tab bar inside the window is the one for the right
+        area's group."""
+        window = self.window
+        window.removeDockWidget(window.generation_dock)
+        window.addDockWidget(Area.LeftDockWidgetArea, window.generation_dock)
+        window.generation_dock.show()
+        window.layout().activate()
+        window.reset_dock_layout()
+        window.reset_dock_layout()
+        window.layout().activate()
+        self.assertEqual(self._tab_bar_texts(window),
+                         [[window.tools_dock.windowTitle(), window.generation_dock.windowTitle()]])
+
+    def test_offscreen_floating_dock_moves_on_screen(self) -> None:
+        """A restored floating dock that no display shows moves onto the window's display."""
+        window = self.window
+        window.generation_dock.setFloating(True)
+        window.generation_dock.setGeometry(QRect(QPoint(-20000, -20000), QSize(300, 200)))
+        self.assertFalse(window.screen().availableGeometry().intersects(window.generation_dock.frameGeometry()))
+        saved = window.save_dock_state()
+        restored = self._new_window()
+        restored.restore_dock_state(saved)
+        screen = restored.screen().availableGeometry()
+        self.assertTrue(screen.intersects(restored.generation_dock.frameGeometry()))
+
+    def test_unmigrated_content_gets_orientation_from_area(self) -> None:
+        """Content with `set_orientation` gets vertical in a side area and horizontal in a strip area."""
+        window = self._new_window(fill=False)
+        content = _OrientedContent()
+        window.tools_dock.set_content(content)
+        self.assertEqual(content.orientations[-1], Qt.Orientation.Vertical)
+        window.removeDockWidget(window.tools_dock)
+        window.addDockWidget(Area.BottomDockWidgetArea, window.tools_dock)
+        window.tools_dock.show()
+        self.assertEqual(content.orientations[-1], Qt.Orientation.Horizontal)
+        calls = len(content.orientations)
+        window.tools_dock.resize(window.tools_dock.width() - 10, window.tools_dock.height())
+        self.assertEqual(len(content.orientations), calls, 'a resize in the same area repeats no orientation')
+
+    def test_dock_panel_gets_orientation_and_size_class(self) -> None:
+        """A DockPanel gets its dock's orientation and a size class from the dock's own size."""
+        window = self._new_window(fill=False)
+        panel = _SamplePanel()
+        window.tools_dock.set_content(panel)
+        window.resizeDocks([window.tools_dock], [200], Qt.Orientation.Horizontal)
+        window.layout().activate()
+        self.assertEqual(panel.orientation, Orientation.SIDE)
+        self.assertEqual(panel.size_class, SizeClass.COMPACT)
+        window.resizeDocks([window.tools_dock], [500], Qt.Orientation.Horizontal)
+        window.layout().activate()
+        self.assertEqual(panel.size_class, SizeClass.WIDE)
+        window.removeDockWidget(window.tools_dock)
+        window.addDockWidget(Area.TopDockWidgetArea, window.tools_dock)
+        window.tools_dock.show()
+        window.resizeDocks([window.tools_dock], [240], Qt.Orientation.Vertical)
+        window.layout().activate()
+        self.assertEqual(panel.orientation, Orientation.STRIP)
+        self.assertEqual(panel.size_class, SizeClass.REGULAR)
+
+    def test_close_saves_dock_layout(self) -> None:
+        """Closing the window stores the dock layout next to the window geometry."""
+        with patch('src.ui.window.main_window.QApplication.exit'):
+            self.window.close_without_confirmation()
+        saved = Cache().get(Cache.SAVED_MAIN_WINDOW_STATE)
+        self.assertNotEqual(saved, '')
+        restored = self._new_window()
+        self.assertTrue(restored.restore_dock_state(saved))

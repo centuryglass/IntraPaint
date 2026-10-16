@@ -88,7 +88,6 @@ from src.image.open_raster import save_ora_image, read_ora_image, ORA_FILE_EXTEN
 from src.tools.base_tool import BaseTool
 from src.tools.generation_area_tool import GenerationAreaTool
 from src.ui.input_fields.pressure_curve_input import PressureCurveInput
-from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.image_scale_modal import ImageScaleModal
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers, \
     show_warning_dialog
@@ -101,9 +100,8 @@ from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
 from src.ui.theme import (apply_font_point_size, apply_overlay_scroll_bars, apply_rounded_popups, apply_style,
                           apply_theme)
-from src.ui.widget.tool_tab import ToolTab
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
-from src.ui.window.main_window import MainWindow, TabBoxID
+from src.ui.window.main_window import MainWindow
 from src.ui.window.navigation_window import NavigationWindow
 from src.undo_stack import UndoStack
 from src.util.active_text_field_tracker import ActiveTextFieldTracker
@@ -160,6 +158,7 @@ GENERATION_MODE_AUTO = 'auto'
 MENU_FILE = _tr('File')
 MENU_EDIT = _tr('Edit')
 MENU_IMAGE = _tr('Image')
+MENU_IMAGE_PANELS = MENU_IMAGE + '.' + _tr('Panels')
 MENU_SELECTION = _tr('Selection')
 MENU_LAYERS = _tr('Layers')
 MENU_FILTERS = _tr('Filters')
@@ -169,9 +168,6 @@ SUBMENU_MOVE = _tr('Move')
 SUBMENU_SELECT = _tr('Select')
 SUBMENU_TRANSFORM = _tr('Transform')
 
-CONTROL_TAB_NAME = _tr('Image Generation')
-
-ICON_PATH_GEN_TAB = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
 ICON_PATH_LAYER_TAB = f'{PROJECT_DIR}/resources/icons/tabs/layers.svg'
 ICON_PATH_NAVIGATION_TAB = f'{PROJECT_DIR}/resources/icons/tabs/navigation.svg'
 ICON_PATH_COLOR_TAB = f'{PROJECT_DIR}/resources/icons/tabs/colors.svg'
@@ -302,6 +298,8 @@ class AppController(MenuBuilder):
             self._window.setMinimumSize(width, height)
         else:
             restore_window(self._window, Cache().get(Cache.SAVED_MAIN_WINDOW_GEOMETRY))
+        # After the geometry, so the docks fit the restored window:
+        self._window.restore_dock_state(Cache().get(Cache.SAVED_MAIN_WINDOW_STATE))
         if args.init_image is not None:
             self.load_image(file_path=args.init_image)
         if not self._image_stack.has_image:
@@ -341,6 +339,7 @@ class AppController(MenuBuilder):
 
         # Set up menus:
         self.build_menus()
+        self.insert_menu_actions(MENU_IMAGE_PANELS, self._window.dock_toggle_actions())
 
         # Since image filter menus follow a very simple pattern, add them here instead of using @menu_action.
         # At the same time, make sure the filter tool's list of available options contains all filters.
@@ -466,18 +465,8 @@ class AppController(MenuBuilder):
         _update_cursor_and_control_hint(active_tool)
         self._tool_panel.setup_active_tool(active_tool)
 
-        # Set up main window tabs:
-        self._tool_tab = ToolTab(self._tool_panel, self._tool_controller, parent=self._window)
-        try:
-            tool_tab_box_id = TabBoxID(Cache().get(Cache.TOOL_TAB_BAR))
-        except ValueError:
-            tool_tab_box_id = None  # Invalid cache entry, use default placement
-        self._window.add_tab(self._tool_tab, tool_tab_box_id)
-
+        self._window.tools_dock.set_content(self._tool_panel)
         self._generator_control_panel: Optional[GeneratorPanel] = None
-        self._generator_tab = Tab(CONTROL_TAB_NAME, None, KeyConfig.SELECT_GENERATOR_TAB, parent=self._window)
-        self._generator_tab.hide()
-        self._generator_tab.setIcon(QIcon(ICON_PATH_GEN_TAB))
 
         # Prepare image generator options, and select one based on availability and command line arguments.
         self._null_generator = NullGenerator(self._window, self._image_stack)
@@ -564,11 +553,7 @@ class AppController(MenuBuilder):
         # unload last generator:
         last_generator = self._null_generator if self._generator is None else self._generator
         if self._generator is not None:
-            for tab in self._generator.get_extra_tabs():
-                self._window.remove_tab(tab)
-            if self._generator_control_panel is not None:
-                for tab_bar_widget in self._generator_control_panel.get_tab_bar_widgets():
-                    self._generator_tab.remove_tab_bar_widget(tab_bar_widget)
+            self._window.controlnet_dock.set_content(None)
             self._generator.unload_settings(self._settings_modal)
             self._generator.clear_menus()
             self._generator.disconnect_or_disable()
@@ -585,29 +570,9 @@ class AppController(MenuBuilder):
         self._generator.init_settings(self._settings_modal)
         self._generator.build_menus()
 
-        prev_panel_was_none = self._generator_control_panel is None
         self._generator_control_panel = self._generator.get_control_panel()
-        self._generator_tab.content_widget = self._generator_control_panel
-        if self._generator_control_panel is not None:
-            for tab_bar_widget in self._generator_control_panel.get_tab_bar_widgets():
-                self._generator_tab.add_tab_bar_widget(tab_bar_widget)
-        if self._generator_control_panel is None and not prev_panel_was_none:
-            self._window.remove_tab(self._generator_tab)
-        elif prev_panel_was_none and self._generator_control_panel is not None:
-            try:
-                generation_tab_box_id = TabBoxID(Cache().get(Cache.GENERATION_TAB_BAR))
-            except ValueError:
-                generation_tab_box_id = None
-            self._window.add_tab(self._generator_tab, generation_tab_box_id)
-            self._generator_tab.show()
-        for tab in self._generator.get_extra_tabs():
-            # Remember to adjust this if you add any other generator-specific tabs
-            try:
-                box_id: Optional[TabBoxID] = TabBoxID(Cache().get(Cache.CONTROLNET_TAB_BAR))
-            except ValueError:
-                box_id = None
-            self._window.add_tab(tab, box_id)
-            tab.show()
+        self._window.generation_dock.set_content(self._generator_control_panel)
+        self._window.controlnet_dock.set_content(self._generator.get_controlnet_panel())
         if self._generator_window is not None:
             self._generator_window.mark_active_generator(generator)
 
@@ -1306,6 +1271,12 @@ class AppController(MenuBuilder):
         self._settings_modal.show_modal()
 
     # Image menu:
+
+    @menu_action(MENU_IMAGE_PANELS, 'reset_dock_layout_shortcut', 197,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
+    def reset_panel_layout(self) -> None:
+        """Put every panel back where it starts on first run, and open it."""
+        self._window.reset_dock_layout()
 
     @menu_action(MENU_IMAGE, 'toggle_rulers_shortcut', 198)
     def toggle_rulers(self) -> None:

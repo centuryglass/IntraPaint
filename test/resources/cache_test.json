@@ -1,9 +1,6 @@
 {
     "edit_size": "512x512",
     "generation_size": "512x512",
-    "tool_tab_bar": "RIGHT",
-    "generation_tab_bar": "RIGHT",
-    "controlnet_tab_bar": "",
     "last_brush_color": "#ff000000",
     "new_image_background_color": "#ffffffff",
     "text_background_color": "#ffffffff",
@@ -175,6 +172,7 @@
     "shape_tool_fill_color": "#FFFFFFFF",
     "shape_tool_antialias": true,
     "saved_main_window_geometry": "",
+    "saved_main_window_state": "",
     "saved_layer_window_pos": "",
     "saved_navigation_window_pos": "",
     "guidance_scale": {

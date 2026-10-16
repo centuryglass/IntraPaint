@@ -39,7 +39,6 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 # UI/Label text:
-CONTROLNET_TITLE = _tr('ControlNet')
 CONTROLNET_UNIT_TITLE = _tr('ControlNet Unit {unit_number}')
 ENABLE_CONTROLNET_CHECKBOX_LABEL = _tr('Enable ControlNet Unit')
 LOW_VRAM_LABEL = _tr('Low VRAM')

@@ -189,7 +189,6 @@ SD_WEBUI_GENERATOR_SETUP = SD_WEBUI_GENERATOR_SETUP_OPTIONS + SD_WEBUI_GENERATOR
                            + SD_WEBUI_GENERATOR_SETUP_ALTERNATIVES
 
 SD_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/stable-diffusion.png'
-ICON_PATH_CONTROLNET_TAB = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
 DEFAULT_WEBUI_URL = 'http://localhost:7860'
 AUTH_ERROR_DETAIL_KEY = 'detail'
 STYLE_ERROR_TITLE = _tr('Updating prompt styles failed')

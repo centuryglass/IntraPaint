@@ -189,28 +189,28 @@
         "saved": true
     },
     "select_tool_tab": {
-        "label": "Select tool tab:",
+        "label": "Show/hide Tools panel:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Select or toggle the tool control tab",
+        "description": "Show and focus the Tools panel, or hide it if it is showing",
         "type": "string",
         "default": "1",
         "saved": true
     },
     "select_generator_tab": {
-        "label": "Select image generation tab:",
+        "label": "Show/hide Image Generation panel:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Select or toggle the image generation tab",
+        "description": "Show and focus the Image Generation panel, or hide it if it is showing",
         "type": "string",
         "default": "2",
         "saved": true
     },
     "select_ControlNet_tab": {
-        "label": "Select ControlNet tab:",
+        "label": "Show/hide ControlNet panel:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Select or toggle the ControlNet tab",
+        "description": "Show and focus the ControlNet panel, or hide it if it is showing",
         "type": "string",
         "default": "3",
         "saved": true
@@ -600,6 +600,15 @@
         "description": "Open a navigation window showing the entire edited image.",
         "type": "string",
         "default": "Ctrl+Alt+W",
+        "saved": true
+    },
+    "reset_dock_layout_shortcut": {
+        "label": "Reset panel layout",
+        "category": "Menu Shortcuts",
+        "subcategory": "Image Menu",
+        "description": "Put every panel back where it starts on first run, and open it.",
+        "type": "string",
+        "default": "Ctrl+Alt+Shift+P",
         "saved": true
     },
     "toggle_rulers_shortcut": {

@@ -6,15 +6,14 @@ from typing import Optional, cast, Any, Protocol
 
 from PIL import Image
 from PySide6.QtCore import Signal, QSize, SignalInstance, QRect, QPoint
-from PySide6.QtGui import QImage, QIcon, QPainter, QTransform
-from PySide6.QtWidgets import QInputDialog, QApplication
+from PySide6.QtGui import QImage, QPainter, QTransform
+from PySide6.QtWidgets import QInputDialog, QApplication, QWidget
 from sd_backend_client import AuthError, CONTROLNET_MODEL_NONE, ControlNetModel, ControlNetPreprocessor, \
     ControlNetUnit, ControlTypeDef, GenerationError, GenerationHandle, GenerationProgress, GenerationResult, \
     GenerationStatus, PreprocessorParams, SDBackendError
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.config.key_config import KeyConfig
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.controller.image_generation.mask_blur import blur_extent_in_image, grow_mask
 from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTROLNET_REUSE_IMAGE_CODE, \
@@ -23,9 +22,8 @@ from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qim
 from src.controller.image_generation.sd_adapters.progress_adapter import progress_status_update
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
-from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.modal_utils import show_error_dialog
-from src.ui.panel.controlnet_panel import TabbedControlNetPanel, CONTROLNET_TITLE
+from src.ui.panel.controlnet_panel import TabbedControlNetPanel
 from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.window.extra_network_window import ExtraNetworkWindow
 from src.ui.window.main_window import MainWindow
@@ -174,7 +172,6 @@ ERROR_MESSAGE_PREPROCESSOR_PREVIEW_FAILED = _tr('Loading ControlNet preprocessor
 
 SD_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/stable-diffusion.png'
 STABLE_DIFFUSION_CONFIG_CATEGORY = QApplication.translate('config.application_config', 'Stable Diffusion')
-ICON_PATH_CONTROLNET_TAB = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
 MENU_STABLE_DIFFUSION = 'Stable Diffusion'
 
 
@@ -231,7 +228,6 @@ class SDGenerator(ImageGenerator):
         self._connected = False
         self._control_panel: Optional[StableDiffusionPanel] = None
         self._preview = QImage(SD_PREVIEW_IMAGE)
-        self._controlnet_tab: Optional[Tab] = None
         self._controlnet_panel: Optional[TabbedControlNetPanel] = None
         self._scaling_mode_cache_key = scaling_mode_cache_key
         self._show_extended_controlnet_options = show_extended_controlnet_options
@@ -246,11 +242,9 @@ class SDGenerator(ImageGenerator):
         """Returns a preview image for this generator."""
         return self._preview
 
-    def get_extra_tabs(self) -> list[Tab]:
-        """Returns any extra tabs that the generator will add to the main window."""
-        if self._controlnet_tab is not None:
-            return [self._controlnet_tab]
-        return []
+    def get_controlnet_panel(self) -> Optional[QWidget]:
+        """Returns the ControlNet panel, if the connected backend supports ControlNet."""
+        return self._controlnet_panel
 
     def get_webservice(self) -> Optional[SDClient]:
         """Return the webservice object this module uses to connect to Stable Diffusion, if initialized."""
@@ -545,7 +539,7 @@ class SDGenerator(ImageGenerator):
             controlnet_preprocessor_list: list[ControlNetPreprocessor] = []
 
             # Build ControlNet tab, if available through the API:
-            if self._controlnet_tab is None:
+            if self._controlnet_panel is None:
                 try:
                     controlnet_model_list = self.get_controlnet_models()
                     controlnet_preprocessor_list = self.get_controlnet_preprocessors()
@@ -557,10 +551,6 @@ class SDGenerator(ImageGenerator):
                                                                  control_types,
                                                                  control_keys,
                                                                  self._show_extended_controlnet_options)
-                        self._controlnet_tab = Tab(CONTROLNET_TITLE, controlnet_panel, KeyConfig.SELECT_CONTROLNET_TAB,
-                                                   parent=self.menu_window)
-                        self._controlnet_tab.hide()
-                        self._controlnet_tab.setIcon(QIcon(ICON_PATH_CONTROLNET_TAB))
                         controlnet_panel.request_preview.connect(self.controlnet_preprocessor_preview)
                         self._controlnet_panel = controlnet_panel
                 except (KeyError, RuntimeError) as err:
@@ -634,10 +624,9 @@ class SDGenerator(ImageGenerator):
                 cache.set(cache_key, {})
         self.clear_cached_generator_data()
 
-        if self._controlnet_tab is not None:
-            self._controlnet_tab.setParent(None)
-            self._controlnet_tab.deleteLater()
-            self._controlnet_tab = None
+        if self._controlnet_panel is not None:
+            self._controlnet_panel.setParent(None)
+            self._controlnet_panel.deleteLater()
             self._controlnet_panel = None
         assert self._window is not None
         self._window.cancel_generation.disconnect(self.cancel_generation)

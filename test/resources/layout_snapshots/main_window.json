@@ -1,6 +1,8 @@
 {
   "full_hd": {
-    "problems": [],
+    "problems": [
+      "clipped: tools_dock/ToolPanel/ToolButton[9]/KeyHintLabel 'Shift+S' shows 48x23 of 51x23"
+    ],
     "size": [
       1920,
       1080
@@ -8,12 +10,7 @@
   },
   "hd": {
     "problems": [
-      "squeezed: QStackedWidget is 1280x698, minimum 614x766",
-      "squeezed: QStackedWidget/QWidget is 1280x698, minimum 614x766",
-      "squeezed: QStackedWidget/QWidget/ImagePanel is 1280x656, minimum 614x724",
-      "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1] is 67x654, minimum 67x722",
-      "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar is 61x648, minimum 61x716",
-      "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/Tab 'Image Generation' is 52x141, minimum 33x209"
+      "clipped: tools_dock/ToolPanel/ToolButton[9]/KeyHintLabel 'Shift+S' shows 48x23 of 51x23"
     ],
     "size": [
       1280,
@@ -21,14 +18,21 @@
     ]
   },
   "minimum": {
-    "problems": [],
+    "problems": [
+      "clipped: tools_dock shows 402x482 of 402x488",
+      "clipped: tools_dock/ToolPanel shows 402x463 of 402x469",
+      "clipped: tools_dock/ToolPanel/QTabWidget shows 398x278 of 398x282",
+      "clipped: tools_dock/ToolPanel/ToolButton[9]/KeyHintLabel 'Shift+S' shows 48x23 of 51x23"
+    ],
     "size": [
-      614,
-      788
+      693,
+      533
     ]
   },
   "portrait": {
-    "problems": [],
+    "problems": [
+      "clipped: tools_dock/ToolPanel/ToolButton[9]/KeyHintLabel 'Shift+S' shows 48x23 of 51x23"
+    ],
     "size": [
       1080,
       1920
@@ -36,14 +40,7 @@
   },
   "small": {
     "problems": [
-      "squeezed: QStackedWidget is 800x578, minimum 354x766",
-      "squeezed: QStackedWidget/QWidget is 800x578, minimum 354x766",
-      "squeezed: QStackedWidget/QWidget/ImagePanel is 800x536, minimum 354x724",
-      "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1] is 67x534, minimum 67x722",
-      "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar is 61x528, minimum 61x716",
-      "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/ToolTab 'Tools' is 53x70, minimum 33x118",
-      "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/Tab 'Image Generation' is 52x70, minimum 33x209",
-      "squeezed: QStackedWidget/QWidget/ImagePanel/TabBox[1]/TabBar/RotatingToolbarButton 'Generate'/Label 'Generate' is 27x63, minimum 27x64"
+      "clipped: tools_dock/ToolPanel/ToolButton[9]/KeyHintLabel 'Shift+S' shows 48x23 of 51x23"
     ],
     "size": [
       800,
@@ -51,7 +48,9 @@
     ]
   },
   "ultrawide": {
-    "problems": [],
+    "problems": [
+      "clipped: tools_dock/ToolPanel/ToolButton[9]/KeyHintLabel 'Shift+S' shows 48x23 of 51x23"
+    ],
     "size": [
       3440,
       1440
