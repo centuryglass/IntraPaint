@@ -32,6 +32,8 @@ class LoadingWidget(QWidget):
         """Initializes the widget, optionally with a parent widget, an initial loading message, and the designs to
         pick from. By default, it picks from every design `default_loading_designs` finds."""
         super().__init__(parent=parent)
+        # Drawn over the window, so it must not block clicks or the cancel shortcut:
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self._message = message
         self._phase = 0.0
         self._font_size: Optional[int] = None

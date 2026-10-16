@@ -373,6 +373,7 @@ class MainWindow(QMainWindow):
         if is_loading:
             AppStateTracker.set_app_state(APP_STATE_LOADING)
             self._loading_widget.show()
+            self._loading_widget.raise_()
             self._loading_widget.message = message if message is not None else DEFAULT_LOADING_MESSAGE
         else:
             if AppStateTracker.app_state() == APP_STATE_LOADING:
