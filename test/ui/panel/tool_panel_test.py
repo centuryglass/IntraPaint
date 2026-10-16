@@ -12,7 +12,7 @@ from src.tools.eyedropper_tool import EyedropperTool
 from src.tools.free_selection_tool import FreeSelectionTool
 from src.tools.generation_area_tool import GenerationAreaTool
 from src.tools.text_tool import TextTool
-from src.ui.layout.panel_size_class import Orientation, SizeClass
+from src.ui.layout.panel_size_class import GridSize, Orientation, SizeClass, choose_layout
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.tool_panel import ToolPanel, BUTTON_LAYOUTS, BUTTON_SPACING, MAX_STRIP_EDGE_LENGTH, \
     STRIP_NARROW_COLUMNS, strip_button_layout
@@ -20,6 +20,24 @@ from src.util.visual.text_drawing_utils import get_key_display_string
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
+
+
+class GridLayoutControlPanel(QWidget):
+    """A tool control panel that declares grid layouts and records each one it is given."""
+
+    LAYOUTS = (GridSize(1, 1), GridSize(2, 1), GridSize(3, 1), GridSize(1, 2))
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.received: list[tuple[Orientation, GridSize]] = []
+
+    def grid_layouts(self) -> tuple[GridSize, ...]:
+        """Returns `LAYOUTS`."""
+        return self.LAYOUTS
+
+    def set_grid_layout(self, orientation: Orientation, layout: GridSize) -> None:
+        """Records the layout."""
+        self.received.append((orientation, layout))
 
 # A dock size inside each size class, away from the boundaries:
 HOST_SIZES = {
@@ -59,6 +77,45 @@ class ToolPanelTest(IntraPaintTestCase):
     def _set_host(self, orientation: Orientation, size_class: SizeClass) -> None:
         self._tool_panel.set_host_facts(orientation, HOST_SIZES[(orientation, size_class)])
         self.assertEqual(self._tool_panel.size_class, size_class)
+
+    def _activate_grid_layout_tool(self) -> GridLayoutControlPanel:
+        tool = self._tool(DrawTool)
+        control_panel = GridLayoutControlPanel()
+        tool.get_control_panel = lambda: control_panel
+        self._tool_panel.add_tool_button(tool)
+        self._tool_panel.setup_active_tool(tool)
+        return control_panel
+
+    def _host_and_settle(self, orientation: Orientation, size: QSize) -> None:
+        self._tool_panel.set_host_facts(orientation, size)
+        self._tool_panel.resize(size)
+        settle_layouts(self._tool_panel)
+
+    def test_grid_layout_measures_tool_control_area(self) -> None:
+        """The grid size comes from the tool control area, so a strip wide enough for three columns at the dock is
+        two columns once the buttons take their share."""
+        self._activate_grid_layout_tool()
+        self._host_and_settle(Orientation.STRIP, QSize(800, 240))
+        grid_size = self._tool_panel.tool_control_grid_size
+        assert grid_size is not None
+        self.assertEqual(grid_size.columns, 2)
+
+    def test_grid_layout_forwarded_on_change(self) -> None:
+        """A grid-aware control panel gets the chosen layout on activation, and again only when the orientation or
+        chosen layout changes."""
+        control_panel = self._activate_grid_layout_tool()
+        self.assertEqual(len(control_panel.received), 1)
+        for orientation, size in ((Orientation.STRIP, QSize(1400, 240)), (Orientation.SIDE, QSize(340, 900))):
+            with self.subTest(orientation=orientation):
+                self._host_and_settle(orientation, size)
+                grid_size = self._tool_panel.tool_control_grid_size
+                assert grid_size is not None
+                expected = choose_layout(grid_size, GridLayoutControlPanel.LAYOUTS, orientation)
+                self.assertEqual(control_panel.received[-1], (orientation, expected))
+        self.assertEqual(control_panel.received[-1], (Orientation.SIDE, GridSize(1, 2)))
+        count = len(control_panel.received)
+        self._host_and_settle(Orientation.SIDE, QSize(345, 905))
+        self.assertEqual(len(control_panel.received), count)
 
     def test_add_remove_tool_button(self) -> None:
         """It should be possible to add and remove a tool button"""

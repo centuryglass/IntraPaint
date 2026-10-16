@@ -11,11 +11,13 @@
   buttons names the tool, and reset moves into the More popover.
 - Reset restores the active tool's `BaseTool.get_reset_config_keys`, and is hidden for a tool that declares none.
 - Tool control panels that haven't migrated to `DockPanel` get a `Qt.Orientation` through their `set_orientation`.
+- A tool control panel that is a `GridLayoutPanel` gets the layout `choose_layout` picks for the tool control area,
+  which is the space beside the buttons and under the header, not the whole dock.
 """
 from dataclasses import dataclass
 from typing import Optional
 
-from PySide6.QtCore import Qt, Signal, QObject
+from PySide6.QtCore import Qt, Signal, QObject, QEvent
 from PySide6.QtGui import QPalette, QResizeEvent
 from PySide6.QtWidgets import QWidget, QLabel, QGridLayout, QVBoxLayout, QSizePolicy, QPushButton
 
@@ -23,7 +25,8 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.tools.base_tool import BaseTool
 from src.ui.layout.dock_panel import DockPanel
-from src.ui.layout.panel_size_class import Orientation, SizeClass
+from src.ui.layout.panel_size_class import (GridLayoutPanel, GridSize, GridSizeTracker, Orientation, SizeClass,
+                                            choose_layout)
 from src.ui.panel.panel_reset import reset_config_keys
 from src.ui.widget.panel_header import RESET_TOOLTIP
 from src.ui.widget.shortcut_tooltip import shortcut_tooltip_text
@@ -78,6 +81,9 @@ class ToolPanel(DockPanel):
         self._active_tool: Optional[BaseTool] = None
         self._active_tool_panel: Optional[QWidget] = None
         self._layout_key = (Orientation.SIDE, SizeClass.REGULAR)
+        self._grid_tracker = GridSizeTracker()
+        # The orientation and layout last sent to the active tool control panel's `set_grid_layout`:
+        self._forwarded_grid_layout: Optional[tuple[Orientation, GridSize]] = None
 
         self._button_layout = BUTTON_LAYOUTS[self._layout_key]
 
@@ -103,6 +109,7 @@ class ToolPanel(DockPanel):
         self._tool_control_layout.setContentsMargins(0, 0, 0, 0)
         # Tool control panels that haven't migrated to `DockPanel` don't widen the panel, so they squeeze to fit it:
         self._tool_control_box.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Expanding)
+        self._tool_control_box.installEventFilter(self)
 
         # The header moves into the scrolled body, so it shares the button grid's margins:
         self.layout().removeWidget(self.header)
@@ -173,6 +180,8 @@ class ToolPanel(DockPanel):
                 self._active_tool_panel = tool_panel
                 self._tool_control_layout.addWidget(tool_panel)
                 self._forward_orientation()
+                self._forwarded_grid_layout = None
+                self._forward_grid_layout()
                 tool_panel.show()
         self._update_tool_text()
         self._update_reset_controls()
@@ -209,8 +218,21 @@ class ToolPanel(DockPanel):
         self._button_layout = self._current_button_layout()
         self._build_button_rows()
         self._forward_orientation()
+        self._forward_grid_layout()
         self._update_tool_text()
         self._update_reset_controls()
+
+    @property
+    def tool_control_grid_size(self) -> Optional[GridSize]:
+        """The tool control area's grid size, or None before it is first measured."""
+        return self._grid_tracker.grid_size
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        """Re-measures the tool control area when it resizes."""
+        if watched is self._tool_control_box and event.type() == QEvent.Type.Resize:
+            if self._grid_tracker.update(self._tool_control_box.size()):
+                self._forward_grid_layout()
+        return super().eventFilter(watched, event)
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Re-fits a strip's button grid to the new height."""
@@ -239,6 +261,23 @@ class ToolPanel(DockPanel):
             orientation = self._layout_key[0]
             self._active_tool_panel.set_orientation(Qt.Orientation.Vertical if orientation == Orientation.SIDE
                                                     else Qt.Orientation.Horizontal)
+
+    def _forward_grid_layout(self) -> None:
+        """Sends the active tool control panel its layout for the tool control area, if it declares layouts and the
+        choice changed."""
+        panel = self._active_tool_panel
+        if not isinstance(panel, GridLayoutPanel):
+            return
+        if self._grid_tracker.grid_size is None:
+            self._grid_tracker.update(self._tool_control_box.size())
+        grid_size = self._grid_tracker.grid_size
+        assert grid_size is not None
+        orientation = self._layout_key[0]
+        layout = choose_layout(grid_size, panel.grid_layouts(), orientation)
+        if layout is None or (orientation, layout) == self._forwarded_grid_layout:
+            return
+        self._forwarded_grid_layout = (orientation, layout)
+        panel.set_grid_layout(orientation, layout)
 
     def _update_tool_text(self) -> None:
         """Shows the active tool's name and key in the header, or in the dim line in Strip Short."""

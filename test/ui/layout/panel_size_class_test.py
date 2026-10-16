@@ -1,9 +1,10 @@
 """Tests the orientation and size class calculator: boundaries, hysteresis in both directions for both orientations,
-and orientation from a dock's area."""
+and orientation from a dock's area. Also tests grid sizes, their per-axis hysteresis, and layout choice."""
 from PySide6.QtCore import QSize, Qt
 
-from src.ui.layout.panel_size_class import (HYSTERESIS, Orientation, SizeClass, SizeClassTracker,
-                                            orientation_for_dock, size_class_for)
+from src.ui.layout.panel_size_class import (GRID_COLUMN_WIDTH, GRID_ROW_HEIGHT, HYSTERESIS, GridSize,
+                                            GridSizeTracker, Orientation, SizeClass, SizeClassTracker, choose_layout,
+                                            grid_size_for, orientation_for_dock, size_class_for)
 from test.base_test_case import IntraPaintTestCase
 
 
@@ -75,3 +76,71 @@ class PanelSizeClassTest(IntraPaintTestCase):
         self.assertTrue(tracker.update(Orientation.STRIP, QSize(300, 500)))
         self.assertEqual(tracker.orientation, Orientation.STRIP)
         self.assertEqual(tracker.size_class, SizeClass.WIDE)
+
+
+class GridSizeTest(IntraPaintTestCase):
+    """Tests grid_size_for, GridSizeTracker and choose_layout."""
+
+    def test_cell_boundaries(self) -> None:
+        """n cells fit from n units on each axis, clamped to 1 through 3."""
+        for extent, cells in ((0, 1), (2 * GRID_COLUMN_WIDTH - 1, 1), (2 * GRID_COLUMN_WIDTH, 2),
+                              (3 * GRID_COLUMN_WIDTH - 1, 2), (3 * GRID_COLUMN_WIDTH, 3), (10000, 3)):
+            with self.subTest(width=extent):
+                self.assertEqual(grid_size_for(QSize(extent, 0)), GridSize(cells, 1))
+        for extent, cells in ((2 * GRID_ROW_HEIGHT - 1, 1), (2 * GRID_ROW_HEIGHT, 2), (3 * GRID_ROW_HEIGHT, 3)):
+            with self.subTest(height=extent):
+                self.assertEqual(grid_size_for(QSize(0, extent)), GridSize(1, cells))
+
+    def test_invalid_size(self) -> None:
+        """Counts outside 1 through 3 raise ValueError."""
+        for columns, rows in ((0, 1), (1, 0), (4, 1), (1, 4)):
+            with self.subTest(columns=columns, rows=rows):
+                with self.assertRaises(ValueError):
+                    GridSize(columns, rows)
+
+    def test_hysteresis_on_each_axis(self) -> None:
+        """Each axis holds its count until the extent is more than HYSTERESIS pixels past the boundary, and changing
+        one axis leaves the other alone."""
+        for axis, unit in ((0, GRID_COLUMN_WIDTH), (1, GRID_ROW_HEIGHT)):
+
+            def size(extent: int, other: int = 0) -> QSize:
+                return QSize(extent, other) if axis == 0 else QSize(other, extent)
+
+            def count(grid_size: GridSize) -> int:
+                return grid_size.columns if axis == 0 else grid_size.rows
+
+            with self.subTest(axis=axis):
+                tracker = GridSizeTracker()
+                self.assertTrue(tracker.update(size(unit, 10000)))
+                self.assertEqual(count(tracker.grid_size), 1)
+                self.assertFalse(tracker.update(size(2 * unit + HYSTERESIS - 1, 10000)))
+                self.assertTrue(tracker.update(size(2 * unit + HYSTERESIS, 10000)))
+                self.assertEqual(count(tracker.grid_size), 2)
+                self.assertFalse(tracker.update(size(2 * unit - HYSTERESIS, 10000)))
+                self.assertTrue(tracker.update(size(2 * unit - HYSTERESIS - 1, 10000)))
+                self.assertEqual(count(tracker.grid_size), 1)
+                # The other axis stayed at 3 throughout:
+                other = tracker.grid_size.rows if axis == 0 else tracker.grid_size.columns
+                self.assertEqual(other, 3)
+
+    def test_choose_largest_fitting_layout(self) -> None:
+        """The largest declared layout that fits wins, so sizes without their own layout reuse a smaller one."""
+        layouts = (GridSize(1, 1), GridSize(2, 1), GridSize(3, 1), GridSize(2, 2))
+        cases = {GridSize(1, 3): GridSize(1, 1), GridSize(3, 1): GridSize(3, 1), GridSize(2, 3): GridSize(2, 2),
+                 GridSize(3, 3): GridSize(2, 2)}
+        for available, expected in cases.items():
+            with self.subTest(available=str(available)):
+                self.assertEqual(choose_layout(available, layouts, Orientation.STRIP), expected)
+
+    def test_tie_break_by_orientation(self) -> None:
+        """Between equal areas, strips take more columns and side panels more rows."""
+        layouts = (GridSize(1, 1), GridSize(1, 2), GridSize(2, 1))
+        self.assertEqual(choose_layout(GridSize(2, 2), layouts, Orientation.STRIP), GridSize(2, 1))
+        self.assertEqual(choose_layout(GridSize(2, 2), layouts, Orientation.SIDE), GridSize(1, 2))
+
+    def test_fallback_when_nothing_fits(self) -> None:
+        """With no layout that fits, the smallest wins. No declared layouts gives None."""
+        layouts = (GridSize(3, 1), GridSize(1, 2), GridSize(2, 2))
+        self.assertEqual(choose_layout(GridSize(1, 1), layouts, Orientation.SIDE), GridSize(1, 2))
+        self.assertEqual(choose_layout(GridSize(1, 1), layouts, Orientation.STRIP), GridSize(1, 2))
+        self.assertIsNone(choose_layout(GridSize(3, 3), (), Orientation.SIDE))
