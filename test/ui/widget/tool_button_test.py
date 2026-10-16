@@ -8,7 +8,8 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.key_config import KeyConfig
 from src.tools.base_tool import BaseTool
-from src.ui.widget.tool_button import ToolButton, TOOL_ICON_SIZE, PLATE_MARGIN, PLATE_SHADOW_OFFSET
+from src.ui.widget.key_hint_label import compact_key_text
+from src.ui.widget.tool_button import ToolButton, TOOL_ICON_SIZE, PLATE_MARGIN, PLATE_SHADOW_OFFSET, MAX_KEY_HINT_SHARE
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -95,9 +96,34 @@ class ToolButtonKeyHintTest(IntraPaintTestCase):
         self.assertLessEqual(overlap.width() * overlap.height(), hint.width() * hint.height() / 4)
         self.assertTrue(button.rect().contains(hint))
 
-    def test_key_hint_wider_than_half_the_button_stays_hidden(self) -> None:
-        """A key hint too wide for the button, such as a modifier combination, is hidden."""
-        KeyConfig().set(KeyConfig.TEXT_TOOL_KEY, 'Ctrl+Shift+T')
+    def test_wide_key_hint_switches_to_modifier_symbols(self) -> None:
+        """A key hint too wide for the button shows its modifiers as symbols, and switches back when the button is
+        large enough for the full text."""
+        KeyConfig().set(KeyConfig.TEXT_TOOL_KEY, 'Shift+S')
+        button = self._button(KeyConfig.TEXT_TOOL_KEY)
+        button.set_edge_length(40, show_key_hint=True)
+        # pylint: disable=protected-access
+        self.assertTrue(button._key_hint.compact)
+        self.assertTrue(button._key_hint.isVisibleTo(button))
+        self.assertLessEqual(button._key_hint.width(), round(40 * MAX_KEY_HINT_SHARE))
+        button.set_edge_length(TOOL_ICON_SIZE, show_key_hint=True)
+        self.assertFalse(button._key_hint.compact)
+
+    def test_key_hint_too_wide_even_with_symbols_stays_hidden(self) -> None:
+        """A key hint still too wide with modifier symbols is hidden."""
+        KeyConfig().set(KeyConfig.TEXT_TOOL_KEY, 'Ctrl+Shift+PgDown')
         button = self._button(KeyConfig.TEXT_TOOL_KEY)
         button.set_edge_length(40, show_key_hint=True)
         self.assertFalse(button._key_hint.isVisibleTo(button))  # pylint: disable=protected-access
+
+
+class CompactKeyTextTest(IntraPaintTestCase):
+    """Tests modifier symbol substitution."""
+
+    def test_modifiers_become_symbols(self) -> None:
+        """Each modifier name and its "+" become one symbol, and other keys stay as they are."""
+        self.assertEqual(compact_key_text('Shift+S'), '⇧S')
+        self.assertEqual(compact_key_text('Ctrl+Shift+T'), '⌃⇧T')
+        self.assertEqual(compact_key_text('Alt+F4, Ctrl++'), '⎇F4, ⌃+')
+        self.assertEqual(compact_key_text('Shift'), '⇧')
+        self.assertEqual(compact_key_text('PgUp'), 'PgUp')

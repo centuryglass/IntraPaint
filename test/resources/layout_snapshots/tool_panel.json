@@ -1,47 +1,107 @@
 {
   "minimum": {
-    "problems": [],
+    "problems": [
+      "overlap: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/IntSliderSpinbox and QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/KeyHintLabel ']' share 18x30",
+      "overlap: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[0] and QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/KeyHintLabel '>' share 18x30",
+      "overlap: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[1] and QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/KeyHintLabel '}' share 18x30",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel is 238x202, minimum 309x202",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/IntSliderSpinbox shows 139x30 of 148x30",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/IntSliderSpinbox/QSpinBox shows 43x26 of 50x26",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[0] shows 139x30 of 148x30",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[0]/QDoubleSpinBox shows 47x26 of 54x26",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[1] shows 139x30 of 148x30",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[1]/QDoubleSpinBox shows 47x26 of 54x26",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FillStyleComboBox is 113x32, minimum 184x32",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/CheckBox 'Draw in selection only' is 121x22, minimum 154x22"
+    ],
     "size": [
-      80,
-      89
+      59,
+      59
     ]
   },
   "narrow": {
     "problems": [
-      "overlap: PanelHeader/QLabel[0] and PanelHeader/QLabel 'Draw' share 1x18",
-      "squeezed: PanelHeader is 40x24, minimum 80x24",
-      "squeezed: PanelHeader/KeycapBadge is 7x24, minimum 19x24",
-      "clipped: PanelHeader/_GlyphButton[0] shows 7x24 of 24x24",
-      "squeezed: QScrollArea is 40x290, minimum 59x59"
+      "overlap: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/IntSliderSpinbox and QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/KeyHintLabel ']' share 18x28",
+      "overlap: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[0] and QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/KeyHintLabel '>' share 18x28",
+      "overlap: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[1] and QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/KeyHintLabel '}' share 18x28",
+      "overlap: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/ColorPairWidget and QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/CheckBox 'Antialiasing' share 48x14",
+      "squeezed: QScrollArea is 29x320, minimum 59x59",
+      "squeezed: QScrollArea/QWidget[0]/QWidget is 256x320, minimum 256x346",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1] is 238x296, minimum 238x322",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1] is 238x176, minimum 309x202",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel is 238x176, minimum 309x202",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/IntSliderSpinbox shows 139x28 of 148x28",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/IntSliderSpinbox is 148x28, minimum 72x30",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/IntSliderSpinbox/QSpinBox shows 43x24 of 50x24",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/IntSliderSpinbox/QSpinBox is 50x24, minimum 50x26",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[0] shows 139x28 of 148x28",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[0] is 148x28, minimum 76x30",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[0]/QDoubleSpinBox shows 47x24 of 54x24",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[0]/QDoubleSpinBox is 54x24, minimum 54x26",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[1] shows 139x28 of 148x28",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[1] is 148x28, minimum 76x30",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[1]/QDoubleSpinBox shows 47x24 of 54x24",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[1]/QDoubleSpinBox is 54x24, minimum 54x26",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FillStyleComboBox is 113x28, minimum 184x32",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/CheckBox 'Draw in selection only' is 121x22, minimum 154x22"
     ],
     "size": [
-      40,
+      29,
       320
     ]
   },
   "preferred": {
-    "problems": [],
+    "problems": [
+      "overlap: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/IntSliderSpinbox and QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/KeyHintLabel ']' share 18x30",
+      "overlap: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[0] and QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/KeyHintLabel '>' share 18x30",
+      "overlap: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[1] and QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/KeyHintLabel '}' share 18x30",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel is 245x202, minimum 309x202",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/IntSliderSpinbox shows 146x30 of 148x30",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[0] shows 146x30 of 148x30",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[1] shows 146x30 of 148x30",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FillStyleComboBox is 120x32, minimum 184x32",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/CheckBox 'Draw in selection only' is 128x22, minimum 154x22"
+    ],
     "size": [
-      327,
+      263,
       320
     ]
   },
   "short": {
     "problems": [
-      "squeezed: PanelHeader is 327x19, minimum 80x24",
-      "squeezed: PanelHeader/KeycapBadge is 19x19, minimum 19x24",
-      "clipped: PanelHeader/_GlyphButton[0] shows 24x19 of 24x24",
-      "squeezed: QScrollArea is 327x19, minimum 59x59"
+      "overlap: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/IntSliderSpinbox and QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/KeyHintLabel ']' share 18x30",
+      "overlap: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[0] and QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/KeyHintLabel '>' share 18x30",
+      "overlap: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[1] and QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/KeyHintLabel '}' share 18x30",
+      "squeezed: QScrollArea is 263x29, minimum 59x59",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel is 238x202, minimum 309x202",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/IntSliderSpinbox shows 139x30 of 148x30",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/IntSliderSpinbox/QSpinBox shows 43x26 of 50x26",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[0] shows 139x30 of 148x30",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[0]/QDoubleSpinBox shows 47x26 of 54x26",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[1] shows 139x30 of 148x30",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[1]/QDoubleSpinBox shows 47x26 of 54x26",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FillStyleComboBox is 113x32, minimum 184x32",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/CheckBox 'Draw in selection only' is 121x22, minimum 154x22"
     ],
     "size": [
-      327,
-      44
+      263,
+      29
     ]
   },
   "tall": {
-    "problems": [],
+    "problems": [
+      "overlap: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/IntSliderSpinbox and QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/KeyHintLabel ']' share 18x30",
+      "overlap: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[0] and QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/KeyHintLabel '>' share 18x30",
+      "overlap: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[1] and QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/KeyHintLabel '}' share 18x30",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel is 245x1082, minimum 309x202",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/IntSliderSpinbox shows 146x30 of 148x30",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[0] shows 146x30 of 148x30",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FloatSliderSpinbox[1] shows 146x30 of 148x30",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/FillStyleComboBox is 120x32, minimum 184x32",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/CheckBox 'Draw in selection only' is 128x22, minimum 154x22"
+    ],
     "size": [
-      327,
+      263,
       1200
     ]
   },

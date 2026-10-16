@@ -17,6 +17,9 @@ TOOL_ICON_SIZE = 48
 # Space between the icon and the button's edge at `TOOL_ICON_SIZE`, and the least space at smaller sizes:
 ICON_MARGIN = 8
 MIN_ICON_MARGIN = 4
+# Below `TOOL_ICON_SIZE`, the widest key hint shown, as a share of the button's width. A wider hint switches to modifier
+# symbols, and stays hidden if it is still too wide:
+MAX_KEY_HINT_SHARE = 0.7
 # Space between the icon and the edge of the plate drawn behind it, at most:
 PLATE_MARGIN = 4
 PLATE_RADIUS = 7.0
@@ -39,8 +42,6 @@ class ToolButton(QToolButton):
         label_text = connected_tool.label
         self._key_hint = KeyHintLabel(None, connected_tool.get_activation_config_key(), parent=self)
         self._key_hint.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        self._key_hint.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
-        self._key_hint.setMinimumSize(self._key_hint.sizeHint())
         set_shortcut_tooltip(self, label_text, connected_tool.get_activation_config_key(),
                              description=connected_tool.get_tooltip_text())
         self._icon_bounds = QRect()
@@ -59,8 +60,9 @@ class ToolButton(QToolButton):
         """Sets the side of the square the button's size hints return, which is `TOOL_ICON_SIZE` by default, and
         whether the key hint shows in its corner.
 
-        Below `TOOL_ICON_SIZE`, the icon moves toward the opposite corner to make room for the key hint, and a key hint
-        too wide for the button stays hidden.
+        Below `TOOL_ICON_SIZE`, the icon moves toward the opposite corner to make room for the key hint. A key hint
+        wider than `MAX_KEY_HINT_SHARE` of the button shows modifiers as symbols, and stays hidden if it is still too
+        wide.
         """
         self._edge_length = length
         self._show_key_hint = show_key_hint
@@ -82,20 +84,29 @@ class ToolButton(QToolButton):
         margin = ICON_MARGIN if edge >= TOOL_ICON_SIZE else max(MIN_ICON_MARGIN, edge // 6 + 1)
         self._plate_margin = min(PLATE_MARGIN, margin - 1)
         self._icon_bounds = get_scaled_placement(self.size(), QSize(1, 1), margin)
-        hint_size = self._key_hint.sizeHint()
-        x = self.width() - hint_size.width()
-        y = self.height() - hint_size.height()
-        self._key_hint.setGeometry(QRect(QPoint(x, y), hint_size))
         if edge >= TOOL_ICON_SIZE:
+            self._key_hint.set_compact(False)
+            self._place_key_hint()
             self._key_hint.setVisible(self._show_key_hint)
             return
-        hint_fits = hint_size.width() <= edge // 2 + MIN_ICON_MARGIN
-        self._key_hint.setVisible(self._show_key_hint and hint_fits)
+        max_hint_width = round(edge * MAX_KEY_HINT_SHARE)
+        self._key_hint.set_compact(False)
+        if self._key_hint.sizeHint().width() > max_hint_width:
+            self._key_hint.set_compact(True)
+        hint_size = self._place_key_hint()
+        self._key_hint.setVisible(self._show_key_hint and hint_size.width() <= max_hint_width)
         if self._key_hint.isVisibleTo(self):
-            # The icon overlaps at most the top left quarter of the key hint:
+            # The icon gives up half the key hint's height, so the hint covers only the icon's corner:
             side = edge - MIN_ICON_MARGIN - hint_size.height() // 2
             self._plate_margin = MIN_ICON_MARGIN - 1
             self._icon_bounds = QRect(MIN_ICON_MARGIN, MIN_ICON_MARGIN, side, side)
+
+    def _place_key_hint(self) -> QSize:
+        """Moves the key hint into the bottom right corner at its size hint, returning that size."""
+        hint_size = self._key_hint.sizeHint()
+        corner = QPoint(self.width() - hint_size.width(), self.height() - hint_size.height())
+        self._key_hint.setGeometry(QRect(corner, hint_size))
+        return hint_size
 
     @property
     def is_active(self) -> bool:

@@ -1,16 +1,19 @@
 """A panel header: the panel or active tool's icon, name and key, an optional dim description, a reset-to-defaults
 button and a More button.
 
+- The key and description follow the name. When the first line can't fit them, they move to a second line, where the
+  description wraps. A name that still doesn't fit ends with an ellipsis.
 - The header holds no config. `reset_requested` fires when the reset button is clicked, and the owner restores its
   declared keys (see `src.ui.panel.panel_reset`).
 - The More button opens a popover holding the controls a size class moved out of the panel, plus panel commands. The
   owner supplies them with `set_popover_content` and refreshes them in a `more_requested` handler.
-- In the Strip Short size class the owner hides the header and places `more_button` at the end of the panel's row.
+- In the Strip Short size class the owner hides the header and places `more_button` at the end of the panel's row, and
+  `restore_more_button` puts it back.
 """
 from typing import Optional
 
 from PySide6.QtCore import QEvent, QPointF, QRectF, QSize, Qt, Signal
-from PySide6.QtGui import QIcon, QPainter, QPainterPath, QPalette, QPen
+from PySide6.QtGui import QIcon, QPainter, QPainterPath, QPalette, QPen, QResizeEvent
 from PySide6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QLabel, QSizePolicy, QStyle, QStyleOptionToolButton,
                                QToolButton, QVBoxLayout, QWidget)
 
@@ -33,6 +36,7 @@ ICON_SIZE = 18
 BUTTON_SIZE = 24
 GLYPH_SIZE = 12.0
 HEADER_SPACING = 6
+LINE_SPACING = 2
 POPOVER_MARGIN = 8
 
 
@@ -94,6 +98,51 @@ class _GlyphButton(QToolButton):
         painter.end()
 
 
+class _ElidedLabel(QLabel):
+    """A one-line label that ends its text with an ellipsis when it is too narrow, and shows the full text as a
+    tooltip then."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._full_text = ''
+        self.setMinimumWidth(1)
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+
+    @property
+    def full_text(self) -> str:
+        """Returns the text before eliding."""
+        return self._full_text
+
+    def set_full_text(self, text: str) -> None:
+        """Changes the text, eliding it to the current width."""
+        self._full_text = text
+        self.updateGeometry()
+        self._elide()
+
+    def full_text_width(self) -> int:
+        """Returns the width the full text needs, with a pixel to spare on each side for rounding."""
+        return self.fontMetrics().horizontalAdvance(self._full_text) + 2
+
+    def sizeHint(self) -> QSize:
+        """Returns the size of the full text."""
+        return QSize(self.full_text_width(), super().sizeHint().height())
+
+    def minimumSizeHint(self) -> QSize:
+        """Returns a width of one pixel, since the text elides to fit."""
+        return QSize(1, super().minimumSizeHint().height())
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
+        """Elides the text to the new width."""
+        super().resizeEvent(event)
+        self._elide()
+
+    def _elide(self) -> None:
+        shown = self._full_text if self.width() >= self.full_text_width() \
+            else self.fontMetrics().elidedText(self._full_text, Qt.TextElideMode.ElideRight, self.width())
+        self.setText(shown)
+        self.setToolTip(self._full_text if shown != self._full_text else '')
+
+
 class PanelPopover(QFrame):
     """A frameless popup window holding one widget, which closes on any click outside it."""
 
@@ -139,32 +188,43 @@ class PanelHeader(QWidget):
         super().__init__(parent)
         self._icon_label = QLabel()
         self._icon_label.setFixedSize(ICON_SIZE, ICON_SIZE)
-        self._name_label = QLabel()
-        self._name_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
-        self._name_label.setMinimumWidth(1)
+        self._icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._name_label = _ElidedLabel()
         self._key_badge = self._make_key_badge()
         self._description_label = QLabel()
         self._description_label.setForegroundRole(QPalette.ColorRole.PlaceholderText)
-        self._description_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         self._description_label.setMinimumWidth(1)
         self._description_label.hide()
+        # The key and description, which move to their own line when the first line can't fit them:
+        self._details = QWidget()
+        details_layout = QHBoxLayout(self._details)
+        details_layout.setContentsMargins(0, 0, 0, 0)
+        details_layout.setSpacing(HEADER_SPACING)
+        details_layout.addWidget(self._key_badge)
+        details_layout.addWidget(self._description_label, stretch=1)
+        self._wrapped = False
         self._reset_button = _GlyphButton(_GlyphButton.RESET, RESET_TOOLTIP)
         self._more_button = _GlyphButton(_GlyphButton.MORE, MORE_TOOLTIP)
         self._more_button.hide()
         self._popover = PanelPopover(self)
-        layout = QHBoxLayout(self)
+        layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(HEADER_SPACING)
-        layout.addWidget(self._icon_label)
-        layout.addWidget(self._name_label, stretch=1)
-        layout.addWidget(self._key_badge)
-        layout.addWidget(self._description_label, stretch=2)
-        layout.addWidget(self._reset_button)
-        layout.addWidget(self._more_button)
+        layout.setSpacing(LINE_SPACING)
+        self._first_line = QHBoxLayout()
+        self._first_line.setSpacing(HEADER_SPACING)
+        self._first_line.addWidget(self._icon_label)
+        self._first_line.addWidget(self._name_label)
+        self._first_line.addWidget(self._details, stretch=1)
+        self._first_line.addWidget(self._reset_button)
+        self._first_line.addWidget(self._more_button)
+        self._second_line = QHBoxLayout()
+        self._second_line.setSpacing(HEADER_SPACING)
+        layout.addLayout(self._first_line)
+        layout.addLayout(self._second_line)
         self._reset_button.clicked.connect(self.reset_requested)
         self._more_button.clicked.connect(self.show_popover)
         self._icon = icon if icon is not None else QIcon()
-        self._name_label.setText(name)
+        self._name_label.set_full_text(name)
         self.set_key_text(key_text)
         self._refresh_icon()
 
@@ -192,20 +252,36 @@ class PanelHeader(QWidget):
         return self._popover
 
     def name(self) -> str:
-        """Returns the panel or tool name."""
-        return self._name_label.text()
+        """Returns the panel or tool name, in full even while it is elided."""
+        return self._name_label.full_text
+
+    @property
+    def is_wrapped(self) -> bool:
+        """Whether the key and description are on their own line."""
+        return self._wrapped
 
     def set_name(self, name: str, icon: Optional[QIcon] = None) -> None:
         """Changes the shown name, and the icon if one is given, for example when the active tool changes."""
-        self._name_label.setText(name)
+        self._name_label.set_full_text(name)
         if icon is not None:
             self._icon = icon
             self._refresh_icon()
+        self._fit_lines()
+
+    def set_icon_width(self, width: int) -> None:
+        """Centers the icon in a column `width` pixels wide, to line it up with a column of buttons below or above."""
+        self._icon_label.setFixedWidth(max(width, ICON_SIZE))
+        self._fit_lines()
+
+    def restore_more_button(self) -> None:
+        """Puts the More button back at the end of the first line, after its owner moved it elsewhere."""
+        self._first_line.addWidget(self._more_button)
 
     def set_key_text(self, key_text: str) -> None:
         """Shows `key_text` on a keycap after the name, or hides the keycap if it is empty."""
         self._key_badge.set_text(key_text)
         self._key_badge.setVisible(key_text != '')
+        self._fit_lines()
 
     def description(self) -> str:
         """Returns the description shown after the key, or the empty string if none is shown."""
@@ -215,6 +291,7 @@ class PanelHeader(QWidget):
         """Shows a dim description after the key, or hides it if `description` is empty."""
         self._description_label.setText(description)
         self._description_label.setVisible(description != '')
+        self._fit_lines()
 
     def set_reset_tooltip(self, key_text: str = '') -> None:
         """Adds a key binding to the reset button's tooltip, or restores the plain tooltip if `key_text` is empty."""
@@ -230,6 +307,57 @@ class PanelHeader(QWidget):
         self.more_requested.emit()
         if self._popover.content is not None:
             self._popover.popup_below(self._more_button)
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
+        """Moves the key and description to their own line if the first line can't fit them."""
+        super().resizeEvent(event)
+        self._fit_lines()
+
+    def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the size with the key and description on the first line."""
+        return QSize(self._one_line_width(), self._first_line_height())
+
+    def _first_line_height(self) -> int:
+        widgets = [self._icon_label, self._name_label, self._key_badge, self._reset_button, self._more_button]
+        return max(widget.sizeHint().height() for widget in widgets)
+
+    def _second_line_indent(self) -> int:
+        return self._icon_label.width() + HEADER_SPACING if not self._icon_label.isHidden() else 0
+
+    def _needs_second_line(self, width: int) -> bool:
+        has_details = not self._key_badge.isHidden() or not self._description_label.isHidden()
+        return has_details and width < self._one_line_width()
+
+    def _one_line_width(self) -> int:
+        """Returns the width the first line needs with the key and description on it."""
+        widgets = [self._icon_label, self._key_badge, self._reset_button, self._more_button]
+        shown = [widget for widget in widgets if not widget.isHidden()]
+        width = sum(widget.sizeHint().width() for widget in shown) + self._name_label.full_text_width()
+        if not self._description_label.isHidden():
+            # A pixel to spare on each side for rounding, as `_ElidedLabel.full_text_width` has:
+            width += self._description_label.fontMetrics().horizontalAdvance(self._description_label.text()) + 2
+            width += HEADER_SPACING
+        return width + HEADER_SPACING * len(shown)
+
+    def _fit_lines(self) -> None:
+        self.updateGeometry()
+        wrap = self._needs_second_line(self.width())
+        if wrap == self._wrapped:
+            return
+        self._wrapped = wrap
+        if wrap:
+            self._first_line.removeWidget(self._details)
+            self._second_line.setContentsMargins(self._second_line_indent(), 0, 0, 0)
+            self._second_line.addWidget(self._details)
+            self._first_line.insertStretch(2, 1)
+        else:
+            self._second_line.removeWidget(self._details)
+            stretch = self._first_line.itemAt(2)
+            if stretch is not None and stretch.spacerItem() is not None:
+                self._first_line.removeItem(stretch)
+            self._first_line.insertWidget(2, self._details, stretch=1)
+        self._description_label.setWordWrap(wrap)
+        self._details.show()
 
     def _refresh_icon(self) -> None:
         if not self._icon.isNull():
