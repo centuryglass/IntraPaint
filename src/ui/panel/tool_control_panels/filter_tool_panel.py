@@ -1,18 +1,18 @@
 """Control panel widget for the filter tool."""
 import json
-from typing import Optional, Callable, Any
+from typing import Any, Callable, Optional
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QLabel, QHBoxLayout
+from PySide6.QtWidgets import QApplication, QGridLayout, QLabel, QWidget
 
 from src.config.cache import Cache
 from src.image.filter.filter import ImageFilter
 from src.ui.input_fields.check_box import CheckBox
-from src.ui.input_fields.slider_spinbox import FloatSliderSpinbox, IntSliderSpinbox
-from src.ui.layout.divider import Divider
-from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
-from src.util.layout import extract_layout_item, synchronize_row_widths
-from src.util.parameter import DynamicFieldWidget, ParamType
+from src.ui.input_fields.segmented_control import DisplayMode, MAX_SEGMENTS, Segment, SegmentedControl
+from src.ui.input_fields.slider_field import number_field_for_parameter
+from src.ui.layout.label_column_layout import normalize_row_label
+from src.ui.panel.tool_control_panels.stroke_block import StrokeBlock, StrokeToolPanel, tool_section
+from src.util.parameter import Parameter, ParamType, TYPE_FLOAT, TYPE_INT, TYPE_STR
 from src.util.shared_constants import ICON_SIZE
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -24,45 +24,80 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-LABEL_TEXT_FILTER_TYPE = _tr('Filter:')
-LABEL_TEXT_FILTER_SELECTED_ONLY = _tr('Filter selection only')
+LABEL_TEXT_FILTER_TYPE = _tr('Filter')
+SECTION_TITLE = _tr('Filter')
+STRENGTH_LABEL = _tr('Strength')
+STRENGTH_TOOLTIP = _tr('How strongly the filter is applied where you paint')
+# Parameters wrap into this many columns in a strip:
+STRIP_PARAMETER_COLUMNS = 3
 
 
-class FilterToolPanel(BrushToolPanel):
-    """Control panel widget for the filter tool."""
+class FilterToolPanel(StrokeToolPanel):
+    """Control panel widget for the filter tool: the stroke block with Opacity read as Strength, then the filter
+    section."""
 
     def __init__(self, filter_list: list[ImageFilter]) -> None:
         self._filters = filter_list
-        self._filter_option_panel = QWidget()
-        super().__init__(size_key=Cache.FILTER_TOOL_BRUSH_SIZE, pressure_size_key=Cache.FILTER_TOOL_PRESSURE_SIZE,
-                         opacity_key=Cache.FILTER_TOOL_OPACITY, pressure_opacity_key=Cache.FILTER_TOOL_PRESSURE_OPACITY,
-                         hardness_key=Cache.FILTER_TOOL_HARDNESS,
-                         pressure_hardness_key=Cache.FILTER_TOOL_PRESSURE_HARDNESS,
-                         antialias_key=Cache.FILTER_TOOL_ANTIALIAS,
-                         selection_only_label=LABEL_TEXT_FILTER_SELECTED_ONLY,
-                         added_rows=[self._filter_option_panel, Divider(Qt.Orientation.Horizontal)])
-        self._filter_layout = QVBoxLayout(self._filter_option_panel)
+        super().__init__(StrokeBlock(size_key=Cache.FILTER_TOOL_BRUSH_SIZE,
+                                     pressure_size_key=Cache.FILTER_TOOL_PRESSURE_SIZE,
+                                     opacity_key=Cache.FILTER_TOOL_OPACITY,
+                                     opacity_label=STRENGTH_LABEL,
+                                     opacity_tooltip=STRENGTH_TOOLTIP,
+                                     pressure_opacity_key=Cache.FILTER_TOOL_PRESSURE_OPACITY,
+                                     hardness_key=Cache.FILTER_TOOL_HARDNESS,
+                                     pressure_hardness_key=Cache.FILTER_TOOL_PRESSURE_HARDNESS,
+                                     antialias_key=Cache.FILTER_TOOL_ANTIALIAS))
+        self._strip = False
         self._filter_dropdown = Cache().get_control_widget(Cache.FILTER_TOOL_SELECTED_FILTER)
         self._filter_dropdown.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         for i in range(self._filter_dropdown.count()):
             name = self._filter_dropdown.itemText(i)
             img_filter = self._filter_from_name(name)
             self._filter_dropdown.setItemIcon(i, img_filter.get_icon())
-
         self._filter_dropdown.valueChanged.connect(self._update_filter_option_slot)
-        self._filter_row = QWidget(self)
         self._filter_label = QLabel(LABEL_TEXT_FILTER_TYPE)
         self._filter_label.setBuddy(self._filter_dropdown)
-        filter_row_layout = QHBoxLayout(self._filter_row)
-        filter_row_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        filter_row_layout.addWidget(self._filter_label)
-        filter_row_layout.addWidget(self._filter_dropdown)
-        self._filter_layout.addWidget(self._filter_row)
+
+        self._parameter_widgets: list[QWidget] = []
+        self._parameter_container = QWidget(self)
+        self._parameter_layout = QGridLayout(self._parameter_container)
+        self._parameter_layout.setContentsMargins(0, 0, 0, 0)
+        self._parameter_layout.setSpacing(4)
         self._current_filter: Optional[ImageFilter] = None
         self._filter_params = json.loads(Cache().get(Cache.FILTER_TOOL_CACHED_PARAMETERS))
-        self._filter_widget_connections: list[tuple[DynamicFieldWidget, Callable[[Any], None]]] = []
+        # One setter per parameter widget of the current filter, to apply cached values:
+        self._parameter_setters: list[Callable[[Any], None]] = []
         self._update_filter_option_slot(self._filter_dropdown.currentText())
         Cache().connect(self, Cache.FILTER_TOOL_CACHED_PARAMETERS, self._update_filter_param_slot)
+        # The section goes in after the first parameters, so no layout caches a size hint without them:
+        self._section = tool_section(SECTION_TITLE, self._filter_row(), self._parameter_container)
+        self._layout.addWidget(self._section)
+
+    def _filter_row(self) -> QWidget:
+        row = QWidget(self)
+        row_layout = QGridLayout(row)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        row_layout.addWidget(self._filter_label, 0, 0)
+        row_layout.addWidget(self._filter_dropdown, 0, 1)
+        row_layout.setColumnStretch(1, 1)
+        return row
+
+    def set_orientation(self, orientation: Qt.Orientation) -> None:
+        """Passes the dock's orientation to the block, and wraps parameters into extra columns in a strip."""
+        super().set_orientation(orientation)
+        strip = orientation == Qt.Orientation.Horizontal
+        if strip != self._strip:
+            self._strip = strip
+            self._arrange_parameters()
+
+    def _arrange_parameters(self) -> None:
+        for widget in self._parameter_widgets:
+            self._parameter_layout.removeWidget(widget)
+        columns = STRIP_PARAMETER_COLUMNS if self._strip else 1
+        for index in range(STRIP_PARAMETER_COLUMNS):
+            self._parameter_layout.setColumnStretch(index, 1 if index < columns else 0)
+        for index, widget in enumerate(self._parameter_widgets):
+            self._parameter_layout.addWidget(widget, index // columns, index % columns)
 
     def _filter_from_name(self, filter_name: str) -> ImageFilter:
         matching = [img_filter for img_filter in self._filters if img_filter.get_name() == filter_name]
@@ -76,8 +111,43 @@ class FilterToolPanel(BrushToolPanel):
             return
         filter_name = self._current_filter.get_name()
         for i, filter_value in enumerate(self._filter_params[filter_name]):
-            filter_input = self._filter_widget_connections[i][0]
-            filter_input.setValue(filter_value)
+            self._parameter_setters[i](filter_value)
+
+    def _build_parameter_widget(self, parameter: Parameter) -> tuple[QWidget, Any, Callable[[Any], None]]:
+        """Returns a parameter's widget, the signal that reports its value, and a function that sets its value.
+
+        Parameter labels are sentence case without colons.
+        """
+        label = normalize_row_label(parameter.name)
+        if parameter.type_name in (TYPE_INT, TYPE_FLOAT):
+            field = number_field_for_parameter(parameter)
+            field.set_label(label)
+            return field, field.valueChanged, field.set_value
+        if parameter.type_name == TYPE_STR and parameter.options is not None and 2 <= len(
+                parameter.options) <= MAX_SEGMENTS:
+            # The options are the stored values, so segments bind them raw:
+            options = [str(option) for option in parameter.options]
+            control = SegmentedControl([Segment(option, option) for option in options],
+                                       display_mode=DisplayMode.LABEL, combo_fallback=True)
+            return self._labeled(label, control, parameter.description), control.valueChanged, control.set_value
+        widget = parameter.get_input_widget()
+        if isinstance(widget, CheckBox):
+            widget.setText(label)
+            return widget, widget.valueChanged, widget.setValue
+        return self._labeled(label, widget, parameter.description), widget.valueChanged, widget.setValue
+
+    @staticmethod
+    def _labeled(label: str, widget: QWidget, description: str) -> QWidget:
+        container = QWidget()
+        container_layout = QGridLayout(container)
+        container_layout.setContentsMargins(0, 0, 0, 0)
+        label_widget = QLabel(label)
+        label_widget.setBuddy(widget)
+        label_widget.setToolTip(description)
+        container_layout.addWidget(label_widget, 0, 0)
+        container_layout.addWidget(widget, 0, 1)
+        container_layout.setColumnStretch(1, 1)
+        return container
 
     def _update_filter_option_slot(self, filter_name: str) -> None:
         """Update panel layout with new filter parameters when the filter changes"""
@@ -85,79 +155,29 @@ class FilterToolPanel(BrushToolPanel):
         if img_filter == self._current_filter:
             return
 
-        # Clear old layout:
-        while len(self._filter_widget_connections) > 0:
-            widget, handler = self._filter_widget_connections.pop(0)
-            widget.valueChanged.disconnect(handler)
-        while self._filter_layout.count() > 0:
-            widget = self._filter_layout.takeAt(0).widget()
-            assert widget is not None
-            if widget != self._filter_row:
-                widget.setVisible(False)
-                widget.setParent(None)
-        self._filter_layout.addWidget(self._filter_row)
+        for widget in self._parameter_widgets:
+            self._parameter_layout.removeWidget(widget)
+            widget.setVisible(False)
+            widget.setParent(None)
+            widget.deleteLater()
+        self._parameter_widgets = []
+        self._parameter_setters = []
 
-        # Prepare parent class items for alignment:
-        expected_row_length = 5
-        alignment_rows = [[self._filter_label, None, self._filter_dropdown, None, None]]
-        layout = self.layout()
-        assert isinstance(layout, QVBoxLayout)
-        for i in range(layout.count()):
-            item = layout.itemAt(i)
-            assert item is not None
-            row_layout = item.layout()
-            if row_layout is None:
-                continue
-            row = []
-            for i2 in range(row_layout.count()):
-                row_widget = extract_layout_item(row_layout.itemAt(i2))
-                if not isinstance(row_widget, QWidget):
-                    continue
-                if isinstance(row_widget, (IntSliderSpinbox, FloatSliderSpinbox)):
-                    row.append(row_widget.label)
-                    row.append(row_widget.slider)
-                    row.append(row_widget.spinbox)
-                else:
-                    row.append(row_widget)
-            if len(row) == expected_row_length:
-                alignment_rows.append(row)
-
-        # Create new filter widgets:
         for idx, parameter in enumerate(img_filter.get_parameters()):
-            row = []
-
             def _update_param_in_json(new_value: ParamType, param_idx=idx, param_key=filter_name) -> None:
                 if self._filter_params[param_key][param_idx] != new_value:
                     self._filter_params[param_key][param_idx] = new_value
                     Cache().set(Cache.FILTER_TOOL_CACHED_PARAMETERS, json.dumps(self._filter_params))
-            widget = parameter.get_input_widget()
+
+            widget, value_signal, set_value = self._build_parameter_widget(parameter)
             try:
-                widget.setValue(self._filter_params[filter_name][idx])
+                set_value(self._filter_params[filter_name][idx])
             except (TypeError, ValueError):
-                widget.setValue(parameter.default_value)  # type: ignore
+                set_value(parameter.default_value)
                 self._filter_params[filter_name][idx] = parameter.default_value
                 Cache().set(Cache.FILTER_TOOL_CACHED_PARAMETERS, json.dumps(self._filter_params))
-            widget.valueChanged.connect(_update_param_in_json)
-            self._filter_widget_connections.append((widget, _update_param_in_json))
-            if isinstance(widget, (IntSliderSpinbox, FloatSliderSpinbox, CheckBox)):
-                widget.setText(parameter.name)
-                if isinstance(widget, (IntSliderSpinbox, FloatSliderSpinbox)):
-                    widget.set_slider_included(True)
-                    row = [widget.label, None, widget.slider, None, widget.spinbox]
-            else:
-                widget_label = QLabel(parameter.name)
-                widget_label.setBuddy(widget)
-                widget_label.setToolTip(parameter.description)
-                widget_container = QWidget(self)
-                widget_layout = QHBoxLayout(widget_container)
-                widget_layout.setSpacing(1)
-                widget_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-                widget_layout.addWidget(widget_label)
-                widget_layout.addWidget(widget)
-                widget = widget_container
-                row = [widget_label, None, widget, None, None]
-            self._filter_layout.addWidget(widget)
-            if len(row) > 0:
-                alignment_rows.append(row)
-        synchronize_row_widths(alignment_rows)
+            value_signal.connect(_update_param_in_json)
+            self._parameter_widgets.append(widget)
+            self._parameter_setters.append(set_value)
+        self._arrange_parameters()
         self._current_filter = img_filter

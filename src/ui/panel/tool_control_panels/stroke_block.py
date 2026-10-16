@@ -19,7 +19,7 @@ from typing import Optional
 
 from PySide6.QtCore import QPointF, QSize, Qt
 from PySide6.QtGui import QColor, QPainter, QPaintEvent, QPalette, QRadialGradient, QResizeEvent
-from PySide6.QtWidgets import (QApplication, QBoxLayout, QCheckBox, QGridLayout, QLabel, QSizePolicy,
+from PySide6.QtWidgets import (QApplication, QBoxLayout, QCheckBox, QGridLayout, QLabel, QLayout, QSizePolicy,
                                QVBoxLayout, QWidget)
 
 from src.config.cache import Cache
@@ -30,6 +30,7 @@ from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.widget.color_pair_widget import ColorPairWidget
+from src.ui.widget.panel_section import PanelSection
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.stroke_block'
@@ -50,6 +51,7 @@ PREVIEW_MIN_WIDTH = 420
 FIELD_COLUMN_MAX_WIDTH = 290
 PREVIEW_MIN_HEIGHT = 72
 COLUMN_SPACING = 10
+STACKED_SPACING = 6
 MIN_PATTERN_CHARACTERS = 6
 PREVIEW_STAMP_SPACING = 0.2
 
@@ -120,16 +122,78 @@ class StrokePreview(QWidget):
         painter.end()
 
 
+def build_paint_row(color_key: Optional[str], pattern_key: Optional[str], parent: QWidget) -> Optional[QWidget]:
+    """Returns the color pair and Pattern dropdown as one row, or None if the tool has neither."""
+    if color_key is None and pattern_key is None:
+        return None
+    cache = Cache()
+    row = QWidget(parent)
+    row_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, row)
+    row_layout.setContentsMargins(0, 0, 0, 0)
+    if color_key == Cache.LAST_BRUSH_COLOR:
+        row_layout.addWidget(ColorPairWidget(row))
+    if pattern_key is not None:
+        pattern_label = QLabel(normalize_row_label(cache.get_label(pattern_key)))
+        pattern_dropdown = FillStyleComboBox(pattern_key)
+        pattern_label.setBuddy(pattern_dropdown)
+        pattern_dropdown.setSizeAdjustPolicy(pattern_dropdown.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        pattern_dropdown.setMinimumContentsLength(MIN_PATTERN_CHARACTERS)
+        row_layout.addWidget(pattern_label)
+        row_layout.addWidget(pattern_dropdown, stretch=1)
+        if color_key is not None:
+            def _pattern_color_update(color_str: str, *_) -> None:
+                if QColor(color_str).isValid():
+                    pattern_dropdown.set_icon_colors(QColor(color_str))
+
+            cache.connect(row, color_key, _pattern_color_update)
+            pattern_dropdown.set_icon_colors(cache.get_color(color_key, Qt.GlobalColor.black))
+    row_layout.addStretch(1)
+    return row
+
+
+def tool_section(title: str, *items: QWidget | QLayout) -> PanelSection:
+    """Returns a titled section holding `items` in a column, for a tool panel's sections after the stroke block."""
+    body = QWidget()
+    body_layout = QVBoxLayout(body)
+    body_layout.setContentsMargins(0, 0, 0, 0)
+    for item in items:
+        if isinstance(item, QLayout):
+            body_layout.addLayout(item)
+        else:
+            body_layout.addWidget(item)
+    return PanelSection(title, body)
+
+
+def build_selection_only_checkbox() -> QWidget:
+    """Returns the "Only inside selection" checkbox shared by every tool that paints."""
+    checkbox = Cache().get_control_widget(Cache.PAINT_SELECTION_ONLY)
+    set_signal(checkbox)
+    if isinstance(checkbox, QCheckBox):
+        checkbox.setText(ONLY_INSIDE_SELECTION_LABEL)
+    return checkbox
+
+
 class StrokeBlock(QWidget):
-    """Size, Opacity and Hardness fields, the color pair and Pattern, and the shared checkboxes."""
+    """Size, Opacity and Hardness fields, the color pair and Pattern, and the shared checkboxes.
+
+    `size_label` and `opacity_label` replace the Cache labels, for tools that name those values differently (the
+    smudge and filter tools call opacity "Strength"). `opacity_tooltip` replaces the description to match.
+    """
 
     def __init__(self, size_key: str, opacity_key: Optional[str] = None, hardness_key: Optional[str] = None,
                  pressure_size_key: Optional[str] = None, pressure_opacity_key: Optional[str] = None,
                  pressure_hardness_key: Optional[str] = None, color_key: Optional[str] = None,
                  pattern_key: Optional[str] = None, antialias_key: Optional[str] = None,
-                 show_preview: bool = False, parent: Optional[QWidget] = None) -> None:
+                 show_preview: bool = False, opacity_label: Optional[str] = None,
+                 opacity_tooltip: Optional[str] = None, size_label: Optional[str] = None,
+                 parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         cache = Cache()
+        self._label_overrides = {size_key: size_label}
+        self._tooltip_overrides: dict[str, Optional[str]] = {}
+        if opacity_key is not None:
+            self._label_overrides[opacity_key] = opacity_label
+            self._tooltip_overrides[opacity_key] = opacity_tooltip
         self._fields: dict[str, NumberField] = {}
         self._pressure_fields: list[NumberField] = []
         self._orientation = Qt.Orientation.Vertical
@@ -153,32 +217,9 @@ class StrokeBlock(QWidget):
             fields_layout.addWidget(field)
         self._field_keys = list(self._fields)
 
-        self._paint_widget: Optional[QWidget] = None
-        self._paint_layout = None
-        if color_key is not None or pattern_key is not None:
-            self._paint_widget = QWidget(self)
-            paint_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._paint_widget)
-            self._paint_layout: Optional[QBoxLayout] = paint_layout
-            paint_layout.setContentsMargins(0, 0, 0, 0)
-            if color_key == Cache.LAST_BRUSH_COLOR:
-                paint_layout.addWidget(ColorPairWidget(self._paint_widget))
-            if pattern_key is not None:
-                pattern_label = QLabel(normalize_row_label(cache.get_label(pattern_key)))
-                pattern_dropdown = FillStyleComboBox(pattern_key)
-                pattern_label.setBuddy(pattern_dropdown)
-                pattern_dropdown.setSizeAdjustPolicy(
-                    pattern_dropdown.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-                pattern_dropdown.setMinimumContentsLength(MIN_PATTERN_CHARACTERS)
-                paint_layout.addWidget(pattern_label)
-                paint_layout.addWidget(pattern_dropdown, stretch=1)
-                if color_key is not None:
-                    def _pattern_color_update(color_str: str, *_) -> None:
-                        if QColor(color_str).isValid():
-                            pattern_dropdown.set_icon_colors(QColor(color_str))
-
-                    cache.connect(self, color_key, _pattern_color_update)
-                    pattern_dropdown.set_icon_colors(cache.get_color(color_key, Qt.GlobalColor.black))
-            paint_layout.addStretch(1)
+        self._paint_widget = build_paint_row(color_key, pattern_key, self)
+        paint_layout = self._paint_widget.layout() if self._paint_widget is not None else None
+        self._paint_layout = paint_layout if isinstance(paint_layout, QBoxLayout) else None
 
         self._checks_widget = QWidget(self)
         self._checks_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._checks_widget)
@@ -189,11 +230,7 @@ class StrokeBlock(QWidget):
             if isinstance(antialias_checkbox, QCheckBox):
                 antialias_checkbox.setText(normalize_row_label(cache.get_label(antialias_key)))
             self._checks_layout.addWidget(antialias_checkbox)
-        selection_only_checkbox = cache.get_control_widget(Cache.PAINT_SELECTION_ONLY)
-        set_signal(selection_only_checkbox)
-        if isinstance(selection_only_checkbox, QCheckBox):
-            selection_only_checkbox.setText(ONLY_INSIDE_SELECTION_LABEL)
-        self._checks_layout.addWidget(selection_only_checkbox)
+        self._checks_layout.addWidget(build_selection_only_checkbox())
 
         self._preview: Optional[StrokePreview] = None
         if show_preview:
@@ -221,12 +258,12 @@ class StrokeBlock(QWidget):
                      display_scale: float) -> NumberField:
         cache = Cache()
         minimum, maximum, step = cache.get_range(key)
-        label = normalize_row_label(cache.get_label(key))
+        label = self._label_overrides.get(key) or normalize_row_label(cache.get_label(key))
         if minimum is None or maximum is None or step is None:
             raise ValueError(f'Cache key {key} needs a numeric range')
         field = SliderField(label, cache.get(key), minimum, maximum, step=step, suffix=suffix,
                             display_scale=display_scale, parent=self)
-        description = cache.get_tooltip(key)
+        description = self._tooltip_overrides.get(key) or cache.get_tooltip(key)
         keys = KeyConfig()
         field.setToolTip(KEYS_TOOLTIP.format(description=description, decrease=keys.get(decrease_key),
                                              increase=keys.get(increase_key)))
@@ -270,6 +307,37 @@ class StrokeBlock(QWidget):
         """Re-arranges when the width crosses a threshold."""
         super().resizeEvent(event)
         self._arrange()
+
+    def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the layout's hint, at least `STACK_CHECKBOXES_WIDTH` wide in a side panel so it isn't stacked."""
+        hint = super().sizeHint()
+        if self._orientation == Qt.Orientation.Vertical:
+            hint.setWidth(max(hint.width(), STACK_CHECKBOXES_WIDTH))
+        return hint
+
+    def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the minimum of the stacked arrangement, which the block takes whenever it is narrower than
+        `STACK_CHECKBOXES_WIDTH`."""
+        hint = super().minimumSizeHint()
+        if self._orientation == Qt.Orientation.Vertical and self._arrangement is not None \
+                and not self._arrangement[1]:
+            stacked = self._stacked_minimum_size()
+            hint = QSize(min(hint.width(), stacked.width()), max(hint.height(), stacked.height()))
+        return hint
+
+    def _stacked_minimum_size(self) -> QSize:
+        """Returns the minimum size of the side arrangement with the paint row and checkboxes in columns."""
+        sizes = [self._fields_widget.minimumSizeHint()]
+        for widget, box in ((self._paint_widget, self._paint_layout), (self._checks_widget, self._checks_layout)):
+            if widget is None or box is None:
+                continue
+            items = [box.itemAt(i) for i in range(box.count())]
+            item_sizes = [item.minimumSize() for item in items if item is not None and item.widget() is not None]
+            spacing = box.spacing() if box.spacing() >= 0 else STACKED_SPACING
+            sizes.append(QSize(max(size.width() for size in item_sizes),
+                               sum(size.height() for size in item_sizes) + spacing * (len(item_sizes) - 1)))
+        return QSize(max(size.width() for size in sizes),
+                     sum(size.height() for size in sizes) + self._grid.verticalSpacing() * (len(sizes) - 1))
 
     def arrange_for_width(self, width: int) -> None:
         """Arranges the block as if it were `width` pixels wide."""

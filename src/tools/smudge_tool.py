@@ -11,7 +11,7 @@ from src.image.brush.smudge_brush import SmudgeBrush
 from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
+from src.ui.panel.tool_control_panels.stroke_block import StrokeToolPanel
 from src.ui.panel.tool_control_panels.smudge_tool_panel import SmudgeToolPanel
 from src.util.math_utils import clamp
 from src.util.shared_constants import PROJECT_DIR
@@ -112,7 +112,7 @@ class SmudgeTool(BrushTool):  # type: ignore
 
         if cache.get(Cache.EXPECT_TABLET_INPUT):
             control_panel = self.get_control_panel()
-            assert isinstance(control_panel, BrushToolPanel)
+            assert isinstance(control_panel, StrokeToolPanel)
             control_panel.show_pressure_checkboxes()
 
     def get_input_hint(self) -> str:

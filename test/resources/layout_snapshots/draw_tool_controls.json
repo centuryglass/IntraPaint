@@ -27,37 +27,29 @@
   "preferred": {
     "problems": [],
     "size": [
-      178,
+      278,
       269
     ]
   },
   "short": {
     "problems": [
-      "overlap: StrokeBlock/QWidget[0]/SliderField[0] and StrokeBlock/QWidget[0]/SliderField[1] share 150x11",
-      "overlap: StrokeBlock/QWidget[0]/SliderField[1] and StrokeBlock/QWidget[0]/SliderField[2] share 150x11",
-      "overlap: StrokeBlock/QWidget[1]/ColorPairWidget and StrokeBlock/QWidget[1]/QLabel 'Pattern' share 48x8",
-      "overlap: StrokeBlock/QWidget[1]/ColorPairWidget and StrokeBlock/QWidget[1]/FillStyleComboBox share 48x7",
-      "squeezed: StrokeBlock is 160x116, minimum 146x251",
-      "squeezed: StrokeBlock/QWidget[0] is 150x35, minimum 110x80",
-      "clipped: StrokeBlock/QWidget[0]/SliderField[1] shows 150x22 of 150x24",
-      "clipped: StrokeBlock/QWidget[0]/SliderField[2] shows 150x9 of 150x24",
-      "squeezed: StrokeBlock/QWidget[1] is 160x35, minimum 103x109",
-      "clipped: StrokeBlock/QWidget[1]/ColorPairWidget shows 48x35 of 48x48",
-      "squeezed: StrokeBlock/QWidget[1]/QLabel 'Pattern' is 160x8, minimum 43x17",
-      "squeezed: StrokeBlock/QWidget[1]/FillStyleComboBox is 160x7, minimum 103x32",
-      "squeezed: StrokeBlock/QWidget[2] is 160x34, minimum 146x50",
-      "squeezed: StrokeBlock/QWidget[2]/CheckBox 'Antialiasing' is 146x14, minimum 93x22",
-      "squeezed: StrokeBlock/QWidget[2]/CheckBox 'Only inside selection' is 146x14, minimum 146x22"
+      "overlap: StrokeBlock/QWidget[0]/SliderField[0] and StrokeBlock/QWidget[0]/SliderField[1] share 250x9",
+      "overlap: StrokeBlock/QWidget[0]/SliderField[1] and StrokeBlock/QWidget[0]/SliderField[2] share 250x9",
+      "squeezed: StrokeBlock is 260x116, minimum 146x251",
+      "squeezed: StrokeBlock/QWidget[0] is 250x41, minimum 110x80",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[2] shows 250x11 of 250x24",
+      "squeezed: StrokeBlock/QWidget[1] is 260x41, minimum 206x48",
+      "clipped: StrokeBlock/QWidget[1]/ColorPairWidget shows 48x41 of 48x48"
     ],
     "size": [
-      178,
+      278,
       134
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      178,
+      278,
       1200
     ]
   },
