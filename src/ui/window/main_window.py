@@ -11,6 +11,7 @@ The primary image editing window: the canvas in the center, with every other pan
 - The Tools, Image Generation and ControlNet docks always exist, so a restore can place them even before their
   generator provides content. A dock without content stays hidden (see `PanelDock.set_content`).
 - Icon rails along the window edges (`DockRails`) hold each dock's button, the recent tools and Generate.
+- Right-clicking a dock's tab, title area or rail button opens its menu (`build_dock_menu`).
 - While the generated image selector replaces the canvas, every dock and rail hides, and the layout from before comes
   back when it closes.
 """
@@ -19,10 +20,11 @@ import sys
 from enum import StrEnum
 from typing import Callable, Optional
 
-from PySide6.QtCore import Qt, QRect, QSize, QObject, QTimer, Signal, QByteArray
-from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, QAction, QMoveEvent, \
-    QScreen, QShowEvent
-from PySide6.QtWidgets import QMainWindow, QStackedWidget, QApplication, QSizePolicy, QTabWidget
+from PySide6.QtCore import Qt, QPoint, QRect, QSize, QObject, QTimer, Signal, QByteArray
+from PySide6.QtGui import QContextMenuEvent, QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, \
+    QAction, QMoveEvent, QScreen, QShowEvent
+from PySide6.QtWidgets import QMainWindow, QStackedWidget, QApplication, QSizePolicy, QMenu, QTabBar, QTabWidget, \
+    QWidget
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
@@ -34,6 +36,7 @@ from src.ui.panel.layer_ui.layer_panel import LayerPanel
 
 from src.controller.tool_controller import ToolController
 from src.ui.widget.loading_widget import LoadingWidget
+from src.ui.window.dock_menu import DockEdge, build_dock_menu, move_all_to_edge
 from src.ui.window.dock_rail import DockGroup, DockRails
 from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.panel_dock import PanelDock
@@ -172,6 +175,7 @@ class MainWindow(QMainWindow):
 
         # Docks:
         self.setDockNestingEnabled(True)
+        # `dock_menu._settle` finds each group's tab bar above its docks, so it changes with this:
         self.setTabPosition(Qt.DockWidgetArea.AllDockWidgetAreas, QTabWidget.TabPosition.North)
         # Top and bottom areas span the full window width:
         self.setCorner(Qt.Corner.TopLeftCorner, Qt.DockWidgetArea.TopDockWidgetArea)
@@ -189,10 +193,14 @@ class MainWindow(QMainWindow):
         self._navigation_dock = PanelDock(NAVIGATION_DOCK_TITLE, DockID.NAVIGATION, self,
                                           QIcon(ICON_PATH_NAVIGATION_DOCK))
         self._rails = DockRails(self)
-        for dock in self.upper_docks:
-            self._rails.add_dock(dock, DockGroup.UPPER)
-        for dock in self.lower_docks:
-            self._rails.add_dock(dock, DockGroup.LOWER)
+        for docks, group in ((self.upper_docks, DockGroup.UPPER), (self.lower_docks, DockGroup.LOWER)):
+            for dock in docks:
+                button = self._rails.add_dock(dock, group)
+                # The rail blocks context menus, so each button opens the dock menu itself:
+                button.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+                button.customContextMenuRequested.connect(
+                    lambda pos, rail_button=button: self._show_dock_menu(rail_button.dock,
+                                                                         rail_button.mapToGlobal(pos)))
         self._rails.set_tools_dock(self._tools_dock)
         self._rails.set_generation_dock(self._generation_dock)
         self._rails.generate_button.clicked.connect(self.generate_signal)
@@ -262,6 +270,47 @@ class MainWindow(QMainWindow):
     def dock_toggle_actions(self) -> list[QAction]:
         """Returns each dock's show/hide action, for the menu. An action is hidden while its dock has no content."""
         return [dock.toggleViewAction() for dock in self.docks]
+
+    def move_all_docks_to_edge(self, edge: DockEdge) -> None:
+        """Moves every dock that has content into one tab group along a window edge."""
+        move_all_to_edge(self, self.docks, edge)
+
+    def dock_menu(self, dock: PanelDock) -> QMenu:
+        """Builds the context menu for a dock (see `build_dock_menu`)."""
+        return build_dock_menu(self, dock, self.docks)
+
+    def dock_at(self, widget: Optional[QWidget], global_pos: QPoint) -> Optional[PanelDock]:
+        """Returns the dock whose tab or title area is at a screen position, given the widget there."""
+        while widget is not None and widget is not self:
+            if isinstance(widget, QTabBar) and widget.parent() is self:
+                tab_index = widget.tabAt(widget.mapFromGlobal(global_pos))
+                if tab_index < 0:
+                    return None
+                tab_text = widget.tabText(tab_index)
+                return next((dock for dock in self.docks if dock.windowTitle() == tab_text), None)
+            if isinstance(widget, PanelDock):
+                content = widget.content
+                if content is not None and widget.mapFromGlobal(global_pos).y() >= content.geometry().top():
+                    return None
+                return widget
+            widget = widget.parentWidget()
+        return None
+
+    def _show_dock_menu(self, dock: PanelDock, global_pos: QPoint) -> None:
+        """Shows a dock's menu at a screen position, then deletes it."""
+        menu = self.dock_menu(dock)
+        menu.exec(global_pos)
+        menu.deleteLater()
+
+    def contextMenuEvent(self, event: Optional[QContextMenuEvent]) -> None:  # pylint: disable=invalid-name
+        """Shows the dock menu over a dock's tab or title area, and Qt's own menu elsewhere."""
+        if event is None:
+            return
+        dock = self.dock_at(QApplication.widgetAt(event.globalPos()), event.globalPos())
+        if dock is None:
+            super().contextMenuEvent(event)
+            return
+        self._show_dock_menu(dock, event.globalPos())
 
     def reset_dock_layout(self) -> None:
         """Puts every dock back in the first-run layout and opens it.
