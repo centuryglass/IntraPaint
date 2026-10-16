@@ -45,23 +45,29 @@ def _by_name(docks: list[PanelDock]) -> dict[str, PanelDock]:
     return {dock.objectName(): dock for dock in docks}
 
 
-def tab_groups(window: QMainWindow, docks: list[PanelDock]) -> list[list[PanelDock]]:
+def docked_groups(window: QMainWindow, docks: list[PanelDock], with_empty: bool = False) -> list[list[PanelDock]]:
     """Returns the docked tab groups among `docks` that hold a dock with content, in layout order.
 
-    Each group lists its docks with content in tab order, with its open dock moved to the front. A dock alone in its
-    place is a group of one. Floating docks are left out.
+    Each group lists its docks with content in tab order, and with `with_empty` its docks without content too. A dock
+    alone in its place is a group of one. Floating docks are left out.
     """
     groups = read_dock_groups(window.saveState().data())
     by_name = _by_name(docks)
     result: list[list[PanelDock]] = []
     for group in groups or []:
         members = [by_name.get(saved.name) for saved in group.docks]
-        available = [dock for dock in members if dock is not None and dock.is_available and not dock.isFloating()]
-        if len(available) == 0:
-            continue
-        available.sort(key=lambda dock: dock.isHidden())
-        result.append(available)
+        docked = [dock for dock in members if dock is not None and not dock.isFloating()]
+        if any(dock.is_available for dock in docked):
+            result.append(docked if with_empty else [dock for dock in docked if dock.is_available])
     return result
+
+
+def tab_groups(window: QMainWindow, docks: list[PanelDock]) -> list[list[PanelDock]]:
+    """Returns `docked_groups`, with each group's open dock moved to the front."""
+    groups = docked_groups(window, docks)
+    for group in groups:
+        group.sort(key=lambda dock: dock.isHidden())
+    return groups
 
 
 def _is_open(dock: PanelDock) -> bool:

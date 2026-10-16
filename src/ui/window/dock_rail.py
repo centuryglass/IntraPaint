@@ -6,17 +6,17 @@
   bottom) show icon, name and keycap.
 - The buttons act as the docks' tabs. Clicking a button opens its dock in place of the open dock of its tab group, or
   closes it if it is showing (`PanelDock.toggle_from_key`). A dock with no content has no button.
-- The recent tools and the Generate button sit in the rail of the Tools dock and of the Image Generation dock. The
+- A rail groups its buttons by tab group and lines each group up with its docks (see `DockRail`).
+- The recent tools sit after the Tools dock's group, and Generate at the end of the Image Generation dock's rail. The
   recent tools fill only the space the other buttons leave, so they never raise the window's minimum size. Their
   maximum count is `AppConfig.TOOLBAR_TOOL_BUTTON_COUNT`.
 """
-from enum import IntEnum
 from typing import Optional
 
-from PySide6.QtCore import QMargins, QPoint, QRect, QRectF, QSize, Qt
+from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QRectF, QSize, Qt
 from PySide6.QtGui import QFont, QFontMetrics, QIcon, QPainter, QPaintEvent, QPalette, QPen, QResizeEvent
-from PySide6.QtWidgets import (QApplication, QBoxLayout, QFrame, QHBoxLayout, QMainWindow, QPushButton,
-                               QSizePolicy, QToolBar, QToolButton, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QFrame, QMainWindow, QPushButton, QSizePolicy, QToolBar, QToolButton,
+                               QWidget)
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -26,6 +26,7 @@ from src.tools.base_tool import BaseTool
 from src.ui.ink_style import set_primary_button
 from src.ui.widget.shortcut_tooltip import set_shortcut_tooltip
 from src.ui.widget.tool_button import ToolButton
+from src.ui.window.dock_groups import docked_groups
 from src.ui.window.panel_dock import PanelDock
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING
 from src.util.shared_constants import PROJECT_DIR
@@ -61,6 +62,13 @@ STRIP_BUTTON_PADDING = 6
 # Smallest tool button the recent tools strip draws in a side rail:
 RECENT_TOOL_SIZE = SIDE_RAIL_WIDTH
 RAIL_SPACING = 2
+# Space between a rail's ends and its first and last items:
+RAIL_MARGIN = 2
+# Space before each dock group after a rail's first, with a rule across its middle:
+RULE_SPACE = 7
+RULE_WIDTH = 3
+# Space between a rule's ends and the rail's sides:
+RULE_INSET = 4
 
 
 class _GenerateButton(QPushButton):
@@ -79,12 +87,6 @@ class _GenerateButton(QPushButton):
     def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
         """Returns `sizeHint` while icon-only."""
         return self.sizeHint() if self.icon_only else super().minimumSizeHint()
-
-
-class DockGroup(IntEnum):
-    """Which part of a rail a dock's button is in. A rule separates the groups."""
-    UPPER = 0
-    LOWER = 1
 
 
 def toolbar_area_for(area: Qt.DockWidgetArea) -> Qt.ToolBarArea:
@@ -376,10 +378,10 @@ class RecentToolStrip(QWidget):
 
 
 class _RailRule(QFrame):
-    """The rule between a rail's upper and lower dock groups."""
+    """The rule at the start of each of a rail's dock groups after the first."""
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, parent: QWidget) -> None:
+        super().__init__(parent)
         self.setFrameShape(QFrame.Shape.HLine)
         self.setFrameShadow(QFrame.Shadow.Sunken)
 
@@ -388,33 +390,57 @@ class _RailRule(QFrame):
         self.setFrameShape(QFrame.Shape.HLine if side else QFrame.Shape.VLine)
 
 
+class _RailContent(QWidget):
+    """The widget a rail holds, which its rail lays out along the rail (`DockRail.place`)."""
+
+    def __init__(self, rail: 'DockRail') -> None:
+        super().__init__()
+        self._rail = rail
+
+    def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns room for every button, rule and the maximum number of recent tools."""
+        return self._rail.content_size(with_recent_tools=True)
+
+    def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns room for every button and rule, without recent tools."""
+        return self._rail.content_size(with_recent_tools=False)
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
+        """Places the rail's contents for the new length."""
+        super().resizeEvent(event)
+        self._rail.place()
+
+
 class DockRail(QToolBar):
-    """The rail along one window edge. Its content is one widget laid out along the rail."""
+    """The rail along one window edge. It places its dock buttons by tab group, then its recent tools and Generate.
+
+    - Each group's buttons start where the group's open dock starts along the rail, so a split area's groups line up
+      with their docks. A rule marks the start of each group after the first.
+    - A group with no open dock, or one whose start would overlap the group before it, follows the group before it.
+      A group that would run past the rail's end moves back to end there. When the groups still don't fit, they are
+      packed from the rail's start.
+    - The recent tools fill the space between the Tools dock's group and the next group. Generate is at the rail's end.
+    """
 
     def __init__(self, window: QMainWindow, area: Qt.DockWidgetArea, object_name: str) -> None:
         super().__init__(window)
         self.setObjectName(object_name)
+        self._window = window
         self._area = area
         self._side = area in (Qt.DockWidgetArea.LeftDockWidgetArea, Qt.DockWidgetArea.RightDockWidgetArea)
         self.setMovable(False)
         self.setFloatable(False)
         self.setAllowedAreas(toolbar_area_for(area))
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.PreventContextMenu)
-        self._content = QWidget()
+        self._content = _RailContent(self)
         # The toolbar gives a widget more than its size hint only along the rail, and only if it expands there:
         self._content.setSizePolicy(QSizePolicy.Policy.Preferred if self._side else QSizePolicy.Policy.Expanding,
                                     QSizePolicy.Policy.Expanding if self._side else QSizePolicy.Policy.Preferred)
-        direction = QBoxLayout.Direction.TopToBottom if self._side else QBoxLayout.Direction.LeftToRight
-        self._layout = QVBoxLayout(self._content) if self._side else QHBoxLayout(self._content)
-        self._layout.setDirection(direction)
-        self._layout.setContentsMargins(QMargins(0, 2, 0, 2) if self._side else QMargins(2, 0, 2, 0))
-        self._layout.setSpacing(RAIL_SPACING)
-        self._rule = _RailRule()
-        self._rule.set_side(self._side)
-        self._buttons: list[tuple[DockGroup, RailButton]] = []
+        self._groups: list[list[RailButton]] = []
+        self._rules: list[_RailRule] = []
         self._recent_strip: Optional[RecentToolStrip] = None
+        self._recent_group = -1
         self._generate_button: Optional[QPushButton] = None
-        self._stretch_index = -1
         self.addWidget(self._content)
         self.hide()
 
@@ -430,8 +456,18 @@ class DockRail(QToolBar):
 
     @property
     def buttons(self) -> list[RailButton]:
-        """Returns the dock buttons in the rail, upper group first."""
-        return [button for _group, button in self._buttons]
+        """Returns the dock buttons in the rail, group by group."""
+        return [button for group in self._groups for button in group]
+
+    @property
+    def groups(self) -> list[list[RailButton]]:
+        """Returns the rail's dock buttons by tab group, in rail order."""
+        return [list(group) for group in self._groups]
+
+    @property
+    def rules(self) -> list[QFrame]:
+        """Returns the rules between groups that are showing."""
+        return [rule for rule in self._rules if not rule.isHidden()]
 
     @property
     def recent_tools(self) -> Optional[RecentToolStrip]:
@@ -451,52 +487,178 @@ class DockRail(QToolBar):
             Qt.DockWidgetArea.BottomDockWidgetArea: Qt.Edge.TopEdge,
         }[self._area]
 
-    def set_contents(self, buttons: list[tuple[DockGroup, RailButton]], recent: Optional[RecentToolStrip],
-                     generate: Optional[QPushButton]) -> None:
-        """Replaces the rail's contents: dock buttons grouped, then the recent tools, then Generate."""
-        # Takes every item, including the spacer an earlier call added:
-        while self._layout.count() > 0:
-            item = self._layout.takeAt(0)
-            if item is not None and item.widget() is not None and item.widget() is not self._rule:
-                item.widget().hide()
-        self._buttons = list(buttons)
+    def set_contents(self, groups: list[list[RailButton]], recent: Optional[RecentToolStrip],
+                     recent_group: int, generate: Optional[QPushButton]) -> None:
+        """Replaces the rail's contents: dock buttons by tab group, the recent tools after group `recent_group`, and
+        Generate."""
+        for widget in (*self.buttons, self._recent_strip, self._generate_button):
+            if widget is not None and widget.parentWidget() is self._content:
+                widget.hide()
+        self._groups = [list(group) for group in groups]
         self._recent_strip = recent
+        self._recent_group = recent_group
         self._generate_button = generate
-        for group in DockGroup:
-            members = [button for button_group, button in buttons if button_group == group]
-            for button in members:
-                button.set_placement(self._side, self._edge())
-                self._layout.addWidget(button, 0, self._alignment())
-                button.setVisible(button.dock.is_available)
-            if group == DockGroup.UPPER:
-                self._layout.addWidget(self._rule)
+        for button in self.buttons:
+            button.setParent(self._content)
+            button.set_placement(self._side, self._edge())
         if recent is not None:
+            recent.setParent(self._content)
             recent.set_side(self._side)
-            self._layout.addWidget(recent, 1)
-            recent.show()
-        else:
-            self._layout.addStretch(1)
         if generate is not None:
-            self._layout.addWidget(generate, 0, self._alignment())
+            generate.setParent(self._content)
+        while len(self._rules) < len(self._groups):
+            rule = _RailRule(self._content)
+            rule.set_side(self._side)
+            self._rules.append(rule)
+        self._content.updateGeometry()
         self.refresh_visibility()
 
-    def _alignment(self) -> Qt.AlignmentFlag:
-        return Qt.AlignmentFlag.AlignHCenter if self._side else Qt.AlignmentFlag.AlignVCenter
+    def _shown_groups(self) -> list[tuple[int, list[RailButton]]]:
+        """Returns each group's index and its buttons with content, leaving out groups with none."""
+        groups = [(idx, [button for button in group if button.dock.is_available])
+                  for idx, group in enumerate(self._groups)]
+        return [(idx, group) for idx, group in groups if len(group) > 0]
+
+    def _length(self, widget: QWidget) -> int:
+        hint = widget.sizeHint()
+        return hint.height() if self._side else hint.width()
+
+    def _breadth(self, widget: QWidget) -> int:
+        hint = widget.sizeHint()
+        return hint.width() if self._side else hint.height()
+
+    def _generate_shown(self) -> bool:
+        return self._generate_button is not None and not self._generate_button.isHidden()
+
+    def content_size(self, with_recent_tools: bool) -> QSize:
+        """Returns the length every button and rule needs, with the recent tools' size hint if requested, and the
+        breadth of the widest item."""
+        groups = self._shown_groups()
+        widgets: list[QWidget] = [button for _idx, group in groups for button in group]
+        if self._generate_shown():
+            assert self._generate_button is not None
+            widgets.append(self._generate_button)
+        length = 2 * RAIL_MARGIN + sum(self._length(widget) for widget in widgets) \
+            + RAIL_SPACING * max(len(widgets) - 1, 0) + RULE_SPACE * max(len(groups) - 1, 0)
+        breadth = max((self._breadth(widget) for widget in widgets), default=0)
+        if with_recent_tools and self._recent_strip is not None:
+            length += self._length(self._recent_strip) + RAIL_SPACING
+            breadth = max(breadth, self._breadth(self._recent_strip))
+        if self._side:
+            return QSize(max(breadth, SIDE_RAIL_WIDTH), length)
+        return QSize(length, breadth)
+
+    def _span_start(self, group: list[RailButton]) -> Optional[int]:
+        """Returns where the group's open docked dock starts along the rail, or None if it has none."""
+        dock = next((button.dock for button in group if not button.dock.isHidden() and not button.dock.isFloating()),
+                    None)
+        if dock is None or not dock.isVisible():
+            return None
+        start = self._content.mapFrom(self._window, dock.geometry().topLeft())
+        return start.y() if self._side else start.x()
+
+    def _group_length(self, group: list[RailButton]) -> int:
+        return sum(self._length(button) for button in group) + RAIL_SPACING * (len(group) - 1)
+
+    def _group_starts(self, groups: list[list[RailButton]], end: int) -> list[int]:
+        """Returns where each group's buttons start: at its dock's start, after the group before it, and pulled back
+        from the rail's end as far as that allows. Packs the groups from the rail's start if they still don't fit."""
+        starts = []
+        cursor = RAIL_MARGIN
+        for idx, group in enumerate(groups):
+            earliest = cursor if idx == 0 else cursor + RULE_SPACE
+            span_start = self._span_start(group)
+            start = earliest if span_start is None else max(earliest, span_start)
+            starts.append(start)
+            cursor = start + self._group_length(group)
+        latest = end
+        for idx in reversed(range(len(groups))):
+            starts[idx] = min(starts[idx], latest - self._group_length(groups[idx]))
+            latest = starts[idx] - RULE_SPACE
+        cursor = RAIL_MARGIN
+        for idx, group in enumerate(groups):
+            if starts[idx] < (cursor if idx == 0 else cursor + RULE_SPACE):
+                return self._packed_starts(groups)
+            cursor = starts[idx] + self._group_length(group)
+        return starts
+
+    def _packed_starts(self, groups: list[list[RailButton]]) -> list[int]:
+        starts = []
+        cursor = RAIL_MARGIN
+        for idx, group in enumerate(groups):
+            start = cursor if idx == 0 else cursor + RULE_SPACE
+            starts.append(start)
+            cursor = start + self._group_length(group)
+        return starts
+
+    def place(self) -> None:
+        """Places the buttons, rules, recent tools and Generate along the rail's current length."""
+        length = self._content.height() if self._side else self._content.width()
+        breadth = self._content.width() if self._side else self._content.height()
+        end = length - RAIL_MARGIN
+        if self._generate_shown():
+            assert self._generate_button is not None
+            generate_length = self._length(self._generate_button)
+            end -= generate_length
+            self._place(self._generate_button, end, generate_length, breadth)
+            end -= RAIL_SPACING
+        shown = self._shown_groups()
+        starts = self._group_starts([group for _idx, group in shown], end)
+        for rule in self._rules:
+            rule.hide()
+        recent_start: Optional[int] = None
+        recent_end = end
+        for position, ((idx, group), start) in enumerate(zip(shown, starts)):
+            if position > 0:
+                rule = self._rules[position - 1]
+                self._place(rule, start - (RULE_SPACE + RULE_WIDTH) // 2, RULE_WIDTH, breadth - 2 * RULE_INSET,
+                            RULE_INSET)
+                rule.show()
+                if recent_start is not None and recent_end == end:
+                    recent_end = start - RULE_SPACE
+            cursor = start
+            for button in group:
+                button_length = self._length(button)
+                self._place(button, cursor, button_length, breadth)
+                cursor += button_length + RAIL_SPACING
+            if idx == self._recent_group:
+                recent_start = cursor
+        if self._recent_strip is not None:
+            if recent_start is None:
+                recent_start = RAIL_MARGIN if len(shown) == 0 else max(starts[-1], RAIL_MARGIN)
+            self._place(self._recent_strip, recent_start, max(recent_end - recent_start, 0), breadth)
+
+    def _place(self, widget: QWidget, start: int, length: int, breadth: int, offset: Optional[int] = None) -> None:
+        """Sets a widget's geometry along the rail, centered across it unless `offset` is given."""
+        widget_breadth = min(self._breadth(widget), breadth) if offset is None else breadth
+        across = (breadth - widget_breadth) // 2 if offset is None else offset
+        if self._side:
+            widget.setGeometry(QRect(across, start, widget_breadth, length))
+        else:
+            widget.setGeometry(QRect(start, across, length, widget_breadth))
 
     def refresh_visibility(self, suspended: bool = False) -> None:
-        """Shows the rule only between two groups that both have a visible button, and the rail only when it has a
-        visible button, recent tool or Generate button and is not suspended."""
-        visible_groups = {group for group, button in self._buttons if button.dock.is_available}
-        self._rule.setVisible(len(visible_groups) == 2)
-        has_content = len(visible_groups) > 0 or self._recent_strip is not None \
-            or (self._generate_button is not None and not self._generate_button.isHidden())
+        """Shows each button with content, and the rail only when it has a visible button, recent tool or Generate
+        button and is not suspended. Then places the contents."""
+        for button in self.buttons:
+            button.setVisible(button.dock.is_available)
+        if self._recent_strip is not None:
+            self._recent_strip.show()
+        has_content = len(self._shown_groups()) > 0 or self._recent_strip is not None or self._generate_shown()
         self.setVisible(has_content and not suspended)
+        self._content.updateGeometry()
+        self.place()
 
 
-class DockRails:
-    """Owns the four `DockRail`s of a main window and keeps each dock's button in the rail of its area."""
+class DockRails(QObject):
+    """Owns the four `DockRail`s of a main window and keeps each dock's button in the rail of its area.
+
+    Buttons are grouped by the docks' tab groups (`docked_groups`). The rails are placed again whenever a dock moves,
+    resizes, opens or closes.
+    """
 
     def __init__(self, window: QMainWindow) -> None:
+        super().__init__(window)
         self._window = window
         self._rails: dict[Qt.DockWidgetArea, DockRail] = {}
         for area, name in ((Qt.DockWidgetArea.LeftDockWidgetArea, 'left_rail'),
@@ -506,7 +668,7 @@ class DockRails:
             rail = DockRail(window, area, name)
             self._rails[area] = rail
             window.addToolBar(toolbar_area_for(area), rail)
-        self._docks: list[tuple[DockGroup, PanelDock, RailButton]] = []
+        self._docks: list[tuple[PanelDock, RailButton]] = []
         self._dock_areas: dict[PanelDock, Qt.DockWidgetArea] = {}
         self._tools_dock: Optional[PanelDock] = None
         self._generation_dock: Optional[PanelDock] = None
@@ -539,19 +701,20 @@ class DockRails:
         """Returns the rail holding a registered dock's button."""
         return self._rails[self._dock_areas[dock]]
 
-    def add_dock(self, dock: PanelDock, group: DockGroup,
+    def add_dock(self, dock: PanelDock,
                  default_area: Qt.DockWidgetArea = Qt.DockWidgetArea.RightDockWidgetArea) -> RailButton:
         """Adds a button for a dock, in the rail of the dock's area."""
         button = RailButton(dock)
-        self._docks.append((group, dock, button))
+        self._docks.append((dock, button))
         self._dock_areas[dock] = default_area
         dock.dockLocationChanged.connect(lambda area, moved=dock: self._dock_moved(moved, area))
-        dock.toggleViewAction().changed.connect(self._refresh)
+        dock.toggleViewAction().changed.connect(self.sync)
+        dock.installEventFilter(self)
         self.sync()
         return button
 
     def set_tools_dock(self, dock: PanelDock) -> None:
-        """Puts the recent tools in the rail of this dock."""
+        """Puts the recent tools in the rail of this dock, after its group's buttons."""
         self._tools_dock = dock
         self.sync()
 
@@ -559,7 +722,6 @@ class DockRails:
         """Puts the Generate button in the rail of this dock, shown while the dock is not showing."""
         self._generation_dock = dock
         dock.visibilityChanged.connect(self._refresh)
-        dock.toggleViewAction().changed.connect(self._refresh)
         self.sync()
 
     def set_tool_controller(self, tool_controller: ToolController) -> None:
@@ -570,31 +732,46 @@ class DockRails:
         self._recent_strip = RecentToolStrip(tool_controller)
         self.sync()
 
-    def _dock_moved(self, dock: PanelDock, area: Qt.DockWidgetArea) -> None:
-        if area in self._rails and area != self._dock_areas[dock]:
-            self._dock_areas[dock] = area
-            self.sync()
+    def eventFilter(self, _watched: QObject, event: QEvent) -> bool:  # pylint: disable=invalid-name
+        """Places the rails again when a dock moves or resizes."""
+        if event.type() in (QEvent.Type.Move, QEvent.Type.Resize) and not self._suspended:
+            for rail in self._rails.values():
+                if rail.isVisible():
+                    rail.place()
+        return False
 
-    def sync(self) -> None:
-        """Moves each button to the rail of its dock's current area. Call after a layout change Qt doesn't report with
-        `dockLocationChanged`, such as `addDockWidget` or `restoreState`."""
-        for _group, dock, _button in self._docks:
+    def _dock_moved(self, dock: PanelDock, area: Qt.DockWidgetArea) -> None:
+        if area in self._rails:
+            self._dock_areas[dock] = area
+        self.sync()
+
+    def sync(self, *_args) -> None:
+        """Moves each button to the rail of its dock's current area, grouped by tab group. Call after a layout change
+        Qt doesn't report with `dockLocationChanged`, such as `addDockWidget` or `restoreState`."""
+        for dock, _button in self._docks:
             area = self._window.dockWidgetArea(dock)
             if area in self._rails:
                 self._dock_areas[dock] = area
+        buttons = dict(self._docks)
+        groups = docked_groups(self._window, [dock for dock, _button in self._docks], with_empty=True)
+        grouped = {dock for group in groups for dock in group}
+        # Floating and empty docks follow the groups, each alone:
+        groups += [[dock] for dock, _button in self._docks if dock not in grouped]
         for area, rail in self._rails.items():
-            buttons = [(group, button) for group, dock, button in self._docks if self._dock_areas[dock] == area]
-            recent = self._recent_strip if self._tools_dock is not None \
-                and self._dock_areas.get(self._tools_dock) == area else None
+            rail_groups = [[buttons[dock] for dock in group] for group in groups
+                           if self._dock_areas[group[0]] == area]
+            recent_group = -1
+            if self._tools_dock is not None and self._dock_areas.get(self._tools_dock) == area:
+                recent_group = next((idx for idx, group in enumerate(rail_groups)
+                                     if any(button.dock is self._tools_dock for button in group)), -1)
+            recent = self._recent_strip if recent_group >= 0 else None
             generate = self._generate_button if self._generation_dock is not None \
                 and self._dock_areas.get(self._generation_dock) == area else None
-            rail.set_contents(buttons, recent, generate)
+            rail.set_contents(rail_groups, recent, recent_group, generate)
         self._refresh()
 
     def _refresh(self, *_args) -> None:
-        """Updates which buttons, rules and rails are visible."""
-        for _group, dock, button in self._docks:
-            button.setVisible(dock.is_available)
+        """Updates which buttons and rails are visible, and places each rail's contents."""
         if self._generation_dock is not None:
             dock = self._generation_dock
             self._generate_button.setVisible(dock.is_available and not dock.is_showing)

@@ -34,7 +34,7 @@ from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.controller.tool_controller import ToolController
 from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.window.dock_menu import DockEdge, build_dock_menu, move_all_to_edge
-from src.ui.window.dock_rail import DockGroup, DockRails
+from src.ui.window.dock_rail import DockRails
 from src.ui.window.dock_groups import close_background_docks, hide_dock_tab_bars
 from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.panel_dock import PanelDock
@@ -189,14 +189,12 @@ class MainWindow(QMainWindow):
         self._navigation_dock = PanelDock(NAVIGATION_DOCK_TITLE, DockID.NAVIGATION, self,
                                           QIcon(ICON_PATH_NAVIGATION_DOCK))
         self._rails = DockRails(self)
-        for docks, group in ((self.upper_docks, DockGroup.UPPER), (self.lower_docks, DockGroup.LOWER)):
-            for dock in docks:
-                button = self._rails.add_dock(dock, group)
-                # The rail blocks context menus, so each button opens the dock menu itself:
-                button.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-                button.customContextMenuRequested.connect(
-                    lambda pos, rail_button=button: self._show_dock_menu(rail_button.dock,
-                                                                         rail_button.mapToGlobal(pos)))
+        for dock in self.docks:
+            button = self._rails.add_dock(dock)
+            # The rail blocks context menus, so each button opens the dock menu itself:
+            button.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            button.customContextMenuRequested.connect(
+                lambda pos, rail_button=button: self._show_dock_menu(rail_button.dock, rail_button.mapToGlobal(pos)))
         self._rails.set_tools_dock(self._tools_dock)
         self._rails.set_generation_dock(self._generation_dock)
         self._rails.generate_button.clicked.connect(self.generate_signal)
