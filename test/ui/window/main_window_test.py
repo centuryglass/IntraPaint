@@ -72,3 +72,12 @@ class MainWindowTest(IntraPaintTestCase):
         confirm.assert_not_called()
         mock_exit.assert_called_once()
         self.assertIs(self.window.confirm_close, confirm)
+
+    def test_loading_widget_is_above_selection_screen(self) -> None:
+        """The loading indicator is the topmost child while a generation runs, not hidden behind the screen."""
+        self.window.show_generated_options(None)
+        self.window.set_is_loading(True)
+        loading_widget = self.window._loading_widget  # pylint: disable=protected-access
+        self.assertTrue(loading_widget.isVisible())
+        child_widgets = [child for child in self.window.children() if child.isWidgetType()]
+        self.assertIs(child_widgets[-1], loading_widget)
