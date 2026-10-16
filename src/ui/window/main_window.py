@@ -270,10 +270,19 @@ class MainWindow(QMainWindow):
     def move_all_docks_to_edge(self, edge: DockEdge) -> None:
         """Moves every dock that has content into one tab group along a window edge."""
         move_all_to_edge(self, self.docks, edge)
+        self._rails.sync()
 
     def dock_menu(self, dock: PanelDock) -> QMenu:
-        """Builds the context menu for a dock (see `build_dock_menu`)."""
-        return build_dock_menu(self, dock, self.docks)
+        """Builds the context menu for a dock (see `build_dock_menu`).
+
+        Its moves don't all emit `dockLocationChanged`, so the rails resync after any of its actions.
+        """
+        menu = build_dock_menu(self, dock, self.docks)
+        for submenu in [menu, *menu.findChildren(QMenu)]:
+            for action in submenu.actions():
+                if action.menu() is None:
+                    action.triggered.connect(lambda _checked=False: self._rails.sync())
+        return menu
 
     def dock_at(self, widget: Optional[QWidget], global_pos: QPoint) -> Optional[PanelDock]:
         """Returns the dock whose title area is at a screen position, given the widget there."""

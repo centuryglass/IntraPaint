@@ -132,6 +132,20 @@ class DockMenuTest(IntraPaintTestCase):
             self.assertEqual(self._group(dock), {dock}, edge)
             self.assertEqual(self._shown_tab_bars(), [], edge)
 
+    def test_rail_button_follows_a_move_to_each_edge(self) -> None:
+        """Moving a dock to an edge, alone or with every panel, moves its rail button to that edge's rail."""
+        window = self.window
+        dock = window.layers_dock
+        for edge in (DockEdge.LEFT, DockEdge.RIGHT, DockEdge.TOP, DockEdge.BOTTOM):
+            self._trigger(dock, MENU_MOVE_TO_EDGE, edge_title(edge))
+            rail = window.rails.rail_for(dock)
+            self.assertEqual(rail.area, edge.value, edge)
+            self.assertIn(dock, [button.dock for button in rail.buttons if not button.isHidden()], edge)
+        for edge in (DockEdge.TOP, DockEdge.RIGHT):
+            window.move_all_docks_to_edge(edge)
+            for moved in (dock for dock in window.docks if dock.is_available):
+                self.assertEqual(window.rails.rail_for(moved).area, edge.value, (edge, moved.objectName()))
+
     def test_move_to_edge_spans_the_edge(self) -> None:
         """Moving to an edge that holds docks adds a strip running the full length of that edge."""
         window = self.window
