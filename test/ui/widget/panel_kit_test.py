@@ -143,6 +143,33 @@ class PanelHeaderTest(IntraPaintTestCase):
         self.assertEqual(header.name(), 'Eraser')
 
 
+    def test_details_wrap_to_second_line_when_narrow(self) -> None:
+        """The key and description share the name's line while they fit, and move to their own line when not."""
+        header = PanelHeader('Set Image Generation Area', key_text='G')
+        header.set_description('Select an image region for AI image generation')
+        header.show()
+        header.resize(1000, header.sizeHint().height())
+        self.assertFalse(header.is_wrapped)
+        header.resize(300, header.sizeHint().height())
+        self.assertTrue(header.is_wrapped)
+        header.resize(1000, header.sizeHint().height())
+        self.assertFalse(header.is_wrapped)
+
+    def test_long_name_elides_and_keeps_full_text(self) -> None:
+        """A name too long for the header ends with an ellipsis, shows its full text as a tooltip, and reads back in
+        full."""
+        name = 'Set Image Generation Area'
+        header = PanelHeader(name)
+        header.show()
+        header.resize(80, header.sizeHint().height())
+        name_label = header._name_label  # pylint: disable=protected-access
+        self.assertNotEqual(name_label.text(), name)
+        self.assertEqual(name_label.toolTip(), name)
+        self.assertEqual(header.name(), name)
+        header.resize(1000, header.sizeHint().height())
+        self.assertEqual(name_label.text(), name)
+
+
 class DisabledBannerTest(IntraPaintTestCase):
     """Tests the disabled banner's message and fix button."""
 

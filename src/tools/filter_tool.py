@@ -94,10 +94,14 @@ class FilterTool(QtPaintBrushTool):
 
     # noinspection PyMethodMayBeStatic
     def get_control_panel(self) -> Optional[QWidget]:
-        """Returns the blur tool control panel."""
+        """Returns the filter tool control panel."""
         if self._control_panel is None:
             self._control_panel = FilterToolPanel(self._filters)
         return self._control_panel
+
+    def get_reset_config_keys(self) -> list[str]:
+        """Returns no keys: resetting the brush alone would leave the filter and its parameters as they are."""
+        return []
 
     def _filter_update_slot(self, filter_name: str) -> None:
         new_filter = self._filter_from_name(filter_name)

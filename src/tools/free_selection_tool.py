@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QWidget, QApplication
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
-from src.tools.base_tool import BaseTool
+from src.tools.base_tool import BaseTool, ToolGroup
 from src.tools.context_pin_dragger import ContextPinDragger
 from src.ui.graphics_items.path_creation_item import PathCreationItem
 from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
@@ -40,6 +40,8 @@ FREE_SELECTION_CONTROL_HINT = _tr('{left_mouse_icon}: add or move point<br/>{ent
 
 class FreeSelectionTool(BaseTool):
     """Select or deselect polygonal areas."""
+
+    TOOL_GROUP = ToolGroup.SELECTION
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__(KeyConfig.FREE_SELECTION_TOOL_KEY, FREE_SELECTION_LABEL, FREE_SELECTION_TOOLTIP,

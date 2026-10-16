@@ -10,7 +10,7 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
-from src.tools.base_tool import BaseTool
+from src.tools.base_tool import BaseTool, ToolGroup
 from src.tools.shape_drag_tool import ShapeDragTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
@@ -40,6 +40,8 @@ PREVIEW_OPACITY = 0.7
 
 class ShapeTool(ShapeDragTool):
     """Draws various geometric shapes."""
+
+    TOOL_GROUP = ToolGroup.EDIT
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__(KeyConfig.SHAPE_TOOL_KEY, SHAPE_TOOL_LABEL, SHAPE_TOOL_TOOLTIP, QIcon(ICON_PATH_SHAPE_TOOL),

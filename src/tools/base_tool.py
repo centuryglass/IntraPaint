@@ -7,6 +7,7 @@ Supports the following:
 - Override the cursor when over the image viewer.
 """
 import os
+from enum import IntEnum
 from typing import Optional
 
 from PySide6.QtCore import QObject, Signal, QPoint, QEvent, Qt
@@ -39,6 +40,14 @@ PAN_HINT = _tr('{modifier_or_modifiers}+{left_mouse_icon} or {middle_mouse_icon}
 ZOOM_HINT = _tr('{v_scroll_icon}: zoom')
 FIXED_ASPECT_HINT = _tr('{modifier_or_modifiers}: Fixed aspect ratio')
 DEBUG_CURSOR_FILE_PREFIX = 'debug_'
+
+
+class ToolGroup(IntEnum):
+    """The tool panel's button groups, in the order the panel shows them."""
+    PAINT = 0
+    EDIT = 1
+    SELECTION = 2
+    GENERATION = 3
 
 
 # noinspection PyMethodMayBeStatic
@@ -90,6 +99,9 @@ class BaseTool(QObject):
     """
 
     cursor_change = Signal()
+
+    # The tool panel groups buttons by this, keeping the order tools were added within a group:
+    TOOL_GROUP = ToolGroup.PAINT
 
     def __init__(self, activation_config_key: str, label_text: str, tooltip_text: str, icon: QIcon,
                  enable_selection_restrictions: bool = True) -> None:
@@ -210,6 +222,11 @@ class BaseTool(QObject):
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
         return None
+
+    def get_reset_config_keys(self) -> list[str]:
+        """Returns the `Cache` keys the tool panel's reset button restores to their defaults. With none, the button
+        is hidden."""
+        return []
 
     def validate_layer(self, layer: Optional[Layer], require_image_layer=True, show_error_messages=True,
                        image_stack: Optional[ImageStack] = None) -> bool:

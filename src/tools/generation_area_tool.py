@@ -10,7 +10,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.generation_area_controller import record_generation_area_size
 from src.image.layers.image_stack import ImageStack
-from src.tools.base_tool import BaseTool
+from src.tools.base_tool import BaseTool, ToolGroup
 from src.ui.graphics_items.area_resize_handle import AreaResizeHandle
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.generation_area_tool_panel import GenerationAreaToolPanel
@@ -67,6 +67,8 @@ class GenerationAreaTool(BaseTool):
     the top left corner fixed, keeping the generation resolution's aspect ratio while the modifier is held. Each
     left-drag starts a new undo step.
     """
+
+    TOOL_GROUP = ToolGroup.GENERATION
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, show_handles: bool = True) -> None:
         super().__init__(KeyConfig.GENERATION_AREA_TOOL_KEY, GENERATION_AREA_LABEL, GENERATION_AREA_TOOLTIP,

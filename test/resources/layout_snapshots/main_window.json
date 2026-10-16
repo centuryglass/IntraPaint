@@ -1,44 +1,34 @@
 {
   "full_hd": {
-    "problems": [
-      "clipped: tools_dock/ToolPanel/ToolButton[9]/KeyHintLabel 'Shift+S' shows 48x23 of 51x23"
-    ],
+    "problems": [],
     "size": [
       1920,
       1080
     ]
   },
   "hd": {
-    "problems": [
-      "clipped: tools_dock/ToolPanel/ToolButton[9]/KeyHintLabel 'Shift+S' shows 48x23 of 51x23"
-    ],
+    "problems": [],
     "size": [
       1280,
       720
     ]
   },
   "minimum": {
-    "problems": [
-      "clipped: tools_dock/ToolPanel/ToolButton[9]/KeyHintLabel 'Shift+S' shows 48x23 of 51x23"
-    ],
+    "problems": [],
     "size": [
-      733,
-      542
+      741,
+      473
     ]
   },
   "portrait": {
-    "problems": [
-      "clipped: tools_dock/ToolPanel/ToolButton[9]/KeyHintLabel 'Shift+S' shows 48x23 of 51x23"
-    ],
+    "problems": [],
     "size": [
       1080,
       1920
     ]
   },
   "small": {
-    "problems": [
-      "clipped: tools_dock/ToolPanel/ToolButton[9]/KeyHintLabel 'Shift+S' shows 48x23 of 51x23"
-    ],
+    "problems": [],
     "size": [
       800,
       600
@@ -46,9 +36,8 @@
   },
   "ultrawide": {
     "problems": [
-      "squeezed: layers_dock/LayerPanel/QScrollArea/QWidget[0]/LayerGroupWidget/BorderedWidget/LayerWidget is 306x50, minimum 140x80",
-      "squeezed: layers_dock/LayerPanel/QScrollArea/QWidget[0]/LayerGroupWidget/LayerWidget is 335x50, minimum 201x80",
-      "clipped: tools_dock/ToolPanel/ToolButton[9]/KeyHintLabel 'Shift+S' shows 48x23 of 51x23"
+      "squeezed: layers_dock/LayerPanel/QScrollArea/QWidget[0]/LayerGroupWidget/BorderedWidget/LayerWidget is 279x50, minimum 140x80",
+      "squeezed: layers_dock/LayerPanel/QScrollArea/QWidget[0]/LayerGroupWidget/LayerWidget is 308x50, minimum 201x80"
     ],
     "size": [
       3440,
