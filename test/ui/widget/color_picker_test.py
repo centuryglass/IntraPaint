@@ -1,7 +1,7 @@
 """Tests TabbedColorPicker's shared color, its layouts, ColorControlPanel's layout choice, and ColorDialog."""
 from PySide6.QtCore import QPoint, QPointF, QSize, Qt
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QScrollArea
+from PySide6.QtWidgets import QDockWidget, QLabel, QMainWindow, QScrollArea
 from PySide6 import QtTest
 
 from src.config.application_config import AppConfig
@@ -272,6 +272,24 @@ class ColorControlPanelTest(IntraPaintTestCase):
         self.panel.set_orientation(Qt.Orientation.Horizontal)
         self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.BOTTOM_WIDE)
 
+    def test_shrinking_floating_dock_does_not_grow_without_bound(self) -> None:
+        """A floating dock shrinking from a tall layout to the compact one keeps the size it was given."""
+        window = QMainWindow()
+        window.setCentralWidget(QLabel('central'))
+        dock = QDockWidget('color', window)
+        dock.setWidget(self.panel)
+        window.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dock)
+        window.resize(1600, 1000)
+        window.show()
+        dock.setFloating(True)
+        self.panel.set_orientation(Qt.Orientation.Vertical)
+        dock.resize(456, 1200)
+        self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.SIDE_TALL)
+        dock.resize(456, 400)
+        self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.SIDE_COMPACT)
+        self.assertEqual(dock.height(), 400)
+        window.close()
+
     def test_narrow_bottom_panel_falls_back_to_compact(self) -> None:
         """A bottom dock too narrow for the bottom layouts uses the compact side layout."""
         self.panel.resize(400, 360)
@@ -295,7 +313,7 @@ class ColorControlPanelTest(IntraPaintTestCase):
     def test_scroll_area_uses_visible_size(self) -> None:
         """In a scroll area the panel fills the visible area and picks the layout for it, without scrolling."""
         cases = ((Qt.Orientation.Vertical, QSize(680, 420), ColorPickerLayout.SIDE_COMPACT),
-                 (Qt.Orientation.Horizontal, QSize(400, 360), ColorPickerLayout.SIDE_COMPACT),
+                 (Qt.Orientation.Horizontal, QSize(300, 360), ColorPickerLayout.SIDE_COMPACT),
                  (Qt.Orientation.Horizontal, QSize(700, 200), ColorPickerLayout.BOTTOM_SHORT))
         area = QScrollArea()
         area.setWidgetResizable(True)
