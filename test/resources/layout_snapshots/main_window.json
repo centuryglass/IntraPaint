@@ -14,10 +14,25 @@
     ]
   },
   "minimum": {
-    "problems": [],
+    "problems": [
+      "overlap: tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/StrokeBlock/QWidget[0]/SliderField[0] and tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/StrokeBlock/QWidget[0]/SliderField[1] share 222x6",
+      "overlap: tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/StrokeBlock/QWidget[0]/SliderField[1] and tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/StrokeBlock/QWidget[0]/SliderField[2] share 222x6",
+      "overlap: tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/StrokeBlock/QWidget[1]/ColorPairWidget and tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/StrokeBlock/QWidget[1]/QLabel 'Pattern' share 48x13",
+      "overlap: tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/StrokeBlock/QWidget[1]/ColorPairWidget and tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/StrokeBlock/QWidget[1]/FillStyleComboBox share 48x10",
+      "squeezed: tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget is 268x298, minimum 256x387",
+      "squeezed: tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget/QWidget[1] is 250x274, minimum 238x363",
+      "squeezed: tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1] is 250x180, minimum 164x269",
+      "squeezed: tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel is 250x180, minimum 164x269",
+      "squeezed: tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/StrokeBlock is 232x162, minimum 146x251",
+      "squeezed: tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/StrokeBlock/QWidget[0] is 222x50, minimum 110x80",
+      "clipped: tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/StrokeBlock/QWidget[0]/SliderField[2] shows 222x14 of 222x24",
+      "squeezed: tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/StrokeBlock/QWidget[1] is 232x50, minimum 103x109",
+      "squeezed: tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/StrokeBlock/QWidget[1]/QLabel 'Pattern' is 232x13, minimum 43x17",
+      "squeezed: tools_dock/ToolPanel/QScrollArea/QWidget[0]/QWidget/QWidget[1]/QWidget[1]/DrawToolPanel/StrokeBlock/QWidget[1]/FillStyleComboBox is 232x12, minimum 103x32"
+    ],
     "size": [
-      741,
-      473
+      634,
+      304
     ]
   },
   "portrait": {
@@ -36,8 +51,8 @@
   },
   "ultrawide": {
     "problems": [
-      "squeezed: layers_dock/LayerPanel/QScrollArea/QWidget[0]/LayerGroupWidget/BorderedWidget/LayerWidget is 279x50, minimum 140x80",
-      "squeezed: layers_dock/LayerPanel/QScrollArea/QWidget[0]/LayerGroupWidget/LayerWidget is 308x50, minimum 201x80"
+      "squeezed: layers_dock/LayerPanel/QScrollArea/QWidget[0]/LayerGroupWidget/BorderedWidget/LayerWidget is 172x50, minimum 140x80",
+      "squeezed: layers_dock/LayerPanel/QScrollArea/QWidget[0]/LayerGroupWidget/LayerWidget is 201x50, minimum 201x80"
     ],
     "size": [
       3440,
