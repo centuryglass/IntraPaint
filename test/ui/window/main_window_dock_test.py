@@ -10,7 +10,7 @@ from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
 from src.ui.layout.dock_panel import DockPanel, P1, PanelLayout
 from src.ui.layout.panel_size_class import Orientation, SizeClass
-from src.ui.window.main_window import MainWindow, DEFAULT_SIDE_DOCK_WIDTH
+from src.ui.window.main_window import MainWindow, DEFAULT_SIDE_DOCK_WIDTH, DOCK_STATE_VERSION
 from src.ui.window.panel_dock import PanelDock
 from test.base_test_case import IntraPaintTestCase
 
@@ -269,6 +269,24 @@ class MainWindowDockTest(IntraPaintTestCase):
         self.assertTrue(window.generation_dock.is_showing)
         self.assertTrue(window.controlnet_dock.isHidden())
         self.assertEqual(window.generation_dock.geometry(), showing_geometry)
+
+    def test_closing_image_selector_leaves_no_stale_tab_bars(self) -> None:
+        """Each tab group draws one tab bar after the image selector opens and closes, however many times."""
+        window = self.window
+        expected = sorted(self._tab_bar_texts(window))
+        for _ in range(2):
+            window.set_image_selector_visible(True)
+            window.set_image_selector_visible(False)
+            window.layout().activate()
+            self.assertEqual(sorted(self._tab_bar_texts(window)), expected)
+
+    def test_failed_restore_keeps_tab_bars(self) -> None:
+        """A saved layout of another version is refused, and the first-run tab bars stay drawn."""
+        window = self.window
+        expected = sorted(self._tab_bar_texts(window))
+        state = window.saveState(DOCK_STATE_VERSION + 1).toBase64().data().decode()
+        self.assertFalse(window.restore_dock_state(state))
+        self.assertEqual(sorted(self._tab_bar_texts(window)), expected)
 
     def test_saving_while_selector_shows_saves_previous_layout(self) -> None:
         """Saving while the image selector hides the docks saves the layout from before it opened."""
