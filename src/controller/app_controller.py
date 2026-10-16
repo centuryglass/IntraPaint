@@ -158,7 +158,8 @@ GENERATION_MODE_AUTO = 'auto'
 MENU_FILE = _tr('File')
 MENU_EDIT = _tr('Edit')
 MENU_IMAGE = _tr('Image')
-MENU_IMAGE_PANELS = MENU_IMAGE + '.' + _tr('Panels')
+MENU_VIEW = _tr('View')
+MENU_VIEW_PANELS = MENU_VIEW + '.' + _tr('Panels')
 MENU_SELECTION = _tr('Selection')
 MENU_LAYERS = _tr('Layers')
 MENU_FILTERS = _tr('Filters')
@@ -311,6 +312,7 @@ class AppController(MenuBuilder):
         ordered_menus = [
             MENU_FILE,
             MENU_EDIT,
+            MENU_VIEW,
             MENU_IMAGE,
             MENU_SELECTION,
             MENU_LAYERS,
@@ -339,7 +341,7 @@ class AppController(MenuBuilder):
 
         # Set up menus:
         self.build_menus()
-        self.insert_menu_actions(MENU_IMAGE_PANELS, self._window.dock_toggle_actions())
+        self.insert_menu_actions(MENU_VIEW_PANELS, self._window.dock_toggle_actions())
 
         # Since image filter menus follow a very simple pattern, add them here instead of using @menu_action.
         # At the same time, make sure the filter tool's list of available options contains all filters.
@@ -1271,23 +1273,52 @@ class AppController(MenuBuilder):
         self._set_alt_window_fractional_bounds(self._settings_modal)
         self._settings_modal.show_modal()
 
-    # Image menu:
+    # View menu:
 
-    @menu_action(MENU_IMAGE_PANELS, 'reset_dock_layout_shortcut', 197,
+    @menu_action(MENU_VIEW, 'zoom_in_shortcut', 190, valid_app_states=[APP_STATE_EDITING])
+    def zoom_in(self) -> None:
+        """Zoom in on the image view by one step."""
+        self._image_viewer.zoom_in()
+
+    @menu_action(MENU_VIEW, 'zoom_out_shortcut', 191, valid_app_states=[APP_STATE_EDITING])
+    def zoom_out(self) -> None:
+        """Zoom out from the image view by one step."""
+        self._image_viewer.zoom_out()
+
+    @menu_action(MENU_VIEW, 'reset_view_shortcut', 192, valid_app_states=[APP_STATE_EDITING])
+    def reset_view(self) -> None:
+        """Fit the whole image in the view."""
+        self._image_viewer.follow_generation_area = False
+        self._image_viewer.reset_scale()
+
+    @menu_action(MENU_VIEW, 'zoom_to_gen_area_shortcut', 193, valid_app_states=[APP_STATE_EDITING])
+    def zoom_to_generation_area(self) -> None:
+        """Center the view on the image generation area."""
+        self._image_viewer.zoom_to_generation_area()
+
+    @menu_action(MENU_VIEW, 'toggle_control_hints_shortcut', 196, valid_app_states=[APP_STATE_EDITING])
+    def toggle_control_hints(self) -> None:
+        """Show or hide the active tool's control hints below the image."""
+        config = AppConfig()
+        config.set(AppConfig.SHOW_TOOL_CONTROL_HINTS, not config.get(AppConfig.SHOW_TOOL_CONTROL_HINTS))
+
+    @menu_action(MENU_VIEW_PANELS, 'reset_dock_layout_shortcut', 197,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def reset_panel_layout(self) -> None:
         """Put every panel back where it starts on first run, and open it."""
         self._window.reset_dock_layout()
 
-    @menu_action(MENU_IMAGE, 'toggle_rulers_shortcut', 198)
+    @menu_action(MENU_VIEW, 'toggle_rulers_shortcut', 198)
     def toggle_rulers(self) -> None:
         """Show or hide the rulers beside the image."""
         AppConfig().set(AppConfig.SHOW_RULERS, not AppConfig().get(AppConfig.SHOW_RULERS))
 
-    @menu_action(MENU_IMAGE, 'navigation_window_shortcut', 199)
+    @menu_action(MENU_VIEW, 'navigation_window_shortcut', 199)
     def show_navigation_window(self) -> None:
         """Show the image preview window."""
         self._window.show_navigation_window()
+
+    # Image menu:
 
     @menu_action(MENU_IMAGE, 'resize_canvas_shortcut', 200, valid_app_states=[APP_STATE_EDITING])
     def resize_canvas(self) -> None:
