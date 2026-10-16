@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication
                                QPlainTextEdit, QProxyStyle, QPushButton, QSlider, QStyle, QStyleOption,
                                QStyleOptionButton, QStyleOptionComboBox, QStyleOptionMenuItem, QStyleOptionProgressBar,
                                QStyleOptionSlider, QStyleOptionSpinBox, QStyleOptionTab, QStyleOptionViewItem,
-                               QTabBar, QTextEdit, QWidget)
+                               QTabBar, QTextEdit, QWidget, QWidgetItem)
 
 State = QStyle.StateFlag
 Primitive = QStyle.PrimitiveElement
@@ -319,9 +319,15 @@ class InkStyle(QProxyStyle):
 
     def styleHint(self, hint: QStyle.StyleHint, option: Optional[QStyleOption] = None,
                   widget: Optional[QWidget] = None, return_data: Optional[object] = None) -> int:
-        """Makes scroll bars overlay their content when overlay_scroll_bars is set."""
+        """Makes scroll bars overlay their content when overlay_scroll_bars is set.
+
+        Qt's layout code sometimes passes a QWidgetItem as `widget`. The base style's binding rejects it with a
+        TypeError, so it is replaced by the item's widget.
+        """
         if hint == QStyle.StyleHint.SH_ScrollBar_Transient:
             return int(self._overlay_scroll_bars)
+        if isinstance(widget, QWidgetItem):
+            widget = widget.widget()
         return super().styleHint(hint, option, widget, return_data)
 
     def sizeFromContents(self, content_type: QStyle.ContentsType, option: Optional[QStyleOption],
