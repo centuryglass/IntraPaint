@@ -60,7 +60,7 @@ def _eta_text(eta_seconds: float) -> str:
         eta_text = STATUS_ETA_MINUTES.format(minutes=minutes, seconds=f'{seconds:02d}')
     else:
         eta_text = STATUS_ETA_SECONDS.format(seconds=seconds)
-    return eta_text.replace(" ", "\xa0")
+    return eta_text.replace(' ', '\xa0')
 
 
 def progress_status_text(progress: GenerationProgress, batch_index: int = 0, num_batches: int = 1) -> str:
