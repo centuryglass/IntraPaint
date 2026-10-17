@@ -2,13 +2,14 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt, QRect, QRectF, QPoint, QSize
-from PySide6.QtGui import QKeySequence, QPainter, QPaintEvent, QFont, QPalette
+from PySide6.QtGui import QKeySequence, QPainter, QPaintEvent, QFont
 from PySide6.QtWidgets import QLabel, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.util.key_code_utils import get_key_with_modifiers, get_modifier_string, KEY_REQUIRES_SHIFT
-from src.util.visual.keycap import KEYCAP_PADDING, KEYCAP_DEPTH, draw_keycap, keycap_colors, keycap_font, keycap_size
+from src.util.visual.keycap import (KEYCAP_PADDING, KEYCAP_DEPTH, draw_keycap, keycap_colors, keycap_font,
+                                    keycap_size)
 from src.util.visual.text_drawing_utils import find_text_size, get_key_display_string
 
 # Modifier names and the symbols that replace them in compact key text, in the order they are tried:
@@ -39,7 +40,7 @@ def compact_key_text(text: str) -> str:
 class KeyHintLabel(QLabel):
     """Shows formatted key suggestions to the user, drawn as raised keycaps.
 
-    The keycap is drawn by `src.util.visual.keycap`, in the palette's `Button`, `Shadow` and `ButtonText` colors.
+    The keycap is drawn by `src.util.visual.keycap`, in the colors from `keycap_colors`.
     """
 
     def __init__(self, keys: Optional[QKeySequence | Qt.KeyboardModifier | str] = None,
@@ -52,7 +53,6 @@ class KeyHintLabel(QLabel):
         font.setPointSize(self._default_size)
         self.setFont(font)
         self.setTextFormat(Qt.TextFormat.RichText)
-        self.setForegroundRole(QPalette.ColorRole.ButtonText)
         self.setContentsMargins(KEYCAP_PADDING.left(), KEYCAP_PADDING.top(), KEYCAP_PADDING.right(),
                                 KEYCAP_PADDING.bottom() + KEYCAP_DEPTH)
         self._saved_size: Optional[QSize] = None
@@ -186,7 +186,8 @@ class KeyHintLabel(QLabel):
         for invalid_str, replacement in key_substitutions.items():
             if invalid_str in key_display_str:
                 key_display_str = key_display_str.replace(invalid_str, replacement)
-        self.setText(f'<span><strong>{key_display_str}</strong></span>')
+        text_color = keycap_colors(self.palette())[2].name()
+        self.setText(f'<span style="color: {text_color};"><strong>{key_display_str}</strong></span>')
 
     def _key_update_slot(self, key_string: str) -> None:
         self._update_text(key_string)
