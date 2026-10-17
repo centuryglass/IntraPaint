@@ -3,10 +3,8 @@
 - A press on a rail button becomes a drag once it moves `DRAG_DISTANCE` px. A shorter press stays a click.
 - Within the rail, a marker shows the drop. Over another group's buttons, the drop tabs the dock into that group
   (`tab_with`). Between groups, it splits the dock beside the nearer group, on that side (`split_beside`).
-- Leaving the rail hands the drag to Qt: the dock opens with its title bar, and gets a synthetic press near the bar's
-  left end and moves, as if that bar had been dragged. Qt floats the dock with that point under the pointer and follows
-  the mouse from there, as for any title bar drag. This relies on Qt starting a dock drag from mouse events sent to the
-  title area, which `QDockWidget` doesn't document; if Qt doesn't start one, the dock stays where it was.
+- Leaving the rail hands the drag to Qt (`start_qt_dock_drag`), which floats the dock and follows the mouse as for any
+  title bar drag.
 - A floating dock dragged over a rail, whether handed off from a rail or dragged by its own title bar, shows the same
   marker there. Released over the rail, Qt finishes its own drag first, then the dock is placed as a rail drop would
   place it.
@@ -14,28 +12,19 @@
 from dataclasses import dataclass
 from typing import Callable, Optional
 
-from PySide6.QtCore import QEvent, QObject, QPoint, QPointF, QRect, Qt
+from PySide6.QtCore import QEvent, QObject, QPoint, QRect, Qt
 from PySide6.QtGui import QCursor, QMouseEvent, QPainter, QPaintEvent, QPalette, QPen
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
 
 from src.ui.window.dock_placement import SplitSide, split_beside, tab_with
 from src.ui.window.dock_rail import DockRail, DockRails, RailButton
 from src.ui.window.panel_dock import PanelDock
+from src.ui.window.qt_dock_drag import start_qt_dock_drag
 
 DRAG_DISTANCE = 6
 # How far the pointer may stray past a rail's edges before the drag leaves the rail:
 RAIL_LEAVE_MARGIN = 8
 MARKER_WIDTH = 3
-# Distance from a dock's left or right edge to the point a hand-off presses in its title bar:
-TITLE_PRESS_INSET = 10
-TITLE_PRESS_Y = 3
-
-
-def _send_mouse(widget: QWidget, event_type: QEvent.Type, global_pos: QPoint, button: Qt.MouseButton) -> None:
-    """Sends a widget a mouse event at a screen position, with the left button held."""
-    QApplication.sendEvent(widget, QMouseEvent(event_type, QPointF(widget.mapFromGlobal(global_pos)),
-                                               QPointF(global_pos), button, Qt.MouseButton.LeftButton,
-                                               Qt.KeyboardModifier.NoModifier))
 
 
 @dataclass(frozen=True)
@@ -255,19 +244,4 @@ class RailDrag(QObject):
         self._end()
         self._button = None
         button.setDown(False)
-        dock = button.dock
-        if dock.isHidden():
-            dock.open_in_group()
-        dock.show_title_bar_for_drag()
-        layout = self._window.layout()
-        if layout is not None:
-            layout.activate()
-        press = QPoint(TITLE_PRESS_INSET, TITLE_PRESS_Y)
-        # The first move passes Qt's drag distance to start the drag. The second puts the press point at the pointer:
-        past_drag_distance = press + QPoint(QApplication.startDragDistance() + 1, QApplication.startDragDistance() + 1)
-        _send_mouse(dock, QEvent.Type.MouseButtonPress, dock.mapToGlobal(press), Qt.MouseButton.LeftButton)
-        _send_mouse(dock, QEvent.Type.MouseMove, dock.mapToGlobal(past_drag_distance), Qt.MouseButton.NoButton)
-        # Mapped after the first move, which floats the dock:
-        _send_mouse(dock, QEvent.Type.MouseMove, global_pos, Qt.MouseButton.NoButton)
-        if not dock.isFloating():
-            dock.restore_title_bar()
+        start_qt_dock_drag(self._window, button.dock, global_pos)
