@@ -465,6 +465,11 @@ class DockRail(QToolBar):
         return [list(group) for group in self._groups]
 
     @property
+    def content(self) -> QWidget:
+        """Returns the widget holding the rail's buttons, which positions along the rail are measured in."""
+        return self._content
+
+    @property
     def rules(self) -> list[QFrame]:
         """Returns the rules between groups that are showing."""
         return [rule for rule in self._rules if not rule.isHidden()]

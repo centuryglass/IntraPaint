@@ -7,7 +7,8 @@ The primary image editing window: the canvas in the center, with every other pan
 - Each tab group shows one dock at a time, and Qt's dock tab bars are never drawn (see `src.ui.window.dock_groups`).
 - The Tools, Image Generation and ControlNet docks always exist, so a restore can place them even before their
   generator provides content. A dock without content stays hidden (see `PanelDock.set_content`).
-- Icon rails along the window edges (`DockRails`) hold each dock's button, the recent tools and Generate.
+- Icon rails along the window edges (`DockRails`) hold each dock's button, the recent tools and Generate. Dragging a
+  button moves its dock (`RailDrag`).
 - Right-clicking a dock's title area or rail button opens its menu (`build_dock_menu`).
 - While the generated image selector replaces the canvas, every dock and rail hides, and the layout from before comes
   back when it closes.
@@ -38,6 +39,7 @@ from src.ui.window.dock_placement import DockEdge, move_all_to_edge
 from src.ui.window.dock_rail import DockRails
 from src.ui.window.dock_groups import close_background_docks, hide_dock_tab_bars
 from src.ui.window.navigation_window import NavigationWindow
+from src.ui.window.rail_drag import RailDrag
 from src.ui.window.panel_dock import PanelDock
 from src.ui.window.window_geometry import capture_geometry
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
@@ -190,8 +192,10 @@ class MainWindow(QMainWindow):
         self._navigation_dock = PanelDock(NAVIGATION_DOCK_TITLE, DockID.NAVIGATION, self,
                                           QIcon(ICON_PATH_NAVIGATION_DOCK))
         self._rails = DockRails(self)
+        self._rail_drag = RailDrag(self, self._rails, self._rails.sync)
         for dock in self.docks:
             button = self._rails.add_dock(dock)
+            self._rail_drag.watch(button)
             # The rail blocks context menus, so each button opens the dock menu itself:
             button.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             button.customContextMenuRequested.connect(
@@ -256,6 +260,11 @@ class MainWindow(QMainWindow):
     def set_tool_controller(self, tool_controller: ToolController) -> None:
         """Shows the controller's recent tools in the rail of the Tools dock."""
         self._rails.set_tool_controller(tool_controller)
+
+    @property
+    def rail_drag(self) -> RailDrag:
+        """Returns the handler for rail button drags."""
+        return self._rail_drag
 
     @property
     def rails(self) -> DockRails:

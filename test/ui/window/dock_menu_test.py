@@ -322,12 +322,12 @@ class DockMenuTest(IntraPaintTestCase):
             QApplication.sendEvent(button, event)
         show_menu.assert_called_once_with(window.layers_dock, button.mapToGlobal(center))
 
-    def test_dock_at_title(self) -> None:
-        """Right-click lookup finds the dock for its title area, and none over dock content."""
+    def test_dock_at_finds_no_docked_title(self) -> None:
+        """A docked dock has no title area, so right-click lookup finds no dock at its top edge or over its content.
+        Its rail button opens its menu instead."""
         window = self.window
         dock = window.layers_dock
-        title_point = QPoint(dock.width() // 2, 2)
-        self.assertIs(window.dock_at(dock, dock.mapToGlobal(title_point)), dock)
+        self.assertIsNone(window.dock_at(dock, dock.mapToGlobal(QPoint(dock.width() // 2, 2))))
         content = window.layers_dock.content
         assert content is not None
         self.assertIsNone(window.dock_at(content, content.mapToGlobal(content.rect().center())))

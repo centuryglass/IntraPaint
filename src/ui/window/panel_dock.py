@@ -7,6 +7,9 @@
 - A tab group shows one dock at a time, and the edge rails act as its tabs. Opening a dock with `open_in_group`, its
   key, its toggle action or a mouse drop into a group closes the group's other docks. A dock in the background of a
   group is closed. `show` opens a dock without closing the others, so code opens docks with `open_in_group`.
+- A docked dock has no title bar; its rail button names it and moves it. A floating dock shows Qt's title bar, which
+  drags it and docks it again. `show_title_bar_for_drag` brings the title bar back so a rail button drag can hand off
+  to Qt's own dock drag (see `src.ui.window.rail_drag`).
 - The dock's key (`shortcut_config_key`) opens and focuses the dock, or closes it if it is already open.
 - A dock with no content is hidden and its toggle action is hidden too. It remembers whether it was open, and opens
   again when content arrives, unless another dock in its group is open by then.
@@ -16,7 +19,7 @@
 from contextlib import contextmanager
 from typing import Iterator, Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon, QResizeEvent
 from PySide6.QtWidgets import QDockWidget, QMainWindow, QWidget
 
@@ -29,6 +32,22 @@ from src.ui.window.dock_state import read_dock_groups
 def qt_orientation(orientation: Orientation) -> Qt.Orientation:
     """Returns the `Qt.Orientation` that unmigrated panels' `set_orientation` expects: vertical for side panels."""
     return Qt.Orientation.Vertical if orientation == Orientation.SIDE else Qt.Orientation.Horizontal
+
+
+class _NoTitleBar(QWidget):
+    """The title bar of a docked dock: empty, so Qt draws none.
+
+    `QDockWidget` adds its title bar's size hint to the dock's minimum size. A plain widget's invalid (-1, -1) hint
+    would shrink that minimum below the content's, so the hint is zero.
+    """
+
+    def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns an empty size."""
+        return QSize(0, 0)
+
+    def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns an empty size."""
+        return QSize(0, 0)
 
 
 class PanelDock(QDockWidget):
@@ -51,12 +70,15 @@ class PanelDock(QDockWidget):
         self._open_when_available = True
         self._showing = False
         self._forwarded_orientation: Optional[Qt.Orientation] = None
+        self._no_title_bar = _NoTitleBar()
+        self.setTitleBarWidget(self._no_title_bar)
         self.toggleViewAction().setVisible(False)
         self.toggleViewAction().setIcon(self.windowIcon())
         self.visibilityChanged.connect(self._visibility_changed)
         self.dockLocationChanged.connect(self._update_host_facts)
         self.topLevelChanged.connect(self._update_host_facts)
         self.topLevelChanged.connect(self._top_level_changed)
+        self.topLevelChanged.connect(self._update_title_bar)
         self.toggleViewAction().triggered.connect(self._toggle_action_triggered)
         if shortcut_config_key is not None:
             HotkeyFilter.instance().register_config_keybinding(f'PanelDock_{id(self)}_shortcut',
@@ -181,6 +203,22 @@ class PanelDock(QDockWidget):
         """Updates the content's grid size."""
         super().resizeEvent(event)
         self._update_host_facts()
+
+    def show_title_bar_for_drag(self) -> None:
+        """Shows Qt's title bar while docked, so a press on it starts Qt's dock drag. The bar hides again once the
+        dock is docked, or with `restore_title_bar`."""
+        self.setTitleBarWidget(None)
+
+    def restore_title_bar(self) -> None:
+        """Shows Qt's title bar while floating, and none while docked."""
+        self._update_title_bar(self.isFloating())
+
+    def _update_title_bar(self, floating: bool) -> None:
+        if floating:
+            if self.titleBarWidget() is not None:
+                self.setTitleBarWidget(None)
+        elif self.titleBarWidget() is not self._no_title_bar:
+            self.setTitleBarWidget(self._no_title_bar)
 
     def _toggle_action_triggered(self, checked: bool) -> None:
         """Closes the group's other docks when the toggle action opens this one."""
