@@ -17,7 +17,7 @@ from typing import Optional
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import (QColor, QFocusEvent, QFont, QFontMetrics, QHelpEvent, QKeyEvent, QMouseEvent, QPainter,
-                           QPaintEvent, QPalette, QPen, QResizeEvent, QWheelEvent)
+                           QPainterPath, QPaintEvent, QPalette, QPen, QResizeEvent, QWheelEvent)
 from PySide6.QtWidgets import QApplication, QLineEdit, QSizePolicy, QToolTip, QWidget
 
 from src.ui.ink_style import RADIUS, ink_colors
@@ -38,8 +38,11 @@ MIN_WIDTH = 110
 PREFERRED_WIDTH = 150
 MAX_WIDTH = 300
 TEXT_MARGIN = 7
+# Horizontal space the pressure link takes from the text area:
 PRESSURE_LINK_WIDTH = 22
-PRESSURE_DOT_RADIUS = 4.0
+PRESSURE_TILE_SIZE = 18
+PRESSURE_TILE_MARGIN = 4
+PRESSURE_TILE_RADIUS = 3.0
 # An unbounded field changes by one step for every this many pixels dragged:
 PIXELS_PER_STEP = 4
 # A page step is this many single steps, unless set otherwise:
@@ -66,6 +69,7 @@ class _FieldColors:
         self.background = palette.color(group, QPalette.ColorRole.Base)
         self.text = palette.color(group, QPalette.ColorRole.Text)
         self.label = _mix(self.text, self.background, LABEL_DIM_FRACTION)
+        self.tile = palette.color(group, QPalette.ColorRole.Button)
         self.outline = palette.color(group, QPalette.ColorRole.Mid)
         self.focus = palette.color(group, QPalette.ColorRole.Highlight)
         colors = ink_colors()
@@ -285,7 +289,8 @@ class NumberField(QWidget):
     def _pressure_link_rect(self) -> QRect:
         if not self._pressure_available:
             return QRect()
-        return QRect(self.width() - PRESSURE_LINK_WIDTH, 0, PRESSURE_LINK_WIDTH, self.height())
+        left = self.width() - PRESSURE_TILE_MARGIN - PRESSURE_TILE_SIZE
+        return QRect(left, (self.height() - PRESSURE_TILE_SIZE) // 2, PRESSURE_TILE_SIZE, PRESSURE_TILE_SIZE)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Sizing and painting
@@ -360,16 +365,22 @@ class NumberField(QWidget):
     def _paint_pressure_link(self, painter: QPainter) -> None:
         colors = self._colors
         link_rect = self._pressure_link_rect()
-        center = QPointF(link_rect.center()) + QPointF(0.5, 0.5)
-        painter.setPen(QPen(colors.outline, 1))
-        painter.drawLine(QPointF(link_rect.left() + 0.5, 4.0), QPointF(link_rect.left() + 0.5, self.height() - 4.0))
-        if self._pressure_enabled:
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(colors.accent)
-        else:
-            painter.setPen(QPen(colors.label, 1.5))
-            painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.drawEllipse(center, PRESSURE_DOT_RADIUS, PRESSURE_DOT_RADIUS)
+        enabled = self._pressure_enabled
+        tile = QRectF(link_rect).adjusted(0.5, 0.5, -0.5, -0.5)
+        # The tile is opaque so the fill never shows through it.
+        tile_fill = _mix(colors.background, colors.accent, 0.25) if enabled else colors.tile
+        painter.setBrush(tile_fill)
+        painter.setPen(QPen(colors.accent if enabled else colors.outline, 1))
+        painter.drawRoundedRect(tile, PRESSURE_TILE_RADIUS, PRESSURE_TILE_RADIUS)
+        # A pressure curve, from low and flat to high and steep, in a 12 x 12 box centered in the tile.
+        origin = QPointF(link_rect.center()) + QPointF(0.5, 0.5) - QPointF(6.0, 6.0)
+        curve = QPainterPath(origin + QPointF(1.5, 10.5))
+        curve.cubicTo(origin + QPointF(6.0, 10.5), origin + QPointF(8.0, 7.0), origin + QPointF(10.5, 1.5))
+        pen = QPen(colors.accent if enabled else colors.label, 1.6)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        painter.setPen(pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawPath(curve)
 
     def changeEvent(self, event: QEvent) -> None:  # pylint: disable=invalid-name
         """Rebuilds the cached colors and font when the palette, font or enabled state changes."""
