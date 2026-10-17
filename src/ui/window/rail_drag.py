@@ -91,7 +91,11 @@ class RailDrag(QObject):
     def watch(self, button: RailButton) -> None:
         """Lets a rail button be dragged, and its dock be dropped on a rail while floating."""
         button.installEventFilter(self)
-        button.dock.installEventFilter(self)
+        dock = button.dock
+        dock.installEventFilter(self)
+        # A floating dock without native decorations gets Qt's resize handler as an event filter, which takes mouse
+        # moves first. Installing this filter again puts it back in front:
+        dock.topLevelChanged.connect(lambda _floating, watched=dock: watched.installEventFilter(self))
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # pylint: disable=invalid-name
         """Starts, follows and ends drags of watched buttons, leaving clicks to the buttons, and follows floating

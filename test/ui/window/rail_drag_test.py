@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QApplication, QLabel, QWidget
 
 from src.image.layers.image_stack import ImageStack
 from src.ui.window.dock_rail import RailButton
+from src.ui.window.floating_title_bar import FloatingTitleBar
 from src.ui.window.main_window import MainWindow
 from src.ui.window.panel_dock import PanelDock
 from src.ui.window.rail_drag import DRAG_DISTANCE, TITLE_PRESS_INSET, TITLE_PRESS_Y
@@ -88,13 +89,13 @@ class RailDragTest(IntraPaintTestCase):
         return {dock, *dock.group_mates()}
 
     def test_docked_docks_have_no_title_bar_and_floating_docks_do(self) -> None:
-        """A docked dock's content starts at its top edge. Floating brings Qt's title bar back, and docking hides it
+        """A docked dock's content starts at its top edge. Floating shows its floating title bar, and docking hides it
         again."""
         dock = self.window.layers_dock
         assert dock.content is not None
         self.assertEqual(dock.content.geometry().top(), 0)
         dock.setFloating(True)
-        self.assertIsNone(dock.titleBarWidget())
+        self.assertIsInstance(dock.titleBarWidget(), FloatingTitleBar)
         dock.setFloating(False)
         self._activate()
         self.assertEqual(dock.content.geometry().top(), 0)
@@ -169,7 +170,7 @@ class RailDragTest(IntraPaintTestCase):
         outside = window.mapToGlobal(QPoint(300, 300))
         self._press_and_move(button, self._center(button) + QPoint(0, DRAG_DISTANCE), outside)
         self.assertTrue(dock.isFloating())
-        self.assertIsNone(dock.titleBarWidget())
+        self.assertIsInstance(dock.titleBarWidget(), FloatingTitleBar)
         _send(dock, QEvent.Type.MouseButtonRelease, outside, LEFT, NO_BUTTON)
         self.assertTrue(dock.isFloating())
         self.assertTrue(dock.geometry().contains(outside) or dock.frameGeometry().contains(outside))
