@@ -8,18 +8,18 @@
   },
   "narrow": {
     "problems": [
-      "squeezed: QScrollArea is 29x408, minimum 59x59"
+      "squeezed: QScrollArea is 29x322, minimum 59x59"
     ],
     "size": [
       29,
-      408
+      322
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
       352,
-      408
+      322
     ]
   },
   "short": {
@@ -35,14 +35,14 @@
     "problems": [],
     "size": [
       352,
-      1224
+      1200
     ]
   },
   "wide": {
     "problems": [],
     "size": [
       1600,
-      408
+      322
     ]
   }
 }
