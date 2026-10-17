@@ -1,4 +1,4 @@
-"""Draws keycaps: rounded `Button`-filled plates with a `Shadow` outline and a hard depth edge below.
+"""Draws keycaps: rounded `WindowText`-filled plates with `Shadow` text and outline, and a hard depth edge below.
 
 `KeyHintLabel` draws its keycap with `draw_keycap`, and `rich_text_key_hint` renders the same plate into inline
 images, so the two stay in step with each other and with the theme.
@@ -14,16 +14,20 @@ KEYCAP_PADDING = QMargins(5, 3, 5, 2)
 
 
 def keycap_font(base_font: QFont) -> QFont:
-    """Returns the bold version of a font, as keycaps draw their text."""
+    """Returns the semi-bold version of a font, as keycaps draw their text."""
     font = QFont(base_font)
-    font.setBold(True)
+    font.setWeight(QFont.Weight.DemiBold)
     return font
 
 
 def keycap_colors(palette: QPalette) -> tuple[QColor, QColor, QColor]:
-    """Returns the (fill, outline, text) colors a palette gives a keycap."""
-    return (palette.color(QPalette.ColorRole.Button), palette.color(QPalette.ColorRole.Shadow),
-            palette.color(QPalette.ColorRole.ButtonText))
+    """Returns the (fill, outline, text) colors a palette gives a keycap.
+
+    The light `WindowText` fill and dark `Shadow` text stay legible on the darker `Window` and `ToolTipBase` backgrounds
+    keycaps appear on, in a theme that keeps those roles far apart.
+    """
+    shadow = palette.color(QPalette.ColorRole.Shadow)
+    return palette.color(QPalette.ColorRole.WindowText), shadow, shadow
 
 
 def keycap_size(text_size: QSize) -> QSize:
