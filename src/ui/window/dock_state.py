@@ -4,6 +4,8 @@
   (`read_dock_groups`).
 - `QMainWindow.addDockWidget` always appends to its area, and `splitDockWidget` only places after. Placing a dock
   first in an area means saving the layout, reordering the area's top-level items, and restoring it.
+- `splitDockWidget` tabs a dock into the first dock's group when that dock is tabbed. Splitting beside a tab group
+  parses the layout into a tree, moves the dock's item beside the group's, and writes it back (`split_dock_beside`).
 - The layout follows Qt's `QDockAreaLayout::saveState` and `QDockAreaLayoutInfo::saveState`, written with
   `QDataStream` version Qt_5_0: big-endian 32-bit ints, one-byte markers, and UTF-16 strings with a byte-length prefix.
   Any part that doesn't parse as expected makes a read or edit return None, so a changed format leaves the layout as it
@@ -183,3 +185,186 @@ def move_dock_to_area_start(state: bytes, area: Qt.DockWidgetArea, orientation: 
     except (ValueError, struct.error, UnicodeDecodeError):
         return None
     return None
+
+
+@dataclass
+class _WidgetNode:
+    """A dock's item in a layout tree: its name, flags byte, and four ints (see `_WIDGET_FIELDS_SIZE`)."""
+    name: Optional[str]
+    flags: int
+    fields: tuple[int, int, int, int]
+
+
+@dataclass
+class _GroupNode:
+    """A tab group or a row or column of items. `current` is only written for a tab group."""
+    tabbed: bool
+    current: int
+    orientation: int
+    items: list['_WidgetNode | _NestedNode']
+
+
+@dataclass
+class _NestedNode:
+    """A group nested in a row or column, with its four ints (see `_SEQUENCE_FIELDS_SIZE`)."""
+    fields: tuple[int, int, int, int]
+    group: _GroupNode
+
+
+@dataclass
+class _Area:
+    position: int
+    size: bytes
+    root: _GroupNode
+
+
+@dataclass
+class _LayoutTree:
+    """A parsed `saveState` dock layout. Bytes outside the dock areas are kept as they were."""
+    header: bytes
+    areas: list[_Area]
+    tail: bytes
+
+
+def _parse_group(reader: _Reader) -> _GroupNode:
+    marker = reader.byte()
+    tabbed = marker == _TAB_MARKER
+    if not tabbed and marker != _SEQUENCE_MARKER:
+        raise ValueError(f'unexpected dock group marker {marker:#x}')
+    current = reader.int32() if tabbed else -1
+    orientation = reader.byte()
+    items: list[_WidgetNode | _NestedNode] = []
+    for _ in range(reader.int32()):
+        marker = reader.byte()
+        if marker == _WIDGET_MARKER:
+            name = reader.string()
+            flags = reader.byte()
+            items.append(_WidgetNode(name, flags, _read_fields(reader)))
+        elif marker == _SEQUENCE_MARKER:
+            fields = _read_fields(reader)
+            items.append(_NestedNode(fields, _parse_group(reader)))
+        else:
+            raise ValueError(f'unexpected dock item marker {marker:#x}')
+    return _GroupNode(tabbed, current, orientation, items)
+
+
+def _read_fields(reader: _Reader) -> tuple[int, int, int, int]:
+    return reader.int32(), reader.int32(), reader.int32(), reader.int32()
+
+
+def _parse_tree(state: bytes) -> _LayoutTree:
+    """Parses a saved layout, raising ValueError, struct.error or UnicodeDecodeError if it doesn't parse."""
+    reader = _Reader(state, _VERSION_HEADER_SIZE)
+    if reader.byte() != _DOCK_STATE_MARKER:
+        raise ValueError('not a dock layout')
+    header = state[:reader.pos]
+    areas = []
+    for _ in range(reader.int32()):
+        position = reader.int32()
+        size = reader.data[reader.pos:reader.pos + _AREA_SIZE_SIZE]
+        reader.skip(_AREA_SIZE_SIZE)
+        areas.append(_Area(position, size, _parse_group(reader)))
+    return _LayoutTree(header, areas, state[reader.pos:])
+
+
+def _write_group(group: _GroupNode, out: list[bytes]) -> None:
+    if group.tabbed:
+        out.append(struct.pack('>Bi', _TAB_MARKER, group.current))
+    else:
+        out.append(struct.pack('>B', _SEQUENCE_MARKER))
+    out.append(struct.pack('>Bi', group.orientation, len(group.items)))
+    for item in group.items:
+        if isinstance(item, _WidgetNode):
+            out.append(struct.pack('>B', _WIDGET_MARKER))
+            if item.name is None:
+                out.append(struct.pack('>I', 0xffffffff))
+            else:
+                encoded = item.name.encode('utf-16-be')
+                out.append(struct.pack('>I', len(encoded)) + encoded)
+            out.append(struct.pack('>B4i', item.flags, *item.fields))
+        else:
+            out.append(struct.pack('>B4i', _SEQUENCE_MARKER, *item.fields))
+            _write_group(item.group, out)
+
+
+def _write_tree(tree: _LayoutTree) -> bytes:
+    out = [tree.header, struct.pack('>i', len(tree.areas))]
+    for area in tree.areas:
+        out.append(struct.pack('>i', area.position) + area.size)
+        _write_group(area.root, out)
+    out.append(tree.tail)
+    return b''.join(out)
+
+
+def _find_path(group: _GroupNode, name: str) -> Optional[list[tuple[_GroupNode, int]]]:
+    """Returns each group and item index from `group` down to the named dock's item, or None if it isn't there."""
+    for idx, item in enumerate(group.items):
+        if isinstance(item, _WidgetNode):
+            if item.name == name:
+                return [(group, idx)]
+        else:
+            path = _find_path(item.group, name)
+            if path is not None:
+                return [(group, idx), *path]
+    return None
+
+
+def _take_dock(tree: _LayoutTree, name: str) -> _WidgetNode:
+    """Removes a dock's item, then every group the removal leaves empty. Raises ValueError if the dock isn't there."""
+    for area in tree.areas:
+        path = _find_path(area.root, name)
+        if path is None:
+            continue
+        group, idx = path[-1]
+        node = group.items.pop(idx)
+        assert isinstance(node, _WidgetNode)
+        if group.tabbed and group.current >= idx:
+            group.current = -1 if group.current == idx else group.current - 1
+        for parent, parent_idx in reversed(path[:-1]):
+            child = parent.items[parent_idx]
+            if isinstance(child, _NestedNode) and len(child.group.items) == 0:
+                parent.items.pop(parent_idx)
+        if len(area.root.items) == 0:
+            tree.areas.remove(area)
+        return node
+    raise ValueError(f'{name} is not in the saved dock layout')
+
+
+def split_dock_beside(state: bytes, name: str, target_name: str, orientation: Qt.Orientation,
+                      after: bool) -> Optional[bytes]:
+    """Returns saved layout bytes with a dock moved out of its place and docked beside the target dock's tab group.
+
+    The dock goes after the target's group (right or below) when `after` is set, before it otherwise, along
+    `orientation`. Where the group's row or column runs the other way, the group and the dock are nested in a new one.
+    The dock is open, and the two share the group's old size. Returns None if either dock isn't in the layout, they are
+    the same dock, or the layout doesn't parse.
+    """
+    if name == target_name:
+        return None
+    try:
+        tree = _parse_tree(state)
+        moved = _take_dock(tree, name)
+        target_path = None
+        for area in tree.areas:
+            target_path = _find_path(area.root, target_name)
+            if target_path is not None:
+                break
+        if target_path is None:
+            return None
+        # A tab group is replaced as a whole, through the nested item that holds it:
+        parent, idx = target_path[-2] if target_path[-1][0].tabbed and len(target_path) > 1 else target_path[-1]
+        if parent.tabbed:
+            return None
+        target = parent.items[idx]
+        size = target.fields[1]
+        moved.flags = _STATE_FLAG_VISIBLE
+        moved.fields = (target.fields[0], max(size // 2, 0), -1, -1)
+        if parent.orientation == orientation.value:
+            target.fields = (target.fields[0], size - moved.fields[1], target.fields[2], target.fields[3])
+            parent.items.insert(idx + 1 if after else idx, moved)
+        else:
+            pair: list[_WidgetNode | _NestedNode] = [target, moved] if after else [moved, target]
+            parent.items[idx] = _NestedNode(target.fields, _GroupNode(False, -1, orientation.value, pair))
+        return _write_tree(tree)
+    except (ValueError, struct.error, UnicodeDecodeError):
+        return None

@@ -5,7 +5,8 @@ import sys
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QDockWidget, QLabel, QMainWindow
 
-from src.ui.window.dock_state import SavedDock, SavedGroup, move_dock_to_area_start, read_dock_groups
+from src.ui.window.dock_state import SavedDock, SavedGroup, move_dock_to_area_start, read_dock_groups, \
+    split_dock_beside
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -100,3 +101,36 @@ class DockStateTest(IntraPaintTestCase):
         state = self.window.saveState().data()
         self.assertIsNone(read_dock_groups(state[:40]))
         self.assertIsNone(read_dock_groups(b''))
+
+    def test_split_beside_a_tab_group(self) -> None:
+        """A dock split beside a tab group lands beside the whole group, open, and the group keeps its other docks."""
+        window = self.window
+        window.tabifyDockWidget(self.docks['first'], self.docks['second'])
+        self._activate()
+        state = split_dock_beside(window.saveState().data(), 'moved', 'first', Qt.Orientation.Vertical, True)
+        assert state is not None
+        self.assertTrue(window.restoreState(state))
+        self._activate()
+        groups = read_dock_groups(window.saveState().data())
+        assert groups is not None
+        self.assertEqual([[dock.name for dock in group.docks] for group in groups], [['first', 'second'], ['moved']])
+        self.assertGreater(self.docks['moved'].y(), self.docks['second'].geometry().bottom())
+
+    def test_split_beside_nests_across_a_row(self) -> None:
+        """Splitting across the target's row nests the target and the dock in a new column, keeping the row."""
+        window = self.window
+        state = split_dock_beside(window.saveState().data(), 'second', 'moved', Qt.Orientation.Vertical, False)
+        assert state is not None
+        self.assertTrue(window.restoreState(state))
+        self._activate()
+        self.assertLess(self.docks['second'].geometry().bottom(), self.docks['moved'].y())
+        self.assertEqual(self.docks['second'].x(), self.docks['moved'].x())
+        self.assertLess(self.docks['first'].x(), self.docks['moved'].x())
+
+    def test_split_beside_refuses_bad_targets(self) -> None:
+        """The same dock, a missing dock, or broken bytes give None."""
+        state = self.window.saveState().data()
+        self.assertIsNone(split_dock_beside(state, 'first', 'first', HORIZONTAL, True))
+        self.assertIsNone(split_dock_beside(state, 'first', 'missing', HORIZONTAL, True))
+        self.assertIsNone(split_dock_beside(state, 'missing', 'first', HORIZONTAL, True))
+        self.assertIsNone(split_dock_beside(state[:40], 'first', 'second', HORIZONTAL, True))

@@ -7,8 +7,9 @@ from PySide6.QtGui import QAction, QContextMenuEvent
 from PySide6.QtWidgets import QApplication, QLabel, QMenu, QTabBar
 
 from src.image.layers.image_stack import ImageStack
-from src.ui.window.dock_menu import DockEdge, MENU_DOCK, MENU_FLOAT, MENU_HIDE_PANEL, MENU_MOVE_ALL_TO_EDGE, \
-    MENU_MOVE_TO_EDGE, MENU_TAB_WITH, edge_title, group_label
+from src.ui.window.dock_menu import MENU_DOCK, MENU_FLOAT, MENU_HIDE_PANEL, MENU_MOVE_ALL_TO_EDGE, \
+    MENU_MOVE_TO_EDGE, MENU_SPLIT_BESIDE, MENU_TAB_WITH, edge_title, group_label, side_title
+from src.ui.window.dock_placement import DockEdge, SplitSide
 from src.ui.window.main_window import MainWindow
 from src.ui.window.panel_dock import PanelDock
 from test.base_test_case import IntraPaintTestCase
@@ -80,7 +81,8 @@ class DockMenuTest(IntraPaintTestCase):
         """An open docked dock's menu has every entry in order, with one edge per Move to edge entry."""
         menu = self.window.dock_menu(self.window.tools_dock)
         self.assertEqual(list(self._entries(menu)),
-                         [MENU_TAB_WITH, MENU_MOVE_TO_EDGE, MENU_FLOAT, MENU_HIDE_PANEL, MENU_MOVE_ALL_TO_EDGE])
+                         [MENU_TAB_WITH, MENU_SPLIT_BESIDE, MENU_MOVE_TO_EDGE, MENU_FLOAT, MENU_HIDE_PANEL,
+                          MENU_MOVE_ALL_TO_EDGE])
         for title in (MENU_MOVE_TO_EDGE, MENU_MOVE_ALL_TO_EDGE):
             self.assertEqual(list(self._entries(self._submenu(self.window.tools_dock, title))),
                              [edge_title(edge) for edge in DockEdge])
@@ -112,6 +114,84 @@ class DockMenuTest(IntraPaintTestCase):
         self.assertTrue(window.color_dock.is_showing)
         self.assertEqual(self._open_docks(), {window.color_dock, window.layers_dock})
         self.assertEqual(self._shown_tab_bars(), [])
+
+    def test_split_beside_each_side(self) -> None:
+        """Split beside puts the dock on that side of the target group, in a group of its own, open, and leaves the
+        target group's docks and open dock as they were."""
+        window = self.window
+        upper_label = group_label([window.tools_dock, window.generation_dock])
+        tools_group = self._group(window.tools_dock)
+        checks = {
+            SplitSide.LEFT: lambda moved, target: moved.geometry().right() < target.geometry().left(),
+            SplitSide.RIGHT: lambda moved, target: moved.geometry().left() > target.geometry().right(),
+            SplitSide.ABOVE: lambda moved, target: moved.geometry().bottom() < target.geometry().top(),
+            SplitSide.BELOW: lambda moved, target: moved.geometry().top() > target.geometry().bottom()
+        }
+        for side, is_beside in checks.items():
+            with self.subTest(side=side):
+                window.reset_dock_layout()
+                self._activate()
+                self._trigger(window.color_dock, MENU_SPLIT_BESIDE, upper_label, side_title(side))
+                self.assertTrue(is_beside(window.color_dock, window.tools_dock))
+                self.assertEqual(self._group(window.color_dock), {window.color_dock})
+                self.assertEqual(self._group(window.tools_dock), tools_group)
+                self.assertEqual(self._open_docks(), {window.tools_dock, window.color_dock, window.layers_dock})
+                self.assertEqual(self._shown_tab_bars(), [])
+                self.assertEqual(window.rails.rail_for(window.color_dock).area, Area.RightDockWidgetArea)
+
+    def test_split_beside_shares_the_group_size(self) -> None:
+        """The split dock and the target group share the group's old size equally."""
+        window = self.window
+        self._trigger(window.color_dock, MENU_SPLIT_BESIDE, group_label([window.tools_dock, window.generation_dock]),
+                      side_title(SplitSide.LEFT))
+        self.assertLessEqual(abs(window.color_dock.width() - window.tools_dock.width()), 1)
+
+    def test_split_beside_its_own_group(self) -> None:
+        """A dock splits beside its own group while the group holds another dock with content, and the group keeps
+        its other docks."""
+        window = self.window
+        lower_label = group_label([window.layers_dock, window.color_dock, window.navigation_dock])
+        self._trigger(window.layers_dock, MENU_SPLIT_BESIDE, lower_label, side_title(SplitSide.BELOW))
+        self.assertGreater(window.layers_dock.geometry().top(), window.color_dock.geometry().bottom())
+        self.assertEqual(self._group(window.color_dock), {window.color_dock, window.navigation_dock})
+        self.assertEqual(self._group(window.layers_dock), {window.layers_dock})
+        self.assertFalse(window.color_dock.isHidden())
+
+    def test_split_beside_leaves_out_a_group_of_only_the_dock(self) -> None:
+        """A group holding only the dock isn't a Split beside target, and with no other group the entry is
+        disabled."""
+        window = self.window
+        window.move_all_docks_to_edge(DockEdge.LEFT)
+        self._activate()
+        self.assertTrue(self._entries(window.dock_menu(window.tools_dock))[MENU_SPLIT_BESIDE].isEnabled())
+        self._trigger(window.tools_dock, MENU_MOVE_TO_EDGE, edge_title(DockEdge.RIGHT))
+        split_menu = self._submenu(window.tools_dock, MENU_SPLIT_BESIDE)
+        others = [dock for dock in window.docks if dock.is_available and dock is not window.tools_dock]
+        self.assertEqual(list(self._entries(split_menu)), [group_label(sorted(others, key=lambda d: d.isHidden()))])
+
+    def test_split_beside_docks_a_floating_or_closed_dock(self) -> None:
+        """A floating or closed dock split beside a group is docked there and open."""
+        window = self.window
+        upper_label = group_label([window.tools_dock, window.generation_dock])
+        self._trigger(window.navigation_dock, MENU_FLOAT)
+        self._trigger(window.navigation_dock, MENU_SPLIT_BESIDE, upper_label, side_title(SplitSide.ABOVE))
+        self.assertFalse(window.navigation_dock.isFloating())
+        self.assertTrue(window.navigation_dock.is_showing)
+        self.assertLess(window.navigation_dock.geometry().bottom(), window.tools_dock.geometry().top())
+        window.color_dock.hide()
+        self._trigger(window.color_dock, MENU_SPLIT_BESIDE, upper_label, side_title(SplitSide.LEFT))
+        self.assertTrue(window.color_dock.is_showing)
+        self.assertLess(window.color_dock.geometry().right(), window.tools_dock.geometry().left())
+
+    def test_split_beside_another_area(self) -> None:
+        """A dock in another area moves to the target group's area."""
+        window = self.window
+        self._trigger(window.color_dock, MENU_MOVE_TO_EDGE, edge_title(DockEdge.BOTTOM))
+        self._trigger(window.color_dock, MENU_SPLIT_BESIDE,
+                      group_label([window.layers_dock, window.navigation_dock]), side_title(SplitSide.RIGHT))
+        self.assertEqual(window.dockWidgetArea(window.color_dock), Area.RightDockWidgetArea)
+        self.assertGreater(window.color_dock.geometry().left(), window.layers_dock.geometry().right())
+        self.assertEqual(window.rails.rail_for(window.color_dock).area, Area.RightDockWidgetArea)
 
     def test_tab_with_disabled_without_other_groups(self) -> None:
         """With every dock in one group, Tab with is disabled."""
