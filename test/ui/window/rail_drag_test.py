@@ -11,7 +11,7 @@ from src.image.layers.image_stack import ImageStack
 from src.ui.window.dock_rail import RailButton
 from src.ui.window.main_window import MainWindow
 from src.ui.window.panel_dock import PanelDock
-from src.ui.window.rail_drag import DRAG_DISTANCE
+from src.ui.window.rail_drag import DRAG_DISTANCE, TITLE_PRESS_INSET, TITLE_PRESS_Y
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -173,3 +173,62 @@ class RailDragTest(IntraPaintTestCase):
         _send(dock, QEvent.Type.MouseButtonRelease, outside, LEFT, NO_BUTTON)
         self.assertTrue(dock.isFloating())
         self.assertTrue(dock.geometry().contains(outside) or dock.frameGeometry().contains(outside))
+
+    def _hand_off(self, dock: PanelDock, outside: QPoint) -> None:
+        button = self._button(dock)
+        self._press_and_move(button, self._center(button) + QPoint(0, DRAG_DISTANCE), outside)
+
+    def test_hand_off_holds_the_dock_by_its_upper_left(self) -> None:
+        """The handed-off dock floats with the pointer near its upper-left corner, give or take Qt's frame offset."""
+        dock = self.window.layers_dock
+        outside = self.window.mapToGlobal(QPoint(300, 300))
+        self._hand_off(dock, outside)
+        held = dock.mapFromGlobal(outside)
+        self.assertLessEqual(abs(held.x() - TITLE_PRESS_INSET), 4)
+        self.assertLessEqual(abs(held.y() - TITLE_PRESS_Y), 4)
+        _send(dock, QEvent.Type.MouseButtonRelease, outside, LEFT, NO_BUTTON)
+
+    def test_handed_off_drag_back_over_the_rail_places_the_dock_there(self) -> None:
+        """Dragging a handed-off dock back over its rail shows the marker, and releasing there places it as a rail
+        drop would."""
+        window = self.window
+        dock = window.tools_dock
+        self._hand_off(dock, window.mapToGlobal(QPoint(300, 300)))
+        self.assertTrue(dock.isFloating())
+        target = self._center(self._button(window.color_dock))
+        _send(dock, QEvent.Type.MouseMove, target, NO_BUTTON, LEFT)
+        self.assertTrue(window.rail_drag.marker.isVisible())
+        _send(dock, QEvent.Type.MouseButtonRelease, target, LEFT, NO_BUTTON)
+        self._activate()
+        self.assertFalse(dock.isFloating())
+        self.assertIn(dock, self._group(window.layers_dock))
+        self.assertTrue(dock.is_showing)
+        self.assertFalse(window.rail_drag.marker.isVisible())
+
+    def test_floating_dock_dragged_onto_a_rail_is_placed_there(self) -> None:
+        """A floating dock dragged by its own title bar and released on another group's buttons is tabbed into that
+        group, open."""
+        window = self.window
+        dock = window.navigation_dock
+        dock.open_in_group()
+        dock.setFloating(True)
+        target = self._center(self._button(window.tools_dock))
+        _send(dock, QEvent.Type.MouseMove, target, NO_BUTTON, LEFT)
+        _send(dock, QEvent.Type.MouseButtonRelease, target, LEFT, NO_BUTTON)
+        self._activate()
+        self.assertFalse(dock.isFloating())
+        self.assertIn(dock, self._group(window.tools_dock))
+        self.assertTrue(dock.is_showing)
+
+    def test_floating_dock_released_off_the_rails_stays_floating(self) -> None:
+        """Leaving the rail hides the marker, and a release elsewhere leaves the dock to Qt."""
+        window = self.window
+        dock = window.navigation_dock
+        dock.open_in_group()
+        dock.setFloating(True)
+        _send(dock, QEvent.Type.MouseMove, self._rail_point(self._group_end(1) + 20), NO_BUTTON, LEFT)
+        away = window.mapToGlobal(QPoint(300, 300))
+        _send(dock, QEvent.Type.MouseMove, away, NO_BUTTON, LEFT)
+        self.assertFalse(window.rail_drag.marker.isVisible())
+        _send(dock, QEvent.Type.MouseButtonRelease, away, LEFT, NO_BUTTON)
+        self.assertTrue(dock.isFloating())
