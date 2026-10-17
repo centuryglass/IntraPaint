@@ -5,10 +5,10 @@ button and a More button.
   description wraps. A name that still doesn't fit ends with an ellipsis.
 - The header holds no config. `reset_requested` fires when the reset button is clicked, and the owner restores its
   declared keys (see `src.ui.panel.panel_reset`).
-- The More button opens a popover holding the controls a small grid size moved out of the panel, plus panel
-  commands. The owner supplies them with `set_popover_content` and refreshes them in a `more_requested` handler.
-- In a strip one row tall (Strip Short) the owner hides the header and places `more_button` at the end of the panel's
-  row, and `restore_more_button` puts it back.
+- The More button opens a popover holding the controls that didn't fit in the panel, plus panel commands. The owner
+  supplies them with `set_popover_content` and refreshes them in a `more_requested` handler.
+- In a strip too short for the header, the owner hides it and places `more_button` at the end of the panel's row, and
+  `restore_more_button` puts it back.
 """
 from typing import Optional
 
@@ -177,6 +177,22 @@ class PanelPopover(QFrame):
         self.show()
 
 
+class _IconLabel(QLabel):
+    """The header's icon, with size hints equal to the fixed size its owner sets.
+
+    QLabel caches size hints expanded to its minimum size when its content last changed, so they go stale once
+    `PanelHeader.set_icon_width` narrows it.
+    """
+
+    def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the fixed size."""
+        return self.minimumSize()
+
+    def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the fixed size."""
+        return self.minimumSize()
+
+
 class PanelHeader(QWidget):
     """Shows what a panel is for and offers its reset and overflow commands."""
 
@@ -186,7 +202,7 @@ class PanelHeader(QWidget):
     def __init__(self, name: str, icon: Optional[QIcon] = None, key_text: str = '',
                  parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self._icon_label = QLabel()
+        self._icon_label = _IconLabel()
         self._icon_label.setFixedSize(ICON_SIZE, ICON_SIZE)
         self._icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._name_label = _ElidedLabel()

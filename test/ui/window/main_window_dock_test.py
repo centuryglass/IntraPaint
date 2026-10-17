@@ -1,5 +1,5 @@
 """Tests MainWindow's docks: the first-run layout, docks without content, keys, saved layouts, the image selector,
-and the orientation and grid size each dock reports to its panel."""
+and the orientation and size each dock reports to its panel."""
 import sys
 from unittest.mock import patch
 
@@ -8,8 +8,8 @@ from PySide6.QtWidgets import QApplication, QLabel, QTabBar
 
 from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
-from src.ui.layout.dock_panel import DockPanel, P1, PanelLayout
-from src.ui.layout.panel_size_class import Orientation
+from src.ui.layout.dock_panel import DockPanel, PanelLayout
+from src.ui.layout.panel_fit import REQUIRED, Orientation
 from src.ui.window.main_window import MainWindow, DEFAULT_SIDE_DOCK_WIDTH, DOCK_STATE_VERSION
 from src.ui.window.panel_dock import PanelDock
 from test.base_test_case import IntraPaintTestCase
@@ -37,7 +37,7 @@ class _SamplePanel(DockPanel):
     """A migrated panel with one control."""
 
     def build(self, ui: PanelLayout) -> None:
-        ui.section('Sample').add(QLabel('control'), P1)
+        ui.section('Sample').add(QLabel('control'), REQUIRED)
 
 
 class MainWindowDockTest(IntraPaintTestCase):
@@ -409,25 +409,23 @@ class MainWindowDockTest(IntraPaintTestCase):
         window.tools_dock.resize(window.tools_dock.width() - 10, window.tools_dock.height())
         self.assertEqual(len(content.orientations), calls, 'a resize in the same area repeats no orientation')
 
-    def test_dock_panel_gets_orientation_and_grid_size(self) -> None:
-        """A DockPanel gets its dock's orientation and a grid size from the dock's own size."""
+    def test_dock_panel_gets_orientation_and_the_size_it_fills(self) -> None:
+        """A DockPanel gets its dock's orientation, and plans for its own size rather than the dock's."""
         window = self._new_window(fill=False)
         panel = _SamplePanel()
         window.tools_dock.set_content(panel)
-        window.resizeDocks([window.tools_dock], [200], Qt.Orientation.Horizontal)
-        window.layout().activate()
-        self.assertEqual(panel.orientation, Orientation.SIDE)
-        self.assertEqual(panel.grid_size.columns, 1)
-        window.resizeDocks([window.tools_dock], [500], Qt.Orientation.Horizontal)
-        window.layout().activate()
-        self.assertEqual(panel.grid_size.columns, 3)
-        window.removeDockWidget(window.tools_dock)
-        window.addDockWidget(Area.TopDockWidgetArea, window.tools_dock)
-        window.tools_dock.show()
-        window.resizeDocks([window.tools_dock], [240], Qt.Orientation.Vertical)
-        window.layout().activate()
-        self.assertEqual(panel.orientation, Orientation.STRIP)
-        self.assertEqual(panel.grid_size.rows, 2)
+        for area, orientation, extent, axis in ((Area.LeftDockWidgetArea, Orientation.SIDE, 300,
+                                                 Qt.Orientation.Horizontal),
+                                                (Area.TopDockWidgetArea, Orientation.STRIP, 240,
+                                                 Qt.Orientation.Vertical)):
+            with self.subTest(orientation=orientation):
+                window.removeDockWidget(window.tools_dock)
+                window.addDockWidget(area, window.tools_dock)
+                window.tools_dock.show()
+                window.resizeDocks([window.tools_dock], [extent], axis)
+                window.layout().activate()
+                self.assertEqual(panel.orientation, orientation)
+                self.assertEqual(panel.available_size, panel.size())
 
     def test_close_saves_dock_layout(self) -> None:
         """Closing the window stores the dock layout next to the window geometry."""
