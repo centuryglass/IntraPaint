@@ -1,5 +1,67 @@
 # Changelog and release notes
 
+## [1.5.0](https://github.com/centuryglass/IntraPaint/compare/v1.4.0...v1.5.0) (2026-10-17)
+
+
+### Features
+
+* **inpaint:** mask blur control, and inpainting results without a hard edge ([#339](https://github.com/centuryglass/IntraPaint/issues/339)) ([9c34ef9](https://github.com/centuryglass/IntraPaint/commit/9c34ef9e6cc1204274c8ca71734f448ab961efe4))
+* open animated GIF, WebP, APNG and AVIF files as one layer per frame ([#331](https://github.com/centuryglass/IntraPaint/issues/331)) ([43c571c](https://github.com/centuryglass/IntraPaint/commit/43c571c8a6cbbc2b9a1ce65511d87fdf64beef66)), closes [#329](https://github.com/centuryglass/IntraPaint/issues/329)
+* Reopen the last batch of generated image options ([#300](https://github.com/centuryglass/IntraPaint/issues/300)) ([2da6bd5](https://github.com/centuryglass/IntraPaint/commit/2da6bd5a2575f7207d57bcfab5e2b867614c8148))
+* **selection:** add replace/intersect modes and Shift/Alt modifiers to selection tools ([#287](https://github.com/centuryglass/IntraPaint/issues/287)) ([9c59120](https://github.com/centuryglass/IntraPaint/commit/9c591202087188d24c872f70cf0b6c2441f2aed2))
+* **tools:** edit context pins with the right button in every selection tool ([#328](https://github.com/centuryglass/IntraPaint/issues/328)) ([ae0b9be](https://github.com/centuryglass/IntraPaint/commit/ae0b9beb23411c1212d818bc2a4513fa1743742c))
+* **ui:** add a dock context menu to tab panels together or move them to a window edge ([#369](https://github.com/centuryglass/IntraPaint/issues/369)) ([a02e21b](https://github.com/centuryglass/IntraPaint/commit/a02e21b5fc7aa8edf7f6f212808eac9d0d331f0e))
+* **ui:** add a View menu for view-only actions ([#367](https://github.com/centuryglass/IntraPaint/issues/367)) ([d6f592a](https://github.com/centuryglass/IntraPaint/commit/d6f592aece55c2348e5bbb16af1753c4c759adc6))
+* **ui:** add GeometryBlock for position, size, scale and angle fields ([#308](https://github.com/centuryglass/IntraPaint/issues/308)) ([#361](https://github.com/centuryglass/IntraPaint/issues/361)) ([820a24d](https://github.com/centuryglass/IntraPaint/commit/820a24d4b5428cd55bc62e56ceeecb2d9ac3b064))
+* **ui:** add orientation and size class model with DockPanel ([#356](https://github.com/centuryglass/IntraPaint/issues/356)) ([3aa0dbf](https://github.com/centuryglass/IntraPaint/commit/3aa0dbf472287e4fc6fbde9bdbec635c8ee80c3f))
+* **ui:** add panel sections, header, disabled banner and button weights ([#306](https://github.com/centuryglass/IntraPaint/issues/306)) ([#355](https://github.com/centuryglass/IntraPaint/issues/355)) ([faca47f](https://github.com/centuryglass/IntraPaint/commit/faca47f5593a01b4bd9b4de6e67f26902a389876))
+* **ui:** add SegmentedControl for short choices ([#354](https://github.com/centuryglass/IntraPaint/issues/354)) ([3bcbb91](https://github.com/centuryglass/IntraPaint/commit/3bcbb9147595eccb0672d7af3603fce4de7b53d5))
+* **ui:** add SliderField and NumberField input fields ([#304](https://github.com/centuryglass/IntraPaint/issues/304)) ([#350](https://github.com/centuryglass/IntraPaint/issues/350)) ([7169b77](https://github.com/centuryglass/IntraPaint/commit/7169b77dcaaa9993c0413dc025f255870952ed8d))
+* **ui:** dock panels with QDockWidget instead of custom tab boxes ([#358](https://github.com/centuryglass/IntraPaint/issues/358)) ([30fd230](https://github.com/centuryglass/IntraPaint/commit/30fd230a5f72e5f94d00f590570be9632aab7dca))
+* **ui:** drag panels by their rail buttons, and hide docked panels' title bars ([#385](https://github.com/centuryglass/IntraPaint/issues/385)) ([db6d001](https://github.com/centuryglass/IntraPaint/commit/db6d0016682a5c90053ad3708e78b4fb6f875615))
+* **ui:** icon rails for panel docks, recent tools and Generate ([#363](https://github.com/centuryglass/IntraPaint/issues/363)) ([b5d403e](https://github.com/centuryglass/IntraPaint/commit/b5d403eaa6f64aae4b46cafa69ff71be3619c4ad))
+* **ui:** line up each group's rail buttons with its panels ([#383](https://github.com/centuryglass/IntraPaint/issues/383)) ([93000c3](https://github.com/centuryglass/IntraPaint/commit/93000c32c33485055c8653f657d711859b3a5194))
+* **ui:** move eraser, smudge, clone stamp, fill and filter panels onto the stroke block ([#377](https://github.com/centuryglass/IntraPaint/issues/377)) ([2833514](https://github.com/centuryglass/IntraPaint/commit/2833514dd4dddf1dc504edde10d0365cf17b78a4))
+* **ui:** move Layers, Color and Navigation into their own dock group ([#365](https://github.com/centuryglass/IntraPaint/issues/365)) ([0099b07](https://github.com/centuryglass/IntraPaint/commit/0099b07e0345a21857dfcd4700f0d81d9d6ec13f))
+* **ui:** pick a random loading indicator design for each load ([#333](https://github.com/centuryglass/IntraPaint/issues/333)) ([6c6c763](https://github.com/centuryglass/IntraPaint/commit/6c6c763076ad422e371efb7238670b9012c850c4))
+* **ui:** restore window geometry safely across display changes ([#351](https://github.com/centuryglass/IntraPaint/issues/351)) ([48e6838](https://github.com/centuryglass/IntraPaint/commit/48e6838ba25e95edf456c10f7585f394d87322cf))
+* **ui:** rich tooltips with keycap-styled key bindings ([#347](https://github.com/centuryglass/IntraPaint/issues/347)) ([cde9140](https://github.com/centuryglass/IntraPaint/commit/cde9140ad97d98e48e7426f577a3dbacce19faf9))
+* **ui:** rounded menus and tooltips with hard shadows ([#291](https://github.com/centuryglass/IntraPaint/issues/291)) ([3c4ec08](https://github.com/centuryglass/IntraPaint/commit/3c4ec08206c3fc4d3b395e80012f580cd14a03b0))
+* **ui:** shared stroke block for paint tool panels, starting with Draw ([#373](https://github.com/centuryglass/IntraPaint/issues/373)) ([3ba3015](https://github.com/centuryglass/IntraPaint/commit/3ba301588f39c0c50ea9b2b4408b5677e9742194))
+* **ui:** show a floating panel's rail button in its own title bar ([#386](https://github.com/centuryglass/IntraPaint/issues/386)) ([d2588e4](https://github.com/centuryglass/IntraPaint/commit/d2588e4c207b19d74b12c5c72565ce366dbe7f2e))
+* **ui:** show key bindings in tool and layer button tooltips ([#290](https://github.com/centuryglass/IntraPaint/issues/290)) ([55b201a](https://github.com/centuryglass/IntraPaint/commit/55b201ac4eafaf0c4ad7093ca85e43d23f0fbf76))
+* **ui:** show one panel per dock group, with the edge rails as its only tabs ([#379](https://github.com/centuryglass/IntraPaint/issues/379)) ([63e0f8a](https://github.com/centuryglass/IntraPaint/commit/63e0f8ae8cd6c367b0af0aa21ee0c36fc104afd6))
+* **ui:** slim tool strip with an active tool header, and a minimum canvas size ([#370](https://github.com/centuryglass/IntraPaint/issues/370)) ([00d509e](https://github.com/centuryglass/IntraPaint/commit/00d509e9ce195f512d65e58a86610f524e4c85ce))
+* **ui:** split a panel beside a group from the dock menu, and share panel moves in dock_placement ([#384](https://github.com/centuryglass/IntraPaint/issues/384)) ([6f347ad](https://github.com/centuryglass/IntraPaint/commit/6f347ad605127e11fd78de1f55dd068760947b5c))
+
+
+### Bug Fixes
+
+* **agents:** pin issue fetches to origin and add the OpenCode issue-cache hook ([#298](https://github.com/centuryglass/IntraPaint/issues/298)) ([6263b11](https://github.com/centuryglass/IntraPaint/commit/6263b117bc98b3af9f51ebd205291050bc676cae))
+* clear undo history when opening or creating an image, and drop the previous image's generated options ([#337](https://github.com/centuryglass/IntraPaint/issues/337)) ([18b6d72](https://github.com/centuryglass/IntraPaint/commit/18b6d72b361010efea868437abf4b2165053845d))
+* **config:** report speed-modifier keybinding conflicts instead of raising KeyError ([#359](https://github.com/centuryglass/IntraPaint/issues/359)) ([eb35be6](https://github.com/centuryglass/IntraPaint/commit/eb35be6b848875512b35528ece7daf5053f296d8)), closes [#357](https://github.com/centuryglass/IntraPaint/issues/357)
+* **config:** show translated option names while saving the stored option ([#340](https://github.com/centuryglass/IntraPaint/issues/340)) ([cb16639](https://github.com/centuryglass/IntraPaint/commit/cb16639fe4ed255d07330a7b5605b157b4263f6c))
+* **config:** stop translating stored config option strings ([#336](https://github.com/centuryglass/IntraPaint/issues/336)) ([db102b0](https://github.com/centuryglass/IntraPaint/commit/db102b0900f8e3b74f16d36b643c883191a39696))
+* **formats:** keep EPS files away from Ghostscript through Qt's image plugins ([#292](https://github.com/centuryglass/IntraPaint/issues/292)) ([89bfe5f](https://github.com/centuryglass/IntraPaint/commit/89bfe5f93f1cd905320796e71726972a15414736))
+* **generation:** run WebUI generation through sd-backend-client ([#275](https://github.com/centuryglass/IntraPaint/issues/275)) ([8f637fb](https://github.com/centuryglass/IntraPaint/commit/8f637fb9bb4d192543837d7b77f24804dd0525c5))
+* **layers:** make ImageStack.batching_content_updates nestable and exception-safe ([#282](https://github.com/centuryglass/IntraPaint/issues/282)) ([90c1072](https://github.com/centuryglass/IntraPaint/commit/90c1072b3a43a965c040ed252a65a5aa2869cdae))
+* **layers:** name every loaded image's layer "layer 1" ([#349](https://github.com/centuryglass/IntraPaint/issues/349)) ([6f43de2](https://github.com/centuryglass/IntraPaint/commit/6f43de2cf51a5437fef8127f31cbf59ed7ff64c5))
+* **ui:** correct small panel bugs from the UI panel review ([#346](https://github.com/centuryglass/IntraPaint/issues/346)) ([5ee1be9](https://github.com/centuryglass/IntraPaint/commit/5ee1be921c2d217028e63b978d57ff65d3d0055a))
+* **ui:** Improve loading indicator text formatting ([#368](https://github.com/centuryglass/IntraPaint/issues/368)) ([62a8ded](https://github.com/centuryglass/IntraPaint/commit/62a8dedcbbf0e4f05a892907cf4c9d4c253eb612))
+* **ui:** keep generated image selector zoom as a ratio and drop it when the frame changes ([#281](https://github.com/centuryglass/IntraPaint/issues/281)) ([409554d](https://github.com/centuryglass/IntraPaint/commit/409554dc0e8620a4d2742d6c6a35caab6eaa2161))
+* **ui:** move a panel's rail button when the dock menu moves it to the right or bottom edge ([#382](https://github.com/centuryglass/IntraPaint/issues/382)) ([875ad1a](https://github.com/centuryglass/IntraPaint/commit/875ad1a47aa7523b2a0884b26f9950d8a9d45ee3))
+* **ui:** raise the loading indicator above the central widget ([#362](https://github.com/centuryglass/IntraPaint/issues/362)) ([5741b8e](https://github.com/centuryglass/IntraPaint/commit/5741b8e21dd115f1bec45cbcd4a2ce642a64ac60))
+* **ui:** remove inpaint full-res and padding controls from selection panels ([#348](https://github.com/centuryglass/IntraPaint/issues/348)) ([314a9a1](https://github.com/centuryglass/IntraPaint/commit/314a9a1be62a25aa48c1ef5182ae9deb5e386b75)), closes [#302](https://github.com/centuryglass/IntraPaint/issues/302)
+* **ui:** scale loading indicator text with its bounds ([#364](https://github.com/centuryglass/IntraPaint/issues/364)) ([782a1b9](https://github.com/centuryglass/IntraPaint/commit/782a1b97b887ef62c70f6f5269e6b7ff471e0d5b))
+* **ui:** stop restored dock layouts leaving old tab bars drawn over the window ([#375](https://github.com/centuryglass/IntraPaint/issues/375)) ([3e1d945](https://github.com/centuryglass/IntraPaint/commit/3e1d94547bf90f0a1543d43fccba3f8240f231cf))
+* **ui:** stop the bug dialog reopening when a tooltip or toolbar triggers a style error ([#366](https://github.com/centuryglass/IntraPaint/issues/366)) ([8299e37](https://github.com/centuryglass/IntraPaint/commit/8299e37a5ee72cd222e50e872ef7f2337d27b45e))
+* **ui:** stop the color panel growing without bound when a floating dock shrinks ([#371](https://github.com/centuryglass/IntraPaint/issues/371)) ([97a53a0](https://github.com/centuryglass/IntraPaint/commit/97a53a0b3888041a8911a1a7a7186249f394bcb5))
+
+
+### Performance Improvements
+
+* **selection:** store the selection mask as Alpha8 and skip whole-image work per edit ([#272](https://github.com/centuryglass/IntraPaint/issues/272)) ([d657c00](https://github.com/centuryglass/IntraPaint/commit/d657c00b71a22797f26c7cdebf4a69c39f3b66ba))
+
 ## [1.4.0](https://github.com/centuryglass/IntraPaint/compare/v1.3.0...v1.4.0) (2026-10-10)
 
 
