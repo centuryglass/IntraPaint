@@ -7,9 +7,10 @@
 - A tab group shows one dock at a time, and the edge rails act as its tabs. Opening a dock with `open_in_group`, its
   key, its toggle action or a mouse drop into a group closes the group's other docks. A dock in the background of a
   group is closed. `show` opens a dock without closing the others, so code opens docks with `open_in_group`.
-- A docked dock has no title bar; its rail button names it and moves it. A floating dock shows the title bar set with
+- A docked dock has no title bar; its rail button names it and moves it, and the notch in its upper-left corner
+  (`DockNotch`) drags it. A floating dock shows the title bar set with
   `set_floating_title_bar`, or Qt's without one, and is dragged by it. `show_title_bar_for_drag` shows Qt's title bar
-  while docked, so a rail button drag can hand off to Qt's own dock drag (see `src.ui.window.rail_drag`).
+  while docked, so a rail button or notch drag can hand off to Qt's own dock drag (see `src.ui.window.qt_dock_drag`).
 - The dock's key (`shortcut_config_key`) opens and focuses the dock, or closes it if it is already open.
 - A dock with no content is hidden and its toggle action is hidden too. It remembers whether it was open, and opens
   again when content arrives, unless another dock in its group is open by then.
@@ -26,7 +27,9 @@ from PySide6.QtWidgets import QDockWidget, QMainWindow, QWidget
 from src.hotkey_filter import HotkeyFilter
 from src.ui.layout.dock_panel import DockPanel
 from src.ui.layout.panel_size_class import Orientation, orientation_for_dock
+from src.ui.window.dock_notch import DockNotch
 from src.ui.window.dock_state import read_dock_groups
+from src.ui.window.qt_dock_drag import start_qt_dock_drag
 
 
 def qt_orientation(orientation: Orientation) -> Qt.Orientation:
@@ -73,6 +76,9 @@ class PanelDock(QDockWidget):
         self._no_title_bar = _NoTitleBar()
         self._floating_title_bar: Optional[QWidget] = None
         self.setTitleBarWidget(self._no_title_bar)
+        self._notch = DockNotch(self, lambda pos: start_qt_dock_drag(window, self, pos))
+        self._notch.move(0, 0)
+        self._notch.raise_()
         self.toggleViewAction().setVisible(False)
         self.toggleViewAction().setIcon(self.windowIcon())
         self.visibilityChanged.connect(self._visibility_changed)
@@ -141,6 +147,7 @@ class PanelDock(QDockWidget):
             return
         self.setWidget(content)
         content.show()
+        self._notch.raise_()
         self.toggleViewAction().setVisible(True)
         if self._open_when_available:
             if any(not mate.isHidden() for mate in self.group_mates()):
@@ -203,7 +210,13 @@ class PanelDock(QDockWidget):
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Updates the content's grid size."""
         super().resizeEvent(event)
+        self._notch.raise_()
         self._update_host_facts()
+
+    @property
+    def notch(self) -> DockNotch:
+        """The corner triangle that drags the dock while it is docked."""
+        return self._notch
 
     def show_title_bar_for_drag(self) -> None:
         """Shows Qt's title bar while docked, so a press on it starts Qt's dock drag. The bar hides again once the
@@ -224,6 +237,8 @@ class PanelDock(QDockWidget):
         wanted = self._floating_title_bar if floating else self._no_title_bar
         if self.titleBarWidget() is not wanted:
             self.setTitleBarWidget(wanted)
+        self._notch.setVisible(not floating)
+        self._notch.raise_()
 
     def _toggle_action_triggered(self, checked: bool) -> None:
         """Closes the group's other docks when the toggle action opens this one."""

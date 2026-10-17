@@ -12,7 +12,8 @@ from src.ui.window.dock_rail import RailButton
 from src.ui.window.floating_title_bar import FloatingTitleBar
 from src.ui.window.main_window import MainWindow
 from src.ui.window.panel_dock import PanelDock
-from src.ui.window.rail_drag import DRAG_DISTANCE, TITLE_PRESS_INSET, TITLE_PRESS_Y
+from src.ui.window.qt_dock_drag import TITLE_PRESS_INSET, TITLE_PRESS_Y
+from src.ui.window.rail_drag import DRAG_DISTANCE
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -99,6 +100,50 @@ class RailDragTest(IntraPaintTestCase):
         dock.setFloating(False)
         self._activate()
         self.assertEqual(dock.content.geometry().top(), 0)
+
+    def test_notch_shows_only_while_docked_and_above_the_content(self) -> None:
+        """A docked dock shows its notch in the upper-left corner above the content. Floating hides it."""
+        dock = self.window.layers_dock
+        notch = dock.notch
+        self.assertTrue(notch.isVisible())
+        self.assertEqual(notch.pos(), QPoint(0, 0))
+        children = dock.children()
+        self.assertGreater(children.index(notch), children.index(dock.content))
+        dock.setFloating(True)
+        self.assertFalse(notch.isVisible())
+        dock.setFloating(False)
+        self._activate()
+        self.assertTrue(notch.isVisible())
+
+    def test_dragging_the_notch_floats_the_dock_under_the_pointer(self) -> None:
+        """Dragging the notch out of the dock hands off to Qt's dock drag, as a rail button drag does."""
+        dock = self.window.layers_dock
+        notch = dock.notch
+        start = notch.mapToGlobal(QPoint(2, 2))
+        outside = self.window.mapToGlobal(QPoint(300, 300))
+        _send(notch, QEvent.Type.MouseButtonPress, start, LEFT, LEFT)
+        _send(notch, QEvent.Type.MouseMove, start + QPoint(DRAG_DISTANCE, DRAG_DISTANCE), NO_BUTTON, LEFT)
+        self.assertTrue(dock.isFloating())
+        _send(dock, QEvent.Type.MouseMove, outside, NO_BUTTON, LEFT)
+        _send(dock, QEvent.Type.MouseButtonRelease, outside, LEFT, NO_BUTTON)
+        self.assertTrue(dock.isFloating())
+
+    def test_short_notch_press_does_not_drag(self) -> None:
+        """A press that moves less than the drag distance leaves the dock docked."""
+        dock = self.window.layers_dock
+        start = dock.notch.mapToGlobal(QPoint(2, 2))
+        _send(dock.notch, QEvent.Type.MouseButtonPress, start, LEFT, LEFT)
+        _send(dock.notch, QEvent.Type.MouseMove, start + QPoint(1, 0), NO_BUTTON, LEFT)
+        _send(dock.notch, QEvent.Type.MouseButtonRelease, start, LEFT, NO_BUTTON)
+        self.assertFalse(dock.isFloating())
+
+    def test_notch_press_off_the_triangle_is_ignored(self) -> None:
+        """The corner of the notch's square opposite the triangle does not start a drag."""
+        dock = self.window.layers_dock
+        corner = dock.notch.mapToGlobal(QPoint(14, 14))
+        _send(dock.notch, QEvent.Type.MouseButtonPress, corner, LEFT, LEFT)
+        _send(dock.notch, QEvent.Type.MouseMove, corner + QPoint(DRAG_DISTANCE * 3, 0), NO_BUTTON, LEFT)
+        self.assertFalse(dock.isFloating())
 
     def test_short_press_is_a_click(self) -> None:
         """Moving less than the drag distance before release still toggles the dock."""
