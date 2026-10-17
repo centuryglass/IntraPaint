@@ -16,8 +16,8 @@ import math
 from typing import Optional
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, QRectF, QSize, Qt, Signal
-from PySide6.QtGui import (QColor, QFocusEvent, QFont, QFontMetrics, QHelpEvent, QKeyEvent, QMouseEvent, QPainter,
-                           QPainterPath, QPaintEvent, QPalette, QPen, QResizeEvent, QWheelEvent)
+from PySide6.QtGui import (QColor, QFocusEvent, QFont, QFontMetrics, QHelpEvent, QHoverEvent, QKeyEvent, QMouseEvent,
+                           QPainter, QPainterPath, QPaintEvent, QPalette, QPen, QResizeEvent, QWheelEvent)
 from PySide6.QtWidgets import QApplication, QLineEdit, QSizePolicy, QToolTip, QWidget
 
 from src.ui.ink_style import RADIUS, ink_colors
@@ -395,7 +395,9 @@ class NumberField(QWidget):
     # -----------------------------------------------------------------------------------------------------------------
 
     def event(self, event: QEvent) -> bool:
-        """Tracks hover, and shows the pressure link's tooltip over the link."""
+        """Tracks hover, uses the default cursor over the pressure link, and shows the link's tooltip."""
+        if event.type() in (QEvent.Type.HoverEnter, QEvent.Type.HoverMove) and isinstance(event, QHoverEvent):
+            self._update_cursor(event.position().toPoint())
         if event.type() == QEvent.Type.HoverEnter:
             self._hovered = True
             self.update()
@@ -407,6 +409,14 @@ class NumberField(QWidget):
             QToolTip.showText(event.globalPos(), self._pressure_tooltip, self)
             return True
         return super().event(event)
+
+    def _update_cursor(self, pos: QPoint) -> None:
+        """Shows the scrub cursor, except over the pressure link while no drag is in progress."""
+        over_link = self._pressure_available and self._press_pos is None and self._pressure_link_rect().contains(pos)
+        if over_link:
+            self.setCursor(Qt.CursorShape.ArrowCursor)
+        else:
+            self.setCursor(Qt.CursorShape.SizeHorCursor)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:  # pylint: disable=invalid-name
         """Starts a possible drag. A press on the pressure link toggles it instead."""
@@ -443,6 +453,7 @@ class NumberField(QWidget):
         was_scrubbing = self._scrubbing
         self._press_pos = None
         self._scrubbing = False
+        self._update_cursor(event.position().toPoint())
         if was_scrubbing:
             self.update()
             self.dragFinished.emit()

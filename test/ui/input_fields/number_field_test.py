@@ -2,8 +2,8 @@
 the pen pressure link, and accessibility text. Events are synthesized, and nothing waits on the event loop."""
 import sys
 
-from PySide6.QtCore import QPoint, QPointF, Qt
-from PySide6.QtGui import QWheelEvent
+from PySide6.QtCore import QEvent, QPoint, QPointF, Qt
+from PySide6.QtGui import QHoverEvent, QWheelEvent
 from PySide6 import QtTest
 from PySide6.QtWidgets import QApplication, QLineEdit
 
@@ -202,6 +202,18 @@ class NumberFieldTest(IntraPaintTestCase):
             SliderField('Bad', 0, 5, 5)
         with self.assertRaises(ValueError):
             self._slider().set_range(None, 10)
+
+    def test_pressure_link_uses_default_cursor(self) -> None:
+        """Hovering the link shows the arrow cursor, and the rest of the field shows the scrub cursor."""
+        field = self._slider()
+        field.set_pressure_link_available(True)
+        link_pos = QPointF(WIDTH - PRESSURE_LINK_WIDTH // 2, CENTER_Y)
+        body_pos = QPointF(WIDTH // 4, CENTER_Y)
+        hover = QEvent.Type.HoverMove
+        field.event(QHoverEvent(hover, link_pos, link_pos, body_pos))
+        self.assertEqual(field.cursor().shape(), Qt.CursorShape.ArrowCursor)
+        field.event(QHoverEvent(hover, body_pos, body_pos, link_pos))
+        self.assertEqual(field.cursor().shape(), Qt.CursorShape.SizeHorCursor)
 
     def test_pressure_link(self) -> None:
         """The link is clickable only when shown, toggles with a click or Space, and doesn't resize the field."""
