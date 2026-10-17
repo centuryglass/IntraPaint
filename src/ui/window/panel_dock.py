@@ -1,6 +1,6 @@
 """A `QDockWidget` that hosts one main window panel and tells the panel where it is docked.
 
-- Orientation and size class come from the dock's area, floating state and size, through
+- Orientation and grid size come from the dock's area, floating state and size, through
   `src.ui.layout.panel_size_class`. A `DockPanel` gets them through `set_host_facts`. Other content with a
   `set_orientation` method gets the matching `Qt.Orientation` when the orientation changes, until it migrates to
   `DockPanel`.
@@ -32,7 +32,7 @@ def qt_orientation(orientation: Orientation) -> Qt.Orientation:
 
 
 class PanelDock(QDockWidget):
-    """Hosts one panel, forwards orientation and size class to it, and toggles it from a key."""
+    """Hosts one panel, forwards orientation and grid size to it, and toggles it from a key."""
 
     _drop_rule_pauses = 0
 
@@ -178,7 +178,7 @@ class PanelDock(QDockWidget):
         return True
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
-        """Updates the content's size class."""
+        """Updates the content's grid size."""
         super().resizeEvent(event)
         self._update_host_facts()
 

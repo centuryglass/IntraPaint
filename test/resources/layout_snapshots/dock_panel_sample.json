@@ -1,5 +1,5 @@
 {
-  "side_compact": {
+  "side_1x3": {
     "more_button": true,
     "overflow": [
       "name",
@@ -20,7 +20,7 @@
       "Stroke"
     ]
   },
-  "side_regular": {
+  "side_2x3": {
     "more_button": true,
     "overflow": [
       "flag",
@@ -40,7 +40,7 @@
       "Stroke"
     ]
   },
-  "side_wide": {
+  "side_3x3": {
     "more_button": false,
     "overflow": [],
     "problems": [],
@@ -63,7 +63,7 @@
       "Advanced"
     ]
   },
-  "strip_compact": {
+  "strip_3x1": {
     "more_button": true,
     "overflow": [
       "name",
@@ -84,7 +84,7 @@
       "Stroke"
     ]
   },
-  "strip_regular": {
+  "strip_3x2": {
     "more_button": true,
     "overflow": [
       "flag",
@@ -104,7 +104,7 @@
       "Stroke"
     ]
   },
-  "strip_wide": {
+  "strip_3x3": {
     "more_button": false,
     "overflow": [],
     "problems": [],

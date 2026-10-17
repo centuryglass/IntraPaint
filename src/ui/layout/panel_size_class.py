@@ -1,16 +1,22 @@
-"""Orientation and size class for a panel, computed from its dock's area and size.
+"""Orientation and grid size for a panel, computed from its dock's area and size.
 
-A panel never measures the window. Its host reports two facts: an `Orientation` and a `SizeClass`. All thresholds live
+A panel never measures the window. Its host reports two facts: an `Orientation` and a `GridSize`. All thresholds live
 in this module, so DPI normalization (issue #13) changes them in one place.
 
-- Side panels (left and right docks) are a tall column and are classed by width.
-- Strip panels (top and bottom docks) are a wide row and are classed by height.
-- A floating dock is a side panel when it is taller than wide.
-- `SizeClassTracker` keeps the current class while the size stays within `HYSTERESIS` pixels of its range, so dragging
+- Side panels (left and right docks) are a tall column, and strip panels (top and bottom docks) are a wide row. A
+  floating dock is a side panel when it is taller than wide. Orientation sets the direction content flows and scrolls.
+- A `GridSize(columns, rows)` classes the width into 1 to 3 columns at `COLUMN_BOUNDARIES` and the height into 1 to 3
+  rows at `ROW_BOUNDARIES`. Measure the area the layout fills, not the dock.
+- `GridSize.constrained` is the count along a panel's short axis, which sets density: columns for side panels, rows
+  for strips. The six named classes of the panel redesign are side 1x3, 2x3 and 3x3 (Compact, Regular, Wide) and
+  strip 3x1, 3x2 and 3x3 (Short, Regular, Tall).
+- A `GridLayoutPanel` declares the `GridSize`s it has a layout for, and `choose_layout` picks one for an area.
+- `GridSizeTracker` keeps each axis's count while the size stays within `HYSTERESIS` pixels of its range, so dragging
   a separator across a boundary doesn't flicker.
 """
-from enum import Enum, IntEnum
-from typing import Optional
+from dataclasses import dataclass
+from enum import Enum
+from typing import Iterable, Optional, Protocol, runtime_checkable
 
 from PySide6.QtCore import QSize, Qt
 
@@ -21,19 +27,10 @@ class Orientation(Enum):
     STRIP = 'strip'
 
 
-class SizeClass(IntEnum):
-    """How much room a panel has along its constrained axis, in increasing order.
-
-    Strip panels call `COMPACT` "Short" and `WIDE` "Tall".
-    """
-    COMPACT = 0
-    REGULAR = 1
-    WIDE = 2
-
-
-# Where COMPACT ends (exclusive) and where REGULAR ends (inclusive), per orientation.
-SIDE_BOUNDARIES = (260, 420)
-STRIP_BOUNDARIES = (170, 320)
+# Where 1 ends (exclusive) and where 2 ends (inclusive), per axis:
+COLUMN_BOUNDARIES = (260, 420)
+ROW_BOUNDARIES = (170, 320)
+GRID_MAX_CELLS = 3
 HYSTERESIS = 6
 
 SIDE_PANEL_MIN_COLUMN_WIDTH = 240
@@ -41,29 +38,82 @@ STRIP_SECTION_MIN_WIDTH = 240
 STRIP_SECTION_MAX_WIDTH = 300
 
 
-def boundaries(orientation: Orientation) -> tuple[int, int]:
-    """Returns the sizes where `COMPACT` ends and where `REGULAR` ends for an orientation."""
-    return SIDE_BOUNDARIES if orientation == Orientation.SIDE else STRIP_BOUNDARIES
+@dataclass(frozen=True)
+class GridSize:
+    """An area or a layout in grid cells: `columns` across and `rows` down, each from 1 to `GRID_MAX_CELLS`.
 
-
-def constrained_extent(orientation: Orientation, size: QSize) -> int:
-    """Returns the dimension that decides the size class: width for side panels, height for strips."""
-    return size.width() if orientation == Orientation.SIDE else size.height()
-
-
-def size_class_for(orientation: Orientation, size: QSize) -> SizeClass:
-    """Returns the size class for a dock size, with no hysteresis.
-
-    Side panels: COMPACT below 260, REGULAR from 260 through 420, WIDE above 420. Strips: COMPACT below 170, REGULAR
-    from 170 through 320, TALL above 320.
+    Written columns x rows, so `GridSize(3, 1)` is "3x1". Raises ValueError for a count outside that range.
     """
-    extent = constrained_extent(orientation, size)
-    compact_end, regular_end = boundaries(orientation)
-    if extent < compact_end:
-        return SizeClass.COMPACT
-    if extent <= regular_end:
-        return SizeClass.REGULAR
-    return SizeClass.WIDE
+    columns: int
+    rows: int
+
+    def __post_init__(self) -> None:
+        for count in (self.columns, self.rows):
+            if not 1 <= count <= GRID_MAX_CELLS:
+                raise ValueError(f'Invalid grid size {self.columns}x{self.rows}')
+
+    @property
+    def area(self) -> int:
+        """The number of cells covered."""
+        return self.columns * self.rows
+
+    def constrained(self, orientation: Orientation) -> int:
+        """Returns the count along the panel's short axis: columns for side panels, rows for strips."""
+        return self.columns if orientation == Orientation.SIDE else self.rows
+
+    def fits_in(self, other: 'GridSize') -> bool:
+        """Returns whether this size fits inside another on both axes."""
+        return self.columns <= other.columns and self.rows <= other.rows
+
+    def __str__(self) -> str:
+        return f'{self.columns}x{self.rows}'
+
+
+def _cell_count(extent: int, cell_boundaries: tuple[int, int]) -> int:
+    first_end, second_end = cell_boundaries
+    if extent < first_end:
+        return 1
+    return 2 if extent <= second_end else 3
+
+
+def grid_size_for(size: QSize) -> GridSize:
+    """Returns the grid size for an area, with no hysteresis.
+
+    Width: 1 column below 260, 2 from 260 through 420, 3 above 420. Height: 1 row below 170, 2 from 170 through 320,
+    3 above 320.
+    """
+    return GridSize(_cell_count(size.width(), COLUMN_BOUNDARIES), _cell_count(size.height(), ROW_BOUNDARIES))
+
+
+def _tracked_cell_count(current: int, extent: int, cell_boundaries: tuple[int, int]) -> int:
+    """Keeps `current` until `extent` is more than `HYSTERESIS` pixels outside its range."""
+    first_end, second_end = cell_boundaries
+    low, high = {1: (None, first_end), 2: (first_end, second_end + 1), 3: (second_end + 1, None)}[current]
+    below = low is not None and extent < low - HYSTERESIS
+    above = high is not None and extent >= high + HYSTERESIS
+    return _cell_count(extent, cell_boundaries) if below or above else current
+
+
+class GridSizeTracker:
+    """Tracks one area's `GridSize` across resizes, keeping each axis's count near its boundaries."""
+
+    def __init__(self) -> None:
+        self._grid_size: Optional[GridSize] = None
+
+    @property
+    def grid_size(self) -> Optional[GridSize]:
+        """The current grid size, or None before the first update."""
+        return self._grid_size
+
+    def update(self, size: QSize) -> bool:
+        """Applies a new area size, returning whether the grid size changed."""
+        old = self._grid_size
+        if old is None:
+            self._grid_size = grid_size_for(size)
+        else:
+            self._grid_size = GridSize(_tracked_cell_count(old.columns, size.width(), COLUMN_BOUNDARIES),
+                                       _tracked_cell_count(old.rows, size.height(), ROW_BOUNDARIES))
+        return old != self._grid_size
 
 
 def orientation_for_dock(area: Qt.DockWidgetArea, floating: bool, size: QSize) -> Orientation:
@@ -79,45 +129,32 @@ def orientation_for_dock(area: Qt.DockWidgetArea, floating: bool, size: QSize) -
     return Orientation.STRIP
 
 
-class SizeClassTracker:
-    """Tracks one panel's size class across resizes, keeping the current class near its boundaries.
+def choose_layout(available: GridSize, layouts: Iterable[GridSize], orientation: Orientation) -> Optional[GridSize]:
+    """Returns the declared layout to use in an area, or None if no layouts are declared.
 
-    The class changes only once the size is more than `HYSTERESIS` pixels outside the current class's range. Changing
-    orientation discards the history and classifies from scratch.
+    - The largest layout by area that fits wins.
+    - On a tie, strips prefer more columns and side panels more rows.
+    - If none fits, the smallest layout wins, with the same tie-break. The panel's body scrolls.
     """
+    layouts = list(layouts)
+    if len(layouts) == 0:
+        return None
 
-    def __init__(self, orientation: Orientation = Orientation.SIDE, size: Optional[QSize] = None) -> None:
-        self._orientation = orientation
-        self._size_class: Optional[SizeClass] = None
-        if size is not None:
-            self.update(orientation, size)
+    def long_axis(layout: GridSize) -> int:
+        return layout.columns if orientation == Orientation.STRIP else layout.rows
 
-    @property
-    def orientation(self) -> Orientation:
-        """The orientation from the latest update."""
-        return self._orientation
+    fitting = [layout for layout in layouts if layout.fits_in(available)]
+    if len(fitting) == 0:
+        return min(layouts, key=lambda layout: (layout.area, -long_axis(layout)))
+    return max(fitting, key=lambda layout: (layout.area, long_axis(layout)))
 
-    @property
-    def size_class(self) -> Optional[SizeClass]:
-        """The current size class, or None before the first update."""
-        return self._size_class
 
-    def update(self, orientation: Orientation, size: QSize) -> bool:
-        """Applies new host facts, returning whether the orientation or size class changed."""
-        old = (self._orientation, self._size_class)
-        if orientation != self._orientation or self._size_class is None:
-            self._orientation = orientation
-            self._size_class = size_class_for(orientation, size)
-            return old != (self._orientation, self._size_class)
-        extent = constrained_extent(orientation, size)
-        compact_end, regular_end = boundaries(orientation)
-        low, high = {
-            SizeClass.COMPACT: (None, compact_end),
-            SizeClass.REGULAR: (compact_end, regular_end + 1),
-            SizeClass.WIDE: (regular_end + 1, None)
-        }[self._size_class]
-        below = low is not None and extent < low - HYSTERESIS
-        above = high is not None and extent >= high + HYSTERESIS
-        if below or above:
-            self._size_class = size_class_for(orientation, size)
-        return old != (self._orientation, self._size_class)
+@runtime_checkable
+class GridLayoutPanel(Protocol):
+    """Content that arranges itself in one of the `GridSize` layouts it declares."""
+
+    def grid_layouts(self) -> tuple[GridSize, ...]:
+        """Returns the layouts this content has. It must not change while the content is shown."""
+
+    def set_grid_layout(self, orientation: Orientation, layout: GridSize) -> None:
+        """Arranges the content for a chosen layout. Called only when the orientation or layout changes."""

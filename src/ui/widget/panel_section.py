@@ -4,7 +4,7 @@
   the section's values, such as "512 x 512, batch 4". The owner supplies the summary text with `set_summary`, or with
   `bind_summary`, which recomputes it when a bound value changes.
 - Two states decide whether the body shows: the remembered choice (`is_expanded`) and a forced collapse
-  (`set_forced_collapsed`) that a size class uses without changing the remembered choice.
+  (`set_forced_collapsed`) that a small grid size uses without changing the remembered choice.
 - The section holds no config. The owner stores `is_expanded` per section by connecting `expanded_changed`, and calls
   `set_expanded` to restore it.
 """

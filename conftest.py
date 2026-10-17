@@ -20,12 +20,17 @@ prepare the environment that the Qt-based tests rely on:
 - Flush C stdio after each test, so output native libraries print is captured with the test.
 - Fail any test that opens a modal dialog or menu. Under the offscreen platform nothing can close
   one, so it would block the whole run until the CI job times out.
+- On Python 3.12 and up, keep the last few exceptions raised in the project's own code. A failure that says a Qt call "returned
+  NULL without setting an exception" gets a report section listing them and the test that ran before it, since
+  PySide lost the exception that caused it (issue #283).
 """
 import ctypes
 import os
 import shutil
 import sys
 import tempfile
+from collections import deque
+from types import CodeType
 from typing import Callable, Optional
 
 # Must run before PySide6 is imported anywhere (including by test modules at collection time):
@@ -199,3 +204,88 @@ def _flush_c_stdout():
     """
     yield
     _libc.fflush(None)
+
+
+# Text of the SystemError PySide raises when a Python override it called raised and the exception was lost:
+_LOST_EXCEPTION_TEXT = 'without setting an exception'
+_RECENT_RAISE_LIMIT = 20
+_MAX_RAISE_MESSAGE_LENGTH = 300
+# (code, bytecode offset, message) for each recent exception raised in the project's own code, oldest first:
+_recent_raises: deque[tuple[CodeType, int, str]] = deque(maxlen=_RECENT_RAISE_LIMIT)
+# The raises before the latest lost-exception SystemError, until a failed test report takes them:
+_raises_before_lost_exception: Optional[list[str]] = None
+_monitoring_tool_id: Optional[int] = None
+_current_test: Optional[str] = None
+_previous_test: Optional[str] = None
+
+
+def _describe_raise(code: CodeType, offset: int, message: str) -> str:
+    line = next((line for start, end, line in code.co_lines() if start <= offset < end), None)
+    return f'{code.co_filename}:{line} in {code.co_qualname}: {message}'
+
+
+def _is_project_code(code: CodeType) -> bool:
+    filename = code.co_filename
+    return filename.startswith(_PROJECT_ROOT + os.sep) and 'site-packages' not in filename
+
+
+def _record_raise(code: CodeType, offset: int, exception: BaseException) -> None:
+    """A `sys.monitoring` RAISE callback. It keeps no reference to the exception, so no frames or widgets stay alive.
+
+    Exceptions raised outside the project, as by pytest, aren't recorded. A lost-exception SystemError always is.
+    """
+    global _raises_before_lost_exception
+    if not isinstance(exception, SystemError) and not _is_project_code(code):
+        return
+    try:
+        message = f'{type(exception).__qualname__}: {exception}'
+    except Exception:  # pylint: disable=broad-exception-caught
+        message = type(exception).__qualname__
+    if _LOST_EXCEPTION_TEXT in message and _raises_before_lost_exception is None:
+        _raises_before_lost_exception = [_describe_raise(*entry) for entry in _recent_raises]
+    _recent_raises.append((code, offset, message[:_MAX_RAISE_MESSAGE_LENGTH]))
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Starts recording raised exceptions, using the first free `sys.monitoring` tool ID."""
+    global _monitoring_tool_id
+    monitoring = getattr(sys, 'monitoring', None)
+    if monitoring is None:
+        return
+    for tool_id in range(6):
+        if monitoring.get_tool(tool_id) is None:
+            monitoring.use_tool_id(tool_id, 'intrapaint-test-raises')
+            monitoring.register_callback(tool_id, monitoring.events.RAISE, _record_raise)
+            monitoring.set_events(tool_id, monitoring.events.RAISE)
+            _monitoring_tool_id = tool_id
+            return
+
+
+def pytest_unconfigure(config: pytest.Config) -> None:
+    """Stops recording raised exceptions."""
+    global _monitoring_tool_id
+    if _monitoring_tool_id is not None:
+        sys.monitoring.set_events(_monitoring_tool_id, sys.monitoring.events.NO_EVENTS)
+        sys.monitoring.free_tool_id(_monitoring_tool_id)
+        _monitoring_tool_id = None
+
+
+def pytest_runtest_logstart(nodeid: str, location: tuple) -> None:
+    """Tracks the test that ran before the current one, and drops raises recorded for an earlier test."""
+    global _current_test, _previous_test, _raises_before_lost_exception
+    _previous_test = _current_test
+    _current_test = nodeid
+    _raises_before_lost_exception = None
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_logreport(report: pytest.TestReport) -> None:
+    """Adds the raises recorded before a lost-exception SystemError to the failure that reports it."""
+    global _raises_before_lost_exception
+    if not report.failed or _raises_before_lost_exception is None \
+            or _LOST_EXCEPTION_TEXT not in str(report.longrepr):
+        return
+    lines = [f'Previous test: {_previous_test}', 'Exceptions raised in project code before it, oldest first:',
+             *_raises_before_lost_exception]
+    report.sections.append(('Raises before the lost exception (issue #283)', '\n'.join(lines)))
+    _raises_before_lost_exception = None

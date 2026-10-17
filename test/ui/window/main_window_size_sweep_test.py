@@ -21,7 +21,7 @@ DOCK_AREAS = (Qt.DockWidgetArea.LeftDockWidgetArea, Qt.DockWidgetArea.RightDockW
 
 
 def _sweep_sizes() -> list[QSize]:
-    """The smallest supported window size and a large one. Panels change layout with their dock's size class, which
+    """The smallest supported window size and a large one. Panels change layout with their dock's grid size, which
     `test/ui/layout/panel_size_class_test.py` covers."""
     return [TARGET_SIZE, LARGE_WINDOW]
 
