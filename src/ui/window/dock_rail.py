@@ -1,7 +1,8 @@
 """Icon rails along the main window's edges, with one button per `PanelDock`, the recent tools and Generate.
 
 - Each window edge has a `DockRail`, a non-movable `QToolBar`. A dock's button sits in the rail of the area the dock was
-  last docked in, so it follows the dock between edges. A floating dock's button stays where it was.
+  last docked in, so it follows the dock between edges. An open floating dock's button is in its title bar instead
+  (`FloatingTitleBar`), and returns to the rail of its last area when the dock closes.
 - Side rails (left and right) are `SIDE_RAIL_WIDTH` wide, with an icon and keycap per button. Strip rails (top and
   bottom) show icon, name and keycap.
 - The buttons act as the docks' tabs. Clicking a button opens its dock in place of the open dock of its tab group, or
@@ -714,6 +715,7 @@ class DockRails(QObject):
         self._dock_areas[dock] = default_area
         dock.dockLocationChanged.connect(lambda area, moved=dock: self._dock_moved(moved, area))
         dock.toggleViewAction().changed.connect(self.sync)
+        dock.topLevelChanged.connect(self.sync)
         dock.installEventFilter(self)
         self.sync()
         return button
@@ -760,8 +762,10 @@ class DockRails(QObject):
         buttons = dict(self._docks)
         groups = docked_groups(self._window, [dock for dock, _button in self._docks], with_empty=True)
         grouped = {dock for group in groups for dock in group}
-        # Floating and empty docks follow the groups, each alone:
-        groups += [[dock] for dock, _button in self._docks if dock not in grouped]
+        # An open floating dock's button is in its title bar (`FloatingTitleBar`). Closed floating docks follow the
+        # groups of the area they were last docked in, each alone:
+        groups += [[dock] for dock, _button in self._docks
+                   if dock not in grouped and not (dock.isFloating() and not dock.isHidden())]
         for area, rail in self._rails.items():
             rail_groups = [[buttons[dock] for dock in group] for group in groups
                            if self._dock_areas[group[0]] == area]

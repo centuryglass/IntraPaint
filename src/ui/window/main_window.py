@@ -38,6 +38,7 @@ from src.ui.window.dock_menu import build_dock_menu
 from src.ui.window.dock_placement import DockEdge, move_all_to_edge
 from src.ui.window.dock_rail import DockRails
 from src.ui.window.dock_groups import close_background_docks, hide_dock_tab_bars
+from src.ui.window.floating_title_bar import FloatingTitleBar
 from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.rail_drag import RailDrag
 from src.ui.window.panel_dock import PanelDock
@@ -196,6 +197,9 @@ class MainWindow(QMainWindow):
         for dock in self.docks:
             button = self._rails.add_dock(dock)
             self._rail_drag.watch(button)
+            # Looked up on each call, as the rail button's menu below is:
+            show_menu = lambda menu_dock, pos: self._show_dock_menu(menu_dock, pos)  # pylint: disable=unnecessary-lambda,unnecessary-lambda-assignment
+            dock.set_floating_title_bar(FloatingTitleBar(dock, show_menu))
             # The rail blocks context menus, so each button opens the dock menu itself:
             button.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             button.customContextMenuRequested.connect(

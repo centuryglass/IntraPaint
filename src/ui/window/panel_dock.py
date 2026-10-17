@@ -7,9 +7,9 @@
 - A tab group shows one dock at a time, and the edge rails act as its tabs. Opening a dock with `open_in_group`, its
   key, its toggle action or a mouse drop into a group closes the group's other docks. A dock in the background of a
   group is closed. `show` opens a dock without closing the others, so code opens docks with `open_in_group`.
-- A docked dock has no title bar; its rail button names it and moves it. A floating dock shows Qt's title bar, which
-  drags it and docks it again. `show_title_bar_for_drag` brings the title bar back so a rail button drag can hand off
-  to Qt's own dock drag (see `src.ui.window.rail_drag`).
+- A docked dock has no title bar; its rail button names it and moves it. A floating dock shows the title bar set with
+  `set_floating_title_bar`, or Qt's without one, and is dragged by it. `show_title_bar_for_drag` shows Qt's title bar
+  while docked, so a rail button drag can hand off to Qt's own dock drag (see `src.ui.window.rail_drag`).
 - The dock's key (`shortcut_config_key`) opens and focuses the dock, or closes it if it is already open.
 - A dock with no content is hidden and its toggle action is hidden too. It remembers whether it was open, and opens
   again when content arrives, unless another dock in its group is open by then.
@@ -71,6 +71,7 @@ class PanelDock(QDockWidget):
         self._showing = False
         self._forwarded_orientation: Optional[Qt.Orientation] = None
         self._no_title_bar = _NoTitleBar()
+        self._floating_title_bar: Optional[QWidget] = None
         self.setTitleBarWidget(self._no_title_bar)
         self.toggleViewAction().setVisible(False)
         self.toggleViewAction().setIcon(self.windowIcon())
@@ -209,16 +210,20 @@ class PanelDock(QDockWidget):
         dock is docked, or with `restore_title_bar`."""
         self.setTitleBarWidget(None)
 
+    def set_floating_title_bar(self, title_bar: Optional[QWidget]) -> None:
+        """Sets the title bar shown while floating, or Qt's with None. Mouse events the bar ignores reach the dock,
+        so pressing on its empty space drags the dock."""
+        self._floating_title_bar = title_bar
+        self.restore_title_bar()
+
     def restore_title_bar(self) -> None:
-        """Shows Qt's title bar while floating, and none while docked."""
+        """Shows the floating title bar while floating, and none while docked."""
         self._update_title_bar(self.isFloating())
 
     def _update_title_bar(self, floating: bool) -> None:
-        if floating:
-            if self.titleBarWidget() is not None:
-                self.setTitleBarWidget(None)
-        elif self.titleBarWidget() is not self._no_title_bar:
-            self.setTitleBarWidget(self._no_title_bar)
+        wanted = self._floating_title_bar if floating else self._no_title_bar
+        if self.titleBarWidget() is not wanted:
+            self.setTitleBarWidget(wanted)
 
     def _toggle_action_triggered(self, checked: bool) -> None:
         """Closes the group's other docks when the toggle action opens this one."""
