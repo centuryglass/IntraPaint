@@ -1,4 +1,4 @@
-"""Draws keycaps: rounded `Button`-filled plates with a `Shadow` outline and a hard depth edge below.
+"""Draws keycaps: rounded white plates with black text, with a `Shadow` outline and a hard depth edge below.
 
 `KeyHintLabel` draws its keycap with `draw_keycap`, and `rich_text_key_hint` renders the same plate into inline
 images, so the two stay in step with each other and with the theme.
@@ -6,6 +6,8 @@ images, so the two stay in step with each other and with the theme.
 from PySide6.QtCore import QMargins, QRectF, QSize
 from PySide6.QtGui import QColor, QFont, QPainter, QPalette, QPen
 
+KEYCAP_FILL = QColor(255, 255, 255)
+KEYCAP_TEXT = QColor(0, 0, 0)
 KEYCAP_RADIUS = 3.0
 # The keycap's ink shadow drops this far below it:
 KEYCAP_DEPTH = 2
@@ -21,9 +23,9 @@ def keycap_font(base_font: QFont) -> QFont:
 
 
 def keycap_colors(palette: QPalette) -> tuple[QColor, QColor, QColor]:
-    """Returns the (fill, outline, text) colors a palette gives a keycap."""
-    return (palette.color(QPalette.ColorRole.Button), palette.color(QPalette.ColorRole.Shadow),
-            palette.color(QPalette.ColorRole.ButtonText))
+    """Returns the (fill, outline, text) colors for a keycap: white with black text, and the palette's `Shadow`
+    outline. Fill and text stay fixed so keycaps contrast with any panel background."""
+    return KEYCAP_FILL, palette.color(QPalette.ColorRole.Shadow), KEYCAP_TEXT
 
 
 def keycap_size(text_size: QSize) -> QSize:

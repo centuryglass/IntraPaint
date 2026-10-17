@@ -103,7 +103,7 @@ class RichShortcutTooltipTest(IntraPaintTestCase):
         palette = QApplication.palette()
         original = QPalette(palette)
         try:
-            palette.setColor(QPalette.ColorRole.Button, QColor('#123456'))
+            palette.setColor(QPalette.ColorRole.Shadow, QColor('#123456'))
             QApplication.setPalette(palette)
             self.assertNotEqual(rich_shortcut_tooltip_text('T', 'K'), before)
         finally:
