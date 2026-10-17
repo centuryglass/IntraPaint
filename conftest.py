@@ -23,6 +23,8 @@ prepare the environment that the Qt-based tests rely on:
 - On Python 3.12 and up, keep the last few exceptions raised in the project's own code. A failure that says a Qt call "returned
   NULL without setting an exception" gets a report section listing them and the test that ran before it, since
   PySide lost the exception that caused it (issue #283).
+- Report GC and coverage-lock state when a test runs for two minutes, ahead of pytest's thread dump
+  (`test/hang_diagnostics.py`, issue #390).
 """
 import ctypes
 import os
@@ -58,6 +60,9 @@ import pytest
 from PySide6.QtWidgets import (QApplication, QColorDialog, QDialog, QFileDialog, QFontDialog, QInputDialog, QMenu,
                                QMessageBox, QWidget)
 
+from test.hang_diagnostics import HangWatchdog
+
+_hang_watchdog = HangWatchdog()
 _CONFIG_FIXTURE_DIR = os.path.join(_PROJECT_ROOT, 'test', 'resources')
 _config_copy_dir: Optional[str] = None
 
@@ -249,6 +254,7 @@ def _record_raise(code: CodeType, offset: int, exception: BaseException) -> None
 def pytest_configure(config: pytest.Config) -> None:
     """Starts recording raised exceptions, using the first free `sys.monitoring` tool ID."""
     global _monitoring_tool_id
+    _hang_watchdog.start()
     monitoring = getattr(sys, 'monitoring', None)
     if monitoring is None:
         return
@@ -264,6 +270,7 @@ def pytest_configure(config: pytest.Config) -> None:
 def pytest_unconfigure(config: pytest.Config) -> None:
     """Stops recording raised exceptions."""
     global _monitoring_tool_id
+    _hang_watchdog.stop()
     if _monitoring_tool_id is not None:
         sys.monitoring.set_events(_monitoring_tool_id, sys.monitoring.events.NO_EVENTS)
         sys.monitoring.free_tool_id(_monitoring_tool_id)
@@ -275,6 +282,7 @@ def pytest_runtest_logstart(nodeid: str, location: tuple) -> None:
     global _current_test, _previous_test, _raises_before_lost_exception
     _previous_test = _current_test
     _current_test = nodeid
+    _hang_watchdog.test_started(nodeid)
     _raises_before_lost_exception = None
 
 
@@ -289,3 +297,8 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
              *_raises_before_lost_exception]
     report.sections.append(('Raises before the lost exception (issue #283)', '\n'.join(lines)))
     _raises_before_lost_exception = None
+
+
+def pytest_runtest_logfinish(nodeid: str, location: tuple) -> None:
+    """Stops the hang watchdog's clock once a test and its fixtures have finished."""
+    _hang_watchdog.test_finished()
