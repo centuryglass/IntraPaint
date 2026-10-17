@@ -1,9 +1,9 @@
 """A `QDockWidget` that hosts one main window panel and tells the panel where it is docked.
 
 - Orientation comes from the dock's area, floating state and size, through `src.ui.layout.panel_fit`. A `DockPanel`
-  gets it through `set_host_facts`, with the size the panel fills, which leaves out the dock's title bar. Other
-  content with a `set_orientation` method gets the matching `Qt.Orientation` when the orientation changes, until it
-  migrates to `DockPanel`.
+  gets it through `set_host_facts` as a preference, with the size the panel fills, which leaves out the dock's title
+  bar. Other content with a `set_orientation` method gets the matching `Qt.Orientation` when the orientation changes,
+  until it migrates to `DockPanel`.
 - A tab group shows one dock at a time, and the edge rails act as its tabs. Opening a dock with `open_in_group`, its
   key, its toggle action or a mouse drop into a group closes the group's other docks. A dock in the background of a
   group is closed. `show` opens a dock without closing the others, so code opens docks with `open_in_group`.

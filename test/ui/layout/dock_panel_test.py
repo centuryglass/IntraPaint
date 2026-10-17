@@ -136,24 +136,34 @@ class DockPanelTest(IntraPaintTestCase):
             self.assertTrue(self.panel.flag.isChecked())
 
     def test_unchanged_host_facts_do_not_replan(self) -> None:
-        """Repeating the same orientation and size measures nothing, and arrange runs only on orientation changes."""
+        """Repeating the same orientation and size measures nothing, and a change plans again."""
         measures: list[QSize] = []
-        arranged: list[Orientation] = []
         original_measure = self.panel.measure
-        original_arrange = self.panel.arrange
         self.panel.measure = lambda: (measures.append(QSize()), original_measure())[1]  # type: ignore[method-assign]
-        self.panel.arrange = lambda o: (arranged.append(o), original_arrange(o))[1]  # type: ignore[method-assign]
         self._host(SIDE, QSize(300, 500))
         count = len(measures)
         self._host(SIDE, QSize(300, 500))
         self.assertEqual(len(measures), count)
         self._host(SIDE, QSize(310, 500))
-        self._host(STRIP, QSize(900, 200))
-        self.assertEqual(arranged, [SIDE, STRIP])
+        self.assertGreater(len(measures), count)
+
+    def test_orientation_follows_the_shape_when_the_preferred_one_overflows(self) -> None:
+        """A panel keeps the host's orientation while its content fits, and takes the other one when only that one
+        fits, such as a tall, narrow panel in a bottom dock."""
+        self._host(STRIP, QSize(1400, 160))
+        self.assertEqual(self.panel.orientation, STRIP)
+        self._host(STRIP, QSize(200, 900))
+        self.assertEqual(self.panel.preferred_orientation, STRIP)
+        self.assertEqual(self.panel.orientation, SIDE)
+        self.assertEqual(self.panel.overflow_widgets, [])
+        self._host(SIDE, QSize(1400, 160))
+        self.assertEqual(self.panel.orientation, STRIP)
+        self._host(SIDE, QSize(500, 600))
+        self.assertEqual(self.panel.orientation, SIDE)
 
     def test_short_strip_collapses_header_into_the_row(self) -> None:
         """A strip too short for the header hides it and moves the More button to the end of the row, and both
-        return once the strip is taller. Side panels never collapse their header."""
+        return once the panel is taller. Side panels never collapse their header."""
         self._host(STRIP, QSize(300, 60))
         self.panel.show()
         more_button = self.panel.header.more_button
@@ -164,7 +174,7 @@ class DockPanelTest(IntraPaintTestCase):
         self._host(STRIP, QSize(300, 400))
         self.assertFalse(self.panel.header.isHidden())
         self.assertTrue(self.panel.header.isAncestorOf(more_button))
-        self.assertTrue(more_button.isVisible())
+        self.assertEqual(more_button.isVisible(), len(self.panel.overflow_widgets) > 0)
         self._host(SIDE, QSize(60, 60))
         self.assertFalse(self.panel.header_collapsed)
 
@@ -247,8 +257,8 @@ class DockPanelTest(IntraPaintTestCase):
             host.release()
 
     def test_layout_snapshots(self) -> None:
-        """Where each control sits, which sections show, their geometry and any layout problems, at each sample
-        size."""
+        """The orientation each sample size lays out in, where each control sits, which sections show, their geometry
+        and any layout problems."""
         result: dict[str, dict] = {}
         names = {id(self.panel.size_slider): 'size', id(self.panel.name_field): 'name', id(self.panel.flag): 'flag',
                  id(self.panel.extra): 'extra', id(self.panel.only_extra): 'only_extra'}
@@ -262,6 +272,7 @@ class DockPanelTest(IntraPaintTestCase):
                     'overflow': [names[id(w)] for w in self.panel.overflow_widgets],
                     'visible_sections': [s.title for s in shown],
                     'section_geometry': {s.title: list(s.widget.geometry().getRect()) for s in shown},
+                    'orientation': self.panel.orientation.value,
                     'header_collapsed': self.panel.header_collapsed,
                     'more_button': not self.panel.header.more_button.isHidden(),
                     'problems': find_layout_problems(self.panel),

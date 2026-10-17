@@ -3,7 +3,7 @@ space a fit-aware tool control panel gets."""
 import sys
 
 from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication, QScrollArea, QWidget
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
@@ -95,8 +95,8 @@ class ToolPanelTest(IntraPaintTestCase):
         return columns * layout.edge_length + (columns - 1) * BUTTON_SPACING + margins.left() + margins.right()
 
     def test_fit_content_gets_base_size_then_the_space_left_over(self) -> None:
-        """A fit-aware control panel is measured at its base size while the panel plans, then gets the space beside
-        the buttons and under the header."""
+        """A fit-aware control panel is measured at its base size in each orientation the panel plans, then gets the
+        space beside the buttons and under the header."""
         tool = self._tool(DrawTool)
         control_panel = FitControlPanel()
         tool.get_control_panel = lambda: control_panel
@@ -107,7 +107,8 @@ class ToolPanelTest(IntraPaintTestCase):
                 orientation, size = HOST_SIZES[name]
                 control_panel.base_sizes.clear()
                 self._host(orientation, size)
-                self.assertEqual(control_panel.base_sizes, [orientation])
+                self.assertEqual(self._tool_panel.orientation, orientation)
+                self.assertEqual(control_panel.base_sizes[-1], orientation)
                 space_orientation, space = control_panel.spaces[-1]
                 self.assertEqual(space_orientation, orientation)
                 box = self._tool_panel._tool_control_box  # pylint: disable=protected-access
@@ -118,6 +119,28 @@ class ToolPanelTest(IntraPaintTestCase):
                 else:
                     self.assertLess(space.width(), size.width() - self._tool_panel._strip_column.width())  # pylint: disable=protected-access
                     self.assertEqual(space.height(), box.height())
+
+    def test_plans_leave_no_layout_work_for_the_event_loop(self) -> None:
+        """After a resize, every widget already has its final geometry, so a paint before the posted layout requests
+        run can't show a half-applied layout."""
+        self._add_tools()
+        self._tool_panel.setup_active_tool(self._tool_panel.tool_buttons[0].connected_tool)
+        for name, (orientation, size) in HOST_SIZES.items():
+            with self.subTest(size=name):
+                self._tool_panel.resize(size)
+                self._tool_panel.set_host_facts(orientation, size)
+                widgets = [widget for widget in self._tool_panel.findChildren(QWidget)
+                           if widget.isVisibleTo(self._tool_panel)]
+                planned = [widget.geometry() for widget in widgets]
+                settle_layouts(self._tool_panel)
+                settled = [widget.geometry() for widget in widgets]
+                moved = [type(widget).__name__ for widget, before, after in zip(widgets, planned, settled)
+                         if before != after]
+                self.assertEqual(moved, [])
+                # A scroll bar that doesn't match its range would change the body's width after the next paint:
+                scroll_area = self._tool_panel.findChild(QScrollArea)
+                for bar in (scroll_area.horizontalScrollBar(), scroll_area.verticalScrollBar()):
+                    self.assertEqual(bar.isVisibleTo(scroll_area), bar.maximum() > bar.minimum())
 
     def test_add_remove_tool_button(self) -> None:
         """It should be possible to add and remove a tool button"""
@@ -287,6 +310,7 @@ class ToolPanelTest(IntraPaintTestCase):
         draw_tool = self._tool(DrawTool)
         self._tool_panel.add_tool_button(draw_tool)
         self._tool_panel.setup_active_tool(draw_tool)
+        self._host_named('side_regular')
         cache = Cache()
         default_size = cache.get_default(Cache.DRAW_TOOL_BRUSH_SIZE)
         cache.set(Cache.DRAW_TOOL_BRUSH_SIZE, default_size + 7)

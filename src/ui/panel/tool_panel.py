@@ -113,8 +113,7 @@ class ToolPanel(DockPanel):
         self._tool_control_box = QWidget()
         self._tool_control_layout = QVBoxLayout(self._tool_control_box)
         self._tool_control_layout.setContentsMargins(0, 0, 0, 0)
-        # Tool control panels don't widen the panel, so they squeeze to fit it:
-        self._tool_control_box.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Expanding)
+        self._update_tool_control_policy()
 
         # The header moves into the scrolled body, so it shares the button grid's margins:
         self.layout().removeWidget(self.header)
@@ -193,6 +192,7 @@ class ToolPanel(DockPanel):
                 tool_panel.setToolTip(active_tool.get_tooltip_text())
                 self._active_tool_panel = tool_panel
                 self._tool_control_layout.addWidget(tool_panel)
+                self._update_tool_control_policy()
                 self._forward_orientation()
                 tool_panel.show()
         self._update_tool_text()
@@ -255,12 +255,19 @@ class ToolPanel(DockPanel):
         else:
             self._tool_control_box.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
 
+    def _update_tool_control_policy(self) -> None:
+        """Lets a `FitContent` tool control panel's planned width count, so the panel scrolls or changes orientation
+        when it doesn't fit. Other tool control panels don't widen the panel, so they squeeze to fit it."""
+        width_policy = QSizePolicy.Policy.Preferred if isinstance(self._active_tool_panel, FitContent) \
+            else QSizePolicy.Policy.Ignored
+        self._tool_control_box.setSizePolicy(width_policy, QSizePolicy.Policy.Expanding)
+
     def fit_finished(self, orientation: Orientation) -> None:
         """Lays out the buttons for the chosen form, and gives a `FitContent` tool control panel the space beside the
         buttons and under the header."""
         if self._built_layout != self._button_layout:
             self._build_button_rows()
-        self._tool_control_box.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Expanding)
+        self._update_tool_control_policy()
         if isinstance(self._active_tool_panel, FitContent):
             self._active_tool_panel.set_fit_space(orientation, self.tool_control_space())
 

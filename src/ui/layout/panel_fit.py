@@ -16,6 +16,9 @@ as much as fits there. Thresholds live in this module, so DPI normalization (iss
     scrolls.
 - `plan_fit` keeps the current placement until a better one fits with `HYSTERESIS` pixels to spare, so dragging a
   separator across a boundary doesn't flicker.
+- `plan_orientation` plans both orientations and keeps the host's preferred one unless the other fits without
+  overflowing where it doesn't, or shows optional items it leaves out. A dock's area only sets the preference, so a
+  tall panel in a bottom dock can still lay out as a side panel. Switching needs `HYSTERESIS` pixels to spare too.
 - `plan_fit` is pure. A `measure` callback returns a placement's minimum size. `FitPlanner` binds it to widgets, and
   `fresh_minimum_size` measures widgets without waiting on the event loop.
 """
@@ -108,6 +111,13 @@ def _rank(items: Sequence[FitItem], placement: Placement) -> tuple[int, ...]:
                  for i, item in sorted(enumerate(items), key=lambda entry: (entry[1].priority, entry[0])))
 
 
+def _left_out(items: Sequence[FitItem], placement: Placement) -> tuple[bool, ...]:
+    """Orders placements by which optional items they show, in fill order, ignoring their forms."""
+    return tuple(placement[i] is None
+                 for i, item in sorted(enumerate(items), key=lambda entry: (entry[1].priority, entry[0]))
+                 if not item.required)
+
+
 def _fits_axis(need: int, before: int, available: int) -> bool:
     return need <= max(available, before)
 
@@ -173,6 +183,46 @@ def _invalidate_sizes(widget: QWidget) -> None:
         layout.invalidate()
 
 
+def _overflows(need: QSize, available: QSize) -> bool:
+    return need.width() > available.width() or need.height() > available.height()
+
+
+def plan_orientation(items: Sequence[FitItem], available: QSize, preferred: Orientation,
+                     measure: Callable[[Orientation, Placement], QSize],
+                     current: Optional[tuple[Orientation, Placement]] = None) -> tuple[Orientation, Placement]:
+    """Returns the orientation and placement for content in an available size, planning each orientation with
+    `plan_fit`.
+
+    - The orientation whose content doesn't overflow the available size wins, then the one that shows more optional
+      items, in fill order, then `preferred`, then the one with larger forms. Form sizes come last because forms
+      differ between orientations, so a strip's larger buttons say nothing about which orientation suits the space.
+    - `current` is the orientation and placement in use, if any. Another orientation replaces it only once it also
+      wins in `available` shrunk by `HYSTERESIS` on both axes.
+    """
+
+    def _plan(orientation: Orientation, size: QSize) -> tuple[tuple, Placement]:
+        in_use = current[1] if current is not None and current[0] == orientation else None
+        placement = plan_fit(items, size, orientation, lambda p: measure(orientation, p), in_use)
+        score = (_overflows(measure(orientation, placement), size), _left_out(items, placement),
+                 orientation != preferred, _rank(items, placement))
+        return score, placement
+
+    plans = {preferred: _plan(preferred, available)}
+    overflows, left_out = plans[preferred][0][:2]
+    # Nothing beats a preferred plan that fits and leaves nothing out, so the other orientation needs no plan:
+    if not overflows and not any(left_out) and (current is None or current[0] == preferred):
+        return preferred, plans[preferred][1]
+    other = Orientation.STRIP if preferred == Orientation.SIDE else Orientation.SIDE
+    plans[other] = _plan(other, available)
+    best = min(plans, key=lambda orientation: plans[orientation][0])
+    if current is None or best == current[0]:
+        return best, plans[best][1]
+    roomy_score, _ = _plan(best, QSize(available.width() - HYSTERESIS, available.height() - HYSTERESIS))
+    if roomy_score < plans[current[0]][0]:
+        return best, plans[best][1]
+    return current[0], plans[current[0]][1]
+
+
 def fresh_minimum_size(root: QWidget) -> QSize:
     """Returns root's minimum size after clearing the cached sizes under it.
 
@@ -192,8 +242,9 @@ class FitPlanner:
     - `apply(orientation, placement)` arranges the content's widgets for a placement. Planning applies trial placements
       in any order, so `apply` must leave no trace of earlier ones.
     - `measure()` returns the arranged content's minimum size, usually through `fresh_minimum_size`.
-    - `prepare(orientation)` runs before each plan's trials, and `finish(orientation)` after its result is applied.
-      Neither runs when `update` skips planning.
+    - `prepare(orientation)` runs before the trials in each orientation planned, and once more if needed before the
+      result is applied. `finish(orientation)` runs after the result is applied. Neither runs when `update` skips
+      planning.
     - Keyboard focus survives planning, though trials may hide or move the focused widget.
     """
 
@@ -207,6 +258,8 @@ class FitPlanner:
         self._finish = finish
         self._placement: Optional[Placement] = None
         self._orientation: Optional[Orientation] = None
+        # The orientation the latest update asked for, which a flexible update only prefers:
+        self._requested: Optional[Orientation] = None
         self._available: Optional[QSize] = None
         self._applied = False
 
@@ -225,22 +278,35 @@ class FitPlanner:
         """The available size being planned for, or from the latest update, or None before the first one."""
         return self._available
 
-    def update(self, orientation: Orientation, available: QSize, force: bool = False) -> bool:
+    def update(self, orientation: Orientation, available: QSize, force: bool = False, flexible: bool = False) -> bool:
         """Plans for an orientation and available size and applies the result, returning whether the placement or
-        orientation changed. Skips planning when neither input changed, unless `force` is set."""
-        if self._applied and not force and orientation == self._orientation and available == self._available:
+        orientation changed. Skips planning when neither input changed, unless `force` is set.
+
+        With `flexible` set, `orientation` is only preferred, and `plan_orientation` picks the one to use.
+        """
+        if self._applied and not force and orientation == self._requested and available == self._available:
             return False
         focus = QApplication.focusWidget()
-        current = self._placement if orientation == self._orientation else None
+        self._requested = orientation
         self._available = QSize(available)
-        if self._prepare is not None:
-            self._prepare(orientation)
+        prepared: list[Orientation] = []
 
-        def _measure(placement: Placement) -> QSize:
-            self._apply(orientation, placement)
+        def _measure(planned_orientation: Orientation, placement: Placement) -> QSize:
+            if self._prepare is not None and prepared[-1:] != [planned_orientation]:
+                self._prepare(planned_orientation)
+                prepared.append(planned_orientation)
+            self._apply(planned_orientation, placement)
             return self._measure()
 
-        placement = plan_fit(self._items, available, orientation, _measure, current)
+        in_use = None if self._placement is None or self._orientation is None else (self._orientation,
+                                                                                     self._placement)
+        if flexible:
+            orientation, placement = plan_orientation(self._items, available, orientation, _measure, in_use)
+        else:
+            current = self._placement if orientation == self._orientation else None
+            placement = plan_fit(self._items, available, orientation, lambda p: _measure(orientation, p), current)
+        if self._prepare is not None and prepared[-1:] != [orientation]:
+            self._prepare(orientation)
         self._apply(orientation, placement)
         changed = placement != self._placement or orientation != self._orientation
         self._placement = placement

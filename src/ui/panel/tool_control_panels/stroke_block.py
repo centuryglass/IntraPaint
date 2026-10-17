@@ -386,6 +386,8 @@ class StrokeBlock(QWidget):
                 self._grid.addWidget(self._preview, row, 1)
             self._grid.setColumnStretch(0, 1)
             self._grid.setColumnStretch(1, 1)
+            # Height beyond what the rows need goes below them:
+            self._grid.setRowStretch(3, 1)
             return
         self._grid.addWidget(self._fields_widget, 0, 0, top)
         row = 1

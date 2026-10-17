@@ -2,6 +2,7 @@
   "side_short": {
     "header_collapsed": false,
     "more_button": true,
+    "orientation": "side",
     "overflow": [
       "name",
       "extra",
@@ -23,6 +24,7 @@
   "side_tall_narrow": {
     "header_collapsed": false,
     "more_button": false,
+    "orientation": "side",
     "overflow": [],
     "problems": [],
     "section_geometry": {
@@ -47,6 +49,7 @@
   "side_wide": {
     "header_collapsed": false,
     "more_button": false,
+    "orientation": "side",
     "overflow": [],
     "problems": [],
     "section_geometry": {
@@ -70,27 +73,33 @@
   },
   "strip_narrow": {
     "header_collapsed": false,
-    "more_button": true,
-    "overflow": [
-      "extra",
-      "only_extra"
-    ],
+    "more_button": false,
+    "orientation": "side",
+    "overflow": [],
     "problems": [],
     "section_geometry": {
+      "Advanced": [
+        0,
+        109,
+        282,
+        79
+      ],
       "Stroke": [
         0,
         0,
-        240,
-        352
+        282,
+        103
       ]
     },
     "visible_sections": [
-      "Stroke"
+      "Stroke",
+      "Advanced"
     ]
   },
   "strip_regular": {
     "header_collapsed": false,
     "more_button": false,
+    "orientation": "strip",
     "overflow": [],
     "problems": [],
     "section_geometry": {
@@ -115,6 +124,7 @@
   "strip_short": {
     "header_collapsed": true,
     "more_button": true,
+    "orientation": "strip",
     "overflow": [
       "name",
       "only_extra"
@@ -142,6 +152,7 @@
   "strip_tiny": {
     "header_collapsed": true,
     "more_button": true,
+    "orientation": "strip",
     "overflow": [
       "name",
       "flag",
@@ -166,6 +177,7 @@
   "strip_wide": {
     "header_collapsed": false,
     "more_button": false,
+    "orientation": "strip",
     "overflow": [],
     "problems": [],
     "section_geometry": {

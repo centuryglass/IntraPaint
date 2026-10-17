@@ -1,7 +1,8 @@
 """Base class for panels that show as much as fits in the space their host reports.
 
 A `DockPanel` subclass declares sections and a priority for each control in `build`. The host calls `set_host_facts`
-when the dock's orientation or size changes, and the panel plans again whenever it is resized. Planning
+when the dock's orientation or size changes, and the panel plans again whenever it is resized. The host's orientation
+is a preference: the panel takes whichever orientation its content fits best. Planning
 (`src.ui.layout.panel_fit`) moves controls between their sections and the overflow area without rebuilding them, so
 their state survives.
 
@@ -134,6 +135,8 @@ class DockPanel(QWidget):
     def __init__(self, name: str = '', icon: Optional[QIcon] = None, key_text: str = '',
                  parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
+        # The orientation the host prefers, and the one the panel is arranged in:
+        self._preferred_orientation = Orientation.SIDE
         self._orientation = Orientation.SIDE
         self._arranged_orientation: Optional[Orientation] = None
         self._layout_model = PanelLayout()
@@ -179,8 +182,13 @@ class DockPanel(QWidget):
 
     @property
     def orientation(self) -> Orientation:
-        """The orientation from the latest host update."""
+        """The orientation the panel is arranged in, which planning picks with the host's as a preference."""
         return self._orientation
+
+    @property
+    def preferred_orientation(self) -> Orientation:
+        """The orientation from the latest host update."""
+        return self._preferred_orientation
 
     @property
     def available_size(self) -> Optional[QSize]:
@@ -213,20 +221,22 @@ class DockPanel(QWidget):
 
     def set_host_facts(self, orientation: Orientation, size: QSize) -> None:
         """Called by the host when the dock's orientation or size changes, with the size the panel fills. Plans again
-        if either changed."""
-        self._orientation = orientation
-        self._fit_planner().update(orientation, size)
+        if either changed. The orientation is a preference: `src.ui.layout.panel_fit.plan_orientation` picks the one
+        the content fits best."""
+        self._preferred_orientation = orientation
+        self._fit_planner().update(orientation, size, flexible=True)
 
     def refit(self) -> None:
         """Plans again for the latest size, after the content's own size changed."""
         planner = self._fit_planner()
         available = planner.available
-        planner.update(self._orientation, available if available is not None else self.size(), force=True)
+        planner.update(self._preferred_orientation, available if available is not None else self.size(), force=True,
+                       flexible=True)
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
         """Plans for the new size."""
         super().resizeEvent(event)
-        self._fit_planner().update(self._orientation, self.size())
+        self._fit_planner().update(self._preferred_orientation, self.size(), flexible=True)
 
     def arrange(self, orientation: Orientation) -> None:
         """Lays out structure that depends only on the orientation. Called when it changes, before any placement.
@@ -342,8 +352,23 @@ class DockPanel(QWidget):
         # own update waits on a posted layout request, and planning runs after it sized the body for this resize:
         self.measure()
         QApplication.sendEvent(self._scroll, QEvent(QEvent.Type.LayoutRequest))
+        self._apply_layouts()
+
+    def _apply_layouts(self) -> None:
+        """Applies the planned layout's geometry now, parents first.
+
+        Qt otherwise applies it on posted layout requests. A window resize paints before those run, so each resize
+        would show a half-applied layout and then the finished one, which flickers. A second pass applies size hints
+        that changed during the first, such as a header that wrapped to fit its new width.
+        """
+        for _ in range(2):
+            for widget in [self, *self.findChildren(QWidget)]:
+                layout = widget.layout()
+                if layout is not None and not widget.isHidden() and not widget.isWindow():
+                    layout.activate()
 
     def _apply_placement(self, orientation: Orientation, placement: Placement) -> None:
+        self._orientation = orientation
         if orientation != self._arranged_orientation:
             self._arranged_orientation = orientation
             self.arrange(orientation)
