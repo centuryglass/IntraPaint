@@ -2,58 +2,58 @@
   "minimum": {
     "problems": [],
     "size": [
-      299,
+      296,
       123
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 131x45, minimum 146x70",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (Ctrl+D)' is 131x18, minimum 122x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (Ctrl+A)' is 131x17, minimum 146x30",
-      "squeezed: SelectionModeToggle/Label 'Add' is 51x21, minimum 109x27",
-      "squeezed: SelectionModeToggle/Label 'Subtract' is 51x21, minimum 126x27",
+      "squeezed: ReflowingButtonGroup is 130x45, minimum 146x70",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (Ctrl+D)' is 130x18, minimum 122x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (Ctrl+A)' is 130x17, minimum 146x30",
+      "squeezed: SelectionModeToggle/Label 'Add' is 51x21, minimum 108x27",
+      "squeezed: SelectionModeToggle/Label 'Subtract' is 51x21, minimum 125x27",
       "squeezed: SelectionModeToggle/Label 'Replace' is 51x21, minimum 94x29",
       "squeezed: SelectionModeToggle/Label 'Intersect' is 51x21, minimum 101x29",
-      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[0] shows 28x22 of 28x23",
-      "clipped: SelectionModeToggle/KeyHintLabel 'Ctrl+Shift' shows 49x23 of 63x23"
+      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[0] shows 27x22 of 27x23",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Ctrl+Shift' shows 49x23 of 62x23"
     ],
     "size": [
-      149,
+      148,
       123
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      299,
+      296,
       123
     ]
   },
   "short": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 281x14, minimum 146x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (Ctrl+D)' is 125x14, minimum 122x30",
+      "squeezed: ReflowingButtonGroup is 278x14, minimum 146x30",
+      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (Ctrl+D)' is 122x14, minimum 122x30",
       "squeezed: ReflowingButtonGroup/QPushButton 'Select All (Ctrl+A)' is 146x14, minimum 146x30",
-      "squeezed: SelectionModeToggle/Label 'Add' is 126x6, minimum 109x27",
-      "squeezed: SelectionModeToggle/Label 'Subtract' is 126x6, minimum 126x27",
-      "squeezed: SelectionModeToggle/Label 'Replace' is 126x6, minimum 94x29",
-      "squeezed: SelectionModeToggle/Label 'Intersect' is 126x6, minimum 101x29",
-      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[0] shows 28x14 of 28x23",
-      "clipped: SelectionModeToggle/KeyHintLabel 'Ctrl+Shift' shows 63x14 of 63x23",
-      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[1] shows 28x14 of 28x23",
-      "clipped: SelectionModeToggle/KeyHintLabel 'Shift'[1] shows 38x14 of 38x23",
-      "squeezed: KeyHintLabel 'Q' is 21x14, minimum 21x23"
+      "squeezed: SelectionModeToggle/Label 'Add' is 125x6, minimum 108x27",
+      "squeezed: SelectionModeToggle/Label 'Subtract' is 125x6, minimum 125x27",
+      "squeezed: SelectionModeToggle/Label 'Replace' is 125x6, minimum 94x29",
+      "squeezed: SelectionModeToggle/Label 'Intersect' is 125x6, minimum 101x29",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[0] shows 27x14 of 27x23",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Ctrl+Shift' shows 62x14 of 62x23",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[1] shows 27x14 of 27x23",
+      "clipped: SelectionModeToggle/KeyHintLabel 'Shift'[1] shows 37x14 of 37x23",
+      "squeezed: KeyHintLabel 'Q' is 20x14, minimum 20x23"
     ],
     "size": [
-      299,
+      296,
       61
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      299,
+      296,
       1200
     ]
   },
