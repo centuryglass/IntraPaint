@@ -18,23 +18,23 @@
   "preferred": {
     "problems": [],
     "size": [
-      366,
+      411,
       322
     ]
   },
   "short": {
     "problems": [
-      "squeezed: QScrollArea is 366x29, minimum 59x59"
+      "squeezed: QScrollArea is 411x29, minimum 59x59"
     ],
     "size": [
-      366,
+      411,
       29
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      366,
+      411,
       1200
     ]
   },
