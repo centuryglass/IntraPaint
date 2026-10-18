@@ -1,8 +1,8 @@
 """Saves screenshots of the style gallery, the main window and every panel at extreme sizes, with a layout report,
 or sweep sheets that show panels across a grid of dock sizes.
 
-The renders come from `test/ui/ui_capture.py`, the same code the style gallery and panel layout tests compare against
-their goldens and snapshots. It runs offscreen in mock mode with the panel layout test's config setup, so screenshots
+The renders come from `test/ui/ui_capture.py` and `test/ui/panel_capture.py`, the same code the style gallery and panel
+layout tests compare against their goldens and snapshots. It runs offscreen in mock mode with the panel layout test's config setup, so screenshots
 match what the tests check. The output directory gets:
 - `index.html`: every image on one page, with each capture's layout problems listed under it.
 - `gallery/<control>.png`: each control in every state, labeled.
@@ -51,10 +51,11 @@ from PySide6.QtWidgets import QApplication
 from src.ui.layout.dock_panel import DockPanel
 from src.ui.layout.panel_fit import Orientation
 from test.base_test_case import reset_singletons
-from test.ui.ui_capture import (CELL_MARGIN, GALLERY_CONTROLS, SWEEP_HEIGHTS, SWEEP_WIDTHS, GalleryControl, PanelHost,
-                                PanelScene, find_layout_problems, gallery_cell_rect, layout_report,
-                                layout_widget_rects, mock_app_controller, panel_scenes, render_gallery_control,
-                                tools_panel_scenes)
+from test.ui.panel_capture import (SWEEP_HEIGHTS, SWEEP_WIDTHS, PanelHost, PanelScene, find_layout_problems,
+                                   layout_report, layout_widget_rects, mock_app_controller, panel_scenes,
+                                   tools_panel_scenes)
+from test.ui.ui_capture import (CELL_MARGIN, GALLERY_CONTROLS, GalleryControl, gallery_cell_rect,
+                                render_gallery_control)
 
 LABEL_WIDTH = 110
 LABEL_HEIGHT = 20

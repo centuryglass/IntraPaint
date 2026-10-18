@@ -9,7 +9,7 @@ import sys
 from PySide6.QtWidgets import QApplication
 
 from test.base_test_case import IntraPaintTestCase
-from test.ui.ui_capture import PanelHost, find_layout_problems, layout_report, mock_app_controller, panel_scenes
+from test.ui.panel_capture import PanelHost, find_layout_problems, layout_report, mock_app_controller, panel_scenes
 
 app = QApplication.instance() or QApplication(sys.argv)
 
