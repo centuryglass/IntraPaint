@@ -663,6 +663,7 @@ SIZE_CASES = ('preferred', 'minimum', 'wide', 'tall', 'narrow', 'short')
 FALLBACK_SIZE = QSize(400, 300)
 WIDE_MIN_WIDTH = 1600
 TALL_MIN_HEIGHT = 1200
+MAX_SETTLE_PASSES = 8
 
 
 def panel_size(case: str, widget: QWidget) -> QSize:
@@ -693,15 +694,25 @@ def panel_size(case: str, widget: QWidget) -> QSize:
 
 
 def _settle_layouts(root: QWidget) -> None:
-    """Activates every layout under root, parents first, so geometry is final without running the event loop.
+    """Activates every layout under root, parents first, and delivers posted layout requests, so geometry is final.
 
-    A second pass applies size hints that changed during the first, such as a header that wrapped to fit its new width.
+    Qt applies some size hint changes, such as a dock panel switching size class, only when a posted
+    `QEvent.LayoutRequest` runs, which the running app's event loop does. Each pass activates the layouts and delivers
+    the requests it posted, until a pass changes no geometry (at most MAX_SETTLE_PASSES).
     """
-    for _ in range(2):
+    for _ in range(MAX_SETTLE_PASSES):
+        before = _geometries(root)
         for widget in [root, *root.findChildren(QWidget)]:
             layout = widget.layout()
             if layout is not None and widget.isVisibleTo(root):
                 layout.activate()
+        QApplication.sendPostedEvents(None, QEvent.Type.LayoutRequest)
+        if _geometries(root) == before:
+            return
+
+
+def _geometries(root: QWidget) -> list[QRect]:
+    return [widget.geometry() for widget in root.findChildren(QWidget)]
 
 
 class PanelHost(QWidget):
