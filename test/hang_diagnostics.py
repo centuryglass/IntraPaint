@@ -9,11 +9,12 @@ The watchdog thread and the GC callback live in `test/`, outside coverage's `sou
 `data_lock` for their frames and they can still run while the main thread is stuck on it.
 """
 import gc
+import os
 import sys
 import threading
 import time
 import traceback
-from typing import Optional
+from typing import Optional, TextIO
 
 REPORT_AFTER_SECONDS = 120.0  # Must stay below `faulthandler_timeout` in pytest.ini, so this report comes first.
 _POLL_SECONDS = 5.0
@@ -44,9 +45,19 @@ class HangWatchdog:
         self._recent_gc: list[str] = []
         self._thread: Optional[threading.Thread] = None
         self._main_thread_id = threading.main_thread().ident
+        self._stream: Optional[TextIO] = None
 
     def start(self) -> None:
-        """Begins watching: installs the GC callback and starts the polling thread."""
+        """Begins watching: installs the GC callback and starts the polling thread.
+
+        Call it while pytest's capture is suspended (`pytest_configure`), so the duplicate of file descriptor 2 it
+        keeps for reports is the real stderr. Pytest's default capture redirects descriptor 2 itself, and holds
+        anything written to it until the test ends, which a hung test never does.
+        """
+        try:
+            self._stream = os.fdopen(os.dup(2), 'w')
+        except OSError:
+            self._stream = None
         gc.callbacks.append(self._on_gc)
         self._thread = threading.Thread(target=self._watch, name='hang-watchdog', daemon=True)
         self._thread.start()
@@ -55,6 +66,9 @@ class HangWatchdog:
         """Removes the GC callback. The daemon thread ends with the process."""
         if self._on_gc in gc.callbacks:
             gc.callbacks.remove(self._on_gc)
+        if self._stream is not None:
+            self._stream.close()
+            self._stream = None
 
     def test_started(self, nodeid: str) -> None:
         """Starts the clock for a test."""
@@ -99,7 +113,6 @@ class HangWatchdog:
             main_stack,
             '--- end hang diagnostics ---',
         ]
-        # sys.__stderr__ bypasses pytest's capture, which is not flushed until the test ends.
-        stream = sys.__stderr__ or sys.stderr
+        stream = self._stream or sys.__stderr__ or sys.stderr
         stream.write('\n'.join(lines) + '\n')
         stream.flush()
