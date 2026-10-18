@@ -234,15 +234,29 @@ def layout_widget_rects(root: QWidget) -> list[QRect]:
 
 
 def _layout_widgets(layout: QLayout) -> list[QWidget]:
-    """Returns the widgets a layout and its nested layouts manage."""
-    widgets = []
-    for i in range(layout.count()):
-        item = layout.itemAt(i)
-        if item.widget() is not None:
-            widgets.append(item.widget())
-        elif item.layout() is not None:
-            widgets.extend(_layout_widgets(item.layout()))
-    return widgets
+    """Returns the widgets a layout and its nested layouts manage, in layout order.
+
+    Finds them with `QLayout.indexOf`, never `itemAt`. A Python wrapper from `itemAt` outlives its item when Qt deletes
+    the item along with its widget, and shiboken frees the item again when the layout's wrapper goes, which corrupts
+    the heap.
+    """
+    parent = layout.parentWidget()
+    if parent is None:
+        return []
+    children = parent.findChildren(QWidget, options=Qt.FindChildOption.FindDirectChildrenOnly)
+
+    def _in_order(current: QLayout) -> list[QWidget]:
+        entries: list[tuple[int, list[QWidget]]] = []
+        for child in children:
+            index = current.indexOf(child)
+            if index >= 0:
+                entries.append((index, [child]))
+        for nested in current.findChildren(QLayout, options=Qt.FindChildOption.FindDirectChildrenOnly):
+            index = current.indexOf(nested)
+            if index >= 0:
+                entries.append((index, _in_order(nested)))
+        return [widget for _, widgets in sorted(entries, key=lambda entry: entry[0]) for widget in widgets]
+    return _in_order(layout)
 
 
 def _ignores_size(widget: QWidget, orientation: Qt.Orientation) -> bool:
