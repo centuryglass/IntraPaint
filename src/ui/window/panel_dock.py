@@ -1,9 +1,9 @@
 """A `QDockWidget` that hosts one main window panel and tells the panel where it is docked.
 
-- Orientation and grid size come from the dock's area, floating state and size, through
-  `src.ui.layout.panel_size_class`. A `DockPanel` gets them through `set_host_facts`. Other content with a
-  `set_orientation` method gets the matching `Qt.Orientation` when the orientation changes, until it migrates to
-  `DockPanel`.
+- Orientation comes from the dock's area, floating state and size, through `src.ui.layout.panel_fit`. A `DockPanel`
+  gets it through `set_host_facts` as a preference, with the size the panel fills, which leaves out the dock's title
+  bar. Other content with a `set_orientation` method gets the matching `Qt.Orientation` when the orientation changes,
+  until it migrates to `DockPanel`.
 - A tab group shows one dock at a time, and the edge rails act as its tabs. Opening a dock with `open_in_group`, its
   key, its toggle action or a mouse drop into a group closes the group's other docks. A dock in the background of a
   group is closed. `show` opens a dock without closing the others, so code opens docks with `open_in_group`.
@@ -26,7 +26,7 @@ from PySide6.QtWidgets import QDockWidget, QMainWindow, QWidget
 
 from src.hotkey_filter import HotkeyFilter
 from src.ui.layout.dock_panel import DockPanel
-from src.ui.layout.panel_size_class import Orientation, orientation_for_dock
+from src.ui.layout.panel_fit import Orientation, orientation_for_dock
 from src.ui.window.dock_notch import DockNotch
 from src.ui.window.dock_state import read_dock_groups
 from src.ui.window.qt_dock_drag import start_qt_dock_drag
@@ -54,7 +54,7 @@ class _NoTitleBar(QWidget):
 
 
 class PanelDock(QDockWidget):
-    """Hosts one panel, forwards orientation and grid size to it, and toggles it from a key."""
+    """Hosts one panel, forwards orientation and size to it, and toggles it from a key."""
 
     _drop_rule_pauses = 0
 
@@ -72,7 +72,8 @@ class PanelDock(QDockWidget):
         self._content: Optional[QWidget] = None
         self._open_when_available = True
         self._showing = False
-        self._forwarded_orientation: Optional[Qt.Orientation] = None
+        # The orientation last reported to the content:
+        self._orientation: Optional[Orientation] = None
         self._no_title_bar = _NoTitleBar()
         self._floating_title_bar: Optional[QWidget] = None
         self.setTitleBarWidget(self._no_title_bar)
@@ -140,7 +141,7 @@ class PanelDock(QDockWidget):
             self._content.hide()
             self._content.setParent(None)
         self._content = content
-        self._forwarded_orientation = None
+        self._orientation = None
         if content is None:
             self.toggleViewAction().setVisible(False)
             self.hide()
@@ -208,7 +209,7 @@ class PanelDock(QDockWidget):
         return True
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
-        """Updates the content's grid size."""
+        """Updates the content's orientation and size."""
         super().resizeEvent(event)
         self._notch.raise_()
         self._update_host_facts()
@@ -259,11 +260,11 @@ class PanelDock(QDockWidget):
     def _update_host_facts(self, *_args) -> None:
         if self._content is None:
             return
-        orientation = orientation_for_dock(self._window.dockWidgetArea(self), self.isFloating(), self.size())
+        orientation = orientation_for_dock(self._window.dockWidgetArea(self), self.isFloating(), self.size(),
+                                           self._orientation)
+        changed = orientation != self._orientation
+        self._orientation = orientation
         if isinstance(self._content, DockPanel):
-            self._content.set_host_facts(orientation, self.size())
-        elif hasattr(self._content, 'set_orientation'):
-            legacy_orientation = qt_orientation(orientation)
-            if legacy_orientation != self._forwarded_orientation:
-                self._forwarded_orientation = legacy_orientation
-                self._content.set_orientation(legacy_orientation)
+            self._content.set_host_facts(orientation, self._content.size())
+        elif changed and hasattr(self._content, 'set_orientation'):
+            self._content.set_orientation(qt_orientation(orientation))

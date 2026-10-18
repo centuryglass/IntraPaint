@@ -9,15 +9,19 @@
 
 Tool-specific sections go after the block, in `StrokeToolPanel`.
 
-Layout follows the orientation and width the block is given:
-- Side: one column. Below `STACK_CHECKBOXES_WIDTH` the checkboxes stack. From `PREVIEW_MIN_WIDTH` the fields stop at
-  `FIELD_COLUMN_MAX_WIDTH` and a `StrokePreview` fills the space beside them.
-- Strip: the fields in column 1, the color pair and checkboxes in column 2.
+Layout is planned by fit (`src.ui.layout.panel_fit`) in the space the Tools panel gives `StrokeToolPanel`:
+- Side: one column. Strip: the fields in column 1, the color pair and checkboxes in column 2.
+- The color pair and Pattern, and the checkboxes, are required items. In a side panel each row stacks into a column
+  when it doesn't fit across. In a strip the rows stay inline, because stacking would make them taller.
+- A tool with a `StrokePreview` shows it beside the fields or below them, whichever fits, or hides it. The preview is
+  decorative, so it never moves to the More popover. Beside the fields, they keep at least
+  `BESIDE_FIELD_MIN_WIDTH` and stop at `FIELD_COLUMN_MAX_WIDTH`.
 """
 import math
+from dataclasses import dataclass
 from typing import Optional
 
-from PySide6.QtCore import QPointF, QSize, Qt
+from PySide6.QtCore import QEvent, QPointF, QSize, Qt
 from PySide6.QtGui import QColor, QPainter, QPaintEvent, QPalette, QRadialGradient, QResizeEvent
 from PySide6.QtWidgets import (QApplication, QBoxLayout, QCheckBox, QGridLayout, QLabel, QLayout, QSizePolicy,
                                QVBoxLayout, QWidget)
@@ -28,6 +32,7 @@ from src.ui.ink_style import set_signal
 from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.slider_field import SliderField
+from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement, fresh_minimum_size
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.panel_section import PanelSection
@@ -46,14 +51,39 @@ PIXEL_SUFFIX = _tr(' px')
 PERCENT_SUFFIX = _tr('%')
 KEYS_TOOLTIP = _tr('{description}\nKeys: {decrease} / {increase}')
 
-STACK_CHECKBOXES_WIDTH = 260
-PREVIEW_MIN_WIDTH = 420
+BESIDE_FIELD_MIN_WIDTH = 200
 FIELD_COLUMN_MAX_WIDTH = 290
-PREVIEW_MIN_HEIGHT = 72
+PREVIEW_MIN_SIZE = QSize(120, 72)
+PREVIEW_MAX_SIZE = QSize(400, 160)
 COLUMN_SPACING = 10
-STACKED_SPACING = 6
 MIN_PATTERN_CHARACTERS = 6
 PREVIEW_STAMP_SPACING = 0.2
+QWIDGETSIZE_MAX = 16777215
+
+# The block's planner items, and their forms:
+PAINT_ITEM = 'paint'
+CHECKS_ITEM = 'checks'
+PREVIEW_ITEM = 'preview'
+INLINE = 0
+STACKED = 1
+BESIDE = 0
+BELOW = 1
+PREVIEW_PRIORITY = 1
+_FIT_ITEMS = {
+    PAINT_ITEM: FitItem(REQUIRED, 2),
+    CHECKS_ITEM: FitItem(REQUIRED, 2),
+    PREVIEW_ITEM: FitItem(PREVIEW_PRIORITY, 2),
+}
+
+
+@dataclass(frozen=True)
+class StrokeArrangement:
+    """How a `StrokeBlock` is laid out: the orientation, whether each row is stacked into a column, and the preview's
+    form, or None while it is hidden."""
+    orientation: Orientation
+    paint_stacked: bool = False
+    checks_stacked: bool = False
+    preview: Optional[int] = None
 
 
 class StrokePreview(QWidget):
@@ -66,7 +96,8 @@ class StrokePreview(QWidget):
         self._opacity_key = opacity_key
         self._hardness_key = hardness_key
         self._color_key = color_key
-        self.setMinimumHeight(PREVIEW_MIN_HEIGHT)
+        self.setMinimumSize(PREVIEW_MIN_SIZE)
+        self.setMaximumSize(PREVIEW_MAX_SIZE)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         cache = Cache()
         for key in (size_key, opacity_key, hardness_key, color_key):
@@ -75,7 +106,7 @@ class StrokePreview(QWidget):
 
     def sizeHint(self) -> QSize:
         """Returns a short, wide area."""
-        return QSize(120, PREVIEW_MIN_HEIGHT)
+        return PREVIEW_MIN_SIZE
 
     def paintEvent(self, _event: Optional[QPaintEvent]) -> None:  # pylint: disable=invalid-name
         """Draws overlapping soft stamps along a wave, shrunk to fit the height."""
@@ -196,8 +227,7 @@ class StrokeBlock(QWidget):
             self._tooltip_overrides[opacity_key] = opacity_tooltip
         self._fields: dict[str, NumberField] = {}
         self._pressure_fields: list[NumberField] = []
-        self._orientation = Qt.Orientation.Vertical
-        self._arrangement: Optional[tuple[Qt.Orientation, bool, bool]] = None
+        self._arrangement: Optional[StrokeArrangement] = None
 
         self._fields_widget = QWidget(self)
         fields_layout = QVBoxLayout(self._fields_widget)
@@ -240,7 +270,9 @@ class StrokeBlock(QWidget):
         self._grid.setContentsMargins(0, 0, 0, 0)
         self._grid.setHorizontalSpacing(COLUMN_SPACING)
         self._grid.setVerticalSpacing(6)
-        self._arrange(force=True)
+        self._fit_keys = [key for key, present in ((PAINT_ITEM, self._paint_widget is not None), (CHECKS_ITEM, True),
+                                                   (PREVIEW_ITEM, self._preview is not None)) if present]
+        self._arrange(StrokeArrangement(Orientation.SIDE))
 
     # -----------------------------------------------------------------------------------------------------------------
     # Fields
@@ -297,60 +329,29 @@ class StrokeBlock(QWidget):
     # Layout
     # -----------------------------------------------------------------------------------------------------------------
 
-    def set_orientation(self, orientation: Qt.Orientation) -> None:
-        """Vertical is a side panel, horizontal a strip."""
-        if orientation != self._orientation:
-            self._orientation = orientation
-            self._arrange()
+    @property
+    def fit_items(self) -> list[FitItem]:
+        """The block's items for planning: the paint row if the tool has one, the checkboxes, and the preview if the
+        tool has one."""
+        return [_FIT_ITEMS[key] for key in self._fit_keys]
 
-    def resizeEvent(self, event: QResizeEvent) -> None:  # pylint: disable=invalid-name
-        """Re-arranges when the width crosses a threshold."""
-        super().resizeEvent(event)
-        self._arrange()
+    @property
+    def arrangement(self) -> StrokeArrangement:
+        """The block's current arrangement."""
+        assert self._arrangement is not None
+        return self._arrangement
 
-    def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
-        """Returns the layout's hint, at least `STACK_CHECKBOXES_WIDTH` wide in a side panel so it isn't stacked."""
-        hint = super().sizeHint()
-        if self._orientation == Qt.Orientation.Vertical:
-            hint.setWidth(max(hint.width(), STACK_CHECKBOXES_WIDTH))
-        return hint
+    def apply_fit(self, orientation: Orientation, placement: Placement) -> None:
+        """Arranges the block for the forms its `fit_items` take in a placement."""
+        forms = dict(zip(self._fit_keys, placement))
+        # Stacking a row makes it taller, which only saves room in a side panel:
+        side = orientation == Orientation.SIDE
+        self._arrange(StrokeArrangement(orientation, paint_stacked=side and forms.get(PAINT_ITEM) == STACKED,
+                                        checks_stacked=side and forms.get(CHECKS_ITEM) == STACKED,
+                                        preview=forms.get(PREVIEW_ITEM)))
 
-    def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
-        """Returns the minimum of the stacked arrangement, which the block takes whenever it is narrower than
-        `STACK_CHECKBOXES_WIDTH`."""
-        hint = super().minimumSizeHint()
-        if self._orientation == Qt.Orientation.Vertical and self._arrangement is not None \
-                and not self._arrangement[1]:
-            stacked = self._stacked_minimum_size()
-            hint = QSize(min(hint.width(), stacked.width()), max(hint.height(), stacked.height()))
-        return hint
-
-    def _stacked_minimum_size(self) -> QSize:
-        """Returns the minimum size of the side arrangement with the paint row and checkboxes in columns."""
-        sizes = [self._fields_widget.minimumSizeHint()]
-        for widget, box in ((self._paint_widget, self._paint_layout), (self._checks_widget, self._checks_layout)):
-            if widget is None or box is None:
-                continue
-            items = [box.itemAt(i) for i in range(box.count())]
-            item_sizes = [item.minimumSize() for item in items if item is not None and item.widget() is not None]
-            spacing = box.spacing() if box.spacing() >= 0 else STACKED_SPACING
-            sizes.append(QSize(max(size.width() for size in item_sizes),
-                               sum(size.height() for size in item_sizes) + spacing * (len(item_sizes) - 1)))
-        return QSize(max(size.width() for size in sizes),
-                     sum(size.height() for size in sizes) + self._grid.verticalSpacing() * (len(sizes) - 1))
-
-    def arrange_for_width(self, width: int) -> None:
-        """Arranges the block as if it were `width` pixels wide."""
-        self._arrange(width=width)
-
-    def _arrange(self, force: bool = False, width: Optional[int] = None) -> None:
-        if width is None:
-            width = self.width()
-        strip = self._orientation == Qt.Orientation.Horizontal
-        stacked = (not strip) and 0 < width < STACK_CHECKBOXES_WIDTH
-        preview = (not strip) and self._preview is not None and width >= PREVIEW_MIN_WIDTH
-        arrangement = (self._orientation, stacked, preview)
-        if arrangement == self._arrangement and not force:
+    def _arrange(self, arrangement: StrokeArrangement) -> None:
+        if arrangement == self._arrangement:
             return
         self._arrangement = arrangement
         for widget in (self._fields_widget, self._paint_widget, self._checks_widget, self._preview):
@@ -358,60 +359,122 @@ class StrokeBlock(QWidget):
                 self._grid.removeWidget(widget)
         for index in range(3):
             self._grid.setColumnStretch(index, 0)
-        self._checks_layout.setDirection(QBoxLayout.Direction.TopToBottom if stacked
+        for index in range(5):
+            self._grid.setRowStretch(index, 0)
+        self._checks_layout.setDirection(QBoxLayout.Direction.TopToBottom if arrangement.checks_stacked
                                          else QBoxLayout.Direction.LeftToRight)
-        if self._preview is not None:
-            self._preview.setVisible(preview)
         if self._paint_layout is not None:
-            self._paint_layout.setDirection(QBoxLayout.Direction.TopToBottom if stacked
+            self._paint_layout.setDirection(QBoxLayout.Direction.TopToBottom if arrangement.paint_stacked
                                             else QBoxLayout.Direction.LeftToRight)
-        self._fields_widget.setMaximumWidth(FIELD_COLUMN_MAX_WIDTH if preview else 16777215)
-        if strip:
-            self._grid.addWidget(self._fields_widget, 0, 0, 3, 1)
+        if self._preview is not None:
+            self._preview.setVisible(arrangement.preview is not None)
+        beside = arrangement.preview == BESIDE
+        self._fields_widget.setMinimumWidth(BESIDE_FIELD_MIN_WIDTH if beside else 0)
+        self._fields_widget.setMaximumWidth(FIELD_COLUMN_MAX_WIDTH if beside else QWIDGETSIZE_MAX)
+        # Top-aligned, so Size stays put when a taller preview sits beside the fields:
+        top = Qt.AlignmentFlag.AlignTop
+        if arrangement.orientation == Orientation.STRIP:
+            self._grid.addWidget(self._fields_widget, 0, 0, 3, 1, top)
             row = 0
             for widget in (self._paint_widget, self._checks_widget):
                 if widget is not None:
                     self._grid.addWidget(widget, row, 1)
                     row += 1
+            if self._preview is not None and beside:
+                self._grid.addWidget(self._preview, 0, 2, 3, 1)
+            elif self._preview is not None and arrangement.preview == BELOW:
+                self._grid.addWidget(self._preview, row, 1)
             self._grid.setColumnStretch(0, 1)
             self._grid.setColumnStretch(1, 1)
+            # Height beyond what the rows need goes below them:
+            self._grid.setRowStretch(3, 1)
             return
-        self._grid.addWidget(self._fields_widget, 0, 0)
-        if preview:
-            assert self._preview is not None
+        self._grid.addWidget(self._fields_widget, 0, 0, top)
+        row = 1
+        if self._preview is not None and beside:
             self._grid.addWidget(self._preview, 0, 1)
             self._grid.setColumnStretch(1, 1)
         else:
             self._grid.setColumnStretch(0, 1)
-        row = 1
+            if self._preview is not None and arrangement.preview == BELOW:
+                self._grid.addWidget(self._preview, row, 0, 1, 2)
+                row += 1
         for widget in (self._paint_widget, self._checks_widget):
             if widget is not None:
                 self._grid.addWidget(widget, row, 0, 1, 2)
                 row += 1
+        # Height beyond what the rows need goes below them:
+        self._grid.setRowStretch(row, 1)
 
 
 class StrokeToolPanel(QWidget):
-    """A tool control panel with a `StrokeBlock` first, and the tool's own sections after it."""
+    """A tool control panel with a `StrokeBlock` first, and the tool's own sections after it.
+
+    - It is a `src.ui.layout.panel_fit.FitContent`: the Tools panel measures it at `fit_base_size`, then
+      `set_fit_space` plans the block in the space left over.
+    - Without a host that calls `set_fit_space`, it plans for its own size when resized. That size must not follow
+      its content, or each plan would resize it and plan again. A new parent clears the host's space, so a host calls
+      `set_fit_space` again after adding the panel.
+    - `set_orientation` arranges it for an orientation, vertical for a side panel. Subclasses extend it for their own
+      sections.
+    """
 
     def __init__(self, block: StrokeBlock, sections: Optional[list[QWidget]] = None) -> None:
         super().__init__()
         self._block = block
+        self._orientation = Qt.Orientation.Vertical
+        self._space: Optional[QSize] = None
         self._layout = QVBoxLayout(self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._layout.addWidget(block)
         for section in sections or []:
             self._layout.addWidget(section)
+        self._planner = FitPlanner(block.fit_items, block.apply_fit, lambda: fresh_minimum_size(self))
 
     @property
     def stroke_block(self) -> StrokeBlock:
         """The panel's stroke controls."""
         return self._block
 
+    def fit_base_size(self, orientation: Orientation) -> QSize:
+        """Returns the minimum size with the block's required items in their smallest forms and no preview, and
+        keeps that arrangement until the next `set_fit_space`."""
+        self._follow_orientation(orientation)
+        return self._planner.base_size(orientation)
+
+    def set_fit_space(self, orientation: Orientation, size: QSize) -> None:
+        """Plans the block for the space the Tools panel gives the panel."""
+        self._follow_orientation(orientation)
+        self._space = QSize(size)
+        self._planner.update(orientation, size)
+
     def set_orientation(self, orientation: Qt.Orientation) -> None:
-        """Passes the dock's orientation to the block."""
-        self._block.set_orientation(orientation)
+        """Vertical is a side panel, horizontal a strip. Subclasses extend this to arrange their own sections."""
+        self._orientation = orientation
+
+    def event(self, event: QEvent) -> bool:
+        """Forgets the host's space when the panel moves to a new parent."""
+        if event.type() == QEvent.Type.ParentChange:
+            self._space = None
+        return super().event(event)
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
+        """Plans for the new size, unless a host plans the panel."""
+        super().resizeEvent(event)
+        if self._space is None:
+            self._planner.update(self._fit_orientation(), self.size())
 
     def show_pressure_checkboxes(self) -> None:
         """After receiving a tablet event, call this to reveal the pen pressure links."""
         self._block.show_pressure_links()
         Cache().set(Cache.EXPECT_TABLET_INPUT, True)
+        self._planner.update(self._fit_orientation(), self._space if self._space is not None else self.size(),
+                             force=True)
+
+    def _fit_orientation(self) -> Orientation:
+        return Orientation.SIDE if self._orientation == Qt.Orientation.Vertical else Orientation.STRIP
+
+    def _follow_orientation(self, orientation: Orientation) -> None:
+        qt_orientation = Qt.Orientation.Vertical if orientation == Orientation.SIDE else Qt.Orientation.Horizontal
+        if qt_orientation != self._orientation:
+            self.set_orientation(qt_orientation)

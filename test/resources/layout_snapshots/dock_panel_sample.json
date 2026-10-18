@@ -1,29 +1,10 @@
 {
-  "side_1x3": {
+  "side_short": {
+    "header_collapsed": false,
     "more_button": true,
+    "orientation": "side",
     "overflow": [
       "name",
-      "flag",
-      "extra",
-      "only_extra"
-    ],
-    "problems": [],
-    "section_geometry": {
-      "Stroke": [
-        0,
-        0,
-        182,
-        276
-      ]
-    },
-    "visible_sections": [
-      "Stroke"
-    ]
-  },
-  "side_2x3": {
-    "more_button": true,
-    "overflow": [
-      "flag",
       "extra",
       "only_extra"
     ],
@@ -33,29 +14,31 @@
         0,
         0,
         322,
-        276
+        72
       ]
     },
     "visible_sections": [
       "Stroke"
     ]
   },
-  "side_3x3": {
+  "side_tall_narrow": {
+    "header_collapsed": false,
     "more_button": false,
+    "orientation": "side",
     "overflow": [],
     "problems": [],
     "section_geometry": {
       "Advanced": [
         0,
-        197,
-        482,
+        109,
+        182,
         79
       ],
       "Stroke": [
         0,
         0,
-        482,
-        191
+        182,
+        103
       ]
     },
     "visible_sections": [
@@ -63,36 +46,69 @@
       "Advanced"
     ]
   },
-  "strip_3x1": {
-    "more_button": true,
-    "overflow": [
-      "name",
-      "flag",
-      "extra",
-      "only_extra"
-    ],
+  "side_wide": {
+    "header_collapsed": false,
+    "more_button": false,
+    "orientation": "side",
+    "overflow": [],
     "problems": [],
     "section_geometry": {
+      "Advanced": [
+        0,
+        109,
+        482,
+        79
+      ],
       "Stroke": [
         0,
         0,
-        240,
-        102
+        482,
+        103
       ]
     },
     "visible_sections": [
-      "Stroke"
+      "Stroke",
+      "Advanced"
     ]
   },
-  "strip_3x2": {
-    "more_button": true,
-    "overflow": [
-      "flag",
-      "extra",
-      "only_extra"
-    ],
+  "strip_narrow": {
+    "header_collapsed": false,
+    "more_button": false,
+    "orientation": "side",
+    "overflow": [],
     "problems": [],
     "section_geometry": {
+      "Advanced": [
+        0,
+        109,
+        282,
+        79
+      ],
+      "Stroke": [
+        0,
+        0,
+        282,
+        103
+      ]
+    },
+    "visible_sections": [
+      "Stroke",
+      "Advanced"
+    ]
+  },
+  "strip_regular": {
+    "header_collapsed": false,
+    "more_button": false,
+    "orientation": "strip",
+    "overflow": [],
+    "problems": [],
+    "section_geometry": {
+      "Advanced": [
+        246,
+        0,
+        240,
+        192
+      ],
       "Stroke": [
         0,
         0,
@@ -101,11 +117,67 @@
       ]
     },
     "visible_sections": [
+      "Stroke",
+      "Advanced"
+    ]
+  },
+  "strip_short": {
+    "header_collapsed": true,
+    "more_button": true,
+    "orientation": "strip",
+    "overflow": [
+      "name",
+      "only_extra"
+    ],
+    "problems": [],
+    "section_geometry": {
+      "Advanced": [
+        246,
+        0,
+        240,
+        72
+      ],
+      "Stroke": [
+        0,
+        0,
+        240,
+        72
+      ]
+    },
+    "visible_sections": [
+      "Stroke",
+      "Advanced"
+    ]
+  },
+  "strip_tiny": {
+    "header_collapsed": true,
+    "more_button": true,
+    "orientation": "strip",
+    "overflow": [
+      "name",
+      "flag",
+      "extra",
+      "only_extra"
+    ],
+    "problems": [
+      "squeezed: QScrollArea is 300x50, minimum 59x59"
+    ],
+    "section_geometry": {
+      "Stroke": [
+        0,
+        0,
+        240,
+        44
+      ]
+    },
+    "visible_sections": [
       "Stroke"
     ]
   },
-  "strip_3x3": {
+  "strip_wide": {
+    "header_collapsed": false,
     "more_button": false,
+    "orientation": "strip",
     "overflow": [],
     "problems": [],
     "section_geometry": {
@@ -113,13 +185,13 @@
         246,
         0,
         240,
-        352
+        112
       ],
       "Stroke": [
         0,
         0,
         240,
-        352
+        112
       ]
     },
     "visible_sections": [

@@ -1,7 +1,7 @@
 """Tests StrokeBlock's binding to Cache values, its pen pressure links and its arrangements."""
 import json
 
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QPoint, QSize
 from PySide6.QtWidgets import QCheckBox
 
 from src.config.cache import Cache
@@ -12,11 +12,18 @@ from src.ui.panel.tool_control_panels.eraser_tool_panel import EraserToolPanel
 from src.ui.panel.tool_control_panels.fill_tool_panel import FillToolPanel
 from src.ui.panel.tool_control_panels.filter_tool_panel import FilterToolPanel
 from src.ui.panel.tool_control_panels.smudge_tool_panel import SmudgeToolPanel
-from src.ui.panel.tool_control_panels.stroke_block import (ONLY_INSIDE_SELECTION_LABEL, PREVIEW_MIN_WIDTH,
-                                                           STACK_CHECKBOXES_WIDTH)
+from src.tools.draw_tool import DrawTool
+from src.ui.layout.panel_fit import Orientation
+from src.ui.panel.tool_control_panels.stroke_block import (BELOW, BESIDE, BESIDE_FIELD_MIN_WIDTH,
+                                                           FIELD_COLUMN_MAX_WIDTH, ONLY_INSIDE_SELECTION_LABEL)
+from src.ui.panel.tool_panel import ToolPanel
 from test.base_test_case import IntraPaintTestCase
 from test.tools.tool_test_case import ToolTestCase
 from test.ui.panel.tool_panel_test import settle_layouts
+
+
+SIDE = Orientation.SIDE
+STRIP = Orientation.STRIP
 
 
 class StrokeBlockTest(IntraPaintTestCase):
@@ -55,14 +62,54 @@ class StrokeBlockTest(IntraPaintTestCase):
         texts = [box.text() for box in self.block.findChildren(QCheckBox)]
         self.assertIn(ONLY_INSIDE_SELECTION_LABEL, texts)
 
-    def test_arrangements_follow_width_and_orientation(self) -> None:
-        """Narrow side panels stack checkboxes, wide ones show the preview, strips use two columns."""
-        self.block.arrange_for_width(STACK_CHECKBOXES_WIDTH - 20)
-        self.assertEqual(self.block._arrangement, (Qt.Orientation.Vertical, True, False))
-        self.block.arrange_for_width(PREVIEW_MIN_WIDTH + 20)
-        self.assertEqual(self.block._arrangement, (Qt.Orientation.Vertical, False, True))
-        self.panel.set_orientation(Qt.Orientation.Horizontal)
-        self.assertEqual(self.block._arrangement, (Qt.Orientation.Horizontal, False, False))
+    def test_preview_takes_whichever_room_the_panel_has(self) -> None:
+        """The preview goes beside the fields where the panel is wide enough, below them where it is tall enough, and
+        hides where it is neither."""
+        cases = {
+            'side_tall_narrow': (SIDE, QSize(260, 900), BELOW),
+            'side_wide': (SIDE, QSize(420, 900), BESIDE),
+            'side_short': (SIDE, QSize(260, 200), None),
+            'strip_wide': (STRIP, QSize(1400, 160), BESIDE),
+        }
+        for name, (orientation, size, preview) in cases.items():
+            with self.subTest(size=name):
+                self.panel.set_fit_space(orientation, size)
+                arrangement = self.block.arrangement
+                self.assertEqual(arrangement.orientation, orientation)
+                self.assertEqual(arrangement.preview, preview)
+                preview_widget = self.block._preview  # pylint: disable=protected-access
+                assert preview_widget is not None
+                self.assertEqual(preview_widget.isHidden(), preview is None)
+
+    def test_preview_beside_keeps_the_fields_usable(self) -> None:
+        """Beside the preview, the fields are at least BESIDE_FIELD_MIN_WIDTH and at most FIELD_COLUMN_MAX_WIDTH
+        wide."""
+        self.panel.set_fit_space(SIDE, QSize(1000, 900))
+        self.assertEqual(self.block.arrangement.preview, BESIDE)
+        fields = self.block._fields_widget  # pylint: disable=protected-access
+        self.assertEqual((fields.minimumWidth(), fields.maximumWidth()), (BESIDE_FIELD_MIN_WIDTH,
+                                                                          FIELD_COLUMN_MAX_WIDTH))
+
+    def test_rows_stack_when_they_do_not_fit_across(self) -> None:
+        """A narrow side panel stacks the checkboxes into a column and a wider one keeps them in a row. A strip keeps
+        them in a row, however narrow."""
+        self.panel.set_fit_space(SIDE, QSize(170, 900))
+        self.assertTrue(self.block.arrangement.checks_stacked)
+        self.panel.set_fit_space(SIDE, QSize(500, 900))
+        self.assertFalse(self.block.arrangement.checks_stacked)
+        self.panel.set_fit_space(STRIP, QSize(170, 300))
+        self.assertFalse(self.block.arrangement.checks_stacked)
+        self.assertFalse(self.block.arrangement.paint_stacked)
+
+    def test_orientation_reaches_subclass_sections(self) -> None:
+        """Planning for a strip calls set_orientation, so subclasses arrange their own sections."""
+        orientations = []
+        original = self.panel.set_orientation
+        self.panel.set_orientation = lambda o: (orientations.append(o), original(o))[1]  # type: ignore[method-assign]
+        self.panel.set_fit_space(STRIP, QSize(1400, 160))
+        self.panel.set_fit_space(STRIP, QSize(1300, 160))
+        self.assertEqual(len(orientations), 1, orientations)
+        self.assertEqual(self.block.arrangement.orientation, STRIP)
 
 
 class ToolPanelsOnStrokeBlockTest(ToolTestCase):
@@ -143,3 +190,17 @@ class ToolPanelsOnStrokeBlockTest(ToolTestCase):
         params[filter_name][0] = 2.0
         Cache().set(Cache.FILTER_TOOL_CACHED_PARAMETERS, json.dumps(params))
         self.assertEqual(field.value(), 2.0)
+
+    def test_tools_panel_gives_the_preview_spare_room(self) -> None:
+        """In the Tools panel, a tall, narrow side dock shows the Draw preview below the fields, and a wide strip under
+        170 px tall shows it beside them."""
+        tool = DrawTool(self.image_stack, self.image_viewer)
+        tool_panel = ToolPanel()
+        tool_panel.add_tool_button(tool)
+        tool_panel.setup_active_tool(tool)
+        control_panel = tool.get_control_panel()
+        assert isinstance(control_panel, DrawToolPanel)
+        for orientation, size, preview in ((SIDE, QSize(260, 1000), BELOW), (STRIP, QSize(1400, 160), BESIDE)):
+            with self.subTest(orientation=orientation):
+                tool_panel.set_host_facts(orientation, size)
+                self.assertEqual(control_panel.stroke_block.arrangement.preview, preview)

@@ -1,32 +1,33 @@
 """The Tools dock's panel: a grid of tool buttons, a header naming the active tool, and the tool's controls.
 
-- Orientation and grid size come from the dock (`DockPanel.set_host_facts`). The orientation and the cells along the
-  constrained axis (`GridSize.constrained`) pick the button size and grid from `BUTTON_LAYOUTS`. Side panels show
-  rows of eight with the header under them, then the controls. Strip panels put the header across the top, with the
-  grid left of the controls. A strip grid has three columns when the panel is tall enough for them
-  (`strip_button_layout`), and four otherwise.
+- Orientation and size come from the dock (`DockPanel.set_host_facts`), and the panel shows as much as fits
+  (`src.ui.layout.panel_fit`). Side panels show rows of eight buttons with the header under them, then the controls.
+  Strip panels put the header across the top, with the grid left of the controls.
+- The buttons take the largest of `SIDE_BUTTON_FORMS` or `STRIP_BUTTON_FORMS` that fits across the panel. The largest
+  strip form is a grid of `STRIP_NARROW_COLUMNS` columns, with buttons as tall as the height allows
+  (`strip_button_layout`).
 - Buttons are ordered by `BaseTool.TOOL_GROUP`, keeping the order tools were added within a group, and always line up
   in columns.
 - The header names the active tool with its icon, key and description, and its icon is centered over the first
-  button column. Side Compact leaves out the description. In Strip Short the header is hidden, a dim line under the
+  button column. The description shows when it fits. A strip too short for the header hides it, a dim line under the
   buttons names the tool, and reset moves into the More popover.
 - Reset restores the active tool's `BaseTool.get_reset_config_keys`, and is hidden for a tool that declares none.
-- Tool control panels that haven't migrated to `DockPanel` get a `Qt.Orientation` through their `set_orientation`.
-- A tool control panel that is a `GridLayoutPanel` gets the layout `choose_layout` picks for the tool control area,
-  which is the space beside the buttons and under the header, not the whole dock.
+- A tool control panel that is a `FitContent` is measured at its base size while the panel plans, then gets the space
+  beside the buttons and under the header. Other tool control panels are left out of planning, and get a
+  `Qt.Orientation` through their `set_orientation`.
 """
 from dataclasses import dataclass
 from typing import Optional
 
-from PySide6.QtCore import Qt, Signal, QObject, QEvent
-from PySide6.QtGui import QPalette, QResizeEvent
+from PySide6.QtCore import QObject, QSize, Qt, Signal
+from PySide6.QtGui import QPalette
 from PySide6.QtWidgets import QWidget, QLabel, QGridLayout, QVBoxLayout, QSizePolicy, QPushButton
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.tools.base_tool import BaseTool
-from src.ui.layout.dock_panel import DockPanel, is_strip_short
-from src.ui.layout.panel_size_class import GridLayoutPanel, GridSize, GridSizeTracker, Orientation, choose_layout
+from src.ui.layout.dock_panel import DockPanel
+from src.ui.layout.panel_fit import REQUIRED, FitContent, FitItem, Orientation, fresh_minimum_size
 from src.ui.panel.panel_reset import reset_config_keys
 from src.ui.widget.panel_header import RESET_TOOLTIP
 from src.ui.widget.shortcut_tooltip import shortcut_tooltip_text
@@ -44,21 +45,16 @@ class ButtonLayout:
     key_hints: bool = False
 
 
-# Keyed by orientation and the cells along the constrained axis:
-BUTTON_LAYOUTS = {
-    (Orientation.SIDE, 1): ButtonLayout(22, 8),
-    (Orientation.SIDE, 2): ButtonLayout(28, 8),
-    (Orientation.SIDE, 3): ButtonLayout(40, 8, key_hints=True),
-    (Orientation.STRIP, 1): ButtonLayout(22, 8),
-    (Orientation.STRIP, 2): ButtonLayout(28, 4),
-    (Orientation.STRIP, 3): ButtonLayout(28, 4),
-}
-
-# Strip grids switch to this many columns when buttons of at least `BUTTON_LAYOUTS`' size fit the height:
+# The button forms, largest first:
+SIDE_BUTTON_FORMS = (ButtonLayout(40, 8, key_hints=True), ButtonLayout(28, 8), ButtonLayout(22, 8))
+STRIP_BUTTON_FORMS = (ButtonLayout(28, 4), ButtonLayout(28, 4), ButtonLayout(22, 8))
+# The largest strip form fits buttons of at least its `STRIP_BUTTON_FORMS` size into this many columns:
 STRIP_NARROW_COLUMNS = 3
 MAX_STRIP_EDGE_LENGTH = 40
 # Strip buttons this large or larger show key hints:
 KEY_HINT_MIN_EDGE_LENGTH = 40
+# The header description is optional, placed before any later optional item:
+DESCRIPTION_PRIORITY = 1
 
 
 def strip_button_layout(button_count: int, grid_height: int, default: ButtonLayout) -> ButtonLayout:
@@ -71,6 +67,16 @@ def strip_button_layout(button_count: int, grid_height: int, default: ButtonLayo
     return ButtonLayout(edge, STRIP_NARROW_COLUMNS, key_hints=edge >= KEY_HINT_MIN_EDGE_LENGTH)
 
 
+def button_grid_size(button_count: int, layout: ButtonLayout) -> QSize:
+    """Returns the size of a grid of `button_count` buttons in `layout`."""
+    if button_count == 0:
+        return QSize(0, 0)
+    columns = min(layout.columns, button_count)
+    rows = -(-button_count // layout.columns)
+    return QSize(columns * layout.edge_length + (columns - 1) * BUTTON_SPACING,
+                 rows * layout.edge_length + (rows - 1) * BUTTON_SPACING)
+
+
 class ToolPanel(DockPanel):
     """Provides buttons to select between tools and shows the active tool's control panel."""
 
@@ -81,12 +87,11 @@ class ToolPanel(DockPanel):
         self._tool_widgets: dict[str, ToolButton] = {}
         self._active_tool: Optional[BaseTool] = None
         self._active_tool_panel: Optional[QWidget] = None
-        self._layout_key = (Orientation.SIDE, GridSize(2, 3))
-        self._grid_tracker = GridSizeTracker()
-        # The orientation and layout last sent to the active tool control panel's `set_grid_layout`:
-        self._forwarded_grid_layout: Optional[tuple[Orientation, GridSize]] = None
-
-        self._button_layout = self._default_button_layout()
+        self._button_form = 1
+        self._button_layout = SIDE_BUTTON_FORMS[self._button_form]
+        # The layout the buttons were last placed in:
+        self._built_layout: Optional[ButtonLayout] = None
+        self._show_description = True
 
         self._strip_column = QWidget()
         strip_column_layout = QVBoxLayout(self._strip_column)
@@ -98,7 +103,7 @@ class ToolPanel(DockPanel):
         self._button_grid_layout.setSpacing(BUTTON_SPACING)
         self._button_grid_layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
         strip_column_layout.addWidget(self._button_grid)
-        # Names the active tool in Strip Short, where the header is hidden:
+        # Names the active tool while the header is collapsed:
         self._short_label = QLabel()
         self._short_label.setForegroundRole(QPalette.ColorRole.PlaceholderText)
         self._short_label.hide()
@@ -108,9 +113,7 @@ class ToolPanel(DockPanel):
         self._tool_control_box = QWidget()
         self._tool_control_layout = QVBoxLayout(self._tool_control_box)
         self._tool_control_layout.setContentsMargins(0, 0, 0, 0)
-        # Tool control panels that haven't migrated to `DockPanel` don't widen the panel, so they squeeze to fit it:
-        self._tool_control_box.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Expanding)
-        self._tool_control_box.installEventFilter(self)
+        self._update_tool_control_policy()
 
         # The header moves into the scrolled body, so it shares the button grid's margins:
         self.layout().removeWidget(self.header)
@@ -119,7 +122,7 @@ class ToolPanel(DockPanel):
         self._content_layout.setContentsMargins(0, 0, 0, 0)
         self._body_layout.insertWidget(0, self._content, stretch=1)
 
-        # In Strip Short, the More popover holds the reset button:
+        # While the header is collapsed, the More popover holds the reset button:
         self._short_popover_content = QWidget()
         short_popover_layout = QVBoxLayout(self._short_popover_content)
         short_popover_layout.setContentsMargins(0, 0, 0, 0)
@@ -129,7 +132,9 @@ class ToolPanel(DockPanel):
 
         self.header.reset_requested.connect(self.reset_active_tool)
         self._short_reset_button.clicked.connect(self._reset_from_popover)
-        self.arrange(*self._layout_key)
+        self.add_fit_item(FitItem(REQUIRED, len(SIDE_BUTTON_FORMS)), self._apply_button_form)
+        self.add_fit_item(FitItem(DESCRIPTION_PRIORITY), self._apply_description_form)
+        self.arrange(Orientation.SIDE)
 
     @property
     def active_tool(self) -> Optional[BaseTool]:
@@ -141,6 +146,11 @@ class ToolPanel(DockPanel):
         """The tool buttons, in the order the panel shows them."""
         return sorted(self._tool_widgets.values(), key=lambda button: button.connected_tool.TOOL_GROUP)
 
+    @property
+    def button_layout(self) -> ButtonLayout:
+        """The tool buttons' current layout."""
+        return self._button_layout
+
     def add_tool_button(self, tool: BaseTool) -> None:
         """Creates and shows a new tool button for a given tool object."""
         if tool.label in self._tool_widgets:
@@ -150,6 +160,7 @@ class ToolPanel(DockPanel):
         button.tool_selected.connect(self.tool_selected)
         button.is_active = tool is self._active_tool
         self._build_button_rows()
+        self.refit()
 
     def remove_tool_button(self, tool: BaseTool) -> None:
         """Removes a tool button from the panel."""
@@ -159,6 +170,7 @@ class ToolPanel(DockPanel):
         button.hide()
         button.setParent(None)
         self._build_button_rows()
+        self.refit()
 
     def setup_active_tool(self, active_tool: Optional[QObject]) -> None:
         """Shows a new active tool's name, key and control panel."""
@@ -180,12 +192,11 @@ class ToolPanel(DockPanel):
                 tool_panel.setToolTip(active_tool.get_tooltip_text())
                 self._active_tool_panel = tool_panel
                 self._tool_control_layout.addWidget(tool_panel)
+                self._update_tool_control_policy()
                 self._forward_orientation()
-                self._forwarded_grid_layout = None
-                self._forward_grid_layout()
                 tool_panel.show()
         self._update_tool_text()
-        self._update_reset_controls()
+        self.refit()
         self.updateGeometry()
 
     def reset_active_tool(self) -> bool:
@@ -194,10 +205,9 @@ class ToolPanel(DockPanel):
             return False
         return reset_config_keys(Cache(), self._active_tool.get_reset_config_keys())
 
-    def arrange(self, orientation: Orientation, grid_size: GridSize) -> None:
-        """Lays out the buttons, header and controls for the orientation and grid size."""
-        super().arrange(orientation, grid_size)
-        self._layout_key = (orientation, grid_size)
+    def arrange(self, orientation: Orientation) -> None:
+        """Places the buttons, header and controls for the orientation."""
+        super().arrange(orientation)
         for widget in (self._strip_column, self.header, self._tool_control_box):
             self._content_layout.removeWidget(widget)
         for index in range(3):
@@ -216,80 +226,110 @@ class ToolPanel(DockPanel):
             self._content_layout.addWidget(self._tool_control_box, 1, 1)
             self._content_layout.setRowStretch(1, 1)
             self._content_layout.setColumnStretch(1, 1)
-        self._button_layout = self._current_button_layout()
-        self._build_button_rows()
         self._forward_orientation()
-        self._forward_grid_layout()
+
+    def header_width(self, available: QSize) -> int:
+        """Returns the available width less the body's margins, which the header spans in both orientations, and less
+        the scroll bar while a side panel scrolls."""
+        margins = self._body_layout.contentsMargins()
+        width = available.width() - margins.left() - margins.right()
+        if self.content_scrolls and self.orientation == Orientation.SIDE:
+            width -= self.scroll_bar_extent()
+        return width
+
+    def apply_header_form(self, collapsed: bool) -> None:
+        """Shows the header, or a dim line under the buttons naming the tool while it is collapsed."""
+        super().apply_header_form(collapsed)
         self._update_tool_text()
+
+    def finish_placement(self) -> None:
+        """Puts reset in the header, or in the More popover while the header is collapsed."""
+        super().finish_placement()
         self._update_reset_controls()
 
-    @property
-    def tool_control_grid_size(self) -> Optional[GridSize]:
-        """The tool control area's grid size, or None before it is first measured."""
-        return self._grid_tracker.grid_size
+    def prepare_fit(self, orientation: Orientation) -> None:
+        """Measures a `FitContent` tool control panel at its base size while the panel plans, and leaves any other
+        tool control panel out of the measurements."""
+        if isinstance(self._active_tool_panel, FitContent):
+            self._active_tool_panel.fit_base_size(orientation)
+        else:
+            self._tool_control_box.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
 
-    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-        """Re-measures the tool control area when it resizes."""
-        if watched is self._tool_control_box and event.type() == QEvent.Type.Resize:
-            if self._grid_tracker.update(self._tool_control_box.size()):
-                self._forward_grid_layout()
-        return super().eventFilter(watched, event)
+    def _update_tool_control_policy(self) -> None:
+        """Lets a `FitContent` tool control panel's planned width count, so the panel scrolls or changes orientation
+        when it doesn't fit. Other tool control panels don't widen the panel, so they squeeze to fit it."""
+        width_policy = QSizePolicy.Policy.Preferred if isinstance(self._active_tool_panel, FitContent) \
+            else QSizePolicy.Policy.Ignored
+        self._tool_control_box.setSizePolicy(width_policy, QSizePolicy.Policy.Expanding)
 
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
-        """Re-fits a strip's button grid to the new height."""
-        super().resizeEvent(event)
-        button_layout = self._current_button_layout()
-        if button_layout != self._button_layout:
-            self._button_layout = button_layout
+    def fit_finished(self, orientation: Orientation) -> None:
+        """Lays out the buttons for the chosen form, and gives a `FitContent` tool control panel the space beside the
+        buttons and under the header."""
+        if self._built_layout != self._button_layout:
             self._build_button_rows()
+        self._update_tool_control_policy()
+        if isinstance(self._active_tool_panel, FitContent):
+            self._active_tool_panel.set_fit_space(orientation, self.tool_control_space())
+
+    def tool_control_space(self) -> QSize:
+        """Returns the space the tool control panel gets in the latest plan: the available size less the margins, any
+        scroll bar, the button column and the header."""
+        available = self.available_size if self.available_size is not None else self.size()
+        fresh_minimum_size(self._content)
+        margins = self._body_layout.contentsMargins()
+        width = available.width() - margins.left() - margins.right()
+        height = available.height() - margins.top() - margins.bottom()
+        if self.content_scrolls:
+            if self.orientation == Orientation.SIDE:
+                width -= self.scroll_bar_extent()
+            else:
+                height -= self.scroll_bar_extent()
+        header_height = 0 if self.header.isHidden() \
+            else self.header.minimumSizeHint().height() + self._content_layout.verticalSpacing()
+        column = self._strip_column.sizeHint()
+        if self.orientation == Orientation.SIDE:
+            height -= column.height() + self._content_layout.verticalSpacing() + header_height
+        else:
+            width -= column.width() + self._content_layout.horizontalSpacing()
+            height -= header_height
+        return QSize(max(width, 0), max(height, 0))
+
+    def _apply_button_form(self, form: Optional[int]) -> None:
+        """Sizes the button grid for a form. Resizing every button for each trial is slow, so `fit_finished` lays the
+        buttons out once planning is done."""
+        assert form is not None
+        self._button_form = form
+        self._button_layout = self._current_button_layout()
+        self._button_grid.setFixedSize(button_grid_size(len(self._tool_widgets), self._button_layout))
+        self.header.set_icon_width(self._button_layout.edge_length)
+
+    def _apply_description_form(self, form: Optional[int]) -> None:
+        self._show_description = form is not None
+        self._update_tool_text()
 
     def _current_button_layout(self) -> ButtonLayout:
-        """Returns the button layout for the grid size, fitted to the height in strips more than one row tall."""
-        default = self._default_button_layout()
-        if self._layout_key[0] == Orientation.SIDE or self._is_strip_short():
+        """Returns the layout for the button form, with the largest strip form fitted to the available height."""
+        if self.orientation == Orientation.SIDE:
+            return SIDE_BUTTON_FORMS[self._button_form]
+        default = STRIP_BUTTON_FORMS[self._button_form]
+        if self._button_form != 0:
             return default
+        available = self.available_size if self.available_size is not None else self.size()
         margins = self._body_layout.contentsMargins()
-        grid_height = (self.height() - margins.top() - margins.bottom() - self.header.sizeHint().height()
-                       - self._content_layout.verticalSpacing())
+        grid_height = available.height() - margins.top() - margins.bottom()
+        if not self.header.isHidden():
+            grid_height -= self.header.minimumSizeHint().height() + self._content_layout.verticalSpacing()
         return strip_button_layout(len(self._tool_widgets), grid_height, default)
 
-    def _is_strip_short(self) -> bool:
-        return is_strip_short(*self._layout_key)
-
-    def _is_side_compact(self) -> bool:
-        orientation, grid_size = self._layout_key
-        return orientation == Orientation.SIDE and grid_size.columns == 1
-
-    def _default_button_layout(self) -> ButtonLayout:
-        orientation, grid_size = self._layout_key
-        return BUTTON_LAYOUTS[(orientation, grid_size.constrained(orientation))]
-
     def _forward_orientation(self) -> None:
-        """Passes the orientation to an active tool panel that hasn't migrated to `DockPanel`."""
-        if self._active_tool_panel is not None and hasattr(self._active_tool_panel, 'set_orientation'):
-            orientation = self._layout_key[0]
-            self._active_tool_panel.set_orientation(Qt.Orientation.Vertical if orientation == Orientation.SIDE
-                                                    else Qt.Orientation.Horizontal)
-
-    def _forward_grid_layout(self) -> None:
-        """Sends the active tool control panel its layout for the tool control area, if it declares layouts and the
-        choice changed."""
+        """Passes the orientation to an active tool panel that doesn't plan its own layout."""
         panel = self._active_tool_panel
-        if not isinstance(panel, GridLayoutPanel):
-            return
-        if self._grid_tracker.grid_size is None:
-            self._grid_tracker.update(self._tool_control_box.size())
-        grid_size = self._grid_tracker.grid_size
-        assert grid_size is not None
-        orientation = self._layout_key[0]
-        layout = choose_layout(grid_size, panel.grid_layouts(), orientation)
-        if layout is None or (orientation, layout) == self._forwarded_grid_layout:
-            return
-        self._forwarded_grid_layout = (orientation, layout)
-        panel.set_grid_layout(orientation, layout)
+        if panel is not None and not isinstance(panel, FitContent) and hasattr(panel, 'set_orientation'):
+            panel.set_orientation(Qt.Orientation.Vertical if self.orientation == Orientation.SIDE
+                                  else Qt.Orientation.Horizontal)
 
     def _update_tool_text(self) -> None:
-        """Shows the active tool's name and key in the header, or in the dim line in Strip Short."""
+        """Shows the active tool's name and key in the header, or in the dim line while the header is collapsed."""
         tool = self._active_tool
         if tool is None:
             self.header.set_name('')
@@ -301,16 +341,16 @@ class ToolPanel(DockPanel):
         keys = KeyConfig().get(tool.get_activation_config_key())
         self.header.set_name(tool.label, tool.get_icon())
         self.header.set_key_text(get_key_display_string(keys, rich_text=False) if keys != '' else '')
-        show_description = not self._is_side_compact() and not self._is_strip_short()
-        self.header.set_description(tool.get_tooltip_text() if show_description else '')
+        self.header.set_description(tool.get_tooltip_text() if self._show_description else '')
         self._short_label.setText(shortcut_tooltip_text(tool.label, keys))
-        self._short_label.setVisible(self._is_strip_short())
+        self._short_label.setVisible(self.header_collapsed)
 
     def _update_reset_controls(self) -> None:
-        """Shows reset in the header, or in the More popover in Strip Short, if the active tool has reset keys."""
+        """Shows reset in the header, or in the More popover while the header is collapsed, if the active tool has
+        reset keys."""
         can_reset = self._active_tool is not None and len(self._active_tool.get_reset_config_keys()) > 0
         self.header.reset_button.setVisible(can_reset)
-        if self._is_strip_short():
+        if self.header_collapsed:
             self.header.set_popover_content(self._short_popover_content if can_reset else None)
             # Reparenting hides a widget:
             self.header.more_button.setVisible(can_reset)
@@ -322,6 +362,8 @@ class ToolPanel(DockPanel):
     def _build_button_rows(self) -> None:
         """Places the buttons in a grid for the current layout, starting a new row every `ButtonLayout.columns`."""
         layout = self._button_layout
+        self._built_layout = layout
+        self._button_grid.setFixedSize(button_grid_size(len(self._tool_widgets), layout))
         while self._button_grid_layout.count() > 0:
             self._button_grid_layout.takeAt(0)
         for index, button in enumerate(self.tool_buttons):

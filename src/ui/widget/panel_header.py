@@ -5,10 +5,10 @@ button and a More button.
   description wraps. A name that still doesn't fit ends with an ellipsis.
 - The header holds no config. `reset_requested` fires when the reset button is clicked, and the owner restores its
   declared keys (see `src.ui.panel.panel_reset`).
-- The More button opens a popover holding the controls a small grid size moved out of the panel, plus panel
-  commands. The owner supplies them with `set_popover_content` and refreshes them in a `more_requested` handler.
-- In a strip one row tall (Strip Short) the owner hides the header and places `more_button` at the end of the panel's
-  row, and `restore_more_button` puts it back.
+- The More button opens a popover holding the controls that didn't fit in the panel, plus panel commands. The owner
+  supplies them with `set_popover_content` and refreshes them in a `more_requested` handler.
+- In a strip too short for the header, the owner hides it and places `more_button` at the end of the panel's row, and
+  `restore_more_button` puts it back.
 """
 from typing import Optional
 
@@ -177,6 +177,22 @@ class PanelPopover(QFrame):
         self.show()
 
 
+class _IconLabel(QLabel):
+    """The header's icon, with size hints equal to the fixed size its owner sets.
+
+    QLabel caches size hints expanded to its minimum size when its content last changed, so they go stale once
+    `PanelHeader.set_icon_width` narrows it.
+    """
+
+    def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the fixed size."""
+        return self.minimumSize()
+
+    def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the fixed size."""
+        return self.minimumSize()
+
+
 class PanelHeader(QWidget):
     """Shows what a panel is for and offers its reset and overflow commands."""
 
@@ -186,7 +202,7 @@ class PanelHeader(QWidget):
     def __init__(self, name: str, icon: Optional[QIcon] = None, key_text: str = '',
                  parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self._icon_label = QLabel()
+        self._icon_label = _IconLabel()
         self._icon_label.setFixedSize(ICON_SIZE, ICON_SIZE)
         self._icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._name_label = _ElidedLabel()
@@ -203,6 +219,9 @@ class PanelHeader(QWidget):
         details_layout.addWidget(self._key_badge)
         details_layout.addWidget(self._description_label, stretch=1)
         self._wrapped = False
+        # `_one_line_width`'s inputs and result:
+        self._one_line_key: Optional[tuple] = None
+        self._one_line_cache = 0
         self._reset_button = _GlyphButton(_GlyphButton.RESET, RESET_TOOLTIP)
         self._more_button = _GlyphButton(_GlyphButton.MORE, MORE_TOOLTIP)
         self._more_button.hide()
@@ -329,15 +348,25 @@ class PanelHeader(QWidget):
         return has_details and width < self._one_line_width()
 
     def _one_line_width(self) -> int:
-        """Returns the width the first line needs with the key and description on it."""
+        """Returns the width the first line needs with the key and description on it.
+
+        Measuring text is slow and panel planning reads this often, so the width is kept until something it depends
+        on changes.
+        """
         widgets = [self._icon_label, self._key_badge, self._reset_button, self._more_button]
+        key = (tuple(widget.isHidden() for widget in widgets), self._icon_label.minimumWidth(), self._key_badge.text,
+               self._name_label.full_text, self._description_label.isHidden(), self._description_label.text())
+        if key == self._one_line_key:
+            return self._one_line_cache
         shown = [widget for widget in widgets if not widget.isHidden()]
         width = sum(widget.sizeHint().width() for widget in shown) + self._name_label.full_text_width()
         if not self._description_label.isHidden():
             # A pixel to spare on each side for rounding, as `_ElidedLabel.full_text_width` has:
             width += self._description_label.fontMetrics().horizontalAdvance(self._description_label.text()) + 2
             width += HEADER_SPACING
-        return width + HEADER_SPACING * len(shown)
+        self._one_line_key = key
+        self._one_line_cache = width + HEADER_SPACING * len(shown)
+        return self._one_line_cache
 
     def _fit_lines(self) -> None:
         self.updateGeometry()
@@ -365,7 +394,10 @@ class PanelHeader(QWidget):
         self._icon_label.setVisible(not self._icon.isNull())
 
     def changeEvent(self, event: QEvent) -> None:  # pylint: disable=invalid-name
-        """Rebuilds the icon pixmap when the palette changes, for icons that recolor themselves."""
+        """Rebuilds the icon pixmap when the palette changes, for icons that recolor themselves, and measures text again
+        when the font or style changes."""
         if event.type() == QEvent.Type.PaletteChange:
             self._refresh_icon()
+        if event.type() in (QEvent.Type.FontChange, QEvent.Type.StyleChange):
+            self._one_line_key = None
         super().changeEvent(event)

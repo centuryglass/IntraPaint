@@ -3,50 +3,56 @@
     "problems": [],
     "size": [
       327,
-      270
+      242
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: StrokeBlock is 145x136, minimum 146x136",
-      "squeezed: StrokeBlock/QWidget[1] is 145x50, minimum 146x50",
-      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Only inside selection' is 145x22, minimum 146x22",
+      "squeezed: StrokeBlock is 145x108, minimum 245x108",
+      "squeezed: StrokeBlock/QWidget[1] is 145x22, minimum 245x22",
+      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Antialiasing' is 70x22, minimum 93x22",
+      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Only inside selection' is 69x22, minimum 146x22",
       "squeezed: PanelSection is 145x110, minimum 309x110",
       "squeezed: PanelSection/QWidget is 145x84, minimum 309x84",
       "squeezed: PanelSection/QWidget/SegmentedControl/QComboBox is 145x24, minimum 113x25"
     ],
     "size": [
       163,
-      270
+      242
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
       327,
-      270
+      242
     ]
   },
   "short": {
     "problems": [
-      "overlap: StrokeBlock/QWidget[0]/SliderField[0] and StrokeBlock/QWidget[0]/SliderField[1] share 299x13",
-      "overlap: StrokeBlock/QWidget[0]/SliderField[0] and StrokeBlock/QWidget[0]/SliderField[2] share 299x2",
-      "overlap: StrokeBlock/QWidget[0]/SliderField[1] and StrokeBlock/QWidget[0]/SliderField[2] share 299x13",
-      "overlap: PanelSection/QWidget/QWidget/NumberField[0] and PanelSection/QWidget/QWidget/NumberField[1] share 300x15",
-      "squeezed: StrokeBlock is 309x56, minimum 146x136",
-      "squeezed: StrokeBlock/QWidget[0] is 299x28, minimum 110x80",
-      "clipped: StrokeBlock/QWidget[0]/SliderField[1] shows 299x17 of 299x24",
-      "clipped: StrokeBlock/QWidget[0]/SliderField[2] shows 299x6 of 299x24",
-      "squeezed: PanelSection is 309x55, minimum 309x110",
-      "squeezed: PanelSection/QWidget is 309x29, minimum 309x84",
-      "squeezed: PanelSection/QWidget/SegmentedControl is 309x12, minimum 113x24",
-      "squeezed: PanelSection/QWidget/QWidget is 309x11, minimum 110x54",
-      "clipped: PanelSection/QWidget/QWidget/NumberField[0] shows 300x11 of 300x24",
-      "clipped: PanelSection/QWidget/QWidget/NumberField[1] shows 300x2 of 300x24"
+      "overlap: StrokeBlock/QWidget[0]/SliderField[0] and StrokeBlock/QWidget[0]/SliderField[1] share 299x15",
+      "overlap: StrokeBlock/QWidget[0]/SliderField[0] and StrokeBlock/QWidget[0]/SliderField[2] share 299x6",
+      "overlap: StrokeBlock/QWidget[0]/SliderField[1] and StrokeBlock/QWidget[0]/SliderField[2] share 299x15",
+      "overlap: PanelSection/QWidget/QWidget/NumberField[0] and PanelSection/QWidget/QWidget/NumberField[1] share 300x16",
+      "squeezed: StrokeBlock is 309x49, minimum 245x108",
+      "squeezed: StrokeBlock/QWidget[0] is 299x22, minimum 110x80",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[0] shows 299x22 of 299x24",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[1] shows 299x13 of 299x24",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[2] shows 299x4 of 299x24",
+      "squeezed: StrokeBlock/QWidget[1] is 309x21, minimum 245x22",
+      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Antialiasing' is 93x21, minimum 93x22",
+      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Only inside selection' is 146x21, minimum 146x22",
+      "squeezed: PanelSection is 309x48, minimum 309x110",
+      "squeezed: PanelSection/_HeaderButton 'Source' is 305x24, minimum 16x26",
+      "squeezed: PanelSection/QWidget is 309x24, minimum 309x84",
+      "squeezed: PanelSection/QWidget/SegmentedControl is 309x9, minimum 113x24",
+      "squeezed: PanelSection/QWidget/QWidget is 309x9, minimum 110x54",
+      "clipped: PanelSection/QWidget/QWidget/NumberField[0] shows 300x9 of 300x24",
+      "clipped: PanelSection/QWidget/QWidget/NumberField[1] shows 300x1 of 300x24"
     ],
     "size": [
       327,
-      135
+      121
     ]
   },
   "tall": {
@@ -60,7 +66,7 @@
     "problems": [],
     "size": [
       1600,
-      270
+      242
     ]
   }
 }
