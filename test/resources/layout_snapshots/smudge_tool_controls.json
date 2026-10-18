@@ -8,13 +8,11 @@
   },
   "narrow": {
     "problems": [
-      "overlap: StrokeBlock/QWidget[0]/SliderField[0] and StrokeBlock/QWidget[0]/SliderField[1] share 110x5",
-      "overlap: StrokeBlock/QWidget[0]/SliderField[1] and StrokeBlock/QWidget[0]/SliderField[2] share 110x5",
+      "overlap: StrokeBlock/QWidget[0]/SliderField[0] and StrokeBlock/QWidget[0]/SliderField[1] share 113x5",
+      "overlap: StrokeBlock/QWidget[0]/SliderField[1] and StrokeBlock/QWidget[0]/SliderField[2] share 113x5",
       "squeezed: StrokeBlock is 113x108, minimum 146x136",
-      "squeezed: StrokeBlock/QWidget[0] is 103x52, minimum 110x80",
-      "clipped: StrokeBlock/QWidget[0]/SliderField[0] shows 103x24 of 110x24",
-      "clipped: StrokeBlock/QWidget[0]/SliderField[1] shows 103x24 of 110x24",
-      "clipped: StrokeBlock/QWidget[0]/SliderField[2] shows 103x14 of 110x24",
+      "squeezed: StrokeBlock/QWidget[0] is 113x52, minimum 110x80",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[2] shows 113x14 of 113x24",
       "squeezed: StrokeBlock/QWidget[1] is 113x50, minimum 146x50",
       "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Only inside selection' is 113x22, minimum 146x22"
     ],
@@ -32,15 +30,15 @@
   },
   "short": {
     "problems": [
-      "overlap: StrokeBlock/QWidget[0]/SliderField[0] and StrokeBlock/QWidget[0]/SliderField[1] share 235x16",
-      "overlap: StrokeBlock/QWidget[0]/SliderField[0] and StrokeBlock/QWidget[0]/SliderField[2] share 235x8",
-      "overlap: StrokeBlock/QWidget[0]/SliderField[1] and StrokeBlock/QWidget[0]/SliderField[2] share 235x16",
+      "overlap: StrokeBlock/QWidget[0]/SliderField[0] and StrokeBlock/QWidget[0]/SliderField[1] share 243x16",
+      "overlap: StrokeBlock/QWidget[0]/SliderField[0] and StrokeBlock/QWidget[0]/SliderField[2] share 243x8",
+      "overlap: StrokeBlock/QWidget[0]/SliderField[1] and StrokeBlock/QWidget[0]/SliderField[2] share 243x16",
       "squeezed: StrokeBlock is 245x45, minimum 146x136",
-      "squeezed: StrokeBlock/QWidget[0] is 235x20, minimum 110x80",
-      "clipped: StrokeBlock/QWidget[0]/SliderField[0] shows 235x20 of 235x24",
-      "clipped: StrokeBlock/QWidget[0]/SliderField[1] shows 235x12 of 235x24",
-      "clipped: StrokeBlock/QWidget[0]/SliderField[2] shows 235x4 of 235x24",
-      "squeezed: StrokeBlock/QWidget[1] is 245x19, minimum 146x50",
+      "squeezed: StrokeBlock/QWidget[0] is 243x20, minimum 110x80",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[0] shows 243x20 of 243x24",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[1] shows 243x12 of 243x24",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[2] shows 243x4 of 243x24",
+      "squeezed: StrokeBlock/QWidget[1] is 243x19, minimum 146x50",
       "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Antialiasing' is 146x7, minimum 93x22",
       "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Only inside selection' is 146x6, minimum 146x22"
     ],

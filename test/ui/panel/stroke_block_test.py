@@ -90,6 +90,33 @@ class StrokeBlockTest(IntraPaintTestCase):
         self.assertEqual((fields.minimumWidth(), fields.maximumWidth()), (BESIDE_FIELD_MIN_WIDTH,
                                                                           FIELD_COLUMN_MAX_WIDTH))
 
+    def test_controls_stay_grouped_in_the_fields_column(self) -> None:
+        """Side panels keep the color pair and checkboxes under the fields at the same width, and no control column
+        grows past FIELD_COLUMN_MAX_WIDTH in a wide panel or strip."""
+        self.panel.resize(1000, 900)
+        self.panel.show()
+        for orientation, size in ((SIDE, QSize(1000, 900)), (SIDE, QSize(430, 900)), (STRIP, QSize(1400, 160))):
+            with self.subTest(orientation=orientation, size=size):
+                self.panel.set_fit_space(orientation, size)
+                settle_layouts(self.panel)
+                columns = [self.block._fields_widget, self.block._paint_widget,  # pylint: disable=protected-access
+                           self.block._checks_widget]  # pylint: disable=protected-access
+                for widget in columns:
+                    assert widget is not None
+                    self.assertLessEqual(widget.width(), FIELD_COLUMN_MAX_WIDTH)
+                if orientation == SIDE:
+                    fields, paint = columns[:2]
+                    assert paint is not None
+                    self.assertEqual(paint.mapTo(self.block, paint.rect().topLeft()).x(),
+                                     fields.mapTo(self.block, fields.rect().topLeft()).x())
+                    self.assertEqual(paint.width(), fields.width())
+                else:
+                    paint = columns[1]
+                    assert paint is not None
+                    fields_right = columns[0].mapTo(self.block, columns[0].rect().topRight()).x()
+                    paint_left = paint.mapTo(self.block, paint.rect().topLeft()).x()
+                    self.assertLess(paint_left - fields_right, 2 * FIELD_COLUMN_MAX_WIDTH - columns[0].width())
+
     def test_rows_stack_when_they_do_not_fit_across(self) -> None:
         """A narrow side panel stacks the checkboxes into a column and a wider one keeps them in a row. A strip keeps
         them in a row, however narrow."""

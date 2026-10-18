@@ -10,12 +10,15 @@
 Tool-specific sections go after the block, in `StrokeToolPanel`.
 
 Layout is planned by fit (`src.ui.layout.panel_fit`) in the space the Tools panel gives `StrokeToolPanel`:
-- Side: one column. Strip: the fields in column 1, the color pair and checkboxes in column 2.
+- Side: the fields, color pair and checkboxes share column 1, and a preview beside them takes column 2. Strip: the
+  fields in column 1, the color pair and checkboxes in column 2, and a preview beside the fields in column 3.
+- Every control column stops at `FIELD_COLUMN_MAX_WIDTH`, so a wide panel leaves spare width after the last column
+  instead of stretching the columns apart.
 - The color pair and Pattern, and the checkboxes, are required items. In a side panel each row stacks into a column
   when it doesn't fit across. In a strip the rows stay inline, because stacking would make them taller.
 - A tool with a `StrokePreview` shows it beside the fields or below them, whichever fits, or hides it. The preview is
   decorative, so it never moves to the More popover. Beside the fields, they keep at least
-  `BESIDE_FIELD_MIN_WIDTH` and stop at `FIELD_COLUMN_MAX_WIDTH`.
+  `BESIDE_FIELD_MIN_WIDTH`.
 """
 import math
 from dataclasses import dataclass
@@ -58,7 +61,10 @@ PREVIEW_MAX_SIZE = QSize(400, 160)
 COLUMN_SPACING = 10
 MIN_PATTERN_CHARACTERS = 6
 PREVIEW_STAMP_SPACING = 0.2
-QWIDGETSIZE_MAX = 16777215
+# Capped columns share width until they reach their caps, and a spare column after them takes what is left. Without
+# it the layout would center each capped column in a wider cell:
+CONTROL_COLUMN_STRETCH = 100
+SPARE_COLUMN_STRETCH = 1
 
 # The block's planner items, and their forms:
 PAINT_ITEM = 'paint'
@@ -170,7 +176,7 @@ def build_paint_row(color_key: Optional[str], pattern_key: Optional[str], parent
         pattern_dropdown.setSizeAdjustPolicy(pattern_dropdown.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
         pattern_dropdown.setMinimumContentsLength(MIN_PATTERN_CHARACTERS)
         row_layout.addWidget(pattern_label)
-        row_layout.addWidget(pattern_dropdown, stretch=1)
+        row_layout.addWidget(pattern_dropdown, stretch=1)  # Stretches to the row's edge, see `StrokeBlock._arrange`
         if color_key is not None:
             def _pattern_color_update(color_str: str, *_) -> None:
                 if QColor(color_str).isValid():
@@ -178,7 +184,8 @@ def build_paint_row(color_key: Optional[str], pattern_key: Optional[str], parent
 
             cache.connect(row, color_key, _pattern_color_update)
             pattern_dropdown.set_icon_colors(cache.get_color(color_key, Qt.GlobalColor.black))
-    row_layout.addStretch(1)
+    if pattern_key is None:
+        row_layout.addStretch(1)
     return row
 
 
@@ -357,7 +364,7 @@ class StrokeBlock(QWidget):
         for widget in (self._fields_widget, self._paint_widget, self._checks_widget, self._preview):
             if widget is not None:
                 self._grid.removeWidget(widget)
-        for index in range(3):
+        for index in range(4):
             self._grid.setColumnStretch(index, 0)
         for index in range(5):
             self._grid.setRowStretch(index, 0)
@@ -366,12 +373,18 @@ class StrokeBlock(QWidget):
         if self._paint_layout is not None:
             self._paint_layout.setDirection(QBoxLayout.Direction.TopToBottom if arrangement.paint_stacked
                                             else QBoxLayout.Direction.LeftToRight)
+            # The Pattern combo fills the row's width, but not extra height when stacked:
+            for dropdown in self._paint_widget.findChildren(FillStyleComboBox):  # type: ignore[union-attr]
+                self._paint_layout.setStretchFactor(dropdown, 0 if arrangement.paint_stacked else 1)
         if self._preview is not None:
             self._preview.setVisible(arrangement.preview is not None)
         beside = arrangement.preview == BESIDE
         self._fields_widget.setMinimumWidth(BESIDE_FIELD_MIN_WIDTH if beside else 0)
-        self._fields_widget.setMaximumWidth(FIELD_COLUMN_MAX_WIDTH if beside else QWIDGETSIZE_MAX)
-        # Top-aligned, so Size stays put when a taller preview sits beside the fields:
+        for widget in (self._fields_widget, self._paint_widget, self._checks_widget):
+            if widget is not None:
+                widget.setMaximumWidth(FIELD_COLUMN_MAX_WIDTH)
+        # Top-aligned, so Size stays put when a taller preview sits beside the fields. No horizontal alignment, which
+        # would size each widget to its hint instead of its column:
         top = Qt.AlignmentFlag.AlignTop
         if arrangement.orientation == Orientation.STRIP:
             self._grid.addWidget(self._fields_widget, 0, 0, 3, 1, top)
@@ -384,27 +397,36 @@ class StrokeBlock(QWidget):
                 self._grid.addWidget(self._preview, 0, 2, 3, 1)
             elif self._preview is not None and arrangement.preview == BELOW:
                 self._grid.addWidget(self._preview, row, 1)
-            self._grid.setColumnStretch(0, 1)
-            self._grid.setColumnStretch(1, 1)
+            self._grid.setColumnStretch(0, CONTROL_COLUMN_STRETCH)
+            self._grid.setColumnStretch(1, CONTROL_COLUMN_STRETCH)
+            columns = 2
+            if self._preview is not None and beside:
+                self._grid.setColumnStretch(2, CONTROL_COLUMN_STRETCH)
+                columns = 3
+            self._grid.setColumnStretch(columns, SPARE_COLUMN_STRETCH)
             # Height beyond what the rows need goes below them:
             self._grid.setRowStretch(3, 1)
             return
         self._grid.addWidget(self._fields_widget, 0, 0, top)
         row = 1
         if self._preview is not None and beside:
-            self._grid.addWidget(self._preview, 0, 1)
-            self._grid.setColumnStretch(1, 1)
+            # The preview spans the rows, and every control stays in column 1 under the fields:
+            self._grid.addWidget(self._preview, 0, 1, 3, 1)
+            self._grid.setColumnStretch(0, CONTROL_COLUMN_STRETCH)
+            self._grid.setColumnStretch(1, CONTROL_COLUMN_STRETCH)
+            self._grid.setColumnStretch(2, SPARE_COLUMN_STRETCH)
         else:
-            self._grid.setColumnStretch(0, 1)
+            self._grid.setColumnStretch(0, CONTROL_COLUMN_STRETCH)
+            self._grid.setColumnStretch(1, SPARE_COLUMN_STRETCH)
             if self._preview is not None and arrangement.preview == BELOW:
-                self._grid.addWidget(self._preview, row, 0, 1, 2)
+                self._grid.addWidget(self._preview, row, 0)
                 row += 1
         for widget in (self._paint_widget, self._checks_widget):
             if widget is not None:
-                self._grid.addWidget(widget, row, 0, 1, 2)
+                self._grid.addWidget(widget, row, 0)
                 row += 1
         # Height beyond what the rows need goes below them:
-        self._grid.setRowStretch(row, 1)
+        self._grid.setRowStretch(max(row, 3), 1)
 
 
 class StrokeToolPanel(QWidget):
