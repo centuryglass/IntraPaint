@@ -9,6 +9,9 @@ what a test checked.
 - Panel captures resize each panel inside a plain host widget, which lets them go below the panel's minimum size the
   way a squeezed dock or divider can. `find_layout_problems` lists overlapping, clipped and squeezed child widgets.
   Its results depend on font metrics, which the bundled theme font fixes.
+- A panel that takes a dock orientation is captured with a side and a strip preference, as a left or right dock and a
+  top or bottom dock would tell it. `PanelHost.capture` passes it on.
+- `SWEEP_WIDTHS` and `SWEEP_HEIGHTS` are a grid of dock sizes between the extremes, for sweep sheets.
 """
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
@@ -29,6 +32,8 @@ from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QAbstractSp
 
 from src.ui.button_weight import ButtonWeight, set_button_weight
 from src.ui.ink_style import InkStyle, set_primary_button, set_signal
+from src.ui.layout.dock_panel import DockPanel
+from src.ui.layout.panel_fit import FitContent, Orientation
 from src.ui.widget.disabled_banner import DisabledBanner
 from src.ui.widget.keycap_badge import KeycapBadge
 from src.ui.widget.panel_header import PanelHeader
@@ -715,8 +720,35 @@ def _geometries(root: QWidget) -> list[QRect]:
     return [widget.geometry() for widget in root.findChildren(QWidget)]
 
 
+def host_orientations(panel: QWidget) -> tuple[Optional[Orientation], ...]:
+    """Returns the orientations to capture a panel with: side and strip for a panel `tell_orientation` can tell, or only
+    None for any other."""
+    if isinstance(panel, (DockPanel, FitContent)) or hasattr(panel, 'set_orientation'):
+        return Orientation.SIDE, Orientation.STRIP
+    return (None,)
+
+
+def tell_orientation(panel: QWidget, orientation: Orientation, size: QSize) -> None:
+    """Tells a panel its orientation the way its host does, with the size it fills.
+
+    - A `DockPanel` gets `set_host_facts`, as from `PanelDock`.
+    - `FitContent` gets `set_fit_space`, as from the Tools panel.
+    - Other content gets `set_orientation` with the matching `Qt.Orientation`.
+    """
+    if isinstance(panel, DockPanel):
+        panel.set_host_facts(orientation, size)
+    elif isinstance(panel, FitContent):
+        panel.set_fit_space(orientation, size)
+    elif hasattr(panel, 'set_orientation'):
+        panel.set_orientation(Qt.Orientation.Vertical if orientation == Orientation.SIDE else Qt.Orientation.Horizontal)
+
+
 class PanelHost(QWidget):
-    """A plain parent that sets a panel's geometry directly, so the panel can be sized below its minimum."""
+    """A plain parent that sets a panel's geometry directly, so the panel can be sized below its minimum.
+
+    Fit planning keeps a placement until a better one fits with `HYSTERESIS` to spare, so a capture within that margin
+    of a planning boundary depends on the size captured before it.
+    """
 
     def __init__(self, panel: QWidget) -> None:
         super().__init__()
@@ -726,16 +758,22 @@ class PanelHost(QWidget):
         panel.setParent(self)
         panel.show()
 
-    def capture(self, size: QSize) -> QImage:
-        """Resizes the panel, settles its layouts and returns a render of it."""
+    def capture(self, size: QSize, orientation: Optional[Orientation] = None) -> QImage:
+        """Resizes the panel, tells it the orientation if one is given, settles its layouts and returns a render of
+        it."""
         self.resize(size)
+        if orientation is not None:
+            tell_orientation(self.panel, orientation, size)
         self.panel.setGeometry(QRect(QPoint(), size))
         self.show()
         _settle_layouts(self.panel)
         return self.panel.grab().toImage()
 
     def release(self) -> None:
-        """Hides the host and returns the panel to its original parent, or makes it a hidden window if it had none."""
+        """Hides the host and returns the panel to its original parent, or makes it a hidden window if it had none.
+
+        The panel keeps the last orientation it was told.
+        """
         self.hide()
         self.panel.setParent(self._old_parent)
         self.panel.setVisible(self._panel_was_visible and self._old_parent is not None)
@@ -825,6 +863,13 @@ def _visible_rect(widget: QWidget, root: QWidget) -> QRect:
     return visible
 
 
+def layout_widget_rects(root: QWidget) -> list[QRect]:
+    """Returns the rectangle in root of every visible widget under it that `find_layout_problems` checks."""
+    return [_rect_in(widget, root) for widget in root.findChildren(QWidget)
+            if widget.isVisibleTo(root) and not widget.isWindow() and not _is_qt_internal(widget, root)
+            and not _is_parked(widget, root)]
+
+
 def _layout_widgets(layout: QLayout) -> list[QWidget]:
     """Returns the widgets a layout and its nested layouts manage."""
     widgets = []
@@ -893,6 +938,10 @@ def layout_report(size: QSize, problems: list[str]) -> dict:
     return {'size': [size.width(), size.height()], 'problems': problems}
 
 
+# Dock sizes for sweep sheets, from a squeezed dock to a wide strip or a tall side panel:
+SWEEP_WIDTHS = (160, 240, 360, 540, 800, 1200)
+SWEEP_HEIGHTS = (100, 160, 240, 360, 540, 800)
+
 # Common screen sizes the main window is captured at, along with its minimum size:
 WINDOW_SIZES = {'small': QSize(800, 600), 'hd': QSize(1280, 720), 'full_hd': QSize(1920, 1080),
                 'ultrawide': QSize(3440, 1440), 'portrait': QSize(1080, 1920)}
@@ -910,6 +959,9 @@ class PanelScene:
 
     A scene with `fixed_sizes` is captured at its minimum size and those sizes, and other scenes at SIZE_CASES. Captures
     run inside the context manager `context` returns.
+
+    A scene without `fixed_sizes` is captured in each of its panel's `host_orientations`. Strip captures reuse the
+    sizes measured before the first capture, so a strip is also captured tall and narrow.
     """
     name: str
     build: Callable[['AppController'], Optional[QWidget]]
@@ -921,6 +973,24 @@ class PanelScene:
         if self.fixed_sizes is not None:
             return {'minimum': panel_size('minimum', panel), **self.fixed_sizes}
         return {case: panel_size(case, panel) for case in SIZE_CASES}
+
+    def orientations(self, panel: QWidget) -> tuple[Optional[Orientation], ...]:
+        """Returns the orientations to capture the panel with, or only None for a panel no dock tells."""
+        return (None,) if self.fixed_sizes is not None else host_orientations(panel)
+
+    def captures(self, panel: QWidget) -> dict[str, tuple[QSize, Optional[Orientation]]]:
+        """Returns each capture's size and orientation by capture name: the size case, prefixed with `strip_` for a
+        strip capture.
+
+        Tells the panel its first orientation before measuring, since a panel keeps the orientation it was last told.
+        """
+        orientations = self.orientations(panel)
+        if orientations[0] is not None:
+            tell_orientation(panel, orientations[0], panel.size())
+            _settle_layouts(panel)
+        sizes = self.sizes(panel)
+        return {(f'strip_{case}' if orientation == Orientation.STRIP else case): (size, orientation)
+                for orientation in orientations for case, size in sizes.items()}
 
 
 def _snake_case(name: str) -> str:
@@ -935,6 +1005,23 @@ def _tool_control_scenes(controller: 'AppController') -> list[PanelScene]:
             scenes.append(PanelScene(_snake_case(type(tool).__name__) + '_controls',
                                      lambda _controller, panel_tool=tool: panel_tool.get_control_panel()))
     return scenes
+
+
+def _show_tool(controller: 'AppController', tool) -> QWidget:
+    # pylint: disable=protected-access
+    controller._tool_controller.active_tool = tool
+    return controller._tool_panel
+
+
+def tools_panel_scenes(controller: 'AppController') -> list[PanelScene]:
+    """Returns a scene for the Tools panel with each tool that has a control panel active, for sweep sheets.
+
+    Each scene makes its tool the active tool when built.
+    """
+    # pylint: disable=protected-access
+    return [PanelScene('tools_panel_' + _snake_case(type(tool).__name__),
+                       lambda c, panel_tool=tool: _show_tool(c, panel_tool))
+            for tool in controller._tool_controller.tools if tool.get_control_panel() is not None]
 
 
 def panel_scenes(controller: 'AppController') -> list[PanelScene]:

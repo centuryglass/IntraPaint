@@ -186,6 +186,11 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
   text-free goldens, and `test/ui/panel_layout_test.py` snapshots each panel's layout problems at extreme sizes, so a
   change to the style, theme, fonts or any panel's layout can fail them. `python scripts/capture_ui.py` saves the same
   renders as images. `test/ui/ui_capture.py` describes both.
+- **Panel layout work is checked on sweep sheets.** Before calling a layout change done, run
+  `python scripts/capture_ui.py --sheet --only <panel>` and read every sheet it prints, side and strip. For a tool's
+  controls, that includes `tools_panel_<tool>`, the Tools panel with that tool active. A sheet shows the panel at a
+  grid of dock sizes. Misalignment, stretched sections and wasted space show up there even when the snapshots pass.
+  Put the before and after sheets in the PR. The script's docstring covers the options.
 - **Stable Diffusion requests are pinned by snapshots.** `test/controller/image_generation/` compares what the WebUI
   and ComfyUI generators send with `test/resources/sd_request_snapshots/`, so a change under `sd_adapters/` or to those
   generators can fail it. A PR that changes a snapshot explains the diff.

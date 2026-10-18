@@ -31,6 +31,52 @@
       29
     ]
   },
+  "strip_minimum": {
+    "problems": [],
+    "size": [
+      59,
+      59
+    ]
+  },
+  "strip_narrow": {
+    "problems": [
+      "squeezed: QScrollArea is 29x322, minimum 59x59"
+    ],
+    "size": [
+      29,
+      322
+    ]
+  },
+  "strip_preferred": {
+    "problems": [],
+    "size": [
+      411,
+      322
+    ]
+  },
+  "strip_short": {
+    "problems": [
+      "squeezed: QScrollArea is 411x29, minimum 59x59"
+    ],
+    "size": [
+      411,
+      29
+    ]
+  },
+  "strip_tall": {
+    "problems": [],
+    "size": [
+      411,
+      1200
+    ]
+  },
+  "strip_wide": {
+    "problems": [],
+    "size": [
+      1600,
+      322
+    ]
+  },
   "tall": {
     "problems": [],
     "size": [

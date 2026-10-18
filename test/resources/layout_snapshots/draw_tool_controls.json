@@ -55,6 +55,102 @@
       90
     ]
   },
+  "strip_minimum": {
+    "problems": [
+      "overlap: StrokeBlock/QWidget[1]/ColorPairWidget and StrokeBlock/QWidget[1]/QLabel 'Pattern' share 4x48",
+      "squeezed: StrokeBlock is 245x162, minimum 365x154",
+      "squeezed: StrokeBlock/QWidget[1] is 125x48, minimum 206x48",
+      "squeezed: StrokeBlock/QWidget[1]/QLabel 'Pattern' is 38x48, minimum 43x17",
+      "squeezed: StrokeBlock/QWidget[1]/FillStyleComboBox is 37x32, minimum 103x32",
+      "squeezed: StrokeBlock/QWidget[2] is 125x22, minimum 245x22",
+      "squeezed: StrokeBlock/QWidget[2]/CheckBox 'Antialiasing' is 60x22, minimum 93x22",
+      "squeezed: StrokeBlock/QWidget[2]/CheckBox 'Only inside selection' is 59x22, minimum 146x22"
+    ],
+    "size": [
+      263,
+      180
+    ]
+  },
+  "strip_narrow": {
+    "problems": [
+      "overlap: StrokeBlock/QWidget[1]/ColorPairWidget and StrokeBlock/QWidget[1]/QLabel 'Pattern' share 13x48",
+      "overlap: StrokeBlock/QWidget[1]/ColorPairWidget and StrokeBlock/QWidget[1]/FillStyleComboBox share 10x32",
+      "squeezed: StrokeBlock is 113x162, minimum 365x154",
+      "squeezed: StrokeBlock/QWidget[0] is 52x80, minimum 110x80",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[0] shows 52x24 of 110x24",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[1] shows 52x24 of 110x24",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[2] shows 52x24 of 110x24",
+      "squeezed: StrokeBlock/QWidget[1] is 51x48, minimum 206x48",
+      "squeezed: StrokeBlock/QWidget[1]/QLabel 'Pattern' is 13x48, minimum 43x17",
+      "squeezed: StrokeBlock/QWidget[1]/FillStyleComboBox is 13x32, minimum 103x32",
+      "squeezed: StrokeBlock/QWidget[2] is 51x22, minimum 245x22",
+      "squeezed: StrokeBlock/QWidget[2]/CheckBox 'Antialiasing' is 23x22, minimum 93x22",
+      "squeezed: StrokeBlock/QWidget[2]/CheckBox 'Only inside selection' is 22x22, minimum 146x22",
+      "clipped: StrokeBlock/StrokePreview shows 51x72 of 120x72"
+    ],
+    "size": [
+      131,
+      180
+    ]
+  },
+  "strip_preferred": {
+    "problems": [
+      "overlap: StrokeBlock/QWidget[1]/ColorPairWidget and StrokeBlock/QWidget[1]/QLabel 'Pattern' share 4x48",
+      "squeezed: StrokeBlock is 245x162, minimum 365x154",
+      "squeezed: StrokeBlock/QWidget[1] is 125x48, minimum 206x48",
+      "squeezed: StrokeBlock/QWidget[1]/QLabel 'Pattern' is 38x48, minimum 43x17",
+      "squeezed: StrokeBlock/QWidget[1]/FillStyleComboBox is 37x32, minimum 103x32",
+      "squeezed: StrokeBlock/QWidget[2] is 125x22, minimum 245x22",
+      "squeezed: StrokeBlock/QWidget[2]/CheckBox 'Antialiasing' is 60x22, minimum 93x22",
+      "squeezed: StrokeBlock/QWidget[2]/CheckBox 'Only inside selection' is 59x22, minimum 146x22"
+    ],
+    "size": [
+      263,
+      180
+    ]
+  },
+  "strip_short": {
+    "problems": [
+      "overlap: StrokeBlock/QWidget[1]/ColorPairWidget and StrokeBlock/QWidget[1]/QLabel 'Pattern' share 4x38",
+      "squeezed: StrokeBlock is 245x72, minimum 365x82",
+      "squeezed: StrokeBlock/QWidget[0] is 110x72, minimum 110x80",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[2] shows 110x21 of 110x24",
+      "squeezed: StrokeBlock/QWidget[1] is 125x38, minimum 206x48",
+      "clipped: StrokeBlock/QWidget[1]/ColorPairWidget shows 48x38 of 48x48",
+      "squeezed: StrokeBlock/QWidget[1]/QLabel 'Pattern' is 38x38, minimum 43x17",
+      "squeezed: StrokeBlock/QWidget[1]/FillStyleComboBox is 37x32, minimum 103x32",
+      "squeezed: StrokeBlock/QWidget[2] is 125x22, minimum 245x22",
+      "squeezed: StrokeBlock/QWidget[2]/CheckBox 'Antialiasing' is 60x22, minimum 93x22",
+      "squeezed: StrokeBlock/QWidget[2]/CheckBox 'Only inside selection' is 59x22, minimum 146x22"
+    ],
+    "size": [
+      263,
+      90
+    ]
+  },
+  "strip_tall": {
+    "problems": [
+      "overlap: StrokeBlock/QWidget[1]/ColorPairWidget and StrokeBlock/QWidget[1]/QLabel 'Pattern' share 4x48",
+      "squeezed: StrokeBlock is 245x1182, minimum 365x154",
+      "squeezed: StrokeBlock/QWidget[1] is 125x48, minimum 206x48",
+      "squeezed: StrokeBlock/QWidget[1]/QLabel 'Pattern' is 38x48, minimum 43x17",
+      "squeezed: StrokeBlock/QWidget[1]/FillStyleComboBox is 37x32, minimum 103x32",
+      "squeezed: StrokeBlock/QWidget[2] is 125x22, minimum 245x22",
+      "squeezed: StrokeBlock/QWidget[2]/CheckBox 'Antialiasing' is 60x22, minimum 93x22",
+      "squeezed: StrokeBlock/QWidget[2]/CheckBox 'Only inside selection' is 59x22, minimum 146x22"
+    ],
+    "size": [
+      263,
+      1200
+    ]
+  },
+  "strip_wide": {
+    "problems": [],
+    "size": [
+      1600,
+      180
+    ]
+  },
   "tall": {
     "problems": [],
     "size": [

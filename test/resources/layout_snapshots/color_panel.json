@@ -43,6 +43,64 @@
       124
     ]
   },
+  "strip_minimum": {
+    "problems": [],
+    "size": [
+      202,
+      249
+    ]
+  },
+  "strip_narrow": {
+    "problems": [
+      "overlap: QWidget[28]/ColorPickerHeader/ColorPairWidget and QWidget[28]/ColorPickerHeader/QLabel '#000000' share 13x17",
+      "squeezed: QWidget[28] is 99x306, minimum 200x247",
+      "squeezed: QWidget[28]/ColorPickerHeader is 99x48, minimum 149x48",
+      "squeezed: QWidget[28]/ColorPickerHeader/QLabel '#000000' is 29x17, minimum 57x17",
+      "squeezed: QWidget[28]/ColorPickerHeader/QToolButton is 29x31, minimum 32x31",
+      "squeezed: QWidget[28]/QTabWidget is 99x221, minimum 196x162",
+      "squeezed: QWidget[28]/AlphaHexRow is 99x25, minimum 200x25",
+      "squeezed: QWidget[28]/AlphaHexRow/QLabel 'Alpha:' is 29x25, minimum 38x17",
+      "squeezed: QWidget[28]/AlphaHexRow/GradientSlider is 29x20, minimum 60x20",
+      "clipped: QWidget[28]/AlphaHexRow/QLineEdit shows 29x25 of 90x25"
+    ],
+    "size": [
+      101,
+      308
+    ]
+  },
+  "strip_preferred": {
+    "problems": [],
+    "size": [
+      302,
+      308
+    ]
+  },
+  "strip_short": {
+    "problems": [
+      "squeezed: QWidget[33] is 300x122, minimum 200x247",
+      "squeezed: QWidget[33]/ColorPickerHeader is 300x43, minimum 149x48",
+      "clipped: QWidget[33]/ColorPickerHeader/ColorPairWidget shows 48x43 of 48x48",
+      "squeezed: QWidget[33]/QTabWidget is 300x42, minimum 196x162"
+    ],
+    "size": [
+      302,
+      124
+    ]
+  },
+  "strip_tall": {
+    "problems": [],
+    "size": [
+      302,
+      1200
+    ]
+  },
+  "strip_wide": {
+    "problems": [],
+    "size": [
+      1600,
+      308
+    ]
+  },
   "tall": {
     "problems": [],
     "size": [

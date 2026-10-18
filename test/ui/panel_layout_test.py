@@ -1,7 +1,8 @@
 """Pins each panel's layout problems at extreme sizes, so a change that adds or fixes one shows up in a snapshot diff.
 
-Each snapshot in `test/resources/layout_snapshots/` lists, for every size a panel is captured at, the size and the
-problems `find_layout_problems` reports. Run `scripts/capture_ui.py` to see the captures the snapshots describe.
+Each snapshot in `test/resources/layout_snapshots/` lists, for every capture `PanelScene.captures` gives a panel, the
+size and the problems `find_layout_problems` reports. Run `scripts/capture_ui.py` to see the captures the snapshots
+describe.
 """
 import sys
 
@@ -32,9 +33,9 @@ class PanelLayoutTest(IntraPaintTestCase):
                 host = PanelHost(panel)
                 try:
                     captures = {}
-                    for size_case, size in scene.sizes(panel).items():
-                        host.capture(size)
-                        captures[size_case] = layout_report(size, find_layout_problems(panel))
+                    for name, (size, orientation) in scene.captures(panel).items():
+                        host.capture(size, orientation)
+                        captures[name] = layout_report(size, find_layout_problems(panel))
                 finally:
                     host.release()
                 self.assert_json_matches_snapshot(captures, f'{SNAPSHOT_DIR}/{scene.name}.json')

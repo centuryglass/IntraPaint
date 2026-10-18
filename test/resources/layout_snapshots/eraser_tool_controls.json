@@ -47,6 +47,81 @@
       63
     ]
   },
+  "strip_minimum": {
+    "problems": [
+      "squeezed: StrokeBlock is 245x108, minimum 365x80",
+      "squeezed: StrokeBlock/QWidget[1] is 125x23, minimum 245x22",
+      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Antialiasing' is 60x22, minimum 93x22",
+      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Only inside selection' is 59x22, minimum 146x22"
+    ],
+    "size": [
+      263,
+      126
+    ]
+  },
+  "strip_narrow": {
+    "problems": [
+      "squeezed: StrokeBlock is 113x108, minimum 365x80",
+      "squeezed: StrokeBlock/QWidget[0] is 52x80, minimum 110x80",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[0] shows 52x24 of 110x24",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[1] shows 52x24 of 110x24",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[2] shows 52x24 of 110x24",
+      "squeezed: StrokeBlock/QWidget[1] is 51x23, minimum 245x22",
+      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Antialiasing' is 23x22, minimum 93x22",
+      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Only inside selection' is 22x22, minimum 146x22"
+    ],
+    "size": [
+      131,
+      126
+    ]
+  },
+  "strip_preferred": {
+    "problems": [
+      "squeezed: StrokeBlock is 245x108, minimum 365x80",
+      "squeezed: StrokeBlock/QWidget[1] is 125x23, minimum 245x22",
+      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Antialiasing' is 60x22, minimum 93x22",
+      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Only inside selection' is 59x22, minimum 146x22"
+    ],
+    "size": [
+      263,
+      126
+    ]
+  },
+  "strip_short": {
+    "problems": [
+      "overlap: StrokeBlock/QWidget[0]/SliderField[0] and StrokeBlock/QWidget[0]/SliderField[1] share 110x7",
+      "overlap: StrokeBlock/QWidget[0]/SliderField[1] and StrokeBlock/QWidget[0]/SliderField[2] share 110x8",
+      "squeezed: StrokeBlock is 245x45, minimum 365x80",
+      "squeezed: StrokeBlock/QWidget[0] is 110x45, minimum 110x80",
+      "clipped: StrokeBlock/QWidget[0]/SliderField[2] shows 110x12 of 110x24",
+      "squeezed: StrokeBlock/QWidget[1] is 125x11, minimum 245x22",
+      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Antialiasing' is 60x11, minimum 93x22",
+      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Only inside selection' is 59x11, minimum 146x22"
+    ],
+    "size": [
+      263,
+      63
+    ]
+  },
+  "strip_tall": {
+    "problems": [
+      "squeezed: StrokeBlock is 245x1182, minimum 365x80",
+      "squeezed: StrokeBlock/QWidget[1] is 125x23, minimum 245x22",
+      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Antialiasing' is 60x22, minimum 93x22",
+      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Only inside selection' is 59x22, minimum 146x22"
+    ],
+    "size": [
+      263,
+      1200
+    ]
+  },
+  "strip_wide": {
+    "problems": [],
+    "size": [
+      1600,
+      126
+    ]
+  },
   "tall": {
     "problems": [],
     "size": [
