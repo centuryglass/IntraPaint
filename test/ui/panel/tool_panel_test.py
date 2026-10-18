@@ -16,7 +16,7 @@ from src.tools.text_tool import TextTool
 from src.ui.layout.panel_fit import HYSTERESIS, Orientation
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.tool_panel import ToolPanel, ButtonLayout, BUTTON_SPACING, MAX_STRIP_EDGE_LENGTH, SIDE_BUTTON_FORMS, \
-    STRIP_BUTTON_FORMS, STRIP_NARROW_COLUMNS, strip_button_layout
+    STRIP_BUTTON_FORMS, STRIP_MAX_COLUMNS, STRIP_NARROW_COLUMNS, strip_button_layout
 from src.util.visual.text_drawing_utils import get_key_display_string
 from test.base_test_case import IntraPaintTestCase
 
@@ -256,8 +256,8 @@ class ToolPanelTest(IntraPaintTestCase):
         self._host_named('strip_short')
         self.assertEqual(self._tool_panel.button_layout, STRIP_BUTTON_FORMS[-1])
 
-    def test_tall_strip_uses_three_larger_columns(self) -> None:
-        """A strip tall enough for three columns of buttons at least the default size uses them, growing the buttons
+    def test_tall_strip_uses_two_larger_columns(self) -> None:
+        """A strip tall enough for two columns of buttons at least the default size uses them, growing the buttons
         up to `MAX_STRIP_EDGE_LENGTH` with key hints at that size."""
         tools = self._add_tools()
         self._host_named('strip_tall')
@@ -266,11 +266,16 @@ class ToolPanelTest(IntraPaintTestCase):
             self.assertEqual(button.width(), MAX_STRIP_EDGE_LENGTH)
 
     def test_strip_button_layout(self) -> None:
-        """Three columns once their buttons are at least the default size, capped at `MAX_STRIP_EDGE_LENGTH`."""
+        """Three columns once their buttons are at least the default size, capped at `MAX_STRIP_EDGE_LENGTH`, and two
+        columns only when the buttons keep that size."""
         default = STRIP_BUTTON_FORMS[0]
         self.assertEqual(strip_button_layout(16, 100, default), default)
-        fitted = strip_button_layout(16, 6 * 30 + 5 * BUTTON_SPACING, default)
-        self.assertEqual((fitted.columns, fitted.edge_length, fitted.key_hints), (STRIP_NARROW_COLUMNS, 30, False))
+        three = strip_button_layout(16, 6 * 30 + 5 * BUTTON_SPACING, default)
+        self.assertEqual((three.columns, three.edge_length, three.key_hints), (STRIP_MAX_COLUMNS, 30, False))
+        two = strip_button_layout(16, 8 * MAX_STRIP_EDGE_LENGTH + 7 * BUTTON_SPACING, default)
+        self.assertEqual((two.columns, two.edge_length), (STRIP_NARROW_COLUMNS, MAX_STRIP_EDGE_LENGTH))
+        shrunk = strip_button_layout(16, 8 * (MAX_STRIP_EDGE_LENGTH - 1) + 7 * BUTTON_SPACING, default)
+        self.assertEqual((shrunk.columns, shrunk.edge_length), (STRIP_MAX_COLUMNS, MAX_STRIP_EDGE_LENGTH))
         tall = strip_button_layout(16, 1000, default)
         self.assertEqual((tall.edge_length, tall.key_hints), (MAX_STRIP_EDGE_LENGTH, True))
 
