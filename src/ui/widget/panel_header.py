@@ -12,7 +12,7 @@ button and a More button.
 """
 from typing import Optional
 
-from PySide6.QtCore import QEvent, QPointF, QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QIcon, QPainter, QPainterPath, QPalette, QPen, QResizeEvent
 from PySide6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QLabel, QSizePolicy, QStyle, QStyleOptionToolButton,
                                QToolButton, QVBoxLayout, QWidget)
@@ -38,6 +38,8 @@ GLYPH_SIZE = 12.0
 HEADER_SPACING = 6
 LINE_SPACING = 2
 POPOVER_MARGIN = 8
+# Space between a popover and the widget it opens from:
+POPOVER_GAP = 2
 
 
 class _GlyphButton(QToolButton):
@@ -169,11 +171,28 @@ class PanelPopover(QFrame):
             self.layout().addWidget(content)
             content.show()
 
-    def popup_below(self, anchor: QWidget) -> None:
-        """Shows the popover under `anchor`, with its right edge aligned to the anchor's."""
+    def popup_below(self, anchor: QWidget, align_left: bool = False, height: Optional[int] = None) -> None:
+        """Shows the popover under `anchor`, with its right edge aligned to the anchor's, or its left edge with
+        `align_left`.
+
+        - It opens above the anchor instead when the screen has more room there, as in a dock at the bottom.
+        - `height` is the height it asks for, its size hint's by default. It shrinks to the room on that side, but not
+          below its minimum size hint.
+        - It moves sideways to stay on the screen.
+        """
         self.adjustSize()
-        corner = anchor.mapToGlobal(anchor.rect().bottomRight())
-        self.move(corner.x() - self.width() + 1, corner.y() + 2)
+        size = QSize(self.width(), self.height() if height is None else height)
+        anchor_rect = QRect(anchor.mapToGlobal(QPoint(0, 0)), anchor.size())
+        screen = anchor.screen().availableGeometry()
+        room_below = screen.bottom() - anchor_rect.bottom() - POPOVER_GAP
+        room_above = anchor_rect.top() - screen.top() - POPOVER_GAP
+        above = size.height() > room_below and room_above > room_below
+        size.setHeight(max(min(size.height(), room_above if above else room_below), self.minimumSizeHint().height()))
+        x = anchor_rect.left() if align_left else anchor_rect.right() - size.width() + 1
+        x = max(screen.left(), min(x, screen.right() - size.width() + 1))
+        y = anchor_rect.top() - POPOVER_GAP - size.height() if above else anchor_rect.bottom() + POPOVER_GAP
+        self.resize(size)
+        self.move(x, y)
         self.show()
 
 

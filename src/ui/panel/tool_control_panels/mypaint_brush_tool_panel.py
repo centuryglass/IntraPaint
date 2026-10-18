@@ -17,7 +17,7 @@ from src.image.mypaint.mypaint_brush import MyPaintBrush
 from src.ui.layout.panel_fit import REQUIRED, STRIP_SECTION_MIN_WIDTH, FitItem, Orientation
 from src.ui.panel.mypaint_brush_dynamics import BrushDynamicsWidget
 from src.ui.panel.mypaint_brush_panel import MAX_CELL_SIZE, MypaintBrushPanel, brush_name
-from src.ui.panel.tool_control_panels.stroke_block import FIELD_COLUMN_MAX_WIDTH, StrokeBlock, StrokeToolPanel
+from src.ui.panel.tool_control_panels.stroke_block import StrokeBlock, StrokeToolPanel
 from src.ui.widget.panel_section import PanelSection
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -65,7 +65,8 @@ class MyPaintBrushToolPanel(StrokeToolPanel):
         self._dynamics_body_layout.setContentsMargins(0, 0, 0, 0)
         self._dynamics_body_layout.addWidget(self._dynamics)
         self._dynamics_section = PanelSection(DYNAMICS_SECTION_TITLE, dynamics_body)
-        self._dynamics_section.setMaximumWidth(FIELD_COLUMN_MAX_WIDTH)
+        # Its description reads better on fewer, longer lines, so the section can grow like the picker:
+        self._dynamics_section.setMaximumWidth(BRUSH_MAX_WIDTH)
         self._overflow_title = QLabel(DYNAMICS_SECTION_TITLE)
         self.overflow_layout.addWidget(self._overflow_title)
         self._overflow_title.hide()

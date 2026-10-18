@@ -8,7 +8,7 @@
   },
   "narrow": {
     "problems": [
-      "squeezed: StrokeBlock is 77x652, minimum 156x499",
+      "squeezed: StrokeBlock is 77x635, minimum 156x499",
       "squeezed: StrokeBlock/PanelSection[0] is 67x50, minimum 110x50",
       "squeezed: StrokeBlock/PanelSection[0]/QWidget is 67x24, minimum 110x24",
       "squeezed: StrokeBlock/PanelSection[0]/QWidget/QWidget is 67x24, minimum 110x24",
@@ -32,14 +32,14 @@
     ],
     "size": [
       95,
-      670
+      653
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
       245,
-      670
+      653
     ]
   },
   "short": {
@@ -102,7 +102,7 @@
   },
   "strip_narrow": {
     "problems": [
-      "squeezed: StrokeBlock is 77x652, minimum 696x211",
+      "squeezed: StrokeBlock is 77x635, minimum 696x211",
       "squeezed: StrokeBlock/PanelSection[0] is 19x50, minimum 110x50",
       "squeezed: StrokeBlock/PanelSection[0]/_HeaderButton 'Stroke' is 15x26, minimum 16x26",
       "squeezed: StrokeBlock/PanelSection[0]/QWidget is 19x24, minimum 110x24",
@@ -115,9 +115,9 @@
       "clipped: StrokeBlock/PanelSection[1]/QWidget/QWidget[0]/ColorPairWidget shows 19x48 of 48x48",
       "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget[1] is 19x22, minimum 146x22",
       "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget[1]/CheckBox 'Only inside selection' is 19x22, minimum 146x22",
-      "clipped: StrokeBlock/PanelSection[2] shows 19x652 of 420x652",
+      "clipped: StrokeBlock/PanelSection[2] shows 19x635 of 420x635",
       "clipped: StrokeBlock/PanelSection[2]/_HeaderButton 'Brush' shows 19x26 of 416x26",
-      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel shows 19x626 of 420x626",
+      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel shows 19x609 of 420x609",
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/CurrentBrushChip shows 19x44 of 420x44",
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/CurrentBrushChip/QLabel 'No brush' shows 12x17 of 376x17",
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/CurrentBrushChip/QLabel[1] shows 12x17 of 376x17",
@@ -130,17 +130,17 @@
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/FlowWidget/QPushButton 'ramon' shows 0x0 of 80x25",
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/FlowWidget/QPushButton 'experimental' shows 19x25 of 92x25",
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/FlowWidget/QPushButton 'tanda' shows 0x0 of 80x25",
-      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/BrushList shows 19x516 of 420x516",
-      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/BrushList/QWidget[0] shows 19x516 of 409x516"
+      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/BrushList shows 19x499 of 420x499",
+      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/BrushList/QWidget[0] shows 19x499 of 409x499"
     ],
     "size": [
       95,
-      670
+      653
     ]
   },
   "strip_preferred": {
     "problems": [
-      "squeezed: StrokeBlock is 227x652, minimum 696x211",
+      "squeezed: StrokeBlock is 227x635, minimum 696x211",
       "squeezed: StrokeBlock/PanelSection[0] is 69x50, minimum 110x50",
       "squeezed: StrokeBlock/PanelSection[0]/QWidget is 69x24, minimum 110x24",
       "squeezed: StrokeBlock/PanelSection[0]/QWidget/QWidget is 69x24, minimum 110x24",
@@ -149,9 +149,9 @@
       "squeezed: StrokeBlock/PanelSection[1]/QWidget is 69x76, minimum 146x76",
       "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget[1] is 69x22, minimum 146x22",
       "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget[1]/CheckBox 'Only inside selection' is 69x22, minimum 146x22",
-      "clipped: StrokeBlock/PanelSection[2] shows 69x652 of 420x652",
+      "clipped: StrokeBlock/PanelSection[2] shows 69x635 of 420x635",
       "clipped: StrokeBlock/PanelSection[2]/_HeaderButton 'Brush' shows 69x26 of 416x26",
-      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel shows 69x626 of 420x626",
+      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel shows 69x609 of 420x609",
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/CurrentBrushChip shows 69x44 of 420x44",
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/CurrentBrushChip/QLabel 'No brush' shows 62x17 of 376x17",
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/CurrentBrushChip/QLabel[1] shows 62x17 of 376x17",
@@ -164,12 +164,12 @@
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/FlowWidget/QPushButton 'ramon' shows 0x0 of 80x25",
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/FlowWidget/QPushButton 'experimental' shows 69x25 of 92x25",
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/FlowWidget/QPushButton 'tanda' shows 0x0 of 80x25",
-      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/BrushList shows 69x516 of 420x516",
-      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/BrushList/QWidget[0] shows 69x516 of 409x516"
+      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/BrushList shows 69x499 of 420x499",
+      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/BrushList/QWidget[0] shows 69x499 of 409x499"
     ],
     "size": [
       245,
-      670
+      653
     ]
   },
   "strip_short": {
@@ -208,7 +208,7 @@
   },
   "strip_tall": {
     "problems": [
-      "squeezed: StrokeBlock is 227x1992, minimum 696x211",
+      "squeezed: StrokeBlock is 227x1941, minimum 696x211",
       "squeezed: StrokeBlock/PanelSection[0] is 69x50, minimum 110x50",
       "squeezed: StrokeBlock/PanelSection[0]/QWidget is 69x24, minimum 110x24",
       "squeezed: StrokeBlock/PanelSection[0]/QWidget/QWidget is 69x24, minimum 110x24",
@@ -217,9 +217,9 @@
       "squeezed: StrokeBlock/PanelSection[1]/QWidget is 69x76, minimum 146x76",
       "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget[1] is 69x22, minimum 146x22",
       "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget[1]/CheckBox 'Only inside selection' is 69x22, minimum 146x22",
-      "clipped: StrokeBlock/PanelSection[2] shows 69x1992 of 420x1992",
+      "clipped: StrokeBlock/PanelSection[2] shows 69x1941 of 420x1941",
       "clipped: StrokeBlock/PanelSection[2]/_HeaderButton 'Brush' shows 69x26 of 416x26",
-      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel shows 69x1966 of 420x1966",
+      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel shows 69x1915 of 420x1915",
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/CurrentBrushChip shows 69x44 of 420x44",
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/CurrentBrushChip/QLabel 'No brush' shows 62x17 of 376x17",
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/CurrentBrushChip/QLabel[1] shows 62x17 of 376x17",
@@ -232,33 +232,33 @@
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/FlowWidget/QPushButton 'ramon' shows 0x0 of 80x25",
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/FlowWidget/QPushButton 'experimental' shows 69x25 of 92x25",
       "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/FlowWidget/QPushButton 'tanda' shows 0x0 of 80x25",
-      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/BrushList shows 69x1856 of 420x1856",
-      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/BrushList/QWidget[0] shows 69x1856 of 420x1856"
+      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/BrushList shows 69x1805 of 420x1805",
+      "clipped: StrokeBlock/PanelSection[2]/MypaintBrushPanel/BrushList/QWidget[0] shows 69x1805 of 420x1805"
     ],
     "size": [
       245,
-      2010
+      1959
     ]
   },
   "strip_wide": {
     "problems": [],
     "size": [
       1600,
-      670
+      653
     ]
   },
   "tall": {
     "problems": [],
     "size": [
       245,
-      2010
+      1959
     ]
   },
   "wide": {
     "problems": [],
     "size": [
       1600,
-      670
+      653
     ]
   }
 }

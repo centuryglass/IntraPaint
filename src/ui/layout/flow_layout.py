@@ -32,8 +32,11 @@ class FlowLayout(QLayout):
         return self._items.pop(index) if 0 <= index < len(self._items) else None
 
     def hasHeightForWidth(self) -> bool:  # pylint: disable=invalid-name
-        """Returns true, since the height depends on how many lines fit."""
-        return True
+        """Returns false, so parent layouts use `FlowWidget`'s height at its own width.
+
+        A grid computes height for width at a spanned cell's full width, which a width-capped widget never gets.
+        """
+        return False
 
     def heightForWidth(self, width: int) -> int:  # pylint: disable=invalid-name
         """Returns the height needed at a width."""

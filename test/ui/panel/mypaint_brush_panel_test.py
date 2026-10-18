@@ -20,6 +20,7 @@ from src.ui.panel.mypaint_brush_panel import (MypaintBrushPanel, BrushList, brus
 from src.ui.panel.tool_control_panels.mypaint_brush_tool_panel import MyPaintBrushToolPanel
 from src.util.shared_constants import PROJECT_DIR
 from test.base_test_case import IntraPaintTestCase
+from test.ui.panel.tool_panel_test import settle_layouts
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -292,3 +293,29 @@ class MyPaintBrushToolPanelTest(IntraPaintTestCase):
         self.assertFalse(self.panel.brush_panel.compact)
         self.assertTrue(self.panel.dynamics_section.isVisibleTo(self.panel))
         self.assertIsNot(self.panel.dynamics.parentWidget(), self.panel.overflow_content())
+
+    def test_long_dynamics_description_gets_its_whole_height(self) -> None:
+        """After switching to a setting with a long description, the description is tall enough for every line at
+        its width, in a side panel wider than the section's cap."""
+        self.panel.resize(700, 1400)
+        self.panel.set_fit_space(Orientation.SIDE, QSize(700, 1400))
+        self.panel.show()
+        combo = self.panel.dynamics.setting_combo
+        descriptions = {combo.itemText(i): len(self.panel.dynamics.description_for(i)) for i in range(combo.count())}
+        combo.setCurrentIndex(combo.findText(max(descriptions, key=descriptions.get)))
+        settle_layouts(self.panel)
+        label = self.panel.dynamics.description_label
+        self.assertGreater(label.heightForWidth(label.width()), label.fontMetrics().height() * 2)
+        self.assertGreaterEqual(label.height(), label.heightForWidth(label.width()))
+        self.panel.hide()
+
+    def test_compact_strip_chip_keeps_the_whole_name(self) -> None:
+        """Beside the favorites in a strip, the chip is never narrower than its whole brush name."""
+        Cache().set(BRUSH_KEY, os.path.relpath(CHARCOAL_PATH, PROJECT_DIR))
+        picker = self.panel.brush_panel
+        picker.set_compact(True, beside=True)
+        chip = picker.chip
+        self.assertGreaterEqual(chip.minimumWidth(),
+                                chip.name_label.fontMetrics().horizontalAdvance(chip.name_label.text()))
+        picker.set_compact(True, beside=False)
+        self.assertLess(chip.minimumWidth(), chip.sizeHint().width())

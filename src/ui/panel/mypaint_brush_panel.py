@@ -535,7 +535,9 @@ class BrushList(QListWidget):
 class CurrentBrushChip(QFrame):
     """Shows the active brush's preview, name and category, with a star that toggles its favorite.
 
-    While `popup_enabled` is set, the chip shows a drop-down arrow and emits `clicked` when pressed.
+    - While `popup_enabled` is set, the chip shows a drop-down arrow and emits `clicked` when pressed.
+    - Its size hint fits the whole name and category. Its minimum width is CHIP_MIN_WIDTH, or its size hint while
+      `keep_names_whole` is set.
     """
 
     clicked = Signal()
@@ -547,6 +549,7 @@ class CurrentBrushChip(QFrame):
         self.setMinimumWidth(CHIP_MIN_WIDTH)
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self._popup_enabled = False
+        self._keep_names_whole = False
         self._icon_label = QLabel(self)
         self._icon_label.setFixedSize(CHIP_ICON_SIZE, CHIP_ICON_SIZE)
         self._name_label = QLabel(self)
@@ -596,10 +599,27 @@ class CurrentBrushChip(QFrame):
         """Whether pressing the chip should open the picker."""
         return self._popup_enabled
 
+    def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the layout's size hint widened by the name and category text, which the labels leave out so the
+        chip can shrink below it."""
+        hint = super().sizeHint()
+        text_width = max(label.fontMetrics().horizontalAdvance(label.text())
+                         for label in (self._name_label, self._category_label))
+        return QSize(max(hint.width() + text_width, CHIP_MIN_WIDTH), hint.height())
+
+    def set_keep_names_whole(self, keep_whole: bool) -> None:
+        """Sets whether the chip's minimum width fits its whole name and category."""
+        self._keep_names_whole = keep_whole
+        self._update_minimum_width()
+
+    def _update_minimum_width(self) -> None:
+        self.setMinimumWidth(self.sizeHint().width() if self._keep_names_whole else CHIP_MIN_WIDTH)
+
     def set_popup_enabled(self, enabled: bool) -> None:
         """Shows the drop-down arrow and a pointing-hand cursor, or hides them."""
         self._popup_enabled = enabled
         self._arrow.setVisible(enabled)
+        self._update_minimum_width()
         self.setCursor(Qt.CursorShape.PointingHandCursor if enabled else Qt.CursorShape.ArrowCursor)
 
     def set_brush(self, brush_path: Optional[str], icon: Optional[QIcon], favorite: bool) -> None:
@@ -611,6 +631,7 @@ class CurrentBrushChip(QFrame):
             self._category_label.setText('')
             self._star.setEnabled(False)
             self._star.setChecked(False)
+            self._update_minimum_width()
             return
         self._icon_label.setPixmap(icon.pixmap(CHIP_ICON_SIZE, CHIP_ICON_SIZE))
         self._icon_label.show()
@@ -618,6 +639,7 @@ class CurrentBrushChip(QFrame):
         self._category_label.setText(brush_category(brush_path))
         self._star.setEnabled(True)
         self._star.setChecked(favorite)
+        self._update_minimum_width()
 
     def mousePressEvent(self, event: QMouseEvent) -> None:  # pylint: disable=invalid-name
         """Emits `clicked` while the popup is enabled."""
@@ -775,8 +797,9 @@ class MypaintBrushPanel(QWidget):
         self._chip.set_popup_enabled(self._compact)
         beside = self._compact and self._beside
         self._top_layout.setDirection(QBoxLayout.Direction.LeftToRight if beside else QBoxLayout.Direction.TopToBottom)
-        # Beside the chip, the favorites take the row's spare width:
+        # Beside the chip, the favorites take the row's spare width, and drop off before the name is cut short:
         self._top_layout.setStretchFactor(self._favorites_row, 1 if beside else 0)
+        self._chip.set_keep_names_whole(beside)
         self.setSizePolicy(QSizePolicy.Policy.Preferred,
                            QSizePolicy.Policy.Maximum if self._compact else QSizePolicy.Policy.Expanding)
         self.updateGeometry()
@@ -942,15 +965,14 @@ class MypaintBrushPanel(QWidget):
     # -----------------------------------------------------------------------------------------------------------------
 
     def _show_popover(self) -> None:
-        """Opens the full picker under the chip."""
+        """Opens the full picker by the chip: under it, or above it when the screen has more room there."""
         if self._popover is None:
             self._popover = PanelPopover(self)
             picker = MypaintBrushPanel(self._brush_config_key, library=self._library)
-            picker.setFixedSize(POPOVER_SIZE)
+            picker.setFixedWidth(POPOVER_SIZE.width())
             picker.set_layout_width(POPOVER_SIZE.width())
             picker.brush_picked.connect(self._popover.hide)
             self._popover.set_content(picker)
-        self._popover.adjustSize()
-        corner = self._chip.mapToGlobal(self._chip.rect().bottomLeft())
-        self._popover.move(corner.x(), corner.y() + 2)
-        self._popover.show()
+        margins = self._popover.layout().contentsMargins()
+        self._popover.popup_below(self._chip, align_left=True,
+                                  height=POPOVER_SIZE.height() + margins.top() + margins.bottom())
