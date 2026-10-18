@@ -184,8 +184,16 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
   `assert_json_matches_snapshot`, both in `test/base_test_case.py`. Its module docstring covers updating either.
 - **Style and panel layouts are pinned.** `test/ui/style_gallery_test.py` compares each standard control's states with
   text-free goldens, and `test/ui/panel_layout_test.py` snapshots each panel's layout problems at extreme sizes, so a
-  change to the style, theme, fonts or any panel's layout can fail them. `python scripts/capture_ui.py` saves the same
-  renders as images. `test/ui/ui_capture.py` describes both.
+  change to the style, theme, fonts or any panel's layout can fail them. `test/ui/panel_sweep_test.py` checks every
+  dock panel across a grid of dock sizes against its `KNOWN_PROBLEMS`, so a fix removes the entry it fixes. A field
+  meant to be wider than `FIELD_MAX_WIDTH` declares it with `set_field_width_cap` (`src/ui/layout/panel_fit.py`).
+  `python scripts/capture_ui.py` saves the same renders as images. `test/ui/ui_capture.py` and
+  `test/ui/panel_capture.py` describe them.
+- **Panel layout work is checked on sweep sheets.** Before calling a layout change done, run
+  `python scripts/capture_ui.py --sheet --only <panel>` and read every sheet it prints, side and strip. For a tool's
+  controls, that includes `tools_panel_<tool>`, the Tools panel with that tool active. A sheet shows the panel at a
+  grid of dock sizes. Misalignment, stretched sections and wasted space show up there even when the snapshots pass.
+  The PR names the sheets checked and what changed on them. The script's docstring covers the options.
 - **Stable Diffusion requests are pinned by snapshots.** `test/controller/image_generation/` compares what the WebUI
   and ComfyUI generators send with `test/resources/sd_request_snapshots/`, so a change under `sd_adapters/` or to those
   generators can fail it. A PR that changes a snapshot explains the diff.

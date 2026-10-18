@@ -1,0 +1,102 @@
+"""Checks each dock panel, and the Tools panel with each tool active, at every sweep size it can be docked at.
+
+A scene is captured at each `SWEEP_WIDTHS` by `SWEEP_HEIGHTS` size in each of its orientations, skipping sizes below its
+minimum size hint. Every problem `find_layout_problems` or `find_arrangement_problems` reports there counts, by kind:
+the text before the colon.
+
+`KNOWN_PROBLEMS` lists the kinds each scene is known to have and the open issue that tracks each. A scene fails when it
+shows a kind it doesn't list, or when a listed kind no longer appears, so a fix removes its entry. Run
+`scripts/capture_ui.py --sheet --only <scene>` to see where each kind appears.
+"""
+import sys
+
+from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QApplication
+
+from test.base_test_case import IntraPaintTestCase
+from test.ui.panel_capture import (SWEEP_HEIGHTS, SWEEP_WIDTHS, PanelHost, PanelScene, find_arrangement_problems,
+                                   find_layout_problems, mock_app_controller, panel_scenes, tools_panel_scenes)
+
+app = QApplication.instance() or QApplication(sys.argv)
+
+ISSUES = 'https://github.com/centuryglass/IntraPaint/issues/'
+
+_OVERLAP_CLIPPED_SQUEEZED = ('overlap', 'clipped', 'squeezed')
+
+
+def _each(kinds: tuple[str, ...], *issues: int) -> dict[str, tuple[int, ...]]:
+    return {kind: issues for kind in kinds}
+
+
+# Scene name -> {problem kind: the open issues that track it}:
+KNOWN_PROBLEMS: dict[str, dict[str, tuple[int, ...]]] = {
+    'layer_panel': {'stretched': (319,)},
+    'color_panel': {'squeezed': (412,)},
+    'tools_panel_my_paint_brush_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 314),
+    'tools_panel_draw_tool': {'empty band': (411,), 'cramped': (408,)},
+    'tools_panel_eraser_tool': {'empty band': (411,), 'cramped': (408,)},
+    'tools_panel_smudge_tool': {'empty band': (411,), 'cramped': (408,)},
+    'tools_panel_fill_tool': {**_each(_OVERLAP_CLIPPED_SQUEEZED, 313), 'stretched': (313,)},
+    'tools_panel_filter_tool': {'stretched': (402,), 'empty band': (402,)},
+    'tools_panel_clone_stamp_tool': {'stretched': (402,), 'empty band': (402, 411)},
+    'tools_panel_eyedropper_tool': {**_each(_OVERLAP_CLIPPED_SQUEEZED, 413), 'cramped': (408,)},
+    'tools_panel_text_tool': {**_each(_OVERLAP_CLIPPED_SQUEEZED, 317), 'stretched': (317,)},
+    'tools_panel_shape_tool': {'overlap': (316,), 'squeezed': (316,), 'stretched': (316,)},
+    'tools_panel_layer_transform_tool': {**_each(_OVERLAP_CLIPPED_SQUEEZED, 318), 'stretched': (318,),
+                                         'empty band': (318,)},
+    'tools_panel_free_selection_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 315),
+    'tools_panel_selection_brush_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 315),
+    'tools_panel_shape_selection_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 315),
+    'tools_panel_selection_fill_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 315),
+    'tools_panel_generation_area_tool': {'clipped': (323,), 'squeezed': (323,), 'stretched': (323,)},
+}
+
+
+def sweep_scenes(controller) -> list[PanelScene]:
+    """Returns the scenes to sweep: every panel scene without fixed sizes, and every Tools panel scene.
+
+    Standalone tool control scenes and the plain Tools panel scene are left out, since a Tools panel scene shows the
+    same controls where users see them.
+    """
+    return [scene for scene in panel_scenes(controller)
+            if scene.fixed_sizes is None and not scene.name.endswith('_controls') and scene.name != 'tool_panel'] \
+        + tools_panel_scenes(controller)
+
+
+class PanelSweepTest(IntraPaintTestCase):
+    """Sweeps every panel of a mock-mode AppController across the sweep grid."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.controller = mock_app_controller()
+
+    def test_panels_have_only_known_problems(self) -> None:
+        """Each scene shows exactly the problem kinds KNOWN_PROBLEMS lists for it."""
+        for scene in sweep_scenes(self.controller):
+            panel = scene.build(self.controller)
+            if panel is None:
+                continue
+            with self.subTest(panel=scene.name), scene.context():
+                examples: dict[str, str] = {}
+                host = PanelHost(panel)
+                try:
+                    for orientation in scene.orientations(panel):
+                        for height in SWEEP_HEIGHTS:
+                            for width in SWEEP_WIDTHS:
+                                host.capture(QSize(width, height), orientation)
+                                minimum = panel.minimumSizeHint()
+                                if width < minimum.width() or height < minimum.height():
+                                    continue
+                                for problem in find_layout_problems(panel) + find_arrangement_problems(panel):
+                                    place = orientation.value if orientation is not None else 'undocked'
+                                    where = f'{place} {width}x{height}'
+                                    examples.setdefault(problem.split(':', 1)[0], f'{where}: {problem}')
+                finally:
+                    host.release()
+                known = KNOWN_PROBLEMS.get(scene.name, {})
+                new = {kind: example for kind, example in examples.items() if kind not in known}
+                fixed = {kind: [f'{ISSUES}{issue}' for issue in issues] for kind, issues in known.items()
+                         if kind not in examples}
+                self.assertEqual({}, new, f'{scene.name} has problems KNOWN_PROBLEMS does not list')
+                self.assertEqual({}, fixed, f'{scene.name} no longer has these problems: remove them from '
+                                            'KNOWN_PROBLEMS')

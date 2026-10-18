@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QApplication, QCheckBox, QLineEdit, QPushButton, Q
 from src.ui.layout.dock_panel import DockPanel, PanelLayout
 from src.ui.layout.panel_fit import REQUIRED, STRIP_SECTION_MAX_WIDTH, STRIP_SECTION_MIN_WIDTH, Orientation
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
-from test.ui.ui_capture import PanelHost, find_layout_problems
+from test.ui.panel_capture import PanelHost, find_layout_problems
 
 app = QApplication.instance() or QApplication(sys.argv)
 

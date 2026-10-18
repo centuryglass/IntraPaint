@@ -5,6 +5,8 @@
   `bind_summary`, which recomputes it when a bound value changes.
 - Two states decide whether the body shows: the remembered choice (`is_expanded`) and a forced collapse
   (`set_forced_collapsed`) that a panel without room uses without changing the remembered choice.
+- A section can hide its header (`set_header_visible`), which also shows the body, so a panel too short for headers
+  loses no controls.
 - The section holds no config. The owner stores `is_expanded` per section by connecting `expanded_changed`, and calls
   `set_expanded` to restore it.
 """
@@ -141,6 +143,7 @@ class PanelSection(QWidget):
         self._body = body
         self._expanded = expanded
         self._forced_collapsed = False
+        self._header_visible = True
         self._summary = ''
         self._summary_fn: Optional[Callable[[], str]] = None
         self._header_button = _HeaderButton(title)
@@ -148,7 +151,7 @@ class PanelSection(QWidget):
         self._actions = QHBoxLayout()
         self._actions.setContentsMargins(0, 0, CHEVRON_MARGIN, 0)
         self._actions.setSpacing(ACTION_SPACING)
-        header = QHBoxLayout()
+        header = self._header_layout = QHBoxLayout()
         header.setContentsMargins(0, 0, 0, 0)
         header.setSpacing(0)
         header.addWidget(self._header_button, stretch=1)
@@ -181,7 +184,7 @@ class PanelSection(QWidget):
 
     def is_collapsed(self) -> bool:
         """Returns whether the body is hidden now, from a collapsed choice or a forced collapse."""
-        return self._forced_collapsed or not self._expanded
+        return self._header_visible and (self._forced_collapsed or not self._expanded)
 
     def set_expanded(self, expanded: bool) -> None:
         """Sets the remembered choice, and emits `expanded_changed` if it changed."""
@@ -195,6 +198,23 @@ class PanelSection(QWidget):
         forced."""
         if forced != self._forced_collapsed:
             self._forced_collapsed = forced
+            self._apply_state()
+
+    def is_header_visible(self) -> bool:
+        """Returns whether the header row is shown."""
+        return self._header_visible
+
+    def set_header_visible(self, visible: bool) -> None:
+        """Shows or hides the header row. While it is hidden the body shows, whatever the remembered choice."""
+        if visible != self._header_visible:
+            self._header_visible = visible
+            self._header_button.setVisible(visible)
+            for index in range(self._actions.count()):
+                item = self._actions.itemAt(index)
+                if item is not None and item.widget() is not None:
+                    item.widget().setVisible(visible)
+            # A layout with no widget of its own isn't invalidated by its parent's measure pass:
+            self._header_layout.invalidate()
             self._apply_state()
 
     def summary(self) -> str:
@@ -219,6 +239,7 @@ class PanelSection(QWidget):
     def add_header_widget(self, widget: QWidget) -> None:
         """Adds a small action, such as a flat button, to the right of the header."""
         self._actions.addWidget(widget)
+        widget.setVisible(self._header_visible)
 
     def add_header_keycap(self, key_text: str) -> KeycapBadge:
         """Adds a keycap with `key_text` to the right of the header and returns it."""

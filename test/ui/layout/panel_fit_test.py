@@ -1,16 +1,17 @@
-"""Tests the fit planner with a fake measure, orientation from a dock's area, and the widget helpers that bind the
-planner to real content."""
+"""Tests the fit planner with a fake measure, orientation from a dock's area, the widget helpers that bind the
+planner to real content, and field width caps."""
 import sys
 import warnings
 from typing import Sequence
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtWidgets import QApplication, QLineEdit, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QComboBox, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
-from src.ui.layout.panel_fit import (HYSTERESIS, REQUIRED, FitItem, FitPlanner, Orientation, Placement,
-                                     base_placement, fresh_minimum_size, orientation_for_dock, plan_fit,
-                                     plan_orientation)
+from src.ui.layout.panel_fit import (FIELD_MAX_WIDTH, HYSTERESIS, REQUIRED, FitItem, FitPlanner, Orientation,
+                                     Placement, base_placement, field_width_cap, fresh_minimum_size,
+                                     orientation_for_dock, plan_fit, plan_orientation, set_field_width_cap)
 from test.base_test_case import IntraPaintTestCase
+from test.ui.panel_capture import find_arrangement_problems
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -316,3 +317,36 @@ class FitPlannerTest(IntraPaintTestCase):
         self.assertEqual(base, fresh_minimum_size(self.column))
         self.planner.update(SIDE, wide)
         self.assertFalse(self.column.extra.isHidden())
+
+
+class FieldWidthCapTest(IntraPaintTestCase):
+    """Tests field width caps and the stretched-field check that reads them."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.panel = QWidget()
+        self.field = QComboBox(self.panel)
+        self.field.setGeometry(0, 0, FIELD_MAX_WIDTH + 100, 24)
+        self.panel.resize(FIELD_MAX_WIDTH + 100, 24)
+
+    def _stretched(self) -> list[str]:
+        return [problem for problem in find_arrangement_problems(self.panel) if problem.startswith('stretched')]
+
+    def test_default_cap(self) -> None:
+        """A field with no cap of its own gets FIELD_MAX_WIDTH, and is stretched past it."""
+        self.assertEqual(FIELD_MAX_WIDTH, field_width_cap(self.field))
+        self.assertEqual(1, len(self._stretched()))
+
+    def test_own_cap(self) -> None:
+        """A field's own cap replaces FIELD_MAX_WIDTH."""
+        set_field_width_cap(self.field, FIELD_MAX_WIDTH + 200)
+        self.assertEqual(FIELD_MAX_WIDTH + 200, field_width_cap(self.field))
+        self.assertEqual([], self._stretched())
+        set_field_width_cap(self.field, FIELD_MAX_WIDTH + 50)
+        self.assertEqual(1, len(self._stretched()))
+
+    def test_uncapped(self) -> None:
+        """A field set to no cap may stretch to any width."""
+        set_field_width_cap(self.field, None)
+        self.assertIsNone(field_width_cap(self.field))
+        self.assertEqual([], self._stretched())

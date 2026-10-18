@@ -326,14 +326,21 @@ class DockPanel(QWidget):
 
     def finish_placement(self) -> None:
         """Updates the More popover and button after every item is placed. Overrides should call this."""
-        self._header.set_popover_content(self._overflow_content if self._overflow else None)
+        content = self.more_content()
+        self._header.set_popover_content(content)
         more_button = self._header.more_button
         if self._header_collapsed:
             self._body_layout.addWidget(more_button)
         else:
             self._header.restore_more_button()
         # Reparenting hides a widget:
-        more_button.setVisible(bool(self._overflow))
+        more_button.setVisible(content is not None)
+
+    def more_content(self) -> Optional[QWidget]:
+        """Returns the widget the More popover shows, or None to hide the More button. By default it holds the
+        controls that didn't fit. Overrides that always show the button keep the header's width the same before and
+        after a plan."""
+        return self._overflow_content if self._overflow else None
 
     def _controls(self) -> list[_Control]:
         return [control for section in self._layout_model.sections for control in section.controls]
