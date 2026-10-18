@@ -95,7 +95,8 @@ class SelectionPanelsTest(IntraPaintTestCase):
     def test_mode_section_comes_first(self) -> None:
         """Every panel starts with the Mode section, and ends with the Selection section."""
         for name, panel in self.panels.items():
-            sections = [section.title for section in panel.findChildren(PanelSection)]
+            sections = [item.widget().title for item in (panel._layout.itemAt(i)  # pylint: disable=protected-access
+                                                         for i in range(panel._layout.count()))]
             self.assertTrue(sections[0].startswith('Mode'), name)
             self.assertEqual(sections[-1], 'Selection', name)
 

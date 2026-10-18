@@ -2,67 +2,67 @@
   "minimum": {
     "problems": [],
     "size": [
-      434,
-      188
+      255,
+      267
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 199x45, minimum 146x70",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (Ctrl+D)' is 199x18, minimum 122x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (Ctrl+A)' is 199x17, minimum 146x30",
-      "squeezed: SelectionModeToggle/Label 'Add' is 98x21, minimum 108x27",
-      "squeezed: SelectionModeToggle/Label 'Subtract' is 98x21, minimum 125x27",
-      "squeezed: SelectionModeToggle/Label 'Replace' is 98x21, minimum 94x29",
-      "squeezed: SelectionModeToggle/Label 'Intersect' is 98x21, minimum 101x29",
-      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[0] shows 27x22 of 27x23",
-      "squeezed: CheckBox 'Sample Merged' is 54x22, minimum 116x22",
-      "squeezed: CheckBox 'Select all by color' is 53x22, minimum 128x22",
-      "squeezed: CheckBox 'Fill selection holes' is 54x22, minimum 134x22"
+      "squeezed: PanelSection[0] is 109x90, minimum 128x73",
+      "squeezed: PanelSection[0]/QWidget is 109x64, minimum 128x47",
+      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 109x24, minimum 128x24",
+      "squeezed: PanelSection[1] is 109x56, minimum 182x56",
+      "squeezed: PanelSection[1]/QWidget is 109x30, minimum 182x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 52x30, minimum 96x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 51x30, minimum 80x30",
+      "squeezed: PanelSection[2] is 109x91, minimum 237x108",
+      "squeezed: PanelSection[2]/QWidget is 109x65, minimum 237x82",
+      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 109x18, minimum 237x24",
+      "clipped: PanelSection[2]/QWidget/SliderField shows 109x24 of 110x24",
+      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample Merged' is 109x17, minimum 116x22"
     ],
     "size": [
-      217,
-      188
+      127,
+      267
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      434,
-      188
+      255,
+      267
     ]
   },
   "short": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 416x13, minimum 146x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (Ctrl+D)' is 203x13, minimum 122x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (Ctrl+A)' is 203x13, minimum 146x30",
-      "squeezed: SelectionModeToggle/Label 'Add' is 207x5, minimum 108x27",
-      "squeezed: SelectionModeToggle/Label 'Subtract' is 207x5, minimum 125x27",
-      "squeezed: SelectionModeToggle/Label 'Replace' is 207x5, minimum 94x29",
-      "squeezed: SelectionModeToggle/Label 'Intersect' is 207x5, minimum 101x29",
-      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[0] shows 27x12 of 27x23",
-      "clipped: SelectionModeToggle/KeyHintLabel 'Ctrl+Shift' shows 62x12 of 62x23",
-      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[1] shows 27x12 of 27x23",
-      "clipped: SelectionModeToggle/KeyHintLabel 'Shift'[1] shows 37x12 of 37x23",
-      "squeezed: FloatSliderSpinbox is 416x13, minimum 180x30",
-      "squeezed: FloatSliderSpinbox/QLabel 'Color threshold:' is 94x9, minimum 94x17",
-      "squeezed: FloatSliderSpinbox/QSlider is 248x9, minimum 12x23",
-      "squeezed: FloatSliderSpinbox/QDoubleSpinBox is 62x9, minimum 62x26",
-      "squeezed: KeyHintLabel 'Q' is 20x12, minimum 20x23",
-      "squeezed: CheckBox 'Sample Merged' is 116x12, minimum 116x22",
-      "squeezed: CheckBox 'Select all by color' is 128x12, minimum 128x22",
-      "squeezed: CheckBox 'Fill selection holes' is 134x12, minimum 134x22"
+      "overlap: PanelSection[2]/QWidget/SliderField and PanelSection[2]/QWidget/CheckBox 'Sample Merged' share 237x1",
+      "squeezed: PanelSection[0] is 237x35, minimum 128x73",
+      "squeezed: PanelSection[0]/_HeaderButton 'Mode: Add' is 213x18, minimum 16x26",
+      "squeezed: PanelSection[0]/QWidget is 237x17, minimum 128x47",
+      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 237x6, minimum 128x24",
+      "squeezed: PanelSection[0]/QWidget/QLabel 'Hold Shift to add, Alt t' is 237x5, minimum 52x17",
+      "squeezed: PanelSection[0]/KeyHintLabel 'Q' is 20x18, minimum 20x23",
+      "squeezed: PanelSection[1] is 237x34, minimum 182x56",
+      "squeezed: PanelSection[1]/_HeaderButton 'Selection' is 233x17, minimum 16x26",
+      "squeezed: PanelSection[1]/QWidget is 237x17, minimum 182x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 96x17, minimum 96x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 80x17, minimum 80x30",
+      "squeezed: PanelSection[2] is 237x34, minimum 237x108",
+      "squeezed: PanelSection[2]/_HeaderButton 'Fill area' is 233x17, minimum 16x26",
+      "squeezed: PanelSection[2]/QWidget is 237x17, minimum 237x82",
+      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 237x2, minimum 237x24",
+      "clipped: PanelSection[2]/QWidget/SliderField shows 237x9 of 237x24",
+      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample Merged' is 237x1, minimum 116x22"
     ],
     "size": [
-      434,
-      94
+      255,
+      133
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      434,
+      255,
       1200
     ]
   },
@@ -70,7 +70,7 @@
     "problems": [],
     "size": [
       1600,
-      188
+      267
     ]
   }
 }

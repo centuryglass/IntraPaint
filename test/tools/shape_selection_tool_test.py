@@ -214,10 +214,6 @@ class ShapeSelectionModeTest(SelectionToolTestCase):
         self.dragged = rect_mask(self.IMAGE_SIZE, QRect(20, 15, 40, 25))
         self.set_selection_outside_history(self.existing)
 
-    def tearDown(self) -> None:
-        HotkeyFilter.instance().remove_keybinding(f'ShapeSelectionPanel_{id(self.tool.get_control_panel())}_try_toggle')
-        super().tearDown()
-
     def _drag_with(self, modifiers: Qt.KeyboardModifier) -> None:
         with mock.patch.object(QApplication, 'keyboardModifiers', return_value=modifiers):
             self.mouse_drag(self.DRAG, modifiers=modifiers)

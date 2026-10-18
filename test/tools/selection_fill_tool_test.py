@@ -53,6 +53,7 @@ class SelectionFillToolTest(ContextPinGestureTests, SelectionToolTestCase):
         self.layer.set_image(_pattern_image(self.IMAGE_SIZE.width(), self.IMAGE_SIZE.height()))
         Cache().set(Cache.FILL_THRESHOLD, 0.0)
         Cache().set(Cache.SAMPLE_MERGED, False)
+        Cache().restore_default_options(Cache.SELECTION_FILL_AREA)
         Cache().set(Cache.SELECTION_FILL_AREA, FillArea.CONNECTED.value)
         self.tool = self.activate_tool(SelectionFillTool(self.image_stack, self.image_viewer))
         self.empty = np.zeros((self.IMAGE_SIZE.height(), self.IMAGE_SIZE.width()), dtype=bool)

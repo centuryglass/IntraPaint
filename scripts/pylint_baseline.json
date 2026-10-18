@@ -150,9 +150,6 @@
   "src/ui/panel/tool_control_panels/layer_transform_tool_panel.py": {
     "unused-argument": 1
   },
-  "src/ui/panel/tool_control_panels/selection_panel.py": {
-    "unnecessary-lambda": 2
-  },
   "src/ui/panel/tool_control_panels/text_tool_panel.py": {
     "unused-argument": 1
   },

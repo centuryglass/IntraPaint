@@ -114,16 +114,16 @@ class SelectionPanel(QWidget):
         # Selection section:
         select_all_button = self._action_button(SELECT_ALL_LABEL, ICON_PATH_FILL,
                                                 _with_shortcut(SELECT_ALL_TOOLTIP, KeyConfig.SELECT_ALL_SHORTCUT))
-        select_all_button.clicked.connect(lambda: selection_layer.select_all())
+        select_all_button.clicked.connect(lambda: selection_layer.select_all())  # pylint: disable=unnecessary-lambda
         clear_button = self._action_button(CLEAR_LABEL, ICON_PATH_CLEAR,
                                            _with_shortcut(CLEAR_TOOLTIP, KeyConfig.SELECT_NONE_SHORTCUT))
         set_button_weight(clear_button, ButtonWeight.DANGER)
-        clear_button.clicked.connect(lambda: selection_layer.clear())
+        clear_button.clicked.connect(lambda: selection_layer.clear())  # pylint: disable=unnecessary-lambda
         clear_pins_button = self._action_button(CLEAR_PINS_LABEL, ICON_PATH_CLEAR_PINS,
                                                 _with_shortcut(CLEAR_PINS_TOOLTIP,
                                                                KeyConfig.CLEAR_CONTEXT_PINS_SHORTCUT))
         set_button_weight(clear_pins_button, ButtonWeight.DANGER)
-        clear_pins_button.clicked.connect(lambda: selection_layer.clear_context_pins())
+        clear_pins_button.clicked.connect(lambda: selection_layer.clear_context_pins())  # pylint: disable=unnecessary-lambda
         self._clear_pins_button = clear_pins_button
 
         def _update_clear_pins_enabled(pins: list[QPoint]) -> None:
@@ -157,6 +157,8 @@ class SelectionPanel(QWidget):
     def register_hotkey(self, name: str, action: Callable[[], bool], config_key: str) -> None:
         """Binds a config key to an action for as long as the panel exists. `name` must be unique in the panel; the
            action returns whether it consumed the key."""
+        if KeyConfig().get(config_key) == '':
+            return
         binding_id = f'{type(self).__name__}_{id(self)}_{name}'
         HotkeyFilter.instance().register_config_keybinding(binding_id, action, config_key)
         self.destroyed.connect(lambda *_: HotkeyFilter.instance().remove_keybinding(binding_id))
