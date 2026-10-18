@@ -87,8 +87,9 @@ class StrokeBlockTest(IntraPaintTestCase):
         self.panel.set_fit_space(SIDE, QSize(1000, 900))
         self.assertEqual(self.block.arrangement.preview, BESIDE)
         fields = self.block._fields_widget  # pylint: disable=protected-access
-        self.assertEqual((fields.minimumWidth(), fields.maximumWidth()), (BESIDE_FIELD_MIN_WIDTH,
-                                                                          FIELD_COLUMN_MAX_WIDTH))
+        section = self.block._stroke_section  # pylint: disable=protected-access
+        self.assertEqual((fields.minimumWidth(), section.maximumWidth()), (BESIDE_FIELD_MIN_WIDTH,
+                                                                           FIELD_COLUMN_MAX_WIDTH))
 
     def test_controls_stay_grouped_in_the_fields_column(self) -> None:
         """Side panels keep the color pair and checkboxes under the fields at the same width, and no control column
@@ -116,6 +117,35 @@ class StrokeBlockTest(IntraPaintTestCase):
                     fields_right = columns[0].mapTo(self.block, columns[0].rect().topRight()).x()
                     paint_left = paint.mapTo(self.block, paint.rect().topLeft()).x()
                     self.assertLess(paint_left - fields_right, 2 * FIELD_COLUMN_MAX_WIDTH - columns[0].width())
+
+    def test_sections_have_headers_except_in_short_strips(self) -> None:
+        """Side panels and tall strips title the Stroke and options sections. A strip too short for the headers hides
+        them and shows the controls whatever the remembered choice."""
+        stroke = self.block._stroke_section  # pylint: disable=protected-access
+        options = self.block._options_section  # pylint: disable=protected-access
+        self.assertEqual((stroke.title, options.title), ('Stroke', 'Color and options'))
+        for orientation, size, headers in ((SIDE, QSize(300, 900), True), (STRIP, QSize(1000, 320), True),
+                                           (STRIP, QSize(1000, 90), False)):
+            with self.subTest(orientation=orientation, size=size):
+                self.panel.set_fit_space(orientation, size)
+                self.assertEqual(self.block.arrangement.headers, headers)
+                self.assertEqual(stroke.is_header_visible(), headers)
+        stroke.set_expanded(False)
+        self.assertFalse(stroke.is_collapsed())
+        self.panel.set_fit_space(STRIP, QSize(1000, 320))
+        self.assertTrue(stroke.is_collapsed())
+
+    def test_collapsed_stroke_section_summarizes_its_fields(self) -> None:
+        """The Stroke header shows the fields' values while collapsed."""
+        Cache().set(Cache.DRAW_TOOL_BRUSH_SIZE, 48)
+        summary = self.block._stroke_section.summary()  # pylint: disable=protected-access
+        self.assertIn('Size 48 px', summary)
+        self.assertIn('Opacity', summary)
+
+    def test_eraser_options_section_has_no_color_title(self) -> None:
+        """A tool with no color row titles the second section "Options"."""
+        eraser = EraserToolPanel()
+        self.assertEqual(eraser.stroke_block._options_section.title, 'Options')  # pylint: disable=protected-access
 
     def test_rows_stack_when_they_do_not_fit_across(self) -> None:
         """A narrow side panel stacks the checkboxes into a column and a wider one keeps them in a row. A strip keeps

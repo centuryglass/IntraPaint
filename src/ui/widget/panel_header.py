@@ -387,6 +387,10 @@ class PanelHeader(QWidget):
             self._first_line.insertWidget(2, self._details, stretch=1)
         self._description_label.setWordWrap(wrap)
         self._details.show()
+        # The line layouts have no widget of their own, so a measure pass wouldn't clear their cached sizes:
+        self._first_line.invalidate()
+        self._second_line.invalidate()
+        self.layout().invalidate()
 
     def _refresh_icon(self) -> None:
         if not self._icon.isNull():

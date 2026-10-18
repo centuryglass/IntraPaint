@@ -3,67 +3,79 @@
     "problems": [],
     "size": [
       263,
-      312
+      364
     ]
   },
   "narrow": {
     "problems": [
-      "overlap: PanelSection/QWidget/QWidget[1]/SliderField[0] and PanelSection/QWidget/QWidget[1]/SliderField[1] share 113x3",
-      "overlap: PanelSection/QWidget/QWidget[1]/SliderField[1] and PanelSection/QWidget/QWidget[1]/SliderField[2] share 113x3",
-      "overlap: PanelSection/QWidget/QWidget[1]/SliderField[2] and PanelSection/QWidget/QWidget[1]/SliderField[3] share 113x3",
-      "squeezed: StrokeBlock is 113x136, minimum 146x136",
-      "squeezed: StrokeBlock/QWidget[1] is 113x50, minimum 146x50",
-      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Only inside selection' is 113x22, minimum 146x22",
-      "squeezed: PanelSection is 113x152, minimum 217x180",
-      "squeezed: PanelSection/QWidget is 113x126, minimum 217x154",
+      "overlap: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[0] and StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[1] share 113x2",
+      "overlap: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[1] and StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[2] share 113x2",
+      "squeezed: StrokeBlock is 113x170, minimum 146x188",
+      "squeezed: StrokeBlock/PanelSection[0] is 113x88, minimum 110x106",
+      "squeezed: StrokeBlock/PanelSection[0]/QWidget is 113x62, minimum 110x80",
+      "squeezed: StrokeBlock/PanelSection[0]/QWidget/QWidget is 113x62, minimum 110x80",
+      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[2] shows 113x18 of 113x24",
+      "squeezed: StrokeBlock/PanelSection[1] is 113x76, minimum 146x76",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 113x50, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 113x50, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 113x22, minimum 146x22",
+      "squeezed: PanelSection is 113x170, minimum 217x180",
+      "squeezed: PanelSection/QWidget is 113x144, minimum 217x154",
       "squeezed: PanelSection/QWidget/QWidget[0] is 113x40, minimum 217x40",
       "squeezed: PanelSection/QWidget/QWidget[0]/ComboBox is 76x40, minimum 180x40",
-      "squeezed: PanelSection/QWidget/QWidget[1] is 113x80, minimum 110x108",
-      "clipped: PanelSection/QWidget/QWidget[1]/SliderField[3] shows 113x17 of 113x24"
+      "squeezed: PanelSection/QWidget/QWidget[1] is 113x98, minimum 110x108",
+      "clipped: PanelSection/QWidget/QWidget[1]/SliderField[3] shows 113x21 of 113x24"
     ],
     "size": [
       131,
-      312
+      364
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
       263,
-      312
+      364
     ]
   },
   "short": {
     "problems": [
-      "overlap: StrokeBlock/QWidget[0]/SliderField[0] and StrokeBlock/QWidget[0]/SliderField[1] share 243x12",
-      "overlap: StrokeBlock/QWidget[0]/SliderField[0] and StrokeBlock/QWidget[0]/SliderField[2] share 243x1",
-      "overlap: StrokeBlock/QWidget[0]/SliderField[1] and StrokeBlock/QWidget[0]/SliderField[2] share 243x13",
-      "overlap: PanelSection/QWidget/QWidget[1]/SliderField[0] and PanelSection/QWidget/QWidget[1]/SliderField[1] share 245x18",
-      "overlap: PanelSection/QWidget/QWidget[1]/SliderField[0] and PanelSection/QWidget/QWidget[1]/SliderField[2] share 245x13",
-      "overlap: PanelSection/QWidget/QWidget[1]/SliderField[0] and PanelSection/QWidget/QWidget[1]/SliderField[3] share 245x8",
-      "overlap: PanelSection/QWidget/QWidget[1]/SliderField[1] and PanelSection/QWidget/QWidget[1]/SliderField[2] share 245x19",
-      "overlap: PanelSection/QWidget/QWidget[1]/SliderField[1] and PanelSection/QWidget/QWidget[1]/SliderField[3] share 245x14",
-      "overlap: PanelSection/QWidget/QWidget[1]/SliderField[2] and PanelSection/QWidget/QWidget[1]/SliderField[3] share 245x19",
-      "squeezed: StrokeBlock is 245x66, minimum 146x136",
-      "squeezed: StrokeBlock/QWidget[0] is 243x30, minimum 110x80",
-      "clipped: StrokeBlock/QWidget[0]/SliderField[1] shows 243x18 of 243x24",
-      "clipped: StrokeBlock/QWidget[0]/SliderField[2] shows 243x7 of 243x24",
-      "squeezed: StrokeBlock/QWidget[1] is 243x30, minimum 146x50",
-      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Antialiasing' is 146x12, minimum 93x22",
-      "squeezed: StrokeBlock/QWidget[1]/CheckBox 'Only inside selection' is 146x12, minimum 146x22",
-      "squeezed: PanelSection is 245x66, minimum 217x180",
-      "squeezed: PanelSection/QWidget is 245x40, minimum 217x154",
-      "squeezed: PanelSection/QWidget/QWidget[0] is 245x17, minimum 217x40",
-      "squeezed: PanelSection/QWidget/QWidget[0]/ComboBox is 208x17, minimum 180x40",
-      "squeezed: PanelSection/QWidget/QWidget[1] is 245x17, minimum 110x108",
-      "clipped: PanelSection/QWidget/QWidget[1]/SliderField[0] shows 245x17 of 245x24",
-      "clipped: PanelSection/QWidget/QWidget[1]/SliderField[1] shows 245x11 of 245x24",
-      "clipped: PanelSection/QWidget/QWidget[1]/SliderField[2] shows 245x6 of 245x24",
-      "clipped: PanelSection/QWidget/QWidget[1]/SliderField[3] shows 245x1 of 245x24"
+      "overlap: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[0] and StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[1] share 243x16",
+      "overlap: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[0] and StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[2] share 243x9",
+      "overlap: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[1] and StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[2] share 243x17",
+      "overlap: PanelSection/QWidget/QWidget[1]/SliderField[0] and PanelSection/QWidget/QWidget[1]/SliderField[1] share 245x17",
+      "overlap: PanelSection/QWidget/QWidget[1]/SliderField[0] and PanelSection/QWidget/QWidget[1]/SliderField[2] share 245x10",
+      "overlap: PanelSection/QWidget/QWidget[1]/SliderField[0] and PanelSection/QWidget/QWidget[1]/SliderField[3] share 245x3",
+      "overlap: PanelSection/QWidget/QWidget[1]/SliderField[1] and PanelSection/QWidget/QWidget[1]/SliderField[2] share 245x17",
+      "overlap: PanelSection/QWidget/QWidget[1]/SliderField[1] and PanelSection/QWidget/QWidget[1]/SliderField[3] share 245x10",
+      "overlap: PanelSection/QWidget/QWidget[1]/SliderField[2] and PanelSection/QWidget/QWidget[1]/SliderField[3] share 245x17",
+      "squeezed: StrokeBlock is 245x79, minimum 146x188",
+      "squeezed: StrokeBlock/PanelSection[0] is 243x37, minimum 110x106",
+      "squeezed: StrokeBlock/PanelSection[0]/_HeaderButton 'Stroke' is 239x19, minimum 16x26",
+      "squeezed: StrokeBlock/PanelSection[0]/QWidget is 243x18, minimum 110x80",
+      "squeezed: StrokeBlock/PanelSection[0]/QWidget/QWidget is 243x18, minimum 110x80",
+      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[0] shows 243x18 of 243x24",
+      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[1] shows 243x10 of 243x24",
+      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[2] shows 243x3 of 243x24",
+      "squeezed: StrokeBlock/PanelSection[1] is 243x36, minimum 146x76",
+      "squeezed: StrokeBlock/PanelSection[1]/_HeaderButton 'Options' is 239x18, minimum 16x26",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 243x18, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 243x18, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Antialiasing' is 146x6, minimum 93x22",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 146x6, minimum 146x22",
+      "squeezed: PanelSection is 245x79, minimum 217x180",
+      "squeezed: PanelSection/QWidget is 245x53, minimum 217x154",
+      "squeezed: PanelSection/QWidget/QWidget[0] is 245x24, minimum 217x40",
+      "squeezed: PanelSection/QWidget/QWidget[0]/ComboBox is 208x24, minimum 180x40",
+      "squeezed: PanelSection/QWidget/QWidget[1] is 245x23, minimum 110x108",
+      "clipped: PanelSection/QWidget/QWidget[1]/SliderField[0] shows 245x23 of 245x24",
+      "clipped: PanelSection/QWidget/QWidget[1]/SliderField[1] shows 245x16 of 245x24",
+      "clipped: PanelSection/QWidget/QWidget[1]/SliderField[2] shows 245x9 of 245x24",
+      "clipped: PanelSection/QWidget/QWidget[1]/SliderField[3] shows 245x2 of 245x24"
     ],
     "size": [
       263,
-      156
+      182
     ]
   },
   "tall": {
@@ -77,7 +89,7 @@
     "problems": [],
     "size": [
       1600,
-      312
+      364
     ]
   }
 }

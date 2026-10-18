@@ -2,23 +2,26 @@
 
 `StrokeBlock` is a view over `Cache` values, in a fixed order so Size never moves between tools:
 
-1. Size, Opacity and Hardness as `SliderField`s, with pen pressure links inside the fields. The links appear once a
-   tablet has been seen and add no row. Key hints are in the field tooltips.
-2. The color pair and Pattern, if the tool paints a color.
-3. Antialiasing and "Only inside selection".
+1. A Stroke section: Size, Opacity and Hardness as `SliderField`s, with pen pressure links inside the fields. The
+   links appear once a tablet has been seen and add no row. Key hints are in the field tooltips.
+2. A "Color and options" section, or "Options" for a tool with no color: the color pair and Pattern if the tool
+   paints a color, then Antialiasing and "Only inside selection".
+
+Both sections are `PanelSection`s that collapse to a summary line. A strip too short for headers hides them.
 
 Tool-specific sections go after the block, in `StrokeToolPanel`.
 
 Layout is planned by fit (`src.ui.layout.panel_fit`) in the space the Tools panel gives `StrokeToolPanel`:
-- Side: the fields, color pair and checkboxes share column 1, and a preview beside them takes column 2. Strip: the
-  fields in column 1, the color pair and checkboxes in column 2, and a preview beside the fields in column 3.
+- Side: the Stroke and options sections share column 1, and a preview beside them takes column 2. Strip: the Stroke
+  section in column 1, the options section in column 2, and a preview beside them in column 3.
 - Every control column stops at `FIELD_COLUMN_MAX_WIDTH`, so a wide panel leaves spare width after the last column
   instead of stretching the columns apart.
 - The color pair and Pattern, and the checkboxes, are required items. In a side panel each row stacks into a column
   when it doesn't fit across. In a strip the rows stay inline, because stacking would make them taller.
-- A tool with a `StrokePreview` shows it beside the fields or below them, whichever fits, or hides it. The preview is
-  decorative, so it never moves to the More popover. Beside the fields, they keep at least
+- A tool with a `StrokePreview` shows it beside the fields or below them in the Stroke section, whichever fits, or
+  hides it. The preview is decorative, so it never moves to the More popover. Beside the fields, they keep at least
   `BESIDE_FIELD_MIN_WIDTH`.
+- Headers are required in a side panel and optional in a strip, where they cost height.
 """
 import math
 from dataclasses import dataclass
@@ -50,6 +53,9 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 ONLY_INSIDE_SELECTION_LABEL = _tr('Only inside selection')
+STROKE_SECTION_TITLE = _tr('Stroke')
+COLOR_AND_OPTIONS_SECTION_TITLE = _tr('Color and options')
+OPTIONS_SECTION_TITLE = _tr('Options')
 PIXEL_SUFFIX = _tr(' px')
 PERCENT_SUFFIX = _tr('%')
 KEYS_TOOLTIP = _tr('{description}\nKeys: {decrease} / {increase}')
@@ -67,6 +73,7 @@ CONTROL_COLUMN_STRETCH = 100
 SPARE_COLUMN_STRETCH = 1
 
 # The block's planner items, and their forms:
+HEADERS_ITEM = 'headers'
 PAINT_ITEM = 'paint'
 CHECKS_ITEM = 'checks'
 PREVIEW_ITEM = 'preview'
@@ -74,8 +81,10 @@ INLINE = 0
 STACKED = 1
 BESIDE = 0
 BELOW = 1
-PREVIEW_PRIORITY = 1
+HEADERS_PRIORITY = 1
+PREVIEW_PRIORITY = 2
 _FIT_ITEMS = {
+    HEADERS_ITEM: FitItem(HEADERS_PRIORITY),
     PAINT_ITEM: FitItem(REQUIRED, 2),
     CHECKS_ITEM: FitItem(REQUIRED, 2),
     PREVIEW_ITEM: FitItem(PREVIEW_PRIORITY, 2),
@@ -84,12 +93,13 @@ _FIT_ITEMS = {
 
 @dataclass(frozen=True)
 class StrokeArrangement:
-    """How a `StrokeBlock` is laid out: the orientation, whether each row is stacked into a column, and the preview's
-    form, or None while it is hidden."""
+    """How a `StrokeBlock` is laid out: the orientation, whether each row is stacked into a column, the preview's
+    form or None while it is hidden, and whether the section headers show."""
     orientation: Orientation
     paint_stacked: bool = False
     checks_stacked: bool = False
     preview: Optional[int] = None
+    headers: bool = True
 
 
 class StrokePreview(QWidget):
@@ -236,7 +246,7 @@ class StrokeBlock(QWidget):
         self._pressure_fields: list[NumberField] = []
         self._arrangement: Optional[StrokeArrangement] = None
 
-        self._fields_widget = QWidget(self)
+        self._fields_widget = QWidget()
         fields_layout = QVBoxLayout(self._fields_widget)
         fields_layout.setContentsMargins(0, 0, 0, 0)
         fields_layout.setSpacing(4)
@@ -258,7 +268,7 @@ class StrokeBlock(QWidget):
         paint_layout = self._paint_widget.layout() if self._paint_widget is not None else None
         self._paint_layout = paint_layout if isinstance(paint_layout, QBoxLayout) else None
 
-        self._checks_widget = QWidget(self)
+        self._checks_widget = QWidget()
         self._checks_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._checks_widget)
         self._checks_layout.setContentsMargins(0, 0, 0, 0)
         self._checks_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
@@ -273,12 +283,32 @@ class StrokeBlock(QWidget):
         if show_preview:
             self._preview = StrokePreview(size_key, opacity_key, hardness_key, color_key, self)
 
+        self._stroke_body = QWidget()
+        self._stroke_layout = QVBoxLayout(self._stroke_body)
+        self._stroke_layout.setContentsMargins(0, 0, 0, 0)
+        self._stroke_layout.setSpacing(6)
+        self._stroke_layout.addWidget(self._fields_widget)
+        self._stroke_section = PanelSection(STROKE_SECTION_TITLE, self._stroke_body)
+        self._stroke_section.bind_summary(self._stroke_summary,
+                                          *(field.valueChanged for field in self._fields.values()))
+        self._options_body = QWidget()
+        options_layout = QVBoxLayout(self._options_body)
+        options_layout.setContentsMargins(0, 0, 0, 0)
+        options_layout.setSpacing(6)
+        if self._paint_widget is not None:
+            options_layout.addWidget(self._paint_widget)
+        options_layout.addWidget(self._checks_widget)
+        self._options_section = PanelSection(
+            COLOR_AND_OPTIONS_SECTION_TITLE if self._paint_widget is not None else OPTIONS_SECTION_TITLE,
+            self._options_body)
+
         self._grid = QGridLayout(self)
         self._grid.setContentsMargins(0, 0, 0, 0)
         self._grid.setHorizontalSpacing(COLUMN_SPACING)
         self._grid.setVerticalSpacing(6)
-        self._fit_keys = [key for key, present in ((PAINT_ITEM, self._paint_widget is not None), (CHECKS_ITEM, True),
-                                                   (PREVIEW_ITEM, self._preview is not None)) if present]
+        self._fit_keys = [key for key, present in ((HEADERS_ITEM, True), (PAINT_ITEM, self._paint_widget is not None),
+                                                   (CHECKS_ITEM, True), (PREVIEW_ITEM, self._preview is not None))
+                          if present]
         self._arrange(StrokeArrangement(Orientation.SIDE))
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -355,19 +385,27 @@ class StrokeBlock(QWidget):
         side = orientation == Orientation.SIDE
         self._arrange(StrokeArrangement(orientation, paint_stacked=side and forms.get(PAINT_ITEM) == STACKED,
                                         checks_stacked=side and forms.get(CHECKS_ITEM) == STACKED,
-                                        preview=forms.get(PREVIEW_ITEM)))
+                                        preview=forms.get(PREVIEW_ITEM),
+                                        headers=side or forms.get(HEADERS_ITEM) is not None))
+
+    def _stroke_summary(self) -> str:
+        return ', '.join(f'{field.label()} {field.value_text()}' for field in self._fields.values())
 
     def _arrange(self, arrangement: StrokeArrangement) -> None:
         if arrangement == self._arrangement:
             return
         self._arrangement = arrangement
-        for widget in (self._fields_widget, self._paint_widget, self._checks_widget, self._preview):
+        for widget in (self._stroke_section, self._options_section, self._preview):
             if widget is not None:
                 self._grid.removeWidget(widget)
+        if self._preview is not None:
+            self._stroke_layout.removeWidget(self._preview)
         for index in range(4):
             self._grid.setColumnStretch(index, 0)
         for index in range(5):
             self._grid.setRowStretch(index, 0)
+        for section in (self._stroke_section, self._options_section):
+            section.set_header_visible(arrangement.headers)
         self._checks_layout.setDirection(QBoxLayout.Direction.TopToBottom if arrangement.checks_stacked
                                          else QBoxLayout.Direction.LeftToRight)
         if self._paint_layout is not None:
@@ -380,53 +418,38 @@ class StrokeBlock(QWidget):
             self._preview.setVisible(arrangement.preview is not None)
         beside = arrangement.preview == BESIDE
         self._fields_widget.setMinimumWidth(BESIDE_FIELD_MIN_WIDTH if beside else 0)
-        for widget in (self._fields_widget, self._paint_widget, self._checks_widget):
-            if widget is not None:
-                widget.setMaximumWidth(FIELD_COLUMN_MAX_WIDTH)
-        # Top-aligned, so Size stays put when a taller preview sits beside the fields. No horizontal alignment, which
-        # would size each widget to its hint instead of its column:
+        for widget in (self._stroke_section, self._options_section):
+            widget.setMaximumWidth(FIELD_COLUMN_MAX_WIDTH)
+        if self._preview is not None and arrangement.preview == BELOW:
+            self._stroke_layout.addWidget(self._preview)
+        # Top-aligned, so Size stays put when a taller preview sits beside the sections. No horizontal alignment,
+        # which would size each widget to its hint instead of its column:
         top = Qt.AlignmentFlag.AlignTop
+        self._grid.addWidget(self._stroke_section, 0, 0, top)
         if arrangement.orientation == Orientation.STRIP:
-            self._grid.addWidget(self._fields_widget, 0, 0, 3, 1, top)
-            row = 0
-            for widget in (self._paint_widget, self._checks_widget):
-                if widget is not None:
-                    self._grid.addWidget(widget, row, 1)
-                    row += 1
-            if self._preview is not None and beside:
-                self._grid.addWidget(self._preview, 0, 2, 3, 1)
-            elif self._preview is not None and arrangement.preview == BELOW:
-                self._grid.addWidget(self._preview, row, 1)
+            self._grid.addWidget(self._options_section, 0, 1, top)
             self._grid.setColumnStretch(0, CONTROL_COLUMN_STRETCH)
             self._grid.setColumnStretch(1, CONTROL_COLUMN_STRETCH)
             columns = 2
             if self._preview is not None and beside:
+                self._grid.addWidget(self._preview, 0, 2)
                 self._grid.setColumnStretch(2, CONTROL_COLUMN_STRETCH)
                 columns = 3
             self._grid.setColumnStretch(columns, SPARE_COLUMN_STRETCH)
-            # Height beyond what the rows need goes below them:
-            self._grid.setRowStretch(3, 1)
+            # Height beyond what the sections need goes below them:
+            self._grid.setRowStretch(1, 1)
             return
-        self._grid.addWidget(self._fields_widget, 0, 0, top)
-        row = 1
+        self._grid.addWidget(self._options_section, 1, 0, top)
+        self._grid.setColumnStretch(0, CONTROL_COLUMN_STRETCH)
         if self._preview is not None and beside:
-            # The preview spans the rows, and every control stays in column 1 under the fields:
-            self._grid.addWidget(self._preview, 0, 1, 3, 1)
-            self._grid.setColumnStretch(0, CONTROL_COLUMN_STRETCH)
+            # The preview spans both sections' rows, and the sections stay in column 1:
+            self._grid.addWidget(self._preview, 0, 1, 2, 1)
             self._grid.setColumnStretch(1, CONTROL_COLUMN_STRETCH)
             self._grid.setColumnStretch(2, SPARE_COLUMN_STRETCH)
         else:
-            self._grid.setColumnStretch(0, CONTROL_COLUMN_STRETCH)
             self._grid.setColumnStretch(1, SPARE_COLUMN_STRETCH)
-            if self._preview is not None and arrangement.preview == BELOW:
-                self._grid.addWidget(self._preview, row, 0)
-                row += 1
-        for widget in (self._paint_widget, self._checks_widget):
-            if widget is not None:
-                self._grid.addWidget(widget, row, 0)
-                row += 1
-        # Height beyond what the rows need goes below them:
-        self._grid.setRowStretch(max(row, 3), 1)
+        # Height beyond what the sections need goes below them:
+        self._grid.setRowStretch(2, 1)
 
 
 class StrokeToolPanel(QWidget):
