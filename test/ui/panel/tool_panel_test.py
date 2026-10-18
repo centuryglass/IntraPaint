@@ -266,14 +266,16 @@ class ToolPanelTest(IntraPaintTestCase):
             self.assertEqual(button.width(), MAX_STRIP_EDGE_LENGTH)
 
     def test_strip_button_layout(self) -> None:
-        """Two columns once their buttons are at least the default size, else three, capped at
-        `MAX_STRIP_EDGE_LENGTH`."""
+        """Three columns once their buttons are at least the default size, capped at `MAX_STRIP_EDGE_LENGTH`, and two
+        columns only when the buttons keep that size."""
         default = STRIP_BUTTON_FORMS[0]
         self.assertEqual(strip_button_layout(16, 100, default), default)
         three = strip_button_layout(16, 6 * 30 + 5 * BUTTON_SPACING, default)
         self.assertEqual((three.columns, three.edge_length, three.key_hints), (STRIP_MAX_COLUMNS, 30, False))
-        two = strip_button_layout(16, 8 * 30 + 7 * BUTTON_SPACING, default)
-        self.assertEqual((two.columns, two.edge_length, two.key_hints), (STRIP_NARROW_COLUMNS, 30, False))
+        two = strip_button_layout(16, 8 * MAX_STRIP_EDGE_LENGTH + 7 * BUTTON_SPACING, default)
+        self.assertEqual((two.columns, two.edge_length), (STRIP_NARROW_COLUMNS, MAX_STRIP_EDGE_LENGTH))
+        shrunk = strip_button_layout(16, 8 * (MAX_STRIP_EDGE_LENGTH - 1) + 7 * BUTTON_SPACING, default)
+        self.assertEqual((shrunk.columns, shrunk.edge_length), (STRIP_MAX_COLUMNS, MAX_STRIP_EDGE_LENGTH))
         tall = strip_button_layout(16, 1000, default)
         self.assertEqual((tall.edge_length, tall.key_hints), (MAX_STRIP_EDGE_LENGTH, True))
 
