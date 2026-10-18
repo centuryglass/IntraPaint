@@ -24,24 +24,29 @@ Layout is planned by fit (`src.ui.layout.panel_fit`) in the space the Tools pane
 - Headers are required in a side panel and optional in a strip, where they cost height.
 """
 import math
+from collections.abc import Hashable
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
-from PySide6.QtCore import QEvent, QPointF, QSize, Qt
-from PySide6.QtGui import QColor, QPainter, QPaintEvent, QPalette, QRadialGradient, QResizeEvent
+from PySide6.QtCore import QEvent, QPointF, QSize, Qt, QTimer
+from PySide6.QtGui import QBrush, QColor, QImage, QPainter, QPalette, QRadialGradient, QResizeEvent
 from PySide6.QtWidgets import (QApplication, QBoxLayout, QCheckBox, QGridLayout, QLabel, QLayout, QSizePolicy,
                                QVBoxLayout, QWidget)
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.image.brush.qt_paint_brush import QtPaintBrush
+from src.image.layers.image_layer import ImageLayer
 from src.ui.ink_style import set_signal
-from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
+from src.ui.input_fields.fill_style_combo_box import BRUSH_PATTERN_SOLID, FillStyleComboBox
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.slider_field import SliderField
+from src.ui.panel.tool_control_panels.brush_preview import BrushPreview
 from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement, fresh_minimum_size
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.panel_section import PanelSection
+from src.undo_stack import UndoStack
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.stroke_block'
@@ -102,71 +107,109 @@ class StrokeArrangement:
     headers: bool = True
 
 
-class StrokePreview(QWidget):
-    """Draws a sample stroke with the current size, hardness and opacity, for the Qt brush tools."""
+class StrokePreview(BrushPreview):
+    """Previews a sample stroke for the Qt brush tools.
+
+    The accurate render runs a `QtPaintBrush` over the sample stroke on a scratch `ImageLayer`, so it honors the same
+    settings as the canvas. While settings change, the approximation draws overlapping gradient stamps.
+    """
 
     def __init__(self, size_key: str, opacity_key: Optional[str], hardness_key: Optional[str],
-                 color_key: Optional[str], parent: Optional[QWidget] = None) -> None:
-        super().__init__(parent)
+                 color_key: Optional[str], pattern_key: Optional[str] = None, antialias_key: Optional[str] = None,
+                 parent: Optional[QWidget] = None, debounce_timer: Optional[QTimer] = None) -> None:
         self._size_key = size_key
         self._opacity_key = opacity_key
         self._hardness_key = hardness_key
         self._color_key = color_key
+        self._pattern_key = pattern_key
+        self._antialias_key = antialias_key
+        super().__init__((size_key, opacity_key, hardness_key, color_key, pattern_key, antialias_key), parent,
+                         debounce_timer)
         self.setMinimumSize(PREVIEW_MIN_SIZE)
         self.setMaximumSize(PREVIEW_MAX_SIZE)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        cache = Cache()
-        for key in (size_key, opacity_key, hardness_key, color_key):
-            if key is not None:
-                cache.connect(self, key, lambda *_: self.update())
 
     def sizeHint(self) -> QSize:
         """Returns a short, wide area."""
         return PREVIEW_MIN_SIZE
 
-    def paintEvent(self, _event: Optional[QPaintEvent]) -> None:  # pylint: disable=invalid-name
-        """Draws overlapping soft stamps along a wave, shrunk to fit the height."""
-        cache = Cache()
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        palette = self.palette()
-        painter.fillRect(self.rect(), palette.color(QPalette.ColorRole.Base))
-        color = QColor(palette.color(QPalette.ColorRole.Text))
+    def _value(self, key: Optional[str], default: Any) -> Any:
+        return default if key is None else Cache().get(key)
+
+    def _color(self) -> QColor:
+        color = QColor(self.palette().color(QPalette.ColorRole.Text))
         if self._color_key is not None:
-            color = cache.get_color(self._color_key, color)
-        opacity = cache.get(self._opacity_key) if self._opacity_key is not None else 1.0
-        hardness = cache.get(self._hardness_key) if self._hardness_key is not None else 1.0
-        diameter = float(cache.get(self._size_key))
+            color = Cache().get_color(self._color_key, color)
+        return color
+
+    def _inputs(self) -> Hashable:
+        return (self._value(self._size_key, 1), self._value(self._opacity_key, 1.0),
+                self._value(self._hardness_key, 1.0), self._color().name(QColor.NameFormat.HexArgb),
+                self._value(self._pattern_key, BRUSH_PATTERN_SOLID), self._value(self._antialias_key, False))
+
+    def _sample_stroke(self, size: QSize) -> tuple[float, list[QPointF]]:
+        """Returns the brush diameter shrunk to fit, and points along a wave at the brush's stamp spacing."""
         margin = 6.0
-        available = max(self.height() - 2 * margin, 1.0)
-        diameter = max(1.0, min(diameter, available * 0.5))
+        available = max(size.height() - 2 * margin, 1.0)
+        diameter = max(1.0, min(float(self._value(self._size_key, 1)), available * 0.5))
         radius = diameter / 2
-        left, right = margin + radius, self.width() - margin - radius
+        left, right = margin + radius, size.width() - margin - radius
         if right <= left:
-            return
+            return diameter, []
         amplitude = max((available - diameter) / 2, 0.0)
         spacing = max(1.0, diameter * PREVIEW_STAMP_SPACING)
-        stamp_alpha = max(0.0, min(1.0, opacity))
-        # Soft brushes build up under overlap, so each stamp's alpha is a fraction of the stroke opacity:
-        stamp_color = QColor(color)
-        stamp_color.setAlphaF(stamp_alpha * (0.35 if hardness < 1.0 else 1.0))
-        painter.setPen(Qt.PenStyle.NoPen)
-        x = left
-        center_y = self.height() / 2
+        center_y = size.height() / 2
         span = max(right - left, 1.0)
+        points = []
+        x = left
         while x <= right:
-            y = center_y + amplitude * math.sin((x - left) / span * 2 * math.pi)
-            gradient = QRadialGradient(QPointF(x, y), radius)
-            inner = QColor(stamp_color)
+            points.append(QPointF(x, center_y + amplitude * math.sin((x - left) / span * 2 * math.pi)))
+            x += spacing
+        return diameter, points
+
+    def _paint_approximation(self, painter: QPainter) -> None:
+        """Draws overlapping soft stamps along the sample stroke."""
+        diameter, points = self._sample_stroke(self.size())
+        opacity = float(self._value(self._opacity_key, 1.0))
+        hardness = float(self._value(self._hardness_key, 1.0))
+        radius = diameter / 2
+        # Soft brushes build up under overlap, so each stamp's alpha is a fraction of the stroke opacity:
+        stamp_color = self._color()
+        stamp_color.setAlphaF(max(0.0, min(1.0, opacity)) * (0.35 if hardness < 1.0 else 1.0))
+        painter.setPen(Qt.PenStyle.NoPen)
+        for point in points:
+            gradient = QRadialGradient(point, radius)
             outer = QColor(stamp_color)
             outer.setAlpha(0)
-            gradient.setColorAt(0.0, inner)
-            gradient.setColorAt(max(hardness, 0.01) * 0.999, inner)
+            gradient.setColorAt(0.0, stamp_color)
+            gradient.setColorAt(max(hardness, 0.01) * 0.999, stamp_color)
             gradient.setColorAt(1.0, outer)
             painter.setBrush(gradient)
-            painter.drawEllipse(QPointF(x, y), radius, radius)
-            x += spacing
-        painter.end()
+            painter.drawEllipse(point, radius, radius)
+
+    def _render_accurate(self, size: QSize) -> QImage:
+        """Draws the sample stroke with a `QtPaintBrush` on a scratch layer, keeping its edits out of undo history."""
+        diameter, points = self._sample_stroke(size)
+        with UndoStack().unrecorded():
+            layer = ImageLayer(size, 'brush preview')
+            brush = QtPaintBrush(layer)
+            brush.brush_size = round(diameter)
+            brush.brush_color = self._color()
+            brush.opacity = float(self._value(self._opacity_key, 1.0))
+            brush.hardness = float(self._value(self._hardness_key, 1.0))
+            brush.antialiasing = bool(self._value(self._antialias_key, False))
+            pattern = self._value(self._pattern_key, BRUSH_PATTERN_SOLID)
+            try:
+                style = FillStyleComboBox.get_style(pattern)
+            except KeyError:
+                style = Qt.BrushStyle.SolidPattern
+            brush.set_pattern_brush(None if style == Qt.BrushStyle.SolidPattern else QBrush(style))
+            brush.start_stroke()
+            for point in points:
+                brush.stroke_to(point.x(), point.y(), None, None, None)
+            brush.end_stroke()
+            brush.connect_to_layer(None)
+            return layer.image
 
 
 def build_paint_row(color_key: Optional[str], pattern_key: Optional[str], parent: QWidget) -> Optional[QWidget]:
@@ -281,7 +324,8 @@ class StrokeBlock(QWidget):
 
         self._preview: Optional[StrokePreview] = None
         if show_preview:
-            self._preview = StrokePreview(size_key, opacity_key, hardness_key, color_key, self)
+            self._preview = StrokePreview(size_key, opacity_key, hardness_key, color_key, pattern_key, antialias_key,
+                                          self)
 
         self._stroke_body = QWidget()
         self._stroke_layout = QVBoxLayout(self._stroke_body)
