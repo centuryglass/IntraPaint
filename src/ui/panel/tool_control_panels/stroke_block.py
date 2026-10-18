@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from typing import Any, Optional
 
 from PySide6.QtCore import QEvent, QPointF, QSize, Qt, QTimer
-from PySide6.QtGui import QBrush, QColor, QImage, QPainter, QPalette, QRadialGradient, QResizeEvent
+from PySide6.QtGui import QBrush, QColor, QImage, QPalette, QResizeEvent
 from PySide6.QtWidgets import (QApplication, QBoxLayout, QCheckBox, QGridLayout, QLabel, QLayout, QSizePolicy,
                                QVBoxLayout, QWidget)
 
@@ -110,13 +110,13 @@ class StrokeArrangement:
 class StrokePreview(BrushPreview):
     """Previews a sample stroke for the Qt brush tools.
 
-    The accurate render runs a `QtPaintBrush` over the sample stroke on a scratch `ImageLayer`, so it honors the same
-    settings as the canvas. While settings change, the approximation draws overlapping gradient stamps.
+    The render runs a `QtPaintBrush` over the sample stroke on a scratch `ImageLayer`, so it honors the same settings
+    as the canvas.
     """
 
     def __init__(self, size_key: str, opacity_key: Optional[str], hardness_key: Optional[str],
                  color_key: Optional[str], pattern_key: Optional[str] = None, antialias_key: Optional[str] = None,
-                 parent: Optional[QWidget] = None, debounce_timer: Optional[QTimer] = None) -> None:
+                 parent: Optional[QWidget] = None, render_timer: Optional[QTimer] = None) -> None:
         self._size_key = size_key
         self._opacity_key = opacity_key
         self._hardness_key = hardness_key
@@ -124,7 +124,7 @@ class StrokePreview(BrushPreview):
         self._pattern_key = pattern_key
         self._antialias_key = antialias_key
         super().__init__((size_key, opacity_key, hardness_key, color_key, pattern_key, antialias_key), parent,
-                         debounce_timer)
+                         render_timer)
         self.setMinimumSize(PREVIEW_MIN_SIZE)
         self.setMaximumSize(PREVIEW_MAX_SIZE)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -167,27 +167,7 @@ class StrokePreview(BrushPreview):
             x += spacing
         return diameter, points
 
-    def _paint_approximation(self, painter: QPainter) -> None:
-        """Draws overlapping soft stamps along the sample stroke."""
-        diameter, points = self._sample_stroke(self.size())
-        opacity = float(self._value(self._opacity_key, 1.0))
-        hardness = float(self._value(self._hardness_key, 1.0))
-        radius = diameter / 2
-        # Soft brushes build up under overlap, so each stamp's alpha is a fraction of the stroke opacity:
-        stamp_color = self._color()
-        stamp_color.setAlphaF(max(0.0, min(1.0, opacity)) * (0.35 if hardness < 1.0 else 1.0))
-        painter.setPen(Qt.PenStyle.NoPen)
-        for point in points:
-            gradient = QRadialGradient(point, radius)
-            outer = QColor(stamp_color)
-            outer.setAlpha(0)
-            gradient.setColorAt(0.0, stamp_color)
-            gradient.setColorAt(max(hardness, 0.01) * 0.999, stamp_color)
-            gradient.setColorAt(1.0, outer)
-            painter.setBrush(gradient)
-            painter.drawEllipse(point, radius, radius)
-
-    def _render_accurate(self, size: QSize) -> QImage:
+    def _render(self, size: QSize) -> QImage:
         """Draws the sample stroke with a `QtPaintBrush` on a scratch layer, keeping its edits out of undo history."""
         diameter, points = self._sample_stroke(size)
         with UndoStack().unrecorded():
