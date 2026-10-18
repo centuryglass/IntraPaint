@@ -462,6 +462,7 @@ class StrokeToolPanel(QWidget):
         """Returns the minimum size with the block's required items in their smallest forms and no preview, and
         keeps that arrangement until the next `set_fit_space`."""
         self._follow_orientation(orientation)
+        self.apply_base_form(orientation)
         return self._planner.base_size(orientation)
 
     def set_fit_space(self, orientation: Orientation, size: QSize) -> None:
@@ -469,6 +470,15 @@ class StrokeToolPanel(QWidget):
         self._follow_orientation(orientation)
         self._space = QSize(size)
         self._planner.update(orientation, size)
+        self.apply_fit_space(orientation, size)
+
+    def apply_base_form(self, orientation: Orientation) -> None:
+        """Puts the panel's own sections in their smallest forms, for `fit_base_size`. Subclasses with sections that
+        change form override this."""
+
+    def apply_fit_space(self, orientation: Orientation, size: QSize) -> None:
+        """Chooses the forms of the panel's own sections for the space the panel fills, after the block is planned.
+        Subclasses with sections that change form override this."""
 
     def set_orientation(self, orientation: Qt.Orientation) -> None:
         """Vertical is a side panel, horizontal a strip. Subclasses extend this to arrange their own sections."""
@@ -485,6 +495,7 @@ class StrokeToolPanel(QWidget):
         super().resizeEvent(event)
         if self._space is None:
             self._planner.update(self._fit_orientation(), self.size())
+            self.apply_fit_space(self._fit_orientation(), self.size())
 
     def show_pressure_checkboxes(self) -> None:
         """After receiving a tablet event, call this to reveal the pen pressure links."""
