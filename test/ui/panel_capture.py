@@ -1,11 +1,13 @@
 """Captures IntraPaint's panels at extreme sizes and across a grid of dock sizes, and lists their layout problems.
 
-`panel_layout_test.py` compares these captures with committed snapshots, and `scripts/capture_ui.py` saves them as
-images and sweep sheets for review. Both go through the same functions, so a screenshot shows what a test checked.
+`panel_layout_test.py` compares these captures with committed snapshots, `panel_sweep_test.py` checks them across
+the sweep grid, and `scripts/capture_ui.py` saves them as images and sweep sheets for review. All three go through the
+same functions, so a screenshot shows what a test checked.
 
 - Panel captures resize each panel inside a plain host widget, which lets them go below the panel's minimum size the
-  way a squeezed dock or divider can. `find_layout_problems` lists overlapping, clipped and squeezed child widgets.
-  Its results depend on font metrics, which the bundled theme font fixes.
+  way a squeezed dock or divider can. `find_layout_problems` lists overlapping, clipped and squeezed child widgets,
+  and `find_arrangement_problems` lists stretched fields, empty bands and cramped panels. Their results depend on
+  font metrics, which the bundled theme font fixes.
 - A panel that takes a dock orientation is captured with a side and a strip preference, as a left or right dock and a
   top or bottom dock would tell it. `PanelHost.capture` passes it on.
 - `SWEEP_WIDTHS` and `SWEEP_HEIGHTS` are a grid of dock sizes between the extremes, for sweep sheets.
@@ -18,11 +20,14 @@ from unittest.mock import patch
 from PySide6.QtCore import QEvent, QPoint, QRect, QSize, Qt
 from PySide6 import QtGui
 from PySide6.QtGui import QImage, QTextDocumentFragment
-from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QApplication, QDockWidget, QGroupBox, QLabel,
-                               QLayout, QMainWindow, QSizePolicy, QTabBar, QWidget)
+from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QAbstractSpinBox, QApplication, QComboBox,
+                               QDockWidget, QFrame, QGroupBox, QLabel, QLayout, QMainWindow, QSizePolicy, QTabBar,
+                               QWidget)
 
+from src.ui.input_fields.number_field import NumberField
+from src.ui.input_fields.segmented_control import SegmentedControl
 from src.ui.layout.dock_panel import DockPanel
-from src.ui.layout.panel_fit import FitContent, Orientation
+from src.ui.layout.panel_fit import STRIP_SECTION_MAX_WIDTH, FitContent, Orientation
 
 if TYPE_CHECKING:
     from src.controller.app_controller import AppController
@@ -226,11 +231,16 @@ def _visible_rect(widget: QWidget, root: QWidget) -> QRect:
     return visible
 
 
-def layout_widget_rects(root: QWidget) -> list[QRect]:
-    """Returns the rectangle in root of every visible widget under it that `find_layout_problems` checks."""
-    return [_rect_in(widget, root) for widget in root.findChildren(QWidget)
+def _checked_widgets(root: QWidget) -> list[QWidget]:
+    """Returns the visible widgets under root that the layout checks look at."""
+    return [widget for widget in root.findChildren(QWidget)
             if widget.isVisibleTo(root) and not widget.isWindow() and not _is_qt_internal(widget, root)
             and not _is_parked(widget, root)]
+
+
+def layout_widget_rects(root: QWidget) -> list[QRect]:
+    """Returns the rectangle in root of every visible widget under it that `find_layout_problems` checks."""
+    return [_rect_in(widget, root) for widget in _checked_widgets(root)]
 
 
 def _layout_widgets(layout: QLayout) -> list[QWidget]:
@@ -277,9 +287,7 @@ def find_layout_problems(root: QWidget) -> list[str]:
     window parks outside itself, as _is_parked describes.
     """
     problems = []
-    widgets = [widget for widget in root.findChildren(QWidget)
-               if widget.isVisibleTo(root) and not widget.isWindow() and not _is_qt_internal(widget, root)
-               and not _is_parked(widget, root)]
+    widgets = _checked_widgets(root)
     for widget in [root, *widgets]:
         layout = widget.layout()
         if layout is None:
@@ -307,6 +315,87 @@ def find_layout_problems(root: QWidget) -> list[str]:
         if too_narrow or too_short:
             problems.append(f'squeezed: {path} is {widget.width()}x{widget.height()}, minimum '
                             f'{minimum.width()}x{minimum.height()}')
+    return problems
+
+
+# Input fields wider than this are stretched: a field column keeps the width of a strip section.
+FIELD_MAX_WIDTH = STRIP_SECTION_MAX_WIDTH
+FIELD_TYPES = (QComboBox, QAbstractSpinBox, NumberField, SegmentedControl)
+# Empty space wider than this between parts of a panel's content strands the part after it:
+EMPTY_BAND_LIMIT = 48
+# A panel whose content scrolls while using less than this share of the other axis should arrange differently:
+CRAMPED_SHARE = 0.5
+
+
+def _is_framed_scroll_area(widget: QWidget) -> bool:
+    return isinstance(widget, QAbstractScrollArea) and widget.frameShape() != QFrame.Shape.NoFrame
+
+
+def _content_rects(root: QWidget) -> list[tuple[QWidget, QRect]]:
+    """Returns the visible part, inside root, of each widget that shows content: leaf widgets, input fields and framed
+    scroll areas, each counted whole."""
+    widgets = _checked_widgets(root)
+    checked = set(widgets)
+    content = []
+    for widget in widgets:
+        ancestor = widget.parentWidget()
+        inside_whole = False
+        while ancestor is not None and ancestor is not root:
+            if isinstance(ancestor, FIELD_TYPES) or _is_framed_scroll_area(ancestor):
+                inside_whole = True
+                break
+            ancestor = ancestor.parentWidget()
+        if inside_whole:
+            continue
+        whole = isinstance(widget, FIELD_TYPES) or _is_framed_scroll_area(widget)
+        if whole or not any(child in checked for child in widget.findChildren(QWidget)):
+            visible = _visible_rect(widget, root).intersected(root.rect())
+            if not visible.isEmpty():
+                content.append((widget, visible))
+    return content
+
+
+def _empty_bands(spans: list[tuple[int, int, QWidget]]) -> list[tuple[int, QWidget, QWidget]]:
+    """Returns each gap wider than EMPTY_BAND_LIMIT between spans along one axis, as its width and the widgets that
+    end before it and start after it."""
+    bands = []
+    end: Optional[int] = None
+    last: Optional[QWidget] = None
+    for start, stop, widget in sorted(spans, key=lambda span: (span[0], span[1])):
+        if end is not None and last is not None and start - end > EMPTY_BAND_LIMIT:
+            bands.append((start - end, last, widget))
+        if end is None or stop > end:
+            end, last = stop, widget
+    return bands
+
+
+def find_arrangement_problems(root: QWidget) -> list[str]:
+    """Lists ways a panel's content is arranged badly for its size, though nothing overlaps or is clipped.
+
+    - stretched: an input field wider than FIELD_MAX_WIDTH.
+    - empty band: a gap of more than EMPTY_BAND_LIMIT pixels that crosses the whole panel, with content on both sides.
+      A tall band separates rows, and a wide band separates columns.
+    - cramped: a `DockPanel` whose content scrolls, while it uses less than CRAMPED_SHARE of the other axis.
+
+    Content is what `_content_rects` returns.
+    """
+    problems = []
+    for widget in _checked_widgets(root):
+        if isinstance(widget, FIELD_TYPES) and widget.width() > FIELD_MAX_WIDTH:
+            problems.append(f'stretched: {widget_path(widget, root)} is {widget.width()} wide, cap {FIELD_MAX_WIDTH}')
+    content = _content_rects(root)
+    for gap, before, after in _empty_bands([(rect.top(), rect.bottom() + 1, widget) for widget, rect in content]):
+        problems.append(f'empty band: {gap} px tall between {widget_path(before, root)} and {widget_path(after, root)}')
+    for gap, before, after in _empty_bands([(rect.left(), rect.right() + 1, widget) for widget, rect in content]):
+        problems.append(f'empty band: {gap} px wide between {widget_path(before, root)} and {widget_path(after, root)}')
+    if isinstance(root, DockPanel) and root.content_scrolls and len(content) > 0:
+        used = QRect()
+        for _, rect in content:
+            used = used.united(rect)
+        if root.orientation == Orientation.SIDE and used.width() < root.width() * CRAMPED_SHARE:
+            problems.append(f'cramped: scrolls vertically using {used.width()} of {root.width()} width')
+        elif root.orientation == Orientation.STRIP and used.height() < root.height() * CRAMPED_SHARE:
+            problems.append(f'cramped: scrolls horizontally using {used.height()} of {root.height()} height')
     return problems
 
 
