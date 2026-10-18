@@ -40,18 +40,18 @@
   },
   "strip_narrow": {
     "problems": [
-      "squeezed: QScrollArea is 29x322, minimum 59x59"
+      "squeezed: QScrollArea is 29x374, minimum 59x59"
     ],
     "size": [
       29,
-      322
+      374
     ]
   },
   "strip_preferred": {
     "problems": [],
     "size": [
       411,
-      322
+      374
     ]
   },
   "strip_short": {
@@ -74,7 +74,7 @@
     "problems": [],
     "size": [
       1600,
-      322
+      374
     ]
   },
   "tall": {
