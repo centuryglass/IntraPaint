@@ -27,7 +27,7 @@ from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QAbstractSp
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.segmented_control import SegmentedControl
 from src.ui.layout.dock_panel import DockPanel
-from src.ui.layout.panel_fit import STRIP_SECTION_MAX_WIDTH, FitContent, Orientation
+from src.ui.layout.panel_fit import FitContent, Orientation, field_width_cap
 
 if TYPE_CHECKING:
     from src.controller.app_controller import AppController
@@ -318,8 +318,7 @@ def find_layout_problems(root: QWidget) -> list[str]:
     return problems
 
 
-# Input fields wider than this are stretched: a field column keeps the width of a strip section.
-FIELD_MAX_WIDTH = STRIP_SECTION_MAX_WIDTH
+# The fields `find_arrangement_problems` holds to their `field_width_cap`. Text fields aren't among them:
 FIELD_TYPES = (QComboBox, QAbstractSpinBox, NumberField, SegmentedControl)
 # Empty space wider than this between parts of a panel's content strands the part after it:
 EMPTY_BAND_LIMIT = 48
@@ -372,7 +371,7 @@ def _empty_bands(spans: list[tuple[int, int, QWidget]]) -> list[tuple[int, QWidg
 def find_arrangement_problems(root: QWidget) -> list[str]:
     """Lists ways a panel's content is arranged badly for its size, though nothing overlaps or is clipped.
 
-    - stretched: an input field wider than FIELD_MAX_WIDTH.
+    - stretched: one of FIELD_TYPES wider than its `src.ui.layout.panel_fit.field_width_cap`.
     - empty band: a gap of more than EMPTY_BAND_LIMIT pixels that crosses the whole panel, with content on both sides.
       A tall band separates rows, and a wide band separates columns.
     - cramped: a `DockPanel` whose content scrolls, while it uses less than CRAMPED_SHARE of the other axis.
@@ -381,8 +380,11 @@ def find_arrangement_problems(root: QWidget) -> list[str]:
     """
     problems = []
     for widget in _checked_widgets(root):
-        if isinstance(widget, FIELD_TYPES) and widget.width() > FIELD_MAX_WIDTH:
-            problems.append(f'stretched: {widget_path(widget, root)} is {widget.width()} wide, cap {FIELD_MAX_WIDTH}')
+        if not isinstance(widget, FIELD_TYPES):
+            continue
+        cap = field_width_cap(widget)
+        if cap is not None and widget.width() > cap:
+            problems.append(f'stretched: {widget_path(widget, root)} is {widget.width()} wide, cap {cap}')
     content = _content_rects(root)
     for gap, before, after in _empty_bands([(rect.top(), rect.bottom() + 1, widget) for widget, rect in content]):
         problems.append(f'empty band: {gap} px tall between {widget_path(before, root)} and {widget_path(after, root)}')

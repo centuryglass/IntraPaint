@@ -42,6 +42,29 @@ HYSTERESIS = 6
 STRIP_SECTION_MIN_WIDTH = 240
 STRIP_SECTION_MAX_WIDTH = 300
 
+# The widest an input field is laid out, unless set_field_width_cap gives it its own cap:
+FIELD_MAX_WIDTH = STRIP_SECTION_MAX_WIDTH
+FIELD_WIDTH_CAP_PROPERTY = 'field_width_cap'
+_UNCAPPED = -1
+
+
+def set_field_width_cap(field: QWidget, cap: Optional[int]) -> None:
+    """Gives an input field its own width cap in place of FIELD_MAX_WIDTH, or lets it stretch with None.
+
+    The cap is what layout checks hold the field to (`find_arrangement_problems` in `test/ui/panel_capture.py`). It
+    doesn't resize the field: its maximum width and size policy do that.
+    """
+    field.setProperty(FIELD_WIDTH_CAP_PROPERTY, _UNCAPPED if cap is None else cap)
+
+
+def field_width_cap(field: QWidget) -> Optional[int]:
+    """Returns the widest a field should be laid out: its `set_field_width_cap` cap, or FIELD_MAX_WIDTH, or None if it
+    may stretch."""
+    cap = field.property(FIELD_WIDTH_CAP_PROPERTY)
+    if cap is None:
+        return FIELD_MAX_WIDTH
+    return None if cap == _UNCAPPED else int(cap)
+
 # The priority of items that are always shown:
 REQUIRED = 0
 
