@@ -4,7 +4,8 @@
   (`src.ui.layout.panel_fit`). Side panels show rows of eight buttons with the header under them, then the controls.
   Strip panels put the header across the top, with the grid left of the controls.
 - The buttons take the largest of `SIDE_BUTTON_FORMS` or `STRIP_BUTTON_FORMS` that fits across the panel. The largest
-  strip form is a grid of `STRIP_NARROW_COLUMNS` columns, with buttons as tall as the height allows
+  strip form is a grid of `STRIP_NARROW_COLUMNS` columns when the height allows buttons at least as large as the
+  default form's, and a grid of `STRIP_MAX_COLUMNS` columns otherwise, with buttons as tall as the height allows
   (`strip_button_layout`).
 - Buttons are ordered by `BaseTool.TOOL_GROUP`, keeping the order tools were added within a group, and always line up
   in columns.
@@ -48,8 +49,10 @@ class ButtonLayout:
 # The button forms, largest first:
 SIDE_BUTTON_FORMS = (ButtonLayout(40, 8, key_hints=True), ButtonLayout(28, 8), ButtonLayout(22, 8))
 STRIP_BUTTON_FORMS = (ButtonLayout(28, 4), ButtonLayout(28, 4), ButtonLayout(22, 8))
-# The largest strip form fits buttons of at least its `STRIP_BUTTON_FORMS` size into this many columns:
-STRIP_NARROW_COLUMNS = 3
+# The largest strip form fits buttons of at least its `STRIP_BUTTON_FORMS` size into this many columns if it can, and
+# otherwise into `STRIP_MAX_COLUMNS`:
+STRIP_NARROW_COLUMNS = 2
+STRIP_MAX_COLUMNS = 3
 MAX_STRIP_EDGE_LENGTH = 40
 # Strip buttons this large or larger show key hints:
 KEY_HINT_MIN_EDGE_LENGTH = 40
@@ -58,13 +61,15 @@ DESCRIPTION_PRIORITY = 1
 
 
 def strip_button_layout(button_count: int, grid_height: int, default: ButtonLayout) -> ButtonLayout:
-    """Returns the strip grid for a height: `STRIP_NARROW_COLUMNS` columns of buttons as large as fit, up to
-    `MAX_STRIP_EDGE_LENGTH`, or `default` if buttons that size would be smaller than the default's."""
-    rows = max(1, -(-button_count // STRIP_NARROW_COLUMNS))
-    edge = min(MAX_STRIP_EDGE_LENGTH, (grid_height - BUTTON_SPACING * (rows - 1)) // rows)
-    if edge < default.edge_length:
-        return default
-    return ButtonLayout(edge, STRIP_NARROW_COLUMNS, key_hints=edge >= KEY_HINT_MIN_EDGE_LENGTH)
+    """Returns the strip grid for a height: the fewest columns, from `STRIP_NARROW_COLUMNS` to `STRIP_MAX_COLUMNS`,
+    that hold buttons as large as fit, up to `MAX_STRIP_EDGE_LENGTH`, at least as large as the default's. Returns
+    `default` if no column count does."""
+    for columns in range(STRIP_NARROW_COLUMNS, STRIP_MAX_COLUMNS + 1):
+        rows = max(1, -(-button_count // columns))
+        edge = min(MAX_STRIP_EDGE_LENGTH, (grid_height - BUTTON_SPACING * (rows - 1)) // rows)
+        if edge >= default.edge_length:
+            return ButtonLayout(edge, columns, key_hints=edge >= KEY_HINT_MIN_EDGE_LENGTH)
+    return default
 
 
 def button_grid_size(button_count: int, layout: ButtonLayout) -> QSize:
