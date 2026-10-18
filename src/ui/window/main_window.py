@@ -204,6 +204,11 @@ class MainWindow(QMainWindow):
             button.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             button.customContextMenuRequested.connect(
                 lambda pos, rail_button=button: self._show_dock_menu(rail_button.dock, rail_button.mapToGlobal(pos)))
+            notch = dock.notch
+            notch.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            notch.customContextMenuRequested.connect(
+                lambda pos, notch_dock=dock, notch_widget=notch: self._show_dock_menu(
+                    notch_dock, notch_widget.mapToGlobal(pos)))
         self._rails.set_tools_dock(self._tools_dock)
         self._rails.set_generation_dock(self._generation_dock)
         self._rails.generate_button.clicked.connect(self.generate_signal)

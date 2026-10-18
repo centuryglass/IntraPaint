@@ -8,7 +8,7 @@
 from typing import Callable, Optional
 
 from PySide6.QtCore import QPoint, QPointF, Qt
-from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPaintEvent, QPalette, QPolygonF
+from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPaintEvent, QPalette, QPolygonF, QRegion
 from PySide6.QtWidgets import QApplication, QWidget
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -35,6 +35,8 @@ class DockNotch(QWidget):
         self._start_drag = start_drag
         self._press_pos: Optional[QPoint] = None
         self.setFixedSize(NOTCH_SIZE, NOTCH_SIZE)
+        # The mask limits hit testing, the cursor and the tooltip to the triangle:
+        self.setMask(QRegion(self._triangle().toPolygon()))
         self.setCursor(Qt.CursorShape.OpenHandCursor)
         self.setToolTip(NOTCH_TOOLTIP)
 
