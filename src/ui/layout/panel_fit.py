@@ -15,7 +15,8 @@ as much as fits there. Thresholds live in this module, so DPI normalization (iss
     it already does. An optional item that adds nothing along the scroll axis still shows while required content
     scrolls.
 - `plan_fit` keeps the current placement until a better one fits with `HYSTERESIS` pixels to spare, so dragging a
-  separator across a boundary doesn't flicker.
+  separator across a boundary doesn't flicker. A current placement that no longer fits doesn't hold, since forms of
+  one item can differ in shape.
 - `plan_orientation` plans both orientations and keeps the host's preferred one unless the other fits without
   overflowing where it doesn't, or shows optional items it leaves out. A dock's area only sets the preference, so a
   tall panel in a bottom dock can still lay out as a side panel. Switching needs `HYSTERESIS` pixels to spare too.
@@ -151,7 +152,8 @@ def plan_fit(items: Sequence[FitItem], available: QSize, orientation: Orientatio
     """Returns the placement for content in an available size, following the rules in this module's docstring.
 
     `measure` returns the minimum size of the content arranged for a placement. `current` is the placement in use, if
-    any. A better placement replaces it only once it fits in `available` shrunk by `HYSTERESIS` on both axes.
+    any. A better placement replaces it only once it fits in `available` shrunk by `HYSTERESIS` on both axes, unless
+    `current` no longer fits: it is larger across than the best fit, or its optional items overflow the scroll axis.
     """
     cache: dict[Placement, QSize] = {}
 
@@ -165,7 +167,18 @@ def plan_fit(items: Sequence[FitItem], available: QSize, orientation: Orientatio
         return planned
     roomy = _greedy(items, QSize(available.width() - HYSTERESIS, available.height() - HYSTERESIS), orientation,
                     _measure)
-    return roomy if _rank(items, roomy) < _rank(items, current) else current
+    if _rank(items, roomy) < _rank(items, current):
+        return roomy
+    # The current placement holds only while it still fits as `_greedy` judges it: across within the best fit, and
+    # with its optional items adding no overflow along the scroll axis.
+    need = _measure(current)
+    required_need = _measure(tuple(form if item.required else None for item, form in zip(items, current)))
+    if not _fits_axis(cross_extent(need, orientation), cross_extent(_measure(planned), orientation),
+                      cross_extent(available, orientation)) \
+            or not _fits_axis(scroll_extent(need, orientation), scroll_extent(required_need, orientation),
+                              scroll_extent(available, orientation)):
+        return planned
+    return current
 
 
 def _invalidate_sizes(widget: QWidget) -> None:

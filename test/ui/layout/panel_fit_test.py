@@ -125,6 +125,17 @@ class PlanFitTest(IntraPaintTestCase):
         current = plan_fit(items, _side(200, 199), SIDE, content.measure, current)
         self.assertEqual(current, (0, None))
 
+    def test_current_placement_that_no_longer_fits_does_not_hold(self) -> None:
+        """Within HYSTERESIS of a better placement, the current one still gives way once it overflows where the better
+        one doesn't, as when an item's forms differ in shape."""
+        # A wide, short form and a narrow, tall one, like a preview beside or below the fields:
+        content = StackedContent(SIDE, [(100, 100)], [(300, 20), (100, 100)])
+        items = [FitItem(REQUIRED), FitItem(1, 2)]
+        current = plan_fit(items, _side(100, 300), SIDE, content.measure)
+        self.assertEqual(current, (0, 1))
+        # The wide form fits with less than HYSTERESIS to spare, and the tall one no longer fits:
+        self.assertEqual(plan_fit(items, _side(300 + HYSTERESIS - 1, 150), SIDE, content.measure, current), (0, 0))
+
     def test_without_current_placement_there_is_no_hysteresis(self) -> None:
         """The first plan, or one after the items changed, takes whatever fits."""
         content = StackedContent(SIDE, [(100, 100)], [(100, 100)])
