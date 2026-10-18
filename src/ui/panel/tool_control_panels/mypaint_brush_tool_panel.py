@@ -1,26 +1,23 @@
 """Control panel widget for the MyPaint Brush tool: Size and the color pair, the brush picker, and brush dynamics.
 
-The stroke block holds Size only. The brush file defines opacity and hardness, and the Brush section says so.
+The stroke block holds Size only. The brush file defines opacity and hardness, and the Brush section's summary says so.
 
-Section forms follow the space the Tools panel gives the panel (`apply_fit_space`):
-- Side: the picker is compact below `SIDE_COMPACT_WIDTH`. Brush dynamics starts open above `SIDE_WIDE_WIDTH` and
-  collapsed otherwise.
-- Strip: the picker is compact below `STRIP_SHORT_HEIGHT`. Brush dynamics is a column above `STRIP_TALL_HEIGHT`, and a
-  button that opens it in a popover otherwise.
-- The compact picker shows `SIDE_FAVORITE_COUNT` favorites in a side panel and `STRIP_FAVORITE_COUNT` in a strip.
+The Brush and Brush dynamics sections are planned with the block (`StrokeToolPanel.add_tool_section`):
+- Brush is required. Its full form is the whole picker, and its compact form the brush chip with a row of favorites,
+  under the chip in a side panel and beside it in a strip. The full picker takes the height the other sections leave.
+- Brush dynamics is optional. A side panel shows it open, or else collapsed to its summary. A strip shows it open in
+  its own column. Where it doesn't fit, its editor moves to the Tools panel's More popover.
 """
 from typing import Optional
 
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtWidgets import QApplication, QBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
 
 from src.config.cache import Cache
 from src.image.mypaint.mypaint_brush import MyPaintBrush
-from src.ui.layout.panel_fit import Orientation
+from src.ui.layout.panel_fit import REQUIRED, STRIP_SECTION_MIN_WIDTH, FitItem, Orientation
 from src.ui.panel.mypaint_brush_dynamics import BrushDynamicsWidget
-from src.ui.panel.mypaint_brush_panel import MypaintBrushPanel, brush_name
-from src.ui.panel.tool_control_panels.stroke_block import StrokeBlock, StrokeToolPanel
-from src.ui.widget.panel_header import PanelPopover
+from src.ui.panel.mypaint_brush_panel import MAX_CELL_SIZE, MypaintBrushPanel, brush_name
+from src.ui.panel.tool_control_panels.stroke_block import FIELD_COLUMN_MAX_WIDTH, StrokeBlock, StrokeToolPanel
 from src.ui.widget.panel_section import PanelSection
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -35,53 +32,51 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 SIZE_LABEL = _tr('Size')
 BRUSH_SECTION_TITLE = _tr('Brush')
 DYNAMICS_SECTION_TITLE = _tr('Brush dynamics')
-DYNAMICS_BUTTON_LABEL = _tr('Brush dynamics...')
 FILE_DEFINED_HINT = _tr('Opacity and hardness come from the brush file.')
+BRUSH_SUMMARY = _tr('{brush}. {hint}')
 
-SIDE_COMPACT_WIDTH = 260
-SIDE_WIDE_WIDTH = 420
-STRIP_SHORT_HEIGHT = 170
-STRIP_TALL_HEIGHT = 320
-SIDE_FAVORITE_COUNT = 4
-STRIP_FAVORITE_COUNT = 8
-DYNAMICS_POPOVER_WIDTH = 300
+# The widest the picker grows, with room for this many of the largest tiles and the grid's scroll bar:
+WIDEST_TILE_COLUMNS = 5
+BRUSH_MAX_WIDTH = WIDEST_TILE_COLUMNS * MAX_CELL_SIZE + 24
+# The full picker's column width in a strip:
+STRIP_BRUSH_WIDTH = 420
+
+# The planner items' forms:
+BRUSH_FULL = 0
+BRUSH_COMPACT = 1
+DYNAMICS_OPEN = 0
+DYNAMICS_COLLAPSED = 1
+DYNAMICS_PRIORITY = 2
 
 
 class MyPaintBrushToolPanel(StrokeToolPanel):
     """Control panel widget for the MyPaint Brush tool."""
 
     def __init__(self, brush: MyPaintBrush) -> None:
+        super().__init__(StrokeBlock(size_key=Cache.PAINT_TOOL_BRUSH_SIZE, size_label=SIZE_LABEL,
+                                     color_key=Cache.LAST_BRUSH_COLOR))
         self._brush_picker = MypaintBrushPanel()
-        brush_body = QWidget()
-        brush_layout = QVBoxLayout(brush_body)
-        brush_layout.setContentsMargins(0, 0, 0, 0)
-        brush_layout.addWidget(self._brush_picker, stretch=1)
-        self._hint = QLabel(FILE_DEFINED_HINT)
-        self._hint.setWordWrap(True)
-        self._hint.setForegroundRole(self._hint.palette().ColorRole.PlaceholderText)
-        self._hint.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Minimum)
-        brush_layout.addWidget(self._hint)
-        self._brush_section = PanelSection(BRUSH_SECTION_TITLE, brush_body)
+        self._brush_section = PanelSection(BRUSH_SECTION_TITLE, self._brush_picker)
+        self._brush_section.setToolTip(FILE_DEFINED_HINT)
 
         self._dynamics = BrushDynamicsWidget(brush)
-        self._dynamics_section = PanelSection(DYNAMICS_SECTION_TITLE, self._dynamics, expanded=False)
-        self._dynamics_button = QPushButton(DYNAMICS_BUTTON_LABEL)
-        self._dynamics_button.setFlat(True)
-        self._brush = brush
-        self._popover_dynamics: Optional[BrushDynamicsWidget] = None
-        self._popover: Optional[PanelPopover] = None
-        self._wide = False
-        super().__init__(StrokeBlock(size_key=Cache.PAINT_TOOL_BRUSH_SIZE, size_label=SIZE_LABEL,
-                                     color_key=Cache.LAST_BRUSH_COLOR),
-                         [self._brush_section, self._dynamics_section, self._dynamics_button])
-        self._layout.setStretchFactor(self._brush_section, 1)
-        self._dynamics_button.hide()
-        self._dynamics_button.clicked.connect(self._show_dynamics_popover)
+        dynamics_body = QWidget()
+        self._dynamics_body_layout = QVBoxLayout(dynamics_body)
+        self._dynamics_body_layout.setContentsMargins(0, 0, 0, 0)
+        self._dynamics_body_layout.addWidget(self._dynamics)
+        self._dynamics_section = PanelSection(DYNAMICS_SECTION_TITLE, dynamics_body)
+        self._dynamics_section.setMaximumWidth(FIELD_COLUMN_MAX_WIDTH)
+        self._overflow_title = QLabel(DYNAMICS_SECTION_TITLE)
+        self.overflow_layout.addWidget(self._overflow_title)
+        self._overflow_title.hide()
+
+        self.add_tool_section(self._brush_section, FitItem(REQUIRED, 2), self._apply_brush_form, stretch=True)
+        self.add_tool_section(self._dynamics_section, FitItem(DYNAMICS_PRIORITY, 2), self._apply_dynamics_form)
 
         def _update_summaries(*_args) -> None:
             path = self._brush_picker.active_brush_path
-            self._brush_section.set_summary(f'{brush_name(path)}. {FILE_DEFINED_HINT}' if path is not None
-                                            else FILE_DEFINED_HINT)
+            self._brush_section.set_summary(FILE_DEFINED_HINT if path is None
+                                            else BRUSH_SUMMARY.format(brush=brush_name(path), hint=FILE_DEFINED_HINT))
             self._dynamics_section.set_summary(self._dynamics.summary())
 
         self._update_summaries = _update_summaries
@@ -102,73 +97,52 @@ class MyPaintBrushToolPanel(StrokeToolPanel):
 
     @property
     def dynamics(self) -> BrushDynamicsWidget:
-        """The brush dynamics editor in the panel's own section."""
+        """The brush dynamics editor."""
         return self._dynamics
 
     @property
     def dynamics_section(self) -> PanelSection:
-        """The section holding the brush dynamics editor."""
+        """The section holding the brush dynamics editor while it fits in the panel."""
         return self._dynamics_section
-
-    @property
-    def dynamics_button(self) -> QPushButton:
-        """The button that opens brush dynamics in a popover while a strip has no column for them."""
-        return self._dynamics_button
 
     def refresh_dynamics(self) -> None:
         """Re-reads brush dynamics from the brush, after the brush loaded a file."""
         self._dynamics.refresh()
-        if self._popover_dynamics is not None:
-            self._popover_dynamics.refresh()
         self._update_summaries()
 
-    def set_orientation(self, orientation: Qt.Orientation) -> None:
-        """Lays the sections out in a column for a side panel and in a row for a strip."""
-        super().set_orientation(orientation)
-        horizontal = orientation == Qt.Orientation.Horizontal
-        self._layout.setDirection(QBoxLayout.Direction.LeftToRight if horizontal
-                                  else QBoxLayout.Direction.TopToBottom)
-        alignment = Qt.AlignmentFlag.AlignTop
-        self._layout.setAlignment(alignment | Qt.AlignmentFlag.AlignLeft if horizontal else alignment)
-        self._hint.setVisible(not horizontal)
-
-    def apply_base_form(self, orientation: Orientation) -> None:
-        """Uses the compact picker, with brush dynamics collapsed or out of the strip."""
-        self._apply_forms(orientation, compact=True, dynamics_open=False)
-
-    def apply_fit_space(self, orientation: Orientation, size: QSize) -> None:
-        """Chooses the picker and brush dynamics forms for the space, as the module docstring describes."""
-        if orientation == Orientation.SIDE:
-            self._apply_forms(orientation, size.width() < SIDE_COMPACT_WIDTH, size.width() > SIDE_WIDE_WIDTH)
-        else:
-            self._apply_forms(orientation, size.height() < STRIP_SHORT_HEIGHT, size.height() > STRIP_TALL_HEIGHT)
-
-    def _apply_forms(self, orientation: Orientation, compact: bool, dynamics_open: bool) -> None:
+    def _apply_brush_form(self, orientation: Orientation, form: Optional[int]) -> None:
+        compact = form == BRUSH_COMPACT
         strip = orientation == Orientation.STRIP
-        self._brush_picker.set_compact(compact)
-        self._brush_picker.set_favorite_count(STRIP_FAVORITE_COUNT if strip else SIDE_FAVORITE_COUNT)
+        self._brush_picker.set_compact(compact, beside=strip)
+        self.stroke_block.set_tool_section_stretch(self._brush_section, not compact)
+        section = self._brush_section
+        if strip and not compact:
+            section.setFixedWidth(STRIP_BRUSH_WIDTH)
+            self._brush_picker.set_layout_width(STRIP_BRUSH_WIDTH)
+            return
+        section.setMinimumWidth(0)
         if strip:
-            self._dynamics_section.setVisible(dynamics_open)
-            self._dynamics_button.setVisible(not dynamics_open)
-            if dynamics_open:
-                self._dynamics_section.set_expanded(True)
-        else:
-            self._dynamics_section.setVisible(True)
-            self._dynamics_button.setVisible(False)
-            if dynamics_open != self._wide:
-                self._dynamics_section.set_expanded(dynamics_open)
-        self._wide = dynamics_open
+            # Wide enough for every favorite beside the chip, and no wider:
+            section.setMaximumWidth(self._brush_picker.sizeHint().width())
+            return
+        section.setMaximumWidth(BRUSH_MAX_WIDTH)
+        space = self.fit_space
+        if space is not None:
+            margins = self._layout.contentsMargins()
+            self._brush_picker.set_layout_width(min(space.width() - margins.left() - margins.right(),
+                                                    BRUSH_MAX_WIDTH))
 
-    def _show_dynamics_popover(self) -> None:
-        """Opens brush dynamics under the button."""
-        if self._popover is None:
-            self._popover = PanelPopover(self)
-            self._popover_dynamics = BrushDynamicsWidget(self._brush)
-            self._popover_dynamics.setFixedWidth(DYNAMICS_POPOVER_WIDTH)
-            self._popover.set_content(self._popover_dynamics)
-        elif self._popover_dynamics is not None:
-            self._popover_dynamics.refresh()
-        self._popover.adjustSize()
-        corner = self._dynamics_button.mapToGlobal(self._dynamics_button.rect().bottomLeft())
-        self._popover.move(corner.x(), corner.y() + 2)
-        self._popover.show()
+    def _apply_dynamics_form(self, orientation: Orientation, form: Optional[int]) -> None:
+        # A strip has no room for a column holding only a collapsed header:
+        shown = form == DYNAMICS_OPEN or (form == DYNAMICS_COLLAPSED and orientation == Orientation.SIDE)
+        self._dynamics_section.setVisible(shown)
+        self._dynamics_section.set_forced_collapsed(form == DYNAMICS_COLLAPSED)
+        self._dynamics_section.setMinimumWidth(STRIP_SECTION_MIN_WIDTH if orientation == Orientation.STRIP else 0)
+        if shown:
+            self._overflow_title.hide()
+            self._dynamics_body_layout.addWidget(self._dynamics)
+        else:
+            self.overflow_layout.addWidget(self._overflow_title)
+            self.overflow_layout.addWidget(self._dynamics)
+            self._overflow_title.show()
+        self._dynamics.show()

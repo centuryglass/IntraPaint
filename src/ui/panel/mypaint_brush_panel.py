@@ -2,7 +2,8 @@
 
 `MypaintBrushPanel` shows the active brush as a chip, category chips that wrap instead of scrolling, and a grid of
 named tiles with a favorite star on each. A compact form replaces the chips and grid with a row of favorite thumbnails,
-and the chip opens the full picker in a popover. `BrushLibrary` reads the brush files once and can be shared between
+and the chip opens the full picker in a popover. The owner picks the form, and tells the panel the width it is laid out
+at, since the category chips' height depends on it. `BrushLibrary` reads the brush files once and can be shared between
 panels. The favorites list lives in AppConfig under FAV_CONFIG_KEY, so every panel follows changes made in any other.
 
 This widget can only be used if a compatible brushlib/libmypaint QT library is available, bundled for x86_64 Linux and
@@ -17,13 +18,12 @@ from typing import Optional
 from PySide6.QtCore import QPoint, QRect, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import (QIcon, QImage, QMouseEvent, QPainter, QPainterPath, QPalette, QPen, QPixmap,
                            QResizeEvent)
-from PySide6.QtWidgets import (QAbstractButton, QAbstractItemView, QApplication, QFrame, QHBoxLayout, QLabel,
-                               QLayout, QLayoutItem, QListView, QListWidget, QListWidgetItem, QMenu, QPushButton,
-                               QSizePolicy, QStyle, QStyledItemDelegate, QStyleOptionViewItem, QToolButton,
-                               QVBoxLayout, QWidget)
-
+from PySide6.QtWidgets import (QAbstractButton, QAbstractItemView, QApplication, QBoxLayout, QFrame, QHBoxLayout,
+                               QLabel, QListView, QListWidget, QListWidgetItem, QMenu, QPushButton, QSizePolicy, QStyle,
+                               QStyledItemDelegate, QStyleOptionViewItem, QToolButton, QVBoxLayout, QWidget)
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.ui.layout.flow_layout import FlowWidget
 from src.ui.widget.panel_header import PanelPopover
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.image_utils import temp_image_path
@@ -43,6 +43,7 @@ ALL_CATEGORY_NAME = _tr('All')
 ADD_FAVORITE_LABEL = _tr('Add to Favorites')
 REMOVE_FAVORITE_LABEL = _tr('Remove from Favorites')
 FAVORITE_TOOLTIP = _tr('Toggle favorite')
+NO_BRUSH_LABEL = _tr('No brush')
 
 BRUSH_DIR = f'{PROJECT_DIR}/resources/brushes'
 FAV_CONFIG_KEY = 'brush_favorites'
@@ -63,14 +64,15 @@ MAX_CELL_SIZE = MAX_ICON_SIZE + 2 * ICON_PADDING
 # Rows and columns of minimum-size tiles the brush grid asks for in its size hints:
 PREFERRED_ROWS = 2
 PREFERRED_COLUMNS = 4
+MIN_ROWS = 1
+MIN_COLUMNS = 3
 STAR_SIZE = 16
 STAR_MARGIN = 5
 CHIP_ICON_SIZE = 36
+CHIP_MIN_WIDTH = 150
 THUMBNAIL_SIZE = 40
-COMPACT_FAVORITE_COUNT = 4
-# The smallest sizes at which the full picker is laid out; smaller areas should use the compact form:
-FULL_MIN_WIDTH = 240
-FULL_MIN_HEIGHT = 190
+THUMBNAIL_SPACING = 4
+MAX_FAVORITE_THUMBNAILS = 8
 POPOVER_SIZE = QSize(400, 430)
 
 # Item data roles holding each brush tile's .myb file path and whether it is a favorite:
@@ -201,73 +203,61 @@ class StarButton(QAbstractButton):
         painter.end()
 
 
-class FlowLayout(QLayout):
-    """Lays out widgets left to right, starting a new line when the next one doesn't fit."""
+class FavoritesRow(QWidget):
+    """A row of favorite brush thumbnails that shows as many as fit its width.
 
-    def __init__(self, parent: Optional[QWidget] = None, spacing: int = 4) -> None:
+    Its minimum width is one thumbnail, so it never widens its parent past that. Its size hint holds every thumbnail.
+    """
+
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self._items: list[QLayoutItem] = []
-        self._spacing = spacing
-        self.setContentsMargins(0, 0, 0, 0)
+        self._buttons: list[QToolButton] = []
+        self._layout = QHBoxLayout(self)
+        self._layout.setContentsMargins(0, 0, 0, 0)
+        self._layout.setSpacing(THUMBNAIL_SPACING)
+        self._layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
 
-    def addItem(self, item: QLayoutItem) -> None:  # pylint: disable=invalid-name
-        """Adds a layout item after the others."""
-        self._items.append(item)
+    @property
+    def buttons(self) -> list[QToolButton]:
+        """Every thumbnail, shown or not, in order."""
+        return list(self._buttons)
 
-    def count(self) -> int:
-        """Returns the number of items."""
-        return len(self._items)
+    def set_buttons(self, buttons: list[QToolButton]) -> None:
+        """Replaces the thumbnails, deleting the old ones."""
+        for button in self._buttons:
+            self._layout.removeWidget(button)
+            button.setParent(None)
+            button.deleteLater()
+        self._buttons = buttons
+        for button in buttons:
+            self._layout.addWidget(button)
+        self._show_fitting()
+        self.updateGeometry()
 
-    def itemAt(self, index: int) -> Optional[QLayoutItem]:  # pylint: disable=invalid-name
-        """Returns the item at an index, or None."""
-        return self._items[index] if 0 <= index < len(self._items) else None
+    def _button_size(self) -> QSize:
+        return self._buttons[0].sizeHint() if len(self._buttons) > 0 else QSize()
 
-    def takeAt(self, index: int) -> Optional[QLayoutItem]:  # pylint: disable=invalid-name
-        """Removes and returns the item at an index."""
-        return self._items.pop(index) if 0 <= index < len(self._items) else None
-
-    def hasHeightForWidth(self) -> bool:  # pylint: disable=invalid-name
-        """Returns true, since the height depends on how many lines fit."""
-        return True
-
-    def heightForWidth(self, width: int) -> int:  # pylint: disable=invalid-name
-        """Returns the height needed at a width."""
-        return self._do_layout(QRect(0, 0, width, 0), False)
-
-    def setGeometry(self, rect: QRect) -> None:  # pylint: disable=invalid-name
-        """Places the items inside a rectangle."""
-        super().setGeometry(rect)
-        self._do_layout(rect, True)
+    def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns one thumbnail's size, or nothing while there are none."""
+        return self._button_size()
 
     def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
-        """Returns the minimum size."""
-        return self.minimumSize()
+        """Returns the size of every thumbnail in one row."""
+        size = self._button_size()
+        count = len(self._buttons)
+        return QSize(size.width() * count + THUMBNAIL_SPACING * max(count - 1, 0), size.height())
 
-    def minimumSize(self) -> QSize:  # pylint: disable=invalid-name
-        """Returns the size of the largest item plus margins."""
-        size = QSize()
-        for item in self._items:
-            size = size.expandedTo(item.minimumSize())
-        margins = self.contentsMargins()
-        return size + QSize(margins.left() + margins.right(), margins.top() + margins.bottom())
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
+        """Shows the thumbnails that fit the new width."""
+        super().resizeEvent(event)
+        self._show_fitting()
 
-    def _do_layout(self, rect: QRect, apply: bool) -> int:
-        margins = self.contentsMargins()
-        area = rect.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom())
-        x, y, line_height = area.x(), area.y(), 0
-        for item in self._items:
-            if item.widget() is not None and item.widget().isHidden():
-                continue
-            hint = item.sizeHint()
-            if x > area.x() and x + hint.width() > area.right() + 1:
-                x = area.x()
-                y += line_height + self._spacing
-                line_height = 0
-            if apply:
-                item.setGeometry(QRect(QPoint(x, y), hint))
-            x += hint.width() + self._spacing
-            line_height = max(line_height, hint.height())
-        return y + line_height - rect.y() + margins.bottom()
+    def _show_fitting(self) -> None:
+        width = self._button_size().width() + THUMBNAIL_SPACING
+        fitting = max(1, (self.width() + THUMBNAIL_SPACING) // width) if width > THUMBNAIL_SPACING else 0
+        for index, button in enumerate(self._buttons):
+            button.setVisible(index < fitting)
 
 
 class BrushLibrary:
@@ -538,8 +528,8 @@ class BrushList(QListWidget):
         return self._hint_size(PREFERRED_COLUMNS, PREFERRED_ROWS)
 
     def minimumSizeHint(self) -> QSize:
-        """Asks for one minimum-size tile and the scroll bar."""
-        return self._hint_size(1, 1)
+        """Asks for MIN_ROWS rows of MIN_COLUMNS minimum-size tiles, and the scroll bar."""
+        return self._hint_size(MIN_COLUMNS, MIN_ROWS)
 
 
 class CurrentBrushChip(QFrame):
@@ -554,6 +544,8 @@ class CurrentBrushChip(QFrame):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.setFrameShape(QFrame.Shape.StyledPanel)
+        self.setMinimumWidth(CHIP_MIN_WIDTH)
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self._popup_enabled = False
         self._icon_label = QLabel(self)
         self._icon_label.setFixedSize(CHIP_ICON_SIZE, CHIP_ICON_SIZE)
@@ -614,12 +606,14 @@ class CurrentBrushChip(QFrame):
         """Shows a brush, or an empty chip if `brush_path` is None."""
         if brush_path is None or icon is None:
             self._icon_label.clear()
-            self._name_label.setText('')
+            self._icon_label.hide()
+            self._name_label.setText(NO_BRUSH_LABEL)
             self._category_label.setText('')
             self._star.setEnabled(False)
             self._star.setChecked(False)
             return
         self._icon_label.setPixmap(icon.pixmap(CHIP_ICON_SIZE, CHIP_ICON_SIZE))
+        self._icon_label.show()
         self._name_label.setText(brush_name(brush_path))
         self._category_label.setText(brush_category(brush_path))
         self._star.setEnabled(True)
@@ -639,8 +633,9 @@ class MypaintBrushPanel(QWidget):
 
     - The category chips are Favorites while AppConfig's FAV_CONFIG_KEY lists any brushes, All, and one per brush group.
     - Selecting a tile sets the brush Cache holds under brush_config_key, and the panel follows changes to that key.
-    - `set_compact` swaps the chips and grid for a row of favorite thumbnails. The chip then opens the full picker in a
-      popover that closes when a brush is picked.
+    - `set_compact` swaps the chips and grid for a row of favorite thumbnails, beside the chip or under it. The chip
+      then opens the full picker in a popover that closes when a brush is picked.
+    - `set_layout_width` sets the width the category chips wrap at while the panel is measured.
     """
 
     brush_picked = Signal()
@@ -664,34 +659,32 @@ class MypaintBrushPanel(QWidget):
         self._brush_config_key = brush_config_key
         self._library = library if library is not None else BrushLibrary()
         self._compact = compact
-        self._favorite_count = COMPACT_FAVORITE_COUNT
+        self._beside = False
         self._category: Optional[str] = None
         self._category_buttons: dict[str, QPushButton] = {}
-        self._thumbnails: list[QToolButton] = []
         self._popover: Optional[PanelPopover] = None
 
         self._chip = CurrentBrushChip(self)
         self._chip.favoriteToggled.connect(self._toggle_active_favorite)
         self._chip.clicked.connect(self._show_popover)
+        self._favorites_row = FavoritesRow(self)
+        self._top_layout = QBoxLayout(QBoxLayout.Direction.TopToBottom)
+        self._top_layout.setContentsMargins(0, 0, 0, 0)
+        self._top_layout.addWidget(self._chip)
+        self._top_layout.addWidget(self._favorites_row)
 
-        self._category_widget = QWidget(self)
-        self._category_layout = FlowLayout(self._category_widget)
+        self._category_widget = FlowWidget(self)
+        self._category_layout = self._category_widget.flow
         self._grid = BrushList(self)
         self._grid.itemSelectionChanged.connect(self._selection_change_slot)
         self._grid.customContextMenuRequested.connect(self._menu)
         self._grid.favoriteToggled.connect(self.toggle_favorite)
 
-        self._favorites_row = QWidget(self)
-        self._favorites_layout = QHBoxLayout(self._favorites_row)
-        self._favorites_layout.setContentsMargins(0, 0, 0, 0)
-        self._favorites_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self._chip)
+        layout.addLayout(self._top_layout)
         layout.addWidget(self._category_widget)
         layout.addWidget(self._grid, stretch=1)
-        layout.addWidget(self._favorites_row)
 
         self._rebuild_categories()
         self._apply_form()
@@ -719,6 +712,11 @@ class MypaintBrushPanel(QWidget):
         return self._grid
 
     @property
+    def category_chips(self) -> FlowWidget:
+        """The category chips' container."""
+        return self._category_widget
+
+    @property
     def category(self) -> Optional[str]:
         """The name of the chosen category chip."""
         return self._category
@@ -734,9 +732,14 @@ class MypaintBrushPanel(QWidget):
         return dict(self._category_buttons)
 
     @property
-    def thumbnails(self) -> list[QToolButton]:
+    def favorites_row(self) -> FavoritesRow:
         """The favorite thumbnails shown in the compact form."""
-        return list(self._thumbnails)
+        return self._favorites_row
+
+    @property
+    def thumbnails(self) -> list[QToolButton]:
+        """Every favorite thumbnail, shown or not."""
+        return self._favorites_row.buttons
 
     @property
     def compact(self) -> bool:
@@ -753,31 +756,27 @@ class MypaintBrushPanel(QWidget):
         """The absolute path of the active brush, or None if Cache holds none that exists."""
         return _resolved_brush_path(Cache().get(self._brush_config_key))
 
-    def set_compact(self, compact: bool) -> None:
-        """Switches between the full picker and the chip with a row of favorites."""
-        if compact != self._compact:
+    def set_compact(self, compact: bool, beside: bool = False) -> None:
+        """Switches between the full picker and the chip with a row of favorites, which goes beside the chip if
+        `beside` is set and under it otherwise."""
+        if compact != self._compact or beside != self._beside:
             self._compact = compact
+            self._beside = beside
             self._apply_form()
 
-    def set_favorite_count(self, count: int) -> None:
-        """Changes how many favorite thumbnails the compact form shows."""
-        if count != self._favorite_count:
-            self._favorite_count = count
-            self._rebuild_thumbnails()
-            self.updateGeometry()
-
-    def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
-        """Returns the layout's minimum, raised to FULL_MIN_WIDTH by FULL_MIN_HEIGHT in the full form so a host sees
-        when the compact form would fit better."""
-        hint = super().minimumSizeHint()
-        return hint if self._compact else hint.expandedTo(QSize(FULL_MIN_WIDTH, FULL_MIN_HEIGHT))
+    def set_layout_width(self, width: int) -> None:
+        """Sets the width the panel will be laid out at, which the category chips wrap at while measured."""
+        self._category_widget.set_wrap_width(width)
 
     def _apply_form(self) -> None:
         self._category_widget.setVisible(not self._compact)
         self._grid.setVisible(not self._compact)
-        self._favorites_row.setVisible(self._compact and len(self._thumbnails) > 0)
+        self._favorites_row.setVisible(self._compact and len(self.thumbnails) > 0)
         self._chip.set_popup_enabled(self._compact)
-        self.layout().setStretchFactor(self._grid, 0 if self._compact else 1)
+        beside = self._compact and self._beside
+        self._top_layout.setDirection(QBoxLayout.Direction.LeftToRight if beside else QBoxLayout.Direction.TopToBottom)
+        # Beside the chip, the favorites take the row's spare width:
+        self._top_layout.setStretchFactor(self._favorites_row, 1 if beside else 0)
         self.setSizePolicy(QSizePolicy.Policy.Preferred,
                            QSizePolicy.Policy.Maximum if self._compact else QSizePolicy.Policy.Expanding)
         self.updateGeometry()
@@ -852,7 +851,7 @@ class MypaintBrushPanel(QWidget):
         favorites = {os.path.abspath(path) for path in self._library.favorite_paths()}
         self._chip.set_brush(active_brush, None if active_brush is None else self._library.icon(active_brush),
                              active_brush in favorites)
-        for button in self._thumbnails:
+        for button in self.thumbnails:
             button.setChecked(os.path.abspath(button.property('brush_path')) == active_brush)
 
     def _selection_change_slot(self) -> None:
@@ -919,12 +918,8 @@ class MypaintBrushPanel(QWidget):
         self._rebuild_thumbnails()
 
     def _rebuild_thumbnails(self) -> None:
-        for button in self._thumbnails:
-            self._favorites_layout.removeWidget(button)
-            button.setParent(None)
-            button.deleteLater()
-        self._thumbnails = []
-        for path in self._library.favorite_paths()[:self._favorite_count]:
+        buttons = []
+        for path in self._library.favorite_paths()[:MAX_FAVORITE_THUMBNAILS]:
             button = QToolButton(self._favorites_row)
             button.setIcon(self._library.icon(path))
             button.setIconSize(QSize(THUMBNAIL_SIZE, THUMBNAIL_SIZE))
@@ -933,9 +928,9 @@ class MypaintBrushPanel(QWidget):
             button.setAccessibleName(brush_name(path))
             button.setProperty('brush_path', path)
             button.clicked.connect(lambda _checked=False, chosen=path: self._thumbnail_clicked(chosen))
-            self._favorites_layout.addWidget(button)
-            self._thumbnails.append(button)
-        self._favorites_row.setVisible(self._compact and len(self._thumbnails) > 0)
+            buttons.append(button)
+        self._favorites_row.set_buttons(buttons)
+        self._favorites_row.setVisible(self._compact and len(buttons) > 0)
         self._show_active_brush()
 
     def _thumbnail_clicked(self, brush_path: str) -> None:
@@ -952,6 +947,7 @@ class MypaintBrushPanel(QWidget):
             self._popover = PanelPopover(self)
             picker = MypaintBrushPanel(self._brush_config_key, library=self._library)
             picker.setFixedSize(POPOVER_SIZE)
+            picker.set_layout_width(POPOVER_SIZE.width())
             picker.brush_picked.connect(self._popover.hide)
             self._popover.set_content(picker)
         self._popover.adjustSize()

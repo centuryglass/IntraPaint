@@ -1,8 +1,9 @@
 """Tests StrokeBlock's binding to Cache values, its pen pressure links and its arrangements."""
 import json
+from typing import Optional
 
 from PySide6.QtCore import QPoint, QSize
-from PySide6.QtWidgets import QCheckBox
+from PySide6.QtWidgets import QCheckBox, QGridLayout, QLabel
 
 from src.config.cache import Cache
 from src.tools.filter_tool import FilterTool
@@ -13,10 +14,11 @@ from src.ui.panel.tool_control_panels.fill_tool_panel import FillToolPanel
 from src.ui.panel.tool_control_panels.filter_tool_panel import FilterToolPanel
 from src.ui.panel.tool_control_panels.smudge_tool_panel import SmudgeToolPanel
 from src.tools.draw_tool import DrawTool
-from src.ui.layout.panel_fit import Orientation
+from src.ui.layout.panel_fit import FitItem, Orientation
 from src.ui.panel.tool_control_panels.stroke_block import (BELOW, BESIDE, BESIDE_FIELD_MIN_WIDTH,
                                                            FIELD_COLUMN_MAX_WIDTH, ONLY_INSIDE_SELECTION_LABEL)
 from src.ui.panel.tool_panel import ToolPanel
+from src.ui.widget.panel_section import PanelSection
 from test.base_test_case import IntraPaintTestCase
 from test.tools.tool_test_case import ToolTestCase
 from test.ui.panel.tool_panel_test import settle_layouts
@@ -185,6 +187,35 @@ class StrokeBlockTest(IntraPaintTestCase):
         self.panel.set_fit_space(STRIP, QSize(1300, 160))
         self.assertEqual(len(orientations), 1, orientations)
         self.assertEqual(self.block.arrangement.orientation, STRIP)
+
+    def test_tool_sections_join_the_arrangement(self) -> None:
+        """A tool section goes below the block's sections in a side panel and in the next column in a strip, an
+        optional one is planned with the block's items, and a hidden one's column takes no spare width."""
+        section = PanelSection('Tool', QLabel('Tool controls'))
+        forms: list[tuple[Orientation, Optional[int]]] = []
+
+        def _apply(orientation: Orientation, form: Optional[int]) -> None:
+            forms.append((orientation, form))
+            section.setVisible(form is not None)
+
+        self.panel.add_tool_section(section, FitItem(1), _apply)
+        self.panel.set_fit_space(SIDE, QSize(400, 900))
+        settle_layouts(self.panel)
+        options = self.block._options_section  # pylint: disable=protected-access
+        self.assertEqual(forms[-1], (SIDE, 0))
+        self.assertGreaterEqual(section.y(), options.geometry().bottom())
+        self.assertEqual(section.x(), options.x())
+        self.panel.set_fit_space(STRIP, QSize(1400, 200))
+        settle_layouts(self.panel)
+        self.assertEqual(forms[-1], (STRIP, 0))
+        self.assertGreater(section.x(), options.geometry().right())
+        self.assertEqual(section.y(), options.y())
+        base = self.panel.fit_base_size(STRIP)
+        self.panel.set_fit_space(STRIP, QSize(base.width(), 200))
+        self.assertEqual(forms[-1], (STRIP, None))
+        grid = self.block.layout()
+        assert isinstance(grid, QGridLayout)
+        self.assertEqual(grid.columnStretch(grid.getItemPosition(grid.indexOf(section))[1]), 0)
 
 
 class ToolPanelsOnStrokeBlockTest(ToolTestCase):

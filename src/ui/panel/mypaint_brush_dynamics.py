@@ -7,7 +7,8 @@ Size, color and the eraser flag are left out. The tool panel's Size field, the c
 """
 from typing import Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QApplication, QComboBox, QLabel, QSizePolicy, QVBoxLayout, QWidget
 
 from src.image.mypaint.mypaint_brush import BrushSetting, MyPaintBrush
@@ -37,6 +38,36 @@ def editable_settings() -> list[BrushSetting]:
             if setting.cname not in _EXCLUDED_SETTINGS and setting.name != '']
 
 
+class _DescriptionLabel(QLabel):
+    """A word-wrapped label whose minimum height fits its text at its current width.
+
+    QLabel's own minimum size wraps at a width it guesses, so a parent layout can give it too little height. A resize
+    re-measures at the new width.
+    """
+
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self.setWordWrap(True)
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+        self._measured_height = -1
+
+    def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns no width, and the wrapped text's height at the current width."""
+        return QSize(0, self.heightForWidth(max(self.width(), 1)) if self.text() != '' else 0)
+
+    def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the minimum size."""
+        return self.minimumSizeHint()
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
+        """Asks the parent layout for the height the text needs at the new width."""
+        super().resizeEvent(event)
+        height = self.minimumSizeHint().height()
+        if height != self._measured_height:
+            self._measured_height = height
+            self.updateGeometry()
+
+
 class BrushDynamicsWidget(QWidget):
     """A setting picker, the picked setting's description, and a field for its base value."""
 
@@ -50,10 +81,8 @@ class BrushDynamicsWidget(QWidget):
         self._setting_combo.setMinimumContentsLength(8)
         for setting in self._settings:
             self._setting_combo.addItem(setting.name, setting.id)
-        self._description = QLabel(self)
-        self._description.setWordWrap(True)
+        self._description = _DescriptionLabel(self)
         self._description.setForegroundRole(self._description.palette().ColorRole.PlaceholderText)
-        self._description.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Minimum)
         self._field = SliderField(VALUE_LABEL, 0.0, 0.0, 1.0, step=0.01, parent=self)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)

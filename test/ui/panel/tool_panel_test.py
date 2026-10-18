@@ -3,7 +3,7 @@ space a fit-aware tool control panel gets."""
 import sys
 
 from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QApplication, QScrollArea, QWidget
+from PySide6.QtWidgets import QApplication, QLabel, QScrollArea, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -45,6 +45,9 @@ class FitControlPanel(QWidget):
         self.base_sizes: list[Orientation] = []
         self.spaces: list[tuple[Orientation, QSize]] = []
         self.setMinimumSize(100, 100)
+        self.overflow = QWidget()
+        self.left_out = QLabel('Left out', self.overflow)
+        self.left_out.hide()
 
     def fit_base_size(self, orientation: Orientation) -> QSize:
         """Records the call and returns the fixed minimum."""
@@ -54,6 +57,10 @@ class FitControlPanel(QWidget):
     def set_fit_space(self, orientation: Orientation, size: QSize) -> None:
         """Records the space."""
         self.spaces.append((orientation, size))
+
+    def overflow_content(self) -> QWidget:
+        """Returns a widget whose one label shows while it is left out."""
+        return self.overflow
 
 
 def settle_layouts(root: QWidget) -> None:
@@ -350,6 +357,26 @@ class ToolPanelTest(IntraPaintTestCase):
         cache.set(Cache.DRAW_TOOL_BRUSH_SIZE, default_size + 3)
         reset_button.click()
         self.assertEqual(cache.get(Cache.DRAW_TOOL_BRUSH_SIZE), default_size)
+
+    def test_more_popover_shows_controls_the_tool_panel_left_out(self) -> None:
+        """A fit-aware control panel's overflow content shows in the More popover while it holds a visible control,
+        and leaves the popover when another tool becomes active."""
+        tool = self._tool(DrawTool)
+        control_panel = FitControlPanel()
+        tool.get_control_panel = lambda: control_panel
+        other_tool = self._tool(TextTool)
+        for added in (tool, other_tool):
+            self._tool_panel.add_tool_button(added)
+        self._tool_panel.setup_active_tool(tool)
+        more_content = self._tool_panel._more_content  # pylint: disable=protected-access
+        self.assertIs(control_panel.overflow.parentWidget(), more_content)
+        self._tool_panel.header.more_requested.emit()
+        self.assertFalse(control_panel.overflow.isVisibleTo(more_content))
+        control_panel.left_out.show()
+        self._tool_panel.header.more_requested.emit()
+        self.assertTrue(control_panel.overflow.isVisibleTo(more_content))
+        self._tool_panel.setup_active_tool(other_tool)
+        self.assertIsNot(control_panel.overflow.parentWidget(), more_content)
 
     def test_more_popover_opens_settings_tabs(self) -> None:
         """The popover's settings entries ask for the key bindings tab, and for the pressure curve tab once a tablet

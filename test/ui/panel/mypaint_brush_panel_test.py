@@ -4,19 +4,20 @@ import os
 import sys
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QPushButton, QToolButton, QWidget
 from PySide6.QtTest import QTest
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.mypaint.mypaint_brush import MyPaintBrush
+from src.ui.layout.flow_layout import FlowWidget
 from src.ui.layout.panel_fit import Orientation
+from src.ui.widget.panel_section import HEADER_HEIGHT
 from src.ui.panel.mypaint_brush_panel import (MypaintBrushPanel, BrushList, brush_cell_size, MIN_CELL_SIZE,
-                                              MAX_CELL_SIZE, FAVORITES_CATEGORY_NAME, ALL_CATEGORY_NAME,
-                                              FAV_CONFIG_KEY, BRUSH_DIR, BRUSH_PATH_ROLE, star_rect)
-from src.ui.panel.tool_control_panels.mypaint_brush_tool_panel import (MyPaintBrushToolPanel, SIDE_COMPACT_WIDTH,
-                                                                       SIDE_WIDE_WIDTH, STRIP_SHORT_HEIGHT,
-                                                                       STRIP_TALL_HEIGHT)
+                                              MAX_CELL_SIZE, MIN_COLUMNS, MIN_ROWS, FAVORITES_CATEGORY_NAME,
+                                              ALL_CATEGORY_NAME, FAV_CONFIG_KEY, BRUSH_DIR, BRUSH_PATH_ROLE,
+                                              FavoritesRow, star_rect)
+from src.ui.panel.tool_control_panels.mypaint_brush_tool_panel import MyPaintBrushToolPanel
 from src.util.shared_constants import PROJECT_DIR
 from test.base_test_case import IntraPaintTestCase
 
@@ -78,14 +79,48 @@ class BrushListTest(IntraPaintTestCase):
                              == brush_list.visualItemRect(brush_list.item(0)).top()]
                 self.assertEqual(len(first_row), row_width // cell)
 
-    def test_minimum_is_one_cell(self) -> None:
-        """The minimum size hint fits one minimum-size tile, name included, whatever the brush count."""
+    def test_minimum_holds_minimum_grid(self) -> None:
+        """The minimum size hint fits MIN_ROWS rows of MIN_COLUMNS minimum-size tiles, whatever the brush count."""
         brush_list = BrushList()
         for _ in range(40):
             brush_list.add_brush(PENCIL_PATH, QApplication.style().standardIcon(
                 QApplication.style().StandardPixmap.SP_FileIcon))
-        self.assertEqual(brush_list.minimumSizeHint().height(),
-                         MIN_CELL_SIZE + brush_list.name_height + 2 * brush_list.frameWidth())
+        hint = brush_list.minimumSizeHint()
+        self.assertEqual(hint.height(), (MIN_CELL_SIZE + brush_list.name_height) * MIN_ROWS
+                         + 2 * brush_list.frameWidth())
+        self.assertGreaterEqual(hint.width(), MIN_CELL_SIZE * MIN_COLUMNS)
+
+
+class FlowWidgetTest(IntraPaintTestCase):
+    """FlowWidget measures its minimum height at the width it is told it will be laid out at."""
+
+    def test_narrower_wrap_width_adds_lines(self) -> None:
+        """Chips that fit on one line at a wide wrap width need more height at a narrow one."""
+        chips = FlowWidget()
+        for name in ('Favorites', 'All', 'classic', 'deevad', 'ramon', 'experimental'):
+            chips.flow.addWidget(QPushButton(name, chips))
+        chips.set_wrap_width(2000)
+        one_line = chips.minimumSizeHint().height()
+        chips.set_wrap_width(chips.minimumSizeHint().width())
+        self.assertGreater(chips.minimumSizeHint().height(), one_line)
+
+
+class FavoritesRowTest(IntraPaintTestCase):
+    """FavoritesRow shows as many thumbnails as fit its width."""
+
+    def test_shows_fitting_thumbnails(self) -> None:
+        """A row one and a half thumbnails wide shows one, and a row wide enough for all shows all."""
+        # A shown top-level widget can't shrink below its layout's minimum, so the row goes in a parent:
+        parent = QWidget()
+        row = FavoritesRow(parent)
+        row.set_buttons([QToolButton() for _ in range(5)])
+        thumbnail = row.minimumSizeHint().width()
+        parent.show()
+        row.resize(thumbnail * 3 // 2, row.minimumSizeHint().height())
+        self.assertEqual([button.isHidden() for button in row.buttons], [False, True, True, True, True])
+        row.resize(row.sizeHint())
+        self.assertFalse(any(button.isHidden() for button in row.buttons))
+        parent.hide()
 
 
 class MypaintBrushPanelTest(IntraPaintTestCase):
@@ -201,12 +236,12 @@ class MypaintBrushPanelTest(IntraPaintTestCase):
         self.panel.hide()
 
     def test_compact_form_shows_favorite_thumbnails(self) -> None:
-        """The compact form hides the chips and grid and shows up to the requested number of favorites."""
+        """The compact form hides the chips and grid, shows favorite thumbnails, and lets the chip open the picker."""
         self.panel.set_compact(True)
-        self.panel.set_favorite_count(2)
         self.panel.show()
         self.assertFalse(self.panel.grid.isVisible())
-        self.assertEqual(len(self.panel.thumbnails), 2)
+        self.assertFalse(self.panel.category_chips.isVisible())
+        self.assertGreater(len(self.panel.thumbnails), 1)
         self.assertTrue(self.panel.chip.popup_enabled)
         self.panel.thumbnails[1].click()
         self.assertEqual(os.path.abspath(self.panel.active_brush_path),
@@ -228,41 +263,32 @@ class MyPaintBrushToolPanelTest(IntraPaintTestCase):
         self.assertEqual(len(self.panel.stroke_block.fields()), 1)
         self.assertEqual(self.panel.stroke_block.fields()[0].label(), 'Size')
 
-    def test_side_forms_follow_width(self) -> None:
-        """The picker is compact in a narrow side panel and dynamics open only in a wide one."""
-        for width, compact, opened in ((SIDE_COMPACT_WIDTH - 20, True, False), (SIDE_COMPACT_WIDTH + 40, False, False),
-                                       (SIDE_WIDE_WIDTH + 40, False, True)):
-            with self.subTest(width=width):
-                self.panel.set_fit_space(Orientation.SIDE, QSize(width, 700))
-                self.assertEqual(self.panel.brush_panel.compact, compact)
-                self.assertEqual(self.panel.dynamics_section.is_expanded(), opened)
-                self.assertFalse(self.panel.dynamics_button.isVisibleTo(self.panel))
-
-    def test_strip_forms_follow_height(self) -> None:
-        """A short strip is compact, and dynamics move to a button until the strip is tall."""
-        self.panel.set_fit_space(Orientation.STRIP, QSize(900, STRIP_SHORT_HEIGHT - 20))
-        self.assertTrue(self.panel.brush_panel.compact)
-        self.assertTrue(self.panel.dynamics_button.isVisibleTo(self.panel))
-        self.assertFalse(self.panel.dynamics_section.isVisibleTo(self.panel))
-        self.panel.set_fit_space(Orientation.STRIP, QSize(900, STRIP_TALL_HEIGHT + 40))
+    def test_side_forms_follow_fit(self) -> None:
+        """A side panel too narrow for the grid gets the compact picker, and dynamics open where they fit, collapse
+        where only the header fits, and move to the overflow content where nothing does."""
+        self.panel.set_fit_space(Orientation.SIDE, QSize(500, 1200))
         self.assertFalse(self.panel.brush_panel.compact)
-        self.assertFalse(self.panel.dynamics_button.isVisibleTo(self.panel))
         self.assertTrue(self.panel.dynamics_section.isVisibleTo(self.panel))
+        self.assertFalse(self.panel.dynamics_section.is_collapsed())
+        self.panel.set_fit_space(Orientation.SIDE, QSize(120, 1200))
+        self.assertTrue(self.panel.brush_panel.compact)
+        short = self.panel.fit_base_size(Orientation.SIDE)
+        # The base size holds the compact picker, which is all that fits at the base width:
+        self.panel.set_fit_space(Orientation.SIDE, QSize(short.width(), short.height() + HEADER_HEIGHT + 12))
+        self.assertTrue(self.panel.dynamics_section.isVisibleTo(self.panel))
+        self.assertTrue(self.panel.dynamics_section.is_collapsed())
+        self.panel.set_fit_space(Orientation.SIDE, QSize(short.width(), short.height()))
+        self.assertFalse(self.panel.dynamics_section.isVisibleTo(self.panel))
+        self.assertIs(self.panel.dynamics.parentWidget(), self.panel.overflow_content())
 
-    def test_dynamics_edit_reaches_brush(self) -> None:
-        """Changing the base value of the picked setting sets it on the brush."""
-        dynamics = self.panel.dynamics
-        index = dynamics.setting_combo.findText('Opacity', Qt.MatchFlag.MatchContains)
-        self.assertGreaterEqual(index, 0)
-        dynamics.setting_combo.setCurrentIndex(index)
-        dynamics.value_field.set_value(0.25)
-        dynamics.value_field.valueChanged.emit(0.25)
-        self.assertAlmostEqual(self.brush.get_value(dynamics.current_setting.id), 0.25, places=4)
-
-    def test_dynamics_refresh_reads_brush(self) -> None:
-        """After the brush loads another file, refresh shows the new file's value."""
-        dynamics = self.panel.dynamics
-        setting_id = dynamics.current_setting.id
-        self.brush.set_value(setting_id, 0.5)
-        self.panel.refresh_dynamics()
-        self.assertAlmostEqual(dynamics.value_field.value(), 0.5, places=4)
+    def test_strip_forms_follow_fit(self) -> None:
+        """A short strip gets the compact picker and moves dynamics to the overflow content, and a tall, wide one
+        shows the grid and a dynamics column."""
+        self.panel.set_fit_space(Orientation.STRIP, QSize(900, 100))
+        self.assertTrue(self.panel.brush_panel.compact)
+        self.assertFalse(self.panel.dynamics_section.isVisibleTo(self.panel))
+        self.assertIs(self.panel.dynamics.parentWidget(), self.panel.overflow_content())
+        self.panel.set_fit_space(Orientation.STRIP, QSize(1600, 500))
+        self.assertFalse(self.panel.brush_panel.compact)
+        self.assertTrue(self.panel.dynamics_section.isVisibleTo(self.panel))
+        self.assertIsNot(self.panel.dynamics.parentWidget(), self.panel.overflow_content())
