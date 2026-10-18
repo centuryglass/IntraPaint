@@ -2,12 +2,21 @@
 import sys
 from unittest.mock import MagicMock
 
-from PySide6.QtCore import QPoint, QSize
+from PySide6.QtCore import QEvent, QPoint, QSize, Qt
+from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import QApplication, QCheckBox, QLabel, QSpinBox
 
 from src.config.cache import Cache
+from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
+from src.ui.panel.tool_control_panels.brush_selection_panel import BrushSelectionPanel
+from src.ui.panel.tool_control_panels.fill_selection_panel import FillSelectionPanel
+from src.ui.panel.tool_control_panels.free_selection_panel import FreeSelectionPanel
 from src.ui.panel.tool_control_panels.selection_panel import SelectionPanel
+from src.ui.panel.tool_control_panels.shape_selection_panel import ShapeSelectionPanel
+from src.ui.widget.panel_section import PanelSection
+from src.util.visual.selection_fill_area import FillArea
+from src.util.visual.selection_mode import SelectionMode
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG
 from test.base_test_case import IntraPaintTestCase
 
@@ -59,3 +68,80 @@ class SelectionPanelTest(IntraPaintTestCase):
         texts = {widget.text() for widget in self.panel.findChildren(QCheckBox) + self.panel.findChildren(QLabel)}
         self.assertEqual(texts & names, set())
         self.assertEqual(self.panel.findChildren(QSpinBox), [])
+
+
+class SelectionPanelsTest(IntraPaintTestCase):
+    """Tests what the four selection tools' panels share and where they differ."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        Cache().restore_default_options(Cache.SELECTION_MODE)
+        Cache().restore_default_options(Cache.SELECTION_FILL_AREA)
+        self.image_stack = ImageStack(QSize(256, 256), QSize(128, 128), QSize(8, 8), QSize(1024, 1024))
+        self.layer = self.image_stack.selection_layer
+        self.tools = {name: MagicMock(is_active=False) for name in ('brush', 'fill', 'free', 'shape')}
+        self.tools['shape'].get_activation_config_key.return_value = KeyConfig.SHAPE_SELECTION_TOOL_KEY
+        self.panels = {
+            'brush': BrushSelectionPanel(self.layer, self.tools['brush']),
+            'fill': FillSelectionPanel(self.layer, self.tools['fill']),
+            'free': FreeSelectionPanel(self.layer, self.tools['free']),
+            'shape': ShapeSelectionPanel(self.layer, self.tools['shape'])
+        }
+
+    def _press(self, key: Qt.Key) -> None:
+        QApplication.sendEvent(self.panels['free'], QKeyEvent(QEvent.Type.KeyPress, key,
+                                                              Qt.KeyboardModifier.NoModifier))
+
+    def test_mode_section_comes_first(self) -> None:
+        """Every panel starts with the Mode section, and ends with the Selection section."""
+        for name, panel in self.panels.items():
+            sections = [section.title for section in panel.findChildren(PanelSection)]
+            self.assertTrue(sections[0].startswith('Mode'), name)
+            self.assertEqual(sections[-1], 'Selection', name)
+
+    def test_mode_title_names_active_mode(self) -> None:
+        """The Mode section's title shows the stored mode."""
+        Cache().set(Cache.SELECTION_MODE, SelectionMode.SUBTRACT.value)
+        for panel in self.panels.values():
+            self.assertEqual(panel.findChildren(PanelSection)[0].title, 'Mode: Subtract')
+
+    def test_q_cycles_mode_in_every_tool(self) -> None:
+        """The tool action key steps through Replace, Add, Subtract and Intersect for each panel's active tool, then
+           wraps."""
+        order = [SelectionMode.REPLACE, SelectionMode.ADD, SelectionMode.SUBTRACT, SelectionMode.INTERSECT]
+        for name, tool in self.tools.items():
+            Cache().set(Cache.SELECTION_MODE, SelectionMode.REPLACE.value)
+            tool.is_active = True
+            for expected in order[1:] + order[:1]:
+                self._press(Qt.Key.Key_Q)
+                self.assertEqual(Cache().get(Cache.SELECTION_MODE), expected.value, name)
+            tool.is_active = False
+
+    def test_sample_merged_has_no_default_key(self) -> None:
+        """Toggling Sample merged is an unbound action by default."""
+        self.assertEqual(KeyConfig().get(KeyConfig.TOGGLE_SAMPLE_MERGED_HOTKEY), '')
+
+    def test_fill_area_persists_and_gates_fields(self) -> None:
+        """The Fill area control stores its choice, and Holes disables the threshold and Sample merged."""
+        panel = self.panels['fill']
+        assert isinstance(panel, FillSelectionPanel)
+        self.assertEqual(panel.area_control.value(), FillArea.CONNECTED.value)
+        panel.area_control.set_value(FillArea.HOLES.value)
+        self.assertEqual(Cache().get(Cache.SELECTION_FILL_AREA), FillArea.HOLES.value)
+        self.assertFalse(panel.threshold_field.isEnabled())
+        panel.area_control.set_value(FillArea.BY_COLOR.value)
+        self.assertTrue(panel.threshold_field.isEnabled())
+        Cache().set(Cache.SELECTION_FILL_AREA, FillArea.HOLES.value)
+        self.assertEqual(panel.area_control.value(), FillArea.HOLES.value)
+
+    def test_old_color_select_setting_migrates(self) -> None:
+        """A saved `color_select_mode` of true becomes the By color fill area, unless a fill area is saved."""
+        data = {'color_select_mode': True}
+        Cache()._migrate_saved_values(data)  # pylint: disable=protected-access
+        self.assertEqual(data['selection_fill_area'], FillArea.BY_COLOR.value)
+        data = {'color_select_mode': True, 'selection_fill_area': 'Holes'}
+        Cache()._migrate_saved_values(data)  # pylint: disable=protected-access
+        self.assertEqual(data['selection_fill_area'], 'Holes')
+        data = {'color_select_mode': False}
+        Cache()._migrate_saved_values(data)  # pylint: disable=protected-access
+        self.assertNotIn('selection_fill_area', data)

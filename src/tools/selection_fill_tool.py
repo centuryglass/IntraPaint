@@ -16,6 +16,7 @@ from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.fill_selection_panel import FillSelectionPanel
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.image_fill import flood_fill, color_fill
+from src.util.visual.selection_fill_area import FillArea
 from src.util.visual.selection_mode import selection_mode_for_gesture, compose_selection_image
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
@@ -97,12 +98,12 @@ class SelectionFillTool(BaseTool):
             merged_pos = self._image_stack.merged_layer_bounds.topLeft()
             threshold = Cache().get(Cache.FILL_THRESHOLD)
             sample_merged = Cache().get(Cache.SAMPLE_MERGED)
-            fill_by_selection = self._control_panel.fill_by_selection
+            fill_area = self._control_panel.fill_area
             if isinstance(layer, TransformLayer):
                 layer_pos = layer.map_to_image(layer_bounds.topLeft())
             else:
                 layer_pos = layer_bounds.topLeft()
-            if fill_by_selection:
+            if fill_area == FillArea.HOLES:
                 image = self._image_stack.selection_layer.image
                 paint_transform = QTransform()
                 sample_point = image_coordinates - mask_pos
@@ -125,7 +126,7 @@ class SelectionFillTool(BaseTool):
                 paint_transform *= QTransform.fromTranslate(img_offset.x(), img_offset.y())
             if not QRect(QPoint(), image.size()).contains(sample_point):
                 return True
-            if Cache().get(Cache.COLOR_SELECT_MODE):
+            if fill_area == FillArea.BY_COLOR:
                 mask = color_fill(image, image.pixelColor(sample_point), threshold)
             else:
                 mask = flood_fill(image, sample_point, self._color, threshold, False)

@@ -8,12 +8,11 @@ from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
-from src.hotkey_filter import HotkeyFilter
 from src.tools.shape_selection_tool import ShapeSelectionTool
-from src.ui.input_fields.dual_toggle import DualToggle
+from src.ui.panel.tool_control_panels.shape_selection_panel import ShapeSelectionPanel
 from src.undo_stack import UndoStack
 from src.util.visual.selection_mode import SelectionMode
-from src.util.visual.shape_mode import SHAPE_MODE_ELLIPSE_LABEL
+from src.util.visual.shape_mode import ShapeMode
 from test.tools.context_pin_gesture_tests import ContextPinGestureTests
 from test.tools.selection_tool_test_case import SelectionToolTestCase, rect_mask, mask_bounds
 
@@ -46,19 +45,11 @@ class ShapeSelectionToolTest(ContextPinGestureTests, SelectionToolTestCase):
         self.tool = self.activate_tool(ShapeSelectionTool(self.image_stack, self.image_viewer))
         self.empty = np.zeros((self.IMAGE_SIZE.height(), self.IMAGE_SIZE.width()), dtype=bool)
 
-    def tearDown(self) -> None:
-        # The panel's binding would otherwise outlive the test and claim later tests' keys (#165):
-        panel_id = id(self.tool.get_control_panel())
-        HotkeyFilter.instance().remove_keybinding(f'ShapeSelectionPanel_{panel_id}_try_toggle')
-        super().tearDown()
-
     def _set_ellipse_mode(self) -> None:
         """Switches to ellipse selection through the control panel's rectangle/ellipse toggle."""
         panel = self.tool.get_control_panel()
-        assert panel is not None
-        mode_toggle = panel.findChild(DualToggle)
-        assert isinstance(mode_toggle, DualToggle)
-        mode_toggle.setValue(SHAPE_MODE_ELLIPSE_LABEL)
+        assert isinstance(panel, ShapeSelectionPanel)
+        panel.shape_control.set_value(ShapeMode.ELLIPSE.name)
 
     def test_rectangle_drag_selects(self) -> None:
         """A left-drag selects the rectangle between the press and release pixels' top-left corners, as one undo
@@ -174,13 +165,31 @@ class ShapeSelectionToolTest(ContextPinGestureTests, SelectionToolTestCase):
         UndoStack().undo()
         self.assert_selection(first)
 
-    def test_tool_action_hotkey_toggles_ellipse(self) -> None:
-        """The tool action hotkey (Q) switches between rectangle and ellipse, not between select and deselect.
+    def test_tool_action_hotkey_cycles_selection_mode(self) -> None:
+        """The tool action hotkey (Q) steps through Replace, Add, Subtract and Intersect, as in every selection tool."""
+        self.set_selection_mode(SelectionMode.REPLACE)
+        for expected in (SelectionMode.ADD, SelectionMode.SUBTRACT, SelectionMode.INTERSECT, SelectionMode.REPLACE):
+            self._press_key(Qt.Key.Key_Q)
+            self.assertEqual(Cache().get(Cache.SELECTION_MODE), expected.value)
 
-        #140 notes this differs from the free selection tool, where the same key toggles deselect.
-        """
-        QApplication.sendEvent(self.image_viewer, QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Q,
+    def _press_key(self, key: Qt.Key) -> None:
+        QApplication.sendEvent(self.image_viewer, QKeyEvent(QEvent.Type.KeyPress, key,
                                                             Qt.KeyboardModifier.NoModifier))
+
+    def test_repeating_the_tool_key_toggles_the_shape(self) -> None:
+        """Pressing the shape selection tool's key while the tool is active switches between rectangle and
+           ellipse."""
+        panel = self.tool.get_control_panel()
+        assert isinstance(panel, ShapeSelectionPanel)
+        self.assertEqual(panel.shape_control.value(), ShapeMode.RECTANGLE.name)
+        self._press_key(Qt.Key.Key_R)
+        self.assertEqual(panel.shape_control.value(), ShapeMode.ELLIPSE.name)
+        self._press_key(Qt.Key.Key_R)
+        self.assertEqual(panel.shape_control.value(), ShapeMode.RECTANGLE.name)
+
+    def test_repeating_the_tool_key_toggles_the_drawn_shape(self) -> None:
+        """After the tool key is pressed again, a drag selects an ellipse, not a rectangle."""
+        self._press_key(Qt.Key.Key_R)
         rect = QRect(8, 6, 40, 30)
         self.mouse_drag([rect.topLeft(), rect.topLeft() + QPoint(rect.width(), rect.height())])
         mask = self.selection_mask()

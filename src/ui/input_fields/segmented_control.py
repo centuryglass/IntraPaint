@@ -211,6 +211,12 @@ class SegmentedControl(QWidget):
         """
         self._select(self._index_of(value))
 
+    def set_segment_tooltip(self, value: str, tooltip: Optional[str]) -> None:
+        """Replaces the tooltip of the segment with an option string. None restores its label."""
+        index = self._index_of(value)
+        segment = self._segments[index]
+        self._segments[index] = Segment(segment.value, segment.label, segment.icon, tooltip)
+
     def _index_of(self, value: str) -> int:
         for i, segment in enumerate(self._segments):
             if segment.value == value:

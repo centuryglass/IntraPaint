@@ -215,6 +215,9 @@ class Config:
         """Override this to perform any adjustments to default values needed before file IO, e.g. loading list options
            from an external source."""
 
+    def _migrate_saved_values(self, json_data: dict[str, Any]) -> None:
+        """Override this to rewrite values saved under keys that no longer exist, in place, before they are loaded."""
+
     @property
     def json_path(self) -> Optional[str]:
         """Returns the path where this config object saves changes. If None, the config object does not save data to
@@ -735,6 +738,7 @@ class Config:
         if json_data is None:  # Invalid JSON, replace it with defaults
             self._write_to_json()
             return
+        self._migrate_saved_values(json_data)
         with self._lock:
             for entry in self._entries.values():
                 entry.load_from_json_dict(json_data)

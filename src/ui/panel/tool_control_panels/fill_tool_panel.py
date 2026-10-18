@@ -1,7 +1,7 @@
 """Control panel for the fill/paint bucket tool."""
 from typing import Optional
 
-from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QCheckBox, QVBoxLayout, QWidget
 
 from src.config.cache import Cache
 from src.ui.input_fields.slider_field import SliderField
@@ -26,33 +26,47 @@ SAMPLE_MERGED_TOOLTIP = _tr('Fill based on the whole image instead of just the a
                             'fill.')
 
 
+def build_threshold_field(parent: Optional[QWidget] = None) -> SliderField:
+    """Returns the Color threshold field that the Fill and Selection fill panels share, bound to
+    `Cache.FILL_THRESHOLD`."""
+    cache = Cache()
+    minimum, maximum, step = cache.get_range(Cache.FILL_THRESHOLD)
+    assert minimum is not None and maximum is not None and step is not None
+    # Whole numbers only; the stored value stays a float:
+    field = SliderField(normalize_row_label(cache.get_label(Cache.FILL_THRESHOLD)),
+                        int(cache.get(Cache.FILL_THRESHOLD)), int(minimum), int(maximum), step=int(step),
+                        parent=parent)
+    field.setToolTip(THRESHOLD_TOOLTIP)
+
+    def _field_changed(value: int | float) -> None:
+        if cache.get(Cache.FILL_THRESHOLD) != value:
+            cache.set(Cache.FILL_THRESHOLD, float(value))
+
+    field.valueChanged.connect(_field_changed)
+    cache.connect(field, Cache.FILL_THRESHOLD, lambda value, *_: field.set_value(int(value)))
+    return field
+
+
+def build_sample_merged_checkbox() -> QCheckBox:
+    """Returns the Sample merged checkbox that the Fill and Selection fill panels share."""
+    checkbox = Cache().get_control_widget(Cache.SAMPLE_MERGED)
+    assert isinstance(checkbox, QCheckBox)
+    checkbox.setToolTip(SAMPLE_MERGED_TOOLTIP)
+    return checkbox
+
+
 class FillToolPanel(QWidget):
     """Control panel for the fill/paint bucket tool: a Paint section, then a Region section."""
 
     def __init__(self):
         super().__init__()
-        cache = Cache()
         layout = QVBoxLayout(self)
         paint_row = build_paint_row(Cache.LAST_BRUSH_COLOR, Cache.FILL_TOOL_BRUSH_PATTERN, self)
         assert paint_row is not None
         layout.addWidget(tool_section(PAINT_SECTION_TITLE, paint_row, build_selection_only_checkbox()))
 
-        minimum, maximum, step = cache.get_range(Cache.FILL_THRESHOLD)
-        assert minimum is not None and maximum is not None and step is not None
-        # Whole numbers only; the stored value stays a float:
-        self._threshold_field = SliderField(normalize_row_label(cache.get_label(Cache.FILL_THRESHOLD)),
-                                            int(cache.get(Cache.FILL_THRESHOLD)), int(minimum), int(maximum),
-                                            step=int(step), parent=self)
-        self._threshold_field.setToolTip(THRESHOLD_TOOLTIP)
-
-        def _field_changed(value: int | float) -> None:
-            if cache.get(Cache.FILL_THRESHOLD) != value:
-                cache.set(Cache.FILL_THRESHOLD, float(value))
-
-        self._threshold_field.valueChanged.connect(_field_changed)
-        cache.connect(self, Cache.FILL_THRESHOLD, lambda value, *_: self._threshold_field.set_value(int(value)))
-        sample_merged_checkbox = cache.get_control_widget(Cache.SAMPLE_MERGED)
-        sample_merged_checkbox.setToolTip(SAMPLE_MERGED_TOOLTIP)
+        self._threshold_field = build_threshold_field(self)
+        sample_merged_checkbox = build_sample_merged_checkbox()
         layout.addWidget(tool_section(REGION_SECTION_TITLE, self._threshold_field, sample_merged_checkbox))
         layout.addStretch(1)
 
