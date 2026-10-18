@@ -2,8 +2,8 @@
 or sweep sheets that show panels across a grid of dock sizes.
 
 The renders come from `test/ui/ui_capture.py` and `test/ui/panel_capture.py`, the same code the style gallery and panel
-layout tests compare against their goldens and snapshots. It runs offscreen in mock mode with the panel layout test's config setup, so screenshots
-match what the tests check. The output directory gets:
+layout tests compare against their goldens and snapshots. It runs offscreen in mock mode with the panel layout test's
+config setup, so screenshots match what the tests check. The output directory gets:
 - `index.html`: every image on one page, with each capture's layout problems listed under it.
 - `gallery/<control>.png`: each control in every state, labeled.
 - `panels/<panel>/<capture>.png`: each panel for each capture `PanelScene.captures` gives it, the main window
@@ -15,9 +15,9 @@ the main window:
 - `sheets/<panel>/<orientation>.png`: one image per orientation the panel is told (`host_orientations`), with a cell
   for each size in `--widths` by `--heights`, all drawn at `--scale` so cells keep their real proportions. Each cell is
   framed at the panel's bounds and captioned with the orientation planning chose if it differs, and its problem
-  count. Red marks problems. Gray marks a size below the panel's minimum size hint, which only a squeezed window
-  reaches. `--overlay` outlines every widget `find_layout_problems` checks. For a readable close-up of one size, pass
-  one width and height with `--scale 1`.
+  count from `find_layout_problems` and `find_arrangement_problems`. Red marks problems. Gray marks a size below the
+  panel's minimum size hint, which only a squeezed window reaches. `--overlay` outlines every widget
+  `find_layout_problems` checks. For a readable close-up of one size, pass one width and height with `--scale 1`.
 - `sheets/<panel>/<orientation>.json`: each cell's problems, by `<width>x<height>`.
 - `index.html`: every sheet.
 
@@ -51,9 +51,9 @@ from PySide6.QtWidgets import QApplication
 from src.ui.layout.dock_panel import DockPanel
 from src.ui.layout.panel_fit import Orientation
 from test.base_test_case import reset_singletons
-from test.ui.panel_capture import (SWEEP_HEIGHTS, SWEEP_WIDTHS, PanelHost, PanelScene, find_layout_problems,
-                                   layout_report, layout_widget_rects, mock_app_controller, panel_scenes,
-                                   tools_panel_scenes)
+from test.ui.panel_capture import (SWEEP_HEIGHTS, SWEEP_WIDTHS, PanelHost, PanelScene, find_arrangement_problems,
+                                   find_layout_problems, layout_report, layout_widget_rects, mock_app_controller,
+                                   panel_scenes, tools_panel_scenes)
 from test.ui.ui_capture import (CELL_MARGIN, GALLERY_CONTROLS, GalleryControl, gallery_cell_rect,
                                 render_gallery_control)
 
@@ -225,7 +225,7 @@ def sweep_sheet(host: PanelHost, orientation: Optional[Orientation], widths: lis
         for left, column_width, width in zip(lefts, column_widths, widths):
             size = QSize(width, height)
             image = host.capture(size, orientation)
-            problems = find_layout_problems(panel)
+            problems = find_layout_problems(panel) + find_arrangement_problems(panel)
             minimum = panel.minimumSizeHint()
             below_minimum = minimum.isValid() and (width < minimum.width() or height < minimum.height())
             chosen = None
