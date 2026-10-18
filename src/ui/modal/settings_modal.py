@@ -191,8 +191,10 @@ class SettingsModal(QDialog):
         del self._tabs[category]
         tab.deleteLater()
 
-    def show_modal(self):
-        """Shows the settings modal."""
+    def show_modal(self, category: Optional[str] = None):
+        """Shows the settings modal, on the tab named `category` if it exists."""
+        if category is not None and category in self._tabs:
+            self._tab_widget.setCurrentWidget(self._tabs[category])
         self.exec()
 
     def set_tooltip(self, setting_name: str, tooltip: str):

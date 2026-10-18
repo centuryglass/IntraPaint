@@ -441,6 +441,7 @@ class AppController(MenuBuilder):
 
         # Connect signal handlers:
         self._tool_panel.tool_selected.connect(self._tool_controller.set_active_tool)
+        self._tool_panel.settings_requested.connect(self.show_settings)
         self._tool_controller.active_tool_changed.connect(self._tool_panel.setup_active_tool)
         self._tool_controller.tool_added.connect(self._tool_panel.add_tool_button)
         self._tool_controller.tool_removed.connect(self._tool_panel.remove_tool_button)
@@ -1260,15 +1261,15 @@ class AppController(MenuBuilder):
         color_controller.reset()
 
     @menu_action(MENU_EDIT, 'settings_shortcut', 108)
-    def show_settings(self) -> None:
-        """Show the settings window."""
+    def show_settings(self, category: Optional[str] = None) -> None:
+        """Show the settings window, on the tab named `category` if one is given."""
         if self._settings_modal is None:
             self._settings_modal = SettingsModal(self._window)
             self.init_settings(self._settings_modal)
             self._settings_modal.changes_saved.connect(self.update_settings)
         self.refresh_settings(self._settings_modal)
         self._set_alt_window_fractional_bounds(self._settings_modal)
-        self._settings_modal.show_modal()
+        self._settings_modal.show_modal(category)
 
     # View menu:
 
