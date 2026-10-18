@@ -458,8 +458,8 @@ class StrokeToolPanel(QWidget):
     - It is a `src.ui.layout.panel_fit.FitContent`: the Tools panel measures it at `fit_base_size`, then
       `set_fit_space` plans the block in the space left over.
     - Without a host that calls `set_fit_space`, it plans for its own size when resized. That size must not follow
-      its content, or each plan would resize it and plan again. A new parent clears the host's space, so a host calls
-      `set_fit_space` again after adding the panel.
+      its content, or each plan would resize it and plan again. A resize during a plan doesn't start another.
+      A new parent clears the host's space, so a host calls `set_fit_space` again after adding the panel.
     - `set_orientation` arranges it for an orientation, vertical for a side panel. Subclasses extend it for their own
       sections.
     """
@@ -469,6 +469,7 @@ class StrokeToolPanel(QWidget):
         self._block = block
         self._orientation = Qt.Orientation.Vertical
         self._space: Optional[QSize] = None
+        self._planning = False
         self._layout = QVBoxLayout(self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._layout.addWidget(block)
@@ -506,8 +507,13 @@ class StrokeToolPanel(QWidget):
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
         """Plans for the new size, unless a host plans the panel."""
         super().resizeEvent(event)
-        if self._space is None:
-            self._planner.update(self._fit_orientation(), self.size())
+        # Trial placements show and hide section headers, which can resize the panel and re-enter this handler:
+        if self._space is None and not self._planning:
+            self._planning = True
+            try:
+                self._planner.update(self._fit_orientation(), self.size())
+            finally:
+                self._planning = False
 
     def show_pressure_checkboxes(self) -> None:
         """After receiving a tablet event, call this to reveal the pen pressure links."""

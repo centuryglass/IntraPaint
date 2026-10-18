@@ -147,6 +147,24 @@ class StrokeBlockTest(IntraPaintTestCase):
         eraser = EraserToolPanel()
         self.assertEqual(eraser.stroke_block._options_section.title, 'Options')  # pylint: disable=protected-access
 
+    def test_resize_during_a_plan_does_not_plan_again(self) -> None:
+        """A resize that trial placements cause while a plan runs is ignored, so planning can't recurse."""
+        self.panel.show()
+        self.panel.resize(300, 400)
+        planner = self.panel._planner  # pylint: disable=protected-access
+        calls = []
+        original = planner.update
+
+        def _update(*args, **kwargs):
+            calls.append(args)
+            if len(calls) == 1:
+                self.panel.resize(self.panel.width() + 7, self.panel.height())
+            return original(*args, **kwargs)
+
+        planner.update = _update  # type: ignore[method-assign]
+        self.panel.resize(320, 400)
+        self.assertEqual(len(calls), 1)
+
     def test_rows_stack_when_they_do_not_fit_across(self) -> None:
         """A narrow side panel stacks the checkboxes into a column and a wider one keeps them in a row. A strip keeps
         them in a row, however narrow."""
