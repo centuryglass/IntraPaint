@@ -9,7 +9,7 @@ from collections.abc import Hashable, Sequence
 from typing import Optional
 
 from PySide6.QtCore import QSize, QTimer
-from PySide6.QtGui import QImage, QPainter, QPaintEvent, QPalette
+from PySide6.QtGui import QColor, QImage, QPainter, QPaintEvent, QPalette
 from PySide6.QtWidgets import QWidget
 
 from src.config.cache import Cache
@@ -46,6 +46,10 @@ class BrushPreview(QWidget):
     def _render(self, size: QSize) -> QImage:
         """Returns a transparent ARGB32_Premultiplied image of `size` holding the stroke drawn by the real brush."""
         raise NotImplementedError()
+
+    def _background(self) -> QColor:
+        """Returns the color painted behind the rendered image. Subclasses override it to keep the stroke visible."""
+        return self.palette().color(QPalette.ColorRole.Base)
 
     @property
     def is_current(self) -> bool:
@@ -96,7 +100,7 @@ class BrushPreview(QWidget):
         """Draws the shown image, stretched to the widget while a render for its size is pending. The first paint
         renders at once, so the preview is never empty."""
         painter = QPainter(self)
-        painter.fillRect(self.rect(), self.palette().color(QPalette.ColorRole.Base))
+        painter.fillRect(self.rect(), self._background())
         if self._shown is None:
             self._show_current()
         if self._shown is not None:

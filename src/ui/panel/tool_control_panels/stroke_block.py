@@ -49,6 +49,8 @@ from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.panel_section import PanelSection
 from src.undo_stack import UndoStack
+from src.util.visual.contrast_color import contrast_ratio
+from src.util.visual.keycap import keycap_colors
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.stroke_block'
@@ -143,6 +145,15 @@ class StrokePreview(BrushPreview):
         if self._color_key is not None:
             color = Cache().get_color(self._color_key, color)
         return color
+
+    def _background(self) -> QColor:
+        """Returns the panel background or the keycap fill, whichever contrasts more with the brush color."""
+        panel_background = super()._background()
+        keycap_fill = keycap_colors(self.palette())[0]
+        color = self._color()
+        if contrast_ratio(keycap_fill, color) > contrast_ratio(panel_background, color):
+            return keycap_fill
+        return panel_background
 
     def _inputs(self) -> Hashable:
         return (self._value(self._size_key, 1), self._value(self._opacity_key, 1.0),

@@ -3,12 +3,13 @@ import os
 from typing import Optional
 
 from PySide6.QtCore import QSize, QTimer
-from PySide6.QtGui import QImage
+from PySide6.QtGui import QImage, QPalette
 
 from src.config.cache import Cache
 from src.ui.input_fields.fill_style_combo_box import BRUSH_PATTERN_DENSE_3, BRUSH_PATTERN_SOLID
 from src.ui.panel.tool_control_panels.stroke_block import StrokePreview
 from src.undo_stack import UndoStack
+from src.util.visual.keycap import keycap_colors
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
 
 PREVIEW_SIZE = QSize(200, 80)
@@ -62,6 +63,17 @@ class StrokePreviewTest(IntraPaintTestCase):
         before = UndoStack().undo_count()
         preview.render_now()
         self.assertEqual(UndoStack().undo_count(), before)
+
+    def test_background_contrasts_with_the_brush_color(self) -> None:
+        """The background is whichever of the panel background and keycap fill contrasts more with the brush color."""
+        preview = self.make_preview()
+        base = preview.palette().color(QPalette.ColorRole.Base)
+        keycap_fill = keycap_colors(preview.palette())[0]
+        for color in (base, keycap_fill):
+            with self.subTest(color=color.name()):
+                Cache().set(Cache.LAST_BRUSH_COLOR, color.name())
+                other = keycap_fill if color == base else base
+                self.assertEqual(preview._background(), other)  # pylint: disable=protected-access
 
     def test_golden_images(self) -> None:
         """The render matches golden images for hard, soft and patterned brushes."""
