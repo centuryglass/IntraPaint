@@ -58,7 +58,8 @@ Highest precedence first. When two rules conflict, the higher one wins.
 - **An override is a declaration on the content,** such as a width cap (`set_field_width_cap`), a fixed order or a
   stretch limit, with a comment that says why.
 - **A sweep problem an override causes on purpose is recorded as intentional,** not as a known bug.
-  `KNOWN_PROBLEMS` in `test/ui/panel_sweep_test.py` records only bugs, each with the open issue that tracks it.
+  `KNOWN_PROBLEMS` in `test/ui/panel_sweep_test.py` records only bugs, each with the open issue that tracks it, and
+  has no place for intentional exceptions yet (#420).
 
 ## Also binding
 
@@ -93,15 +94,15 @@ These hold alongside the five rules and outrank none of them.
 
 | Rule | Checked by |
 | --- | --- |
-| 1 | `clipped`, `squeezed`, `overlap`, `cramped` |
-| 2 | Not yet checked |
-| 3 | `empty band` |
-| 4 | Not yet checked |
+| 1 | `clipped`, `squeezed`, `overlap`, `cramped`. Not yet checked: `hidden with room` (#417) |
+| 2 | Not yet checked: `starved` (#418) |
+| 3 | `empty band`. Not yet checked: `misplaced leftover` (#417) |
+| 4 | Not yet checked: `misaligned` (#417) |
 | 5 | Not checked |
 
 - **The `stretched` check conflicts with rule 4.** It holds each field to a fixed cap, `FIELD_MAX_WIDTH` or its own
   `set_field_width_cap`, while rule 4 lets a field stretch relative to its natural size to align. A field stretched to
-  align can fail it.
+  align can fail it (#419).
 - **The planner can't express rules 2 and 4 yet.** A `FitItem` has a priority and a form count only. Spare space goes
   wherever the panel's stretch factors put it, and the stretch `DockPanel.__init__` adds after the sections takes it
-  ahead of any growable content.
+  ahead of any growable content (#418, #419). Sections are planned piece by piece, not wrapped (#422).
