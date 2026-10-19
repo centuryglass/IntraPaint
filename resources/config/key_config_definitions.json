@@ -1091,7 +1091,7 @@
         "subcategory": "Stable Diffusion Menu",
         "description": "Remove cached models from GPU memory in ComfyUI.",
         "type": "string",
-        "default": "",
+        "default": "Ctrl+Alt+3",
         "saved": true
     },
     "help_index_shortcut": {

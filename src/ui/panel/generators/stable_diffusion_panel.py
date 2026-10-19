@@ -258,7 +258,8 @@ class StableDiffusionPanel(DockPanel):
         self._mode_section = ui.section(SECTION_TITLE_MODE)
         self._mode_section.widget.set_header_visible(False)
         self._edit_mode_control = SegmentedControl(
-            [Segment(mode, cache.get_option_display(mode)) for mode in cache.get_options(Cache.EDIT_MODE)],
+            [Segment(mode, cache.get_option_display(mode))
+             for mode in (EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, EDIT_MODE_TXT2IMG)],
             display_mode=DisplayMode.LABEL, combo_fallback=True)
         self._edit_mode_control.setToolTip(cache.get_tooltip(Cache.EDIT_MODE))
         self._edit_mode_control.set_value(cache.get(Cache.EDIT_MODE))

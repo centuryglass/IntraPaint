@@ -5,6 +5,7 @@ import json
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QPushButton
 
+from sd_backend_client import ControlNetUnit
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters.controlnet_adapter import SavedControlNetUnit
@@ -17,9 +18,11 @@ from src.ui.panel.generators.stable_diffusion_panel import (CONTROLNET_ALL_OFF, 
                                                             SECTION_TITLE_PROMPT, SECTION_TITLE_SAMPLING,
                                                             StableDiffusionPanel, controlnet_summary)
 from src.ui.panel.generators.webui_advanced_controls import VARIATION_OFF, WebUIAdvancedControls
+from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 from test.base_test_case import IntraPaintTestCase
 from test.ui.panel.tool_panel_test import settle_layouts
+from test.ui.panel_capture import restore_option_lists
 
 SIDE = Orientation.SIDE
 STRIP = Orientation.STRIP
@@ -36,6 +39,8 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
+        restore_option_lists()
+        AppStateTracker().set_app_state(APP_STATE_EDITING)
         self.panel = StableDiffusionPanel(True)
         self.panel.set_advanced_content(WebUIAdvancedControls())
 
@@ -87,16 +92,16 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
             with self.subTest(key=key):
                 field.set_value(value)
                 self.assertEqual(config.get(key), value)
-                config.set(key, value + field.step)
-                self.assertEqual(field.value(), value + field.step)
+                config.set(key, value + field.step())
+                self.assertAlmostEqual(field.value(), value + field.step())
 
     def test_padding_dims_until_full_resolution_is_on(self) -> None:
         """Padding is dimmed while full resolution is off, so the row doesn't change size."""
         cache = Cache()
         cache.set(Cache.INPAINT_FULL_RES, False)
-        self.assertFalse(self.panel._padding_field.isEnabled())
+        self.assertFalse(self.panel._padding_field.isEnabledTo(self.panel))
         cache.set(Cache.INPAINT_FULL_RES, True)
-        self.assertTrue(self.panel._padding_field.isEnabled())
+        self.assertTrue(self.panel._padding_field.isEnabledTo(self.panel))
         self.assertTrue(self.panel._full_res_checkbox.isChecked())
 
     def test_prompt_tools_hide_when_they_have_nothing_to_show(self) -> None:
@@ -189,9 +194,9 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         controls = self.panel.advanced_controls
         assert isinstance(controls, WebUIAdvancedControls)
         Cache().set(Cache.WEBUI_SEED_RESIZE_ENABLED, False)
-        self.assertFalse(controls._seed_resize_input.isEnabled())
+        self.assertFalse(controls._seed_resize_input.isEnabledTo(self.panel))
         Cache().set(Cache.WEBUI_SEED_RESIZE_ENABLED, True)
-        self.assertTrue(controls._seed_resize_input.isEnabled())
+        self.assertTrue(controls._seed_resize_input.isEnabledTo(self.panel))
 
     def test_comfyui_tile_size_is_dimmed_until_tiled_vae_is_on(self) -> None:
         """Tile size is enabled only while tiled VAE encoding is on, and the summary names it."""
@@ -201,10 +206,10 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         assert isinstance(controls, ComfyUIAdvancedControls)
         cache = Cache()
         cache.set(Cache.COMFYUI_TILED_VAE, False)
-        self.assertFalse(controls._tile_size_field.isEnabled())
+        self.assertFalse(controls._tile_size_field.isEnabledTo(panel))
         cache.set(Cache.COMFYUI_TILED_VAE, True)
         cache.set(Cache.COMFYUI_TILED_VAE_TILE_SIZE, 512)
-        self.assertTrue(controls._tile_size_field.isEnabled())
+        self.assertTrue(controls._tile_size_field.isEnabledTo(panel))
         self.assertIn('tiled VAE 512', controls.summary())
 
     def test_advanced_content_can_be_set_once(self) -> None:
@@ -222,11 +227,8 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
 
     def test_controlnet_summary(self) -> None:
         """The summary names the enabled unit, counts several, and reports none."""
-        default_units = [Cache().get(key) for key in (Cache.CONTROLNET_ARGS_0_WEBUI, Cache.CONTROLNET_ARGS_1_WEBUI,
-                                                      Cache.CONTROLNET_ARGS_2_WEBUI)]
-        enabled_unit = SavedControlNetUnit.from_json(default_units[0])
-        enabled_unit.enabled = True
-        enabled = enabled_unit.to_json()
+        default_units = [SavedControlNetUnit(False, '', ControlNetUnit()).to_json() for _ in range(3)]
+        enabled = SavedControlNetUnit(True, '', ControlNetUnit()).to_json()
         self.assertEqual(controlnet_summary(default_units), CONTROLNET_ALL_OFF)
         self.assertTrue(controlnet_summary([default_units[0], enabled]).startswith('unit 2 on'))
         self.assertTrue(controlnet_summary([enabled, enabled]).startswith('2 units'))

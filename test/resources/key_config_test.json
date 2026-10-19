@@ -60,7 +60,7 @@
     "show_layer_menu_shortcut": "F7",
     "settings_shortcut": "F9",
     "lcm_mode_shortcut": "F10",
-    "clear_memory_shortcut": "",
+    "clear_memory_shortcut": "Ctrl+Alt+3",
     "zoom_in_shortcut": "Ctrl+Shift+=",
     "zoom_out_shortcut": "Ctrl+Shift+-",
     "reset_view_shortcut": "Ctrl+Alt+0",
