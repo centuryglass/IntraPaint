@@ -1,90 +1,114 @@
 {
   "minimum": {
-    "problems": [],
+    "problems": [
+      "squeezed: PanelHeader is 82x42, minimum 31x43",
+      "squeezed: QScrollArea is 82x42, minimum 59x59",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[3]/QWidget/LabeledRows[2]/SeedValueSpinbox/BigIntSpinbox/QLineEdit is 7x24, minimum 21x23",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[4]/QWidget/LabeledRows/LineEdit[0] is 22x25, minimum 23x25",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[4]/QWidget/LabeledRows/LineEdit[1] is 22x25, minimum 23x25",
+      "clipped: QPushButton 'Generate' shows 82x27 of 82x28"
+    ],
     "size": [
-      424,
-      805
+      82,
+      123
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: QTabWidget is 206x821, minimum 418x797"
+      "squeezed: QScrollArea is 41x389, minimum 59x59",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[3]/QWidget/LabeledRows[2]/SeedValueSpinbox/BigIntSpinbox/QLineEdit is 7x24, minimum 21x23",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[4]/QWidget/LabeledRows/LineEdit[0] is 22x25, minimum 23x25",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[4]/QWidget/LabeledRows/LineEdit[1] is 22x25, minimum 23x25",
+      "squeezed: QPushButton 'Generate' is 41x28, minimum 82x28"
     ],
     "size": [
-      212,
-      829
+      41,
+      472
     ]
   },
   "preferred": {
-    "problems": [],
+    "problems": [
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[3]/QWidget/LabeledRows[0]/SizeField/QSpinBox[0] is 95x26, minimum 106x26",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[3]/QWidget/LabeledRows[0]/SizeField/QSpinBox[1] is 95x26, minimum 106x26"
+    ],
     "size": [
-      424,
-      829
+      345,
+      472
     ]
   },
   "short": {
     "problems": [
-      "squeezed: QTabWidget is 418x394, minimum 418x797"
+      "squeezed: PanelHeader is 345x17, minimum 38x24",
+      "clipped: PanelHeader/_GlyphButton[1] shows 24x17 of 24x24",
+      "squeezed: QScrollArea is 345x16, minimum 59x59",
+      "clipped: QPushButton 'Generate' shows 345x16 of 345x17",
+      "squeezed: QPushButton 'Generate' is 345x17, minimum 82x28"
     ],
     "size": [
-      424,
-      402
+      345,
+      61
     ]
   },
   "strip_minimum": {
     "problems": [],
     "size": [
-      424,
-      805
+      82,
+      123
     ]
   },
   "strip_narrow": {
-    "problems": [],
+    "problems": [
+      "squeezed: QScrollArea is 41x389, minimum 59x59",
+      "squeezed: QPushButton 'Generate' is 41x28, minimum 82x28"
+    ],
     "size": [
-      212,
-      829
+      41,
+      472
     ]
   },
   "strip_preferred": {
     "problems": [],
     "size": [
-      424,
-      829
+      345,
+      472
     ]
   },
   "strip_short": {
-    "problems": [],
+    "problems": [
+      "squeezed: QScrollArea is 345x28, minimum 59x59",
+      "squeezed: QPushButton 'Generate' is 345x27, minimum 82x28"
+    ],
     "size": [
-      424,
-      402
+      345,
+      61
     ]
   },
   "strip_tall": {
     "problems": [],
     "size": [
-      424,
-      2487
+      345,
+      1416
     ]
   },
   "strip_wide": {
     "problems": [],
     "size": [
       1600,
-      829
+      472
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      424,
-      2487
+      345,
+      1416
     ]
   },
   "wide": {
     "problems": [],
     "size": [
       1600,
-      829
+      472
     ]
   }
 }

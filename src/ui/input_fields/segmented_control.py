@@ -147,18 +147,13 @@ class SegmentedControl(QWidget):
         self._combo: Optional[QComboBox] = None
         if combo_fallback:
             self._combo = QComboBox(self)
-            # The fallback exists for narrow spaces, so its longest option doesn't set the minimum width:
-            self._combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-            self._combo.setMinimumContentsLength(1)
             for segment in self._segments:
                 self._combo.addItem(segment.qicon(), segment.label, segment.value)
             self._combo.currentIndexChanged.connect(self._combo_index_changed)
             self._combo.hide()
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
-        # With a fallback the control can shrink to its combo box, so its size hint isn't its minimum:
-        self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding if combo_fallback
-                                       else QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed))
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed))
         self._colors = _Colors(self)
         self._update_accessibility()
 
@@ -276,19 +271,13 @@ class SegmentedControl(QWidget):
 
     def sizeHint(self) -> QSize:
         """Returns room for equal segments, each as wide as the widest."""
-        return QSize(self._segments_width(), self._control_height())
+        return QSize(self._segments_width(), CONTROL_HEIGHT)
 
     def minimumSizeHint(self) -> QSize:
         """Returns the smallest size that fits the segments, or a combo box if there is a fallback."""
         if self._combo is not None:
-            return QSize(self._combo.minimumSizeHint().width(), self._control_height())
+            return QSize(self._combo.minimumSizeHint().width(), CONTROL_HEIGHT)
         return self.sizeHint()
-
-    def _control_height(self) -> int:
-        """Returns the control's height, which is at least the fallback combo box's minimum."""
-        if self._combo is None:
-            return CONTROL_HEIGHT
-        return max(CONTROL_HEIGHT, self._combo.minimumSizeHint().height())
 
     def uses_combo_fallback(self) -> bool:
         """Returns whether the combo box is replacing the segments."""

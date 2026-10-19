@@ -262,6 +262,13 @@ class StableDiffusionPanel(DockPanel):
             [Segment(mode, cache.get_option_display(mode))
              for mode in (EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, EDIT_MODE_TXT2IMG)],
             display_mode=DisplayMode.LABEL, combo_fallback=True)
+        # The control can shrink to its fallback combo box, so its size hint isn't its minimum width, and it is as tall
+        # as that combo box needs:
+        self._edit_mode_control.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        fallback = self._edit_mode_control.findChild(QComboBox)
+        if fallback is not None:
+            self._edit_mode_control.setFixedHeight(max(self._edit_mode_control.sizeHint().height(),
+                                                       fallback.minimumSizeHint().height()))
         self._edit_mode_control.setToolTip(cache.get_tooltip(Cache.EDIT_MODE))
         self._edit_mode_control.set_value(cache.get(Cache.EDIT_MODE))
         self._mode_section.add(self._edit_mode_control, REQUIRED)
