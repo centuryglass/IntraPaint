@@ -1,6 +1,6 @@
 {
   "(repository)": {
-    "duplicate-code": 56
+    "duplicate-code": 51
   },
   "src/config/config.py": {
     "protected-access": 4

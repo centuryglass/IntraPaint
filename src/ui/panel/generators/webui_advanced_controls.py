@@ -1,4 +1,4 @@
-"""The WebUI generator's settings for the Advanced section: seed variation, seed resizing, tiling and face restoration."""
+"""The WebUI generator's settings for the Advanced section: seed variation and resizing, tiling and face restoration."""
 from typing import Optional
 
 from PySide6.QtCore import Qt

@@ -3,9 +3,8 @@
     "problems": [
       "squeezed: PanelHeader is 82x42, minimum 31x43",
       "squeezed: QScrollArea is 82x42, minimum 59x59",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[3]/QWidget/LabeledRows[2]/SeedValueSpinbox/BigIntSpinbox/QLineEdit is 7x24, minimum 21x23",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[4]/QWidget/LabeledRows/LineEdit[0] is 22x25, minimum 23x25",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[4]/QWidget/LabeledRows/LineEdit[1] is 22x25, minimum 23x25",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[4]/QWidget/LabeledRows/LineEdit[0] is 20x25, minimum 23x25",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[4]/QWidget/LabeledRows/LineEdit[1] is 20x25, minimum 23x25",
       "clipped: QPushButton 'Generate' shows 82x27 of 82x28"
     ],
     "size": [
@@ -17,9 +16,8 @@
     "problems": [
       "squeezed: PanelHeader/QWidget/QLabel 'ComfyUI' is 41x17, minimum 52x17",
       "squeezed: QScrollArea is 41x389, minimum 59x59",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[3]/QWidget/LabeledRows[2]/SeedValueSpinbox/BigIntSpinbox/QLineEdit is 7x24, minimum 21x23",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[4]/QWidget/LabeledRows/LineEdit[0] is 22x25, minimum 23x25",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[4]/QWidget/LabeledRows/LineEdit[1] is 22x25, minimum 23x25",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[4]/QWidget/LabeledRows/LineEdit[0] is 20x25, minimum 23x25",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[4]/QWidget/LabeledRows/LineEdit[1] is 20x25, minimum 23x25",
       "squeezed: QPushButton 'Generate' is 41x28, minimum 82x28"
     ],
     "size": [

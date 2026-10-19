@@ -1,8 +1,8 @@
 """The Stable Diffusion generation panel, for the WebUI and ComfyUI backends.
 
-It is a `DockPanel` with one column of sections in loop order: Edit mode, Prompt, Inpaint, Output, Sampling, Advanced and
-a ControlNet summary, with Generate pinned below them (`DockPanel.set_footer`). Strip docks lay the same sections out as
-columns.
+It is a `DockPanel` with one column of sections in loop order: Edit mode, Prompt, Inpaint, Output, Sampling,
+Advanced and a ControlNet summary, with Generate pinned below them (`DockPanel.set_footer`). Strip docks lay the
+same sections out as columns.
 
 - Every control is bound to its config value and has one owner here. Backend-specific controls arrive as constructor
   arguments (`webui`) and `set_advanced_content`.
@@ -53,7 +53,7 @@ BACKEND_DESCRIPTION_COMFYUI = _tr('ComfyUI')
 
 SECTION_TITLE_MODE = _tr('Edit mode')
 SECTION_TITLE_PROMPT = _tr('Prompt')
-SECTION_TITLE_INPAINT = _tr('Inpaint')
+SECTION_TITLE_INPAINT = _tr('Inpainting')
 SECTION_TITLE_OUTPUT = _tr('Output')
 SECTION_TITLE_SAMPLING = _tr('Sampling')
 SECTION_TITLE_ADVANCED = _tr('Advanced')
@@ -198,6 +198,8 @@ class AdvancedControls(QWidget):
         raise NotImplementedError()
 
 
+# `build` runs in the `DockPanel` constructor, so the controls it creates are attributes defined outside `__init__`:
+# pylint: disable=attribute-defined-outside-init
 class StableDiffusionPanel(DockPanel):
     """A control panel for the Stable Diffusion WebUI and ComfyUI image generators."""
 
@@ -501,13 +503,14 @@ class StableDiffusionPanel(DockPanel):
     def _add_more_button(self, text: str, layout: QVBoxLayout, signal) -> QPushButton:
         button = QPushButton(text)
         button.setFlat(True)
-        button.clicked.connect(lambda: self.header.popover.hide())
+        button.clicked.connect(self.header.popover.hide)
         button.clicked.connect(signal)
         layout.addWidget(button)
         return button
 
     def _refresh_more_menu(self) -> None:
-        self._lcm_menu_button.setVisible(self.lcm_available_check is not None and self.lcm_available_check())
+        check = self.lcm_available_check
+        self._lcm_menu_button.setVisible(check is not None and check())  # pylint: disable=not-callable
 
     def more_content(self) -> Optional[QWidget]:
         """Returns the More menu, which the panel always has."""
@@ -599,4 +602,3 @@ class StableDiffusionPanel(DockPanel):
         """The More menu's buttons, in display order."""
         return [self._setup_menu_button, self._settings_menu_button, self._lcm_menu_button,
                 self._clear_memory_menu_button]
-
