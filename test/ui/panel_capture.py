@@ -6,7 +6,8 @@ same functions, so a screenshot shows what a test checked.
 
 - Panel captures resize each panel inside a plain host widget, which lets them go below the panel's minimum size the
   way a squeezed dock or divider can. `find_layout_problems` lists overlapping, clipped and squeezed child widgets,
-  and `find_arrangement_problems` lists stretched fields, empty bands and cramped panels. Their results depend on
+  and `find_arrangement_problems` lists stretched fields, empty bands, cramped panels, controls hidden while there is
+  room, misplaced leftover space and misaligned neighbors. Their results depend on
   font metrics, which the bundled theme font fixes.
 - A panel that takes a dock orientation is captured with a side and a strip preference, as a left or right dock and a
   top or bottom dock would tell it. `PanelHost.capture` passes it on.
@@ -17,7 +18,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional, TYPE_CHECKING
 from unittest.mock import patch
 
-from PySide6.QtCore import QEvent, QPoint, QRect, QSize, Qt
+from PySide6.QtCore import QEvent, QLine, QPoint, QRect, QSize, Qt
 from PySide6 import QtGui
 from PySide6.QtGui import QImage, QTextDocumentFragment
 from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QAbstractSpinBox, QApplication, QComboBox,
@@ -27,7 +28,8 @@ from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QAbstractSp
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.segmented_control import SegmentedControl
 from src.ui.layout.dock_panel import DockPanel
-from src.ui.layout.panel_fit import FitContent, Orientation, field_width_cap
+from src.ui.layout.panel_fit import (HYSTERESIS, FitContent, Orientation, cross_extent, field_width_cap,
+                                     scroll_extent)
 
 if TYPE_CHECKING:
     from src.controller.app_controller import AppController
@@ -320,10 +322,16 @@ def find_layout_problems(root: QWidget) -> list[str]:
 
 # The fields `find_arrangement_problems` holds to their `field_width_cap`. Text fields aren't among them:
 FIELD_TYPES = (QComboBox, QAbstractSpinBox, NumberField, SegmentedControl)
+# Widgets `_content_rects` counts whole: input fields, and buttons with the badges drawn over them:
+WHOLE_TYPES = (*FIELD_TYPES, QAbstractButton)
 # Empty space wider than this between parts of a panel's content strands the part after it:
 EMPTY_BAND_LIMIT = 48
 # A panel whose content scrolls while using less than this share of the other axis should arrange differently:
 CRAMPED_SHARE = 0.5
+# Content may start this far past the panel's margins before spare space counts as misplaced:
+LEFTOVER_SLACK = 8
+# Edges of neighboring content that differ by more than 0 and at most this many pixels are a near miss:
+ALIGN_TOLERANCE = 8
 
 
 def _is_framed_scroll_area(widget: QWidget) -> bool:
@@ -332,7 +340,7 @@ def _is_framed_scroll_area(widget: QWidget) -> bool:
 
 def _content_rects(root: QWidget) -> list[tuple[QWidget, QRect]]:
     """Returns the visible part, inside root, of each widget that shows content: leaf widgets, input fields and framed
-    scroll areas, each counted whole."""
+    scroll areas, each counted whole as WHOLE_TYPES says."""
     widgets = _checked_widgets(root)
     checked = set(widgets)
     content = []
@@ -340,13 +348,13 @@ def _content_rects(root: QWidget) -> list[tuple[QWidget, QRect]]:
         ancestor = widget.parentWidget()
         inside_whole = False
         while ancestor is not None and ancestor is not root:
-            if isinstance(ancestor, FIELD_TYPES) or _is_framed_scroll_area(ancestor):
+            if isinstance(ancestor, WHOLE_TYPES) or _is_framed_scroll_area(ancestor):
                 inside_whole = True
                 break
             ancestor = ancestor.parentWidget()
         if inside_whole:
             continue
-        whole = isinstance(widget, FIELD_TYPES) or _is_framed_scroll_area(widget)
+        whole = isinstance(widget, WHOLE_TYPES) or _is_framed_scroll_area(widget)
         if whole or not any(child in checked for child in widget.findChildren(QWidget)):
             visible = _visible_rect(widget, root).intersected(root.rect())
             if not visible.isEmpty():
@@ -375,6 +383,10 @@ def find_arrangement_problems(root: QWidget) -> list[str]:
     - empty band: a gap of more than EMPTY_BAND_LIMIT pixels that crosses the whole panel, with content on both sides.
       A tall band separates rows, and a wide band separates columns.
     - cramped: a `DockPanel` whose content scrolls, while it uses less than CRAMPED_SHARE of the other axis.
+    - hidden with room: see `_hidden_with_room`.
+    - misplaced leftover: the content as a whole starts more than LEFTOVER_SLACK past the panel's top or leading edge
+      margin, so spare space sits above or before it, or around it.
+    - misaligned: see `_misaligned_pairs`.
 
     Content is what `_content_rects` returns.
     """
@@ -398,6 +410,144 @@ def find_arrangement_problems(root: QWidget) -> list[str]:
             problems.append(f'cramped: scrolls vertically using {used.width()} of {root.width()} width')
         elif root.orientation == Orientation.STRIP and used.height() < root.height() * CRAMPED_SHARE:
             problems.append(f'cramped: scrolls horizontally using {used.height()} of {root.height()} height')
+    if len(content) > 0:
+        problems.extend(_misplaced_leftover(root, [rect for _, rect in content]))
+        for axis, first, second, gap in _misaligned_pairs(content):
+            edge = 'left' if axis == Qt.Orientation.Horizontal else 'top'
+            problems.append(f'misaligned: {widget_path(first[0], root)} and {widget_path(second[0], root)} '
+                            f'{edge} edges differ by {gap}')
+    if isinstance(root, DockPanel):
+        problems.extend(_hidden_with_room(root))
+    return problems
+
+
+def _misplaced_leftover(root: QWidget, rects: list[QRect]) -> list[str]:
+    """Returns a problem for spare space above or before the content, taken as one rectangle.
+
+    The leading edge is the left, or the right in a right-to-left layout.
+    """
+    used = QRect()
+    for rect in rects:
+        used = used.united(rect)
+    layout = root.layout()
+    if isinstance(root, DockPanel):
+        margins = root.content_margins()
+    else:
+        margins = layout.contentsMargins() if layout is not None else root.contentsMargins()
+    problems = []
+    if used.top() > margins.top() + LEFTOVER_SLACK:
+        problems.append(f'misplaced leftover: content starts {used.top()} px below the top')
+    if root.layoutDirection() == Qt.LayoutDirection.RightToLeft:
+        before = root.width() - 1 - used.right()
+        allowed = margins.right()
+    else:
+        before = used.left()
+        allowed = margins.left()
+    if before > allowed + LEFTOVER_SLACK:
+        problems.append(f'misplaced leftover: content starts {before} px from the leading edge')
+    return problems
+
+
+def _band_neighbors(content: list[tuple[QWidget, QRect]], axis: Qt.Orientation
+                    ) -> list[tuple[tuple[QWidget, QRect], tuple[QWidget, QRect]]]:
+    """Returns each pair of content that sit in the same band with nothing between them, first before second.
+
+    With the Horizontal axis, a band is a row: the pair's vertical spans overlap and no other content overlapping both
+    sits between them. Vertical is the same with columns.
+    """
+    horizontal = axis == Qt.Orientation.Horizontal
+
+    def _span(rect: QRect) -> tuple[int, int]:
+        return (rect.top(), rect.bottom()) if horizontal else (rect.left(), rect.right())
+
+    def _extent(rect: QRect) -> tuple[int, int]:
+        return (rect.left(), rect.right()) if horizontal else (rect.top(), rect.bottom())
+
+    pairs = []
+    for first in content:
+        for second in content:
+            first_span, second_span = _span(first[1]), _span(second[1])
+            shared = (max(first_span[0], second_span[0]), min(first_span[1], second_span[1]))
+            if shared[0] > shared[1] or _extent(first[1])[1] >= _extent(second[1])[0]:
+                continue
+            gap = (_extent(first[1])[1], _extent(second[1])[0])
+            blocked = False
+            for between in content:
+                between_span, between_extent = _span(between[1]), _extent(between[1])
+                if between not in (first, second) and between_span[0] <= shared[1] \
+                        and between_span[1] >= shared[0] and between_extent[1] > gap[0] and between_extent[0] < gap[1]:
+                    blocked = True
+                    break
+            if not blocked:
+                pairs.append((first, second))
+    return pairs
+
+
+def _misaligned_pairs(content: list[tuple[QWidget, QRect]]
+                      ) -> list[tuple[Qt.Orientation, tuple[QWidget, QRect], tuple[QWidget, QRect], int]]:
+    """Returns each pair of neighboring content whose leading edges nearly line up, with the axis the edges are
+    compared along and how far apart they are.
+
+    - Neighbors in a row (`Qt.Orientation.Horizontal`) are compared by top edge, and neighbors in a column
+      (`Qt.Orientation.Vertical`) by left edge.
+    - Edges 1 to ALIGN_TOLERANCE px apart count. Farther apart edges are usually deliberate.
+    - A pair of different sizes centered on each other across the band is left out, like a label beside a taller
+      field.
+    """
+    found = []
+    for axis in (Qt.Orientation.Horizontal, Qt.Orientation.Vertical):
+        for first, second in _band_neighbors(content, axis):
+            if axis == Qt.Orientation.Horizontal:
+                gap = abs(first[1].top() - second[1].top())
+                centered = first[1].height() != second[1].height() \
+                    and abs(first[1].center().y() - second[1].center().y()) <= 1
+            else:
+                gap = abs(first[1].left() - second[1].left())
+                centered = first[1].width() != second[1].width() \
+                    and abs(first[1].center().x() - second[1].center().x()) <= 1
+            if 0 < gap <= ALIGN_TOLERANCE and not centered:
+                found.append((axis, first, second, gap))
+    return found
+
+
+def misaligned_edges(root: QWidget) -> list[QLine]:
+    """Returns the edge of each content rectangle that `find_arrangement_problems` compares for `misaligned`, as a line
+    along it in root's coordinates."""
+    lines = []
+    for axis, first, second, _ in _misaligned_pairs(_content_rects(root)):
+        for _, rect in (first, second):
+            if axis == Qt.Orientation.Horizontal:
+                lines.append(QLine(rect.left(), rect.top(), rect.right(), rect.top()))
+            else:
+                lines.append(QLine(rect.left(), rect.top(), rect.left(), rect.bottom()))
+    return lines
+
+
+def _hidden_with_room(panel: DockPanel) -> list[str]:
+    """Returns a problem for each control in More or hidden that would fit in its smallest form.
+
+    Measures the panel with that one control added, as `DockPanel.measure_with_control` does. It fits when the content
+    stays within the panel on the cross axis, and on the scroll axis, with HYSTERESIS to spare, or doesn't grow past
+    what the placement already needs. The planner's own result isn't consulted. Controls of nested `FitContent` aren't
+    checked.
+    """
+    available = panel.available_size
+    if available is None:
+        return []
+    orientation = panel.orientation
+    roomy = QSize(available.width() - HYSTERESIS, available.height() - HYSTERESIS)
+    current = panel.measure()
+    problems = []
+    for section in panel.sections:
+        for control in section.controls:
+            if control.form is not None:
+                continue
+            need = panel.measure_with_control(control)
+            if cross_extent(need, orientation) <= max(cross_extent(roomy, orientation), cross_extent(current, orientation)) \
+                    and scroll_extent(need, orientation) <= max(scroll_extent(roomy, orientation),
+                                                                scroll_extent(current, orientation)):
+                where = 'hidden' if control.decorative else 'in More'
+                problems.append(f'hidden with room: {widget_path(control.widget, panel)} is {where}, though it fits')
     return problems
 
 

@@ -94,10 +94,10 @@ These hold alongside the five rules and outrank none of them.
 
 | Rule | Checked by |
 | --- | --- |
-| 1 | `clipped`, `squeezed`, `overlap`, `cramped`. Not yet checked: `hidden with room` (#417) |
+| 1 | `clipped`, `squeezed`, `overlap`, `cramped`, `hidden with room` |
 | 2 | Not yet checked: `starved` (#418) |
-| 3 | `empty band`. Not yet checked: `misplaced leftover` (#417) |
-| 4 | Not yet checked: `misaligned` (#417) |
+| 3 | `empty band`, `misplaced leftover` |
+| 4 | `misaligned`, which finds only near misses of 1 to `ALIGN_TOLERANCE` px |
 | 5 | Not checked |
 
 - **The `stretched` check conflicts with rule 4.** It holds each field to a fixed cap, `FIELD_MAX_WIDTH` or its own

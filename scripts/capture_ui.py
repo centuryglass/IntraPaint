@@ -17,7 +17,7 @@ the main window:
   framed at the panel's bounds and captioned with the orientation planning chose if it differs, and its problem
   count from `find_layout_problems` and `find_arrangement_problems`. Red marks problems. Gray marks a size below the
   panel's minimum size hint, which only a squeezed window reaches. `--overlay` outlines every widget
-  `find_layout_problems` checks. For a readable close-up of one size, pass one width and height with `--scale 1`.
+  `find_layout_problems` checks, and draws the edges `misaligned` compares in orange. For a readable close-up of one size, pass one width and height with `--scale 1`.
 - `sheets/<panel>/<orientation>.json`: each cell's problems, by `<width>x<height>`.
 - `index.html`: every sheet.
 
@@ -52,8 +52,8 @@ from src.ui.layout.dock_panel import DockPanel
 from src.ui.layout.panel_fit import Orientation
 from test.base_test_case import reset_singletons
 from test.ui.panel_capture import (SWEEP_HEIGHTS, SWEEP_WIDTHS, PanelHost, PanelScene, find_arrangement_problems,
-                                   find_layout_problems, layout_report, layout_widget_rects, mock_app_controller,
-                                   panel_scenes, tools_panel_scenes)
+                                   find_layout_problems, layout_report, layout_widget_rects, misaligned_edges,
+                                   mock_app_controller, panel_scenes, tools_panel_scenes)
 from test.ui.ui_capture import (CELL_MARGIN, GALLERY_CONTROLS, GalleryControl, gallery_cell_rect,
                                 render_gallery_control)
 
@@ -68,6 +68,7 @@ SHEET_CAPTION_LINE = 13
 SHEET_FONT_PIXELS = 11
 PROBLEM_COLOR = QColor('#e0403a')
 OVERLAY_COLOR = QColor(0, 160, 255, 140)
+MISALIGNED_COLOR = QColor(255, 140, 0, 220)
 
 
 def labeled_gallery_image(control: GalleryControl) -> QImage:
@@ -183,6 +184,9 @@ def _draw_overlay(image: QImage, panel) -> None:
     painter.setPen(QPen(OVERLAY_COLOR, 1))
     for rect in layout_widget_rects(panel):
         painter.drawRect(rect.adjusted(0, 0, -1, -1))
+    painter.setPen(QPen(MISALIGNED_COLOR, 2))
+    for line in misaligned_edges(panel):
+        painter.drawLine(line)
     painter.end()
 
 
