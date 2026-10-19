@@ -22,9 +22,12 @@ the main window:
 - `sheets/<panel>/<orientation>.json`: each cell's problems and hints, by `<width>x<height>`.
 - `index.html`: every sheet.
 
-Usage: python scripts/capture_ui.py [--output DIR] [--only NAME_PART ...]
+`--edit-mode` sets `Cache.EDIT_MODE` before any panel is built, for either kind of capture. Panels that show or hide
+controls by edit mode (the Stable Diffusion panels, the selection tool's controls) render that mode's layout.
+
+Usage: python scripts/capture_ui.py [--output DIR] [--only NAME_PART ...] [--edit-mode MODE]
        python scripts/capture_ui.py --sheet [--only NAME_PART ...] [--widths W ...] [--heights H ...] [--scale S]
-                                    [--overlay]
+                                    [--overlay] [--edit-mode MODE]
 """
 import argparse
 import html
@@ -51,12 +54,16 @@ from PySide6.QtWidgets import QApplication
 
 from src.ui.layout.dock_panel import DockPanel
 from src.ui.layout.panel_fit import Orientation
+from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 from test.base_test_case import reset_singletons
 from test.ui.panel_capture import (SWEEP_HEIGHTS, SWEEP_WIDTHS, PanelHost, PanelScene, find_arrangement_problems,
                                    find_layout_problems, is_hint, layout_report, layout_widget_rects, misaligned_edges,
-                                   mock_app_controller, panel_scenes, tools_panel_scenes)
+                                   mock_app_controller, panel_scenes, restore_option_lists,
+                                   tools_panel_scenes)
 from test.ui.ui_capture import (CELL_MARGIN, GALLERY_CONTROLS, GalleryControl, gallery_cell_rect,
                                 render_gallery_control)
+
+EDIT_MODES = (EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG)
 
 LABEL_WIDTH = 110
 LABEL_HEIGHT = 20
@@ -128,9 +135,9 @@ def _wanted(name: str, filters: list[str]) -> bool:
     return len(filters) == 0 or any(part in name for part in filters)
 
 
-def _set_up_config(config_dir: str) -> None:
+def _set_up_config(config_dir: str, edit_mode: Optional[str]) -> None:
     """Sets up config the way the panel layout test does: conftest.py's fixture copies, then IntraPaintTestCase's
-    reset."""
+    reset. A non-None edit_mode is stored as `Cache.EDIT_MODE`."""
     # pylint: disable=import-outside-toplevel
     from src.config.application_config import AppConfig
     from src.config.cache import Cache
@@ -141,13 +148,16 @@ def _set_up_config(config_dir: str) -> None:
         shutil.copyfile(os.path.join(PROJECT_ROOT, 'test', 'resources', file_name), copy_path)
         config_class(copy_path)
     reset_singletons()
+    if edit_mode is not None:
+        restore_option_lists()
+        Cache().set(Cache.EDIT_MODE, edit_mode)
 
 
-def capture_all(output_dir: str, filters: list[str]) -> None:
+def capture_all(output_dir: str, filters: list[str], edit_mode: Optional[str]) -> None:
     """Captures everything into output_dir. See the module docstring for its layout."""
     config_dir = tempfile.mkdtemp(prefix='intrapaint-capture-config-')
     try:
-        _set_up_config(config_dir)
+        _set_up_config(config_dir, edit_mode)
         controller = mock_app_controller()
 
         gallery_paths = [_save(labeled_gallery_image(control), output_dir, f'gallery/{control.name}.png')
@@ -284,12 +294,12 @@ def _write_sheet_index(output_dir: str, sheet_paths: list[str]) -> None:
 
 
 def capture_sheets(output_dir: str, filters: list[str], widths: list[int], heights: list[int], scale: float,
-                   overlay: bool) -> list[str]:
+                   overlay: bool, edit_mode: Optional[str]) -> list[str]:
     """Saves sweep sheets into output_dir and returns their paths. See the module docstring for its layout."""
     config_dir = tempfile.mkdtemp(prefix='intrapaint-capture-config-')
     sheet_paths: list[str] = []
     try:
-        _set_up_config(config_dir)
+        _set_up_config(config_dir, edit_mode)
         controller = mock_app_controller()
         scenes: list[PanelScene] = [scene for scene in panel_scenes(controller) + tools_panel_scenes(controller)
                                     if scene.fixed_sizes is None and _wanted(scene.name, filters)]
@@ -328,14 +338,17 @@ def main() -> None:
     parser.add_argument('--heights', nargs='+', type=int, default=list(SWEEP_HEIGHTS), help='Sweep sheet heights.')
     parser.add_argument('--scale', type=float, default=SHEET_SCALE, help='Sweep sheet scale.')
     parser.add_argument('--overlay', action='store_true', help='Outline each checked widget in sweep sheets.')
+    parser.add_argument('--edit-mode', choices=EDIT_MODES, default=None,
+                        help='Stable Diffusion edit mode to render panels in. Default: the test config\'s mode.')
     args = parser.parse_args()
     _ = QApplication.instance() or QApplication(sys.argv)
     os.makedirs(args.output, exist_ok=True)
     try:
         if args.sheet:
-            sheet_paths = capture_sheets(args.output, args.only, args.widths, args.heights, args.scale, args.overlay)
+            sheet_paths = capture_sheets(args.output, args.only, args.widths, args.heights, args.scale, args.overlay,
+                                   args.edit_mode)
         else:
-            capture_all(args.output, args.only)
+            capture_all(args.output, args.only, args.edit_mode)
     finally:
         shutil.rmtree(_USER_DIR_ROOT, ignore_errors=True)
     if args.sheet:
