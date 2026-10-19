@@ -276,13 +276,19 @@ class SegmentedControl(QWidget):
 
     def sizeHint(self) -> QSize:
         """Returns room for equal segments, each as wide as the widest."""
-        return QSize(self._segments_width(), CONTROL_HEIGHT)
+        return QSize(self._segments_width(), self._control_height())
 
     def minimumSizeHint(self) -> QSize:
         """Returns the smallest size that fits the segments, or a combo box if there is a fallback."""
         if self._combo is not None:
-            return QSize(self._combo.minimumSizeHint().width(), CONTROL_HEIGHT)
+            return QSize(self._combo.minimumSizeHint().width(), self._control_height())
         return self.sizeHint()
+
+    def _control_height(self) -> int:
+        """Returns the control's height, which is at least the fallback combo box's minimum."""
+        if self._combo is None:
+            return CONTROL_HEIGHT
+        return max(CONTROL_HEIGHT, self._combo.minimumSizeHint().height())
 
     def uses_combo_fallback(self) -> bool:
         """Returns whether the combo box is replacing the segments."""
