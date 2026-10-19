@@ -65,7 +65,8 @@ class SizeField(QWidget):
         self._build_layout()
 
     def _build_layout(self) -> None:
-        clear_layout(self._layout)
+        # Unparenting would hide the widgets, and adding them back doesn't show them again:
+        clear_layout(self._layout, unparent=False)
         if self._orientation == Qt.Orientation.Horizontal:
             def _add_column(column_widget: Optional[QWidget], column: int, stretch: int = 2) -> None:
                 if column_widget is not None:
