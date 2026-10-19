@@ -1,5 +1,5 @@
-"""Tests the layout checks `find_arrangement_problems` adds for rules 1, 3 and 4 of `doc/agents/panel_layout.md`:
-`hidden with room`, `misplaced leftover` and `misaligned`, on small synthetic widget trees."""
+"""Tests the layout checks `hidden with room`, `misplaced leftover` and `misaligned` from `find_arrangement_problems`,
+on small synthetic widget trees."""
 import sys
 from typing import Optional
 

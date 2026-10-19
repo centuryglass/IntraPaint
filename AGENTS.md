@@ -134,7 +134,7 @@ Config is JSON-backed and typed, with `get()` / `set()` / `connect()` (signal on
 
 | File | Covers |
 | --- | --- |
-| [`doc/agents/panel_layout.md`](doc/agents/panel_layout.md) | What a correct panel layout is, and which rule wins a conflict: `src/ui/layout/`, `src/ui/panel/`, `test/ui/panel_capture.py`, `test/ui/panel_sweep_test.py` |
+| [`doc/agents/panel_layout.md`](doc/agents/panel_layout.md) | Where a panel's look comes from, and which layout problems fail tests: `src/ui/layout/`, `src/ui/panel/`, `test/ui/panel_capture.py`, `test/ui/panel_sweep_test.py` |
 
 ## Comments and docs
 
@@ -198,8 +198,9 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
 - **Panel layout work is checked on sweep sheets.** Before calling a layout change done, run
   `python scripts/capture_ui.py --sheet --only <panel>` and read every sheet it prints, side and strip. For a tool's
   controls, that includes `tools_panel_<tool>`, the Tools panel with that tool active. A sheet shows the panel at a
-  grid of dock sizes. Misalignment, stretched sections and wasted space show up there even when the snapshots pass.
-  `doc/agents/panel_layout.md` says what a correct result is. The PR names the sheets checked and what changed on them. The script's docstring covers the options.
+  grid of dock sizes. Misalignment, stretched sections and wasted space show up there as hints, which no test fails
+  on. `doc/agents/panel_layout.md` says what a layout has to do and where its look comes from. The PR names the
+  sheets checked and what changed on them. The script's docstring covers the options.
 - **Stable Diffusion requests are pinned by snapshots.** `test/controller/image_generation/` compares what the WebUI
   and ComfyUI generators send with `test/resources/sd_request_snapshots/`, so a change under `sd_adapters/` or to those
   generators can fail it. A PR that changes a snapshot explains the diff.

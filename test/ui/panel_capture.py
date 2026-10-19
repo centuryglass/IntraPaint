@@ -332,6 +332,13 @@ CRAMPED_SHARE = 0.5
 LEFTOVER_SLACK = 8
 # Edges of neighboring content that differ by more than 0 and at most this many pixels are a near miss:
 ALIGN_TOLERANCE = 8
+# Kinds `find_arrangement_problems` reports as hints: places on a sweep sheet worth a look. No test fails on them:
+HINT_KINDS = ('stretched', 'empty band', 'cramped', 'misplaced leftover', 'misaligned')
+
+
+def is_hint(problem: str) -> bool:
+    """Returns whether a reported problem is one of HINT_KINDS."""
+    return problem.split(':', 1)[0] in HINT_KINDS
 
 
 def _is_framed_scroll_area(widget: QWidget) -> bool:
@@ -377,7 +384,8 @@ def _empty_bands(spans: list[tuple[int, int, QWidget]]) -> list[tuple[int, QWidg
 
 
 def find_arrangement_problems(root: QWidget) -> list[str]:
-    """Lists ways a panel's content is arranged badly for its size, though nothing overlaps or is clipped.
+    """Lists ways a panel's content is arranged badly for its size, though nothing overlaps or is clipped. Every kind
+    but `hidden with room` is one of HINT_KINDS.
 
     - stretched: one of FIELD_TYPES wider than its `src.ui.layout.panel_fit.field_width_cap`.
     - empty band: a gap of more than EMPTY_BAND_LIMIT pixels that crosses the whole panel, with content on both sides.

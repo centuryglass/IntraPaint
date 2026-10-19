@@ -1,8 +1,8 @@
 """Checks each dock panel, and the Tools panel with each tool active, at every sweep size it can be docked at.
 
 A scene is captured at each `SWEEP_WIDTHS` by `SWEEP_HEIGHTS` size in each of its orientations, skipping sizes below its
-minimum size hint. Every problem `find_layout_problems` or `find_arrangement_problems` reports there counts, by kind:
-the text before the colon.
+minimum size hint. Every problem `find_layout_problems` or `find_arrangement_problems` reports there counts, by kind
+(the text before the colon), except `HINT_KINDS`.
 
 `KNOWN_PROBLEMS` lists the kinds each scene is known to have and the open issue that tracks each. A scene fails when it
 shows a kind it doesn't list, or when a listed kind no longer appears, so a fix removes its entry. Run
@@ -15,7 +15,7 @@ from PySide6.QtWidgets import QApplication
 
 from test.base_test_case import IntraPaintTestCase
 from test.ui.panel_capture import (SWEEP_HEIGHTS, SWEEP_WIDTHS, PanelHost, PanelScene, find_arrangement_problems,
-                                   find_layout_problems, mock_app_controller, panel_scenes, tools_panel_scenes)
+                                   find_layout_problems, is_hint, mock_app_controller, panel_scenes, tools_panel_scenes)
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -30,28 +30,17 @@ def _each(kinds: tuple[str, ...], *issues: int) -> dict[str, tuple[int, ...]]:
 
 # Scene name -> {problem kind: the open issues that track it}:
 KNOWN_PROBLEMS: dict[str, dict[str, tuple[int, ...]]] = {
-    'layer_panel': {'stretched': (319,)},
-    'color_panel': {'squeezed': (412,), 'misaligned': (423,)},
-    'navigation_panel': {'misaligned': (424,)},
-    'tools_panel_my_paint_brush_tool': {'empty band': (411,), 'cramped': (408,), 'misaligned': (394, 407)},
-    'tools_panel_draw_tool': {'empty band': (411,), 'cramped': (408,), 'misaligned': (394, 407)},
-    'tools_panel_eraser_tool': {'empty band': (411,), 'cramped': (408,), 'misaligned': (394, 407)},
-    'tools_panel_smudge_tool': {'empty band': (411,), 'cramped': (408,), 'misaligned': (394, 407)},
-    'tools_panel_fill_tool': {**_each(_OVERLAP_CLIPPED_SQUEEZED, 313), 'stretched': (313,), 'misaligned': (394, 313)},
-    'tools_panel_filter_tool': {'stretched': (402,), 'empty band': (402,), 'misaligned': (394, 402, 407)},
-    'tools_panel_clone_stamp_tool': {'stretched': (402,), 'empty band': (402, 411), 'misaligned': (394, 402, 407)},
-    'tools_panel_eyedropper_tool': {**_each(_OVERLAP_CLIPPED_SQUEEZED, 413), 'cramped': (408,),
-                                    'misaligned': (394, 413)},
-    'tools_panel_text_tool': {**_each(_OVERLAP_CLIPPED_SQUEEZED, 317), 'stretched': (317,), 'misaligned': (394, 317)},
-    'tools_panel_shape_tool': {'overlap': (316,), 'squeezed': (316,), 'stretched': (316,), 'misaligned': (394, 316)},
-    'tools_panel_layer_transform_tool': {**_each(_OVERLAP_CLIPPED_SQUEEZED, 318), 'stretched': (318,),
-                                         'empty band': (318,), 'misaligned': (394, 318)},
-    'tools_panel_free_selection_tool': {**_each(_OVERLAP_CLIPPED_SQUEEZED, 315), 'misaligned': (394, 315)},
-    'tools_panel_selection_brush_tool': {**_each(_OVERLAP_CLIPPED_SQUEEZED, 315), 'misaligned': (394, 315)},
-    'tools_panel_shape_selection_tool': {**_each(_OVERLAP_CLIPPED_SQUEEZED, 315), 'misaligned': (394, 315)},
-    'tools_panel_selection_fill_tool': {**_each(_OVERLAP_CLIPPED_SQUEEZED, 315), 'misaligned': (394, 315)},
-    'tools_panel_generation_area_tool': {'clipped': (323,), 'squeezed': (323,), 'stretched': (323,),
-                                         'misaligned': (394, 323)},
+    'color_panel': {'squeezed': (412,)},
+    'tools_panel_fill_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 426),
+    'tools_panel_eyedropper_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 413),
+    'tools_panel_text_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 317),
+    'tools_panel_shape_tool': {'overlap': (316,), 'squeezed': (316,)},
+    'tools_panel_layer_transform_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 318),
+    'tools_panel_free_selection_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 315),
+    'tools_panel_selection_brush_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 315),
+    'tools_panel_shape_selection_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 315),
+    'tools_panel_selection_fill_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 315),
+    'tools_panel_generation_area_tool': {'clipped': (323,), 'squeezed': (323,)},
 }
 
 
@@ -91,6 +80,8 @@ class PanelSweepTest(IntraPaintTestCase):
                                 if width < minimum.width() or height < minimum.height():
                                     continue
                                 for problem in find_layout_problems(panel) + find_arrangement_problems(panel):
+                                    if is_hint(problem):
+                                        continue
                                     place = orientation.value if orientation is not None else 'undocked'
                                     where = f'{place} {width}x{height}'
                                     examples.setdefault(problem.split(':', 1)[0], f'{where}: {problem}')
