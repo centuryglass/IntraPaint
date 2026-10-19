@@ -18,8 +18,8 @@ from typing import Callable, Optional, Sequence
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPalette
-from PySide6.QtWidgets import (QApplication, QBoxLayout, QCheckBox, QComboBox, QLabel, QPushButton, QSizePolicy,
-                               QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QBoxLayout, QCheckBox, QComboBox, QFormLayout, QLabel, QPushButton,
+                               QSizePolicy, QVBoxLayout, QWidget)
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -178,6 +178,8 @@ class LabeledRows(QWidget):
         super().__init__(parent)
         layout = LabelColumnLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        # A label that leaves its field too little room moves above it:
+        layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
         self.labels: list[QLabel] = []
         for text, field in rows:
             label = layout.add_row(text, field)
