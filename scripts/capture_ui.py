@@ -15,10 +15,11 @@ the main window:
 - `sheets/<panel>/<orientation>.png`: one image per orientation the panel is told (`host_orientations`), with a cell
   for each size in `--widths` by `--heights`, all drawn at `--scale` so cells keep their real proportions. Each cell is
   framed at the panel's bounds and captioned with the orientation planning chose if it differs, and its problem
-  count from `find_layout_problems` and `find_arrangement_problems`. Red marks problems. Gray marks a size below the
-  panel's minimum size hint, which only a squeezed window reaches. `--overlay` outlines every widget
+  counts from `find_layout_problems` and `find_arrangement_problems`. Red marks problems, which the sweep test fails
+  on. An amber caption marks a cell with only hints (`HINT_KINDS`), which point at layouts worth a look. Gray marks a
+  size below the panel's minimum size hint, which only a squeezed window reaches. `--overlay` outlines every widget
   `find_layout_problems` checks, and draws the edges `misaligned` compares in orange. For a readable close-up of one size, pass one width and height with `--scale 1`.
-- `sheets/<panel>/<orientation>.json`: each cell's problems, by `<width>x<height>`.
+- `sheets/<panel>/<orientation>.json`: each cell's problems and hints, by `<width>x<height>`.
 - `index.html`: every sheet.
 
 Usage: python scripts/capture_ui.py [--output DIR] [--only NAME_PART ...]
@@ -52,7 +53,7 @@ from src.ui.layout.dock_panel import DockPanel
 from src.ui.layout.panel_fit import Orientation
 from test.base_test_case import reset_singletons
 from test.ui.panel_capture import (SWEEP_HEIGHTS, SWEEP_WIDTHS, PanelHost, PanelScene, find_arrangement_problems,
-                                   find_layout_problems, layout_report, layout_widget_rects, misaligned_edges,
+                                   find_layout_problems, is_hint, layout_report, layout_widget_rects, misaligned_edges,
                                    mock_app_controller, panel_scenes, tools_panel_scenes)
 from test.ui.ui_capture import (CELL_MARGIN, GALLERY_CONTROLS, GalleryControl, gallery_cell_rect,
                                 render_gallery_control)
@@ -67,6 +68,7 @@ SHEET_CAPTION_MIN_WIDTH = 96
 SHEET_CAPTION_LINE = 13
 SHEET_FONT_PIXELS = 11
 PROBLEM_COLOR = QColor('#e0403a')
+HINT_COLOR = QColor('#d89a1c')
 OVERLAY_COLOR = QColor(0, 160, 255, 140)
 MISALIGNED_COLOR = QColor(255, 140, 0, 220)
 
@@ -190,12 +192,17 @@ def _draw_overlay(image: QImage, panel) -> None:
     painter.end()
 
 
-def _cell_caption(chosen: Optional[Orientation], problem_count: int, below_minimum: bool) -> tuple[str, str]:
+def _cell_caption(chosen: Optional[Orientation], problem_count: int, hint_count: int, below_minimum: bool
+                  ) -> tuple[str, str]:
     first = 'below minimum' if below_minimum else ''
     if chosen is not None:
         first = f'{first}, as {chosen.value}' if first else f'as {chosen.value}'
-    second = f'{problem_count} problem(s)' if problem_count > 0 else 'ok'
-    return first, second
+    counts = []
+    if problem_count > 0:
+        counts.append(f'{problem_count} problem(s)')
+    if hint_count > 0:
+        counts.append(f'{hint_count} hint(s)')
+    return first, ', '.join(counts) if counts else 'ok'
 
 
 def sweep_sheet(host: PanelHost, orientation: Optional[Orientation], widths: list[int], heights: list[int],
@@ -229,7 +236,9 @@ def sweep_sheet(host: PanelHost, orientation: Optional[Orientation], widths: lis
         for left, column_width, width in zip(lefts, column_widths, widths):
             size = QSize(width, height)
             image = host.capture(size, orientation)
-            problems = find_layout_problems(panel) + find_arrangement_problems(panel)
+            found = find_layout_problems(panel) + find_arrangement_problems(panel)
+            problems = [problem for problem in found if not is_hint(problem)]
+            hints = [problem for problem in found if is_hint(problem)]
             minimum = panel.minimumSizeHint()
             below_minimum = minimum.isValid() and (width < minimum.width() or height < minimum.height())
             chosen = None
@@ -245,15 +254,18 @@ def sweep_sheet(host: PanelHost, orientation: Optional[Orientation], widths: lis
             flagged = bool(problems) and not below_minimum
             painter.setPen(QPen(PROBLEM_COLOR if flagged else dim_color, 2 if flagged else 1, Qt.PenStyle.DashLine))
             painter.drawRect(target.adjusted(0, 0, -1, -1))
-            first, second = _cell_caption(chosen, len(problems), below_minimum)
+            first, second = _cell_caption(chosen, len(problems), len(hints), below_minimum)
             caption_top = target.bottom() + 1
             painter.setPen(dim_color if below_minimum else text_color)
             painter.drawText(QRect(left, caption_top, column_width, SHEET_CAPTION_LINE), Qt.AlignmentFlag.AlignLeft,
                              first)
-            painter.setPen(PROBLEM_COLOR if flagged else (dim_color if below_minimum else text_color))
+            if below_minimum:
+                painter.setPen(dim_color)
+            else:
+                painter.setPen(PROBLEM_COLOR if problems else (HINT_COLOR if hints else text_color))
             painter.drawText(QRect(left, caption_top + (SHEET_CAPTION_LINE if first else 0), column_width,
                                    SHEET_CAPTION_LINE), Qt.AlignmentFlag.AlignLeft, second)
-            report[f'{width}x{height}'] = {'below_minimum': below_minimum, 'problems': problems,
+            report[f'{width}x{height}'] = {'below_minimum': below_minimum, 'problems': problems, 'hints': hints,
                                            **({'chosen_orientation': chosen.value} if chosen is not None else {})}
     painter.end()
     return sheet, report
