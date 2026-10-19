@@ -20,7 +20,7 @@ _SIZE_LABEL = _tr('Size')
 
 
 class EraserToolPanel(StrokeToolPanel):
-    """Control panel for the eraser tool: the stroke block without a color row."""
+    """Control panel for the eraser tool: the stroke block without a color row, and a preview of erasing."""
 
     def __init__(self):
         super().__init__(StrokeBlock(size_key=Cache.ERASER_TOOL_SIZE,
@@ -30,4 +30,6 @@ class EraserToolPanel(StrokeToolPanel):
                                      pressure_opacity_key=Cache.ERASER_TOOL_PRESSURE_OPACITY,
                                      hardness_key=Cache.ERASER_TOOL_HARDNESS,
                                      pressure_hardness_key=Cache.ERASER_TOOL_PRESSURE_HARDNESS,
-                                     antialias_key=Cache.ERASER_TOOL_ANTIALIAS))
+                                     antialias_key=Cache.ERASER_TOOL_ANTIALIAS,
+                                     show_preview=True,
+                                     erase_preview=True))

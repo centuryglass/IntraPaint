@@ -31,7 +31,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 from PySide6.QtCore import QEvent, QPointF, QSize, Qt, QTimer
-from PySide6.QtGui import QBrush, QColor, QImage, QPalette, QResizeEvent
+from PySide6.QtGui import QBrush, QColor, QImage, QPainter, QPalette, QResizeEvent
 from PySide6.QtWidgets import (QApplication, QBoxLayout, QCheckBox, QGridLayout, QLabel, QLayout, QSizePolicy,
                                QVBoxLayout, QWidget)
 
@@ -49,6 +49,7 @@ from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.panel_section import PanelSection
 from src.undo_stack import UndoStack
+from src.util.visual.image_utils import tile_pattern_fill
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.stroke_block'
@@ -74,6 +75,7 @@ PREVIEW_MAX_SIZE = QSize(400, 160)
 COLUMN_SPACING = 10
 MIN_PATTERN_CHARACTERS = 6
 PREVIEW_STAMP_SPACING = 0.2
+PREVIEW_CHECKER_TILE_SIZE = 6
 # Capped columns share width until they reach their caps, and a spare column after them takes what is left. Without
 # it the layout would center each capped column in a wider cell:
 CONTROL_COLUMN_STRETCH = 100
@@ -113,12 +115,15 @@ class StrokePreview(BrushPreview):
     """Previews a sample stroke for the Qt brush tools.
 
     The render runs a `QtPaintBrush` over the sample stroke on a scratch `ImageLayer`, so it honors the same settings
-    as the canvas.
+    as the canvas. With `erase`, the layer starts filled with the preview background, the brush erases the stroke from
+    it, and the result is composited over a transparency checkerboard.
     """
 
     def __init__(self, size_key: str, opacity_key: Optional[str], hardness_key: Optional[str],
                  color_key: Optional[str], pattern_key: Optional[str] = None, antialias_key: Optional[str] = None,
-                 parent: Optional[QWidget] = None, render_timer: Optional[QTimer] = None) -> None:
+                 parent: Optional[QWidget] = None, render_timer: Optional[QTimer] = None,
+                 erase: bool = False) -> None:
+        self._erase = erase
         self._size_key = size_key
         self._opacity_key = opacity_key
         self._hardness_key = hardness_key
@@ -144,10 +149,17 @@ class StrokePreview(BrushPreview):
             color = Cache().get_color(self._color_key, color)
         return color
 
+    def _backdrop_color(self) -> QColor:
+        """Returns the fill the eraser removes: the same background the other previews draw on."""
+        return QColor(self.palette().color(QPalette.ColorRole.Base))
+
     def _inputs(self) -> Hashable:
-        return (self._value(self._size_key, 1), self._value(self._opacity_key, 1.0),
-                self._value(self._hardness_key, 1.0), self._color().name(QColor.NameFormat.HexArgb),
-                self._value(self._pattern_key, BRUSH_PATTERN_SOLID), self._value(self._antialias_key, False))
+        inputs = (self._value(self._size_key, 1), self._value(self._opacity_key, 1.0),
+                  self._value(self._hardness_key, 1.0), self._color().name(QColor.NameFormat.HexArgb),
+                  self._value(self._pattern_key, BRUSH_PATTERN_SOLID), self._value(self._antialias_key, False))
+        if self._erase:
+            return inputs + (self._backdrop_color().name(QColor.NameFormat.HexArgb),)
+        return inputs
 
     def _sample_stroke(self, size: QSize) -> tuple[float, list[QPointF]]:
         """Returns the brush diameter shrunk to fit, and points along a wave at the brush's stamp spacing."""
@@ -173,8 +185,14 @@ class StrokePreview(BrushPreview):
         """Draws the sample stroke with a `QtPaintBrush` on a scratch layer, keeping its edits out of undo history."""
         diameter, points = self._sample_stroke(size)
         with UndoStack().unrecorded():
-            layer = ImageLayer(size, 'brush preview')
+            if self._erase:
+                backdrop = QImage(size, QImage.Format.Format_ARGB32_Premultiplied)
+                backdrop.fill(self._backdrop_color())
+                layer = ImageLayer(backdrop, 'brush preview')
+            else:
+                layer = ImageLayer(size, 'brush preview')
             brush = QtPaintBrush(layer)
+            brush.eraser = self._erase
             brush.brush_size = round(diameter)
             brush.brush_color = self._color()
             brush.opacity = float(self._value(self._opacity_key, 1.0))
@@ -191,7 +209,15 @@ class StrokePreview(BrushPreview):
                 brush.stroke_to(point.x(), point.y(), None, None, None)
             brush.end_stroke()
             brush.connect_to_layer(None)
-            return layer.image
+            if not self._erase:
+                return layer.image
+            result = QImage(size, QImage.Format.Format_ARGB32_Premultiplied)
+            painter = QPainter(result)
+            tile_pattern_fill(painter, result.rect(), PREVIEW_CHECKER_TILE_SIZE, Qt.GlobalColor.lightGray,
+                              Qt.GlobalColor.darkGray)
+            painter.drawImage(0, 0, layer.image)
+            painter.end()
+            return result
 
 
 def build_paint_row(color_key: Optional[str], pattern_key: Optional[str], parent: QWidget) -> Optional[QWidget]:
@@ -251,13 +277,14 @@ class StrokeBlock(QWidget):
 
     `size_label` and `opacity_label` replace the Cache labels, for tools that name those values differently (the
     smudge and filter tools call opacity "Strength"). `opacity_tooltip` replaces the description to match.
+    `erase_preview` makes the preview show erasing instead of painting.
     """
 
     def __init__(self, size_key: str, opacity_key: Optional[str] = None, hardness_key: Optional[str] = None,
                  pressure_size_key: Optional[str] = None, pressure_opacity_key: Optional[str] = None,
                  pressure_hardness_key: Optional[str] = None, color_key: Optional[str] = None,
                  pattern_key: Optional[str] = None, antialias_key: Optional[str] = None,
-                 show_preview: bool = False, opacity_label: Optional[str] = None,
+                 show_preview: bool = False, erase_preview: bool = False, opacity_label: Optional[str] = None,
                  opacity_tooltip: Optional[str] = None, size_label: Optional[str] = None,
                  parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -307,7 +334,7 @@ class StrokeBlock(QWidget):
         self._preview: Optional[StrokePreview] = None
         if show_preview:
             self._preview = StrokePreview(size_key, opacity_key, hardness_key, color_key, pattern_key, antialias_key,
-                                          self)
+                                          self, erase=erase_preview)
 
         self._stroke_body = QWidget()
         self._stroke_layout = QVBoxLayout(self._stroke_body)

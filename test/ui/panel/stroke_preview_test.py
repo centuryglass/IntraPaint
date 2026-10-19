@@ -1,4 +1,4 @@
-"""Tests StrokePreview's timed updates and its real-brush render."""
+"""Tests StrokePreview's timed updates and its real-brush render, for painting and erasing."""
 import os
 from typing import Optional
 
@@ -80,3 +80,45 @@ class StrokePreviewTest(IntraPaintTestCase):
                 preview = self.make_preview()
                 preview.render_now()
                 self.assert_image_matches_golden(self.render(preview), os.path.join(GOLDEN_DIR, f'stroke_{name}.png'))
+
+
+class EraserPreviewTest(IntraPaintTestCase):
+    """Tests the Eraser tool's preview."""
+
+    def make_preview(self) -> StrokePreview:
+        """Returns a visible preview of the Eraser's settings."""
+        preview = StrokePreview(Cache.ERASER_TOOL_SIZE, Cache.ERASER_TOOL_OPACITY, Cache.ERASER_TOOL_HARDNESS, None,
+                                antialias_key=Cache.ERASER_TOOL_ANTIALIAS, erase=True)
+        preview.setFixedSize(PREVIEW_SIZE)
+        preview.show()
+        preview.render_now()
+        return preview
+
+    def test_stroke_shows_the_checkerboard_through_the_backdrop(self) -> None:
+        """Pixels under the stroke differ from the backdrop-filled pixels beside it."""
+        Cache().set(Cache.ERASER_TOOL_SIZE, 20)
+        Cache().set(Cache.ERASER_TOOL_HARDNESS, 1.0)
+        Cache().set(Cache.ERASER_TOOL_OPACITY, 1.0)
+        image = self.make_preview().grab().toImage()
+        backdrop = image.pixelColor(1, 1)
+        stroke_start = image.pixelColor(PREVIEW_SIZE.width() // 2, PREVIEW_SIZE.height() // 2)
+        self.assertNotEqual(backdrop, stroke_start)
+        colors = {image.pixelColor(x, PREVIEW_SIZE.height() // 2).name() for x in range(20, 180)}
+        self.assertGreater(len(colors), 1)
+
+    def test_golden_images(self) -> None:
+        """The render matches golden images for hard, soft and faint erasers."""
+        cases = {
+            'hard': (20, 1.0, 1.0),
+            'soft': (30, 0.3, 1.0),
+            'faint': (30, 1.0, 0.4),
+        }
+        for name, (size, hardness, opacity) in cases.items():
+            with self.subTest(name):
+                Cache().set(Cache.ERASER_TOOL_SIZE, size)
+                Cache().set(Cache.ERASER_TOOL_HARDNESS, hardness)
+                Cache().set(Cache.ERASER_TOOL_OPACITY, opacity)
+                Cache().set(Cache.ERASER_TOOL_ANTIALIAS, True)
+                preview = self.make_preview()
+                self.assert_image_matches_golden(preview.grab().toImage(),
+                                                 os.path.join(GOLDEN_DIR, f'erase_{name}.png'))
