@@ -32,7 +32,7 @@ def _each(kinds: tuple[str, ...], *issues: int) -> dict[str, tuple[int, ...]]:
 KNOWN_PROBLEMS: dict[str, dict[str, tuple[int, ...]]] = {
     'layer_panel': {'stretched': (319,)},
     'color_panel': {'squeezed': (412,)},
-    'tools_panel_my_paint_brush_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 314),
+    'tools_panel_my_paint_brush_tool': {'empty band': (411,), 'cramped': (408,)},
     'tools_panel_draw_tool': {'empty band': (411,), 'cramped': (408,)},
     'tools_panel_eraser_tool': {'empty band': (411,), 'cramped': (408,)},
     'tools_panel_smudge_tool': {'empty band': (411,), 'cramped': (408,)},

@@ -2,7 +2,7 @@
 the reset helper. Events are synthesized and nothing waits on the event loop."""
 import sys
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, QPoint, QRect, Signal
 from PySide6.QtGui import QColor, QImage
 from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QPushButton, QWidget
 
@@ -13,7 +13,7 @@ from src.ui.layout.label_column_layout import LabelColumnLayout, normalize_row_l
 from src.ui.panel.panel_reset import reset_config_keys
 from src.ui.widget.disabled_banner import DisabledBanner
 from src.ui.widget.keycap_badge import KeycapBadge
-from src.ui.widget.panel_header import MORE_TOOLTIP, PanelHeader, RESET_TOOLTIP
+from src.ui.widget.panel_header import MORE_TOOLTIP, PanelHeader, PanelPopover, RESET_TOOLTIP
 from src.ui.widget.panel_section import PanelSection
 from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
@@ -168,6 +168,61 @@ class PanelHeaderTest(IntraPaintTestCase):
         self.assertEqual(header.name(), name)
         header.resize(1000, header.sizeHint().height())
         self.assertEqual(name_label.text(), name)
+
+
+class PanelPopoverTest(IntraPaintTestCase):
+    """Tests where a popover opens beside its anchor."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.anchor = QWidget()
+        self.anchor.resize(120, 30)
+        self.popover = PanelPopover(self.anchor)
+        content = QLabel('content')
+        content.setMinimumSize(200, 120)
+        self.popover.set_content(content)
+        self.screen = app.primaryScreen().availableGeometry()
+
+    def tearDown(self) -> None:
+        self.popover.hide()
+        self.anchor.hide()
+        super().tearDown()
+
+    def _place_anchor(self, y: int) -> None:
+        self.anchor.move(self.screen.left() + 40, y)
+        self.anchor.show()
+
+    def _anchor_rect(self) -> QRect:
+        return QRect(self.anchor.mapToGlobal(QPoint(0, 0)), self.anchor.size())
+
+    def test_opens_below_with_room_there(self) -> None:
+        """An anchor near the top of the screen gets the popover under it."""
+        self._place_anchor(self.screen.top() + 20)
+        self.popover.popup_below(self.anchor, align_left=True)
+        anchor = self._anchor_rect()
+        self.assertGreater(self.popover.frameGeometry().top(), anchor.bottom())
+        # The offscreen platform offsets windows by a frame margin, so this checks which edge it lines up with:
+        right_aligned_x = anchor.right() + 1 - self.popover.width()
+        self.assertLess(abs(self.popover.x() - anchor.left()), abs(self.popover.x() - right_aligned_x))
+
+    def test_opens_above_near_the_bottom(self) -> None:
+        """An anchor at the bottom of the screen, as in a bottom dock, gets the popover above it, on the screen."""
+        self._place_anchor(self.screen.bottom() - 40)
+        self.popover.popup_below(self.anchor, align_left=True)
+        anchor = self._anchor_rect()
+        geometry = self.popover.frameGeometry()
+        self.assertLess(geometry.bottom(), anchor.top())
+        self.assertTrue(self.screen.contains(geometry), geometry)
+
+    def test_shrinks_to_the_room_but_not_below_its_minimum(self) -> None:
+        """A requested height taller than the room on either side shrinks to that room, but not below the content's
+        minimum."""
+        self._place_anchor(self.screen.center().y())
+        self.popover.popup_below(self.anchor, height=self.screen.height() * 2)
+        anchor = self._anchor_rect()
+        room = max(self.screen.bottom() - anchor.bottom(), anchor.top() - self.screen.top())
+        self.assertLessEqual(self.popover.height(), room)
+        self.assertGreaterEqual(self.popover.height(), self.popover.minimumSizeHint().height())
 
 
 class DisabledBannerTest(IntraPaintTestCase):

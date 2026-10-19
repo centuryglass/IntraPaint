@@ -12,7 +12,8 @@
   button column. The description shows when it fits. A strip too short for the header hides it, a dim line under the
   buttons names the tool, and the More button moves to the end of the buttons' column.
 - The More popover holds reset and shortcuts to the settings tabs for the tool's key bindings and, once a tablet has
-  been seen, the pen pressure curve. `settings_requested` carries the tab name for the controller to show.
+  been seen, the pen pressure curve. `settings_requested` carries the tab name for the controller to show. Controls a
+  `FitContent` tool control panel leaves out go above them.
 - Reset restores the active tool's `BaseTool.get_reset_config_keys`, and is hidden for a tool that declares none.
 - A tool control panel that is a `FitContent` is measured at its base size while the panel plans, then gets the space
   beside the buttons and under the header. Other tool control panels are left out of planning, and get a
@@ -150,6 +151,7 @@ class ToolPanel(DockPanel):
         self._more_content = QWidget()
         more_layout = QVBoxLayout(self._more_content)
         more_layout.setContentsMargins(0, 0, 0, 0)
+        self._more_layout = more_layout
         self._more_reset_button = self._add_more_button(RESET_TOOLTIP, more_layout)
         self._more_keys_button = self._add_more_button(KEY_BINDINGS_LABEL, more_layout)
         self._more_pressure_button = self._add_more_button(PRESSURE_CURVE_LABEL, more_layout)
@@ -205,6 +207,11 @@ class ToolPanel(DockPanel):
         if self._active_tool is not None:
             KeyConfig().disconnect(self, self._active_tool.get_activation_config_key())
         if self._active_tool_panel is not None:
+            if isinstance(self._active_tool_panel, FitContent):
+                overflow = self._active_tool_panel.overflow_content()
+                self._more_layout.removeWidget(overflow)
+                overflow.hide()
+                overflow.setParent(None)
             self._tool_control_layout.removeWidget(self._active_tool_panel)
             self._active_tool_panel.hide()
             self._active_tool_panel.setParent(None)
@@ -219,6 +226,8 @@ class ToolPanel(DockPanel):
                 tool_panel.setToolTip(active_tool.get_tooltip_text())
                 self._active_tool_panel = tool_panel
                 self._tool_control_layout.addWidget(tool_panel)
+                if isinstance(tool_panel, FitContent):
+                    self._more_layout.insertWidget(0, tool_panel.overflow_content())
                 self._update_tool_control_policy()
                 self._forward_orientation()
                 tool_panel.show()
@@ -395,8 +404,12 @@ class ToolPanel(DockPanel):
         return button
 
     def _refresh_more_content(self) -> None:
-        """Shows the popover entries that apply to the active tool now."""
+        """Shows the popover entries that apply to the active tool now, with any controls its panel left out first."""
         tool = self._active_tool
+        if isinstance(self._active_tool_panel, FitContent):
+            overflow = self._active_tool_panel.overflow_content()
+            overflow.setVisible(any(not child.isHidden() for child in overflow.findChildren(
+                QWidget, options=Qt.FindChildOption.FindDirectChildrenOnly)))
         self._more_reset_button.setVisible(tool is not None and len(tool.get_reset_config_keys()) > 0)
         self._more_keys_button.setVisible(tool is not None)
         self._more_pressure_button.setVisible(bool(Cache().get(Cache.EXPECT_TABLET_INPUT)))

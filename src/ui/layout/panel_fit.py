@@ -367,7 +367,7 @@ class FitContent(Protocol):
     """Content that plans its own layout in the space a parent panel gives it.
 
     The parent plans first, measuring the content at `fit_base_size`, then passes the space left over to
-    `set_fit_space`.
+    `set_fit_space`. Optional controls the content leaves out go in `overflow_content`.
     """
 
     def fit_base_size(self, orientation: Orientation) -> QSize:
@@ -376,3 +376,7 @@ class FitContent(Protocol):
 
     def set_fit_space(self, orientation: Orientation, size: QSize) -> None:
         """Plans for the space the parent gives the content."""
+
+    def overflow_content(self) -> QWidget:
+        """Returns a widget holding the controls the latest plan left out, which the parent shows in its More
+        popover. It is empty, with no visible children, while every control fits."""

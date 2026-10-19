@@ -9,11 +9,13 @@
 
 Both sections are `PanelSection`s that collapse to a summary line. A strip too short for headers hides them.
 
-Tool-specific sections go after the block, in `StrokeToolPanel`.
+Tool-specific sections go after the block, in `StrokeToolPanel`. Sections added with `StrokeBlock.add_tool_section`
+join the block's grid, and can be planned with its items.
 
 Layout is planned by fit (`src.ui.layout.panel_fit`) in the space the Tools panel gives `StrokeToolPanel`:
-- Side: the Stroke and options sections share column 1, and a preview beside them takes column 2. Strip: the Stroke
-  section in column 1, the options section in column 2, and a preview beside them in column 3.
+- Side: the Stroke and options sections share column 1, and a preview beside them takes column 2. Tool sections go
+  below, spanning every column up to their own width caps. Strip: the Stroke section in column 1, the options section
+  in column 2, a preview beside them in column 3, and one column per tool section after that.
 - Every control column stops at `FIELD_COLUMN_MAX_WIDTH`, so a wide panel leaves spare width after the last column
   instead of stretching the columns apart.
 - The color pair and Pattern, and the checkboxes, are required items. In a side panel each row stacks into a column
@@ -26,7 +28,7 @@ Layout is planned by fit (`src.ui.layout.panel_fit`) in the space the Tools pane
 import math
 from collections.abc import Hashable
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from PySide6.QtCore import QEvent, QPointF, QSize, Qt, QTimer
 from PySide6.QtGui import QBrush, QColor, QImage, QPalette, QResizeEvent
@@ -326,6 +328,10 @@ class StrokeBlock(QWidget):
             COLOR_AND_OPTIONS_SECTION_TITLE if self._paint_widget is not None else OPTIONS_SECTION_TITLE,
             self._options_body)
 
+        # The tool's own sections, after the block's, and whether each takes the height the others leave:
+        self._tool_sections: list[tuple[PanelSection, bool]] = []
+        # Each tool section's grid column in a strip:
+        self._tool_columns: dict[PanelSection, int] = {}
         self._grid = QGridLayout(self)
         self._grid.setContentsMargins(0, 0, 0, 0)
         self._grid.setHorizontalSpacing(COLUMN_SPACING)
@@ -412,6 +418,30 @@ class StrokeBlock(QWidget):
                                         preview=forms.get(PREVIEW_ITEM),
                                         headers=side or forms.get(HEADERS_ITEM) is not None))
 
+    def add_tool_section(self, section: PanelSection, stretch: bool = False) -> None:
+        """Adds a tool's own section after the block's: below them in a side panel, and in the next column in a
+        strip. A `stretch` section takes the height the others leave. The owner caps the section's width."""
+        self._tool_sections.append((section, stretch))
+        arrangement = self.arrangement
+        self._arrangement = None
+        self._arrange(arrangement)
+
+    def set_tool_section_stretch(self, section: PanelSection, stretch: bool) -> None:
+        """Changes whether a tool section takes the height the others leave."""
+        sections = [(added, stretch if added is section else added_stretch)
+                    for added, added_stretch in self._tool_sections]
+        if sections != self._tool_sections:
+            self._tool_sections = sections
+            arrangement = self.arrangement
+            self._arrangement = None
+            self._arrange(arrangement)
+
+    def update_tool_columns(self) -> None:
+        """Shares a strip's spare width only between tool section columns that show, after a section is shown or
+        hidden."""
+        for section, column in self._tool_columns.items():
+            self._grid.setColumnStretch(column, 0 if section.isHidden() else CONTROL_COLUMN_STRETCH)
+
     def _stroke_summary(self) -> str:
         return ', '.join(f'{field.label()} {field.value_text()}' for field in self._fields.values())
 
@@ -419,16 +449,17 @@ class StrokeBlock(QWidget):
         if arrangement == self._arrangement:
             return
         self._arrangement = arrangement
-        for widget in (self._stroke_section, self._options_section, self._preview):
+        tool_sections = [section for section, _ in self._tool_sections]
+        for widget in (self._stroke_section, self._options_section, self._preview, *tool_sections):
             if widget is not None:
                 self._grid.removeWidget(widget)
         if self._preview is not None:
             self._stroke_layout.removeWidget(self._preview)
-        for index in range(4):
+        for index in range(self._grid.columnCount()):
             self._grid.setColumnStretch(index, 0)
-        for index in range(5):
+        for index in range(self._grid.rowCount()):
             self._grid.setRowStretch(index, 0)
-        for section in (self._stroke_section, self._options_section):
+        for section in (self._stroke_section, self._options_section, *tool_sections):
             section.set_header_visible(arrangement.headers)
         self._checks_layout.setDirection(QBoxLayout.Direction.TopToBottom if arrangement.checks_stacked
                                          else QBoxLayout.Direction.LeftToRight)
@@ -454,26 +485,52 @@ class StrokeBlock(QWidget):
             self._grid.addWidget(self._options_section, 0, 1, top)
             self._grid.setColumnStretch(0, CONTROL_COLUMN_STRETCH)
             self._grid.setColumnStretch(1, CONTROL_COLUMN_STRETCH)
-            columns = 2
+            column = 2
             if self._preview is not None and beside:
                 self._grid.addWidget(self._preview, 0, 2)
                 self._grid.setColumnStretch(2, CONTROL_COLUMN_STRETCH)
-                columns = 3
-            self._grid.setColumnStretch(columns, SPARE_COLUMN_STRETCH)
+                column = 3
+            if len(self._tool_sections) > 0:
+                # With columns after it, an options column wider than its content would leave a gap before them:
+                self._options_section.setMaximumWidth(min(FIELD_COLUMN_MAX_WIDTH,
+                                                          self._options_section.sizeHint().width()))
+            self._tool_columns = {}
+            for section, stretch in self._tool_sections:
+                # A stretching section spans the spare row too, so it fills the strip's height:
+                if stretch:
+                    self._grid.addWidget(section, 0, column, 2, 1)
+                else:
+                    self._grid.addWidget(section, 0, column, top)
+                self._tool_columns[section] = column
+                column += 1
+            self.update_tool_columns()
+            self._grid.setColumnStretch(column, SPARE_COLUMN_STRETCH)
             # Height beyond what the sections need goes below them:
             self._grid.setRowStretch(1, 1)
             return
+        self._tool_columns = {}
         self._grid.addWidget(self._options_section, 1, 0, top)
         self._grid.setColumnStretch(0, CONTROL_COLUMN_STRETCH)
+        spare_column = 1
         if self._preview is not None and beside:
             # The preview spans both sections' rows, and the sections stay in column 1:
             self._grid.addWidget(self._preview, 0, 1, 2, 1)
             self._grid.setColumnStretch(1, CONTROL_COLUMN_STRETCH)
-            self._grid.setColumnStretch(2, SPARE_COLUMN_STRETCH)
-        else:
-            self._grid.setColumnStretch(1, SPARE_COLUMN_STRETCH)
-        # Height beyond what the sections need goes below them:
-        self._grid.setRowStretch(2, 1)
+            spare_column = 2
+        self._grid.setColumnStretch(spare_column, SPARE_COLUMN_STRETCH)
+        # Tool sections span every column, so a section capped wider than the block's columns can use the spare one:
+        row = 2
+        stretched = False
+        for section, stretch in self._tool_sections:
+            self._grid.addWidget(section, row, 0, 1, spare_column + 1,
+                                 Qt.AlignmentFlag(0) if stretch else top)
+            if stretch:
+                self._grid.setRowStretch(row, 1)
+                stretched = True
+            row += 1
+        # Height beyond what the sections need goes below them, unless a tool section takes it:
+        if not stretched:
+            self._grid.setRowStretch(row, 1)
 
 
 class StrokeToolPanel(QWidget):
@@ -484,6 +541,9 @@ class StrokeToolPanel(QWidget):
     - Without a host that calls `set_fit_space`, it plans for its own size when resized. That size must not follow
       its content, or each plan would resize it and plan again. A resize during a plan doesn't start another.
       A new parent clears the host's space, so a host calls `set_fit_space` again after adding the panel.
+    - Sections added with `add_tool_section` join the block's arrangement, and those given a `FitItem` are planned
+      with the block's items. Controls a plan leaves out go in `overflow_content`, which the Tools panel shows in its
+      More popover.
     - `set_orientation` arranges it for an orientation, vertical for a side panel. Subclasses extend it for their own
       sections.
     """
@@ -499,24 +559,68 @@ class StrokeToolPanel(QWidget):
         self._layout.addWidget(block)
         for section in sections or []:
             self._layout.addWidget(section)
-        self._planner = FitPlanner(block.fit_items, block.apply_fit, lambda: fresh_minimum_size(self))
+        self._tool_items: list[tuple[FitItem, Callable[[Orientation, Optional[int]], None]]] = []
+        self._overflow = QWidget()
+        self._overflow_layout = QVBoxLayout(self._overflow)
+        self._overflow_layout.setContentsMargins(0, 0, 0, 0)
+        self._planner = self._build_planner()
 
     @property
     def stroke_block(self) -> StrokeBlock:
         """The panel's stroke controls."""
         return self._block
 
+    @property
+    def fit_space(self) -> Optional[QSize]:
+        """The size being planned for, or the latest plan's, or None before the first plan."""
+        return self._planner.available
+
+    def add_tool_section(self, section: PanelSection, item: Optional[FitItem] = None,
+                         apply: Optional[Callable[[Orientation, Optional[int]], None]] = None,
+                         stretch: bool = False) -> None:
+        """Adds a section after the block's, with `StrokeBlock.add_tool_section`.
+
+        With an `item`, planning calls `apply` with the orientation and the form the item takes, or None for an
+        optional item left out. `apply` hides a left-out section, or moves its controls to `overflow_content`.
+        """
+        self._block.add_tool_section(section, stretch)
+        if item is not None:
+            assert apply is not None
+            self._tool_items.append((item, apply))
+            self._planner = self._build_planner()
+
+    def overflow_content(self) -> QWidget:
+        """Returns the widget holding controls the latest plan left out, for the host's More popover. Subclasses add
+        and remove its controls in their `add_tool_section` callbacks."""
+        return self._overflow
+
+    @property
+    def overflow_layout(self) -> QVBoxLayout:
+        """The layout of `overflow_content`."""
+        return self._overflow_layout
+
     def fit_base_size(self, orientation: Orientation) -> QSize:
-        """Returns the minimum size with the block's required items in their smallest forms and no preview, and
-        keeps that arrangement until the next `set_fit_space`."""
+        """Returns the minimum size with required items in their smallest forms and no optional items, and keeps that
+        arrangement until the next `set_fit_space`."""
         self._follow_orientation(orientation)
         return self._planner.base_size(orientation)
 
     def set_fit_space(self, orientation: Orientation, size: QSize) -> None:
-        """Plans the block for the space the Tools panel gives the panel."""
+        """Plans the block and the tool's sections for the space the Tools panel gives the panel."""
         self._follow_orientation(orientation)
         self._space = QSize(size)
         self._planner.update(orientation, size)
+
+    def _build_planner(self) -> FitPlanner:
+        items = [*self._block.fit_items, *(item for item, _ in self._tool_items)]
+        return FitPlanner(items, self._apply_fit, lambda: fresh_minimum_size(self))
+
+    def _apply_fit(self, orientation: Orientation, placement: Placement) -> None:
+        block_count = len(self._block.fit_items)
+        self._block.apply_fit(orientation, placement[:block_count])
+        for (_, apply), form in zip(self._tool_items, placement[block_count:]):
+            apply(orientation, form)
+        self._block.update_tool_columns()
 
     def set_orientation(self, orientation: Qt.Orientation) -> None:
         """Vertical is a side panel, horizontal a strip. Subclasses extend this to arrange their own sections."""
