@@ -24,7 +24,7 @@ their state survives.
 from dataclasses import dataclass, field
 from typing import Callable, Optional, Sequence
 
-from PySide6.QtCore import QEvent, QSize
+from PySide6.QtCore import QEvent, QMargins, QSize
 from PySide6.QtGui import QIcon, QResizeEvent
 from PySide6.QtWidgets import (QApplication, QBoxLayout, QFrame, QLabel, QScrollArea, QSizePolicy, QVBoxLayout,
                                QWidget)
@@ -175,6 +175,10 @@ class DockPanel(QWidget):
     def build(self, ui: PanelLayout) -> None:
         """Declares sections and controls. Subclasses override it. Called once, from the constructor."""
 
+    def content_margins(self) -> QMargins:
+        """Returns the margins between the panel's edges and its scrolled content."""
+        return self._body_layout.contentsMargins()
+
     @property
     def header(self) -> PanelHeader:
         """The panel's header, which hosts the More button."""
@@ -297,6 +301,25 @@ class DockPanel(QWidget):
         header = fresh_minimum_size(self._header)
         spacing = max(self.layout().spacing(), 0)
         return QSize(max(body.width(), header.width()), body.height() + spacing + header.height())
+
+    def measure_with_control(self, control: _Control) -> QSize:
+        """Returns the content's minimum size with one more control added in its smallest form, and every control
+        already shown in its smallest form. The header, extra items and controls left out stay as placed, and the panel
+        is arranged as before afterwards.
+
+        Layout checks use it to ask whether a control left in More or hidden would have fit if the shown controls had
+        given it room.
+        """
+        planner = self._fit_planner()
+        placement = planner.placement
+        if placement is None:
+            return self.measure()
+        offset = 1 + len(self._extra_items)
+        trial = list(placement)
+        for index, other in enumerate(self._controls()):
+            if other is control or other.form is not None:
+                trial[offset + index] = max(len(other.forms), 1) - 1
+        return planner.measure_placement(tuple(trial))
 
     def prepare_fit(self, orientation: Orientation) -> None:
         """Called before each plan's trials. Subclasses override it to put nested content in a fixed state."""

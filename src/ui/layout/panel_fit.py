@@ -355,6 +355,23 @@ class FitPlanner:
             focus.setFocus()
         return changed
 
+    def measure_placement(self, placement: Placement) -> QSize:
+        """Returns the content's minimum size arranged for a placement in the current orientation, then arranges the
+        content as it was. Planning state is untouched. Returns the current size before the first update."""
+        if self._orientation is None or self._placement is None:
+            return self._measure()
+        orientation = self._orientation
+        if self._prepare is not None:
+            self._prepare(orientation)
+        self._apply(orientation, placement)
+        size = self._measure()
+        if self._prepare is not None:
+            self._prepare(orientation)
+        self._apply(orientation, self._placement)
+        if self._finish is not None:
+            self._finish(orientation)
+        return size
+
     def base_size(self, orientation: Orientation) -> QSize:
         """Returns the content's minimum size with only required items, in their smallest forms. The content keeps
         that arrangement until the next `update`, which then plans even with unchanged inputs."""
