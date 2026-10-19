@@ -2,6 +2,7 @@
 
 A panel never measures the window. Its host reports an `Orientation` and the size the panel fills, and the panel shows
 as much as fits there. Thresholds live in this module, so DPI normalization (issue #13) changes them in one place.
+`doc/agents/panel_layout.md` defines the result planning is judged against.
 
 - Side panels (left and right docks) are a tall column that scrolls vertically. Strip panels (top and bottom docks) are
   a wide row that scrolls horizontally. The scroll axis is the long one, and the other is the cross axis. A floating

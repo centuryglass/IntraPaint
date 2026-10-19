@@ -130,6 +130,12 @@ Config is JSON-backed and typed, with `get()` / `set()` / `connect()` (signal on
     harness, or more than one full test run to confirm belongs in an issue, unless the maintainer asked for that
     investigation.
 
+## Things that will bite you
+
+| File | Covers |
+| --- | --- |
+| [`doc/agents/panel_layout.md`](doc/agents/panel_layout.md) | What a correct panel layout is, and which rule wins a conflict: `src/ui/layout/`, `src/ui/panel/`, `test/ui/panel_capture.py`, `test/ui/panel_sweep_test.py` |
+
 ## Comments and docs
 
 **Comments are reference, not advocacy.** A comment tells the next reader what is true of the code as it stands,
@@ -193,7 +199,7 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
   `python scripts/capture_ui.py --sheet --only <panel>` and read every sheet it prints, side and strip. For a tool's
   controls, that includes `tools_panel_<tool>`, the Tools panel with that tool active. A sheet shows the panel at a
   grid of dock sizes. Misalignment, stretched sections and wasted space show up there even when the snapshots pass.
-  The PR names the sheets checked and what changed on them. The script's docstring covers the options.
+  `doc/agents/panel_layout.md` says what a correct result is. The PR names the sheets checked and what changed on them. The script's docstring covers the options.
 - **Stable Diffusion requests are pinned by snapshots.** `test/controller/image_generation/` compares what the WebUI
   and ComfyUI generators send with `test/resources/sd_request_snapshots/`, so a change under `sd_adapters/` or to those
   generators can fail it. A PR that changes a snapshot explains the diff.
