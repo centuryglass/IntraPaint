@@ -1,8 +1,9 @@
 """The Stable Diffusion generation panel, for the WebUI and ComfyUI backends.
 
 It is a `DockPanel` with one column of sections in loop order: Edit mode, Prompt, Inpaint, Output, Sampling,
-Advanced and a ControlNet summary, with Generate pinned below them (`DockPanel.set_footer`). Strip docks lay the
-same sections out as columns.
+Advanced and a ControlNet summary, with Generate pinned below them (`DockPanel.set_footer`). Strip docks pin Edit
+mode, Prompt and Generate in a column at the left (`DockPanel.pinned_layout`), and lay the other sections out as
+top-aligned columns that scroll beside it.
 
 - Every control is bound to its config value and has one owner here. Backend-specific controls arrive as constructor
   arguments (`webui`) and `set_advanced_content`.
@@ -16,7 +17,7 @@ same sections out as columns.
 """
 from typing import Callable, Optional, Sequence
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QPalette, QResizeEvent
 from PySide6.QtWidgets import (QApplication, QBoxLayout, QCheckBox, QComboBox, QFormLayout, QLabel, QPushButton,
                                QSizePolicy, QVBoxLayout, QWidget)
@@ -29,10 +30,12 @@ from src.ui.ink_style import set_primary_button
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.input_fields.seed_value_spinbox import SeedValueSpinbox
+from src.ui.input_fields.size_field import SizeField
 from src.ui.input_fields.slider_field import SliderField
-from src.ui.layout.dock_panel import DockPanel, PanelLayout
+from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel, PanelLayout
 from src.ui.layout.label_column_layout import LabelColumnLayout, normalize_row_label
-from src.ui.layout.panel_fit import REQUIRED, Orientation
+from src.ui.layout.panel_fit import (FIELD_MAX_WIDTH, REQUIRED, STRIP_SECTION_MAX_WIDTH, Orientation,
+                                     set_field_width_cap)
 from src.ui.widget.disabled_banner import DisabledBanner
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.shared_constants import (BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENERATE, EDIT_MODE_IMG2IMG,
@@ -87,6 +90,14 @@ CONTROLNET_NO_PREPROCESSOR = _tr('no preprocessor')
 SUMMARY_SAMPLING = _tr('{sampler}, {steps} steps, CFG {guidance}', 'Sampling section summary')
 SUMMARY_ADVANCED_DEFAULT = _tr('defaults')
 
+# The widest the pinned prompt column of a strip grows:
+PROMPT_COLUMN_MAX_WIDTH = 400
+
+# Side panels cap the prompt box at this many lines, and the negative prompt box everywhere. A strip's prompt box takes
+# the pinned column's spare height:
+PROMPT_MAX_LINES = 5
+PROMPT_BOX_PADDING = 12
+
 # A pair of fields is stacked in this form:
 PAIR_FORM_SIDE_BY_SIDE = 0
 PAIR_FORM_STACKED = 1
@@ -127,6 +138,7 @@ def option_combo_box(config: Config, key: str, parent: Optional[QWidget] = None)
         control.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
         control.setMinimumContentsLength(8)
         control.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+    control.setMaximumWidth(FIELD_MAX_WIDTH)
     return control
 
 
@@ -165,10 +177,50 @@ class FieldPair(QWidget):
         """Stacks the fields, or puts them side by side."""
         self._layout.setDirection(QBoxLayout.Direction.TopToBottom if stacked else QBoxLayout.Direction.LeftToRight)
 
-    @property
-    def forms(self) -> tuple[Callable[[], None], Callable[[], None]]:
-        """The callbacks that put the pair in each of its forms, largest first, for `DockSection.add`."""
-        return lambda: self.set_stacked(False), lambda: self.set_stacked(True)
+    def fits_side_by_side(self, width: int) -> bool:
+        """Returns whether both fields fit side by side in `width` without eliding their labels or values."""
+        widths = [field.unelided_width() if isinstance(field, NumberField) else field.sizeHint().width()
+                  for field in (self._layout.itemAt(index).widget() for index in range(2))]
+        return sum(widths) + max(self._layout.spacing(), 0) <= width
+
+    def forms(self, column_width: Callable[[], Optional[int]]) -> tuple[Callable[[], None], Callable[[], None]]:
+        """Returns the callbacks that put the pair in each of its forms, largest first, for `DockSection.add`.
+
+        `column_width` returns the width of the strip column the pair sits in, or None in a side panel. Forms are
+        largest across the panel first, so a side panel puts the fields side by side first and a strip stacks them
+        first. A strip column too narrow for both fields' text side by side stacks them in both forms.
+        """
+        def _side_by_side_first() -> None:
+            self.set_stacked(column_width() is not None)
+
+        def _stacked_first() -> None:
+            width = column_width()
+            self.set_stacked(width is None or not self.fits_side_by_side(width))
+
+        return _side_by_side_first, _stacked_first
+
+
+class HonestSizeHints(QWidget):
+    """Holds a widget whose own size hints understate what its layout needs, such as `SizeField`, and reports its
+    layout's size hints instead."""
+
+    def __init__(self, content: QWidget, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self._content = content
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(content)
+        self.setToolTip(content.toolTip())
+
+    def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the content layout's minimum size."""
+        layout = self._content.layout()
+        return layout.minimumSize() if layout is not None else super().minimumSizeHint()
+
+    def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the content layout's preferred size."""
+        layout = self._content.layout()
+        return layout.sizeHint() if layout is not None else super().sizeHint()
 
 
 class LabeledRows(QWidget):
@@ -284,6 +336,8 @@ class StableDiffusionPanel(DockPanel):
         if fallback is not None:
             self._edit_mode_control.setFixedHeight(max(self._edit_mode_control.sizeHint().height(),
                                                        fallback.minimumSizeHint().height()))
+        # Like a tab bar, it spans the panel:
+        set_field_width_cap(self._edit_mode_control, None)
         self._edit_mode_control.setToolTip(cache.get_tooltip(Cache.EDIT_MODE))
         self._edit_mode_control.set_value(cache.get(Cache.EDIT_MODE))
         self._mode_section.add(self._edit_mode_control, REQUIRED)
@@ -293,8 +347,7 @@ class StableDiffusionPanel(DockPanel):
         self._prompt_section = section
         self._prompt_textbox = cache.get_control_widget(Cache.PROMPT, multi_line=True)
         self._negative_textbox = cache.get_control_widget(Cache.NEGATIVE_PROMPT, multi_line=True)
-        for textbox in (self._prompt_textbox, self._negative_textbox):
-            textbox.setMaximumHeight(textbox.fontMetrics().lineSpacing() * 5 + 12)
+        self._negative_textbox.setMaximumHeight(self._prompt_height_cap())
         self._negative_label = QLabel(LABEL_NEGATIVE_PROMPT)
         self._negative_label.setBuddy(self._negative_textbox)
         self._negative_label.setToolTip(self._negative_textbox.toolTip())
@@ -328,6 +381,10 @@ class StableDiffusionPanel(DockPanel):
 
             cache.connect(styles_button, Cache.STYLES, _styles_update)
             _styles_update(cache.get(Cache.STYLES))
+
+    def _prompt_height_cap(self) -> int:
+        """Returns the tallest a prompt box grows in a side panel, or the negative prompt box anywhere."""
+        return self._prompt_textbox.fontMetrics().lineSpacing() * PROMPT_MAX_LINES + PROMPT_BOX_PADDING
 
     @staticmethod
     def _header_tool_button(text: str, tooltip: str, signal) -> QPushButton:
@@ -388,19 +445,28 @@ class StableDiffusionPanel(DockPanel):
         section = ui.section(SECTION_TITLE_OUTPUT)
         self._output_section = section
         self._gen_size_input = cache.get_control_widget(Cache.GENERATION_SIZE)
+        # The boxes' width follows their maximum, which is unbounded by default. The maximum image size bounds it, and
+        # never below the current value, so no saved value is clamped:
+        if isinstance(self._gen_size_input, SizeField):
+            self._gen_size_input.maximum = AppConfig().get(AppConfig.MAX_IMAGE_SIZE).expandedTo(
+                self._gen_size_input.value())
         self._resolution_rule_combobox = option_combo_box(cache, Cache.GENERATION_RESOLUTION_RULE)
         # The width and height boxes sit side by side, or stacked when the section is too narrow for that:
-        size_rows = LabeledRows([(normalize_row_label(cache.get_label(Cache.GENERATION_SIZE)), self._gen_size_input)])
+        self._gen_size_holder = HonestSizeHints(self._gen_size_input)
+        # Both boxes together are as wide as one field, with each label beside its box:
+        self._gen_size_holder.setMaximumWidth(FIELD_MAX_WIDTH)
+        size_rows = LabeledRows([(normalize_row_label(cache.get_label(Cache.GENERATION_SIZE)), self._gen_size_holder),
+                                 (normalize_row_label(cache.get_label(Cache.GENERATION_RESOLUTION_RULE)),
+                                  self._resolution_rule_combobox)])
         section.add(size_rows, REQUIRED, (lambda: self._set_size_orientation(Qt.Orientation.Horizontal),
                                           lambda: self._set_size_orientation(Qt.Orientation.Vertical)))
-        section.add(LabeledRows([(normalize_row_label(cache.get_label(Cache.GENERATION_RESOLUTION_RULE)),
-                                  self._resolution_rule_combobox)]), REQUIRED)
         self._batch_size_field = config_slider_field(cache, Cache.BATCH_SIZE)
         self._batch_count_field = config_slider_field(cache, Cache.BATCH_COUNT)
         batch_pair = FieldPair(self._batch_size_field, self._batch_count_field)
-        section.add(batch_pair, REQUIRED, batch_pair.forms)
+        section.add(batch_pair, REQUIRED, batch_pair.forms(self._strip_column_width))
 
         self._seed_input = SeedValueSpinbox(Cache.SEED, Cache.LAST_SEED)
+        self._seed_input.setMaximumWidth(FIELD_MAX_WIDTH)
         section.add(LabeledRows([(normalize_row_label(cache.get_label(Cache.SEED)), self._seed_input)]), REQUIRED)
         self._last_seed_label = QLabel()
         self._last_seed_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
@@ -414,7 +480,11 @@ class StableDiffusionPanel(DockPanel):
         section.add(self._last_seed_label, REQUIRED)
 
     def _set_size_orientation(self, orientation: Qt.Orientation) -> None:
+        # Strip columns are wide enough for the boxes side by side, and stacking them only takes more height there:
+        if self.orientation == Orientation.STRIP:
+            orientation = Qt.Orientation.Horizontal
         self._gen_size_input.orientation = orientation
+        self._gen_size_holder.updateGeometry()
 
     def _build_sampling_section(self, ui: PanelLayout, cache: Cache) -> None:
         section = ui.section(SECTION_TITLE_SAMPLING)
@@ -427,7 +497,7 @@ class StableDiffusionPanel(DockPanel):
         self._steps_field = config_slider_field(cache, Cache.SAMPLING_STEPS)
         self._guidance_field = config_slider_field(cache, Cache.GUIDANCE_SCALE)
         sampling_pair = FieldPair(self._steps_field, self._guidance_field)
-        section.add(sampling_pair, REQUIRED, sampling_pair.forms)
+        section.add(sampling_pair, REQUIRED, sampling_pair.forms(self._strip_column_width))
         self._clip_skip_field = config_slider_field(cache, Cache.CLIP_SKIP)
         section.add(self._clip_skip_field, REQUIRED)
 
@@ -568,12 +638,32 @@ class StableDiffusionPanel(DockPanel):
     # ---------------------------------------------------------------------------------------------------------------
 
     def arrange(self, orientation: Orientation) -> None:
-        """Lets strip sections shrink to their content's minimum within their column widths, instead of taking their
-        content's preferred width as a floor."""
+        """Pins the Edit mode and Prompt sections and Generate in a column at the left of a strip, with the other
+        sections top-aligned beside it. Strip sections shrink to their content's minimum within their column widths,
+        instead of taking their content's preferred width as a floor."""
         super().arrange(orientation)
-        if orientation == Orientation.STRIP:
-            for section in self.sections:
+        strip = orientation == Orientation.STRIP
+        pinned_sections = (self._mode_section.widget, self._prompt_section.widget)
+        if strip:
+            # The pinned column sets its own width, so its sections drop the strip column limits:
+            for widget in pinned_sections:
+                self.pinned_layout.addWidget(widget)
+                widget.setMinimumWidth(0)
+                widget.setMaximumWidth(QWIDGETSIZE_MAX)
+            self.pinned_layout.parentWidget().setMaximumWidth(PROMPT_COLUMN_MAX_WIDTH)
+        else:
+            for index, widget in enumerate(pinned_sections):
+                self.section_layout.insertWidget(index, widget)
+        self.set_pinned_visible(strip)
+        self._prompt_textbox.setMaximumHeight(QWIDGETSIZE_MAX if strip else self._prompt_height_cap())
+        for section in self.sections:
+            if strip:
                 section.widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+            self.section_layout.setAlignment(section.widget, Qt.AlignmentFlag.AlignTop if strip
+                                             else Qt.AlignmentFlag(0))
+
+    def _strip_column_width(self) -> Optional[int]:
+        return STRIP_SECTION_MAX_WIDTH if self.orientation == Orientation.STRIP else None
 
     def finish_placement(self) -> None:
         """Hides the ControlNet section while the backend has no ControlNet units."""

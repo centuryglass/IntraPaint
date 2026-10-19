@@ -3,6 +3,15 @@
     "problems": [
       "squeezed: PanelHeader is 82x42, minimum 31x43",
       "squeezed: QScrollArea is 82x42, minimum 59x59",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[0] is 159x169, minimum 110x192",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[0]/QWidget is 159x143, minimum 110x166",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[0]/QWidget/QWidget is 159x143, minimum 110x166",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[0]/QWidget/QWidget/LabeledRows is 159x39, minimum 46x48",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[0]/QWidget/QWidget/LabeledRows/QLabel 'Masked content' is 93x16, minimum 46x17",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[0]/QWidget/QWidget/LabeledRows/ComboBox is 159x17, minimum 111x25",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[0]/QWidget/QWidget/QWidget is 159x38, minimum 110x52",
+      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[0]/QWidget/QWidget/QWidget/QCheckBox 'Full resolution' is 159x16, minimum 109x22",
+      "clipped: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[0]/QWidget/QWidget/QWidget/SliderField shows 159x16 of 159x24",
       "clipped: QPushButton 'Generate' shows 82x27 of 82x28"
     ],
     "size": [
@@ -21,10 +30,7 @@
     ]
   },
   "preferred": {
-    "problems": [
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[3]/QWidget/LabeledRows[0]/SizeField/QSpinBox[0] is 95x26, minimum 106x26",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection[3]/QWidget/LabeledRows[0]/SizeField/QSpinBox[1] is 95x26, minimum 106x26"
-    ],
+    "problems": [],
     "size": [
       345,
       472
@@ -44,7 +50,13 @@
     ]
   },
   "strip_minimum": {
-    "problems": [],
+    "problems": [
+      "squeezed: QWidget is 38x123, minimum 131x93",
+      "clipped: QWidget/_PinnedScrollArea shows 38x89 of 131x89",
+      "clipped: QWidget/_PinnedScrollArea/QWidget[0] shows 38x89 of 120x89",
+      "squeezed: QWidget/QPushButton 'Generate' is 38x28, minimum 82x28",
+      "squeezed: QScrollArea is 38x123, minimum 59x59"
+    ],
     "size": [
       82,
       123
@@ -52,8 +64,11 @@
   },
   "strip_narrow": {
     "problems": [
-      "squeezed: QScrollArea is 41x389, minimum 59x59",
-      "squeezed: QPushButton 'Generate' is 41x28, minimum 82x28"
+      "squeezed: QWidget is 18x423, minimum 120x93",
+      "clipped: QWidget/_PinnedScrollArea shows 18x389 of 120x389",
+      "clipped: QWidget/_PinnedScrollArea/QWidget[0] shows 18x389 of 120x389",
+      "squeezed: QWidget/QPushButton 'Generate' is 18x28, minimum 82x28",
+      "squeezed: QScrollArea is 17x423, minimum 59x59"
     ],
     "size": [
       41,
@@ -69,8 +84,9 @@
   },
   "strip_short": {
     "problems": [
-      "squeezed: QScrollArea is 345x28, minimum 59x59",
-      "squeezed: QPushButton 'Generate' is 345x27, minimum 82x28"
+      "squeezed: QWidget is 131x61, minimum 131x93",
+      "squeezed: QWidget/_PinnedScrollArea is 131x28, minimum 59x59",
+      "squeezed: QWidget/QPushButton 'Generate' is 131x27, minimum 82x28"
     ],
     "size": [
       345,

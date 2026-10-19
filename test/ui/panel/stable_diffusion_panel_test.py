@@ -3,20 +3,21 @@ tools, More menu, Advanced section and pinned Generate button."""
 import json
 
 from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QPushButton
+from PySide6.QtWidgets import QBoxLayout, QPushButton, QScrollArea
 
 from sd_backend_client import ControlNetUnit
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters.controlnet_adapter import SavedControlNetUnit
 from src.ui.ink_style import PRIMARY_BUTTON_PROPERTY
+from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.panel_fit import Orientation
 from src.ui.panel.generators.comfyui_advanced_controls import ComfyUIAdvancedControls
 from src.ui.panel.generators.stable_diffusion_panel import (CONTROLNET_ALL_OFF, SECTION_TITLE_ADVANCED,
                                                             SECTION_TITLE_CONTROLNET, SECTION_TITLE_INPAINT,
                                                             SECTION_TITLE_MODE, SECTION_TITLE_OUTPUT,
                                                             SECTION_TITLE_PROMPT, SECTION_TITLE_SAMPLING,
-                                                            StableDiffusionPanel, controlnet_summary)
+                                                            FieldPair, StableDiffusionPanel, controlnet_summary)
 from src.ui.panel.generators.webui_advanced_controls import VARIATION_OFF, WebUIAdvancedControls
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
@@ -245,6 +246,55 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
                 bottom = button.mapTo(self.panel, button.rect().bottomLeft()).y()
                 self.assertLessEqual(bottom, self.panel.height())
                 self.assertGreater(bottom, self.panel.height() - 2 * button.height())
+
+    def test_strip_pins_the_prompt_column_left_of_the_scrolling_sections(self) -> None:
+        """A strip keeps Edit mode, Prompt and Generate in a column at the left that scrolls sideways with nothing, and
+        a side panel puts them back in order."""
+        self.panel.show()
+        mode, prompt, inpaint = (self.panel.sections[index].widget for index in range(3))
+        _host(self.panel, STRIP, QSize(1000, 300))
+        self.assertEqual(self.panel.orientation, STRIP)
+        scroll_area = next(area for area in self.panel.findChildren(QScrollArea) if area.isAncestorOf(inpaint))
+        for widget in (mode, prompt, self.panel.generate_button):
+            self.assertFalse(scroll_area.isAncestorOf(widget))
+            self.assertTrue(widget.isVisible())
+        generate_right = self.panel.generate_button.mapTo(self.panel, self.panel.generate_button.rect().topRight())
+        self.assertLess(generate_right.x(), inpaint.mapTo(self.panel, inpaint.rect().topLeft()).x())
+        _host(self.panel, SIDE, QSize(340, 1400))
+        self.assertTrue(scroll_area.isAncestorOf(mode))
+        tops = [section.mapTo(self.panel, section.rect().topLeft()).y() for section in (mode, prompt, inpaint)]
+        self.assertEqual(tops, sorted(tops))
+
+    def test_strip_columns_stay_top_aligned(self) -> None:
+        """Spare height in a tall strip stays under each column's controls instead of spreading them apart."""
+        self.panel.show()
+        _host(self.panel, STRIP, QSize(1400, 800))
+        inpaint = self.panel.sections[2].widget
+        self.assertLess(inpaint.height(), self.panel.height() // 2)
+        self.assertLess(inpaint.mapTo(self.panel, inpaint.rect().topLeft()).y(), self.panel.height() // 4)
+
+    def test_minimum_size_does_not_depend_on_the_last_layout(self) -> None:
+        """A strip size gives the same minimum size hint whatever size the panel showed before."""
+        self.panel.show()
+        size = QSize(360, 240)
+        _host(self.panel, STRIP, size)
+        first = self.panel.minimumSizeHint()
+        for other in (QSize(1200, 800), QSize(160, 100)):
+            _host(self.panel, STRIP, other)
+        _host(self.panel, STRIP, size)
+        self.assertEqual(self.panel.minimumSizeHint(), first)
+
+    def test_field_pair_forms_follow_the_orientation(self) -> None:
+        """A side panel tries a pair side by side first, a strip tries it stacked first, and a strip column too narrow
+        for both fields' text keeps it stacked."""
+        pair = FieldPair(SliderField('A long first label', 1, 0, 10), SliderField('A long second label', 1, 0, 10))
+        stacked, side_by_side = QBoxLayout.Direction.TopToBottom, QBoxLayout.Direction.LeftToRight
+        for column_width, expected in ((None, (side_by_side, stacked)), (1000, (stacked, side_by_side)),
+                                       (100, (stacked, stacked))):
+            with self.subTest(column_width=column_width):
+                for form, direction in zip(pair.forms(lambda width=column_width: width), expected):
+                    form()
+                    self.assertEqual(pair.layout().direction(), direction)
 
     def test_generate_is_the_only_primary_button(self) -> None:
         """Every other button in the panel is flat or standard."""

@@ -308,6 +308,15 @@ class NumberField(QWidget):
         """Returns how much of the field the fill covers, or None to draw no fill. Subclasses with a fill override."""
         return None
 
+    def unelided_width(self) -> int:
+        """Returns the width that shows the label and the widest value text in the field's range without eliding
+        either."""
+        metrics = QFontMetrics(self._colors.font)
+        value_width = max(metrics.horizontalAdvance(self.value_text(value))
+                          for value in (self._minimum, self._maximum, self._value))
+        label_width = metrics.horizontalAdvance(self._label) + TEXT_MARGIN if self._label != '' else 0
+        return self.width() - self._text_rect().width() + label_width + value_width
+
     def _text_rect(self) -> QRect:
         return self.rect().adjusted(TEXT_MARGIN, 0, -TEXT_MARGIN - (PRESSURE_LINK_WIDTH if self._pressure_available
                                                                      else 0), 0)
