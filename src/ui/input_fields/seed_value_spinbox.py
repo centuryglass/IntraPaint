@@ -69,6 +69,9 @@ class SeedValueSpinbox(QWidget):
             tool_button.clicked.connect(on_click)
             self._layout.addWidget(tool_button)
         self._seed_value_field = cast(BigIntSpinbox, Cache().get_control_widget(seed_cache_key))
+        # The spinbox's line edit is otherwise laid out shorter than its own minimum:
+        self._seed_value_field.setMinimumHeight(self._seed_value_field.sizeHint().height() + 4)
+        self._seed_value_field.setMinimumWidth(self._seed_value_field.fontMetrics().horizontalAdvance('0000') + 24)
         self._layout.addWidget(self._seed_value_field, stretch=1)
         self._seed_value_field.valueChanged.connect(self.valueChanged)
 

@@ -24,7 +24,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.panel.controlnet_panel import TabbedControlNetPanel
-from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
+from src.ui.panel.generators.stable_diffusion_panel import AdvancedControls, StableDiffusionPanel
 from src.ui.window.extra_network_window import ExtraNetworkWindow
 from src.ui.window.main_window import MainWindow
 from src.undo_stack import UndoStack
@@ -245,6 +245,20 @@ class SDGenerator(ImageGenerator):
     def get_controlnet_panel(self) -> Optional[QWidget]:
         """Returns the ControlNet panel, if the connected backend supports ControlNet."""
         return self._controlnet_panel
+
+    def _create_control_panel(self, panel: StableDiffusionPanel, advanced_controls: AdvancedControls
+                              ) -> StableDiffusionPanel:
+        """Connects a new control panel to the commands shared by the Stable Diffusion backends, and fills its Advanced
+        section."""
+        panel.hide()
+        panel.generate_signal.connect(self.start_and_manage_image_generation)
+        panel.lora_requested.connect(self.show_lora_window)
+        panel.lcm_mode_requested.connect(self.set_lcm_mode)
+        panel.lcm_available_check = lambda: _check_lcm_mode_available(self)
+        panel.set_advanced_content(advanced_controls)
+        if self._controlnet_panel is not None:
+            panel.set_controlnet_cache_keys(self.get_controlnet_unit_cache_keys())
+        return panel
 
     def get_webservice(self) -> Optional[SDClient]:
         """Return the webservice object this module uses to connect to Stable Diffusion, if initialized."""
