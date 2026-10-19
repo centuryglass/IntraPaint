@@ -147,13 +147,18 @@ class SegmentedControl(QWidget):
         self._combo: Optional[QComboBox] = None
         if combo_fallback:
             self._combo = QComboBox(self)
+            # The fallback exists for narrow spaces, so its longest option doesn't set the minimum width:
+            self._combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+            self._combo.setMinimumContentsLength(1)
             for segment in self._segments:
                 self._combo.addItem(segment.qicon(), segment.label, segment.value)
             self._combo.currentIndexChanged.connect(self._combo_index_changed)
             self._combo.hide()
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
-        self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed))
+        # With a fallback the control can shrink to its combo box, so its size hint isn't its minimum:
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding if combo_fallback
+                                       else QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed))
         self._colors = _Colors(self)
         self._update_accessibility()
 

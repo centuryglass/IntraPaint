@@ -22,7 +22,6 @@ from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 from test.base_test_case import IntraPaintTestCase
 from test.ui.panel.tool_panel_test import settle_layouts
-from test.ui.panel_capture import restore_option_lists
 
 SIDE = Orientation.SIDE
 STRIP = Orientation.STRIP
@@ -39,7 +38,8 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        restore_option_lists()
+        # The base test case trims option lists to the default, and edit mode needs all three:
+        Cache().restore_default_options(Cache.EDIT_MODE)
         AppStateTracker().set_app_state(APP_STATE_EDITING)
         self.panel = StableDiffusionPanel(True)
         self.panel.set_advanced_content(WebUIAdvancedControls())

@@ -32,7 +32,7 @@ from src.ui.input_fields.seed_value_spinbox import SeedValueSpinbox
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.dock_panel import DockPanel, PanelLayout
 from src.ui.layout.label_column_layout import LabelColumnLayout, normalize_row_label
-from src.ui.layout.panel_fit import REQUIRED
+from src.ui.layout.panel_fit import REQUIRED, Orientation
 from src.ui.widget.disabled_banner import DisabledBanner
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.shared_constants import (BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENERATE, EDIT_MODE_IMG2IMG,
@@ -181,6 +181,7 @@ class LabeledRows(QWidget):
         self.labels: list[QLabel] = []
         for text, field in rows:
             label = layout.add_row(text, field)
+            label.setWordWrap(True)
             label.setToolTip(field.toolTip())
             self.labels.append(label)
 
@@ -348,7 +349,11 @@ class StableDiffusionPanel(DockPanel):
 
         cache.connect(self._full_res_checkbox, Cache.INPAINT_FULL_RES, _full_res_changed)
         _full_res_changed(bool(cache.get(Cache.INPAINT_FULL_RES)))
-        self._full_res_pair = FieldPair(self._full_res_checkbox, self._padding_field, body)
+        self._full_res_pair = QWidget(body)
+        full_res_layout = QVBoxLayout(self._full_res_pair)
+        full_res_layout.setContentsMargins(0, 0, 0, 0)
+        full_res_layout.addWidget(self._full_res_checkbox)
+        full_res_layout.addWidget(self._padding_field)
         self._mask_blur_field = config_slider_field(AppConfig(), AppConfig.MASK_BLUR, body)
 
         for widget in (self._inpaint_note, self._denoising_field, self._masked_content_rows, self._full_res_pair,
@@ -362,8 +367,11 @@ class StableDiffusionPanel(DockPanel):
         self._output_section = section
         self._gen_size_input = cache.get_control_widget(Cache.GENERATION_SIZE)
         self._resolution_rule_combobox = option_combo_box(cache, Cache.GENERATION_RESOLUTION_RULE)
-        section.add(LabeledRows([(normalize_row_label(cache.get_label(Cache.GENERATION_SIZE)), self._gen_size_input),
-                                 (normalize_row_label(cache.get_label(Cache.GENERATION_RESOLUTION_RULE)),
+        # The width and height boxes sit side by side, or stacked when the section is too narrow for that:
+        size_rows = LabeledRows([(normalize_row_label(cache.get_label(Cache.GENERATION_SIZE)), self._gen_size_input)])
+        section.add(size_rows, REQUIRED, (lambda: self._set_size_orientation(Qt.Orientation.Horizontal),
+                                          lambda: self._set_size_orientation(Qt.Orientation.Vertical)))
+        section.add(LabeledRows([(normalize_row_label(cache.get_label(Cache.GENERATION_RESOLUTION_RULE)),
                                   self._resolution_rule_combobox)]), REQUIRED)
         self._batch_size_field = config_slider_field(cache, Cache.BATCH_SIZE)
         self._batch_count_field = config_slider_field(cache, Cache.BATCH_COUNT)
@@ -382,6 +390,9 @@ class StableDiffusionPanel(DockPanel):
         cache.connect(self._last_seed_label, Cache.LAST_SEED, _last_seed_update)
         _last_seed_update(cache.get(Cache.LAST_SEED))
         section.add(self._last_seed_label, REQUIRED)
+
+    def _set_size_orientation(self, orientation: Qt.Orientation) -> None:
+        self._gen_size_input.orientation = orientation
 
     def _build_sampling_section(self, ui: PanelLayout, cache: Cache) -> None:
         section = ui.section(SECTION_TITLE_SAMPLING)
@@ -532,6 +543,14 @@ class StableDiffusionPanel(DockPanel):
     # ---------------------------------------------------------------------------------------------------------------
     # Layout
     # ---------------------------------------------------------------------------------------------------------------
+
+    def arrange(self, orientation: Orientation) -> None:
+        """Lets strip sections shrink to their content's minimum within their column widths, instead of taking their
+        content's preferred width as a floor."""
+        super().arrange(orientation)
+        if orientation == Orientation.STRIP:
+            for section in self.sections:
+                section.widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
 
     def finish_placement(self) -> None:
         """Hides the ControlNet section while the backend has no ControlNet units."""
