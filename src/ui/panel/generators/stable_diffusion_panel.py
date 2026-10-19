@@ -1,22 +1,42 @@
-"""A control panel for the Stable Diffusion WebUI image generator."""
-from typing import Optional
+"""The Stable Diffusion generation panel, for the WebUI and ComfyUI backends.
 
-from PySide6.QtCore import Qt, Signal, SignalInstance
-from PySide6.QtWidgets import QSizePolicy, QLabel, QPushButton, \
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QComboBox
+It is a `DockPanel` with one column of sections in loop order: Edit mode, Prompt, Inpaint, Output, Sampling, Advanced and
+a ControlNet summary, with Generate pinned below them (`DockPanel.set_footer`). Strip docks lay the same sections out as
+columns.
+
+- Every control is bound to its config value and has one owner here. Backend-specific controls arrive as constructor
+  arguments (`webui`) and `set_advanced_content`.
+- The Inpaint section keeps its place in every edit mode: Inpaint shows all its controls, Image to image only denoising
+  strength, and Text to image a one-line note. Widgets inside the section show and hide, so the planner's placement of
+  the section itself never changes.
+- The header's More menu holds the commands that open other windows. The panel emits signals for them and the generator
+  opens the window.
+- The panel stays unaware of the backend connection. The generator shows `DisabledBanner` through
+  `set_disconnected`.
+"""
+from typing import Callable, Optional, Sequence
+
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QPalette
+from PySide6.QtWidgets import (QApplication, QBoxLayout, QCheckBox, QComboBox, QLabel, QPushButton, QSizePolicy,
+                               QVBoxLayout, QWidget)
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.config.config import Config
+from src.controller.image_generation.sd_adapters.controlnet_adapter import SavedControlNetUnit
 from src.ui.ink_style import set_primary_button
+from src.ui.input_fields.number_field import NumberField
+from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.input_fields.seed_value_spinbox import SeedValueSpinbox
-from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
-from src.ui.layout.divider import Divider
-from src.ui.panel.generators.generator_panel import GeneratorPanel
+from src.ui.input_fields.slider_field import SliderField
+from src.ui.layout.dock_panel import DockPanel, PanelLayout
+from src.ui.layout.label_column_layout import LabelColumnLayout, normalize_row_label
+from src.ui.layout.panel_fit import REQUIRED
+from src.ui.widget.disabled_banner import DisabledBanner
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
-from src.util.layout import clear_layout, synchronize_widths
-from src.util.parameter import DynamicFieldWidget
-from src.util.shared_constants import BUTTON_TEXT_GENERATE, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG, \
-    BUTTON_TOOLTIP_GENERATE
+from src.util.shared_constants import (BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENERATE, EDIT_MODE_IMG2IMG,
+                                       EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG)
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.generators.sd_webui_panel'
@@ -27,355 +47,529 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
+PANEL_TITLE = _tr('Image generation')
+BACKEND_DESCRIPTION_WEBUI = _tr('WebUI')
+BACKEND_DESCRIPTION_COMFYUI = _tr('ComfyUI')
+
+SECTION_TITLE_MODE = _tr('Edit mode')
+SECTION_TITLE_PROMPT = _tr('Prompt')
+SECTION_TITLE_INPAINT = _tr('Inpaint')
+SECTION_TITLE_OUTPUT = _tr('Output')
+SECTION_TITLE_SAMPLING = _tr('Sampling')
+SECTION_TITLE_ADVANCED = _tr('Advanced')
+SECTION_TITLE_CONTROLNET = _tr('ControlNet')
+
+LABEL_NEGATIVE_PROMPT = _tr('Negative prompt')
+LABEL_LAST_SEED = _tr('Last seed')
+LABEL_FULL_RESOLUTION = _tr('Full resolution')
+
+BUTTON_TEXT_LORA = _tr('LoRA')
+BUTTON_TOOLTIP_LORA = _tr('Choose LoRA models to add to the prompt')
+BUTTON_TEXT_STYLES = _tr('Styles')
+BUTTON_TOOLTIP_STYLES = _tr('Add saved prompt styles to the prompt')
 BUTTON_TEXT_INTERROGATE = _tr('Interrogate')
 BUTTON_TOOLTIP_INTERROGATE = _tr('Attempt to generate a prompt that describes the current image generation area')
 
-TAB_NAME_MAIN = _tr('Main')
-TAB_NAME_EXTRA = _tr('Extras')
+MENU_TEXT_SETUP = _tr('Select image generator...')
+MENU_TEXT_SETTINGS = _tr('Stable Diffusion settings...')
+MENU_TEXT_LCM_MODE = _tr('LCM mode')
+MENU_TEXT_CLEAR_MEMORY = _tr('Clear GPU memory')
+TOOLTIP_CLEAR_MEMORY = _tr('Remove cached models from GPU memory in ComfyUI.')
+
+INPAINT_NOTE_TXT2IMG = _tr('Text to image ignores the canvas, so denoising, masked content and padding do not apply.')
+BANNER_FIX_TEXT = _tr('Setup...')
+CONTROLNET_BUTTON_TOOLTIP = _tr('Open the ControlNet panel')
+CONTROLNET_ALL_OFF = _tr('all units off')
+CONTROLNET_UNIT_ON = _tr('unit {number} on: {preprocessor}', 'ControlNet summary of an enabled unit')
+CONTROLNET_UNITS_ON = _tr('{count} units on', 'ControlNet summary when several units are enabled')
+CONTROLNET_NO_PREPROCESSOR = _tr('no preprocessor')
+
+SUMMARY_SAMPLING = _tr('{sampler}, {steps} steps, CFG {guidance}', 'Sampling section summary')
+SUMMARY_ADVANCED_DEFAULT = _tr('defaults')
+
+# A pair of fields is stacked in this form:
+PAIR_FORM_SIDE_BY_SIDE = 0
+PAIR_FORM_STACKED = 1
 
 
-class ExtrasTab(QWidget):
-    """Interface for extras tab content that can be added to the panel."""
+def config_slider_field(config: Config, key: str, parent: Optional[QWidget] = None, label: Optional[str] = None,
+                        **field_options) -> SliderField:
+    """Returns a `SliderField` bound to a numeric config value with a finite range. Edits write the config, and config
+    changes update the field. `field_options` are passed on to the field, such as `zero_text`.
+
+    Raises
+    ------
+    ValueError
+        If the config value has no finite range.
+    """
+    minimum, maximum, step = config.get_range(key)
+    if minimum is None or maximum is None or step is None:
+        raise ValueError(f'Config key {key} needs a numeric range')
+    field = SliderField(label if label is not None else normalize_row_label(config.get_label(key)),
+                        config.get(key), minimum, maximum, step=step, parent=parent, **field_options)
+    field.setToolTip(config.get_tooltip(key))
+
+    def _field_changed(value: int | float) -> None:
+        if config.get(key) != value:
+            config.set(key, value)
+
+    field.valueChanged.connect(_field_changed)
+    config.connect(field, key, lambda value, *_: field.set_value(value))
+    return field
+
+
+def option_combo_box(config: Config, key: str, parent: Optional[QWidget] = None) -> QWidget:
+    """Returns the config value's control widget. A combo box is set to shrink below its longest option, so a long
+    model or sampler name can't widen the panel."""
+    control = config.get_control_widget(key)
+    control.setParent(parent)
+    if isinstance(control, QComboBox):
+        control.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        control.setMinimumContentsLength(8)
+        control.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+    return control
+
+
+def controlnet_summary(saved_units: Sequence[str]) -> str:
+    """Returns a one-line description of which saved ControlNet units will apply to the next generation. Units that
+    fail to parse count as off."""
+    enabled: list[tuple[int, SavedControlNetUnit]] = []
+    for index, data in enumerate(saved_units):
+        try:
+            unit = SavedControlNetUnit.from_json(data)
+        except ValueError:
+            continue
+        if unit.enabled:
+            enabled.append((index + 1, unit))
+    if len(enabled) == 0:
+        return CONTROLNET_ALL_OFF
+    if len(enabled) > 1:
+        return CONTROLNET_UNITS_ON.format(count=len(enabled))
+    number, unit = enabled[0]
+    preprocessor = unit.unit.preprocessor
+    return CONTROLNET_UNIT_ON.format(number=number, preprocessor=CONTROLNET_NO_PREPROCESSOR if preprocessor is None
+                                     else preprocessor.typedef.name)
+
+
+class FieldPair(QWidget):
+    """Two fields side by side, or stacked when they don't fit that way. Used as a control with two forms."""
+
+    def __init__(self, first: QWidget, second: QWidget, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self._layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self)
+        self._layout.setContentsMargins(0, 0, 0, 0)
+        self._layout.addWidget(first)
+        self._layout.addWidget(second)
+
+    def set_stacked(self, stacked: bool) -> None:
+        """Stacks the fields, or puts them side by side."""
+        self._layout.setDirection(QBoxLayout.Direction.TopToBottom if stacked else QBoxLayout.Direction.LeftToRight)
+
+    @property
+    def forms(self) -> tuple[Callable[[], None], Callable[[], None]]:
+        """The callbacks that put the pair in each of its forms, largest first, for `DockSection.add`."""
+        return lambda: self.set_stacked(False), lambda: self.set_stacked(True)
+
+
+class LabeledRows(QWidget):
+    """Rows of a label and a field that share one label column."""
+
+    def __init__(self, rows: Sequence[tuple[str, QWidget]], parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        layout = LabelColumnLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.labels: list[QLabel] = []
+        for text, field in rows:
+            label = layout.add_row(text, field)
+            label.setToolTip(field.toolTip())
+            self.labels.append(label)
+
+
+class AdvancedControls(QWidget):
+    """Backend-specific settings shown in the Advanced section. Subclasses fill it in."""
+
+    def summary(self) -> str:
+        """Returns a one-line description of the settings that differ from the usual ones."""
+        raise NotImplementedError()
+
+    def change_signals(self) -> list:
+        """Returns the signals that mean `summary` may have changed."""
+        raise NotImplementedError()
+
+
+class StableDiffusionPanel(DockPanel):
+    """A control panel for the Stable Diffusion WebUI and ComfyUI image generators."""
 
     generate_signal = Signal()
-
-    def orientation(self) -> Qt.Orientation:
-        """Returns the tab's orientation."""
-        raise NotImplementedError()
-
-    def set_orientation(self, orientation: Qt.Orientation) -> None:
-        """Updates the tab's orientation."""
-        raise NotImplementedError()
-
-
-class StableDiffusionPanel(GeneratorPanel):
-    """A control panel for the Stable Diffusion WebUI image generator."""
-
     interrogate_signal = Signal()
-    generate_signal = Signal()
+    lora_requested = Signal()
+    styles_requested = Signal()
+    lcm_mode_requested = Signal()
+    clear_memory_requested = Signal()
+    setup_requested = Signal()
+    settings_requested = Signal()
+    controlnet_requested = Signal()
 
-    def __init__(self,
-                 show_interrogate_button: bool,
-                 show_masked_content_dropdown: bool) -> None:
-        super().__init__()
-        self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
-        cache = Cache()
+    def __init__(self, webui: bool) -> None:
+        # `build` runs in the superclass constructor and needs this:
+        self._webui = webui
+        super().__init__(PANEL_TITLE)
         AppStateTracker.set_enabled_states(self, [APP_STATE_EDITING])
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
+        self.header.set_description(BACKEND_DESCRIPTION_WEBUI if webui else BACKEND_DESCRIPTION_COMFYUI)
+        self.header.reset_button.hide()
+        self._advanced_controls: Optional[AdvancedControls] = None
+        self._controlnet_keys: list[str] = []
+        self.lcm_available_check: Optional[Callable[[], bool]] = None
 
-        self._layout: QVBoxLayout = QVBoxLayout(self)
-        self._layout.setSpacing(2)
-        self._layout.setContentsMargins(2, 2, 2, 2)
-        self._layout.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
-        self._orientation = Qt.Orientation.Horizontal
+        self._banner = DisabledBanner('', BANNER_FIX_TEXT)
+        self._banner.fix_requested.connect(self.setup_requested)
+        self._banner.hide()
+        outer = self.layout()
+        assert isinstance(outer, QVBoxLayout)
+        outer.insertWidget(1, self._banner)
 
-        self._tab_widget = QTabWidget(self)
-        self._tab_widget.setTabBarAutoHide(True)
-        self._main_tab = QWidget(self)
-        self._extras_tab: Optional[ExtrasTab] = None
-
-        self._tab_widget.addTab(self._main_tab, TAB_NAME_MAIN)
-
-        self._main_layout = QVBoxLayout(self._main_tab)
-
-        def _get_control_with_label(config_key: str, config: Cache | AppConfig = cache,
-                                    **kwargs) -> tuple[QLabel, DynamicFieldWidget]:
-            label = QLabel(config.get_label(config_key), parent=self)
-            label.setWordWrap(True)
-            control = config.get_control_widget(config_key, **kwargs)
-            control.setParent(self)
-            label.setToolTip(control.toolTip())
-            label.setBuddy(control)
-            return label, control
-
-        self._prompt_label, self._prompt_textbox = _get_control_with_label(Cache.PROMPT, multi_line=True)
-        self._negative_label, self._negative_textbox = _get_control_with_label(Cache.NEGATIVE_PROMPT,
-                                                                               multi_line=True)
-        # Font size will be used to limit the height of the prompt boxes:
-        line_height = self.font().pixelSize()
-        if line_height < 0:  # font uses pt, not px
-            line_height = round(self.font().pointSize() * 1.5)
-        textbox_height = line_height * 5
-        for textbox in (self._prompt_textbox, self._negative_textbox):
-            textbox.setMaximumHeight(textbox_height)
-
-        self._gen_size_label, self._gen_size_input = _get_control_with_label(Cache.GENERATION_SIZE)
-        self._batch_size_label, self._batch_size_spinbox = _get_control_with_label(Cache.BATCH_SIZE)
-        self._batch_count_label, self._batch_count_spinbox = _get_control_with_label(Cache.BATCH_COUNT)
-        self._step_count_label, self._step_count_slider = _get_control_with_label(Cache.SAMPLING_STEPS)
-        self._guidance_scale_label, self._guidance_scale_slider = _get_control_with_label(Cache.GUIDANCE_SCALE)
-        self._denoising_strength_label, self._denoising_strength_slider = _get_control_with_label(
-            Cache.DENOISING_STRENGTH)
-        self._clip_skip_label, self._clip_skip_spinbox = _get_control_with_label(Cache.CLIP_SKIP)
-        assert isinstance(self._clip_skip_spinbox, IntSliderSpinbox)
-        self._clip_skip_spinbox.set_slider_included(False)
-        IntSliderSpinbox.align_slider_spinboxes([self._step_count_slider, self._guidance_scale_slider,
-                                                 self._denoising_strength_slider])
-        self._edit_mode_label, self._edit_mode_combobox = _get_control_with_label(Cache.EDIT_MODE)
-        self._model_label, self._model_combobox = _get_control_with_label(Cache.SD_MODEL)
-        self._sampler_label, self._sampler_combobox = _get_control_with_label(Cache.SAMPLING_METHOD)
-
-        # Avoid letting excessively long model/sampler names distort the UI layout:
-        for large_combobox in (self._model_combobox, self._sampler_combobox):
-            if isinstance(large_combobox, QComboBox):
-                large_combobox.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-
-        self._masked_content_label: Optional[QLabel] = None
-        self._masked_content_combobox: Optional[QComboBox] = None
-        if show_masked_content_dropdown:
-            self._masked_content_label, self._masked_content_combobox = _get_control_with_label(Cache.MASKED_CONTENT)
-        self._full_res_label, self._full_res_checkbox = _get_control_with_label(Cache.INPAINT_FULL_RES)
-        self._full_res_checkbox.setText('')
-        self._full_res_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
-        self._padding_label, self._padding_slider = _get_control_with_label(Cache.INPAINT_FULL_RES_PADDING)
-        self._mask_blur_label, self._mask_blur_spinbox = _get_control_with_label(AppConfig.MASK_BLUR, AppConfig())
-
-        self._seed_textbox = SeedValueSpinbox(Cache.SEED, Cache.LAST_SEED)
-        self._seed_label = QLabel(Cache().get_label(Cache.SEED))
-        self._seed_label.setToolTip(self._seed_textbox.toolTip())
-        self._seed_label.setBuddy(self._seed_textbox)
-
-        self._last_seed_label = QLabel(Cache().get_label(Cache.LAST_SEED))
-        self._last_seed_textbox = Cache().get_control_widget(Cache.LAST_SEED)
-        self._last_seed_textbox.setReadOnly(True)
-
-        self._interrogate_button: Optional[QPushButton] = None
-        if show_interrogate_button:
-            self._interrogate_button = QPushButton()
-            self._interrogate_button.setText(BUTTON_TEXT_INTERROGATE)
-            self._interrogate_button.setToolTip(BUTTON_TOOLTIP_INTERROGATE)
-            assert isinstance(self._interrogate_button.clicked, SignalInstance)
-            self._interrogate_button.clicked.connect(self.interrogate_signal)
-        self._generate_button = QPushButton()
-        self._generate_button.setText(BUTTON_TEXT_GENERATE)
+        self._generate_button = QPushButton(BUTTON_TEXT_GENERATE)
         self._generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
         set_primary_button(self._generate_button)
         self._generate_button.clicked.connect(self.generate_signal)
+        self.set_footer(self._generate_button)
 
-        def _edit_mode_control_update(edit_mode: str) -> None:
-            self._denoising_strength_label.setVisible(edit_mode != EDIT_MODE_TXT2IMG)
-            self._denoising_strength_slider.setVisible(edit_mode != EDIT_MODE_TXT2IMG)
-            self._full_res_label.setVisible(edit_mode == EDIT_MODE_INPAINT)
-            self._full_res_checkbox.setVisible(edit_mode == EDIT_MODE_INPAINT)
-            self._mask_blur_label.setVisible(edit_mode == EDIT_MODE_INPAINT)
-            self._mask_blur_spinbox.setVisible(edit_mode == EDIT_MODE_INPAINT)
-            self._padding_label.setVisible(edit_mode == EDIT_MODE_INPAINT and self._full_res_checkbox.isChecked())
-            self._padding_slider.setVisible(edit_mode == EDIT_MODE_INPAINT and self._full_res_checkbox.isChecked())
-            if self._masked_content_label is not None and self._masked_content_combobox is not None:
-                self._masked_content_label.setVisible(edit_mode == EDIT_MODE_INPAINT)
-                self._masked_content_combobox.setVisible(edit_mode == EDIT_MODE_INPAINT)
+        self._build_more_menu()
+        self._connect_edit_mode()
 
-        _edit_mode_control_update(cache.get(Cache.EDIT_MODE))
-        cache.connect(self, Cache.EDIT_MODE, _edit_mode_control_update)
+    # ---------------------------------------------------------------------------------------------------------------
+    # Content
+    # ---------------------------------------------------------------------------------------------------------------
 
-        def padding_layout_update(inpaint_full_res: bool) -> None:
-            """Only show the 'full-res padding' spin box if 'inpaint full-res' is checked."""
-            currently_inpainting = cache.get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT
-            self._padding_label.setVisible(inpaint_full_res and currently_inpainting)
-            self._padding_slider.setVisible(inpaint_full_res and currently_inpainting)
+    def build(self, ui: PanelLayout) -> None:
+        """Declares the sections."""
+        cache = Cache()
+        self._build_mode_section(ui)
+        self._build_prompt_section(ui, cache)
+        self._build_inpaint_section(ui, cache)
+        self._build_output_section(ui, cache)
+        self._build_sampling_section(ui, cache)
+        self._build_advanced_section(ui)
+        self._build_controlnet_section(ui)
 
-        cache.connect(self, Cache.INPAINT_FULL_RES, padding_layout_update)
-        padding_layout_update(cache.get(Cache.INPAINT_FULL_RES))
+    def _build_mode_section(self, ui: PanelLayout) -> None:
+        cache = Cache()
+        self._mode_section = ui.section(SECTION_TITLE_MODE)
+        self._mode_section.widget.set_header_visible(False)
+        self._edit_mode_control = SegmentedControl(
+            [Segment(mode, cache.get_option_display(mode)) for mode in cache.get_options(Cache.EDIT_MODE)],
+            display_mode=DisplayMode.LABEL, combo_fallback=True)
+        self._edit_mode_control.setToolTip(cache.get_tooltip(Cache.EDIT_MODE))
+        self._edit_mode_control.set_value(cache.get(Cache.EDIT_MODE))
+        self._mode_section.add(self._edit_mode_control, REQUIRED)
 
-        self._build_layout()
+    def _build_prompt_section(self, ui: PanelLayout, cache: Cache) -> None:
+        section = ui.section(SECTION_TITLE_PROMPT)
+        self._prompt_section = section
+        self._prompt_textbox = cache.get_control_widget(Cache.PROMPT, multi_line=True)
+        self._negative_textbox = cache.get_control_widget(Cache.NEGATIVE_PROMPT, multi_line=True)
+        for textbox in (self._prompt_textbox, self._negative_textbox):
+            textbox.setMaximumHeight(textbox.fontMetrics().lineSpacing() * 5 + 12)
+        self._negative_label = QLabel(LABEL_NEGATIVE_PROMPT)
+        self._negative_label.setBuddy(self._negative_textbox)
+        self._negative_label.setToolTip(self._negative_textbox.toolTip())
+        section.add(self._prompt_textbox, REQUIRED)
+        section.add(self._negative_label, REQUIRED)
+        section.add(self._negative_textbox, REQUIRED)
 
-    def _build_layout(self) -> None:
-        clear_layout(self._layout)
-        clear_layout(self._main_layout)
+        # Prompt tools open existing windows. Each hides when it has nothing to show:
+        self._lora_button = self._header_tool_button(BUTTON_TEXT_LORA, BUTTON_TOOLTIP_LORA, self.lora_requested)
+        self._styles_button: Optional[QPushButton] = None
+        self._interrogate_button: Optional[QPushButton] = None
+        section.widget.add_header_widget(self._lora_button)
+        if self._webui:
+            self._styles_button = self._header_tool_button(BUTTON_TEXT_STYLES, BUTTON_TOOLTIP_STYLES,
+                                                           self.styles_requested)
+            section.widget.add_header_widget(self._styles_button)
+            self._interrogate_button = self._header_tool_button(BUTTON_TEXT_INTERROGATE, BUTTON_TOOLTIP_INTERROGATE,
+                                                                self.interrogate_signal)
+            section.widget.add_header_widget(self._interrogate_button)
 
-        all_inner_layouts = []
-        aligned_sliders = [self._step_count_slider, self._guidance_scale_slider, self._denoising_strength_slider]
+        def _lora_update(models: list) -> None:
+            self._lora_button.setVisible(len(models) > 0)
 
-        self._layout.addWidget(self._tab_widget, stretch=255)
-        button_layout = QHBoxLayout()
-        button_layout.setSpacing(2)
-        button_layout.setContentsMargins(1, 1, 1, 1)
-        self._layout.addLayout(button_layout)
-        if self._interrogate_button is not None:
-            button_layout.addWidget(self._interrogate_button)
-        button_layout.addWidget(self._generate_button)
+        cache.connect(self._lora_button, Cache.LORA_MODELS, _lora_update)
+        _lora_update(cache.get(Cache.LORA_MODELS))
+        if self._styles_button is not None:
+            styles_button = self._styles_button
 
-        if self._orientation == Qt.Orientation.Horizontal:
-            primary_layout = QHBoxLayout()
-            self._main_layout.addLayout(primary_layout)
-            left_panel_layout = QVBoxLayout()
-            right_panel_layout = QVBoxLayout()
-            primary_layout.addLayout(left_panel_layout, stretch=30)
-            primary_layout.addWidget(Divider(Qt.Orientation.Vertical))
-            primary_layout.addLayout(right_panel_layout, stretch=10)
-            right_panel_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-            self._gen_size_input.orientation = Qt.Orientation.Horizontal
+            def _styles_update(styles: list) -> None:
+                styles_button.setVisible(len(styles) > 0)
 
-            # Alignment lists:
-            left_labels: list[QWidget] = []
-            center_labels: list[QWidget] = []
-            right_labels: list[QWidget] = []
-            right_inputs: list[QWidget] = []
-            all_inner_layouts += [primary_layout, left_panel_layout, right_panel_layout]
+            cache.connect(styles_button, Cache.STYLES, _styles_update)
+            _styles_update(cache.get(Cache.STYLES))
 
-            label: Optional[QLabel]
-            input_widget: Optional[QWidget]
+    @staticmethod
+    def _header_tool_button(text: str, tooltip: str, signal) -> QPushButton:
+        button = QPushButton(text)
+        button.setFlat(True)
+        button.setToolTip(tooltip)
+        button.clicked.connect(signal)
+        return button
 
-            for label, textbox in ((self._prompt_label, self._prompt_textbox),
-                                   (self._negative_label, self._negative_textbox)):
-                assert label is not None
-                text_row = QHBoxLayout()
-                text_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-                text_row.addWidget(label)
-                text_row.addWidget(textbox)
-                left_panel_layout.addLayout(text_row)
-                left_labels.append(label)
-                all_inner_layouts.append(text_row)
+    def _build_inpaint_section(self, ui: PanelLayout, cache: Cache) -> None:
+        section = ui.section(SECTION_TITLE_INPAINT)
+        self._inpaint_section = section
+        body = QWidget()
+        body_layout = QVBoxLayout(body)
+        body_layout.setContentsMargins(0, 0, 0, 0)
 
-            lower_left_panel = QHBoxLayout()
-            slider_layout = QVBoxLayout()
-            size_count_layout = QVBoxLayout()
-            left_panel_layout.addLayout(lower_left_panel)
-            lower_left_panel.addLayout(slider_layout, stretch=30)
-            lower_left_panel.addWidget(Divider(Qt.Orientation.Vertical))
-            lower_left_panel.addLayout(size_count_layout, stretch=10)
-            all_inner_layouts += [lower_left_panel, slider_layout, size_count_layout]
+        self._inpaint_note = QLabel(INPAINT_NOTE_TXT2IMG)
+        self._inpaint_note.setWordWrap(True)
+        self._inpaint_note.setForegroundRole(QPalette.ColorRole.PlaceholderText)
+        self._denoising_field = config_slider_field(cache, Cache.DENOISING_STRENGTH, body)
+        self._masked_content_rows: Optional[LabeledRows] = None
+        if self._webui:
+            self._masked_content_combobox = option_combo_box(cache, Cache.MASKED_CONTENT, body)
+            self._masked_content_rows = LabeledRows([(normalize_row_label(cache.get_label(Cache.MASKED_CONTENT)),
+                                                      self._masked_content_combobox)], body)
+        self._full_res_checkbox = QCheckBox(LABEL_FULL_RESOLUTION)
+        self._full_res_checkbox.setToolTip(cache.get_tooltip(Cache.INPAINT_FULL_RES))
+        self._full_res_checkbox.setChecked(bool(cache.get(Cache.INPAINT_FULL_RES)))
 
-            for label, slider in ((self._step_count_label, self._step_count_slider),
-                                  (self._guidance_scale_label, self._guidance_scale_slider),
-                                  (self._denoising_strength_label, self._denoising_strength_slider)):
-                assert label is not None
-                slider_row = QHBoxLayout()
-                slider_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-                slider_row.addWidget(label)
-                slider_row.addWidget(slider)
-                slider_layout.addLayout(slider_row)
-                all_inner_layouts.append(slider_row)
-                left_labels.append(label)
+        def _full_res_toggled(checked: bool) -> None:
+            if cache.get(Cache.INPAINT_FULL_RES) != checked:
+                cache.set(Cache.INPAINT_FULL_RES, checked)
 
-            for label, input_widget in ((self._gen_size_label, self._gen_size_input),
-                                        (self._batch_size_label, self._batch_size_spinbox),
-                                        (self._batch_count_label, self._batch_count_spinbox)):
-                assert label is not None
-                assert input_widget is not None
-                input_row = QHBoxLayout()
-                input_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-                input_row.addWidget(label)
-                input_row.addWidget(input_widget)
-                size_count_layout.addLayout(input_row)
-                all_inner_layouts.append(input_row)
-                center_labels.append(label)
+        self._full_res_checkbox.toggled.connect(_full_res_toggled)
+        self._padding_field = config_slider_field(cache, Cache.INPAINT_FULL_RES_PADDING, body)
 
-            for label, input_widget in ((self._edit_mode_label, self._edit_mode_combobox),
-                                        (self._model_label, self._model_combobox),
-                                        (self._sampler_label, self._sampler_combobox),
-                                        (self._clip_skip_label, self._clip_skip_spinbox),
-                                        (self._masked_content_label, self._masked_content_combobox),
-                                        (self._full_res_label, self._full_res_checkbox),
-                                        (self._padding_label, self._padding_slider),
-                                        (self._mask_blur_label, self._mask_blur_spinbox),
-                                        (self._seed_label, self._seed_textbox),
-                                        (self._last_seed_label, self._last_seed_textbox)):
-                if label is None or input_widget is None:
-                    continue
-                input_row = QHBoxLayout()
-                input_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-                input_row.addWidget(label, stretch=1)
-                input_row.addWidget(input_widget, stretch=2)
-                right_panel_layout.addLayout(input_row)
-                all_inner_layouts.append(input_row)
-                if label == self._full_res_label:
-                    input_row.setStretch(1, 0)
-                else:
-                    right_labels.append(label)
-                    right_inputs.append(input_widget)
-            right_panel_layout.addWidget(Divider(Qt.Orientation.Horizontal))
-            if self._interrogate_button is not None:
-                right_panel_layout.addWidget(self._interrogate_button)
-            right_panel_layout.addWidget(self._generate_button)
+        def _full_res_changed(checked: bool) -> None:
+            if self._full_res_checkbox.isChecked() != checked:
+                self._full_res_checkbox.setChecked(checked)
+            self._padding_field.setEnabled(checked)
 
-            for i in (0, 1, 4, 5):
-                right_panel_layout.setStretch(i, 1)
-            spacer_index = 4 if self._interrogate_button is None else 5
-            right_panel_layout.insertSpacing(right_panel_layout.count() - spacer_index, 20)
+        cache.connect(self._full_res_checkbox, Cache.INPAINT_FULL_RES, _full_res_changed)
+        _full_res_changed(bool(cache.get(Cache.INPAINT_FULL_RES)))
+        self._full_res_pair = FieldPair(self._full_res_checkbox, self._padding_field, body)
+        self._mask_blur_field = config_slider_field(AppConfig(), AppConfig.MASK_BLUR, body)
 
-            for alignment_group in (left_labels, center_labels, right_labels, right_inputs):
-                synchronize_widths(alignment_group)
-            self._batch_size_spinbox.align_slider_spinboxes([self._batch_size_spinbox, self._batch_count_spinbox])
-        else:
-            assert self._orientation == Qt.Orientation.Vertical
-            self._gen_size_input.orientation = Qt.Orientation.Vertical
+        for widget in (self._inpaint_note, self._denoising_field, self._masked_content_rows, self._full_res_pair,
+                       self._mask_blur_field):
+            if widget is not None:
+                body_layout.addWidget(widget)
+        section.add(body, REQUIRED)
 
-            # Alignment groups:
-            labels = []
-            inputs = []
-            for label, input_widget in ((self._edit_mode_label, self._edit_mode_combobox),
-                                        (self._model_label, self._model_combobox),
-                                        (self._sampler_label, self._sampler_combobox),
-                                        (self._masked_content_label, self._masked_content_combobox),
-                                        (self._clip_skip_label, self._clip_skip_spinbox),
-                                        (self._prompt_label, self._prompt_textbox),
-                                        (self._negative_label, self._negative_textbox),
-                                        (self._gen_size_label, self._gen_size_input),
-                                        (self._batch_size_label, self._batch_size_spinbox),
-                                        (self._batch_count_label, self._batch_count_spinbox),
-                                        (self._step_count_label, self._step_count_slider),
-                                        (self._guidance_scale_label, self._guidance_scale_slider),
-                                        (self._denoising_strength_label, self._denoising_strength_slider),
-                                        (self._full_res_label, self._full_res_checkbox),
-                                        (self._padding_label, self._padding_slider),
-                                        (self._mask_blur_label, self._mask_blur_spinbox),
-                                        (self._seed_label, self._seed_textbox),
-                                        (self._last_seed_label, self._last_seed_textbox)):
-                if input_widget is None:
-                    continue
-                if label is None:
-                    self._main_layout.addWidget(input_widget, stretch=1)
-                    continue
-                row_layout = QHBoxLayout()
-                row_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-                row_layout.addWidget(label, stretch=1)
-                row_layout.addWidget(input_widget, stretch=5)
-                labels.append(label)
-                inputs.append(input_widget)
-                all_inner_layouts.append(row_layout)
-                self._main_layout.addLayout(row_layout, stretch=1)
-            aligned_sliders += [self._batch_size_spinbox, self._batch_count_spinbox]
-            self._main_layout.insertStretch(self._main_layout.count() - 2, 10)
-            self._main_layout.addWidget(Divider(Qt.Orientation.Horizontal))
-            if self._interrogate_button is not None:
-                last_row = QHBoxLayout()
-                last_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-                last_row.addWidget(self._interrogate_button, stretch=1)
-                last_row.addWidget(self._generate_button, stretch=1)
-                all_inner_layouts.append(last_row)
-                self._main_layout.addLayout(last_row, stretch=1)
-            else:
-                self._main_layout.addWidget(self._generate_button)
-            synchronize_widths(labels)
-            synchronize_widths(inputs)
-        for layout in all_inner_layouts:
-            layout.setSpacing(2)
-            layout.setContentsMargins(1, 1, 1, 1)
-        self._step_count_slider.align_slider_spinboxes(aligned_sliders)
+    def _build_output_section(self, ui: PanelLayout, cache: Cache) -> None:
+        section = ui.section(SECTION_TITLE_OUTPUT)
+        self._output_section = section
+        self._gen_size_input = cache.get_control_widget(Cache.GENERATION_SIZE)
+        self._resolution_rule_combobox = option_combo_box(cache, Cache.GENERATION_RESOLUTION_RULE)
+        section.add(LabeledRows([(normalize_row_label(cache.get_label(Cache.GENERATION_SIZE)), self._gen_size_input),
+                                 (normalize_row_label(cache.get_label(Cache.GENERATION_RESOLUTION_RULE)),
+                                  self._resolution_rule_combobox)]), REQUIRED)
+        self._batch_size_field = config_slider_field(cache, Cache.BATCH_SIZE)
+        self._batch_count_field = config_slider_field(cache, Cache.BATCH_COUNT)
+        batch_pair = FieldPair(self._batch_size_field, self._batch_count_field)
+        section.add(batch_pair, REQUIRED, batch_pair.forms)
 
-    def set_orientation(self, new_orientation: Qt.Orientation) -> None:
-        """Sets panel orientation."""
-        if new_orientation == self._orientation:
-            return
-        self._orientation = new_orientation
-        if self._extras_tab is not None:
-            self._extras_tab.set_orientation(new_orientation)
-        self._build_layout()
+        self._seed_input = SeedValueSpinbox(Cache.SEED, Cache.LAST_SEED)
+        section.add(LabeledRows([(normalize_row_label(cache.get_label(Cache.SEED)), self._seed_input)]), REQUIRED)
+        self._last_seed_label = QLabel()
+        self._last_seed_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self._last_seed_label.setToolTip(cache.get_tooltip(Cache.LAST_SEED))
+
+        def _last_seed_update(last_seed: str) -> None:
+            self._last_seed_label.setText(f'{LABEL_LAST_SEED} {last_seed}')
+
+        cache.connect(self._last_seed_label, Cache.LAST_SEED, _last_seed_update)
+        _last_seed_update(cache.get(Cache.LAST_SEED))
+        section.add(self._last_seed_label, REQUIRED)
+
+    def _build_sampling_section(self, ui: PanelLayout, cache: Cache) -> None:
+        section = ui.section(SECTION_TITLE_SAMPLING)
+        self._sampling_section = section
+        self._model_combobox = option_combo_box(cache, Cache.SD_MODEL)
+        self._sampler_combobox = option_combo_box(cache, Cache.SAMPLING_METHOD)
+        section.add(LabeledRows([(normalize_row_label(cache.get_label(Cache.SD_MODEL)), self._model_combobox),
+                                 (normalize_row_label(cache.get_label(Cache.SAMPLING_METHOD)),
+                                  self._sampler_combobox)]), REQUIRED)
+        self._steps_field = config_slider_field(cache, Cache.SAMPLING_STEPS)
+        self._guidance_field = config_slider_field(cache, Cache.GUIDANCE_SCALE)
+        sampling_pair = FieldPair(self._steps_field, self._guidance_field)
+        section.add(sampling_pair, REQUIRED, sampling_pair.forms)
+        self._clip_skip_field = config_slider_field(cache, Cache.CLIP_SKIP)
+        section.add(self._clip_skip_field, REQUIRED)
+
+        def _sampling_summary() -> str:
+            return SUMMARY_SAMPLING.format(sampler=cache.get(Cache.SAMPLING_METHOD),
+                                           steps=cache.get(Cache.SAMPLING_STEPS),
+                                           guidance=cache.get(Cache.GUIDANCE_SCALE))
+
+        section.widget.bind_summary(_sampling_summary, self._steps_field.valueChanged,
+                                    self._guidance_field.valueChanged, self._sampler_combobox.valueChanged)
+
+    def _build_advanced_section(self, ui: PanelLayout) -> None:
+        section = ui.section(SECTION_TITLE_ADVANCED)
+        self._advanced_section = section
+        self._advanced_body = QWidget()
+        self._advanced_layout = QVBoxLayout(self._advanced_body)
+        self._advanced_layout.setContentsMargins(0, 0, 0, 0)
+        section.add(self._advanced_body, REQUIRED)
+        section.widget.set_expanded(False)
+
+    def _build_controlnet_section(self, ui: PanelLayout) -> None:
+        section = ui.section(SECTION_TITLE_CONTROLNET)
+        self._controlnet_section = section
+        self._controlnet_button = QPushButton()
+        self._controlnet_button.setFlat(True)
+        self._controlnet_button.setToolTip(CONTROLNET_BUTTON_TOOLTIP)
+        self._controlnet_button.setStyleSheet('text-align: left;')
+        self._controlnet_button.clicked.connect(self.controlnet_requested)
+        section.add(self._controlnet_button, REQUIRED)
+
+    # ---------------------------------------------------------------------------------------------------------------
+    # Backend-specific content
+    # ---------------------------------------------------------------------------------------------------------------
+
+    def set_advanced_content(self, controls: AdvancedControls) -> None:
+        """Fills the Advanced section with a backend's extra settings, and summarizes them when it is collapsed.
+
+        Raises
+        ------
+        RuntimeError
+            If the section was already filled.
+        """
+        if self._advanced_controls is not None:
+            raise RuntimeError('Tried to set the advanced content twice')
+        self._advanced_controls = controls
+        self._advanced_layout.addWidget(controls)
+        self._advanced_section.widget.bind_summary(controls.summary, *controls.change_signals())
+        self.refit()
 
     @property
-    def orientation(self) -> Qt.Orientation:
-        """Access panel orientation."""
-        return self._orientation
+    def advanced_controls(self) -> Optional[AdvancedControls]:
+        """The backend-specific content of the Advanced section, once set."""
+        return self._advanced_controls
 
-    @orientation.setter
-    def orientation(self, new_orientation: Qt.Orientation) -> None:
-        self.set_orientation(new_orientation)
+    def set_controlnet_cache_keys(self, keys: list[str]) -> None:
+        """Shows the ControlNet summary for the units saved under these Cache keys, or hides it for an empty list."""
+        cache = Cache()
+        self._controlnet_keys = list(keys)
+        for key in keys:
+            cache.connect(self._controlnet_button, key, lambda *_: self.refresh_controlnet_summary())
+        self.refresh_controlnet_summary()
+        self.refit()
 
-    def add_extras_tab(self, extras_tab: ExtrasTab) -> None:
-        """Adds a second tab to the panel with extra controls."""
-        if self._extras_tab is not None:
-            raise RuntimeError('Tried to add extras_tab twice')
-        self._extras_tab = extras_tab
-        self._tab_widget.addTab(self._extras_tab, TAB_NAME_EXTRA)
-        extras_tab.generate_signal.connect(self.generate_signal)
-        self._extras_tab.set_orientation(self.orientation)
+    def refresh_controlnet_summary(self) -> None:
+        """Updates the ControlNet summary from the saved units."""
+        cache = Cache()
+        self._controlnet_button.setText(controlnet_summary([cache.get(key) for key in self._controlnet_keys]))
+
+    # ---------------------------------------------------------------------------------------------------------------
+    # More menu, banner and edit mode
+    # ---------------------------------------------------------------------------------------------------------------
+
+    def _build_more_menu(self) -> None:
+        self._more_content = QWidget()
+        more_layout = QVBoxLayout(self._more_content)
+        more_layout.setContentsMargins(0, 0, 0, 0)
+        self._setup_menu_button = self._add_more_button(MENU_TEXT_SETUP, more_layout, self.setup_requested)
+        self._settings_menu_button = self._add_more_button(MENU_TEXT_SETTINGS, more_layout, self.settings_requested)
+        self._lcm_menu_button = self._add_more_button(MENU_TEXT_LCM_MODE, more_layout, self.lcm_mode_requested)
+        self._clear_memory_menu_button = self._add_more_button(MENU_TEXT_CLEAR_MEMORY, more_layout,
+                                                               self.clear_memory_requested)
+        self._clear_memory_menu_button.setToolTip(TOOLTIP_CLEAR_MEMORY)
+        self._clear_memory_menu_button.setVisible(not self._webui)
+        self.header.more_requested.connect(self._refresh_more_menu)
+
+    def _add_more_button(self, text: str, layout: QVBoxLayout, signal) -> QPushButton:
+        button = QPushButton(text)
+        button.setFlat(True)
+        button.clicked.connect(lambda: self.header.popover.hide())
+        button.clicked.connect(signal)
+        layout.addWidget(button)
+        return button
+
+    def _refresh_more_menu(self) -> None:
+        self._lcm_menu_button.setVisible(self.lcm_available_check is not None and self.lcm_available_check())
+
+    def more_content(self) -> Optional[QWidget]:
+        """Returns the More menu, which the panel always has."""
+        return self._more_content
+
+    def set_disconnected(self, message: Optional[str]) -> None:
+        """Shows the not-connected banner with this message, or hides it for None."""
+        if message is not None:
+            self._banner.set_message(message)
+        self._banner.setVisible(message is not None)
+        self.refit()
+
+    def _connect_edit_mode(self) -> None:
+        cache = Cache()
+
+        def _control_changed(mode: str) -> None:
+            if cache.get(Cache.EDIT_MODE) != mode:
+                cache.set(Cache.EDIT_MODE, mode)
+
+        self._edit_mode_control.valueChanged.connect(_control_changed)
+
+        def _edit_mode_changed(edit_mode: str) -> None:
+            self._edit_mode_control.set_value(edit_mode)
+            self._update_inpaint_section(edit_mode)
+
+        cache.connect(self._edit_mode_control, Cache.EDIT_MODE, _edit_mode_changed)
+        self._update_inpaint_section(cache.get(Cache.EDIT_MODE))
+
+    def _update_inpaint_section(self, edit_mode: str) -> None:
+        """Shows the Inpaint section's controls for the mode. The section itself always shows."""
+        inpaint = edit_mode == EDIT_MODE_INPAINT
+        self._inpaint_note.setVisible(edit_mode == EDIT_MODE_TXT2IMG)
+        self._denoising_field.setVisible(edit_mode in (EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG))
+        if self._masked_content_rows is not None:
+            self._masked_content_rows.setVisible(inpaint)
+        self._full_res_pair.setVisible(inpaint)
+        self._mask_blur_field.setVisible(inpaint)
+        self.refit()
+
+    # ---------------------------------------------------------------------------------------------------------------
+    # Layout
+    # ---------------------------------------------------------------------------------------------------------------
+
+    def finish_placement(self) -> None:
+        """Hides the ControlNet section while the backend has no ControlNet units."""
+        super().finish_placement()
+        self._controlnet_section.widget.setVisible(len(self._controlnet_keys) > 0)
+
+    # ---------------------------------------------------------------------------------------------------------------
+    # Accessors for tests and the generators
+    # ---------------------------------------------------------------------------------------------------------------
+
+    @property
+    def edit_mode_control(self) -> SegmentedControl:
+        """The edit mode selector."""
+        return self._edit_mode_control
+
+    @property
+    def generate_button(self) -> QPushButton:
+        """The Generate button."""
+        return self._generate_button
+
+    @property
+    def inpaint_fields(self) -> list[NumberField]:
+        """The Inpaint section's number fields."""
+        return [self._denoising_field, self._padding_field, self._mask_blur_field]
+
+    @property
+    def banner(self) -> DisabledBanner:
+        """The not-connected banner."""
+        return self._banner
+
+    @property
+    def prompt_tool_buttons(self) -> list[QPushButton]:
+        """The Prompt header's buttons, in display order."""
+        return [button for button in (self._lora_button, self._styles_button, self._interrogate_button)
+                if button is not None]
+
+    @property
+    def more_menu_buttons(self) -> list[QPushButton]:
+        """The More menu's buttons, in display order."""
+        return [self._setup_menu_button, self._settings_menu_button, self._lcm_menu_button,
+                self._clear_memory_menu_button]
+

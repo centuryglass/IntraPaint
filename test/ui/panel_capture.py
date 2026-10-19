@@ -650,13 +650,23 @@ def tools_panel_scenes(controller: 'AppController') -> list[PanelScene]:
             for tool in controller._tool_controller.tools if tool.get_control_panel() is not None]
 
 
+def stable_diffusion_panel(webui: bool) -> DockPanel:
+    """Returns a generation panel with a backend's Advanced section filled in, as its generator creates it."""
+    # pylint: disable=import-outside-toplevel
+    from src.ui.panel.generators.comfyui_advanced_controls import ComfyUIAdvancedControls
+    from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
+    from src.ui.panel.generators.webui_advanced_controls import WebUIAdvancedControls
+    panel = StableDiffusionPanel(webui)
+    panel.set_advanced_content(WebUIAdvancedControls() if webui else ComfyUIAdvancedControls())
+    return panel
+
+
 def panel_scenes(controller: 'AppController') -> list[PanelScene]:
     """Returns every panel scene for a mock-mode AppController, in capture order.
 
     Later scenes take their panels out of the main window while they're captured, so the main window comes first.
     """
     # pylint: disable=import-outside-toplevel,protected-access
-    from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
     # Panels that show the controller's ImageStack are the controller's own: a discarded copy would leave the stack
     # connected to deleted graphics items.
     return [
@@ -665,8 +675,8 @@ def panel_scenes(controller: 'AppController') -> list[PanelScene]:
         PanelScene('layer_panel', lambda c: c._window.layers_dock.content),
         PanelScene('color_panel', lambda c: c._tool_panel_color_picker),
         PanelScene('navigation_panel', lambda c: c._tool_panel_navigation_panel),
-        PanelScene('sd_webui_panel', lambda _c: StableDiffusionPanel(True, True)),
-        PanelScene('sd_comfyui_panel', lambda _c: StableDiffusionPanel(False, False)),
+        PanelScene('sd_webui_panel', lambda _c: stable_diffusion_panel(True)),
+        PanelScene('sd_comfyui_panel', lambda _c: stable_diffusion_panel(False)),
         *_tool_control_scenes(controller),
     ]
 

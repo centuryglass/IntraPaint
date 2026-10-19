@@ -1085,6 +1085,15 @@
         "default": "F10",
         "saved": true
     },
+    "clear_memory_shortcut": {
+        "label": "Clear GPU memory",
+        "category": "Menu Shortcuts",
+        "subcategory": "Stable Diffusion Menu",
+        "description": "Remove cached models from GPU memory in ComfyUI.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
     "help_index_shortcut": {
         "label": "Open IntraPaint help pages",
         "category": "Menu Shortcuts",

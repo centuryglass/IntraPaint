@@ -7,7 +7,7 @@ from typing import Optional, Any, cast
 
 from PySide6.QtCore import Signal, QSize, SignalInstance, QRect
 from PySide6.QtGui import QImage
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QWidget
 from sd_backend_client import A1111Webservice, AuthError, BackendTimeoutError, ControlNetPreprocessor, ControlTypeDef, \
     SDBackendError
 from sd_backend_client.api.webui.response_formats import GenerationInfoData
@@ -24,9 +24,8 @@ from src.controller.image_generation.sd_generator import SD_BASE_DESCRIPTION, ST
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
-from src.ui.panel.generators.webui_extras_tab import WebUIExtrasTab
+from src.ui.panel.generators.webui_advanced_controls import WebUIAdvancedControls
 from src.ui.window.main_window import MainWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
 from src.undo_stack import UndoStack
@@ -217,7 +216,6 @@ class SDWebUIGenerator(SDGenerator):
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
         super().__init__(window, image_stack, args, Cache.SD_WEBUI_SERVER_URL, Cache.WEBUI_CACHED_SCALING_MODE, True)
         self._webservice: Optional[A1111Webservice] = create_webservice(self.server_url)
-        self._gen_extras_tab = WebUIExtrasTab()
 
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
@@ -584,14 +582,12 @@ class SDWebUIGenerator(SDGenerator):
         task.error_signal.connect(handle_error)
         task.start()
 
-    def get_control_panel(self) -> Optional[GeneratorPanel]:
+    def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
-            self._control_panel = StableDiffusionPanel(True, True)
-            self._control_panel.hide()
-            self._control_panel.generate_signal.connect(self.start_and_manage_image_generation)
+            self._control_panel = self._create_control_panel(StableDiffusionPanel(True), WebUIAdvancedControls())
             self._control_panel.interrogate_signal.connect(self.interrogate)
-            self._control_panel.add_extras_tab(self._gen_extras_tab)
+            self._control_panel.styles_requested.connect(self.show_style_window)
         return self._control_panel
 
     def generate(self,

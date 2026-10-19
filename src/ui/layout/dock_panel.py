@@ -11,6 +11,8 @@ their state survives.
   hides instead.
 - A control with several forms gets a callback per form, largest first. Planning calls the one for the form that fits.
 - The header is a required item. A strip too short for it hides it and moves its More button to the end of the row.
+- A footer set with `set_footer` stays below the scrolled content in both orientations, and counts toward the
+  panel's minimum size.
 - Each section is a `src.ui.widget.panel_section.PanelSection`, available as `DockSection.widget` for summaries,
   header actions and remembered expansion. A section with no control left in it hides.
 - Side panels stack sections in one column and scroll vertically. Strip panels put sections in fixed-width columns and
@@ -145,6 +147,7 @@ class DockPanel(QWidget):
         self._header_collapsed = False
         self._scrolls = False
         self._overflow: list[QWidget] = []
+        self._footer: Optional[QWidget] = None
 
         self._header = PanelHeader(name, icon, key_text)
         self._scroll = QScrollArea()
@@ -174,6 +177,14 @@ class DockPanel(QWidget):
 
     def build(self, ui: PanelLayout) -> None:
         """Declares sections and controls. Subclasses override it. Called once, from the constructor."""
+
+    def set_footer(self, footer: QWidget) -> None:
+        """Pins a widget below the scrolled content, such as a panel's main action. Call it once, from `build` or the
+        constructor."""
+        if self._footer is not None:
+            raise RuntimeError('Tried to set a footer twice')
+        self._footer = footer
+        self.layout().addWidget(footer)
 
     def content_margins(self) -> QMargins:
         """Returns the margins between the panel's edges and its scrolled content."""
@@ -295,12 +306,15 @@ class DockPanel(QWidget):
     def measure_content(self) -> QSize:
         """Returns the content's minimum size as currently arranged: the header, if shown above the scroll area, over
         the scrolled body."""
-        body = fresh_minimum_size(self._body)
-        if self._header.isHidden() or self._header.parentWidget() is not self:
-            return body
-        header = fresh_minimum_size(self._header)
+        content = fresh_minimum_size(self._body)
         spacing = max(self.layout().spacing(), 0)
-        return QSize(max(body.width(), header.width()), body.height() + spacing + header.height())
+        if not self._header.isHidden() and self._header.parentWidget() is self:
+            header = fresh_minimum_size(self._header)
+            content = QSize(max(content.width(), header.width()), content.height() + spacing + header.height())
+        if self._footer is not None and not self._footer.isHidden():
+            footer = fresh_minimum_size(self._footer)
+            content = QSize(max(content.width(), footer.width()), content.height() + spacing + footer.height())
+        return content
 
     def measure_with_control(self, control: _Control) -> QSize:
         """Returns the content's minimum size with one more control added in its smallest form, and every control

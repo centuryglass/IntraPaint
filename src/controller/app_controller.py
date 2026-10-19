@@ -45,6 +45,7 @@ import sys
 import webbrowser
 from argparse import Namespace
 from typing import Optional, Any, Callable
+from weakref import WeakSet
 
 from PIL import Image, UnidentifiedImageError, ExifTags
 from PIL.ExifTags import IFD
@@ -62,7 +63,7 @@ from src.controller.image_generation.glid3_xl_generator import Glid3XLGenerator
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.controller.image_generation.null_generator import NullGenerator
 from src.controller.image_generation.sd_comfyui_generator import SDComfyUIGenerator, DEFAULT_COMFYUI_URL
-from src.controller.image_generation.sd_generator import MENU_STABLE_DIFFUSION
+from src.controller.image_generation.sd_generator import MENU_STABLE_DIFFUSION, STABLE_DIFFUSION_CONFIG_CATEGORY
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator, DEFAULT_WEBUI_URL
 from src.controller.image_generation.test_generator import TestGenerator
 from src.controller.tool_controller import ToolController
@@ -95,11 +96,11 @@ from src.ui.modal.new_image_modal import NewImageModal
 from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.color_panel import ColorControlPanel
-from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
 from src.ui.theme import (apply_font_point_size, apply_overlay_scroll_bars, apply_rounded_popups, apply_style,
                           apply_theme)
+from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
 from src.ui.window.dock_menu import MENU_MOVE_ALL_TO_EDGE, edge_title
 from src.ui.window.dock_placement import DockEdge
@@ -467,7 +468,8 @@ class AppController(MenuBuilder):
 
         self._window.tools_dock.set_content(self._tool_panel)
         self._window.set_tool_controller(self._tool_controller)
-        self._generator_control_panel: Optional[GeneratorPanel] = None
+        self._generator_control_panel: Optional[QWidget] = None
+        self._wired_generator_panels: WeakSet[QWidget] = WeakSet()
 
         # Prepare image generator options, and select one based on availability and command line arguments.
         self._null_generator = NullGenerator(self._window, self._image_stack)
@@ -572,6 +574,14 @@ class AppController(MenuBuilder):
         self._generator.build_menus()
 
         self._generator_control_panel = self._generator.get_control_panel()
+        if isinstance(self._generator_control_panel, StableDiffusionPanel):
+            # A generator keeps its panel, so each panel's signals connect once:
+            if self._generator_control_panel not in self._wired_generator_panels:
+                self._wired_generator_panels.add(self._generator_control_panel)
+                self._generator_control_panel.setup_requested.connect(self.show_generator_window)
+                self._generator_control_panel.settings_requested.connect(
+                    lambda: self.show_settings(STABLE_DIFFUSION_CONFIG_CATEGORY))
+                self._generator_control_panel.controlnet_requested.connect(self._window.controlnet_dock.open_in_group)
         self._window.generation_dock.set_content(self._generator_control_panel)
         self._window.controlnet_dock.set_content(self._generator.get_controlnet_panel())
         if self._generator_window is not None:

@@ -5,7 +5,7 @@ from typing import Optional, cast, Any
 
 from PySide6.QtCore import QSize, QRect, QPoint, SignalInstance
 from PySide6.QtGui import QImage
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QWidget
 from sd_backend_client import AuthError, BackendOption, BackendTimeoutError, ComfyUiWebservice, \
     PREPROCESSOR_NONE, SDBackendError, ControlNetPreprocessor, ControlTypeDef
 # Not in the library's public API. The model config list has no `Backend` equivalent.
@@ -16,14 +16,15 @@ from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qimage, qimage_to_pil
 from src.controller.image_generation.sd_adapters.params_adapter import build_comfy_params, build_upscale_params
 from src.controller.image_generation.sd_generator import SDGenerator, SD_BASE_DESCRIPTION, \
-    STABLE_DIFFUSION_CONFIG_CATEGORY, GETTING_SD_MODELS, INSTALLATION_STABILITY_MATRIX
+    STABLE_DIFFUSION_CONFIG_CATEGORY, GETTING_SD_MODELS, INSTALLATION_STABILITY_MATRIX, MENU_STABLE_DIFFUSION
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.generators.comfyui_extras_tab import ComfyUIExtrasTab
-from src.ui.panel.generators.generator_panel import GeneratorPanel
+from src.ui.panel.generators.comfyui_advanced_controls import ComfyUIAdvancedControls
 from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.window.extra_network_window import LORA_KEY_NAME, LORA_KEY_ALIAS, LORA_KEY_PATH
 from src.ui.window.main_window import MainWindow
+from src.util.application_state import APP_STATE_EDITING
+from src.util.menu_builder import menu_action
 from src.util.parameter import TYPE_LIST, TYPE_STR
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, AUTH_ERROR, \
     GENERATE_ERROR_MESSAGE_EMPTY_MASK, GENERATE_ERROR_TITLE, ERROR_MESSAGE_TIMEOUT, MISC_CONNECTION_ERROR
@@ -163,7 +164,6 @@ class SDComfyUIGenerator(SDGenerator):
         super().__init__(window, image_stack, args, Cache.SD_COMFYUI_SERVER_URL, Cache.COMFYUI_CACHED_SCALING_MODE)
         self._image_stack = image_stack
         self._webservice: Optional[ComfyUiWebservice] = ComfyUiWebservice(self.server_url)
-        self._gen_extras_tab = ComfyUIExtrasTab()
         # The job the worker thread is waiting on, which `cancel_generation` cancels from the main thread:
 
     def get_display_name(self) -> str:
@@ -411,20 +411,18 @@ class SDComfyUIGenerator(SDGenerator):
         """Unloads this generator's settings from the settings modal."""
         settings_modal.remove_category(AppConfig(), STABLE_DIFFUSION_CONFIG_CATEGORY)
 
-    def get_control_panel(self) -> Optional[GeneratorPanel]:
+    @menu_action(MENU_STABLE_DIFFUSION, 'clear_memory_shortcut', 211, [APP_STATE_EDITING])
+    def clear_comfyui_memory(self) -> None:
+        """Removes cached models from GPU memory within ComfyUI."""
+        assert self._webservice is not None
+        self._webservice.free_memory()
+
+    def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
-            self._control_panel = StableDiffusionPanel(False, False)
-            self._control_panel.hide()
-            self._control_panel.generate_signal.connect(self.start_and_manage_image_generation)
-
-            # Configure "extras" tab in control panel:
-            def _clear_comfyui_memory() -> None:
-                assert self._webservice is not None
-                self._webservice.free_memory()
-
-            self._gen_extras_tab.clear_comfyui_memory_signal.connect(_clear_comfyui_memory)
-            self._control_panel.add_extras_tab(self._gen_extras_tab)
+            self._control_panel = self._create_control_panel(StableDiffusionPanel(False),
+                                                             ComfyUIAdvancedControls())
+            self._control_panel.clear_memory_requested.connect(self.clear_comfyui_memory)
         return self._control_panel
 
     def generate(self,
