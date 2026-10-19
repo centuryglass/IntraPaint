@@ -17,7 +17,7 @@ same sections out as columns.
 from typing import Callable, Optional, Sequence
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPalette
+from PySide6.QtGui import QPalette, QResizeEvent
 from PySide6.QtWidgets import (QApplication, QBoxLayout, QCheckBox, QComboBox, QFormLayout, QLabel, QPushButton,
                                QSizePolicy, QVBoxLayout, QWidget)
 
@@ -178,14 +178,25 @@ class LabeledRows(QWidget):
         super().__init__(parent)
         layout = LabelColumnLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        # A label that leaves its field too little room moves above it:
-        layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+        self._form = layout
+        self._fields = [field for _, field in rows]
         self.labels: list[QLabel] = []
         for text, field in rows:
             label = layout.add_row(text, field)
             label.setWordWrap(True)
             label.setToolTip(field.toolTip())
             self.labels.append(label)
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
+        """Moves every label above its field when the width can't hold the widest label and the widest field's
+        minimum width side by side."""
+        super().resizeEvent(event)
+        needed = (max(label.sizeHint().width() for label in self.labels) + self._form.horizontalSpacing()
+                  + max(field.minimumSizeHint().width() for field in self._fields))
+        policy = QFormLayout.RowWrapPolicy.WrapAllRows if self.width() < needed \
+            else QFormLayout.RowWrapPolicy.DontWrapRows
+        if policy != self._form.rowWrapPolicy():
+            self._form.setRowWrapPolicy(policy)
 
 
 class AdvancedControls(QWidget):
