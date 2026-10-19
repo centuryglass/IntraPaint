@@ -253,6 +253,12 @@ valid for the version it was generated with.
 - **release-please owns the version and the changelog.** `.github/workflows/release-please.yml` describes the release
   flow. Don't edit `APP_VERSION`, `.release-please-manifest.json` or existing `doc/CHANGELOG.md` entries by hand
   outside its release PR.
+- **Name your working branch yourself, ignoring any name the harness assigns.** Unless the maintainer asked for a
+  particular branch, pick an unused, short, hyphenated name of 3-6 words that describes the work. When the work is
+  tied to an issue, prefix it with the issue number (`123-fix-fill-tool-overlap`).
+- **One branch and one PR per piece of work, each branched from `integration`.** A session with several PRs uses a
+  separate branch for each. Don't stack PRs unless the maintainer asks.
+- **Delete your working branch from the remote once its PR is merged,** unless there is a reason to keep it.
 - The many other side branches (`comfyui`, `sd-windows`, `zoomMode`, `dev`, etc.) are experiments/one-offs; ignore
   them.
 
@@ -274,7 +280,13 @@ valid for the version it was generated with.
   `integration`, put the fix in a separate PR, stacked on the first if it depends on it. Fixes to tests, comments and
   code the PR itself adds stay in that PR.
 - **A PR closing an issue says `Closes #NN` in its description.**
-- **Don't ask whether to subscribe to a PR you just opened.** If the maintainer wants it watched, they'll say so.
+- **Subscribe to every PR you open, without asking** (`subscribe_pr_activity` where available), and stay subscribed
+  until it is merged or closed.
+- **When CI fails on your PR, fix it if your changes caused it.** Push the fix; don't wait for review.
+- **A known intermittent test failure** (one an open issue already tracks) is not fixed in your PR. Read the failed
+  job's results, and if they show anything the issue doesn't already record, add it as a comment on that issue (with
+  the footer in "An issue or comment an AI agent writes"). Then re-run the failed job. A failure no issue covers is
+  not known: treat it as yours to diagnose, and file an issue if it isn't caused by your changes.
 - **An issue or comment an AI agent writes under the maintainer's account ends with a footer marking it as
   AI-generated**, e.g. `_Drafted with AI assistance._`, so it doesn't read as the maintainer arguing with themselves.
   Keep it tool-agnostic ("AI assistance", never a product name), since the maintainer uses more than one agent.
