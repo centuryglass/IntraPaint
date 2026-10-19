@@ -1,6 +1,7 @@
 """Control panel for the basic drawing tool."""
 from src.config.cache import Cache
 from src.ui.panel.tool_control_panels.stroke_block import StrokeBlock, StrokeToolPanel
+from src.ui.panel.tool_control_panels.stroke_preview import DrawStrokePreview
 
 
 class DrawToolPanel(StrokeToolPanel):
@@ -16,4 +17,7 @@ class DrawToolPanel(StrokeToolPanel):
                                      color_key=Cache.LAST_BRUSH_COLOR,
                                      pattern_key=Cache.DRAW_TOOL_BRUSH_PATTERN,
                                      antialias_key=Cache.DRAW_TOOL_ANTIALIAS,
-                                     show_preview=True))
+                                     preview=DrawStrokePreview(Cache.DRAW_TOOL_BRUSH_SIZE, Cache.DRAW_TOOL_OPACITY,
+                                                               Cache.DRAW_TOOL_HARDNESS, Cache.LAST_BRUSH_COLOR,
+                                                               Cache.DRAW_TOOL_BRUSH_PATTERN,
+                                                               Cache.DRAW_TOOL_ANTIALIAS)))
