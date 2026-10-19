@@ -285,8 +285,8 @@ valid for the version it was generated with.
 - **When CI fails on your PR, fix it if your changes caused it.** Push the fix; don't wait for review.
 - **A known intermittent test failure** (one an open issue already tracks) is not fixed in your PR. Read the failed
   job's results, and if they show anything the issue doesn't already record, add it as a comment on that issue (with
-  the footer in "An issue or comment an AI agent writes"). Then re-run the failed job. A failure no issue covers is not known: treat it as
-  yours to diagnose, and file an issue if it isn't caused by your changes.
+  the footer in "An issue or comment an AI agent writes"). Then re-run the failed job. A failure no issue covers is
+  not known: treat it as yours to diagnose, and file an issue if it isn't caused by your changes.
 - **An issue or comment an AI agent writes under the maintainer's account ends with a footer marking it as
   AI-generated**, e.g. `_Drafted with AI assistance._`, so it doesn't read as the maintainer arguing with themselves.
   Keep it tool-agnostic ("AI assistance", never a product name), since the maintainer uses more than one agent.
