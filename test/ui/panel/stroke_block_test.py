@@ -1,8 +1,9 @@
 """Tests StrokeBlock's binding to Cache values, its pen pressure links and its arrangements."""
 import json
+from typing import Optional
 
 from PySide6.QtCore import QPoint, QSize
-from PySide6.QtWidgets import QCheckBox
+from PySide6.QtWidgets import QCheckBox, QGridLayout, QLabel
 
 from src.config.cache import Cache
 from src.tools.filter_tool import FilterTool
@@ -13,10 +14,11 @@ from src.ui.panel.tool_control_panels.fill_tool_panel import FillToolPanel
 from src.ui.panel.tool_control_panels.filter_tool_panel import FilterToolPanel
 from src.ui.panel.tool_control_panels.smudge_tool_panel import SmudgeToolPanel
 from src.tools.draw_tool import DrawTool
-from src.ui.layout.panel_fit import Orientation
+from src.ui.layout.panel_fit import FitItem, Orientation
 from src.ui.panel.tool_control_panels.stroke_block import (BELOW, BESIDE, BESIDE_FIELD_MIN_WIDTH,
                                                            FIELD_COLUMN_MAX_WIDTH, ONLY_INSIDE_SELECTION_LABEL)
 from src.ui.panel.tool_panel import ToolPanel
+from src.ui.widget.panel_section import PanelSection
 from test.base_test_case import IntraPaintTestCase
 from test.tools.tool_test_case import ToolTestCase
 from test.ui.panel.tool_panel_test import settle_layouts
@@ -87,8 +89,9 @@ class StrokeBlockTest(IntraPaintTestCase):
         self.panel.set_fit_space(SIDE, QSize(1000, 900))
         self.assertEqual(self.block.arrangement.preview, BESIDE)
         fields = self.block._fields_widget  # pylint: disable=protected-access
-        self.assertEqual((fields.minimumWidth(), fields.maximumWidth()), (BESIDE_FIELD_MIN_WIDTH,
-                                                                          FIELD_COLUMN_MAX_WIDTH))
+        section = self.block._stroke_section  # pylint: disable=protected-access
+        self.assertEqual((fields.minimumWidth(), section.maximumWidth()), (BESIDE_FIELD_MIN_WIDTH,
+                                                                           FIELD_COLUMN_MAX_WIDTH))
 
     def test_controls_stay_grouped_in_the_fields_column(self) -> None:
         """Side panels keep the color pair and checkboxes under the fields at the same width, and no control column
@@ -117,6 +120,53 @@ class StrokeBlockTest(IntraPaintTestCase):
                     paint_left = paint.mapTo(self.block, paint.rect().topLeft()).x()
                     self.assertLess(paint_left - fields_right, 2 * FIELD_COLUMN_MAX_WIDTH - columns[0].width())
 
+    def test_sections_have_headers_except_in_short_strips(self) -> None:
+        """Side panels and tall strips title the Stroke and options sections. A strip too short for the headers hides
+        them and shows the controls whatever the remembered choice."""
+        stroke = self.block._stroke_section  # pylint: disable=protected-access
+        options = self.block._options_section  # pylint: disable=protected-access
+        self.assertEqual((stroke.title, options.title), ('Stroke', 'Color and options'))
+        for orientation, size, headers in ((SIDE, QSize(300, 900), True), (STRIP, QSize(1000, 320), True),
+                                           (STRIP, QSize(1000, 90), False)):
+            with self.subTest(orientation=orientation, size=size):
+                self.panel.set_fit_space(orientation, size)
+                self.assertEqual(self.block.arrangement.headers, headers)
+                self.assertEqual(stroke.is_header_visible(), headers)
+        stroke.set_expanded(False)
+        self.assertFalse(stroke.is_collapsed())
+        self.panel.set_fit_space(STRIP, QSize(1000, 320))
+        self.assertTrue(stroke.is_collapsed())
+
+    def test_collapsed_stroke_section_summarizes_its_fields(self) -> None:
+        """The Stroke header shows the fields' values while collapsed."""
+        Cache().set(Cache.DRAW_TOOL_BRUSH_SIZE, 48)
+        summary = self.block._stroke_section.summary()  # pylint: disable=protected-access
+        self.assertIn('Size 48 px', summary)
+        self.assertIn('Opacity', summary)
+
+    def test_eraser_options_section_has_no_color_title(self) -> None:
+        """A tool with no color row titles the second section "Options"."""
+        eraser = EraserToolPanel()
+        self.assertEqual(eraser.stroke_block._options_section.title, 'Options')  # pylint: disable=protected-access
+
+    def test_resize_during_a_plan_does_not_plan_again(self) -> None:
+        """A resize that trial placements cause while a plan runs is ignored, so planning can't recurse."""
+        self.panel.show()
+        self.panel.resize(300, 400)
+        planner = self.panel._planner  # pylint: disable=protected-access
+        calls = []
+        original = planner.update
+
+        def _update(*args, **kwargs):
+            calls.append(args)
+            if len(calls) == 1:
+                self.panel.resize(self.panel.width() + 7, self.panel.height())
+            return original(*args, **kwargs)
+
+        planner.update = _update  # type: ignore[method-assign]
+        self.panel.resize(320, 400)
+        self.assertEqual(len(calls), 1)
+
     def test_rows_stack_when_they_do_not_fit_across(self) -> None:
         """A narrow side panel stacks the checkboxes into a column and a wider one keeps them in a row. A strip keeps
         them in a row, however narrow."""
@@ -137,6 +187,35 @@ class StrokeBlockTest(IntraPaintTestCase):
         self.panel.set_fit_space(STRIP, QSize(1300, 160))
         self.assertEqual(len(orientations), 1, orientations)
         self.assertEqual(self.block.arrangement.orientation, STRIP)
+
+    def test_tool_sections_join_the_arrangement(self) -> None:
+        """A tool section goes below the block's sections in a side panel and in the next column in a strip, an
+        optional one is planned with the block's items, and a hidden one's column takes no spare width."""
+        section = PanelSection('Tool', QLabel('Tool controls'))
+        forms: list[tuple[Orientation, Optional[int]]] = []
+
+        def _apply(orientation: Orientation, form: Optional[int]) -> None:
+            forms.append((orientation, form))
+            section.setVisible(form is not None)
+
+        self.panel.add_tool_section(section, FitItem(1), _apply)
+        self.panel.set_fit_space(SIDE, QSize(400, 900))
+        settle_layouts(self.panel)
+        options = self.block._options_section  # pylint: disable=protected-access
+        self.assertEqual(forms[-1], (SIDE, 0))
+        self.assertGreaterEqual(section.y(), options.geometry().bottom())
+        self.assertEqual(section.x(), options.x())
+        self.panel.set_fit_space(STRIP, QSize(1400, 200))
+        settle_layouts(self.panel)
+        self.assertEqual(forms[-1], (STRIP, 0))
+        self.assertGreater(section.x(), options.geometry().right())
+        self.assertEqual(section.y(), options.y())
+        base = self.panel.fit_base_size(STRIP)
+        self.panel.set_fit_space(STRIP, QSize(base.width(), 200))
+        self.assertEqual(forms[-1], (STRIP, None))
+        grid = self.block.layout()
+        assert isinstance(grid, QGridLayout)
+        self.assertEqual(grid.columnStretch(grid.getItemPosition(grid.indexOf(section))[1]), 0)
 
 
 class ToolPanelsOnStrokeBlockTest(ToolTestCase):

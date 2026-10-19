@@ -85,6 +85,7 @@ class UndoStack(metaclass=Singleton):
         self._group_started = False
         self._group_type = ''
         self._busy_change = ''
+        self._unrecorded_depth = 0
         self._undo_in_progress = False
         self._redo_in_progress = False
         self._errors: list[BaseException] = []
@@ -161,6 +162,8 @@ class UndoStack(metaclass=Singleton):
         try:
             if not skip_initial_call:
                 action()
+            if self._unrecorded_depth > 0:
+                return True
             if self._open_group_depth > 0 and not self._group_started:
                 self._stack.beginMacro(self._group_type)
                 self._group_started = True
@@ -171,6 +174,18 @@ class UndoStack(metaclass=Singleton):
         finally:
             self._busy_change = ''
         return True
+
+    @contextmanager
+    def unrecorded(self) -> Generator[None, None, None]:
+        """Runs actions committed inside the block without adding them to the history.
+
+        For work on throwaway objects, like a brush preview's scratch layer, whose undo steps would otherwise bury the
+        user's own. Open groups and gestures are unaffected."""
+        self._unrecorded_depth += 1
+        try:
+            yield
+        finally:
+            self._unrecorded_depth -= 1
 
     @contextmanager
     def combining_actions(self, action_type: str) -> Generator[None, None, None]:
@@ -280,6 +295,7 @@ class UndoStack(metaclass=Singleton):
             if self._signal_manager.receivers(SIGNAL(signature)) > 0:
                 signal.disconnect()
         self._open_group_depth = 0
+        self._unrecorded_depth = 0
         self._gesture_open = False
         self._group_started = False
         self._errors.clear()

@@ -2,47 +2,89 @@
   "minimum": {
     "problems": [],
     "size": [
-      856,
-      418
+      424,
+      805
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: QTabWidget is 422x410, minimum 850x410"
+      "squeezed: QTabWidget is 206x821, minimum 418x797"
     ],
     "size": [
-      428,
-      418
+      212,
+      829
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      856,
-      418
+      424,
+      829
     ]
   },
   "short": {
     "problems": [
-      "squeezed: QTabWidget is 850x201, minimum 850x410"
+      "squeezed: QTabWidget is 418x394, minimum 418x797"
     ],
     "size": [
-      856,
-      209
+      424,
+      402
+    ]
+  },
+  "strip_minimum": {
+    "problems": [],
+    "size": [
+      424,
+      805
+    ]
+  },
+  "strip_narrow": {
+    "problems": [],
+    "size": [
+      212,
+      829
+    ]
+  },
+  "strip_preferred": {
+    "problems": [],
+    "size": [
+      424,
+      829
+    ]
+  },
+  "strip_short": {
+    "problems": [],
+    "size": [
+      424,
+      402
+    ]
+  },
+  "strip_tall": {
+    "problems": [],
+    "size": [
+      424,
+      2487
+    ]
+  },
+  "strip_wide": {
+    "problems": [],
+    "size": [
+      1600,
+      829
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      856,
-      1254
+      424,
+      2487
     ]
   },
   "wide": {
     "problems": [],
     "size": [
-      2568,
-      418
+      1600,
+      829
     ]
   }
 }

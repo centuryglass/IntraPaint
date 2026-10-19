@@ -24,7 +24,7 @@ their state survives.
 from dataclasses import dataclass, field
 from typing import Callable, Optional, Sequence
 
-from PySide6.QtCore import QEvent, QSize
+from PySide6.QtCore import QEvent, QMargins, QSize
 from PySide6.QtGui import QIcon, QResizeEvent
 from PySide6.QtWidgets import (QApplication, QBoxLayout, QFrame, QLabel, QScrollArea, QSizePolicy, QVBoxLayout,
                                QWidget)
@@ -175,6 +175,10 @@ class DockPanel(QWidget):
     def build(self, ui: PanelLayout) -> None:
         """Declares sections and controls. Subclasses override it. Called once, from the constructor."""
 
+    def content_margins(self) -> QMargins:
+        """Returns the margins between the panel's edges and its scrolled content."""
+        return self._body_layout.contentsMargins()
+
     @property
     def header(self) -> PanelHeader:
         """The panel's header, which hosts the More button."""
@@ -298,6 +302,25 @@ class DockPanel(QWidget):
         spacing = max(self.layout().spacing(), 0)
         return QSize(max(body.width(), header.width()), body.height() + spacing + header.height())
 
+    def measure_with_control(self, control: _Control) -> QSize:
+        """Returns the content's minimum size with one more control added in its smallest form, and every control
+        already shown in its smallest form. The header, extra items and controls left out stay as placed, and the panel
+        is arranged as before afterwards.
+
+        Layout checks use it to ask whether a control left in More or hidden would have fit if the shown controls had
+        given it room.
+        """
+        planner = self._fit_planner()
+        placement = planner.placement
+        if placement is None:
+            return self.measure()
+        offset = 1 + len(self._extra_items)
+        trial = list(placement)
+        for index, other in enumerate(self._controls()):
+            if other is control or other.form is not None:
+                trial[offset + index] = max(len(other.forms), 1) - 1
+        return planner.measure_placement(tuple(trial))
+
     def prepare_fit(self, orientation: Orientation) -> None:
         """Called before each plan's trials. Subclasses override it to put nested content in a fixed state."""
 
@@ -326,14 +349,21 @@ class DockPanel(QWidget):
 
     def finish_placement(self) -> None:
         """Updates the More popover and button after every item is placed. Overrides should call this."""
-        self._header.set_popover_content(self._overflow_content if self._overflow else None)
+        content = self.more_content()
+        self._header.set_popover_content(content)
         more_button = self._header.more_button
         if self._header_collapsed:
             self._body_layout.addWidget(more_button)
         else:
             self._header.restore_more_button()
         # Reparenting hides a widget:
-        more_button.setVisible(bool(self._overflow))
+        more_button.setVisible(content is not None)
+
+    def more_content(self) -> Optional[QWidget]:
+        """Returns the widget the More popover shows, or None to hide the More button. By default it holds the
+        controls that didn't fit. Overrides that always show the button keep the header's width the same before and
+        after a plan."""
+        return self._overflow_content if self._overflow else None
 
     def _controls(self) -> list[_Control]:
         return [control for section in self._layout_model.sections for control in section.controls]

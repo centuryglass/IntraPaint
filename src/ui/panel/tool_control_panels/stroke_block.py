@@ -2,43 +2,53 @@
 
 `StrokeBlock` is a view over `Cache` values, in a fixed order so Size never moves between tools:
 
-1. Size, Opacity and Hardness as `SliderField`s, with pen pressure links inside the fields. The links appear once a
-   tablet has been seen and add no row. Key hints are in the field tooltips.
-2. The color pair and Pattern, if the tool paints a color.
-3. Antialiasing and "Only inside selection".
+1. A Stroke section: Size, Opacity and Hardness as `SliderField`s, with pen pressure links inside the fields. The
+   links appear once a tablet has been seen and add no row. Key hints are in the field tooltips.
+2. A "Color and options" section, or "Options" for a tool with no color: the color pair and Pattern if the tool
+   paints a color, then Antialiasing and "Only inside selection".
 
-Tool-specific sections go after the block, in `StrokeToolPanel`.
+Both sections are `PanelSection`s that collapse to a summary line. A strip too short for headers hides them.
+
+Tool-specific sections go after the block, in `StrokeToolPanel`. Sections added with `StrokeBlock.add_tool_section`
+join the block's grid, and can be planned with its items.
 
 Layout is planned by fit (`src.ui.layout.panel_fit`) in the space the Tools panel gives `StrokeToolPanel`:
-- Side: the fields, color pair and checkboxes share column 1, and a preview beside them takes column 2. Strip: the
-  fields in column 1, the color pair and checkboxes in column 2, and a preview beside the fields in column 3.
+- Side: the Stroke and options sections share column 1, and a preview beside them takes column 2. Tool sections go
+  below, spanning every column up to their own width caps. Strip: the Stroke section in column 1, the options section
+  in column 2, a preview beside them in column 3, and one column per tool section after that.
 - Every control column stops at `FIELD_COLUMN_MAX_WIDTH`, so a wide panel leaves spare width after the last column
   instead of stretching the columns apart.
 - The color pair and Pattern, and the checkboxes, are required items. In a side panel each row stacks into a column
   when it doesn't fit across. In a strip the rows stay inline, because stacking would make them taller.
-- A tool with a `StrokePreview` shows it beside the fields or below them, whichever fits, or hides it. The preview is
-  decorative, so it never moves to the More popover. Beside the fields, they keep at least
+- A tool with a `StrokePreview` shows it beside the fields or below them in the Stroke section, whichever fits, or
+  hides it. The preview is decorative, so it never moves to the More popover. Beside the fields, they keep at least
   `BESIDE_FIELD_MIN_WIDTH`.
+- Headers are required in a side panel and optional in a strip, where they cost height.
 """
 import math
+from collections.abc import Hashable
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Callable, Optional
 
-from PySide6.QtCore import QEvent, QPointF, QSize, Qt
-from PySide6.QtGui import QColor, QPainter, QPaintEvent, QPalette, QRadialGradient, QResizeEvent
+from PySide6.QtCore import QEvent, QPointF, QSize, Qt, QTimer
+from PySide6.QtGui import QBrush, QColor, QImage, QPalette, QResizeEvent
 from PySide6.QtWidgets import (QApplication, QBoxLayout, QCheckBox, QGridLayout, QLabel, QLayout, QSizePolicy,
                                QVBoxLayout, QWidget)
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.image.brush.qt_paint_brush import QtPaintBrush
+from src.image.layers.image_layer import ImageLayer
 from src.ui.ink_style import set_signal
-from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
+from src.ui.input_fields.fill_style_combo_box import BRUSH_PATTERN_SOLID, FillStyleComboBox
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.slider_field import SliderField
+from src.ui.panel.tool_control_panels.brush_preview import BrushPreview
 from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement, fresh_minimum_size
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.panel_section import PanelSection
+from src.undo_stack import UndoStack
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.stroke_block'
@@ -50,6 +60,9 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 ONLY_INSIDE_SELECTION_LABEL = _tr('Only inside selection')
+STROKE_SECTION_TITLE = _tr('Stroke')
+COLOR_AND_OPTIONS_SECTION_TITLE = _tr('Color and options')
+OPTIONS_SECTION_TITLE = _tr('Options')
 PIXEL_SUFFIX = _tr(' px')
 PERCENT_SUFFIX = _tr('%')
 KEYS_TOOLTIP = _tr('{description}\nKeys: {decrease} / {increase}')
@@ -67,6 +80,7 @@ CONTROL_COLUMN_STRETCH = 100
 SPARE_COLUMN_STRETCH = 1
 
 # The block's planner items, and their forms:
+HEADERS_ITEM = 'headers'
 PAINT_ITEM = 'paint'
 CHECKS_ITEM = 'checks'
 PREVIEW_ITEM = 'preview'
@@ -74,8 +88,10 @@ INLINE = 0
 STACKED = 1
 BESIDE = 0
 BELOW = 1
-PREVIEW_PRIORITY = 1
+HEADERS_PRIORITY = 1
+PREVIEW_PRIORITY = 2
 _FIT_ITEMS = {
+    HEADERS_ITEM: FitItem(HEADERS_PRIORITY),
     PAINT_ITEM: FitItem(REQUIRED, 2),
     CHECKS_ITEM: FitItem(REQUIRED, 2),
     PREVIEW_ITEM: FitItem(PREVIEW_PRIORITY, 2),
@@ -84,79 +100,98 @@ _FIT_ITEMS = {
 
 @dataclass(frozen=True)
 class StrokeArrangement:
-    """How a `StrokeBlock` is laid out: the orientation, whether each row is stacked into a column, and the preview's
-    form, or None while it is hidden."""
+    """How a `StrokeBlock` is laid out: the orientation, whether each row is stacked into a column, the preview's
+    form or None while it is hidden, and whether the section headers show."""
     orientation: Orientation
     paint_stacked: bool = False
     checks_stacked: bool = False
     preview: Optional[int] = None
+    headers: bool = True
 
 
-class StrokePreview(QWidget):
-    """Draws a sample stroke with the current size, hardness and opacity, for the Qt brush tools."""
+class StrokePreview(BrushPreview):
+    """Previews a sample stroke for the Qt brush tools.
+
+    The render runs a `QtPaintBrush` over the sample stroke on a scratch `ImageLayer`, so it honors the same settings
+    as the canvas.
+    """
 
     def __init__(self, size_key: str, opacity_key: Optional[str], hardness_key: Optional[str],
-                 color_key: Optional[str], parent: Optional[QWidget] = None) -> None:
-        super().__init__(parent)
+                 color_key: Optional[str], pattern_key: Optional[str] = None, antialias_key: Optional[str] = None,
+                 parent: Optional[QWidget] = None, render_timer: Optional[QTimer] = None) -> None:
         self._size_key = size_key
         self._opacity_key = opacity_key
         self._hardness_key = hardness_key
         self._color_key = color_key
+        self._pattern_key = pattern_key
+        self._antialias_key = antialias_key
+        super().__init__((size_key, opacity_key, hardness_key, color_key, pattern_key, antialias_key), parent,
+                         render_timer)
         self.setMinimumSize(PREVIEW_MIN_SIZE)
         self.setMaximumSize(PREVIEW_MAX_SIZE)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        cache = Cache()
-        for key in (size_key, opacity_key, hardness_key, color_key):
-            if key is not None:
-                cache.connect(self, key, lambda *_: self.update())
 
     def sizeHint(self) -> QSize:
         """Returns a short, wide area."""
         return PREVIEW_MIN_SIZE
 
-    def paintEvent(self, _event: Optional[QPaintEvent]) -> None:  # pylint: disable=invalid-name
-        """Draws overlapping soft stamps along a wave, shrunk to fit the height."""
-        cache = Cache()
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        palette = self.palette()
-        painter.fillRect(self.rect(), palette.color(QPalette.ColorRole.Base))
-        color = QColor(palette.color(QPalette.ColorRole.Text))
+    def _value(self, key: Optional[str], default: Any) -> Any:
+        return default if key is None else Cache().get(key)
+
+    def _color(self) -> QColor:
+        color = QColor(self.palette().color(QPalette.ColorRole.Text))
         if self._color_key is not None:
-            color = cache.get_color(self._color_key, color)
-        opacity = cache.get(self._opacity_key) if self._opacity_key is not None else 1.0
-        hardness = cache.get(self._hardness_key) if self._hardness_key is not None else 1.0
-        diameter = float(cache.get(self._size_key))
+            color = Cache().get_color(self._color_key, color)
+        return color
+
+    def _inputs(self) -> Hashable:
+        return (self._value(self._size_key, 1), self._value(self._opacity_key, 1.0),
+                self._value(self._hardness_key, 1.0), self._color().name(QColor.NameFormat.HexArgb),
+                self._value(self._pattern_key, BRUSH_PATTERN_SOLID), self._value(self._antialias_key, False))
+
+    def _sample_stroke(self, size: QSize) -> tuple[float, list[QPointF]]:
+        """Returns the brush diameter shrunk to fit, and points along a wave at the brush's stamp spacing."""
         margin = 6.0
-        available = max(self.height() - 2 * margin, 1.0)
-        diameter = max(1.0, min(diameter, available * 0.5))
+        available = max(size.height() - 2 * margin, 1.0)
+        diameter = max(1.0, min(float(self._value(self._size_key, 1)), available * 0.5))
         radius = diameter / 2
-        left, right = margin + radius, self.width() - margin - radius
+        left, right = margin + radius, size.width() - margin - radius
         if right <= left:
-            return
+            return diameter, []
         amplitude = max((available - diameter) / 2, 0.0)
         spacing = max(1.0, diameter * PREVIEW_STAMP_SPACING)
-        stamp_alpha = max(0.0, min(1.0, opacity))
-        # Soft brushes build up under overlap, so each stamp's alpha is a fraction of the stroke opacity:
-        stamp_color = QColor(color)
-        stamp_color.setAlphaF(stamp_alpha * (0.35 if hardness < 1.0 else 1.0))
-        painter.setPen(Qt.PenStyle.NoPen)
-        x = left
-        center_y = self.height() / 2
+        center_y = size.height() / 2
         span = max(right - left, 1.0)
+        points = []
+        x = left
         while x <= right:
-            y = center_y + amplitude * math.sin((x - left) / span * 2 * math.pi)
-            gradient = QRadialGradient(QPointF(x, y), radius)
-            inner = QColor(stamp_color)
-            outer = QColor(stamp_color)
-            outer.setAlpha(0)
-            gradient.setColorAt(0.0, inner)
-            gradient.setColorAt(max(hardness, 0.01) * 0.999, inner)
-            gradient.setColorAt(1.0, outer)
-            painter.setBrush(gradient)
-            painter.drawEllipse(QPointF(x, y), radius, radius)
+            points.append(QPointF(x, center_y + amplitude * math.sin((x - left) / span * 2 * math.pi)))
             x += spacing
-        painter.end()
+        return diameter, points
+
+    def _render(self, size: QSize) -> QImage:
+        """Draws the sample stroke with a `QtPaintBrush` on a scratch layer, keeping its edits out of undo history."""
+        diameter, points = self._sample_stroke(size)
+        with UndoStack().unrecorded():
+            layer = ImageLayer(size, 'brush preview')
+            brush = QtPaintBrush(layer)
+            brush.brush_size = round(diameter)
+            brush.brush_color = self._color()
+            brush.opacity = float(self._value(self._opacity_key, 1.0))
+            brush.hardness = float(self._value(self._hardness_key, 1.0))
+            brush.antialiasing = bool(self._value(self._antialias_key, False))
+            pattern = self._value(self._pattern_key, BRUSH_PATTERN_SOLID)
+            try:
+                style = FillStyleComboBox.get_style(pattern)
+            except KeyError:
+                style = Qt.BrushStyle.SolidPattern
+            brush.set_pattern_brush(None if style == Qt.BrushStyle.SolidPattern else QBrush(style))
+            brush.start_stroke()
+            for point in points:
+                brush.stroke_to(point.x(), point.y(), None, None, None)
+            brush.end_stroke()
+            brush.connect_to_layer(None)
+            return layer.image
 
 
 def build_paint_row(color_key: Optional[str], pattern_key: Optional[str], parent: QWidget) -> Optional[QWidget]:
@@ -236,7 +271,7 @@ class StrokeBlock(QWidget):
         self._pressure_fields: list[NumberField] = []
         self._arrangement: Optional[StrokeArrangement] = None
 
-        self._fields_widget = QWidget(self)
+        self._fields_widget = QWidget()
         fields_layout = QVBoxLayout(self._fields_widget)
         fields_layout.setContentsMargins(0, 0, 0, 0)
         fields_layout.setSpacing(4)
@@ -258,7 +293,7 @@ class StrokeBlock(QWidget):
         paint_layout = self._paint_widget.layout() if self._paint_widget is not None else None
         self._paint_layout = paint_layout if isinstance(paint_layout, QBoxLayout) else None
 
-        self._checks_widget = QWidget(self)
+        self._checks_widget = QWidget()
         self._checks_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._checks_widget)
         self._checks_layout.setContentsMargins(0, 0, 0, 0)
         self._checks_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
@@ -271,14 +306,39 @@ class StrokeBlock(QWidget):
 
         self._preview: Optional[StrokePreview] = None
         if show_preview:
-            self._preview = StrokePreview(size_key, opacity_key, hardness_key, color_key, self)
+            self._preview = StrokePreview(size_key, opacity_key, hardness_key, color_key, pattern_key, antialias_key,
+                                          self)
 
+        self._stroke_body = QWidget()
+        self._stroke_layout = QVBoxLayout(self._stroke_body)
+        self._stroke_layout.setContentsMargins(0, 0, 0, 0)
+        self._stroke_layout.setSpacing(6)
+        self._stroke_layout.addWidget(self._fields_widget)
+        self._stroke_section = PanelSection(STROKE_SECTION_TITLE, self._stroke_body)
+        self._stroke_section.bind_summary(self._stroke_summary,
+                                          *(field.valueChanged for field in self._fields.values()))
+        self._options_body = QWidget()
+        options_layout = QVBoxLayout(self._options_body)
+        options_layout.setContentsMargins(0, 0, 0, 0)
+        options_layout.setSpacing(6)
+        if self._paint_widget is not None:
+            options_layout.addWidget(self._paint_widget)
+        options_layout.addWidget(self._checks_widget)
+        self._options_section = PanelSection(
+            COLOR_AND_OPTIONS_SECTION_TITLE if self._paint_widget is not None else OPTIONS_SECTION_TITLE,
+            self._options_body)
+
+        # The tool's own sections, after the block's, and whether each takes the height the others leave:
+        self._tool_sections: list[tuple[PanelSection, bool]] = []
+        # Each tool section's grid column in a strip:
+        self._tool_columns: dict[PanelSection, int] = {}
         self._grid = QGridLayout(self)
         self._grid.setContentsMargins(0, 0, 0, 0)
         self._grid.setHorizontalSpacing(COLUMN_SPACING)
         self._grid.setVerticalSpacing(6)
-        self._fit_keys = [key for key, present in ((PAINT_ITEM, self._paint_widget is not None), (CHECKS_ITEM, True),
-                                                   (PREVIEW_ITEM, self._preview is not None)) if present]
+        self._fit_keys = [key for key, present in ((HEADERS_ITEM, True), (PAINT_ITEM, self._paint_widget is not None),
+                                                   (CHECKS_ITEM, True), (PREVIEW_ITEM, self._preview is not None))
+                          if present]
         self._arrange(StrokeArrangement(Orientation.SIDE))
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -355,19 +415,52 @@ class StrokeBlock(QWidget):
         side = orientation == Orientation.SIDE
         self._arrange(StrokeArrangement(orientation, paint_stacked=side and forms.get(PAINT_ITEM) == STACKED,
                                         checks_stacked=side and forms.get(CHECKS_ITEM) == STACKED,
-                                        preview=forms.get(PREVIEW_ITEM)))
+                                        preview=forms.get(PREVIEW_ITEM),
+                                        headers=side or forms.get(HEADERS_ITEM) is not None))
+
+    def add_tool_section(self, section: PanelSection, stretch: bool = False) -> None:
+        """Adds a tool's own section after the block's: below them in a side panel, and in the next column in a
+        strip. A `stretch` section takes the height the others leave. The owner caps the section's width."""
+        self._tool_sections.append((section, stretch))
+        arrangement = self.arrangement
+        self._arrangement = None
+        self._arrange(arrangement)
+
+    def set_tool_section_stretch(self, section: PanelSection, stretch: bool) -> None:
+        """Changes whether a tool section takes the height the others leave."""
+        sections = [(added, stretch if added is section else added_stretch)
+                    for added, added_stretch in self._tool_sections]
+        if sections != self._tool_sections:
+            self._tool_sections = sections
+            arrangement = self.arrangement
+            self._arrangement = None
+            self._arrange(arrangement)
+
+    def update_tool_columns(self) -> None:
+        """Shares a strip's spare width only between tool section columns that show, after a section is shown or
+        hidden."""
+        for section, column in self._tool_columns.items():
+            self._grid.setColumnStretch(column, 0 if section.isHidden() else CONTROL_COLUMN_STRETCH)
+
+    def _stroke_summary(self) -> str:
+        return ', '.join(f'{field.label()} {field.value_text()}' for field in self._fields.values())
 
     def _arrange(self, arrangement: StrokeArrangement) -> None:
         if arrangement == self._arrangement:
             return
         self._arrangement = arrangement
-        for widget in (self._fields_widget, self._paint_widget, self._checks_widget, self._preview):
+        tool_sections = [section for section, _ in self._tool_sections]
+        for widget in (self._stroke_section, self._options_section, self._preview, *tool_sections):
             if widget is not None:
                 self._grid.removeWidget(widget)
-        for index in range(4):
+        if self._preview is not None:
+            self._stroke_layout.removeWidget(self._preview)
+        for index in range(self._grid.columnCount()):
             self._grid.setColumnStretch(index, 0)
-        for index in range(5):
+        for index in range(self._grid.rowCount()):
             self._grid.setRowStretch(index, 0)
+        for section in (self._stroke_section, self._options_section, *tool_sections):
+            section.set_header_visible(arrangement.headers)
         self._checks_layout.setDirection(QBoxLayout.Direction.TopToBottom if arrangement.checks_stacked
                                          else QBoxLayout.Direction.LeftToRight)
         if self._paint_layout is not None:
@@ -380,53 +473,64 @@ class StrokeBlock(QWidget):
             self._preview.setVisible(arrangement.preview is not None)
         beside = arrangement.preview == BESIDE
         self._fields_widget.setMinimumWidth(BESIDE_FIELD_MIN_WIDTH if beside else 0)
-        for widget in (self._fields_widget, self._paint_widget, self._checks_widget):
-            if widget is not None:
-                widget.setMaximumWidth(FIELD_COLUMN_MAX_WIDTH)
-        # Top-aligned, so Size stays put when a taller preview sits beside the fields. No horizontal alignment, which
-        # would size each widget to its hint instead of its column:
+        for widget in (self._stroke_section, self._options_section):
+            widget.setMaximumWidth(FIELD_COLUMN_MAX_WIDTH)
+        if self._preview is not None and arrangement.preview == BELOW:
+            self._stroke_layout.addWidget(self._preview)
+        # Top-aligned, so Size stays put when a taller preview sits beside the sections. No horizontal alignment,
+        # which would size each widget to its hint instead of its column:
         top = Qt.AlignmentFlag.AlignTop
+        self._grid.addWidget(self._stroke_section, 0, 0, top)
         if arrangement.orientation == Orientation.STRIP:
-            self._grid.addWidget(self._fields_widget, 0, 0, 3, 1, top)
-            row = 0
-            for widget in (self._paint_widget, self._checks_widget):
-                if widget is not None:
-                    self._grid.addWidget(widget, row, 1)
-                    row += 1
-            if self._preview is not None and beside:
-                self._grid.addWidget(self._preview, 0, 2, 3, 1)
-            elif self._preview is not None and arrangement.preview == BELOW:
-                self._grid.addWidget(self._preview, row, 1)
+            self._grid.addWidget(self._options_section, 0, 1, top)
             self._grid.setColumnStretch(0, CONTROL_COLUMN_STRETCH)
             self._grid.setColumnStretch(1, CONTROL_COLUMN_STRETCH)
-            columns = 2
+            column = 2
             if self._preview is not None and beside:
+                self._grid.addWidget(self._preview, 0, 2)
                 self._grid.setColumnStretch(2, CONTROL_COLUMN_STRETCH)
-                columns = 3
-            self._grid.setColumnStretch(columns, SPARE_COLUMN_STRETCH)
-            # Height beyond what the rows need goes below them:
-            self._grid.setRowStretch(3, 1)
+                column = 3
+            if len(self._tool_sections) > 0:
+                # With columns after it, an options column wider than its content would leave a gap before them:
+                self._options_section.setMaximumWidth(min(FIELD_COLUMN_MAX_WIDTH,
+                                                          self._options_section.sizeHint().width()))
+            self._tool_columns = {}
+            for section, stretch in self._tool_sections:
+                # A stretching section spans the spare row too, so it fills the strip's height:
+                if stretch:
+                    self._grid.addWidget(section, 0, column, 2, 1)
+                else:
+                    self._grid.addWidget(section, 0, column, top)
+                self._tool_columns[section] = column
+                column += 1
+            self.update_tool_columns()
+            self._grid.setColumnStretch(column, SPARE_COLUMN_STRETCH)
+            # Height beyond what the sections need goes below them:
+            self._grid.setRowStretch(1, 1)
             return
-        self._grid.addWidget(self._fields_widget, 0, 0, top)
-        row = 1
+        self._tool_columns = {}
+        self._grid.addWidget(self._options_section, 1, 0, top)
+        self._grid.setColumnStretch(0, CONTROL_COLUMN_STRETCH)
+        spare_column = 1
         if self._preview is not None and beside:
-            # The preview spans the rows, and every control stays in column 1 under the fields:
-            self._grid.addWidget(self._preview, 0, 1, 3, 1)
-            self._grid.setColumnStretch(0, CONTROL_COLUMN_STRETCH)
+            # The preview spans both sections' rows, and the sections stay in column 1:
+            self._grid.addWidget(self._preview, 0, 1, 2, 1)
             self._grid.setColumnStretch(1, CONTROL_COLUMN_STRETCH)
-            self._grid.setColumnStretch(2, SPARE_COLUMN_STRETCH)
-        else:
-            self._grid.setColumnStretch(0, CONTROL_COLUMN_STRETCH)
-            self._grid.setColumnStretch(1, SPARE_COLUMN_STRETCH)
-            if self._preview is not None and arrangement.preview == BELOW:
-                self._grid.addWidget(self._preview, row, 0)
-                row += 1
-        for widget in (self._paint_widget, self._checks_widget):
-            if widget is not None:
-                self._grid.addWidget(widget, row, 0)
-                row += 1
-        # Height beyond what the rows need goes below them:
-        self._grid.setRowStretch(max(row, 3), 1)
+            spare_column = 2
+        self._grid.setColumnStretch(spare_column, SPARE_COLUMN_STRETCH)
+        # Tool sections span every column, so a section capped wider than the block's columns can use the spare one:
+        row = 2
+        stretched = False
+        for section, stretch in self._tool_sections:
+            self._grid.addWidget(section, row, 0, 1, spare_column + 1,
+                                 Qt.AlignmentFlag(0) if stretch else top)
+            if stretch:
+                self._grid.setRowStretch(row, 1)
+                stretched = True
+            row += 1
+        # Height beyond what the sections need goes below them, unless a tool section takes it:
+        if not stretched:
+            self._grid.setRowStretch(row, 1)
 
 
 class StrokeToolPanel(QWidget):
@@ -435,8 +539,11 @@ class StrokeToolPanel(QWidget):
     - It is a `src.ui.layout.panel_fit.FitContent`: the Tools panel measures it at `fit_base_size`, then
       `set_fit_space` plans the block in the space left over.
     - Without a host that calls `set_fit_space`, it plans for its own size when resized. That size must not follow
-      its content, or each plan would resize it and plan again. A new parent clears the host's space, so a host calls
-      `set_fit_space` again after adding the panel.
+      its content, or each plan would resize it and plan again. A resize during a plan doesn't start another.
+      A new parent clears the host's space, so a host calls `set_fit_space` again after adding the panel.
+    - Sections added with `add_tool_section` join the block's arrangement, and those given a `FitItem` are planned
+      with the block's items. Controls a plan leaves out go in `overflow_content`, which the Tools panel shows in its
+      More popover.
     - `set_orientation` arranges it for an orientation, vertical for a side panel. Subclasses extend it for their own
       sections.
     """
@@ -446,29 +553,74 @@ class StrokeToolPanel(QWidget):
         self._block = block
         self._orientation = Qt.Orientation.Vertical
         self._space: Optional[QSize] = None
+        self._planning = False
         self._layout = QVBoxLayout(self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._layout.addWidget(block)
         for section in sections or []:
             self._layout.addWidget(section)
-        self._planner = FitPlanner(block.fit_items, block.apply_fit, lambda: fresh_minimum_size(self))
+        self._tool_items: list[tuple[FitItem, Callable[[Orientation, Optional[int]], None]]] = []
+        self._overflow = QWidget()
+        self._overflow_layout = QVBoxLayout(self._overflow)
+        self._overflow_layout.setContentsMargins(0, 0, 0, 0)
+        self._planner = self._build_planner()
 
     @property
     def stroke_block(self) -> StrokeBlock:
         """The panel's stroke controls."""
         return self._block
 
+    @property
+    def fit_space(self) -> Optional[QSize]:
+        """The size being planned for, or the latest plan's, or None before the first plan."""
+        return self._planner.available
+
+    def add_tool_section(self, section: PanelSection, item: Optional[FitItem] = None,
+                         apply: Optional[Callable[[Orientation, Optional[int]], None]] = None,
+                         stretch: bool = False) -> None:
+        """Adds a section after the block's, with `StrokeBlock.add_tool_section`.
+
+        With an `item`, planning calls `apply` with the orientation and the form the item takes, or None for an
+        optional item left out. `apply` hides a left-out section, or moves its controls to `overflow_content`.
+        """
+        self._block.add_tool_section(section, stretch)
+        if item is not None:
+            assert apply is not None
+            self._tool_items.append((item, apply))
+            self._planner = self._build_planner()
+
+    def overflow_content(self) -> QWidget:
+        """Returns the widget holding controls the latest plan left out, for the host's More popover. Subclasses add
+        and remove its controls in their `add_tool_section` callbacks."""
+        return self._overflow
+
+    @property
+    def overflow_layout(self) -> QVBoxLayout:
+        """The layout of `overflow_content`."""
+        return self._overflow_layout
+
     def fit_base_size(self, orientation: Orientation) -> QSize:
-        """Returns the minimum size with the block's required items in their smallest forms and no preview, and
-        keeps that arrangement until the next `set_fit_space`."""
+        """Returns the minimum size with required items in their smallest forms and no optional items, and keeps that
+        arrangement until the next `set_fit_space`."""
         self._follow_orientation(orientation)
         return self._planner.base_size(orientation)
 
     def set_fit_space(self, orientation: Orientation, size: QSize) -> None:
-        """Plans the block for the space the Tools panel gives the panel."""
+        """Plans the block and the tool's sections for the space the Tools panel gives the panel."""
         self._follow_orientation(orientation)
         self._space = QSize(size)
         self._planner.update(orientation, size)
+
+    def _build_planner(self) -> FitPlanner:
+        items = [*self._block.fit_items, *(item for item, _ in self._tool_items)]
+        return FitPlanner(items, self._apply_fit, lambda: fresh_minimum_size(self))
+
+    def _apply_fit(self, orientation: Orientation, placement: Placement) -> None:
+        block_count = len(self._block.fit_items)
+        self._block.apply_fit(orientation, placement[:block_count])
+        for (_, apply), form in zip(self._tool_items, placement[block_count:]):
+            apply(orientation, form)
+        self._block.update_tool_columns()
 
     def set_orientation(self, orientation: Qt.Orientation) -> None:
         """Vertical is a side panel, horizontal a strip. Subclasses extend this to arrange their own sections."""
@@ -483,8 +635,13 @@ class StrokeToolPanel(QWidget):
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
         """Plans for the new size, unless a host plans the panel."""
         super().resizeEvent(event)
-        if self._space is None:
-            self._planner.update(self._fit_orientation(), self.size())
+        # Trial placements show and hide section headers, which can resize the panel and re-enter this handler:
+        if self._space is None and not self._planning:
+            self._planning = True
+            try:
+                self._planner.update(self._fit_orientation(), self.size())
+            finally:
+                self._planning = False
 
     def show_pressure_checkboxes(self) -> None:
         """After receiving a tablet event, call this to reveal the pen pressure links."""

@@ -11,6 +11,7 @@ from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
 from src.image.brush.mypaint_layer_brush import MyPaintLayerBrush
 from src.image.layers.image_stack import ImageStack
+from src.image.mypaint.mypaint_brush import MyPaintBrush
 from src.tools.base_tool import BaseTool
 from src.tools.brush_tool import BrushTool
 from src.ui.image_viewer import ImageViewer
@@ -68,6 +69,8 @@ class MyPaintBrushTool(BrushTool):
         def set_active_brush(new_brush_path: str) -> None:
             """Update the active MyPaint brush when it changes in cache."""
             self.brush_path = new_brush_path
+            if self._control_panel is not None:
+                self._control_panel.refresh_dynamics()
         cache.connect(self, Cache.MYPAINT_BRUSH, set_active_brush)
         self.update_brush_cursor()
 
@@ -82,8 +85,15 @@ class MyPaintBrushTool(BrushTool):
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""
         if self._control_panel is None:
-            self._control_panel = MyPaintBrushToolPanel()
+            self._control_panel = MyPaintBrushToolPanel(self.mypaint_brush)
         return self._control_panel
+
+    @property
+    def mypaint_brush(self) -> MyPaintBrush:
+        """Returns the MyPaint brush whose settings the control panel edits."""
+        brush = self.brush
+        assert isinstance(brush, MyPaintLayerBrush)
+        return brush.brush
 
     @property
     def brush_path(self) -> Optional[str]:

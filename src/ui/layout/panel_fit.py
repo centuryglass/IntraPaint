@@ -2,6 +2,7 @@
 
 A panel never measures the window. Its host reports an `Orientation` and the size the panel fills, and the panel shows
 as much as fits there. Thresholds live in this module, so DPI normalization (issue #13) changes them in one place.
+`doc/agents/panel_layout.md` lists what a planned layout has to do.
 
 - Side panels (left and right docks) are a tall column that scrolls vertically. Strip panels (top and bottom docks) are
   a wide row that scrolls horizontally. The scroll axis is the long one, and the other is the cross axis. A floating
@@ -41,6 +42,29 @@ HYSTERESIS = 6
 
 STRIP_SECTION_MIN_WIDTH = 240
 STRIP_SECTION_MAX_WIDTH = 300
+
+# The widest an input field is laid out, unless set_field_width_cap gives it its own cap:
+FIELD_MAX_WIDTH = STRIP_SECTION_MAX_WIDTH
+FIELD_WIDTH_CAP_PROPERTY = 'field_width_cap'
+_UNCAPPED = -1
+
+
+def set_field_width_cap(field: QWidget, cap: Optional[int]) -> None:
+    """Gives an input field its own width cap in place of FIELD_MAX_WIDTH, or lets it stretch with None.
+
+    The cap is what layout checks hold the field to (`find_arrangement_problems` in `test/ui/panel_capture.py`). It
+    doesn't resize the field: its maximum width and size policy do that.
+    """
+    field.setProperty(FIELD_WIDTH_CAP_PROPERTY, _UNCAPPED if cap is None else cap)
+
+
+def field_width_cap(field: QWidget) -> Optional[int]:
+    """Returns the widest a field should be laid out: its `set_field_width_cap` cap, or FIELD_MAX_WIDTH, or None if it
+    may stretch."""
+    cap = field.property(FIELD_WIDTH_CAP_PROPERTY)
+    if cap is None:
+        return FIELD_MAX_WIDTH
+    return None if cap == _UNCAPPED else int(cap)
 
 # The priority of items that are always shown:
 REQUIRED = 0
@@ -331,6 +355,23 @@ class FitPlanner:
             focus.setFocus()
         return changed
 
+    def measure_placement(self, placement: Placement) -> QSize:
+        """Returns the content's minimum size arranged for a placement in the current orientation, then arranges the
+        content as it was. Planning state is untouched. Returns the current size before the first update."""
+        if self._orientation is None or self._placement is None:
+            return self._measure()
+        orientation = self._orientation
+        if self._prepare is not None:
+            self._prepare(orientation)
+        self._apply(orientation, placement)
+        size = self._measure()
+        if self._prepare is not None:
+            self._prepare(orientation)
+        self._apply(orientation, self._placement)
+        if self._finish is not None:
+            self._finish(orientation)
+        return size
+
     def base_size(self, orientation: Orientation) -> QSize:
         """Returns the content's minimum size with only required items, in their smallest forms. The content keeps
         that arrangement until the next `update`, which then plans even with unchanged inputs."""
@@ -344,7 +385,7 @@ class FitContent(Protocol):
     """Content that plans its own layout in the space a parent panel gives it.
 
     The parent plans first, measuring the content at `fit_base_size`, then passes the space left over to
-    `set_fit_space`.
+    `set_fit_space`. Optional controls the content leaves out go in `overflow_content`.
     """
 
     def fit_base_size(self, orientation: Orientation) -> QSize:
@@ -353,3 +394,7 @@ class FitContent(Protocol):
 
     def set_fit_space(self, orientation: Orientation, size: QSize) -> None:
         """Plans for the space the parent gives the content."""
+
+    def overflow_content(self) -> QWidget:
+        """Returns a widget holding the controls the latest plan left out, which the parent shows in its More
+        popover. It is empty, with no visible children, while every control fits."""

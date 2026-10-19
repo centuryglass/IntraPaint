@@ -3,8 +3,9 @@ space a fit-aware tool control panel gets."""
 import sys
 
 from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QApplication, QScrollArea, QWidget
+from PySide6.QtWidgets import QApplication, QLabel, QScrollArea, QWidget
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
@@ -44,6 +45,9 @@ class FitControlPanel(QWidget):
         self.base_sizes: list[Orientation] = []
         self.spaces: list[tuple[Orientation, QSize]] = []
         self.setMinimumSize(100, 100)
+        self.overflow = QWidget()
+        self.left_out = QLabel('Left out', self.overflow)
+        self.left_out.hide()
 
     def fit_base_size(self, orientation: Orientation) -> QSize:
         """Records the call and returns the fixed minimum."""
@@ -53,6 +57,10 @@ class FitControlPanel(QWidget):
     def set_fit_space(self, orientation: Orientation, size: QSize) -> None:
         """Records the space."""
         self.spaces.append((orientation, size))
+
+    def overflow_content(self) -> QWidget:
+        """Returns a widget whose one label shows while it is left out."""
+        return self.overflow
 
 
 def settle_layouts(root: QWidget) -> None:
@@ -332,16 +340,17 @@ class ToolPanelTest(IntraPaintTestCase):
         self._tool_panel.setup_active_tool(text_tool)
         self.assertFalse(self._tool_panel.header.reset_button.isVisibleTo(self._tool_panel))
 
-    def test_short_strip_moves_reset_into_more_popover(self) -> None:
-        """While a short strip collapses the header, the More button shows a popover with the reset button, which
-        resets the active tool."""
+    def test_more_popover_resets_the_active_tool(self) -> None:
+        """The More button shows a popover with a reset button, which resets the active tool, including while a short
+        strip collapses the header."""
         draw_tool = self._tool(DrawTool)
         self._tool_panel.add_tool_button(draw_tool)
         self._tool_panel.setup_active_tool(draw_tool)
-        self._host_named('strip_short')
         header = self._tool_panel.header
         self.assertTrue(header.more_button.isVisibleTo(self._tool_panel))
-        reset_button = self._tool_panel._short_reset_button  # pylint: disable=protected-access
+        self._host_named('strip_short')
+        self.assertTrue(header.more_button.isVisibleTo(self._tool_panel))
+        reset_button = self._tool_panel._more_reset_button  # pylint: disable=protected-access
         self.assertIs(header.popover.content, reset_button.parentWidget())
         cache = Cache()
         default_size = cache.get_default(Cache.DRAW_TOOL_BRUSH_SIZE)
@@ -349,6 +358,52 @@ class ToolPanelTest(IntraPaintTestCase):
         reset_button.click()
         self.assertEqual(cache.get(Cache.DRAW_TOOL_BRUSH_SIZE), default_size)
 
+    def test_more_popover_shows_controls_the_tool_panel_left_out(self) -> None:
+        """A fit-aware control panel's overflow content shows in the More popover while it holds a visible control,
+        and leaves the popover when another tool becomes active."""
+        tool = self._tool(DrawTool)
+        control_panel = FitControlPanel()
+        tool.get_control_panel = lambda: control_panel
+        other_tool = self._tool(TextTool)
+        for added in (tool, other_tool):
+            self._tool_panel.add_tool_button(added)
+        self._tool_panel.setup_active_tool(tool)
+        more_content = self._tool_panel._more_content  # pylint: disable=protected-access
+        self.assertIs(control_panel.overflow.parentWidget(), more_content)
+        self._tool_panel.header.more_requested.emit()
+        self.assertFalse(control_panel.overflow.isVisibleTo(more_content))
+        control_panel.left_out.show()
+        self._tool_panel.header.more_requested.emit()
+        self.assertTrue(control_panel.overflow.isVisibleTo(more_content))
+        self._tool_panel.setup_active_tool(other_tool)
+        self.assertIsNot(control_panel.overflow.parentWidget(), more_content)
+
+    def test_more_popover_opens_settings_tabs(self) -> None:
+        """The popover's settings entries ask for the key bindings tab, and for the pressure curve tab once a tablet
+        has been seen."""
+        draw_tool = self._tool(DrawTool)
+        self._tool_panel.add_tool_button(draw_tool)
+        self._tool_panel.setup_active_tool(draw_tool)
+        requested: list[str] = []
+        self._tool_panel.settings_requested.connect(requested.append)
+        keys_button = self._tool_panel._more_keys_button  # pylint: disable=protected-access
+        pressure_button = self._tool_panel._more_pressure_button  # pylint: disable=protected-access
+        Cache().set(Cache.EXPECT_TABLET_INPUT, False)
+        self._tool_panel.header.more_requested.emit()
+        self.assertFalse(pressure_button.isVisibleTo(self._tool_panel._more_content))  # pylint: disable=protected-access
+        Cache().set(Cache.EXPECT_TABLET_INPUT, True)
+        self._tool_panel.header.more_requested.emit()
+        self.assertTrue(pressure_button.isVisibleTo(self._tool_panel._more_content))  # pylint: disable=protected-access
+        keys_button.click()
+        pressure_button.click()
+        self.assertEqual(requested, [KeyConfig().get_category(draw_tool.get_activation_config_key()),
+                                     AppConfig().get_category(AppConfig.TABLET_PRESSURE_CURVE)])
+
+    def test_reset_stays_in_header_in_regular_strips(self) -> None:
+        """Outside a short strip the header's reset button is visible."""
+        draw_tool = self._tool(DrawTool)
+        self._tool_panel.add_tool_button(draw_tool)
+        self._tool_panel.setup_active_tool(draw_tool)
+        header = self._tool_panel.header
         self._host_named('strip_regular')
-        self.assertFalse(header.more_button.isVisibleTo(self._tool_panel))
         self.assertTrue(header.reset_button.isVisibleTo(self._tool_panel))

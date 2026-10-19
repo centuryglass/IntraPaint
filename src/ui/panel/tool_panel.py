@@ -10,7 +10,10 @@
   in columns.
 - The header names the active tool with its icon, key and description, and its icon is centered over the first
   button column. The description shows when it fits. A strip too short for the header hides it, a dim line under the
-  buttons names the tool, and reset moves into the More popover.
+  buttons names the tool, and the More button moves to the end of the buttons' column.
+- The More popover holds reset and shortcuts to the settings tabs for the tool's key bindings and, once a tablet has
+  been seen, the pen pressure curve. `settings_requested` carries the tab name for the controller to show. Controls a
+  `FitContent` tool control panel leaves out go above them.
 - Reset restores the active tool's `BaseTool.get_reset_config_keys`, and is hidden for a tool that declares none.
 - A tool control panel that is a `FitContent` is measured at its base size while the panel plans, then gets the space
   beside the buttons and under the header. Other tool control panels are left out of planning, and get a
@@ -21,8 +24,9 @@ from typing import Optional
 
 from PySide6.QtCore import QObject, QSize, Qt, Signal
 from PySide6.QtGui import QPalette
-from PySide6.QtWidgets import QWidget, QLabel, QGridLayout, QVBoxLayout, QSizePolicy, QPushButton
+from PySide6.QtWidgets import QApplication, QWidget, QLabel, QGridLayout, QVBoxLayout, QSizePolicy, QPushButton
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.tools.base_tool import BaseTool
@@ -33,6 +37,18 @@ from src.ui.widget.panel_header import RESET_TOOLTIP
 from src.ui.widget.shortcut_tooltip import shortcut_tooltip_text
 from src.ui.widget.tool_button import ToolButton
 from src.util.visual.text_drawing_utils import get_key_display_string
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.panel.tool_panel'
+
+
+def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, key, disambiguation, n)
+
+
+KEY_BINDINGS_LABEL = _tr('Key bindings...')
+PRESSURE_CURVE_LABEL = _tr('Pressure curve...')
 
 BUTTON_SPACING = 2
 
@@ -88,6 +104,8 @@ class ToolPanel(DockPanel):
     """Provides buttons to select between tools and shows the active tool's control panel."""
 
     tool_selected = Signal(QObject)
+    # The name of the settings tab to show:
+    settings_requested = Signal(str)
 
     def __init__(self) -> None:
         super().__init__()
@@ -129,16 +147,20 @@ class ToolPanel(DockPanel):
         self._content_layout.setContentsMargins(0, 0, 0, 0)
         self._body_layout.insertWidget(0, self._content, stretch=1)
 
-        # While the header is collapsed, the More popover holds the reset button:
-        self._short_popover_content = QWidget()
-        short_popover_layout = QVBoxLayout(self._short_popover_content)
-        short_popover_layout.setContentsMargins(0, 0, 0, 0)
-        self._short_reset_button = QPushButton(RESET_TOOLTIP)
-        self._short_reset_button.setFlat(True)
-        short_popover_layout.addWidget(self._short_reset_button)
+        # The More popover holds reset and shortcuts to the settings that affect the active tool:
+        self._more_content = QWidget()
+        more_layout = QVBoxLayout(self._more_content)
+        more_layout.setContentsMargins(0, 0, 0, 0)
+        self._more_layout = more_layout
+        self._more_reset_button = self._add_more_button(RESET_TOOLTIP, more_layout)
+        self._more_keys_button = self._add_more_button(KEY_BINDINGS_LABEL, more_layout)
+        self._more_pressure_button = self._add_more_button(PRESSURE_CURVE_LABEL, more_layout)
 
         self.header.reset_requested.connect(self.reset_active_tool)
-        self._short_reset_button.clicked.connect(self._reset_from_popover)
+        self.header.more_requested.connect(self._refresh_more_content)
+        self._more_reset_button.clicked.connect(self._reset_from_popover)
+        self._more_keys_button.clicked.connect(self._show_key_settings)
+        self._more_pressure_button.clicked.connect(self._show_pressure_settings)
         self.add_fit_item(FitItem(REQUIRED, len(SIDE_BUTTON_FORMS)), self._apply_button_form)
         self.add_fit_item(FitItem(DESCRIPTION_PRIORITY), self._apply_description_form)
         self.arrange(Orientation.SIDE)
@@ -185,6 +207,11 @@ class ToolPanel(DockPanel):
         if self._active_tool is not None:
             KeyConfig().disconnect(self, self._active_tool.get_activation_config_key())
         if self._active_tool_panel is not None:
+            if isinstance(self._active_tool_panel, FitContent):
+                overflow = self._active_tool_panel.overflow_content()
+                self._more_layout.removeWidget(overflow)
+                overflow.hide()
+                overflow.setParent(None)
             self._tool_control_layout.removeWidget(self._active_tool_panel)
             self._active_tool_panel.hide()
             self._active_tool_panel.setParent(None)
@@ -199,10 +226,14 @@ class ToolPanel(DockPanel):
                 tool_panel.setToolTip(active_tool.get_tooltip_text())
                 self._active_tool_panel = tool_panel
                 self._tool_control_layout.addWidget(tool_panel)
+                if isinstance(tool_panel, FitContent):
+                    self._more_layout.insertWidget(0, tool_panel.overflow_content())
                 self._update_tool_control_policy()
                 self._forward_orientation()
                 tool_panel.show()
         self._update_tool_text()
+        # Before the plan, so it measures the header with the More button the plan will leave:
+        self._update_reset_controls()
         self.refit()
         self.updateGeometry()
 
@@ -352,15 +383,45 @@ class ToolPanel(DockPanel):
         self._short_label.setText(shortcut_tooltip_text(tool.label, keys))
         self._short_label.setVisible(self.header_collapsed)
 
+    def more_content(self) -> Optional[QWidget]:
+        """Returns the popover content while a tool is active."""
+        return self._more_content if self._active_tool is not None else None
+
     def _update_reset_controls(self) -> None:
-        """Shows reset in the header, or in the More popover while the header is collapsed, if the active tool has
-        reset keys."""
+        """Shows reset in the header if the active tool has reset keys, and the More button while a tool is active."""
         can_reset = self._active_tool is not None and len(self._active_tool.get_reset_config_keys()) > 0
         self.header.reset_button.setVisible(can_reset)
-        if self.header_collapsed:
-            self.header.set_popover_content(self._short_popover_content if can_reset else None)
-            # Reparenting hides a widget:
-            self.header.more_button.setVisible(can_reset)
+        content = self.more_content()
+        self.header.set_popover_content(content)
+        # Reparenting hides a widget:
+        self.header.more_button.setVisible(content is not None)
+
+    @staticmethod
+    def _add_more_button(text: str, layout: QVBoxLayout) -> QPushButton:
+        button = QPushButton(text)
+        button.setFlat(True)
+        layout.addWidget(button)
+        return button
+
+    def _refresh_more_content(self) -> None:
+        """Shows the popover entries that apply to the active tool now, with any controls its panel left out first."""
+        tool = self._active_tool
+        if isinstance(self._active_tool_panel, FitContent):
+            overflow = self._active_tool_panel.overflow_content()
+            overflow.setVisible(any(not child.isHidden() for child in overflow.findChildren(
+                QWidget, options=Qt.FindChildOption.FindDirectChildrenOnly)))
+        self._more_reset_button.setVisible(tool is not None and len(tool.get_reset_config_keys()) > 0)
+        self._more_keys_button.setVisible(tool is not None)
+        self._more_pressure_button.setVisible(bool(Cache().get(Cache.EXPECT_TABLET_INPUT)))
+
+    def _show_key_settings(self) -> None:
+        self.header.popover.hide()
+        if self._active_tool is not None:
+            self.settings_requested.emit(KeyConfig().get_category(self._active_tool.get_activation_config_key()))
+
+    def _show_pressure_settings(self) -> None:
+        self.header.popover.hide()
+        self.settings_requested.emit(AppConfig().get_category(AppConfig.TABLET_PRESSURE_CURVE))
 
     def _reset_from_popover(self) -> None:
         self.header.popover.hide()

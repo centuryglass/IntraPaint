@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QApplication
 from src.ui.layout.reactive_layout_widget import ReactiveLayoutWidget
 from src.ui.window.main_window import MainWindow, MIN_CANVAS_SIZE
 from test.base_test_case import IntraPaintTestCase
-from test.ui.ui_capture import mock_app_controller
+from test.ui.panel_capture import mock_app_controller
 
 app = QApplication.instance() or QApplication(sys.argv)
 
