@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QApplication, QCheckBox, QLabel, QSpinBox
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
+from src.ui.layout.panel_fit import Orientation
 from src.ui.panel.tool_control_panels.brush_selection_panel import BrushSelectionPanel
 from src.ui.panel.tool_control_panels.fill_selection_panel import FillSelectionPanel
 from src.ui.panel.tool_control_panels.free_selection_panel import FreeSelectionPanel
@@ -60,6 +61,24 @@ class SelectionPanelTest(IntraPaintTestCase):
         self.button.click()
         self.assertEqual(self.selection_layer.context_pins, [])
         self.assertFalse(self.button.isEnabled())
+
+    def test_fit_plan_moves_hint_and_wraps_buttons(self) -> None:
+        """A plan without room moves the hint to the overflow content and stacks the Selection buttons, and a plan
+        with room restores both. The base size leaves the hint out, and the same widgets stay throughout."""
+        panel = self.panel
+        hint = panel._hint_label  # pylint: disable=protected-access
+        buttons = panel._actions_layout  # pylint: disable=protected-access
+        base = panel.fit_base_size(Orientation.SIDE)
+        self.assertEqual(panel.overflow_content(), hint.parentWidget())
+        roomy = QSize(600, 600)
+        panel.set_fit_space(Orientation.SIDE, roomy)
+        self.assertNotEqual(panel.overflow_content(), hint.parentWidget())
+        self.assertEqual(buttons.direction(), buttons.Direction.LeftToRight)
+        panel.set_fit_space(Orientation.SIDE, QSize(base.width(), roomy.height()))
+        self.assertEqual(buttons.direction(), buttons.Direction.TopToBottom)
+        self.assertLessEqual(panel.minimumSizeHint().width(), base.width())
+        panel.set_fit_space(Orientation.SIDE, roomy)
+        self.assertEqual(buttons.direction(), buttons.Direction.LeftToRight)
 
     def test_no_full_res_controls(self) -> None:
         """The panel holds no checkbox or label for the inpaint full resolution and padding settings."""
