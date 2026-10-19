@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
 from src.ui.panel.tool_control_panels.stroke_block import StrokeBlock, StrokeToolPanel
+from src.ui.panel.tool_control_panels.stroke_preview import EraseStrokePreview
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.eraser_tool_panel'
@@ -31,5 +32,6 @@ class EraserToolPanel(StrokeToolPanel):
                                      hardness_key=Cache.ERASER_TOOL_HARDNESS,
                                      pressure_hardness_key=Cache.ERASER_TOOL_PRESSURE_HARDNESS,
                                      antialias_key=Cache.ERASER_TOOL_ANTIALIAS,
-                                     show_preview=True,
-                                     erase_preview=True))
+                                     preview=EraseStrokePreview(Cache.ERASER_TOOL_SIZE, Cache.ERASER_TOOL_OPACITY,
+                                                                Cache.ERASER_TOOL_HARDNESS,
+                                                                Cache.ERASER_TOOL_ANTIALIAS)))

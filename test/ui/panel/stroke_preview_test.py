@@ -7,7 +7,7 @@ from PySide6.QtGui import QImage
 
 from src.config.cache import Cache
 from src.ui.input_fields.fill_style_combo_box import BRUSH_PATTERN_DENSE_3, BRUSH_PATTERN_SOLID
-from src.ui.panel.tool_control_panels.stroke_block import StrokePreview
+from src.ui.panel.tool_control_panels.stroke_preview import DrawStrokePreview, EraseStrokePreview, StrokePreview
 from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
 
@@ -18,9 +18,9 @@ GOLDEN_DIR = os.path.join(TEST_RESOURCE_DIR, 'brush_previews')
 class StrokePreviewTest(IntraPaintTestCase):
     """Tests the Draw tool's preview."""
 
-    def make_preview(self, timer: Optional[QTimer] = None) -> StrokePreview:
+    def make_preview(self, timer: Optional[QTimer] = None) -> DrawStrokePreview:
         """Returns a visible preview of the Draw tool's settings."""
-        preview = StrokePreview(Cache.DRAW_TOOL_BRUSH_SIZE, Cache.DRAW_TOOL_OPACITY, Cache.DRAW_TOOL_HARDNESS,
+        preview = DrawStrokePreview(Cache.DRAW_TOOL_BRUSH_SIZE, Cache.DRAW_TOOL_OPACITY, Cache.DRAW_TOOL_HARDNESS,
                                 Cache.LAST_BRUSH_COLOR, Cache.DRAW_TOOL_BRUSH_PATTERN, Cache.DRAW_TOOL_ANTIALIAS,
                                 render_timer=timer)
         preview.setFixedSize(PREVIEW_SIZE)
@@ -85,10 +85,10 @@ class StrokePreviewTest(IntraPaintTestCase):
 class EraserPreviewTest(IntraPaintTestCase):
     """Tests the Eraser tool's preview."""
 
-    def make_preview(self) -> StrokePreview:
+    def make_preview(self) -> EraseStrokePreview:
         """Returns a visible preview of the Eraser's settings."""
-        preview = StrokePreview(Cache.ERASER_TOOL_SIZE, Cache.ERASER_TOOL_OPACITY, Cache.ERASER_TOOL_HARDNESS, None,
-                                antialias_key=Cache.ERASER_TOOL_ANTIALIAS, erase=True)
+        preview = EraseStrokePreview(Cache.ERASER_TOOL_SIZE, Cache.ERASER_TOOL_OPACITY, Cache.ERASER_TOOL_HARDNESS,
+                                     Cache.ERASER_TOOL_ANTIALIAS)
         preview.setFixedSize(PREVIEW_SIZE)
         preview.show()
         preview.render_now()

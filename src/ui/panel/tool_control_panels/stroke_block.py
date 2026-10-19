@@ -25,31 +25,25 @@ Layout is planned by fit (`src.ui.layout.panel_fit`) in the space the Tools pane
   `BESIDE_FIELD_MIN_WIDTH`.
 - Headers are required in a side panel and optional in a strip, where they cost height.
 """
-import math
-from collections.abc import Hashable
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
-from PySide6.QtCore import QEvent, QPointF, QSize, Qt, QTimer
-from PySide6.QtGui import QBrush, QColor, QImage, QPainter, QPalette, QResizeEvent
-from PySide6.QtWidgets import (QApplication, QBoxLayout, QCheckBox, QGridLayout, QLabel, QLayout, QSizePolicy,
-                               QVBoxLayout, QWidget)
+from PySide6.QtCore import QEvent, QSize, Qt
+from PySide6.QtGui import QColor, QResizeEvent
+from PySide6.QtWidgets import (QApplication, QBoxLayout, QCheckBox, QGridLayout, QLabel, QLayout, QVBoxLayout,
+                               QWidget)
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.image.brush.qt_paint_brush import QtPaintBrush
-from src.image.layers.image_layer import ImageLayer
 from src.ui.ink_style import set_signal
-from src.ui.input_fields.fill_style_combo_box import BRUSH_PATTERN_SOLID, FillStyleComboBox
+from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.slider_field import SliderField
-from src.ui.panel.tool_control_panels.brush_preview import BrushPreview
+from src.ui.panel.tool_control_panels.stroke_preview import StrokePreview
 from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement, fresh_minimum_size
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.panel_section import PanelSection
-from src.undo_stack import UndoStack
-from src.util.visual.image_utils import tile_pattern_fill
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.stroke_block'
@@ -70,12 +64,8 @@ KEYS_TOOLTIP = _tr('{description}\nKeys: {decrease} / {increase}')
 
 BESIDE_FIELD_MIN_WIDTH = 200
 FIELD_COLUMN_MAX_WIDTH = 290
-PREVIEW_MIN_SIZE = QSize(120, 72)
-PREVIEW_MAX_SIZE = QSize(400, 160)
 COLUMN_SPACING = 10
 MIN_PATTERN_CHARACTERS = 6
-PREVIEW_STAMP_SPACING = 0.2
-PREVIEW_CHECKER_TILE_SIZE = 6
 # Capped columns share width until they reach their caps, and a spare column after them takes what is left. Without
 # it the layout would center each capped column in a wider cell:
 CONTROL_COLUMN_STRETCH = 100
@@ -109,115 +99,6 @@ class StrokeArrangement:
     checks_stacked: bool = False
     preview: Optional[int] = None
     headers: bool = True
-
-
-class StrokePreview(BrushPreview):
-    """Previews a sample stroke for the Qt brush tools.
-
-    The render runs a `QtPaintBrush` over the sample stroke on a scratch `ImageLayer`, so it honors the same settings
-    as the canvas. With `erase`, the layer starts filled with the preview background, the brush erases the stroke from
-    it, and the result is composited over a transparency checkerboard.
-    """
-
-    def __init__(self, size_key: str, opacity_key: Optional[str], hardness_key: Optional[str],
-                 color_key: Optional[str], pattern_key: Optional[str] = None, antialias_key: Optional[str] = None,
-                 parent: Optional[QWidget] = None, render_timer: Optional[QTimer] = None,
-                 erase: bool = False) -> None:
-        self._erase = erase
-        self._size_key = size_key
-        self._opacity_key = opacity_key
-        self._hardness_key = hardness_key
-        self._color_key = color_key
-        self._pattern_key = pattern_key
-        self._antialias_key = antialias_key
-        super().__init__((size_key, opacity_key, hardness_key, color_key, pattern_key, antialias_key), parent,
-                         render_timer)
-        self.setMinimumSize(PREVIEW_MIN_SIZE)
-        self.setMaximumSize(PREVIEW_MAX_SIZE)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-
-    def sizeHint(self) -> QSize:
-        """Returns a short, wide area."""
-        return PREVIEW_MIN_SIZE
-
-    def _value(self, key: Optional[str], default: Any) -> Any:
-        return default if key is None else Cache().get(key)
-
-    def _color(self) -> QColor:
-        color = QColor(self.palette().color(QPalette.ColorRole.Text))
-        if self._color_key is not None:
-            color = Cache().get_color(self._color_key, color)
-        return color
-
-    def _backdrop_color(self) -> QColor:
-        """Returns the fill the eraser removes: the same background the other previews draw on."""
-        return QColor(self.palette().color(QPalette.ColorRole.Base))
-
-    def _inputs(self) -> Hashable:
-        inputs = (self._value(self._size_key, 1), self._value(self._opacity_key, 1.0),
-                  self._value(self._hardness_key, 1.0), self._color().name(QColor.NameFormat.HexArgb),
-                  self._value(self._pattern_key, BRUSH_PATTERN_SOLID), self._value(self._antialias_key, False))
-        if self._erase:
-            return inputs + (self._backdrop_color().name(QColor.NameFormat.HexArgb),)
-        return inputs
-
-    def _sample_stroke(self, size: QSize) -> tuple[float, list[QPointF]]:
-        """Returns the brush diameter shrunk to fit, and points along a wave at the brush's stamp spacing."""
-        margin = 6.0
-        available = max(size.height() - 2 * margin, 1.0)
-        diameter = max(1.0, min(float(self._value(self._size_key, 1)), available * 0.5))
-        radius = diameter / 2
-        left, right = margin + radius, size.width() - margin - radius
-        if right <= left:
-            return diameter, []
-        amplitude = max((available - diameter) / 2, 0.0)
-        spacing = max(1.0, diameter * PREVIEW_STAMP_SPACING)
-        center_y = size.height() / 2
-        span = max(right - left, 1.0)
-        points = []
-        x = left
-        while x <= right:
-            points.append(QPointF(x, center_y + amplitude * math.sin((x - left) / span * 2 * math.pi)))
-            x += spacing
-        return diameter, points
-
-    def _render(self, size: QSize) -> QImage:
-        """Draws the sample stroke with a `QtPaintBrush` on a scratch layer, keeping its edits out of undo history."""
-        diameter, points = self._sample_stroke(size)
-        with UndoStack().unrecorded():
-            if self._erase:
-                backdrop = QImage(size, QImage.Format.Format_ARGB32_Premultiplied)
-                backdrop.fill(self._backdrop_color())
-                layer = ImageLayer(backdrop, 'brush preview')
-            else:
-                layer = ImageLayer(size, 'brush preview')
-            brush = QtPaintBrush(layer)
-            brush.eraser = self._erase
-            brush.brush_size = round(diameter)
-            brush.brush_color = self._color()
-            brush.opacity = float(self._value(self._opacity_key, 1.0))
-            brush.hardness = float(self._value(self._hardness_key, 1.0))
-            brush.antialiasing = bool(self._value(self._antialias_key, False))
-            pattern = self._value(self._pattern_key, BRUSH_PATTERN_SOLID)
-            try:
-                style = FillStyleComboBox.get_style(pattern)
-            except KeyError:
-                style = Qt.BrushStyle.SolidPattern
-            brush.set_pattern_brush(None if style == Qt.BrushStyle.SolidPattern else QBrush(style))
-            brush.start_stroke()
-            for point in points:
-                brush.stroke_to(point.x(), point.y(), None, None, None)
-            brush.end_stroke()
-            brush.connect_to_layer(None)
-            if not self._erase:
-                return layer.image
-            result = QImage(size, QImage.Format.Format_ARGB32_Premultiplied)
-            painter = QPainter(result)
-            tile_pattern_fill(painter, result.rect(), PREVIEW_CHECKER_TILE_SIZE, Qt.GlobalColor.lightGray,
-                              Qt.GlobalColor.darkGray)
-            painter.drawImage(0, 0, layer.image)
-            painter.end()
-            return result
 
 
 def build_paint_row(color_key: Optional[str], pattern_key: Optional[str], parent: QWidget) -> Optional[QWidget]:
@@ -277,14 +158,14 @@ class StrokeBlock(QWidget):
 
     `size_label` and `opacity_label` replace the Cache labels, for tools that name those values differently (the
     smudge and filter tools call opacity "Strength"). `opacity_tooltip` replaces the description to match.
-    `erase_preview` makes the preview show erasing instead of painting.
+    `preview` is the tool's stroke preview, if it has one.
     """
 
     def __init__(self, size_key: str, opacity_key: Optional[str] = None, hardness_key: Optional[str] = None,
                  pressure_size_key: Optional[str] = None, pressure_opacity_key: Optional[str] = None,
                  pressure_hardness_key: Optional[str] = None, color_key: Optional[str] = None,
                  pattern_key: Optional[str] = None, antialias_key: Optional[str] = None,
-                 show_preview: bool = False, erase_preview: bool = False, opacity_label: Optional[str] = None,
+                 preview: Optional[StrokePreview] = None, opacity_label: Optional[str] = None,
                  opacity_tooltip: Optional[str] = None, size_label: Optional[str] = None,
                  parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -331,10 +212,9 @@ class StrokeBlock(QWidget):
             self._checks_layout.addWidget(antialias_checkbox)
         self._checks_layout.addWidget(build_selection_only_checkbox())
 
-        self._preview: Optional[StrokePreview] = None
-        if show_preview:
-            self._preview = StrokePreview(size_key, opacity_key, hardness_key, color_key, pattern_key, antialias_key,
-                                          self, erase=erase_preview)
+        self._preview = preview
+        if preview is not None:
+            preview.setParent(self)
 
         self._stroke_body = QWidget()
         self._stroke_layout = QVBoxLayout(self._stroke_body)
