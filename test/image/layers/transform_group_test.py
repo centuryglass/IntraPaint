@@ -1,10 +1,11 @@
 """Tests TransformGroup: its bounds, how its transform reaches the layers it holds, and its undo history."""
 import sys
 import unittest
+from typing import Any
 
 import pytest
 from PySide6.QtCore import QSize, QRect
-from PySide6.QtGui import QTransform
+from PySide6.QtGui import QTransform, QImage
 from PySide6.QtWidgets import QApplication
 
 from src.image.layers.image_stack import ImageStack
@@ -22,6 +23,27 @@ STALE_GROUP_REASON = ('https://github.com/centuryglass/IntraPaint/issues/178: a 
                       'connected to the group')
 app = QApplication.instance() or QApplication(sys.argv)
 
+class _TestTransformGroup(TransformGroup):
+    """A test implementation with placeholders for abstract methods."""
+
+    def get_qimage(self) -> QImage:
+        pass
+
+    def set_qimage(self, image: QImage) -> None:
+        pass
+
+    def copy(self) -> 'Layer':
+        pass
+
+    def cut_masked(self, image_mask: QImage) -> None:
+        pass
+
+    def save_state(self) -> Any:
+        pass
+
+    def restore_state(self, saved_state: Any) -> None:
+        pass
+
 
 class TransformGroupTest(IntraPaintTestCase):
     """Tests TransformGroup with a layer group holding two image layers, one nested in a child group."""
@@ -37,7 +59,7 @@ class TransformGroupTest(IntraPaintTestCase):
         self.second.set_size(QSize(20, 10))
         self.second.set_transform(QTransform.fromTranslate(60, 30))
         UndoStack().clear()
-        self.transform_group = TransformGroup(self.group)
+        self.transform_group = _TestTransformGroup(self.group)
         self.menu_transform_groups: list[TransformGroup] = []
 
     def tearDown(self) -> None:
@@ -54,7 +76,7 @@ class TransformGroupTest(IntraPaintTestCase):
 
     def _menu_flip(self) -> None:
         """Flips the group the way the layer menu does, through a new TransformGroup that's discarded after use."""
-        transform_group = TransformGroup(self.group)
+        transform_group = _TestTransformGroup(self.group)
         transform_group.flip_horizontal()
         self.menu_transform_groups.append(transform_group)
 

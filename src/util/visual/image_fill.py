@@ -262,7 +262,8 @@ def fast_flood_fill(image: cython.uchar[:, :, :], width: cython.long, height: cy
             b_curr: cython.uint = image[y, x, 0]
             a_curr: cython.uint = image[y, x, 3]
             if (r_last == r_curr and g_last == g_curr and b_last == b_curr and a_last == a_curr) \
-                    or calculate_color_distance(lab_l, lab_a, lab_b, alpha, r_curr, g_curr, b_curr, a_curr) <= threshold:
+                    or calculate_color_distance(lab_l, lab_a, lab_b, alpha,
+                                                r_curr, g_curr, b_curr, a_curr) <= threshold:
                 mask_view[y, x] = True
                 r_last, g_last, b_last, a_last = r_curr, g_curr, b_curr, a_curr
 
@@ -320,20 +321,19 @@ def flood_fill(image: QImage, pos: QPoint, color: QColor, threshold: float, in_p
         mask_data[filled_mask.astype(bool)] = [0, 0, 0, 255]
 
         return result
+    # Modify original image directly
+    src_np_image = image_data_as_numpy_8bit(image)
+    if image.format() == QImage.Format.Format_ARGB32_Premultiplied:
+        alpha_mult = color.alpha() / 255.0
     else:
-        # Modify original image directly
-        src_np_image = image_data_as_numpy_8bit(image)
-        if image.format() == QImage.Format.Format_ARGB32_Premultiplied:
-            alpha_mult = color.alpha() / 255.0
-        else:
-            alpha_mult = 1.0
-        src_np_image[filled_mask.astype(bool)] = [
-            color.blue() * alpha_mult,
-            color.green() * alpha_mult,
-            color.red() * alpha_mult,
-            color.alpha()
-        ]
-        return None
+        alpha_mult = 1.0
+    src_np_image[filled_mask.astype(bool)] = [
+        color.blue() * alpha_mult,
+        color.green() * alpha_mult,
+        color.red() * alpha_mult,
+        color.alpha()
+    ]
+    return None
 
 
 def color_fill(image: QImage, color: QColor, threshold: float) -> QImage:

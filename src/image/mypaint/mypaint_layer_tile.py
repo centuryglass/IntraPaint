@@ -7,6 +7,8 @@ from PySide6.QtCore import QRect, QSize
 from PySide6.QtGui import QImage
 
 from src.image.layers.image_layer import ImageLayer
+from src.image.layers.layer import Layer
+from src.image.layers.layer_group import LayerGroup
 from src.image.mypaint.libmypaint import TilePixelBuffer, c_uint16_p
 from src.image.mypaint.numpy_image_utils import pixel_data_as_numpy_16bit, numpy_8bit_to_16bit, numpy_16bit_to_8bit
 from src.util.visual.image_utils import (NpAnyArray, image_data_as_numpy_8bit, numpy_intersect, numpy_bounds_index,
@@ -141,9 +143,9 @@ class MyPaintLayerTile:
         """Clear all image data."""
         memset(self._pixels, 0, sizeof(self._pixels))
 
-    def _layer_lock_change_slot(self, layer: ImageLayer, locked: bool) -> None:
+    def _layer_lock_change_slot(self, layer: Layer, locked: bool) -> None:
         """Reset the pixel buffer on unlock"""
         assert self._layer is not None
-        assert layer == self._layer or layer.contains_recursive(self._layer)
+        assert layer == self._layer or (isinstance(layer, LayerGroup) and layer.contains_recursive(self._layer))
         if not locked:
             self.load_pixels_from_layer()

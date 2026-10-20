@@ -80,7 +80,7 @@ class CloneStampBrush(QtPaintBrush):
         if self._source_offset is None or self._source_offset.isNull():
             return
         source_bounds = bounds.translated(self._source_offset.x(), self._source_offset.y())
-        source_image, np_source = self._get_stamp_source_image(source_bounds)
+        _, np_source = self._get_stamp_source_image(source_bounds)
 
         # Use the brush stroke segment as a mask to select between cloned and original content:
         np_image = numpy_bounds_index(image_data_as_numpy_8bit(layer_image), bounds)
@@ -94,17 +94,17 @@ class CloneStampBrush(QtPaintBrush):
                               brush_radius * 2, brush_radius * 2)
         if self._last_segment_params is None:
             return
-        source_image, np_source = self._get_stamp_source_image(source_bounds)
+        _, np_source = self._get_stamp_source_image(source_bounds)
         # When using a fixed source point, the clone stamp tool works basically the same way as the smudge brush,
         # except that the point sampled for drawing is fixed.
         if self._last_segment_params.last_pt is None:
             point_list = [QPoint(self._last_segment_params.change_pt.toPoint())]
         else:
             point_list = []
-            x0 = round(self._last_segment_params.last_pt.x())
-            y0 = round(self._last_segment_params.last_pt.y())
-            x1 = round(self._last_segment_params.change_pt.x())
-            y1 = round(self._last_segment_params.change_pt.y())
+            x0 = int(round(self._last_segment_params.last_pt.x()))
+            y0 = int(round(self._last_segment_params.last_pt.y()))
+            x1 = int(round(self._last_segment_params.change_pt.x()))
+            y1 = int(round(self._last_segment_params.change_pt.y()))
             dx = x1 - x0
             dy = y1 - y0
             if abs(dx) < 2 and abs(dy) < 2:
@@ -138,5 +138,3 @@ class CloneStampBrush(QtPaintBrush):
             if np_layer_img_pt is None or cropped_np_source is None:
                 continue
             np_composite_with_mask(cropped_np_source, np_layer_img_pt, np_segment_img_pt)
-
-

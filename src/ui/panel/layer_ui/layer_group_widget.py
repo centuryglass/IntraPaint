@@ -150,7 +150,7 @@ class LayerGroupWidget(BorderedWidget):
         self._update_insert_params(event.position())
         self.dragging.emit(event.position())
 
-    def dragLeaveEvent(self, event: Optional[QDragLeaveEvent]) -> None:
+    def dragLeaveEvent(self, _event: Optional[QDragLeaveEvent]) -> None:
         """Clear the insert marker on drag exit."""
         if self._insert_pos > 0:
             self._insert_parent = None
@@ -277,6 +277,6 @@ class LayerGroupWidget(BorderedWidget):
                 row += 1
 
     def _update_layer_lock_slot(self, layer: Layer, locked: bool) -> None:
-        assert layer == self._layer or layer.contains_recursive(self._layer)
+        assert layer == self._layer or (isinstance(layer, LayerGroup) and layer.contains_recursive(self._layer))
         if locked and self.is_expanded():
             self.set_expanded(False)

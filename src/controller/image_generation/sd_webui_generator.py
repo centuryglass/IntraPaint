@@ -3,7 +3,7 @@ client."""
 import logging
 import os
 from argparse import Namespace
-from typing import Optional, Any, cast
+from typing import Optional, Any, cast, Dict
 
 from PySide6.QtCore import Signal, QSize, SignalInstance, QRect
 from PySide6.QtGui import QImage
@@ -246,6 +246,7 @@ class SDWebUIGenerator(SDGenerator):
             self._webservice.disconnect()
             self._webservice = None
         self._webservice = create_webservice(url)
+        assert self._webservice is not None
         return self._webservice
 
     def get_controlnet_preprocessors(self) -> list[ControlNetPreprocessor]:
@@ -431,6 +432,7 @@ class SDWebUIGenerator(SDGenerator):
         """Returns whether the generator is supported on the current system."""
         if self._webservice is None:
             self._webservice = create_webservice(self._server_url)
+            assert self._webservice is not None
         try:
             # Login automatically if username/password are defined as env variables.
             if 'SD_UNAME' in os.environ and 'SD_PASS' in os.environ:
@@ -460,8 +462,8 @@ class SDWebUIGenerator(SDGenerator):
         app_config = AppConfig()
         settings_modal.load_from_config(app_config, [STABLE_DIFFUSION_CONFIG_CATEGORY])
 
-    def refresh_settings(self, settings_modal: SettingsModal) -> None:
-        """Reloads current values for this generator's settings, and updates them in the settings modal."""
+    def load_remote_settings(self) -> Dict[str, Any]:
+        """Loads a dict holding backend image generator settings."""
         assert self._webservice is not None
         try:
             settings = self._webservice.get_config()
@@ -469,10 +471,7 @@ class SDWebUIGenerator(SDGenerator):
             logger.error(f'Failed to init WebUI API settings: {err}')
             show_error_dialog(None, ERROR_TITLE_SETTINGS_LOAD_FAILED, ERROR_MESSAGE_SETTINGS_LOAD_FAILED)
             settings = {}
-        app_config = AppConfig()
-        for key in app_config.get_category_keys(STABLE_DIFFUSION_CONFIG_CATEGORY):
-            settings[key] = app_config.get(key)
-        settings_modal.update_settings(settings)
+        return settings
 
     def update_settings(self, changed_settings: dict[str, Any]) -> None:
         """Applies any changed settings from a SettingsModal that are relevant to the image generator and require

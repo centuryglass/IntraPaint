@@ -103,7 +103,7 @@ class GeneratorSetupWindow(QWidget):
         self._generator_list_widgets: list[_GeneratorWidget] = []
         self._selected_generator: Optional[ImageGenerator] = None
 
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+    def resizeEvent(self, _event: Optional[QResizeEvent]) -> None:
         """Make sure text doesn't need horizontal scrolling"""
         inner_width = self._detail_panel.width() - SCROLL_CONTENT_MARGIN
         for scroll_widget in (self._description, self._setup, self._status):
@@ -204,6 +204,6 @@ class _GeneratorWidget(QPushButton):
         self._active = is_active
         self._update_text_formatting()
 
-    def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
+    def mousePressEvent(self, _event: Optional[QMouseEvent]) -> None:
         """Selects this item's generator to show details"""
         self.set_selected(True)

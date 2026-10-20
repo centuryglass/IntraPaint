@@ -10,6 +10,7 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
+from src.image.layers.layer_group import LayerGroup
 from src.tools.base_tool import BaseTool
 from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.panel.tool_control_panels.fill_tool_panel import FillToolPanel
@@ -124,7 +125,8 @@ class FillTool(BaseTool):
             np_mask = image_data_as_numpy_8bit(mask)
             masked_pixels = np_mask[:, :, 3] > 0
             alpha_mult = self._color.alpha() / 255.0
-            np_image[masked_pixels] = [self._color.blue() * alpha_mult, self._color.green() * alpha_mult, self._color.red() * alpha_mult, self._color.alpha()]
+            np_image[masked_pixels] = [self._color.blue() * alpha_mult, self._color.green() * alpha_mult,
+                                       self._color.red() * alpha_mult, self._color.alpha()]
             layer.image = layer_image
             return True
         return False
@@ -137,7 +139,7 @@ class FillTool(BaseTool):
             self._layer_lock_change_slot(self._layer, self._layer.locked or self._layer.parent_locked)
 
     def _layer_lock_change_slot(self, layer: Layer, locked: bool) -> None:
-        assert layer == self._layer or layer.contains_recursive(self._layer)
+        assert layer == self._layer or isinstance(layer, LayerGroup) and layer.contains_recursive(self._layer)
         should_enable = isinstance(self._layer, ImageLayer) and not locked
         if self._control_panel is not None:
             self._control_panel.setEnabled(should_enable)

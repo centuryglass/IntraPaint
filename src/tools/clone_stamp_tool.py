@@ -164,7 +164,7 @@ class CloneStampTool(QtPaintBrushTool):
                 self._pending_source_point = image_coordinates
                 self._update_source_marker()
             return True
-        elif event.buttons() == Qt.MouseButton.LeftButton and self._pending_source_point is not None:
+        if event.buttons() == Qt.MouseButton.LeftButton and self._pending_source_point is not None:
             offset = self._pending_source_point - image_coordinates
             self._pending_source_point = None
             self.update_source_xy(offset)

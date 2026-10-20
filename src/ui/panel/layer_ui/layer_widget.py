@@ -215,13 +215,13 @@ class LayerWidget(BorderedWidget):
         self._update_pixmap()
 
     # noinspection PyUnusedLocal
-    def _layer_content_change_slot(self, *args) -> None:
+    def _layer_content_change_slot(self, *_args) -> None:
         self._preview_render_timer.start()
 
     def _layer_name_change_slot(self, _, name: str) -> None:
         self._label.set_text(name)
 
-    def _layer_lock_change_slot(self, *_) -> None:
+    def _layer_lock_change_slot(self, *_args) -> None:
         # The signal's arguments may describe a parent group's lock, so read the lock state from the layer instead.
         if isinstance(self._label, EditableLabel):
             self._label.set_changes_allowed(not self._layer.locked and not self._layer.parent_locked)
@@ -234,7 +234,7 @@ class LayerWidget(BorderedWidget):
         margin = self._inactive_frame_width
         self.setContentsMargins(margin, margin, margin, margin)
 
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+    def resizeEvent(self, _event: Optional[QResizeEvent]) -> None:
         """Resize the layer pixmap on resize"""
         self._update_pixmap(True)
 
@@ -352,7 +352,7 @@ class LayerWidget(BorderedWidget):
             self.drag_ended.emit()
             self.update()
 
-    def mouseReleaseEvent(self, event: Optional[QMouseEvent]) -> None:
+    def mouseReleaseEvent(self, _event: Optional[QMouseEvent]) -> None:
         """Exit dragging state."""
         self._clicking = False
         self._click_pos = QPoint()

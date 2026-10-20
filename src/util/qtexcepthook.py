@@ -56,15 +56,14 @@ import traceback
 from gettext import gettext as _
 from smtplib import SMTP, SMTPException
 from typing import Callable, Optional
+# pylint: disable=unused-import,wrong-import-order
+from typing import Dict  # noqa
 
 # pylint: disable=no-name-in-module
-from PySide6.QtCore import (QCommandLineOption, QCommandLineParser, QEvent,
+from PySide6.QtCore import (QEvent,
                             Slot)
 from PySide6.QtGui import QTextOption
 from PySide6.QtWidgets import QApplication, QMessageBox, QSizePolicy, QTextEdit
-
-# pylint: disable=unused-import,wrong-import-order
-from typing import Dict  # noqa
 from PySide6.QtWidgets import QPushButton  # noqa
 
 #: The :meth:`QCoreApplication.translate` context for strings in this file
@@ -119,7 +118,7 @@ class ResizableMessageBox(QMessageBox):  # pylint: disable=R0903
         return res
 
 
-class QtExceptHook(object):
+class QtExceptHook():
     """GUI exception hook for PyQt 5.x applications
 
     :param reporting_cb: If provided, a :guilabel:`Report Bug...` button will
@@ -202,7 +201,7 @@ class QtExceptHook(object):
             exc_type, exc_value, exc_traceback, capture_locals=True)
         traceback_text = '\n'.join(t_exception.format())
         if self._extra_info:
-            traceback_text += '\n{}'.format(self._extra_info)
+            traceback_text += f'\n{self._extra_info}'
 
         # Store it in the dialog where *everything* will retrieve it from
         self._dialog.setDetailedText(traceback_text)

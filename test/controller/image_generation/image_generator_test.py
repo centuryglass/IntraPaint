@@ -1,17 +1,20 @@
 """Tests the generation orchestration in `ImageGenerator`: running `generate` as a task, collecting results, and
 applying a chosen sample. Backends are replaced by a scripted subclass, and the main window by a mock."""
-from typing import Optional
+from typing import Optional, Any
 from unittest import mock
 from unittest.mock import MagicMock
 
 from PIL import Image
 from PySide6.QtCore import QPoint, QRect, QSize, Qt, SignalInstance
 from PySide6.QtGui import QImage, QColor, QPainter
+from PySide6.QtWidgets import QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.image_generator import ImageGenerator
+from src.controller.image_generation.test_generator import TestGenerator
 from src.image.layers.image_stack import ImageStack
+from src.ui.modal.settings_modal import SettingsModal
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING
 from src.util.async_task import AsyncTask
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
@@ -32,7 +35,7 @@ def _solid(size: QSize, color: QColor) -> QImage:
     return image
 
 
-class _ScriptedGenerator(ImageGenerator):
+class _ScriptedGenerator(TestGenerator):
     """Returns canned images, or raises a canned error, from `generate`."""
 
     def __init__(self, window, image_stack: ImageStack) -> None:
@@ -64,6 +67,7 @@ class ImageGeneratorTest(IntraPaintTestCase):
         self.image_stack.create_layer('source', _solid(IMAGE_SIZE, SOURCE_COLOR))
         self.image_stack.generation_area = GENERATION_AREA
         with self.image_stack.selection_layer.borrow_image() as mask_image:
+            assert isinstance(mask_image, QImage)
             painter = QPainter(mask_image)
             painter.fillRect(SELECTION_BOUNDS, Qt.GlobalColor.black)
             painter.end()
@@ -187,8 +191,8 @@ class ImageGeneratorTest(IntraPaintTestCase):
 
     def test_cache_generated_image_keeps_order_and_replaces(self) -> None:
         """Images are stored at their index, padding skipped slots with null images, and replaced on repeat."""
-        generator = ImageGenerator(self.window, self.image_stack)
-        first, second, replacement = (_solid(QSize(4, 4), color)
+        generator = TestGenerator(self.window, self.image_stack)
+        first, second, replacement = (_solid(QSize(4, 4), QColor(color))
                                       for color in (Qt.GlobalColor.red, Qt.GlobalColor.green, Qt.GlobalColor.blue))
         with mock.patch('src.controller.image_generation.image_generator.QTimer.singleShot') as single_shot:
             generator._cache_generated_image(first, 0)  # pylint: disable=protected-access
@@ -203,8 +207,8 @@ class ImageGeneratorTest(IntraPaintTestCase):
 
     def test_load_generated_image_skips_null(self) -> None:
         """Only non-null cached images are sent to the window's sample preview."""
-        generator = ImageGenerator(self.window, self.image_stack)
-        generator._generated_images = [QImage(), _solid(QSize(4, 4), Qt.GlobalColor.red)]  # pylint: disable=protected-access
+        generator = TestGenerator(self.window, self.image_stack)
+        generator._generated_images = [QImage(), _solid(QSize(4, 4), QColor(Qt.GlobalColor.red))]  # pylint: disable=protected-access
         generator._load_generated_image_for_selection(0)  # pylint: disable=protected-access
         self.window.load_sample_preview.assert_not_called()
         generator._load_generated_image_for_selection(1)  # pylint: disable=protected-access

@@ -222,40 +222,38 @@ def all_layout_info(item: Any, include_containing_layout_data=True) -> dict[str,
         if key1 in layout_data and key2 in layout_data and layout_data[key1] == layout_data[key2]:
             del layout_data[key2]
 
-    if isinstance(item, QWidget) and include_containing_layout_data:
-        parent = item.parentWidget()
-        if isinstance(parent, QWidget):
-            layout = parent.layout()
-            if layout is not None:
-                idx = layout.indexOf(item)
-                layout_data['layout:index'] = str(idx)
-                if idx >= 0:
-                    layout_data['layout:spacing'] = str(layout.spacing())
-                    layout_data['layout:margins'] = margins_str(layout.contentsMargins())
-                    layout_data['layout:alignment'] = alignment_str(layout.alignment())
-                    if isinstance(layout, QBoxLayout):
-                        full_stretch = 0
-                        for i in range(layout.count()):
-                            full_stretch += layout.stretch(i)
-                        layout_data['layout:stretch'] = f'{layout.stretch(idx)}/{full_stretch}'
-                    if isinstance(layout, QGridLayout):
-                        row, col, r_span, col_span = layout.getItemPosition(idx)
-                        layout_data['layout:size,row,col'] = f'{col_span}x{r_span}, {row},{col}'
-                        row_stretch = 0
-                        col_stretch = 0
-                        for i in range(col, col + col_span, 1):
-                            col_stretch += layout.columnStretch(i)
-                        for i in range(row, row + r_span, 1):
-                            row_stretch += layout.rowStretch(i)
-                        s_row_full = 0
-                        s_col_full = 0
-                        for i in range(layout.columnCount()):
-                            s_col_full += layout.columnStretch(i)
-                        for i in range(layout.rowCount()):
-                            s_row_full += layout.rowStretch(i)
-                        layout_data['layout:stretch(x,y)'] = f'{col_stretch},{row_stretch} / {s_col_full},{s_row_full}'
-                        layout_data['layout:grid_min'] = (f'{layout.columnMinimumWidth(col)}'
-                                                          f'x{layout.rowMinimumHeight(row)}')
+    parent = None if (not include_containing_layout_data or not isinstance(item, QWidget)) else item.parentWidget()
+    layout = None if parent is None else parent.layout()
+    if layout is not None:
+        idx = layout.indexOf(item)
+        layout_data['layout:index'] = str(idx)
+        if idx >= 0:
+            layout_data['layout:spacing'] = str(layout.spacing())
+            layout_data['layout:margins'] = margins_str(layout.contentsMargins())
+            layout_data['layout:alignment'] = alignment_str(layout.alignment())
+            if isinstance(layout, QBoxLayout):
+                full_stretch = 0
+                for i in range(layout.count()):
+                    full_stretch += layout.stretch(i)
+                layout_data['layout:stretch'] = f'{layout.stretch(idx)}/{full_stretch}'
+            if isinstance(layout, QGridLayout):
+                row, col, r_span, col_span = layout.getItemPosition(idx)
+                layout_data['layout:size,row,col'] = f'{col_span}x{r_span}, {row},{col}'
+                row_stretch = 0
+                col_stretch = 0
+                for i in range(col, col + col_span, 1):
+                    col_stretch += layout.columnStretch(i)
+                for i in range(row, row + r_span, 1):
+                    row_stretch += layout.rowStretch(i)
+                s_row_full = 0
+                s_col_full = 0
+                for i in range(layout.columnCount()):
+                    s_col_full += layout.columnStretch(i)
+                for i in range(layout.rowCount()):
+                    s_row_full += layout.rowStretch(i)
+                layout_data['layout:stretch(x,y)'] = f'{col_stretch},{row_stretch} / {s_col_full},{s_row_full}'
+                layout_data['layout:grid_min'] = (f'{layout.columnMinimumWidth(col)}'
+                                                  f'x{layout.rowMinimumHeight(row)}')
 
     ignored_values = [rect_str(QRect()), rect_str(QRectF()), size_str(QSize()), size_str(QSizeF()),
                       region_str(QRegion()), 'None', '', QSize(MAX_WIDGET_SIZE, MAX_WIDGET_SIZE)]
@@ -296,7 +294,8 @@ def layout_debug(widget: QWidget) -> None:
                         record['children'].append(data)
 
     _add_item(widget, layout_data)
-    json.dump(layout_data, open('layout-debug.json', 'w', encoding='utf-8'), indent=2)
+    with open('layout-debug.json', 'w', encoding='utf-8') as outfile:
+        json.dump(layout_data, outfile, indent=2)
 
 
 # Execution time tracking:

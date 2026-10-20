@@ -254,20 +254,19 @@ class LayerTransformTool(BaseTool):
 
     def _layer_lock_change_slot(self, layer: Layer, locked: bool) -> None:
         assert self._layer is not None
-        assert layer == self._layer or layer.contains_recursive(self._layer) or isinstance(layer, TransformGroup)
+        assert layer == self._layer or (isinstance(layer, LayerGroup) and layer.contains_recursive(self._layer))  \
+               or isinstance(layer, TransformGroup)
         if self._control_panel is not None:
             self._control_panel.setEnabled(not locked)
         self._transform_outline.setEnabled(not locked)
         self.set_disabled_cursor(locked)
 
-    # noinspection PyUnusedLocal
     def _layer_transform_change_slot(self, layer: Layer, transform: QTransform) -> None:
         assert layer == self._layer
         if transform != self._transform_outline.transform():
             self._transform_outline.setTransform(transform)
 
-    # noinspection PyUnusedLocal
-    def _layer_size_change_slot(self, layer: Layer, size: QSize) -> None:
+    def _layer_size_change_slot(self, layer: Layer, _size: QSize) -> None:
         assert layer == self._layer
         self._reload_scene_item(keep_relative_origin=True)
 

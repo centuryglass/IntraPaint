@@ -323,7 +323,8 @@ class ImageLayer(TransformLayer):
             self._alpha_locked = locked
             self.alpha_lock_changed.emit(self, locked)
 
-    def _handle_content_change(self, image: QImage, last_bounds_content: QImage, change_bounds: Optional[QRect] = None) -> None:
+    def _handle_content_change(self, image: QImage, last_bounds_content: QImage,
+                               change_bounds: Optional[QRect] = None) -> None:
         """Preserve alpha channel if alpha is locked. Child classes should override to handle changes that they need to
          make before sending update signals."""
         if not hasattr(self, 'alpha_locked'):

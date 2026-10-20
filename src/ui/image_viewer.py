@@ -248,12 +248,12 @@ class ImageViewer(ImageGraphicsView):
 
     # Signal handlers: sync with image/layer changes:
     # noinspection PyUnusedLocal
-    def _active_layer_bounds_changed_slot(self, *args) -> None:
+    def _active_layer_bounds_changed_slot(self, *_args) -> None:
         active_layer = self._image_stack.active_layer
         self._active_layer_outline.outlined_region = QRectF(active_layer.bounds)
 
     # noinspection PyUnusedLocal
-    def _active_layer_change_slot(self, new_active_layer: Layer, *args) -> None:
+    def _active_layer_change_slot(self, new_active_layer: Layer, *_args) -> None:
         # Every connect made for the new active layer needs a matching disconnect for the old one, including the
         # TransformLayer-only transform_changed connection.
         active_id = None if new_active_layer is None else new_active_layer.id
@@ -277,7 +277,7 @@ class ImageViewer(ImageGraphicsView):
                 self._active_layer_outline.setVisible(False)
 
     # noinspection PyUnusedLocal
-    def _selection_content_change_slot(self, *args) -> None:
+    def _selection_content_change_slot(self, *_args) -> None:
         """Sync 'inpaint masked only' bounds with selection layer changes."""
         selection_layer = self._image_stack.selection_layer
         bounds = selection_layer.get_selection_gen_area()
@@ -338,8 +338,7 @@ class ImageViewer(ImageGraphicsView):
             self.zoom_to_generation_area()
         self.update()
 
-    # noinspection PyUnusedLocal
-    def _layer_transform_change_slot(self, layer: Layer, transform: QTransform) -> None:
+    def _layer_transform_change_slot(self, layer: Layer, _transform: QTransform) -> None:
         """Apply layer transformations to outlines."""
         if layer == self._image_stack.active_layer:
             assert isinstance(layer, TransformLayer)

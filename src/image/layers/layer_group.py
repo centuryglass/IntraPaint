@@ -23,7 +23,7 @@ RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QI
 RENDER_DELAY_MS = 10
 
 
-class LayerGroup(Layer, LayerParent):
+class LayerGroup(LayerParent):
     """Represents a group of linked image layers that can be manipulated as one in limited ways."""
 
     bounds_changed = Signal(Layer, QRect)
@@ -629,7 +629,7 @@ class LayerGroup(Layer, LayerParent):
 
     def propagate_parent_lock_signal(self, source: Layer) -> None:
         """Pass on the lock signal from a parent layer through all child layers as appropriate."""
-        assert source == self or source.contains_recursive(self)
+        assert source == self or isinstance(source, LayerParent) and source.contains_recursive(self)
         if not source.locked and self.locked:
             return
         for layer in self._layers:

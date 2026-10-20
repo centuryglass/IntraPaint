@@ -217,7 +217,7 @@ class MenuBuilder:
     def clear_menus(self) -> None:
         """Remove all @menu_action methods that this class added to the menu"""
         action_definitions: list[tuple['MenuData', Callable[..., None]]] = self._get_action_definitions()
-        for menu_data, menu_action_method in action_definitions:
+        for menu_data, _ in action_definitions:
             action_name = KeyConfig().get_label(menu_data.config_key)
             self.remove_menu_action(menu_data.menu_name, action_name)
 

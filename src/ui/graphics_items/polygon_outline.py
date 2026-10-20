@@ -53,7 +53,7 @@ class PolygonOutline(QGraphicsPathItem):
                 super().__init__()
                 self._parent = parent_outline
                 # noinspection PyTypeChecker
-                self._anim = QPropertyAnimation(self, b"animation_offset")
+                self._anim = QPropertyAnimation(self, b'animation_offset')
                 self._anim.setLoopCount(-1)
                 self._anim.setStartValue(0)
                 self._anim.setEndValue(MAX_DASH_OFFSET)

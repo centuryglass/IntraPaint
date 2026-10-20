@@ -142,19 +142,18 @@ class FreeSelectionTool(BaseTool):
             return True
         return False
 
-    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+    def mouse_release(self, _event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Finish a context pin drag."""
         return self._pin_dragger.release(image_coordinates)
 
-    # noinspection PyUnusedLocal
-    def mouse_enter(self, event: Optional[QEvent], image_coordinates: QPoint) -> bool:
+    def mouse_enter(self, _event: Optional[QEvent], _image_coordinates: QPoint) -> bool:
         """Show the line preview on enter if selecting."""
         if self._path_item.count > 0:
             self._preview_line.setVisible(True)
             return True
         return False
 
-    def mouse_exit(self, event: Optional[QEvent], image_coordinates: QPoint) -> bool:
+    def mouse_exit(self, _event: Optional[QEvent], _image_coordinates: QPoint) -> bool:
         """Hide the line preview on exit."""
         self._preview_line.set_line(QLineF())
         self._preview_line.setVisible(False)

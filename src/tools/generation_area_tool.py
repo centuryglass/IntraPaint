@@ -260,7 +260,7 @@ class GenerationAreaTool(BaseTool):
             self._update_hover_cursor(event)
         return False
 
-    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+    def mouse_release(self, _event: Optional[QMouseEvent], _image_coordinates: QPoint) -> bool:
         """Finish any drag, recording the new size if the area was resized."""
         if self._resizing:
             record_generation_area_size(self._image_stack.generation_area.size())

@@ -1,7 +1,7 @@
 """Mock generator for testing and development."""
-from typing import Optional
+from typing import Optional, Any
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import SignalInstance
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 
@@ -13,6 +13,7 @@ from src.image.filter.posterize import PosterizeFilter
 from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
 from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_stack import ImageStack
+from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.testing_panel import TestControlPanel
 from src.ui.window.main_window import MainWindow
@@ -72,7 +73,7 @@ class TestGenerator(ImageGenerator):
         return TestControlPanel()
 
     def generate(self,
-                 status_signal: Signal,
+                 status_signal: SignalInstance,
                  source_image: QImage,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. should be loaded from AppConfig as needed.
@@ -80,7 +81,7 @@ class TestGenerator(ImageGenerator):
 
         Parameters
         ----------
-        status_signal : Signal[dict]
+        status_signal : SignalInstance[dict]
             Signal to emit when status updates are available. Expected keys are 'seed' and 'progress'.
         source_image : QImage, optional
             Image used as a basis for the edited image. TestGenerator will just run this through the available
@@ -106,3 +107,15 @@ class TestGenerator(ImageGenerator):
 
     def disconnect_or_disable(self) -> None:
         """No-op (there's nothing to disconnect/disable)."""
+
+    def init_settings(self, settings_modal: SettingsModal) -> None:
+        """No-op: no settings to initialize."""
+
+    def refresh_settings(self, settings_modal: SettingsModal) -> None:
+        """No-op: no settings to refresh."""
+
+    def update_settings(self, changed_settings: dict[str, Any]) -> None:
+        """No-op: no settings to update."""
+
+    def unload_settings(self, settings_modal: SettingsModal) -> None:
+        """No-op: no settings to unload."""

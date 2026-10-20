@@ -1,8 +1,9 @@
 """Shared base for generators that provide Stable Diffusion image generation with possible ControlNet and upscaling
    support."""
 import logging
+from abc import ABC, abstractmethod
 from argparse import Namespace
-from typing import Optional, cast, Any, Protocol
+from typing import Optional, cast, Any, Protocol, Dict
 
 from PIL import Image
 from PySide6.QtCore import Signal, QSize, SignalInstance, QRect, QPoint
@@ -23,6 +24,7 @@ from src.controller.image_generation.sd_adapters.progress_adapter import progres
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
 from src.ui.modal.modal_utils import show_error_dialog
+from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.controlnet_panel import TabbedControlNetPanel
 from src.ui.panel.generators.stable_diffusion_panel import AdvancedControls, StableDiffusionPanel
 from src.ui.window.extra_network_window import ExtraNetworkWindow
@@ -125,12 +127,12 @@ INSTALLATION_STABILITY_MATRIX = _tr("""
     </li>
     <li>
         If you haven't downloaded any Stable Diffusion models yet, you can do that in Stability Matrix.
-        Go to the <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_MODELS + """'/><b>Model Browser</b> tab to find and 
+        Go to the <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_MODELS + """'/><b>Model Browser</b> tab to find and
         download a Stable Diffusion model file.<br/>
     </li>
     {post_install_generator_setup}
     <li>
-        On the <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES + """'/><b>Packages</b> tab, click the 
+        On the <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES + """'/><b>Packages</b> tab, click the
         <b>Launch</b> button under <b>"{generator_package}"</b>.  A log screen will open up, showing the status of the
         package as it starts up.<br/>
     </li>
@@ -213,7 +215,7 @@ def _check_lora_available(_) -> bool:
     return len(cache.get(Cache.LORA_MODELS)) > 0
 
 
-class SDGenerator(ImageGenerator):
+class SDGenerator(ImageGenerator, ABC):
     """Shared base for generators that provide Stable Diffusion image generation with possible ControlNet and upscaling
        support."""
 
@@ -260,67 +262,67 @@ class SDGenerator(ImageGenerator):
             panel.set_controlnet_cache_keys(self.get_controlnet_unit_cache_keys())
         return panel
 
+    @abstractmethod
     def get_webservice(self) -> Optional[SDClient]:
         """Return the webservice object this module uses to connect to Stable Diffusion, if initialized."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def remove_webservice(self) -> None:
         """Destroy and remove any active webservice object."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def create_or_get_webservice(self, url: str) -> SDClient:
         """Return the webservice object this module uses to connect to Stable Diffusion.  If the webservice already
            exists but the url doesn't match, a new webservice should replace the existing one, using the new url."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def interrogate(self) -> None:
         """Update the prompt to match image content using an AI image description model."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_controlnet_preprocessors(self) -> list[ControlNetPreprocessor]:
         """Return the list of available Controlnet preprocessors."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_controlnet_models(self) -> list[str]:
         """Return the list of available ControlNet models."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_controlnet_types(self) -> dict[str, ControlTypeDef]:
         """Return available ControlNet categories."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_controlnet_unit_cache_keys(self) -> list[str]:
         """Return keys used to cache serialized ControlNet units as strings."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_diffusion_model_names(self) -> list[str]:
         """Return the list of available image generation models."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_lora_model_info(self) -> list[dict[str, Any]]:
         """Return available LoRA model extensions."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_diffusion_sampler_names(self) -> list[str]:
         """Return the list of available samplers."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_upscale_method_names(self) -> list[str]:
         """Return the list of available upscale methods."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def ultimate_upscale_script_available(self) -> bool:
         """Return whether the Stable Diffusion API will support the 'Ultimate SD Upscale' script."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def cache_generator_specific_data(self) -> None:
         """When activating the generator, after the webservice is connected, this method should be implemented to
            load and cache any generator-specific API data."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def clear_cached_generator_data(self) -> None:
         """Clear any cached data specific to this image generator."""
-        raise NotImplementedError()
 
     def cancel_generation(self) -> None:
         """Cancels the job `_wait_for_job` is waiting on, if one is in progress. A job the backend hasn't started is
@@ -380,11 +382,10 @@ class SDGenerator(ImageGenerator):
         finally:
             self._active_handle = None
 
-
+    @abstractmethod
     def upscale_image(self, image: QImage, new_size: QSize, status_signal: SignalInstance,
                       image_signal: SignalInstance) -> None:
         """Upscales an image using cached upscaling settings."""
-        raise NotImplementedError()
 
     def get_gen_area_image(self, init_image: Optional[QImage] = None) -> QImage:
         """Gets the contents of the image generation area, handling any necessary preprocessing."""
@@ -869,3 +870,15 @@ class SDGenerator(ImageGenerator):
         if control_index >= 0:
             assert self._controlnet_panel is not None
             self._controlnet_panel.set_preview(self._generated_images[index], control_index)
+
+    def load_remote_settings(self) -> Dict[str, Any]:
+        """If relevant, loads a dict holding backend image generator settings."""
+        return {}
+
+    def refresh_settings(self, settings_modal: SettingsModal) -> None:
+        """Reloads current values for this generator's settings, and updates them in the settings modal."""
+        settings = self.load_remote_settings()
+        app_config = AppConfig()
+        for key in app_config.get_category_keys(STABLE_DIFFUSION_CONFIG_CATEGORY):
+            settings[key] = app_config.get(key)
+        settings_modal.update_settings(settings)
