@@ -2,58 +2,136 @@
   "minimum": {
     "problems": [],
     "size": [
-      296,
-      123
+      200,
+      196
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 130x45, minimum 146x70",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (Ctrl+D)' is 130x18, minimum 122x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (Ctrl+A)' is 130x17, minimum 146x30",
-      "squeezed: SelectionModeToggle/Label 'Add' is 51x21, minimum 108x27",
-      "squeezed: SelectionModeToggle/Label 'Subtract' is 51x21, minimum 125x27",
-      "squeezed: SelectionModeToggle/Label 'Replace' is 51x21, minimum 94x29",
-      "squeezed: SelectionModeToggle/Label 'Intersect' is 51x21, minimum 101x29",
-      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[0] shows 27x22 of 27x23",
-      "clipped: SelectionModeToggle/KeyHintLabel 'Ctrl+Shift' shows 49x23 of 62x23"
+      "squeezed: PanelSection[0] is 82x50, minimum 128x50",
+      "squeezed: PanelSection[0]/QWidget is 82x24, minimum 128x24",
+      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 82x24, minimum 128x24",
+      "squeezed: PanelSection[1] is 82x58, minimum 96x92",
+      "squeezed: PanelSection[1]/QWidget is 82x32, minimum 96x66",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 82x13, minimum 96x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 82x13, minimum 80x30"
     ],
     "size": [
-      148,
-      123
+      100,
+      196
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      296,
-      123
+      330,
+      196
     ]
   },
   "short": {
     "problems": [
-      "squeezed: ReflowingButtonGroup is 278x14, minimum 146x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Clear (Ctrl+D)' is 122x14, minimum 122x30",
-      "squeezed: ReflowingButtonGroup/QPushButton 'Select All (Ctrl+A)' is 146x14, minimum 146x30",
-      "squeezed: SelectionModeToggle/Label 'Add' is 125x6, minimum 108x27",
-      "squeezed: SelectionModeToggle/Label 'Subtract' is 125x6, minimum 125x27",
-      "squeezed: SelectionModeToggle/Label 'Replace' is 125x6, minimum 94x29",
-      "squeezed: SelectionModeToggle/Label 'Intersect' is 125x6, minimum 101x29",
-      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[0] shows 27x14 of 27x23",
-      "clipped: SelectionModeToggle/KeyHintLabel 'Ctrl+Shift' shows 62x14 of 62x23",
-      "clipped: SelectionModeToggle/KeyHintLabel 'Alt'[1] shows 27x14 of 27x23",
-      "clipped: SelectionModeToggle/KeyHintLabel 'Shift'[1] shows 37x14 of 37x23",
-      "squeezed: KeyHintLabel 'Q' is 20x14, minimum 20x23"
+      "squeezed: PanelSection[0] is 312x23, minimum 128x50",
+      "squeezed: PanelSection[0]/_HeaderButton 'Mode: Add' is 288x12, minimum 16x26",
+      "squeezed: PanelSection[0]/QWidget is 312x11, minimum 128x24",
+      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 312x11, minimum 128x24",
+      "squeezed: PanelSection[0]/KeyHintLabel 'Q' is 20x12, minimum 20x23",
+      "squeezed: PanelSection[1] is 312x22, minimum 182x56",
+      "squeezed: PanelSection[1]/_HeaderButton 'Selection' is 308x11, minimum 16x26",
+      "squeezed: PanelSection[1]/QWidget is 312x11, minimum 182x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 96x11, minimum 96x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 80x11, minimum 80x30",
+      "squeezed: PanelSection[2] is 312x23, minimum 43x43",
+      "squeezed: PanelSection[2]/_HeaderButton 'Free selection' is 308x12, minimum 16x26",
+      "squeezed: PanelSection[2]/QWidget is 312x11, minimum 43x17",
+      "squeezed: PanelSection[2]/QWidget/QLabel 'Click adds a point. Ente' is 312x11, minimum 43x17"
     ],
     "size": [
-      296,
-      61
+      330,
+      98
+    ]
+  },
+  "strip_minimum": {
+    "problems": [
+      "squeezed: PanelSection[0] is 64x60, minimum 128x50",
+      "squeezed: PanelSection[0]/QWidget is 64x30, minimum 128x24",
+      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 64x24, minimum 128x24",
+      "squeezed: PanelSection[1] is 64x60, minimum 182x56",
+      "squeezed: PanelSection[1]/QWidget is 64x34, minimum 182x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 29x30, minimum 96x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 29x30, minimum 80x30"
+    ],
+    "size": [
+      200,
+      196
+    ]
+  },
+  "strip_narrow": {
+    "problems": [
+      "squeezed: PanelSection[0] is 24x60, minimum 128x50",
+      "squeezed: PanelSection[0]/_HeaderButton 'Mode: Add' is 12x26, minimum 16x26",
+      "squeezed: PanelSection[0]/QWidget is 24x30, minimum 128x24",
+      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 24x24, minimum 128x24",
+      "squeezed: PanelSection[0]/KeyHintLabel 'Q' is 8x30, minimum 20x23",
+      "squeezed: PanelSection[1] is 23x60, minimum 182x56",
+      "squeezed: PanelSection[1]/QWidget is 23x34, minimum 182x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 9x30, minimum 96x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 8x30, minimum 80x30",
+      "squeezed: PanelSection[2] is 23x60, minimum 43x43",
+      "squeezed: PanelSection[2]/QWidget is 23x34, minimum 43x17",
+      "squeezed: PanelSection[2]/QWidget/QLabel 'Click adds a point. Ente' is 23x34, minimum 43x17"
+    ],
+    "size": [
+      100,
+      196
+    ]
+  },
+  "strip_preferred": {
+    "problems": [
+      "squeezed: PanelSection[1] is 129x60, minimum 182x56",
+      "squeezed: PanelSection[1]/QWidget is 129x34, minimum 182x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 62x30, minimum 96x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 61x30, minimum 80x30"
+    ],
+    "size": [
+      330,
+      196
+    ]
+  },
+  "strip_short": {
+    "problems": [
+      "squeezed: PanelSection[1] is 129x60, minimum 182x56",
+      "squeezed: PanelSection[1]/QWidget is 129x34, minimum 182x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 62x30, minimum 96x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 61x30, minimum 80x30"
+    ],
+    "size": [
+      330,
+      98
+    ]
+  },
+  "strip_tall": {
+    "problems": [
+      "squeezed: PanelSection[1] is 129x60, minimum 182x56",
+      "squeezed: PanelSection[1]/QWidget is 129x34, minimum 182x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 62x30, minimum 96x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 61x30, minimum 80x30"
+    ],
+    "size": [
+      330,
+      1200
+    ]
+  },
+  "strip_wide": {
+    "problems": [],
+    "size": [
+      1600,
+      196
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      296,
+      330,
       1200
     ]
   },
@@ -61,7 +139,7 @@
     "problems": [],
     "size": [
       1600,
-      123
+      196
     ]
   }
 }

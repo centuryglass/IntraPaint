@@ -43,6 +43,10 @@ KEY_CONFLICT_ERROR = _tr('Key "{key_str}" is shared between options {key_names},
 SPEED_MODIFIED_KEY_DESCRIPTION = _tr('{key_binding_name} (with speed modifier)')
 
 
+# Bindings that ship unbound, and report no error while they are:
+OPTIONAL_KEYS = ('toggle_sample_merged_hotkey', 'toggle_selection_shape_hotkey')
+
+
 class KeyConfig(Config, metaclass=Singleton):
     """Provides access to the user-editable application keybinding config."""
 
@@ -125,6 +129,8 @@ class KeyConfig(Config, metaclass=Singleton):
             errors.append(SPEED_MODIFIER_ERROR.format(speed_modifier=speed_modifier, modifiers=modifiers))
         for config_key in key_binding_options:
             key_binding_name = self.get_label(config_key)
+            if config_key in OPTIONAL_KEYS and self.get(config_key) == '':
+                continue
             key_values = self.get(config_key).split(',')
             for key_value in key_values:
                 standardized_key = _standardize_key_str(key_value)
@@ -300,6 +306,8 @@ class KeyConfig(Config, metaclass=Singleton):
     TEXT_TOOL_KEY: str
     TOGGLE_CONTROL_HINTS_SHORTCUT: str
     TOGGLE_RULERS_SHORTCUT: str
+    TOGGLE_SAMPLE_MERGED_HOTKEY: str
+    TOGGLE_SELECTION_SHAPE_HOTKEY: str
     TOOL_ACTION_HOTKEY: str
     TRANSFORM_TOOL_KEY: str
     UNDO_SHORTCUT: str

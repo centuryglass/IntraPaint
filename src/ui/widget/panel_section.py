@@ -168,6 +168,14 @@ class PanelSection(QWidget):
         """Returns the section title."""
         return self._title
 
+    def set_title(self, title: str) -> None:
+        """Changes the title shown in the header."""
+        self._title = title
+        self._header_button.setText(title)
+        self._header_button.setAccessibleName(title)
+        self._header_button.updateGeometry()
+        self._header_button.update()
+
     @property
     def body(self) -> QWidget:
         """Returns the widget holding the section's controls."""

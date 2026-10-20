@@ -9,9 +9,8 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
 from src.tools.selection_fill_tool import SelectionFillTool
-from src.ui.input_fields.check_box import CheckBox
-from src.ui.panel.tool_control_panels.fill_selection_panel import FILL_BY_SELECTION
 from src.undo_stack import UndoStack
+from src.util.visual.selection_fill_area import FillArea
 from src.util.visual.selection_mode import SelectionMode
 from src.util.visual.image_utils import image_data_as_numpy_8bit
 from test.tools.context_pin_gesture_tests import ContextPinGestureTests
@@ -54,7 +53,8 @@ class SelectionFillToolTest(ContextPinGestureTests, SelectionToolTestCase):
         self.layer.set_image(_pattern_image(self.IMAGE_SIZE.width(), self.IMAGE_SIZE.height()))
         Cache().set(Cache.FILL_THRESHOLD, 0.0)
         Cache().set(Cache.SAMPLE_MERGED, False)
-        Cache().set(Cache.COLOR_SELECT_MODE, False)
+        Cache().restore_default_options(Cache.SELECTION_FILL_AREA)
+        Cache().set(Cache.SELECTION_FILL_AREA, FillArea.CONNECTED.value)
         self.tool = self.activate_tool(SelectionFillTool(self.image_stack, self.image_viewer))
         self.empty = np.zeros((self.IMAGE_SIZE.height(), self.IMAGE_SIZE.width()), dtype=bool)
         UndoStack().clear()
@@ -79,7 +79,7 @@ class SelectionFillToolTest(ContextPinGestureTests, SelectionToolTestCase):
 
     def test_color_select_mode_ignores_connectivity(self) -> None:
         """In color select mode, a click selects every pixel of the clicked color, connected or not."""
-        Cache().set(Cache.COLOR_SELECT_MODE, True)
+        Cache().set(Cache.SELECTION_FILL_AREA, FillArea.BY_COLOR.value)
         self.mouse_drag([QPoint(4, 4)])
         self.assert_one_undo_step(self.empty, self._mask(LEFT_OF_STRIPE, RIGHT_OF_STRIPE, ISLAND))
 
@@ -87,7 +87,7 @@ class SelectionFillToolTest(ContextPinGestureTests, SelectionToolTestCase):
         """On a layer moved right, color select mode matches the color of the layer pixel under the click."""
         self.layer.set_transform(QTransform.fromTranslate(8, 0))
         UndoStack().clear()
-        Cache().set(Cache.COLOR_SELECT_MODE, True)
+        Cache().set(Cache.SELECTION_FILL_AREA, FillArea.BY_COLOR.value)
         self.mouse_drag([QPoint(STRIPE.x() + 8 + 1, 4)])
         self.assert_one_undo_step(self.empty, self._mask(STRIPE.translated(8, 0)))
 
@@ -118,14 +118,10 @@ class SelectionFillToolTest(ContextPinGestureTests, SelectionToolTestCase):
         self.assert_selection(self._mask(QRect(0, 0, 16, 20)))
 
     def test_fill_selection_holes(self) -> None:
-        """With "Fill selection holes" checked, a click in an unselected hole selects the hole, ignoring the image."""
+        """With the Holes fill area, a click in an unselected hole selects the hole, ignoring the image."""
         ring = self._mask(QRect(4, 4, 40, 30)) & ~self._mask(QRect(10, 10, 20, 16))
         self.set_selection_outside_history(ring)
-        panel = self.tool.get_control_panel()
-        assert panel is not None
-        checkboxes = [box for box in panel.findChildren(CheckBox) if box.text() == FILL_BY_SELECTION]
-        self.assertEqual(len(checkboxes), 1)
-        checkboxes[0].setChecked(True)
+        Cache().set(Cache.SELECTION_FILL_AREA, FillArea.HOLES.value)
         self.mouse_drag([QPoint(20, 20)])
         self.assert_one_undo_step(ring, self._mask(QRect(4, 4, 40, 30)))
 

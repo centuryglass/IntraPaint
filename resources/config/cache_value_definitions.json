@@ -176,13 +176,20 @@
         "default": false,
         "saved": true
     },
-    "color_select_mode": {
-        "label": "Select all by color",
+    "selection_fill_area": {
+        "label": "Fill area",
         "category": "Cache",
-        "description": "If checked, ignore boundaries and select all content within the color threshold",
-        "type": "bool",
-        "default": false,
-        "saved": true
+        "subcategory": "Selection",
+        "description": "Which area Selection fill selects: 'Connected' selects the connected region matching the clicked color, 'By color' selects every pixel within the color threshold of the clicked color, and 'Holes' selects the enclosed gaps in the current selection.",
+        "type": "string",
+        "default": "Connected",
+        "options": [
+            "Connected",
+            "By color",
+            "Holes"
+        ],
+        "saved": true,
+        "translate": false
     },
     "paint_selection_only": {
         "label": "Paint selection only",

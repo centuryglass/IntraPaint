@@ -151,8 +151,9 @@ class FreeSelectionToolTest(ContextPinGestureTests, SelectionToolTestCase):
         self.assert_one_undo_step(existing, existing & ~rect_mask(self.IMAGE_SIZE, RECT_AREA))
 
     def test_tool_action_hotkey_cycles_modes(self) -> None:
-        """The tool action hotkey (Q) steps through Add, Subtract, Replace and Intersect, then back to Add."""
-        for expected in (SelectionMode.SUBTRACT, SelectionMode.REPLACE, SelectionMode.INTERSECT, SelectionMode.ADD):
+        """The tool action hotkey (Q) steps through the mode bar's order, Replace, Add, Subtract and Intersect, then
+           wraps around."""
+        for expected in (SelectionMode.SUBTRACT, SelectionMode.INTERSECT, SelectionMode.REPLACE, SelectionMode.ADD):
             self._press_key(Qt.Key.Key_Q)
             self.assertEqual(Cache().get(Cache.SELECTION_MODE), expected.value)
 

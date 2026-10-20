@@ -36,10 +36,6 @@ KNOWN_PROBLEMS: dict[str, dict[str, tuple[int, ...]]] = {
     'tools_panel_text_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 317),
     'tools_panel_shape_tool': {'overlap': (316,), 'squeezed': (316,)},
     'tools_panel_layer_transform_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 318),
-    'tools_panel_free_selection_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 315),
-    'tools_panel_selection_brush_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 315),
-    'tools_panel_shape_selection_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 315),
-    'tools_panel_selection_fill_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 315),
     'tools_panel_generation_area_tool': {'clipped': (323,), 'squeezed': (323,)},
 }
 

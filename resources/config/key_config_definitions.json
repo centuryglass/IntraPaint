@@ -441,12 +441,30 @@
         "saved": true
     },
     "tool_action_hotkey": {
-        "label": "Tool action hotkey",
+        "label": "Cycle selection mode",
         "category": "Keybindings",
         "subcategory": "Tool Shortcuts",
-        "description": "Performs some context-specific action based on the active tool.",
+        "description": "Steps the selection mode through Replace, Add, Subtract and Intersect while a selection tool is active.",
         "type": "string",
         "default": "q",
+        "saved": true
+    },
+    "toggle_sample_merged_hotkey": {
+        "label": "Toggle sample merged",
+        "category": "Keybindings",
+        "subcategory": "Tool Shortcuts",
+        "description": "Toggles the Sample merged option while the selection fill tool is active. Unbound by default.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "toggle_selection_shape_hotkey": {
+        "label": "Toggle selection shape",
+        "category": "Keybindings",
+        "subcategory": "Tool Shortcuts",
+        "description": "Switches between rectangle and ellipse while the shape selection tool is active. Pressing the shape selection tool's own key again does the same. Unbound by default.",
+        "type": "string",
+        "default": "",
         "saved": true
     },
     "new_image_shortcut": {

@@ -1,18 +1,18 @@
 """Selection panel for the SelectionFillTool class."""
 from typing import Optional
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QHBoxLayout
+from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.hotkey_filter import HotkeyFilter
 from src.image.layers.selection_layer import SelectionLayer
 from src.tools.base_tool import BaseTool
-from src.ui.input_fields.check_box import CheckBox
-from src.ui.input_fields.slider_spinbox import FloatSliderSpinbox
+from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
+from src.ui.input_fields.slider_field import SliderField
+from src.ui.panel.tool_control_panels.fill_tool_panel import build_sample_merged_checkbox, build_threshold_field
 from src.ui.panel.tool_control_panels.selection_panel import SelectionPanel
-from src.ui.widget.key_hint_label import KeyHintLabel
+from src.ui.panel.tool_control_panels.stroke_block import tool_section
+from src.util.visual.selection_fill_area import FillArea, stored_fill_area
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.fill_selection_panel'
@@ -23,58 +23,55 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-FILL_BY_SELECTION = _tr('Fill selection holes')
-FILL_BY_SELECTION_TOOLTIP = _tr('Fill based on selection shape only.')
+FILL_AREA_SECTION_TITLE = _tr('Fill area')
 
 
 class FillSelectionPanel(SelectionPanel):
-    """Selection panel for the SelectionFillTool class."""
+    """Selection panel for the SelectionFillTool class: Mode, a Fill area section, then Selection.
+
+    The Fill area control is bound to `Cache.SELECTION_FILL_AREA`. Color threshold and Sample merged are the controls
+    the Fill tool shows, and have no effect in Holes mode, so the panel disables them there.
+    """
 
     def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool) -> None:
         super().__init__(selection_layer, selection_tool)
         cache = Cache()
-        threshold_slider = cache.get_control_widget(Cache.FILL_THRESHOLD)
-        assert isinstance(threshold_slider, FloatSliderSpinbox)
-        threshold_slider.setText(cache.get_label(Cache.FILL_THRESHOLD))
-        self.insert_into_layout(threshold_slider)
+        self._area_control = SegmentedControl(
+            [Segment(area.value, area.label, tooltip=area.tooltip) for area in FillArea], DisplayMode.LABEL,
+            parent=self)
+        self._area_control.set_value(stored_fill_area().value)
+        self._area_control.valueChanged.connect(lambda value: cache.set(Cache.SELECTION_FILL_AREA, value))
+        self._threshold_field = build_threshold_field(self)
+        self._sample_merged_checkbox = build_sample_merged_checkbox()
 
-        checkbox_row = QHBoxLayout()
-        checkbox_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        sample_merged_checkbox = cache.get_control_widget(Cache.SAMPLE_MERGED)
-        checkbox_row.addWidget(sample_merged_checkbox)
-
-        toggle_hint = KeyHintLabel(config_key=KeyConfig.TOOL_ACTION_HOTKEY, parent=self)
-        checkbox_row.addWidget(toggle_hint)
+        def _area_changed(_=None) -> None:
+            area = stored_fill_area()
+            self._area_control.set_value(area.value)
+            for widget in (self._threshold_field, self._sample_merged_checkbox):
+                widget.setEnabled(area != FillArea.HOLES)
+        cache.connect(self._area_control, Cache.SELECTION_FILL_AREA, _area_changed)
+        _area_changed()
+        self.insert_into_layout(tool_section(FILL_AREA_SECTION_TITLE, self._area_control, self._threshold_field,
+                                             self._sample_merged_checkbox))
 
         def _try_toggle() -> bool:
             if not self.selection_tool_is_active:
                 return False
-            sample_merged_checkbox.toggle()
+            self._sample_merged_checkbox.toggle()
             return True
-        binding_id = f'FillSelectionPanel_{id(self)}_try_toggle'
-        HotkeyFilter.instance().register_config_keybinding(binding_id, _try_toggle, KeyConfig.TOOL_ACTION_HOTKEY)
-
-        self._color_select_checkbox = cache.get_control_widget(Cache.COLOR_SELECT_MODE)
-        checkbox_row.addWidget(self._color_select_checkbox)
-
-        self._fill_by_selection_checkbox = CheckBox()
-        self._fill_by_selection_checkbox.setText(FILL_BY_SELECTION)
-        self._fill_by_selection_checkbox.setToolTip(FILL_BY_SELECTION_TOOLTIP)
-        checkbox_row.addWidget(self._fill_by_selection_checkbox)
-
-        def _selection_fill_disables_color(enabled: bool) -> None:
-            if enabled and self._color_select_checkbox.isChecked():
-                self._color_select_checkbox.setChecked(False)
-        self._fill_by_selection_checkbox.valueChanged.connect(_selection_fill_disables_color)
-
-        def _color_fill_disables_selection_fill(enabled: bool) -> None:
-            if enabled and self._fill_by_selection_checkbox.isChecked():
-                self._fill_by_selection_checkbox.setChecked(False)
-        cache.connect(self._fill_by_selection_checkbox, Cache.COLOR_SELECT_MODE, _color_fill_disables_selection_fill)
-
-        self.insert_into_layout(checkbox_row)
+        self.register_hotkey('toggle_sample_merged', _try_toggle, KeyConfig.TOGGLE_SAMPLE_MERGED_HOTKEY)
 
     @property
-    def fill_by_selection(self) -> bool:
-        """Returns whether the tool should ignore image content when filling selection gaps"""
-        return self._fill_by_selection_checkbox.isChecked()
+    def fill_area(self) -> FillArea:
+        """Returns the area the tool should select."""
+        return stored_fill_area()
+
+    @property
+    def area_control(self) -> SegmentedControl:
+        """The Fill area control."""
+        return self._area_control
+
+    @property
+    def threshold_field(self) -> SliderField:
+        """The Color threshold field."""
+        return self._threshold_field
