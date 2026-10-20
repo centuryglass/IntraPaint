@@ -19,6 +19,8 @@ from src.image.layers.image_layer import ImageLayer
 from src.ui.input_fields.fill_style_combo_box import BRUSH_PATTERN_SOLID, FillStyleComboBox
 from src.ui.panel.tool_control_panels.brush_preview import BrushPreview
 from src.undo_stack import UndoStack
+from src.util.visual.contrast_color import contrast_ratio
+from src.util.visual.keycap import keycap_colors
 from src.util.visual.image_utils import tile_pattern_fill
 
 PREVIEW_MIN_SIZE = QSize(120, 72)
@@ -123,6 +125,15 @@ class DrawStrokePreview(StrokePreview):
         if self._color_key is not None:
             color = Cache().get_color(self._color_key, color)
         return color
+
+    def _background(self) -> QColor:
+        """Returns the panel background or the keycap fill, whichever contrasts more with the brush color."""
+        panel_background = super()._background()
+        keycap_fill = keycap_colors(self.palette())[0]
+        color = self._color()
+        if contrast_ratio(keycap_fill, color) > contrast_ratio(panel_background, color):
+            return keycap_fill
+        return panel_background
 
     def _inputs(self) -> Hashable:
         return (super()._inputs(), self._color().name(QColor.NameFormat.HexArgb),
