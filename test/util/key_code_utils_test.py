@@ -39,9 +39,14 @@ class TestKeyCodeUtils(IntraPaintTestCase):
         self.assertEqual(get_modifiers('Meta'), Mod.MetaModifier)
         self.assertEqual(get_modifiers('super+Shift'), Mod.MetaModifier | Mod.ShiftModifier)
 
+    def test_get_modifiers_empty_string(self) -> None:
+        """An empty binding means no modifier, so it parses to NoModifier without error."""
+        self.assertEqual(get_modifiers(''), Mod.NoModifier)
+        self.assertEqual(get_modifiers([""]), Mod.NoModifier)
+
     def test_get_modifiers_rejects_unknown_names(self) -> None:
-        """Anything other than ctrl, control, shift, alt, meta or super raises ValueError, including the empty string."""
-        for modifier_str in ('A', 'Hyper', 'Ctrl+A', ''):
+        """Anything other than ctrl, control, shift, alt, meta or super raises ValueError."""
+        for modifier_str in ('A', 'Hyper', 'Ctrl+A'):
             with self.assertRaises(ValueError, msg=modifier_str):
                 get_modifiers(modifier_str)
 
@@ -61,6 +66,10 @@ class TestKeyCodeUtils(IntraPaintTestCase):
     def test_get_key_with_modifiers_modifier_only(self) -> None:
         """A string of modifier names that Qt can't parse as a key returns no key and all the modifiers."""
         self.assertEqual(get_key_with_modifiers('Ctrl'), (None, Mod.ControlModifier))
+
+    def test_get_key_with_modifiers_empty_string(self) -> None:
+        """An empty string parses as no key and no modifiers instead of raising."""
+        self.assertEqual(get_key_with_modifiers(''), (None, Mod.NoModifier))
 
     def test_get_key_with_modifiers_rejects_key_lists(self) -> None:
         """A comma-separated key list fails its assertion."""
