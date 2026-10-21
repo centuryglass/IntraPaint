@@ -138,12 +138,17 @@ for context_elem in xml_root:
     for message_elem in context_elem:
         if message_elem.tag != 'message':
             continue
-        source_elem = message_elem[-2]
-        assert source_elem.tag == 'source'
-        source_text = source_elem.text
-        translate_elem = message_elem[-1]
-        assert translate_elem.tag == 'translation'
-        message_elem.remove(translate_elem)
+        source_text = ''
+        source_elem = None
+        translate_elem = None
+        for inner_elem in message_elem:
+            if inner_elem.tag == 'source':
+                source_elem = inner_elem
+                source_texte = source_elem.text
+            elif inner_elem.tag == 'translation':
+                translate_elem = inner_elem
+                message_elem.remove(translate_elem)
+        assert source_elem is not None and translate_elem is not None
         translate_elem = Element('translation')
         message_elem.append(translate_elem)
         translate_elem.text = source_text
