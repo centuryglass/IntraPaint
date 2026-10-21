@@ -147,9 +147,10 @@ class DockPanelTest(IntraPaintTestCase):
         self._host(SIDE, QSize(310, 500))
         self.assertGreater(len(measures), count)
 
-    def test_orientation_follows_the_shape_when_the_preferred_one_overflows(self) -> None:
-        """A panel keeps the host's orientation while its content fits, and takes the other one when only that one
-        fits, such as a tall, narrow panel in a bottom dock."""
+    def test_orientation_follows_the_size_no_matter_its_area(self) -> None:
+        """A panel takes the orientation its size suggests, whatever orientation the host reports: a wide space lays
+        out as a strip even in a side dock, and a tall one as a side panel even in a bottom dock. The host's report
+        stays in `preferred_orientation`."""
         self._host(STRIP, QSize(1400, 160))
         self.assertEqual(self.panel.orientation, STRIP)
         self._host(STRIP, QSize(200, 900))

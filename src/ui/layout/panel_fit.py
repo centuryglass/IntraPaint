@@ -4,9 +4,11 @@ A panel never measures the window. Its host reports an `Orientation` and the siz
 as much as fits there. Thresholds live in this module, so DPI normalization (issue #13) changes them in one place.
 `doc/agents/panel_layout.md` lists what a planned layout has to do.
 
-- Side panels (left and right docks) are a tall column that scrolls vertically. Strip panels (top and bottom docks) are
-  a wide row that scrolls horizontally. The scroll axis is the long one, and the other is the cross axis. A floating
-  dock is a side panel when it is taller than wide, with `HYSTERESIS` on the switch.
+- Orientation comes from the space a panel fills: a panel taller than wide is a side panel, a wide one is a strip,
+  with `HYSTERESIS` on the switch, so a tall panel in a bottom dock still lays out as a side panel. The dock area
+  still sets unmigrated panels' orientation (`orientation_for_dock`), until the last one moves to `DockPanel`.
+- Side panels are a tall column that scrolls vertically. Strip panels are a wide row that scrolls horizontally. The
+  scroll axis is the long one, and the other is the cross axis.
 - Content is a list of `FitItem`s, each with a priority and one or more forms, largest first. `plan_fit` picks a form
   for each item, or leaves an optional item out:
   - `REQUIRED` items are always shown, in their largest form that fits on the cross axis. They may scroll.
@@ -18,9 +20,9 @@ as much as fits there. Thresholds live in this module, so DPI normalization (iss
 - `plan_fit` keeps the current placement until a better one fits with `HYSTERESIS` pixels to spare, so dragging a
   separator across a boundary doesn't flicker. A current placement that no longer fits doesn't hold, since forms of
   one item can differ in shape.
-- `plan_orientation` plans both orientations and keeps the host's preferred one unless the other fits without
-  overflowing where it doesn't, or shows optional items it leaves out. A dock's area only sets the preference, so a
-  tall panel in a bottom dock can still lay out as a side panel. Switching needs `HYSTERESIS` pixels to spare too.
+- `plan_orientation` plans both orientations. The one whose content fits better wins; ties go to the orientation the
+  size suggests, so a square-ish panel keeps its orientation until the other axis is longer by more than `HYSTERESIS`
+  pixels. Switching needs `HYSTERESIS` pixels to spare too.
 - `plan_fit` is pure. A `measure` callback returns a placement's minimum size. `FitPlanner` binds it to widgets, and
   `fresh_minimum_size` measures widgets without waiting on the event loop.
 """
@@ -94,21 +96,32 @@ class FitItem:
         return self.priority == REQUIRED
 
 
+def orientation_for_size(size: QSize, current: Optional[Orientation] = None) -> Orientation:
+    """Returns the orientation a panel of `size` arranges its content in: side when it is taller than wide, strip
+    otherwise, with `HYSTERESIS` on the switch.
+
+    `current` is the orientation in use, if any. It holds while the other axis is longer by at most `HYSTERESIS`
+    pixels, so resizing through a square size doesn't switch back and forth. A square size is a strip.
+    """
+    taller_by = size.height() - size.width()
+    if current == Orientation.SIDE:
+        return Orientation.SIDE if taller_by >= -HYSTERESIS else Orientation.STRIP
+    if current == Orientation.STRIP:
+        return Orientation.SIDE if taller_by > HYSTERESIS else Orientation.STRIP
+    return Orientation.SIDE if taller_by > 0 else Orientation.STRIP
+
+
 def orientation_for_dock(area: Qt.DockWidgetArea, floating: bool, size: QSize,
                          current: Optional[Orientation] = None) -> Orientation:
-    """Returns a dock's orientation from its area, or from its aspect ratio when it is floating.
+    """Returns the orientation an unmigrated dock's content arranges in: from the area when docked, from the size
+    when floating.
 
-    Left and right areas are side panels, top and bottom are strips. A floating dock taller than wide is a side panel,
-    and a square one is a strip. A floating dock in `current` orientation keeps it until the other axis is longer by
-    more than `HYSTERESIS` pixels.
+    Left and right areas are side panels, top and bottom are strips. Migrated `DockPanel` content plans from its
+    size alone (`orientation_for_size`), so this area rule only matters until the last panel with a `set_orientation`
+    layout moves to `DockPanel`, and then it is removed.
     """
     if floating:
-        taller_by = size.height() - size.width()
-        if current == Orientation.SIDE:
-            return Orientation.SIDE if taller_by >= -HYSTERESIS else Orientation.STRIP
-        if current == Orientation.STRIP:
-            return Orientation.SIDE if taller_by > HYSTERESIS else Orientation.STRIP
-        return Orientation.SIDE if taller_by > 0 else Orientation.STRIP
+        return orientation_for_size(size, current)
     if area in (Qt.DockWidgetArea.LeftDockWidgetArea, Qt.DockWidgetArea.RightDockWidgetArea):
         return Orientation.SIDE
     return Orientation.STRIP
@@ -224,32 +237,36 @@ def _overflows(need: QSize, available: QSize) -> bool:
     return need.width() > available.width() or need.height() > available.height()
 
 
-def plan_orientation(items: Sequence[FitItem], available: QSize, preferred: Orientation,
+def plan_orientation(items: Sequence[FitItem], available: QSize,
                      measure: Callable[[Orientation, Placement], QSize],
                      current: Optional[tuple[Orientation, Placement]] = None) -> tuple[Orientation, Placement]:
     """Returns the orientation and placement for content in an available size, planning each orientation with
     `plan_fit`.
 
     - The orientation whose content doesn't overflow the available size wins, then the one that shows more optional
-      items, in fill order, then `preferred`, then the one with larger forms. Form sizes come last because forms
-      differ between orientations, so a strip's larger buttons say nothing about which orientation suits the space.
+      items, in fill order, then the one the size's shape suggests, then the one with larger forms. Form sizes come
+      last because forms differ between orientations, so a strip's larger buttons say nothing about which orientation
+      suits the space.
+    - The shape suggestion comes from `orientation_for_size` with the current orientation as its hysteresis anchor, so
+      a square-ish panel keeps its arrangement until the other axis is longer by more than `HYSTERESIS` pixels.
     - `current` is the orientation and placement in use, if any. Another orientation replaces it only once it also
       wins in `available` shrunk by `HYSTERESIS` on both axes.
     """
+    guess = orientation_for_size(available, current[0] if current is not None else None)
 
     def _plan(orientation: Orientation, size: QSize) -> tuple[tuple, Placement]:
         in_use = current[1] if current is not None and current[0] == orientation else None
         placement = plan_fit(items, size, orientation, lambda p: measure(orientation, p), in_use)
         score = (_overflows(measure(orientation, placement), size), _left_out(items, placement),
-                 orientation != preferred, _rank(items, placement))
+                 orientation != guess, _rank(items, placement))
         return score, placement
 
-    plans = {preferred: _plan(preferred, available)}
-    overflows, left_out = plans[preferred][0][:2]
-    # Nothing beats a preferred plan that fits and leaves nothing out, so the other orientation needs no plan:
-    if not overflows and not any(left_out) and (current is None or current[0] == preferred):
-        return preferred, plans[preferred][1]
-    other = Orientation.STRIP if preferred == Orientation.SIDE else Orientation.SIDE
+    plans = {guess: _plan(guess, available)}
+    overflows, left_out = plans[guess][0][:2]
+    # Nothing beats the suggested orientation when it fits and leaves nothing out, so the other needs no plan:
+    if not overflows and not any(left_out) and (current is None or current[0] == guess):
+        return guess, plans[guess][1]
+    other = Orientation.STRIP if guess == Orientation.SIDE else Orientation.SIDE
     plans[other] = _plan(other, available)
     best = min(plans, key=lambda orientation: plans[orientation][0])
     if current is None or best == current[0]:
@@ -295,7 +312,7 @@ class FitPlanner:
         self._finish = finish
         self._placement: Optional[Placement] = None
         self._orientation: Optional[Orientation] = None
-        # The orientation the latest update asked for, which a flexible update only prefers:
+        # The orientation the latest update asked for, which a flexible update does not plan for:
         self._requested: Optional[Orientation] = None
         self._available: Optional[QSize] = None
         self._applied = False
@@ -319,7 +336,8 @@ class FitPlanner:
         """Plans for an orientation and available size and applies the result, returning whether the placement or
         orientation changed. Skips planning when neither input changed, unless `force` is set.
 
-        With `flexible` set, `orientation` is only preferred, and `plan_orientation` picks the one to use.
+        With `flexible` set, `plan_orientation` picks the orientation from the available size and the content's fit;
+        `orientation` only marks whether the input changed. Without it, the orientation is planned directly.
         """
         if self._applied and not force and orientation == self._requested and available == self._available:
             return False
@@ -338,7 +356,7 @@ class FitPlanner:
         in_use = None if self._placement is None or self._orientation is None else (self._orientation,
                                                                                      self._placement)
         if flexible:
-            orientation, placement = plan_orientation(self._items, available, orientation, _measure, in_use)
+            orientation, placement = plan_orientation(self._items, available, _measure, in_use)
         else:
             current = self._placement if orientation == self._orientation else None
             placement = plan_fit(self._items, available, orientation, lambda p: _measure(orientation, p), current)

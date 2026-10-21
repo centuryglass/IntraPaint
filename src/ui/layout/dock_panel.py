@@ -2,7 +2,8 @@
 
 A `DockPanel` subclass declares sections and a priority for each control in `build`. The host calls `set_host_facts`
 when the dock's orientation or size changes, and the panel plans again whenever it is resized. The host's orientation
-is a preference: the panel takes whichever orientation its content fits best. Planning
+is informational: the panel takes whichever orientation the size and its content fit best
+(`src.ui.layout.panel_fit.plan_orientation`). Planning
 (`src.ui.layout.panel_fit`) moves controls between their sections and the overflow area without rebuilding them, so
 their state survives.
 
@@ -156,7 +157,7 @@ class DockPanel(QWidget):
     def __init__(self, name: str = '', icon: Optional[QIcon] = None, key_text: str = '',
                  parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        # The orientation the host prefers, and the one the panel is arranged in:
+        # The orientation the host reports, and the one the panel is arranged in:
         self._preferred_orientation = Orientation.SIDE
         self._orientation = Orientation.SIDE
         self._arranged_orientation: Optional[Orientation] = None
@@ -261,7 +262,7 @@ class DockPanel(QWidget):
 
     @property
     def orientation(self) -> Orientation:
-        """The orientation the panel is arranged in, which planning picks with the host's as a preference."""
+        """The orientation the panel is arranged in, which planning picks from the size and the content's fit."""
         return self._orientation
 
     @property
@@ -300,8 +301,8 @@ class DockPanel(QWidget):
 
     def set_host_facts(self, orientation: Orientation, size: QSize) -> None:
         """Called by the host when the dock's orientation or size changes, with the size the panel fills. Plans again
-        if either changed. The orientation is a preference: `src.ui.layout.panel_fit.plan_orientation` picks the one
-        the content fits best."""
+        if either changed. `orientation` is kept as `preferred_orientation`; `src.ui.layout.panel_fit.plan_orientation`
+        picks the orientation from the size and the content's fit."""
         self._preferred_orientation = orientation
         self._fit_planner().update(orientation, size, flexible=True)
 

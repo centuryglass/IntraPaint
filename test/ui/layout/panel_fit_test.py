@@ -9,7 +9,8 @@ from PySide6.QtWidgets import QApplication, QComboBox, QLineEdit, QPushButton, Q
 
 from src.ui.layout.panel_fit import (FIELD_MAX_WIDTH, HYSTERESIS, REQUIRED, FitItem, FitPlanner, Orientation,
                                      Placement, base_placement, field_width_cap, fresh_minimum_size,
-                                     orientation_for_dock, plan_fit, plan_orientation, set_field_width_cap)
+                                     orientation_for_dock, orientation_for_size, plan_fit, plan_orientation,
+                                     set_field_width_cap)
 from test.base_test_case import IntraPaintTestCase
 from test.ui.panel_capture import find_arrangement_problems
 
@@ -168,30 +169,30 @@ class PlanOrientationTest(IntraPaintTestCase):
     def _measure(self, side: StackedContent, strip: StackedContent):
         return lambda orientation, placement: (side if orientation == SIDE else strip).measure(placement)
 
-    def test_preferred_orientation_holds_while_it_fits(self) -> None:
-        """With the same placement fitting both ways, the preferred orientation wins, even if the other one would use
-        larger forms."""
+    def test_shape_suggested_orientation_holds_while_it_fits(self) -> None:
+        """With the same placement fitting both ways, the orientation the size suggests wins, even if the other one
+        would use larger forms."""
         side = StackedContent(SIDE, [(200, 50), (100, 50)])
         strip = StackedContent(STRIP, [(40, 300), (40, 100)])
         items = [FitItem(REQUIRED, 2)]
-        orientation, placement = plan_orientation(items, QSize(150, 400), SIDE, self._measure(side, strip))
+        orientation, placement = plan_orientation(items, QSize(150, 400), self._measure(side, strip))
         self.assertEqual((orientation, placement), (SIDE, (1,)))
 
     def test_orientation_that_avoids_overflow_wins(self) -> None:
-        """A tall, narrow space in a strip's dock lays out as a side panel when only that fits."""
-        # 150 x 300 as a side panel, and 300 x 150 as a strip:
-        side = StackedContent(SIDE, [(150, 300)])
-        strip = StackedContent(STRIP, [(150, 300)])
+        """The orientation that fits wins over the one the size suggests: at a tall size a panel that only fits as a
+        strip, and at a wide size one that only fits as a side panel."""
+        side = StackedContent(SIDE, [(400, 100)])
+        strip = StackedContent(STRIP, [(400, 100)])
         items = [FitItem(REQUIRED)]
-        self.assertEqual(plan_orientation(items, QSize(200, 900), STRIP, self._measure(side, strip))[0], SIDE)
-        self.assertEqual(plan_orientation(items, QSize(900, 200), STRIP, self._measure(side, strip))[0], STRIP)
+        self.assertEqual(plan_orientation(items, QSize(200, 900), self._measure(side, strip))[0], STRIP)
+        self.assertEqual(plan_orientation(items, QSize(900, 200), self._measure(side, strip))[0], SIDE)
 
     def test_orientation_that_shows_more_optional_items_wins(self) -> None:
-        """When both fit, the orientation that leaves fewer optional items out wins over the preferred one."""
-        side = StackedContent(SIDE, [(100, 100)], [(100, 100)])
-        strip = StackedContent(STRIP, [(100, 100)], [(100, 100)])
+        """When both fit, the orientation that leaves fewer optional items out wins over the suggested one."""
+        side = StackedContent(SIDE, [(100, 100)], [(200, 10)])
+        strip = StackedContent(STRIP, [(100, 100)], [(100, 10)])
         items = [FitItem(REQUIRED), FitItem(1)]
-        orientation, placement = plan_orientation(items, QSize(1000, 150), SIDE, self._measure(side, strip))
+        orientation, placement = plan_orientation(items, QSize(150, 400), self._measure(side, strip))
         self.assertEqual((orientation, placement), (STRIP, (0, 0)))
 
     def test_switching_orientation_needs_room_to_spare(self) -> None:
@@ -201,38 +202,75 @@ class PlanOrientationTest(IntraPaintTestCase):
         strip = StackedContent(STRIP, [(100, 150)])
         items = [FitItem(REQUIRED)]
         measure = self._measure(side, strip)
-        current = plan_orientation(items, QSize(500, 150), SIDE, measure)
+        current = plan_orientation(items, QSize(500, 150), measure)
         self.assertEqual(current[0], STRIP)
-        current = plan_orientation(items, QSize(100, 200), SIDE, measure, current)
+        current = plan_orientation(items, QSize(100, 200), measure, current)
         self.assertEqual(current[0], SIDE)
-        self.assertEqual(plan_orientation(items, QSize(150 + HYSTERESIS - 1, 199), SIDE, measure, current)[0], SIDE)
-        self.assertEqual(plan_orientation(items, QSize(150 + HYSTERESIS, 199), SIDE, measure, current)[0], STRIP)
+        self.assertEqual(plan_orientation(items, QSize(150 + HYSTERESIS - 1, 199), measure, current)[0], SIDE)
+        self.assertEqual(plan_orientation(items, QSize(150 + HYSTERESIS, 199), measure, current)[0], STRIP)
+
+    def test_square_panel_keeps_its_current_orientation(self) -> None:
+        """Within HYSTERESIS of a square, the panel stays in its current orientation, so the same size can lay out
+        either way depending on the plan before it. Beyond that, the shape decides."""
+        side = StackedContent(SIDE, [(100, 100)])
+        strip = StackedContent(STRIP, [(100, 100)])
+        items = [FitItem(REQUIRED)]
+        measure = self._measure(side, strip)
+        current = plan_orientation(items, QSize(200, 200), measure)
+        self.assertEqual(current[0], STRIP)
+        # The strip holds while the height passes the width by at most HYSTERESIS:
+        current = plan_orientation(items, QSize(200, 200 + HYSTERESIS), measure, current)
+        self.assertEqual(current[0], STRIP)
+        current = plan_orientation(items, QSize(200, 200 + HYSTERESIS + 1), measure, current)
+        self.assertEqual(current[0], SIDE)
+        # And a side plan holds while the width passes the height by at most HYSTERESIS:
+        current = plan_orientation(items, QSize(150, 250), measure)
+        self.assertEqual(current[0], SIDE)
+        current = plan_orientation(items, QSize(200 + HYSTERESIS, 200), measure, current)
+        self.assertEqual(current[0], SIDE)
+        current = plan_orientation(items, QSize(200 + HYSTERESIS + 1, 200), measure, current)
+        self.assertEqual(current[0], STRIP)
 
 
 class OrientationTest(IntraPaintTestCase):
-    """Tests orientation_for_dock."""
+    """Tests orientation_for_size and orientation_for_dock."""
 
-    def test_orientation_from_dock(self) -> None:
-        """Left and right areas are side panels, top and bottom are strips, and floating docks use aspect ratio."""
+    def test_orientation_from_size_ignores_area(self) -> None:
+        """A panel's orientation comes from its shape alone: tall is side, wide is a strip, and a square is a strip.
+        The function takes no dock area, so a tall panel in a top or bottom dock is still a side panel, and a wide
+        one in a left or right dock is still a strip."""
+        self.assertEqual(orientation_for_size(QSize(200, 900)), SIDE)
+        self.assertEqual(orientation_for_size(QSize(900, 200)), STRIP)
+        self.assertEqual(orientation_for_size(QSize(200, 201)), SIDE)
+        self.assertEqual(orientation_for_size(QSize(201, 200)), STRIP)
+        self.assertEqual(orientation_for_size(QSize(200, 200)), STRIP)
+        self.assertEqual(orientation_for_size(QSize(300, 200)), STRIP)
+
+    def test_size_hysteresis_in_both_directions(self) -> None:
+        """The current orientation holds while the other axis is longer by at most HYSTERESIS pixels, and switches
+        once it is longer by more."""
+        self.assertEqual(orientation_for_size(QSize(200 + HYSTERESIS, 200), SIDE), SIDE)
+        self.assertEqual(orientation_for_size(QSize(200 + HYSTERESIS + 1, 200), SIDE), STRIP)
+        self.assertEqual(orientation_for_size(QSize(200, 200 + HYSTERESIS), STRIP), STRIP)
+        self.assertEqual(orientation_for_size(QSize(200, 200 + HYSTERESIS + 1), STRIP), SIDE)
+
+    def test_orientation_for_dock_docked_uses_area(self) -> None:
+        """Left and right areas are side panels, top and bottom are strips, for panels that still take the area's
+        orientation."""
         area = Qt.DockWidgetArea
         size = QSize(100, 100)
         self.assertEqual(orientation_for_dock(area.LeftDockWidgetArea, False, size), SIDE)
         self.assertEqual(orientation_for_dock(area.RightDockWidgetArea, False, size), SIDE)
         self.assertEqual(orientation_for_dock(area.TopDockWidgetArea, False, size), STRIP)
         self.assertEqual(orientation_for_dock(area.BottomDockWidgetArea, False, size), STRIP)
-        self.assertEqual(orientation_for_dock(area.NoDockWidgetArea, True, QSize(200, 201)), SIDE)
-        self.assertEqual(orientation_for_dock(area.NoDockWidgetArea, True, QSize(200, 200)), STRIP)
-        self.assertEqual(orientation_for_dock(area.NoDockWidgetArea, True, QSize(300, 200)), STRIP)
 
-    def test_floating_hysteresis(self) -> None:
-        """A floating dock keeps its orientation until the other axis is longer by more than HYSTERESIS pixels."""
+    def test_orientation_for_dock_floating_uses_size(self) -> None:
+        """A floating dock reports its orientation from its size, with the same hysteresis."""
         floating = Qt.DockWidgetArea.NoDockWidgetArea
+        self.assertEqual(orientation_for_dock(floating, True, QSize(200, 900)), SIDE)
+        self.assertEqual(orientation_for_dock(floating, True, QSize(200, 200)), STRIP)
         self.assertEqual(orientation_for_dock(floating, True, QSize(200 + HYSTERESIS, 200), SIDE), SIDE)
         self.assertEqual(orientation_for_dock(floating, True, QSize(200 + HYSTERESIS + 1, 200), SIDE), STRIP)
-        self.assertEqual(orientation_for_dock(floating, True, QSize(200, 200 + HYSTERESIS), STRIP), STRIP)
-        self.assertEqual(orientation_for_dock(floating, True, QSize(200, 200 + HYSTERESIS + 1), STRIP), SIDE)
-        self.assertEqual(orientation_for_dock(Qt.DockWidgetArea.TopDockWidgetArea, False, QSize(100, 900), SIDE),
-                         STRIP)
 
 
 class _Column(QWidget):
