@@ -36,7 +36,7 @@ def get_key_with_modifiers(key_string: str) -> tuple[Optional[Qt.Key], Qt.Keyboa
     except ValueError:
         modifiers = get_modifiers(keys)
         key = None
-    if keys[-1] in KEY_REQUIRES_SHIFT:
+    if keys[-1] and keys[-1] in KEY_REQUIRES_SHIFT:
         modifiers = modifiers | Qt.KeyboardModifier.ShiftModifier
     return key, modifiers
 
@@ -47,6 +47,8 @@ def get_modifiers(modifier_str: str | list[str]) -> Qt.KeyboardModifier:
     if not isinstance(modifier_str, list):
         modifier_str = modifier_str.split('+')
     for mod_str in modifier_str:
+        if not mod_str:
+            continue  # An empty binding means no modifier.
         match mod_str.lower():
             case 'control' | 'ctrl':
                 modifiers = modifiers | Qt.KeyboardModifier.ControlModifier
