@@ -551,11 +551,17 @@ class StrokeToolPanel(QWidget):
                 self._planning = False
 
     def show_pressure_checkboxes(self) -> None:
-        """After receiving a tablet event, call this to reveal the pen pressure links."""
+        """Reveals the pen pressure links after a tablet is seen, and replans once for the reveal.
+
+        Pen use calls this on every tablet event. The reveal changes no measured size, so only the first call
+        replans: a forced replan on every event rearranges the panel in a stream, which flickers it.
+        """
+        first_reveal = not Cache().get(Cache.EXPECT_TABLET_INPUT)
         self._block.show_pressure_links()
         Cache().set(Cache.EXPECT_TABLET_INPUT, True)
-        self._planner.update(self._fit_orientation(), self._space if self._space is not None else self.size(),
-                             force=True)
+        if first_reveal:
+            self._planner.update(self._fit_orientation(), self._space if self._space is not None else self.size(),
+                                 force=True)
 
     def _fit_orientation(self) -> Orientation:
         return Orientation.SIDE if self._orientation == Qt.Orientation.Vertical else Orientation.STRIP

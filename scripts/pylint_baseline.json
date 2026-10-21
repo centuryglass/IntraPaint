@@ -73,7 +73,7 @@
     "unused-argument": 15
   },
   "src/tools/brush_tool.py": {
-    "assignment-from-none": 4,
+    "assignment-from-none": 3,
     "unused-argument": 1,
     "unused-variable": 1
   },
