@@ -222,7 +222,7 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
   below, and the `bundle` job (see "Packaging"). Its `ci` job is the single check to require for merging.
 - Coverage is sparse: treat it as a partial safety net, not an authoritative gate. `coverage run -m pytest` then
   `coverage report` measures it locally; CI's Python 3.13 test leg posts the report to the run summary. The full run
-  takes about 90 seconds.
+  takes about 300 seconds.
 
 ## Type checking
 

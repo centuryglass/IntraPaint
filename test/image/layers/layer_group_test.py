@@ -49,6 +49,19 @@ class LayerGroupTest(IntraPaintTestCase):
         """Flipping a group vertically is undone in one step."""
         self.assert_one_undo_step(self.group.flip_vertical)
 
+    def test_visibility_toggles_ignore_locks(self) -> None:
+        """Locking a group or its child never blocks showing or hiding either."""
+        child = self.layers[0]
+        self.group.set_locked(True)
+        child.visible = False
+        self.assertFalse(child.visible)
+        child.visible = True
+        self.assertTrue(child.visible)
+        self.group.visible = False
+        self.assertFalse(self.group.visible)
+        self.group.visible = True
+        self.assertTrue(self.group.visible)
+
 
 if __name__ == '__main__':
     unittest.main()

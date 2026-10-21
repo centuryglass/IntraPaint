@@ -459,6 +459,22 @@ class LayerPanelTest(IntraPaintTestCase):
             self.assertEqual(getter(), initial_value, button_type.__name__)
             self.assertEqual(button.icon().cacheKey(), initial_icon_key, button_type.__name__)
 
+    def test_locked_layer_visibility_button_works(self) -> None:
+        """Locking a layer or its group doesn't block its visibility button."""
+        button = self._button(self.nested_child, LayerVisibilityButton)
+        self.assertTrue(button.isEnabled())
+        self.nested_child.locked = True
+        self.assertTrue(button.isEnabled())
+        QtTest.QTest.mouseClick(button, Qt.MouseButton.LeftButton)
+        self.assertFalse(self.nested_child.visible)
+        UndoStack().undo()
+        self.assertTrue(self.nested_child.visible)
+        self.group.locked = True
+        QtTest.QTest.mouseClick(button, Qt.MouseButton.LeftButton)
+        self.assertFalse(self.nested_child.visible)
+        UndoStack().undo()
+        self.assertTrue(self.nested_child.visible)
+
     def test_lock_disables_alpha_lock_button(self) -> None:
         """A layer's own lock or a group lock disables its alpha lock button, until every lock is released."""
         button = self._button(self.nested_child, LayerAlphaLockButton)

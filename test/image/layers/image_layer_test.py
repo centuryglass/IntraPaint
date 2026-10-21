@@ -101,6 +101,16 @@ class ImageLayerTest(IntraPaintTestCase):
             image.fill(Qt.GlobalColor.red)
         self.assertTrue(image_is_fully_transparent(self.image_layer.image))
 
+    def test_locked_layer_visibility_toggles(self) -> None:
+        """Locking a layer never blocks showing or hiding it, and each visibility change undoes."""
+        self.image_layer.set_locked(True)
+        self.image_layer.visible = False
+        self.assertFalse(self.image_layer.visible)
+        UndoStack().undo()
+        self.assertTrue(self.image_layer.visible)
+        self.image_layer.visible = True
+        self.assertTrue(self.image_layer.visible)
+
     def test_borrow_image(self) -> None:
         """Test setting content with a QImage when using the borrow_image method"""
         new_image = QImage(INIT_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)

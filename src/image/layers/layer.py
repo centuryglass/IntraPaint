@@ -235,7 +235,14 @@ class Layer(QObject, metaclass=_LayerMeta):
 
             UndoStack().commit_action(_toggle_all, _toggle_all, 'layer.visible')
         else:
-            self._apply_combinable_change(visible, self._visible, self.set_visible, 'layer.visibility')
+            # Hiding bypasses `_apply_combinable_change`, which blocks changes to locked layers.
+            def _hide():
+                self.set_visible(False)
+
+            def _show():
+                self.set_visible(True)
+
+            UndoStack().commit_action(_hide, _show, 'layer.visibility', merge_target=self)
 
     def is_empty(self, bounds: Optional[QRect] = None) -> bool:
         """Returns whether this layer contains only fully transparent pixels, optionally restricting the check to a
@@ -563,8 +570,9 @@ class Layer(QObject, metaclass=_LayerMeta):
                                  last_value: Any,
                                  value_setter: Callable[[Any], None],
                                  change_type: str) -> None:
-        if value_setter is not self.set_visible:
-            assert not self.locked and not self.parent_locked, f'Tried to change {change_type} in a locked layer'
+        # Visibility changes don't come through here: the `visible` property setter commits its own undo, so showing or
+        # hiding a locked layer is always allowed.
+        assert not self.locked and not self.parent_locked, f'Tried to change {change_type} in a locked layer'
         if last_value == new_value:
             return
 
