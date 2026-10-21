@@ -1,7 +1,10 @@
 """Tests KeyConfig keybinding validation."""
 from unittest.mock import patch
 
+from PySide6.QtCore import Qt
+
 from src.config.key_config import KeyConfig
+from src.tools.base_tool import FIXED_ASPECT_HINT, BaseTool
 from test.base_test_case import IntraPaintTestCase
 
 
@@ -41,3 +44,19 @@ class KeyConfigValidationTest(IntraPaintTestCase):
         self.assertEqual(1, len(errors))
         self.assertIn('with speed modifier', errors[0])
         self.assertIn('Alt+Z', errors[0])
+
+
+class KeyConfigModifierTest(IntraPaintTestCase):
+    """An empty modifier binding means no modifier, not an error."""
+
+    def test_get_modifier_empty_value_means_no_modifier(self) -> None:
+        """get_modifier returns NoModifier for an unbound modifier instead of raising."""
+        config = KeyConfig()
+        config.set(KeyConfig.FIXED_ASPECT_MODIFIER, '')
+        self.assertEqual(Qt.KeyboardModifier.NoModifier,
+                         config.get_modifier(KeyConfig.FIXED_ASPECT_MODIFIER))
+
+    def test_modifier_hint_omitted_for_empty_binding(self) -> None:
+        """modifier_hint returns an empty string for an unbound modifier instead of raising."""
+        KeyConfig().set(KeyConfig.FIXED_ASPECT_MODIFIER, '')
+        self.assertEqual('', BaseTool.modifier_hint(KeyConfig.FIXED_ASPECT_MODIFIER, FIXED_ASPECT_HINT))

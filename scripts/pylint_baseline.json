@@ -37,7 +37,7 @@
     "invalid-name": 1
   },
   "src/tools/brush_tool.py": {
-    "assignment-from-none": 4
+    "assignment-from-none": 3
   },
   "src/tools/qt_paint_brush_tool.py": {
     "assignment-from-none": 3,
