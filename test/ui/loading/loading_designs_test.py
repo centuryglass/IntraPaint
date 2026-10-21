@@ -61,11 +61,14 @@ class LoadDesignsTest(IntraPaintTestCase):
         super().tearDown()
 
     def test_shipped_designs(self) -> None:
-        """The committed resources load as the starting variants, after the procedural design."""
+        """The real resources load the procedural design first, and the committed starting variants are among the
+        rest, whatever extra variants exist."""
         designs = load_loading_designs()
-        self.assertEqual([design.label for design in designs],
-                         ['Halftone Press', 'Diffusion Ring: color_wheel', 'Pixel Orbit: ember'])
-        pixel_orbit = designs[2]
+        self.assertIsInstance(designs[0], HalftonePress)
+        by_label = {design.label: design for design in designs}
+        self.assertIn('Diffusion Ring: color_wheel', by_label)
+        self.assertIn('Pixel Orbit: ember', by_label)
+        pixel_orbit = by_label['Pixel Orbit: ember']
         assert isinstance(pixel_orbit, SpriteSheetDesign)
         self.assertEqual(pixel_orbit.frame_count, 32)
 
@@ -155,18 +158,18 @@ class DesignFrameTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.designs = {design.name: design for design in load_loading_designs()}
+        self.designs = {design.label: design for design in load_loading_designs()}
 
     def test_fit_scales_bitmaps_by_whole_numbers(self) -> None:
         """Bitmap designs fit at a whole multiple of their native size, on whole pixels."""
-        pixel_orbit = self.designs['Pixel Orbit']
+        pixel_orbit = self.designs['Pixel Orbit: ember']
         self.assertEqual(pixel_orbit.fit(QRectF(0.5, 0, 250, 300)), QRectF(18, 42, 216, 216))
         self.assertEqual(pixel_orbit.fit(QRectF(0, 0, 50, 50)), QRectF(0, 0, 50, 50))
         self.assertEqual(self.designs['Halftone Press'].fit(QRectF(0, 0, 250, 300)), QRectF(0, 25, 250, 250))
 
     def test_sprite_frame_index(self) -> None:
         """Phase maps evenly onto frames, read along rows."""
-        pixel_orbit = self.designs['Pixel Orbit']
+        pixel_orbit = self.designs['Pixel Orbit: ember']
         assert isinstance(pixel_orbit, SpriteSheetDesign)
         self.assertEqual(pixel_orbit.frame_index(0.0), 0)
         self.assertEqual(pixel_orbit.frame_index(9 / 32), 9)
@@ -176,7 +179,7 @@ class DesignFrameTest(IntraPaintTestCase):
 
     def test_diffusion_ring_rests_on_clean_image(self) -> None:
         """At the rest phase, the frame is the clean image. At phase 0, it is noise inside the ring's alpha."""
-        ring = self.designs['Diffusion Ring']
+        ring = self.designs['Diffusion Ring: color_wheel']
         assert isinstance(ring, DiffusionRing)
         self.assertEqual(signal_level(0.0), 0.0)
         self.assertEqual(signal_level(ring.rest_phase), 1.0)
@@ -190,8 +193,8 @@ class DesignFrameTest(IntraPaintTestCase):
     def test_design_goldens(self) -> None:
         """Each shipped design draws the same frame as its golden image, on both themes when it depends on them."""
         cases = (('Halftone Press', 'halftone_press', (True, False)),
-                 ('Diffusion Ring', 'diffusion_ring', (True,)),
-                 ('Pixel Orbit', 'pixel_orbit', (True,)))
+                 ('Diffusion Ring: color_wheel', 'diffusion_ring', (True,)),
+                 ('Pixel Orbit: ember', 'pixel_orbit', (True,)))
         for name, file_name, themes in cases:
             for dark in themes:
                 with self.subTest(design=name, dark=dark):

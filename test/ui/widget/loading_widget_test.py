@@ -21,6 +21,7 @@ class LoadingWidgetTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.designs = load_loading_designs()
+        self.by_label = {design.label: design for design in self.designs}
         self.widget = LoadingWidget(message='Loading...', designs=self.designs)
         self.widget.resize(WIDGET_SIZE, WIDGET_SIZE)
 
@@ -37,7 +38,7 @@ class LoadingWidgetTest(IntraPaintTestCase):
     def test_pause_holds_rest_frame(self) -> None:
         """Pausing shows the design's rest frame, and unpausing starts a new load with another design."""
         self.widget.show()
-        diffusion_ring = self.designs[1]
+        diffusion_ring = self.by_label['Diffusion Ring: color_wheel']
         self.widget.design = diffusion_ring
         self.widget.paused = True
         self.assertTrue(self.widget.paused)
@@ -60,7 +61,7 @@ class LoadingWidgetTest(IntraPaintTestCase):
 
     def test_render_golden(self) -> None:
         """The widget draws the scrim, the design and the message, on dark and light themes."""
-        self.widget.design = self.designs[2]
+        self.widget.design = self.by_label['Pixel Orbit: ember']
         self.widget.phase = 0.3
         for theme, window_color in (('dark', QColor('#1e2128')), ('light', QColor('#eef0f3'))):
             with self.subTest(theme=theme):
