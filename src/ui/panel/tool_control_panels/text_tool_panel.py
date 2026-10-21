@@ -496,7 +496,7 @@ class TextToolPanel(QWidget):
             self._orientation = orientation
             self._build_layout()
 
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+    def resizeEvent(self, _event: Optional[QResizeEvent]) -> None:
         """Adjust preview and text box size limits based on orientation and panel size."""
         self._preview.setMaximumHeight(self.height() // 3 if self._orientation == Qt.Orientation.Horizontal else
                                        self.height() // 10)

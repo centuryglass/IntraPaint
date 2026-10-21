@@ -120,7 +120,7 @@ class TextTool(BaseTool):
             return True
         return False
 
-    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+    def mouse_release(self, _event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """If dragging, finish and create a new text layer."""
         if self._dragging:
             new_bounds = self._selection_handler.end_selection(image_coordinates).boundingRect().toAlignedRect()
@@ -305,8 +305,7 @@ class TextTool(BaseTool):
         self._placement_outline.setTransform(transform)
         self._connect_signals()
 
-    # noinspection PyUnusedLocal
-    def _layer_lock_change_slot(self, layer: Layer, locked: bool) -> None:
+    def _layer_lock_change_slot(self, _layer: Layer, _locked: bool) -> None:
         if not self.is_active:
             return
         should_enable = self._text_layer is None or (not self._text_layer.locked and not self._text_layer.parent_locked)

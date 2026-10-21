@@ -28,11 +28,11 @@ class ColorDialog(QDialog):
         self.setWindowTitle(COLOR_DIALOG_TITLE)
 
         self._comparison = ColorComparison()
-        self._colorPicker = TabbedColorPicker(self._comparison, ColorPickerLayout.DIALOG)
-        self._colorPicker.color_selected.connect(self._comparison.set_color)
-        self._comparison.revert_requested.connect(self._colorPicker.set_current_color)
+        self._color_picker = TabbedColorPicker(self._comparison, ColorPickerLayout.DIALOG)
+        self._color_picker.color_selected.connect(self._comparison.set_color)
+        self._comparison.revert_requested.connect(self._color_picker.set_current_color)
         self._layout = QVBoxLayout(self)
-        self._layout.addWidget(self._colorPicker)
+        self._layout.addWidget(self._color_picker)
 
         # noinspection PyTypeChecker
         self._button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
@@ -43,7 +43,7 @@ class ColorDialog(QDialog):
     @property
     def color_picker(self) -> TabbedColorPicker:
         """The dialog's color picker."""
-        return self._colorPicker
+        return self._color_picker
 
     @property
     def comparison(self) -> ColorComparison:
@@ -53,12 +53,12 @@ class ColorDialog(QDialog):
     @property
     def selected_color(self) -> QColor:
         """Accesses the current selected color."""
-        return self._colorPicker.selected_color()
+        return self._color_picker.selected_color()
 
     @selected_color.setter
     def selected_color(self, new_color: QColor) -> None:
         """Accesses the current selected color."""
-        self._colorPicker.set_current_color(new_color)
+        self._color_picker.set_current_color(new_color)
 
     @staticmethod
     def show_color_dialog(initial_color: QColor) -> Optional[QColor]:

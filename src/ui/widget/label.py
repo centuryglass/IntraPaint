@@ -225,7 +225,7 @@ class Label(QLabel):
         assert self._image is not None
         return self._image.size()
 
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+    def resizeEvent(self, _event: Optional[QResizeEvent]) -> None:
         """If scaling text to bounds, redraw text when bounds change."""
         if self._scale_text_to_bounds:
             self.setText(self._text)

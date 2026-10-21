@@ -159,6 +159,9 @@ class LayerPanel(QWidget):
             button.setIcon(palette_icon(icon_path, signal=signal))
             button.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
             button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+
+            # We need to suppress parameters that button.clicked would pass to the callback, hence the lambda
+            #pylint: disable=unnecessary-lambda
             button.clicked.connect(lambda: action())
             self._button_bar_layout.addWidget(button)
             if stretch is not None:
@@ -255,7 +258,7 @@ class LayerPanel(QWidget):
             horizontal_scrollbar.setRange(0, 0)
         self._scroll_area.setMinimumWidth(min_scroll_width)
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, _event):
         """Refreshes the scroll area minimum, and saves the panel's bounds when it's a separate window."""
         self._update_scroll_area_minimum()
         if self.isVisible() and self.isWindow():

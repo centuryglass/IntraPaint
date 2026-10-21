@@ -51,7 +51,8 @@ def _extension_set_to_filter_string(str_set: set[str]) -> str:
     if '*.ora' in format_list:
         format_list.remove('*.ora')
         format_list.insert(0, '*.ora')
-    return f'({" ".join(format_list)})'
+    list_str = ' '.join(format_list)
+    return f'({list_str})'
 
 
 SAVE_FILE_FORMATS = _extension_set_to_filter_string(IMAGE_WRITE_FORMATS)

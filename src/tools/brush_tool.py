@@ -16,6 +16,7 @@ from src.image.brush.layer_brush import LayerBrush
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
+from src.image.layers.layer_group import LayerGroup
 from src.tools.base_tool import BaseTool
 from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
@@ -116,10 +117,11 @@ class BrushTool(BaseTool):
 
         if follow_active_layer:
             # noinspection PyUnusedLocal
-            def _selection_layer_update(*args) -> None:
+            def _selection_layer_update(*_args) -> None:
                 if not Cache().get(Cache.PAINT_SELECTION_ONLY) or not self.is_active or self._layer is None \
                         or self._layer == image_stack.selection_layer:
                     return
+                assert self._layer is not None
                 mask = image_stack.get_layer_selection_mask(self._layer)
                 self._brush.set_input_mask(mask)
 
@@ -201,7 +203,7 @@ class BrushTool(BaseTool):
         if not self.is_active:
             return
         assert self._layer is not None
-        assert layer == self._layer or layer.contains_recursive(self._layer)
+        assert layer == self._layer or (isinstance(layer, LayerGroup) and layer.contains_recursive(self._layer))
         control_panel = self.get_control_panel()
         if control_panel is not None:
             control_panel.setEnabled(not locked)
@@ -337,8 +339,8 @@ class BrushTool(BaseTool):
             line_end = QPointF(image_coordinates)
             if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER):
 
-                line_end, angle = closest_point_at_angle_option(QPointF(self._last_pos), line_end,
-                                                                list(range(0, 360, 45)))
+                line_end, _ = closest_point_at_angle_option(QPointF(self._last_pos), line_end,
+                                                            list(range(0, 360, 45)))
             half_px_offset = QPointF(0.5, 0.5)  # Draw from the center of the pixel, not the corner.
             self._preview_line.set_line(QLineF(QPointF(self._last_pos) + half_px_offset, line_end + half_px_offset))
         if event.buttons() == Qt.MouseButton.LeftButton:
@@ -346,7 +348,7 @@ class BrushTool(BaseTool):
             return True
         return False
 
-    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+    def mouse_release(self, event: Optional[QMouseEvent], _image_coordinates: QPoint) -> bool:
         """Receives a mouse release event, returning whether the tool consumed the event."""
         if self._layer is None or event is None or not self._image_stack.has_image:
             return False
@@ -382,20 +384,20 @@ class BrushTool(BaseTool):
         """Called after the brush has drawn the last of a stroke. Subclasses can finish what
            `_before_stroke_start` set up."""
 
-    def mouse_enter(self, event: Optional[QEvent], image_coordinates: QPoint) -> bool:
+    def mouse_enter(self, _event: Optional[QEvent], _image_coordinates: QPoint) -> bool:
         """Show the line preview on enter if in line mode."""
         if KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER):
             self._preview_line.setVisible(True)
             return True
         return False
 
-    def mouse_exit(self, event: Optional[QEvent], image_coordinates: QPoint) -> bool:
+    def mouse_exit(self, _event: Optional[QEvent], _image_coordinates: QPoint) -> bool:
         """Hide the line preview on exit."""
         self._preview_line.set_line(QLineF())
         self._preview_line.setVisible(False)
         return True
 
-    def tablet_event(self, event: Optional[QTabletEvent], image_coordinates: QPoint) -> bool:
+    def tablet_event(self, event: Optional[QTabletEvent], _image_coordinates: QPoint) -> bool:
         """Cache tablet data when received."""
         assert event is not None
         control_panel = self.get_control_panel()

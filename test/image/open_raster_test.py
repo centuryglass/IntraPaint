@@ -4,7 +4,7 @@ import os
 import sys
 import tempfile
 import zipfile
-from typing import Optional
+from typing import Optional, Any
 from unittest.mock import patch
 from xml.etree.ElementTree import fromstring, tostring
 
@@ -378,6 +378,21 @@ class OpenRasterTest(IntraPaintTestCase):
         """Saving a layer type the .ora writer doesn't know fails instead of saving it as plain pixels."""
 
         class _OtherLayer(TransformLayer):
+            def set_qimage(self, image: QImage) -> None:
+                pass
+
+            def copy(self) -> 'Layer':
+                pass
+
+            def cut_masked(self, image_mask: QImage) -> None:
+                pass
+
+            def save_state(self) -> Any:
+                pass
+
+            def restore_state(self, saved_state: Any) -> None:
+                pass
+
             def get_qimage(self) -> QImage:
                 return _solid_image(QColor(Qt.GlobalColor.green))
 

@@ -132,7 +132,7 @@ class PressureCurveInput(QFrame):
         self.setValue(curve)
         self.update()
 
-    def paintEvent(self, event: Optional[QPaintEvent]) -> None:
+    def paintEvent(self, _event: Optional[QPaintEvent]) -> None:
         """Draw the pressure grid."""
         painter = QPainter(self)
         palette = self.palette()
@@ -180,7 +180,7 @@ class PressureCurveInput(QFrame):
         with signals_blocked(self):
             self._set_index_value(self._drag_point, drag_value)
 
-    def mouseReleaseEvent(self, event: Optional[QMouseEvent]) -> None:
+    def mouseReleaseEvent(self, _event: Optional[QMouseEvent]) -> None:
         """Stop dragging and send change signal on release."""
         if self._drag_point is not None:
             self._drag_point = None

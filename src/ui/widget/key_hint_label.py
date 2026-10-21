@@ -71,6 +71,8 @@ class KeyHintLabel(QLabel):
             self.setFont(updated_font)
         AppConfig().connect(self, AppConfig.KEY_HINT_FONT_SIZE, _update_size)
 
+    # Naming conventions must match Qt:
+    # pylint: disable=invalid-name
     def deleteLater(self) -> None:
         """Disconnect from config before scheduling deletion."""
         AppConfig().disconnect(self, AppConfig.KEY_HINT_FONT_SIZE)

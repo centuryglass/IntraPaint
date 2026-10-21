@@ -258,25 +258,23 @@ class BaseTool(QObject):
 
     # Event handlers:
 
-    def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+    def mouse_click(self, _event: Optional[QMouseEvent], _image_coordinates: QPoint) -> bool:
         """Receives a mouse click event, returning whether the tool consumed the event."""
         return False
 
-    # noinspection PyUnusedLocal
-    def mouse_double_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+    def mouse_double_click(self, _event: Optional[QMouseEvent], _image_coordinates: QPoint) -> bool:
         """Receives a mouse double click event, returning whether the tool consumed the event."""
         return False
 
-    def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+    def mouse_move(self, _event: Optional[QMouseEvent], _image_coordinates: QPoint) -> bool:
         """Receives a mouse move event, returning whether the tool consumed the event."""
         return False
 
-    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+    def mouse_release(self, _event: Optional[QMouseEvent], _image_coordinates: QPoint) -> bool:
         """Receives a mouse release event, returning whether the tool consumed the event."""
         return False
 
-    # noinspection PyUnusedLocal
-    def mouse_enter(self, event: Optional[QEvent], image_coordinates: QPoint) -> bool:
+    def mouse_enter(self, _event: Optional[QEvent], _image_coordinates: QPoint) -> bool:
         """Receives a mouse enter event, returning whether the tool consumed the event.
 
         Mouse enter events are non-standard, the widget managing this tool needs to identify these itself by tracking
@@ -284,8 +282,7 @@ class BaseTool(QObject):
         """
         return False
 
-    # noinspection PyUnusedLocal
-    def mouse_exit(self, event: Optional[QEvent], image_coordinates: QPoint) -> bool:
+    def mouse_exit(self, _event: Optional[QEvent], _image_coordinates: QPoint) -> bool:
         """Receives a mouse exit event, returning whether the tool consumed the event.
 
         Mouse exit events are non-standard, the widget managing this tool needs to identify these itself by tracking
@@ -293,10 +290,10 @@ class BaseTool(QObject):
         """
         return False
 
-    def tablet_event(self, event: Optional[QTabletEvent], image_coordinates: QPoint) -> bool:
+    def tablet_event(self, _event: Optional[QTabletEvent], _image_coordinates: QPoint) -> bool:
         """Receives a graphics tablet input event, returning whether the tool consumed the event."""
         return False
 
-    def wheel_event(self, event: Optional[QWheelEvent]) -> bool:
+    def wheel_event(self, _event: Optional[QWheelEvent]) -> bool:
         """Receives a mouse wheel scroll event, returning whether the tool consumed the event."""
         return False

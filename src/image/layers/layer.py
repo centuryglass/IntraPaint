@@ -1,5 +1,7 @@
 """Interface for any entity that can exist within an image layer stack."""
+from __future__ import annotations
 import datetime
+from abc import abstractmethod, ABCMeta
 from contextlib import contextmanager
 from typing import Any, Callable, Optional, Generator
 
@@ -28,39 +30,16 @@ ERROR_MESSAGE_LOCKED_PARENT = _tr('Cannot show layer "{layer_name}", parent laye
                                   ' hidden.')
 
 
-class LayerParent:
-    """Defines the interface expected within layer parents.  LayerParent classes should also be Layers."""
+class _LayerMeta(ABCMeta, type(QObject)):
+    """Metaclass allowing for abstract-base support in QObjects."""
 
-    def get_layer_index(self, layer: 'Layer | int') -> Optional[int]:
-        """Returns a layer's index in the stack, or None if it isn't found."""
-        raise NotImplementedError
+    def __call__(cls, *args, **kwargs):
+        if cls.__abstractmethods__:
+            raise TypeError(f"Can't instantiate abstract class {cls.__name__} with abstract "
+                            f"method(s) {', '.join(sorted(cls.__abstractmethods__))}")
+        return super().__call__(*args, **kwargs)
 
-    def get_layer_by_index(self, index: int) -> 'Layer':
-        """Returns a layer within the parent."""
-        raise NotImplementedError()
-
-    def get_layer_by_id(self, layer_id: Optional[int]) -> Optional['Layer']:
-        """Returns a layer within the parent, or None if no matching layer was found."""
-        raise NotImplementedError()
-
-    def contains(self, child_layer: 'Layer') -> bool:
-        """Returns whether this parent contains a given child layer."""
-        raise NotImplementedError()
-
-    def contains_recursive(self, child_layer: 'Layer') -> bool:
-        """Returns whether child_layer is underneath this parent in the layer tree."""
-        raise NotImplementedError()
-
-    def remove_layer(self, layer: 'Layer') -> None:
-        """Removes a layer."""
-        raise NotImplementedError()
-
-    def insert_layer(self, layer: 'Layer', index: Optional[int]) -> None:
-        """Insert a layer within this parent."""
-        raise NotImplementedError()
-
-
-class Layer(QObject):
+class Layer(QObject, metaclass=_LayerMeta):
     """Interface for any entity that can exist within an image layer stack."""
 
     name_changed = Signal(QObject, str)
@@ -115,13 +94,11 @@ class Layer(QObject):
     def layer_parent(self, new_parent: Optional[LayerParent]) -> None:
         """Sets or clears this layer's parent layer."""
         if new_parent is None and self._parent is not None:
-            assert isinstance(self._parent, Layer)
             assert not self._parent.contains(self), (f'Layer {self.name}:{self.id} not removed from '
                                                      f'parent {self._parent.name}:{self._parent.id} before clearing'
                                                      ' parent property.')
         if new_parent is not None:
             assert new_parent != self
-            assert isinstance(new_parent, Layer)
             assert new_parent.contains(self), (f'Layer {self.name}:{self.id} parent set'
                                                f' to {new_parent.name}:{new_parent.id}), but that layer does not '
                                                'contain this one.')
@@ -150,7 +127,6 @@ class Layer(QObject):
         """Return whether any of this layer's parents are locked."""
         parent_iter = self.layer_parent
         while parent_iter is not None:
-            assert isinstance(parent_iter, Layer)
             if parent_iter.locked:
                 return True
             parent_iter = parent_iter.layer_parent
@@ -226,7 +202,6 @@ class Layer(QObject):
             return False
         parent = self.layer_parent
         if parent is not None:
-            assert isinstance(parent, Layer)
             return parent.visible
         return True
 
@@ -241,25 +216,22 @@ class Layer(QObject):
                 toggled_layers.add(self)
             parent = self.layer_parent
             while parent is not None:
-                assert isinstance(parent, Layer)
-                if not parent._visible:
+                if not parent.visible:
                     toggled_layers.add(parent)
                     i = 0
                     while True:
                         try:
-                            assert isinstance(parent, LayerParent)
                             child = parent.get_layer_by_index(i)
                             i += 1
-                            if child._visible and not child.locked and child != self:
+                            if child.get_visible() and not child.locked and child != self:
                                 toggled_layers.add(child)
                         except ValueError:
                             break
-                assert isinstance(parent, Layer)
                 parent = parent.layer_parent
 
             def _toggle_all():
                 for layer in toggled_layers:
-                    layer.set_visible(not layer._visible)
+                    layer.set_visible(not layer.get_visible())
 
             UndoStack().commit_action(_toggle_all, _toggle_all, 'layer.visible')
         else:
@@ -395,37 +367,29 @@ class Layer(QObject):
 
     # Unimplemented interface:
 
+    @abstractmethod
     def get_qimage(self) -> QImage:
         """Return layer image data as an ARGB32 formatted QImage."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def set_qimage(self, image: QImage) -> None:
         """Update the layer image data."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def copy(self) -> 'Layer':
         """Returns a copy of this layer."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def cut_masked(self, image_mask: QImage) -> None:
         """Clear the contents of an area in the parent image."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def save_state(self) -> Any:
         """Export the current layer state, so it can be restored later."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def restore_state(self, saved_state: Any) -> None:
         """Restore the layer state from a previous saved state."""
-        raise NotImplementedError()
-
-    def contains(self, child_layer: 'Layer') -> bool:
-        """Returns whether this layer contains a given child layer."""
-        return False
-
-    def contains_recursive(self, child_layer: 'Layer') -> bool:
-        """Returns whether this layer recursively contains a given child layer."""
-        return False
 
     # Misc. utility:
 
@@ -599,7 +563,7 @@ class Layer(QObject):
                                  last_value: Any,
                                  value_setter: Callable[[Any], None],
                                  change_type: str) -> None:
-        if value_setter != self.set_visible:
+        if value_setter is not self.set_visible:
             assert not self.locked and not self.parent_locked, f'Tried to change {change_type} in a locked layer'
         if last_value == new_value:
             return
@@ -611,3 +575,40 @@ class Layer(QObject):
             setter(value)
 
         UndoStack().commit_action(_update, _undo, change_type, merge_target=self)
+
+
+class LayerParent(Layer):
+    """Defines the interface expected within layers that can hold child layers."""
+
+    @abstractmethod
+    def get_layer_index(self, layer: 'Layer | int') -> Optional[int]:
+        """Returns a layer's index in the stack, or None if it isn't found."""
+
+    @abstractmethod
+    def get_layer_by_index(self, index: int) -> 'Layer':
+        """Returns a layer within the parent."""
+
+    @abstractmethod
+    def get_layer_by_id(self, layer_id: Optional[int]) -> Optional['Layer']:
+        """Returns a layer within the parent, or None if no matching layer was found."""
+
+    @abstractmethod
+    def contains(self, child_layer: 'Layer') -> bool:
+        """Returns whether this parent contains a given child layer."""
+
+    @abstractmethod
+    def contains_recursive(self, child_layer: 'Layer') -> bool:
+        """Returns whether child_layer is underneath this parent in the layer tree."""
+
+    @abstractmethod
+    def remove_layer(self, layer: 'Layer') -> None:
+        """Removes a layer."""
+
+    @abstractmethod
+    def insert_layer(self, layer: 'Layer', index: Optional[int]) -> None:
+        """Insert a layer within this parent."""
+
+    @property
+    @abstractmethod
+    def count(self) -> int:
+        """Returns the number of layers"""

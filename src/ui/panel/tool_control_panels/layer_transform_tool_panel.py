@@ -432,7 +432,7 @@ class _TransformPreview(QWidget):
         self._layer_transform = new_transform
         self.update()
 
-    def paintEvent(self, event: Optional[QPaintEvent]) -> None:
+    def paintEvent(self, _event: Optional[QPaintEvent]) -> None:
         """Draw the transformed layer over the image bounds."""
         painter = QPainter(self)
         painter.drawTiledPixmap(QRect(QPoint(), self.size()), self._background)

@@ -63,16 +63,15 @@ def align_inner_bounds(outer_bounds: QRect | QRectF, inner_bounds: QRect | QRect
                                       start_margin: int, end_margin: int) -> tuple[int, int]:
         if outer_size >= (inner_size + start_margin + end_margin):
             return start_margin, end_margin
-        else:
-            logger.warning(f'inner {dim_name} plus margins exceeds outer {dim_name}, margins will be adjusted.  '
-                           f'outer={outer_size}, inner={inner_size}, margins={start_margin},{end_margin}')
-            margin_available = outer_size - inner_size
-            if margin_available == 0:
-                return 0, 0
-            if start_margin == 0:
-                return 0, margin_available
-            new_start_margin = round(margin_available * start_margin / (start_margin + end_margin))
-            return new_start_margin, margin_available - new_start_margin
+        logger.warning(f'inner {dim_name} plus margins exceeds outer {dim_name}, margins will be adjusted.  '
+                       f'outer={outer_size}, inner={inner_size}, margins={start_margin},{end_margin}')
+        margin_available = outer_size - inner_size
+        if margin_available == 0:
+            return 0, 0
+        if start_margin == 0:
+            return 0, margin_available
+        new_start_margin = round(margin_available * start_margin / (start_margin + end_margin))
+        return new_start_margin, margin_available - new_start_margin
 
     left_margin, right_margin = _validate_and_correct_margins('width', outer_bounds.width(),
                                                               inner_bounds.width(), left_margin, right_margin)

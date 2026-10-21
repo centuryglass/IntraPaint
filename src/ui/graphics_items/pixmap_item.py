@@ -1,7 +1,7 @@
 """Extends QGraphicsPixmapItem to add alternate composition modes."""
 from typing import Optional
 
-from PySide6.QtGui import QPainter, QPixmap, Qt, QTransform
+from PySide6.QtGui import QPainter, QPixmap, Qt
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsItem, QStyleOptionGraphicsItem, QWidget
 
 from src.image.composite_mode import CompositeMode

@@ -71,7 +71,7 @@ class ImageFilter:
         into account (False)."""
         return True
 
-    def radius(self, parameter_values: list[Any]) -> float:
+    def radius(self, _parameter_values: list[Any]) -> float:
         """Given a set of valid parameters, estimate how far each pixel's influence extends in the final image."""
         return 0.0
 

@@ -1,5 +1,6 @@
 """Interface for providing image generation capabilities."""
 import logging
+from abc import ABC, abstractmethod
 from typing import Optional, Any
 
 from PIL import Image
@@ -37,7 +38,7 @@ GENERATE_ERROR_MESSAGE_EXISTING_OP = _tr('Existing image generation operation no
 logger = logging.getLogger(__name__)
 
 
-class ImageGenerator(MenuBuilder):
+class ImageGenerator(MenuBuilder, ABC):
     """Interface for providing image generation capabilities."""
 
     # Used to emit additional information when anything goes wrong with an active generator.
@@ -58,55 +59,60 @@ class ImageGenerator(MenuBuilder):
         """Used to emit additional information when anything goes wrong with an active generator."""
         return self._signal_object.status_signal
 
+    @abstractmethod
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_description(self) -> str:
         """Returns an extended description of this generator."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_preview_image(self) -> QImage:
         """Returns a preview image for this generator."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def get_setup_text(self) -> str:
         """Returns a rich text description of how to set up this generator."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def is_available(self) -> bool:
         """Returns whether the generator is supported on the current system."""
-        raise NotImplementedError()
 
+
+    @abstractmethod
     def configure_or_connect(self) -> bool:
         """Handles any required steps necessary to configure the generator, install required components, and/or
            connect to required external services, returning whether the process completed correctly."""
-        raise NotImplementedError()
 
     def get_controlnet_panel(self) -> Optional[QWidget]:
         """Returns the panel the main window's ControlNet dock shows, or None if the generator has no ControlNet."""
         return None
 
+    @abstractmethod
     def disconnect_or_disable(self) -> None:
         """Closes any connections, unloads models, or otherwise turns off this generator."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def init_settings(self, settings_modal: SettingsModal) -> None:
         """Updates a settings modal to add settings relevant to this generator."""
 
+    @abstractmethod
     def refresh_settings(self, settings_modal: SettingsModal) -> None:
         """Reloads current values for this generator's settings, and updates them in the settings modal."""
 
+    @abstractmethod
     def update_settings(self, changed_settings: dict[str, Any]) -> None:
         """Applies any changed settings from a SettingsModal that are relevant to the image generator and require
            special handling."""
 
+    @abstractmethod
     def unload_settings(self, settings_modal: SettingsModal) -> None:
         """Unloads this generator's settings from the settings modal."""
 
+    @abstractmethod
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
-        raise NotImplementedError()
 
     def upscale(self, new_size: QSize) -> bool:
         """Optionally upscale using a custom upscaler, returning whether upscaling was attempted."""
@@ -117,6 +123,8 @@ class ImageGenerator(MenuBuilder):
             scale_all_layers(self._image_stack, new_size.width(), new_size.height())
         return True
 
+
+    @abstractmethod
     def generate(self,
                  status_signal: SignalInstance,
                  source_image: QImage,
@@ -134,7 +142,6 @@ class ImageGenerator(MenuBuilder):
         mask_image : QImage, optional
             Mask marking the edited image region.
         """
-        raise NotImplementedError()
 
     def get_generation_inputs(self) -> tuple[QImage, Optional[QImage]]:
         """Returns the image and inpainting mask that image generation passes to `generate`.

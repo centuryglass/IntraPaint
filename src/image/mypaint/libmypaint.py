@@ -44,25 +44,25 @@ class MyPaintRectangles(Structure):
 
 
 # Surface:
-surface_ptr: TypeAlias = c_void_p
+SurfacePtr: TypeAlias = c_void_p
 
-MyPaintSurfaceDrawDabFunction = CFUNCTYPE(c_int, surface_ptr, c_float, c_float,  # (self, x, y
+MyPaintSurfaceDrawDabFunction = CFUNCTYPE(c_int, SurfacePtr, c_float, c_float,  # (self, x, y
                                           c_float, c_float, c_float, c_float,  # radius, r, g, b
                                           c_float, c_float, c_float,  # opaque, hardness, softness
                                           c_float, c_float, c_float,  # alpha eraser, aspect ratio, angle
                                           c_float, c_float, c_float,  # lock alpha, colorize, posterize
                                           c_float, c_float)  # posterize_num, paint)
 
-MyPaintSurfaceGetColorFunction = CFUNCTYPE(None, surface_ptr, c_float, c_float, c_float,  # (self, x, y, radius
+MyPaintSurfaceGetColorFunction = CFUNCTYPE(None, SurfacePtr, c_float, c_float, c_float,  # (self, x, y, radius
                                            c_float_p, c_float_p, c_float_p, c_float_p, c_float)  # r, g, b, a, paint)
 
-MyPaintSurfaceBeginAtomicFunction = CFUNCTYPE(None, surface_ptr)  # (self)
+MyPaintSurfaceBeginAtomicFunction = CFUNCTYPE(None, SurfacePtr)  # (self)
 
-MyPaintSurfaceEndAtomicFunction = CFUNCTYPE(None, surface_ptr, POINTER(MyPaintRectangles))  # (self, rectangle buffer)
+MyPaintSurfaceEndAtomicFunction = CFUNCTYPE(None, SurfacePtr, POINTER(MyPaintRectangles))  # (self, rectangle buffer)
 
-MyPaintSurfaceDestroyFunction = CFUNCTYPE(None, surface_ptr)  # (self)
+MyPaintSurfaceDestroyFunction = CFUNCTYPE(None, SurfacePtr)  # (self)
 
-MyPaintSurfaceSavePngFunction = CFUNCTYPE(None, surface_ptr, c_char_p, c_int, c_int,  # (self, path, x, y,
+MyPaintSurfaceSavePngFunction = CFUNCTYPE(None, SurfacePtr, c_char_p, c_int, c_int,  # (self, path, x, y,
                                           c_int, c_int)  # width, height)
 
 
@@ -94,11 +94,11 @@ class MyPaintTileRequest(Structure):
 
 request_ptr = POINTER(MyPaintTileRequest)
 
-MyPaintTileRequestStartFunction = CFUNCTYPE(None, surface_ptr, request_ptr)
+MyPaintTileRequestStartFunction = CFUNCTYPE(None, SurfacePtr, request_ptr)
 
-MyPaintTileRequestEndFunction = CFUNCTYPE(None, surface_ptr, request_ptr)
+MyPaintTileRequestEndFunction = CFUNCTYPE(None, SurfacePtr, request_ptr)
 
-MyPaintTiledSurfaceAreaChanged = CFUNCTYPE(None, surface_ptr, c_int, c_int, c_int, c_int)  # (self, x, y, w, h)
+MyPaintTiledSurfaceAreaChanged = CFUNCTYPE(None, SurfacePtr, c_int, c_int, c_int, c_int)  # (self, x, y, w, h)
 
 
 # Tiled surface:
@@ -204,7 +204,7 @@ def load_libmypaint() -> CDLL:
     # ignore the rest, including is_linear. The library version is not detected, so a system libmypaint found by
     # find_library may use either form.
     lib.mypaint_brush_stroke_to.restype = c_int
-    lib.mypaint_brush_stroke_to.argtypes = [c_void_p, surface_ptr,  # brush, surface,
+    lib.mypaint_brush_stroke_to.argtypes = [c_void_p, SurfacePtr,  # brush, surface,
                                             c_float, c_float,  # x, y
                                             c_float, c_float, c_float,  # pressure, x_tilt, y_tilt
                                             c_double, c_float, c_float,  # dtime, view_zoom, view_rotation
@@ -226,9 +226,9 @@ def load_libmypaint() -> CDLL:
 
     # Surface functions:
     lib.mypaint_surface_begin_atomic.restype = None
-    lib.mypaint_surface_begin_atomic.argtypes = [surface_ptr]
+    lib.mypaint_surface_begin_atomic.argtypes = [SurfacePtr]
     lib.mypaint_surface_end_atomic.restype = None
-    lib.mypaint_surface_end_atomic.argtypes = [surface_ptr, POINTER(MyPaintRectangles)]
+    lib.mypaint_surface_end_atomic.argtypes = [SurfacePtr, POINTER(MyPaintRectangles)]
     return lib
 
 

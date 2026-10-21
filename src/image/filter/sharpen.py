@@ -57,7 +57,7 @@ class SharpenFilter(ImageFilter):
         into account (False)."""
         return False
 
-    def radius(self, parameter_values: list[Any]) -> float:
+    def radius(self, _parameter_values: list[Any]) -> float:
         """Given a set of valid parameters, estimate how far each pixel's influence extends in the final image."""
         # This might be larger than necessary, but it's probably not worth finding the exact value to cut a few extra
         # pixel lines out of the change bounds.

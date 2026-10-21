@@ -76,7 +76,7 @@ class LayerGraphicsItem(PixmapItem):
         self.setVisible(self._layer.visible and not hidden)
 
     # noinspection PyUnusedLocal
-    def _update_pixmap(self, *args) -> None:
+    def _update_pixmap(self, *_args) -> None:
         if isinstance(self._layer, SelectionLayer):
             return  # Nothing is drawn for the selection layer, so building its full-size pixmap would be wasted.
         self.setPixmap(self._layer.pixmap)
@@ -108,12 +108,12 @@ class LayerGraphicsItem(PixmapItem):
         self.composition_mode = self._display_mode()
 
     # noinspection PyUnusedLocal
-    def _update_transform(self, *args) -> None:
+    def _update_transform(self, *_args) -> None:
         assert isinstance(self._layer, TransformLayer)
         self.setTransform(self._layer.transform)
 
     # noinspection PyUnusedLocal
-    def _update_bounds(self, *args) -> None:
+    def _update_bounds(self, *_args) -> None:
         bounds = self._layer.bounds
         if bounds.size() == self.pixmap().size():
             self._pending_bounds = QRect()

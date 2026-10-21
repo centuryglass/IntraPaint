@@ -386,14 +386,6 @@ class SDComfyUIGenerator(SDGenerator):
         app_config = AppConfig()
         settings_modal.load_from_config(app_config, [STABLE_DIFFUSION_CONFIG_CATEGORY])
 
-    def refresh_settings(self, settings_modal: SettingsModal) -> None:
-        """Reloads current values for this generator's settings, and updates them in the settings modal."""
-        settings = {}
-        app_config = AppConfig()
-        for key in app_config.get_category_keys(STABLE_DIFFUSION_CONFIG_CATEGORY):
-            settings[key] = app_config.get(key)
-        settings_modal.update_settings(settings)
-
     def update_settings(self, changed_settings: dict[str, Any]) -> None:
         """Applies any changed settings from a SettingsModal that are relevant to the image generator and require
            special handling."""

@@ -94,7 +94,7 @@ class ZoomTool(BaseTool):
             return True
         return False
 
-    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+    def mouse_release(self, _event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """If resizing, finish on mouse_release."""
         if self._pin_dragger.release(image_coordinates):
             return True
@@ -198,25 +198,21 @@ class NavigationWindow(ImagePanel):
             return
         self.image_viewer.set_cursor(active_tool.cursor)
 
-    # noinspection PyUnusedLocal
-    def _local_offset_change_slot(self, offset: QPoint) -> None:
+    def _local_offset_change_slot(self, _offset: QPoint) -> None:
         if self._reset_zoom_button is not None:
             self._reset_zoom_button.setVisible(not self.image_viewer.is_at_default_view)
 
-    # noinspection PyUnusedLocal
-    def _local_scale_change_slot(self, scale: float) -> None:
+    def _local_scale_change_slot(self, _scale: float) -> None:
         if self._reset_zoom_button is not None:
             self._reset_zoom_button.setVisible(not self.image_viewer.is_at_default_view)
 
-    # noinspection PyUnusedLocal
-    def _main_offset_change_slot(self, offset: QPoint) -> None:
+    def _main_offset_change_slot(self, _offset: QPoint) -> None:
         self._main_view_outline.outlined_region = self._main_image_viewer.visible_scene_bounds
 
-    # noinspection PyUnusedLocal
-    def _main_scale_change_slot(self, scale: float) -> None:
+    def _main_scale_change_slot(self, _scale: float) -> None:
         self._main_view_outline.outlined_region = self._main_image_viewer.visible_scene_bounds
 
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+    def resizeEvent(self, _event: Optional[QResizeEvent]) -> None:
         """Save navigation window bounds changes when visible."""
         if self.isVisible():
             Cache().save_bounds(Cache.SAVED_NAVIGATION_WINDOW_POS, self)

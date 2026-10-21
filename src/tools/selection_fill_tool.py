@@ -147,7 +147,7 @@ class SelectionFillTool(BaseTool):
         """Continues a context pin drag."""
         return self._pin_dragger.move(event, image_coordinates)
 
-    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+    def mouse_release(self, _event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Finishes a context pin drag."""
         return self._pin_dragger.release(image_coordinates)
 

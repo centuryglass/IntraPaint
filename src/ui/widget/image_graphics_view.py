@@ -564,7 +564,7 @@ class ImageGraphicsView(QGraphicsView):
          when appropriate."""
         self._zoom_step(1.0 / (multiplier * ZOOM_FACTOR), integer_scaling)
 
-    def eventFilter(self, source, event: Optional[QEvent]):
+    def eventFilter(self, _source, event: Optional[QEvent]):
         """Intercept mouse wheel events, use for scrolling in zoom mode:"""
         assert event is not None
         if event.type() == QEvent.Type.Leave:
@@ -587,6 +587,8 @@ class ImageGraphicsView(QGraphicsView):
             self._update_scale_and_transform()
         return False
 
+    # Naming conventions must match Qt:
+    # pylint: disable=invalid-name
     def leaveEvent(self, event: Optional[QEvent]):
         """Clear the pixmap mouse cursor on leave."""
         self._last_widget_cursor_pos = None

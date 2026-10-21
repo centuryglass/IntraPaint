@@ -59,7 +59,7 @@ class ShapeDragTool(BaseTool):
             self._end_drag(image_coordinates)
         return True
 
-    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+    def mouse_release(self, _event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Finishes the drag."""
         if not self._dragging:
             return False

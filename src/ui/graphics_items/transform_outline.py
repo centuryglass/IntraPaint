@@ -1,15 +1,15 @@
 """Provides controls for transforming a graphics item."""
 import math
-from typing import Optional, Any, Generator, Iterable
+from typing import Optional, Iterable
 
-from PySide6.QtCore import Qt, QRectF, QPointF, Signal, QSizeF, QPoint
+from PySide6.QtCore import Qt, QRectF, QPointF, Signal, QSizeF
 from PySide6.QtGui import QPainter, QPen, QTransform, QPainterPath, QImage
 from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, \
     QGraphicsSceneMouseEvent, QGraphicsTransform, \
     QGraphicsObject
 
-from src.undo_stack import UndoStack
 from src.ui.graphics_items.transform_handle import TransformHandle, TRANSFORM_MODE_SCALE, TRANSFORM_MODE_ROTATE
+from src.undo_stack import UndoStack
 from src.util.math_utils import clamp, avoiding_zero
 from src.util.shared_constants import MIN_NONZERO
 from src.util.signals_blocked import signals_blocked

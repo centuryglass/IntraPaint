@@ -10,6 +10,7 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
+from src.image.layers.layer_group import LayerGroup
 from src.tools.base_tool import BaseTool, ToolGroup
 from src.tools.shape_drag_tool import ShapeDragTool
 from src.ui.image_viewer import ImageViewer
@@ -259,7 +260,7 @@ class ShapeTool(ShapeDragTool):
 
     def _layer_lock_slot(self, layer: Layer, locked: bool) -> None:
         assert self._layer is not None
-        assert layer == self._layer or layer.contains_recursive(self._layer)
+        assert layer == self._layer or (isinstance(layer, LayerGroup) and layer.contains_recursive(self._layer))
         self.set_disabled_cursor(locked or not isinstance(self._layer, ImageLayer))
         if self.is_active and self._control_panel is not None:
             self._control_panel.setEnabled(not locked and isinstance(self._layer, ImageLayer))
