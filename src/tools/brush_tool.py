@@ -426,9 +426,6 @@ class BrushTool(BaseTool):
         self._tablet_x_tilt = event.xTilt()
         self._tablet_y_tilt = event.yTilt()
         self._tablet_event_timestamp = datetime.datetime.now().timestamp()
-        control_panel = self.get_control_panel()
-        if isinstance(control_panel, StrokeToolPanel):
-            control_panel.show_pressure_checkboxes()
         return True
 
     def update_brush_cursor(self) -> None:

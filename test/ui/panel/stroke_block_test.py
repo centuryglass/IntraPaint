@@ -59,6 +59,32 @@ class StrokeBlockTest(IntraPaintTestCase):
         field.set_pressure_link_enabled(False)
         self.assertFalse(Cache().get(Cache.DRAW_TOOL_PRESSURE_SIZE))
 
+    def test_revealing_pressure_links_plans_once(self) -> None:
+        """Pen use calls show_pressure_checkboxes on every tablet event, but only the first call replans.
+
+        The reveal changes no measured size, and a forced replan on every event rearranges the panel in a stream,
+        flickering it.
+        """
+        Cache().set(Cache.EXPECT_TABLET_INPUT, False)
+        panel = DrawToolPanel()
+        panel.set_fit_space(SIDE, QSize(340, 700))
+        panel.show()
+        settle_layouts(panel)
+        planner = panel._planner  # pylint: disable=protected-access
+        updates = []
+        original_update = planner.update
+
+        def _update(*args, **kwargs):
+            updates.append(args)
+            return original_update(*args, **kwargs)
+
+        planner.update = _update  # type: ignore[method-assign]
+        for _ in range(10):
+            panel.show_pressure_checkboxes()
+            settle_layouts(panel)
+        self.assertEqual(len(updates), 1, 'only the first tablet event replans the panel')
+        self.assertTrue(panel.stroke_block.fields()[0].pressure_link_available())
+
     def test_selection_checkbox_uses_the_shared_label(self) -> None:
         """The selection option reads the same in every tool."""
         texts = [box.text() for box in self.block.findChildren(QCheckBox)]
