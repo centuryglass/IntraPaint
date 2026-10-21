@@ -2,7 +2,8 @@
 
 Drop-downs choose the design and its variant from everything `load_loading_designs` finds, including new sprite
 sheets added under `resources/loading/`. The other controls set the message, the theme backdrop, play and pause, and
-scrub to any phase.
+scrub to any phase. "Export GIF" writes one loop of the current design and options as an infinitely looping GIF at
+the preview's current resolution.
 
 Usage: python scripts/preview_loading_widget.py
 """
@@ -14,10 +15,11 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
 # pylint: disable=wrong-import-position
+from PIL import Image
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QColor, QPalette, QShowEvent
-from PySide6.QtWidgets import QApplication, QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSlider, \
-    QVBoxLayout, QWidget
+from PySide6.QtGui import QColor, QImage, QPalette, QShowEvent
+from PySide6.QtWidgets import QApplication, QComboBox, QFileDialog, QHBoxLayout, QLabel, QLineEdit, QPushButton, \
+    QSlider, QVBoxLayout, QWidget
 
 from src.ui.loading.loading_design import LoadingDesign
 from src.ui.loading.loading_designs import load_loading_designs
@@ -26,6 +28,9 @@ from src.ui.widget.loading_widget import LoadingWidget
 BACKDROPS = {'Dark': QColor('#1e2128'), 'Light': QColor('#eef0f3')}
 SLIDER_STEPS = 1000
 SYNC_INTERVAL_MS = 30
+# One GIF frame's duration in milliseconds. A multiple of 10 keeps the loop length exact, since GIF delays are stored
+# in hundredths of a second.
+FRAME_MS = 30
 
 
 class LoadingPreviewWindow(QWidget):
@@ -48,6 +53,7 @@ class LoadingPreviewWindow(QWidget):
         self._message_field = QLineEdit('Loading...')
         self._phase_slider = QSlider(Qt.Orientation.Horizontal)
         self._phase_slider.setRange(0, SLIDER_STEPS)
+        self._export_button = QPushButton('Export GIF')
 
         self._backdrop = QWidget()
         self._backdrop.setAutoFillBackground(True)
@@ -66,6 +72,7 @@ class LoadingPreviewWindow(QWidget):
         control_row.addWidget(QLabel('Message'))
         control_row.addWidget(self._message_field, stretch=1)
         control_row.addWidget(self._play_button)
+        control_row.addWidget(self._export_button)
         phase_row = QHBoxLayout()
         phase_row.addWidget(QLabel('Phase'))
         phase_row.addWidget(self._phase_slider)
@@ -80,6 +87,7 @@ class LoadingPreviewWindow(QWidget):
         self._random_button.clicked.connect(self._random_design)
         self._theme_box.currentTextChanged.connect(self._apply_theme)
         self._play_button.clicked.connect(self._toggle_play)
+        self._export_button.clicked.connect(self._export_gif)
         self._message_field.textChanged.connect(self._message_changed)
         self._phase_slider.valueChanged.connect(self._scrub)
         self._sync_timer = QTimer(self)
@@ -157,6 +165,34 @@ class LoadingPreviewWindow(QWidget):
         self._loading_widget.paused = True
         self._loading_widget.phase = value / SLIDER_STEPS
         self._sync_controls()
+
+    def _export_gif(self) -> None:
+        """Writes one loop of the current design as an infinitely looping GIF at the preview's current resolution."""
+        if self._loading_widget.width() <= 0 or self._loading_widget.height() <= 0:
+            return
+        design = self._loading_widget.design
+        parts = [design.name, design.variant] if design.variant else [design.name]
+        suggested_name = '_'.join(part.replace(' ', '_') for part in parts) + '.gif'
+        path, _ = QFileDialog.getSaveFileName(self, 'Export GIF', suggested_name, 'GIF images (*.gif)')
+        if not path:
+            return
+        if not path.lower().endswith('.gif'):
+            path += '.gif'
+        frame_count = max(1, round(design.duration_ms / FRAME_MS))
+        saved_phase = self._loading_widget.phase
+        saved_paused = self._loading_widget.paused
+        try:
+            frames = []
+            for index in range(frame_count):
+                self._loading_widget.phase = index / frame_count
+                frame = self._backdrop.grab().toImage().convertToFormat(QImage.Format.Format_RGB888)
+                pil_frame = Image.frombytes('RGB', (frame.width(), frame.height()), bytes(frame.bits()))
+                frames.append(pil_frame)
+            frames[0].save(path, save_all=True, append_images=frames[1:], duration=FRAME_MS, loop=0)
+            print(f'Saved {path}')
+        finally:
+            self._loading_widget.paused = saved_paused
+            self._loading_widget.phase = saved_phase
 
 
 def main() -> None:
