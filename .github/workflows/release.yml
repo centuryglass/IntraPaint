@@ -23,7 +23,10 @@ concurrency:
 jobs:
   publish:
     name: publish
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    # Only a successful push-triggered ci run in this repository may publish. A fork could run a ci workflow of the
+    # same name on its own master, so the branch and event filters alone don't tie the artifacts to this repo;
+    # head_repository must be this repository too.
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
