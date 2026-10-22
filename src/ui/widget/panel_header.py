@@ -148,6 +148,8 @@ class _ElidedLabel(QLabel):
 class PanelPopover(QFrame):
     """A frameless popup window holding one widget, which closes on any click outside it."""
 
+    closed = Signal()
+
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent, Qt.WindowType.Popup)
         self.setFrameShape(QFrame.Shape.StyledPanel)
@@ -170,6 +172,11 @@ class PanelPopover(QFrame):
         if content is not None:
             self.layout().addWidget(content)
             content.show()
+
+    def hideEvent(self, event) -> None:  # pylint: disable=invalid-name
+        """Emits `closed`."""
+        super().hideEvent(event)
+        self.closed.emit()
 
     def popup_below(self, anchor: QWidget, align_left: bool = False, height: Optional[int] = None) -> None:
         """Shows the popover under `anchor`, with its right edge aligned to the anchor's, or its left edge with

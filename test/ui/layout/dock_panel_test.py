@@ -10,7 +10,7 @@ from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtWidgets import QApplication, QCheckBox, QLineEdit, QPushButton, QScrollArea, QSlider, QWidget
 
 from src.ui.layout.dock_panel import DockPanel, PanelLayout
-from src.ui.layout.panel_fit import REQUIRED, STRIP_SECTION_MAX_WIDTH, STRIP_SECTION_MIN_WIDTH, Orientation
+from src.ui.layout.panel_fit import HYSTERESIS, REQUIRED, STRIP_SECTION_MAX_WIDTH, STRIP_SECTION_MIN_WIDTH, Orientation
 from src.ui.widget.panel_section import HEADER_HEIGHT
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
 from test.ui.panel_capture import PanelHost, find_layout_problems, tell_orientation
@@ -49,6 +49,22 @@ class SamplePanel(DockPanel):
         advanced = ui.section('Advanced')
         advanced.add(self.extra, 3)
         advanced.add(self.only_extra, 3)
+
+
+class CollapsiblePanel(DockPanel):
+    """A required slider, an optional field, and a collapsible section of tall required content with a summary."""
+
+    def build(self, ui: PanelLayout) -> None:
+        self.slider = QSlider(Qt.Orientation.Horizontal)
+        self.optional = QLineEdit()
+        self.block = QWidget()
+        self.block.setMinimumHeight(200)
+        main = ui.section('Main')
+        main.add(self.slider, REQUIRED)
+        main.add(self.optional, 2)
+        self.sampling = ui.section('Sampling', collapsible=True, priority=3)
+        self.sampling.add(self.block, REQUIRED)
+        self.sampling.widget.set_summary('Euler a, 30 steps')
 
 
 class OversizedPanel(DockPanel):
@@ -418,3 +434,92 @@ class DockPanelTest(IntraPaintTestCase):
         for section in self.panel.sections:
             self.assertIs(section.widget.parentWidget(), self.panel.section_layout.parentWidget())
         self.assertEqual(len(self.panel.findChildren(QScrollArea)), 2)
+
+
+class CollapsibleSectionTest(IntraPaintTestCase):
+    """Tests sections that collapse to their summary by fit."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.panel = CollapsiblePanel()
+        self.panel.show()
+
+    def _host(self, size: QSize) -> None:
+        self.panel.resize(size)
+        tell_orientation(self.panel, SIDE, size)
+
+    def test_short_panel_collapses_the_section_before_it_scrolls(self) -> None:
+        """A panel too short for the section's body collapses it to its header, keeps the optional field it outranks,
+        and does not scroll."""
+        self._host(QSize(300, 200))
+        section = self.panel.sampling
+        self.assertTrue(section.widget.is_collapsed())
+        self.assertTrue(section.collapsed_by_fit)
+        self.assertTrue(section.widget.isVisibleTo(self.panel))
+        self.assertFalse(self.panel.block.isVisibleTo(self.panel))
+        self.assertFalse(self.panel.content_scrolls)
+        self.assertEqual(self.panel.overflow_widgets, [])
+
+    def test_section_expands_again_once_it_fits_with_room_to_spare(self) -> None:
+        """The section stays collapsed within HYSTERESIS of fitting and expands beyond it, without changing the
+        remembered choice."""
+        self._host(QSize(300, 200))
+        needed = self.panel.measure().height()
+        self._host(QSize(300, 900))
+        expanded_height = self.panel.measure().height()
+        self.assertFalse(self.panel.sampling.widget.is_collapsed())
+        self.assertTrue(self.panel.sampling.widget.is_expanded())
+        self.assertGreater(expanded_height, needed)
+        self._host(QSize(300, 200))
+        self.assertTrue(self.panel.sampling.widget.is_collapsed())
+        self.assertTrue(self.panel.sampling.widget.is_expanded())
+        self._host(QSize(300, expanded_height + 2 * self.panel.inset + HYSTERESIS))
+        self.assertFalse(self.panel.sampling.widget.is_collapsed())
+
+    def test_optional_controls_with_a_lower_priority_number_move_to_more_first(self) -> None:
+        """The optional field outranks the section, so it stays placed while the section collapses."""
+        self._host(QSize(300, 200))
+        self.assertNotIn(self.panel.optional, self.panel.overflow_widgets)
+        self.assertTrue(self.panel.sampling.widget.is_collapsed())
+
+    def test_minimum_size_does_not_depend_on_history(self) -> None:
+        """The same size gives the same minimum size hint, whatever the panel showed before."""
+        size = QSize(300, 200)
+        self._host(size)
+        fresh = self.panel.minimumSizeHint()
+        used = CollapsiblePanel()
+        for visited in (QSize(300, 900), QSize(300, 100), size):
+            used.resize(visited)
+            tell_orientation(used, SIDE, visited)
+        self.assertEqual(used.minimumSizeHint(), fresh)
+
+    def test_clicking_a_collapsed_header_shows_the_body_in_a_popover(self) -> None:
+        """A forced-collapsed header opens the body as a popover, and the body returns to the section when it
+        closes."""
+        self._host(QSize(300, 200))
+        widget = self.panel.sampling.widget
+        widget.header_button.click()
+        popover = self.panel._section_popover  # pylint: disable=protected-access
+        self.assertIsNotNone(popover)
+        self.assertIs(popover.content, self.panel.sampling.widget.body)
+        self.assertTrue(popover.isVisible())
+        self.assertTrue(self.panel.block.isVisible())
+        popover.hide()
+        self.assertIs(self.panel.block.parentWidget(), widget.body)
+        self.assertTrue(widget.is_collapsed())
+        self.assertFalse(self.panel.block.isVisibleTo(self.panel))
+
+    def test_expanding_closes_the_popover(self) -> None:
+        """Planning that expands the section closes its popover and puts the body back."""
+        self._host(QSize(300, 200))
+        self.panel.sampling.widget.header_button.click()
+        self._host(QSize(300, 900))
+        popover = self.panel._section_popover  # pylint: disable=protected-access
+        self.assertFalse(popover.isVisible())
+        self.assertFalse(self.panel.sampling.widget.is_collapsed())
+        self.assertTrue(self.panel.block.isVisibleTo(self.panel))
+
+    def test_priority_must_be_above_required(self) -> None:
+        """A collapsible section can't be required, since it could never be left out."""
+        with self.assertRaises(ValueError):
+            PanelLayout().section('Bad', collapsible=True, priority=REQUIRED)
