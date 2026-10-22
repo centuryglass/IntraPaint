@@ -411,7 +411,7 @@ Click and drag any layer to move it within the list.  Right-click a layer to sho
 9. **Isolate button**: Available only on layer groups, activating isolation makes it so the blending mode of layers within the group will never blend with layers outside the group.
 10. **Alpha lock button**:  Available only on image layers, alpha locking prevents all changes to layer opacity. When the alpha lock is set, drawing within the layer will only affect non-transparent areas, and the eraser tool will do nothing.
 11. **Lock button**: When locked, layers cannot be moved or edited in any way.  When a layer group is locked, the same restriction applies to all layers within it.
-12. **Visibility button**: Click to hide the layer within the image, or to reveal it if it was previously hidden.  Most changes to hidden layer content will also be prevented.
+12. **Visibility button**: Click to hide the layer within the image, or to reveal it if it was previously hidden. This changes only that layer: a layer inside a hidden group stays out of the image until the group is shown, and its button shows a crossed-out eye while it is marked visible. Most changes to hidden layer content will also be prevented, including layers inside a hidden group.
 13. **New layer button**: Click to create a new layer. If an unlocked layer group is the active layer the new layer will be created at the top of that group, otherwise it will be created above the active layer.
 14. **New layer group button**: Click to create a new layer group.  New layer groups are always empty, but existing layers can be dragged into them.
 15. **Delete layer button**: Click to delete the active layer.

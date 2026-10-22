@@ -7,7 +7,6 @@ from typing import Any, Callable, Optional, Generator
 
 from PySide6.QtCore import QObject, Signal, QRect, QPoint, QSize, QRectF
 from PySide6.QtGui import QImage, QPixmap, QPainter, QTransform, QPainterPath, QPolygonF
-from PySide6.QtWidgets import QApplication
 
 from src.image.composite_mode import CompositeMode
 from src.undo_stack import UndoStack
@@ -15,19 +14,6 @@ from src.util.cached_data import CachedData
 from src.util.visual.geometry_utils import map_rect_precise, transform_needs_smooth_sampling
 from src.util.visual.image_utils import (create_transparent_image, NpAnyArray, image_data_as_numpy_8bit_readonly,
                                          image_is_fully_transparent)
-
-# The QCoreApplication.translate context for strings in this file
-TR_ID = 'image.layer.layer'
-
-
-def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
-    """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, key, disambiguation, n)
-
-
-ERROR_TITLE_SHOW_LAYER_FAILED = _tr('Showing layer failed')
-ERROR_MESSAGE_LOCKED_PARENT = _tr('Cannot show layer "{layer_name}", parent layer "{parent_name}" is locked and'
-                                  ' hidden.')
 
 
 class _LayerMeta(ABCMeta, type(QObject)):
@@ -43,6 +29,9 @@ class Layer(QObject, metaclass=_LayerMeta):
     """Interface for any entity that can exist within an image layer stack."""
 
     name_changed = Signal(QObject, str)
+    # Sent when the layer's own visibility changes, with the layer and its new `visible` value. A group's change is
+    # also sent from every layer inside it, with the group and its value as the arguments, so a receiver that needs this
+    # layer's `shown` state reads it from the layer.
     visibility_changed = Signal(QObject, bool)
     # The rect is in the layer's own coordinates: before the transform for a TransformLayer (map it with
     # TransformLayer.map_changed_rect_to_image), and image coordinates for a LayerGroup. Region compositing redraws
@@ -197,52 +186,44 @@ class Layer(QObject, metaclass=_LayerMeta):
 
     @property
     def visible(self) -> bool:
-        """Returns whether this layer is marked as visible."""
-        if not self._visible:
-            return False
-        parent = self.layer_parent
-        if parent is not None:
-            return parent.visible
-        return True
+        """Returns whether this layer is marked visible. A visible layer still isn't shown while a group it is in is
+        hidden (see `shown`)."""
+        return self._visible
 
     @visible.setter
     def visible(self, visible: bool):
-        """Sets whether this layer is marked as visible."""
-        if visible == self.visible:
+        """Marks this layer visible or hidden, as one undoable action that changes no other layer."""
+        if visible == self._visible:
             return
-        if visible:  # Un-hide hidden parents without making other child layers visible:
-            toggled_layers: set[Layer] = set()
-            if not self._visible:
-                toggled_layers.add(self)
-            parent = self.layer_parent
-            while parent is not None:
-                if not parent.visible:
-                    toggled_layers.add(parent)
-                    i = 0
-                    while True:
-                        try:
-                            child = parent.get_layer_by_index(i)
-                            i += 1
-                            if child.get_visible() and not child.locked and child != self:
-                                toggled_layers.add(child)
-                        except ValueError:
-                            break
-                parent = parent.layer_parent
 
-            def _toggle_all():
-                for layer in toggled_layers:
-                    layer.set_visible(not layer.get_visible())
+        # Visibility bypasses `_apply_combinable_change`, which blocks changes to locked layers.
+        def _update(value=visible) -> None:
+            self.set_visible(value)
 
-            UndoStack().commit_action(_toggle_all, _toggle_all, 'layer.visible')
-        else:
-            # Hiding bypasses `_apply_combinable_change`, which blocks changes to locked layers.
-            def _hide():
-                self.set_visible(False)
+        def _undo(value=not visible) -> None:
+            self.set_visible(value)
 
-            def _show():
-                self.set_visible(True)
+        UndoStack().commit_action(_update, _undo, 'layer.visible')
 
-            UndoStack().commit_action(_hide, _show, 'layer.visibility', merge_target=self)
+    @property
+    def hidden_parent(self) -> Optional[LayerParent]:
+        """Returns the nearest group this layer is in that is marked hidden, or None if every one is visible."""
+        parent_iter = self.layer_parent
+        while parent_iter is not None:
+            if not parent_iter.visible:
+                return parent_iter
+            parent_iter = parent_iter.layer_parent
+        return None
+
+    @property
+    def parent_hidden(self) -> bool:
+        """Returns whether any group this layer is in is marked hidden."""
+        return self.hidden_parent is not None
+
+    @property
+    def shown(self) -> bool:
+        """Returns whether this layer and every group it is in are marked visible, so its content is in the image."""
+        return self._visible and not self.parent_hidden
 
     def is_empty(self, bounds: Optional[QRect] = None) -> bool:
         """Returns whether this layer contains only fully transparent pixels, optionally restricting the check to a
@@ -329,10 +310,6 @@ class Layer(QObject, metaclass=_LayerMeta):
                 self._visible = visible
                 self.visibility_changed.emit(self, visible)
                 self.signal_content_changed(self.bounds)
-
-    def get_visible(self) -> bool:
-        """Returns whether this layer is set to visible. Unlike the visible property, this ignores parent visibility."""
-        return self._visible
 
     def set_size(self, new_size: QSize) -> None:
         """Updates the layer's size, reporting both the old and new areas as changed."""

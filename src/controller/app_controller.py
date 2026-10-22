@@ -758,7 +758,7 @@ class AppController(MenuBuilder):
         merge_down_action = self.get_action_for_method(self.merge_layer_down)
         if merge_down_action.isEnabled():
             next_layer = self._image_stack.next_layer(active_layer)
-            if next_layer is None or next_layer.locked or next_layer.parent_locked or not next_layer.visible \
+            if next_layer is None or next_layer.locked or next_layer.parent_locked or not next_layer.shown \
                     or not isinstance(next_layer, TransformLayer) \
                     or next_layer.layer_parent != active_layer.layer_parent:
                 merge_down_action.setEnabled(False)
@@ -771,7 +771,7 @@ class AppController(MenuBuilder):
         # "Merge all visible" needs at least one mergeable visible top-level layer:
         merge_visible_action = self.get_action_for_method(self.merge_all_visible)
         if _test_state(self.merge_all_visible):
-            visible_top_layers = [layer for layer in self._image_stack.layer_stack.child_layers if layer.visible]
+            visible_top_layers = [layer for layer in self._image_stack.layer_stack.child_layers if layer.shown]
             can_merge_visible = len(visible_top_layers) > 1 or (len(visible_top_layers) == 1
                                                                 and isinstance(visible_top_layers[0], LayerGroup)
                                                                 and visible_top_layers[0].count > 0)

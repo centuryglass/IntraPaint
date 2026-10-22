@@ -189,7 +189,7 @@ class BrushTool(BaseTool):
             self._brush.connect_to_layer(layer)
         control_panel = self.get_control_panel()
         should_enable = (layer is not None and isinstance(layer, ImageLayer) and not layer.locked
-                         and not layer.parent_locked and layer.visible)
+                         and not layer.parent_locked and layer.shown)
         if control_panel is not None:
             control_panel.setEnabled(should_enable)
         self.set_disabled_cursor(not should_enable)

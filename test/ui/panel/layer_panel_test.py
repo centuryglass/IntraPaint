@@ -475,6 +475,25 @@ class LayerPanelTest(IntraPaintTestCase):
         UndoStack().undo()
         self.assertTrue(self.nested_child.visible)
 
+    def test_visibility_button_in_hidden_group(self) -> None:
+        """In a hidden group, a visible layer's button shows the hidden-by-group icon and names the group. Clicking
+        it toggles that layer alone."""
+        button = self._button(self.nested_child, LayerVisibilityButton)
+        visible_icon = button.icon().cacheKey()
+        self.group.visible = False
+        parent_hidden_icon = button.icon().cacheKey()
+        self.assertNotEqual(parent_hidden_icon, visible_icon)
+        self.assertIn('"group"', button.toolTip())
+        QtTest.QTest.mouseClick(button, Qt.MouseButton.LeftButton)
+        self.assertEqual([self.nested_child.visible, self.group.visible, self.nested.visible, self.inner_top.visible],
+                         [False, False, True, True])
+        self.assertNotIn(button.icon().cacheKey(), (visible_icon, parent_hidden_icon))
+        self.assertNotIn('"group"', button.toolTip())
+        QtTest.QTest.mouseClick(button, Qt.MouseButton.LeftButton)
+        self.assertEqual([self.nested_child.visible, self.group.visible], [True, False])
+        self.group.visible = True
+        self.assertEqual(button.icon().cacheKey(), visible_icon)
+
     def test_lock_disables_alpha_lock_button(self) -> None:
         """A layer's own lock or a group lock disables its alpha lock button, until every lock is released."""
         button = self._button(self.nested_child, LayerAlphaLockButton)

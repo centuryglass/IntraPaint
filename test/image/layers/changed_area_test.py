@@ -216,11 +216,12 @@ class LayerPropertyTest(ChangedAreaTestCase):
         """Hiding and showing a group."""
         self.assert_undo_redo_covered(lambda: setattr(self.group, 'visible', False))
 
-    def test_show_layer_in_hidden_group(self) -> None:
-        """Showing a hidden layer inside a hidden group shows the group too."""
+    def test_show_group_with_layer_shown_while_hidden(self) -> None:
+        """Showing a group reveals a layer that was marked visible while the group was hidden."""
         self.rotated.visible = False
         self.group.visible = False
-        self.assert_undo_redo_covered(lambda: setattr(self.rotated, 'visible', True))
+        self.rotated.visible = True
+        self.assert_undo_redo_covered(lambda: setattr(self.group, 'visible', True))
 
     def test_group_opacity_and_mode(self) -> None:
         """Changing a group's opacity and blend mode."""

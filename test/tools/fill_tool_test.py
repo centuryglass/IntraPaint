@@ -324,6 +324,19 @@ class FillToolTest(ToolTestCase):
         self.assertEqual(UndoStack().undo_count(), 0)
         self.layer.locked = False
 
+    def test_layer_in_hidden_group_refuses_fill(self) -> None:
+        """A click on a visible layer inside a hidden group shows an error naming the group, and changes nothing."""
+        group = self.image_stack.create_layer_group('hidden group')
+        grouped = self.image_stack.create_layer(image_data=region_pattern(self.IMAGE_SIZE), layer_parent=group)
+        self.image_stack.active_layer = grouped
+        group.visible = False
+        initial_image = grouped.image
+        with patch('src.tools.base_tool.show_error_dialog') as mock_error:
+            self.mouse_drag([SEED_POINT])
+        mock_error.assert_called_once()
+        self.assertIn('"hidden group"', mock_error.call_args.args[2])
+        self.assert_images_equal(grouped.image, initial_image)
+
     def test_hidden_layer_refuses_fill(self) -> None:
         """A click on a hidden layer shows an error and changes nothing."""
         self.layer.visible = False

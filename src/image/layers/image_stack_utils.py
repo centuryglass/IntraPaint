@@ -201,7 +201,7 @@ def top_layer_at_point(image_stack: ImageStack, image_coordinates: QPoint) -> Op
         if pixel_color.alpha() > 0:
             return layer
         if top_transparent is None or (top_transparent.locked or top_transparent.parent_locked
-                                       or not top_transparent.visible):
+                                       or not top_transparent.shown):
             top_transparent = layer
     return top_transparent
 

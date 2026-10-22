@@ -892,7 +892,7 @@ class ImageStack(QObject):
         if not self.validate_layer_showing_errors(layer):
             return
         # The replacement layer is rendered from the parent, which leaves out hidden layers.
-        if not layer.visible:
+        if not layer.shown:
             show_error_dialog(None, ERROR_TITLE_FLATTEN_FAILED, ERROR_MESSAGE_HIDDEN_LAYER_FLATTEN)
             return
         parent = layer.layer_parent
@@ -987,7 +987,7 @@ class ImageStack(QObject):
         deleted. The merged layer is placed at the former position of the bottommost
         visible layer.
         """
-        visible_layers = [layer for layer in self._layer_stack.child_layers if layer.visible]
+        visible_layers = [layer for layer in self._layer_stack.child_layers if layer.shown]
         if len(visible_layers) == 0:
             return
         if len(visible_layers) == 1 and isinstance(visible_layers[0], ImageLayer):
@@ -1004,7 +1004,7 @@ class ImageStack(QObject):
                 for child in layer.recursive_child_layers:
                     if child.locked:
                         locked_layers.append(child)
-                    if isinstance(child, TextLayer) and child.visible:
+                    if isinstance(child, TextLayer) and child.shown:
                         text_layer_names.append(child.name)
         if len(locked_layers) > 0:
             if len(locked_layers) > 1:
@@ -1025,7 +1025,7 @@ class ImageStack(QObject):
         for layer in visible_layers:
             if isinstance(layer, LayerGroup):
                 for child in layer.recursive_child_layers:
-                    if not child.visible:
+                    if not child.shown:
                         hidden_in_groups.append(child)
         if len(hidden_in_groups) > 0:
             hidden_names = ', '.join([f'"{layer.name}"' for layer in hidden_in_groups])
@@ -1037,7 +1037,7 @@ class ImageStack(QObject):
         bottom_index = self._layer_stack.get_layer_index(bottom_layer)
         assert bottom_index is not None
         insert_index = sum(1 for i in range(bottom_index)
-                           if not self._layer_stack.get_layer_by_index(i).visible)
+                           if not self._layer_stack.get_layer_by_index(i).shown)
 
         stack_bounds = self.merged_layer_bounds
         if stack_bounds.isEmpty():
@@ -1104,7 +1104,7 @@ class ImageStack(QObject):
         if not isinstance(base_layer, TransformLayer) or base_layer.locked or base_layer.parent_locked:
             show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER, signal=True)
             return
-        if not top_layer.visible or not base_layer.visible:
+        if not top_layer.shown or not base_layer.shown:
             show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, ERROR_MESSAGE_HIDDEN_LAYER_MERGE)
             return
 
@@ -1166,7 +1166,7 @@ class ImageStack(QObject):
                 with base.with_alpha_lock_disabled():
                     base.set_image(img)
                 base.set_transform(matrix)
-                if removed.visible != base.visible:
+                if removed.shown != base.shown:
                     self._emit_content_changed()
                 if update_active:
                     self._set_active_layer_internal(base)
@@ -1178,7 +1178,7 @@ class ImageStack(QObject):
                 self._insert_layer_internal(restored, parent, idx)
                 if update_active:
                     self._set_active_layer_internal(restored)
-                if restored.visible != base.visible:
+                if restored.shown != base.shown:
                     self._emit_content_changed()
 
             UndoStack().commit_action(_do_merge, _undo_merge, 'ImageStack.merge_layer_down')
@@ -1225,7 +1225,7 @@ class ImageStack(QObject):
         painter = QPainter(resized_image)
         painter.drawImage(QRect(layer_position, layer_image.size()), layer_image)
         painter.end()
-        content_changed = layer.visible and not layer.empty
+        content_changed = layer.shown and not layer.empty
 
         def _resize(resized=layer, img=resized_image, changed=content_changed) -> None:
             with resized.with_alpha_lock_disabled():
@@ -1536,7 +1536,7 @@ class ImageStack(QObject):
             self._render_timer.start()
 
     def _layer_content_change_slot(self, layer: Layer, _=None) -> None:
-        if layer.visible and (layer == self._layer_stack or layer == self.selection_layer
+        if layer.shown and (layer == self._layer_stack or layer == self.selection_layer
                               or self._layer_stack.contains_recursive(layer)):
             if layer != self.selection_layer and layer.content_change_timestamp > self._last_change_timestamp:
                 self._last_change_timestamp = layer.content_change_timestamp
@@ -1622,7 +1622,7 @@ class ImageStack(QObject):
             if self._active_layer_id is self._layer_stack.id:
                 self._active_layer_id = layer.id
                 self.active_layer_changed.emit(layer)
-        if layer.visible and not layer.empty:
+        if layer.shown and not layer.empty:
             self._last_change_timestamp = datetime.datetime.now().timestamp()
             self._trigger_content_render()
 
@@ -1659,7 +1659,7 @@ class ImageStack(QObject):
         self._update_z_values()
         if self._layer_stack.count == 0:
             AppStateTracker.set_app_state(APP_STATE_NO_IMAGE)
-        if layer.visible and not layer.empty:
+        if layer.shown and not layer.empty:
             self._last_change_timestamp = datetime.datetime.now().timestamp()
             self._trigger_content_render()
 

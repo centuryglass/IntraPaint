@@ -8,7 +8,8 @@ from PySide6.QtGui import QColor, QImage
 from src.image.layers.image_layer import ImageLayer
 from src.ui.modal.modal_utils import show_error_dialog
 from src.util.shared_constants import (ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_LAYER_HIDDEN,
-                                       ERROR_MESSAGE_LAYER_LOCKED, ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED,
+                                       ERROR_MESSAGE_LAYER_GROUP_HIDDEN, ERROR_MESSAGE_LAYER_LOCKED,
+                                       ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED,
                                        ERROR_MESSAGE_LAYER_GROUP_LOCKED, LOCK_ERROR_MESSAGES)
 from src.util.visual.image_utils import image_is_fully_transparent
 
@@ -111,7 +112,7 @@ class LayerBrush:
 
     def start_stroke(self) -> None:
         """Signals the start of a brush stroke, to be called once whenever user input starts or resumes."""
-        if self._layer is None or not self._layer.visible or self._layer.locked or self._layer.parent_locked:
+        if self._layer is None or not self._layer.shown or self._layer.locked or self._layer.parent_locked:
             return
         if self._drawing:
             self.end_stroke()
@@ -125,6 +126,8 @@ class LayerBrush:
             error_message = ERROR_MESSAGE_LAYER_NONE
         elif not self._layer.visible:
             error_message = ERROR_MESSAGE_LAYER_HIDDEN
+        elif (hidden_parent := self._layer.hidden_parent) is not None:
+            error_message = ERROR_MESSAGE_LAYER_GROUP_HIDDEN.format(group_name=hidden_parent.name)
         elif self._layer.locked:
             error_message = ERROR_MESSAGE_LAYER_LOCKED
         elif self._layer.parent_locked:

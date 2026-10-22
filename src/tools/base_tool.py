@@ -21,8 +21,8 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.ui.modal.modal_utils import show_error_dialog
 from src.util.shared_constants import ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_LAYER_LOCKED, \
-    ERROR_MESSAGE_LAYER_GROUP_LOCKED, ERROR_MESSAGE_LAYER_HIDDEN, ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED, \
-    DEBUG_CURSOR_ENV_VAR, LOCK_ERROR_MESSAGES
+    ERROR_MESSAGE_LAYER_GROUP_LOCKED, ERROR_MESSAGE_LAYER_HIDDEN, ERROR_MESSAGE_LAYER_GROUP_HIDDEN, \
+    ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED, DEBUG_CURSOR_ENV_VAR, LOCK_ERROR_MESSAGES
 from src.util.visual.image_utils import image_is_fully_transparent
 from src.util.visual.text_drawing_utils import left_button_hint_text, middle_button_hint_text, \
     vertical_scroll_hint_text, rich_text_key_hints
@@ -240,6 +240,8 @@ class BaseTool(QObject):
             error_message = ERROR_MESSAGE_LAYER_GROUP_LOCKED
         elif not layer.visible:
             error_message = ERROR_MESSAGE_LAYER_HIDDEN
+        elif (hidden_parent := layer.hidden_parent) is not None:
+            error_message = ERROR_MESSAGE_LAYER_GROUP_HIDDEN.format(group_name=hidden_parent.name)
         elif (image_stack is not None and Cache().get(Cache.PAINT_SELECTION_ONLY)
               and self._enable_selection_restrictions):
             mask_image = image_stack.selection_layer.image_bits_readonly

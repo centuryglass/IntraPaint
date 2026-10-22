@@ -275,7 +275,7 @@ class LayerWidget(BorderedWidget):
             painter.restore()
             painter.setPen(Qt.GlobalColor.black)
             painter.drawRect(paint_bounds)
-            if not self._layer.visible:
+            if not self._layer.shown:
                 painter.fillRect(paint_bounds, QColor.fromRgb(0, 0, 0, 100))
         if self._clicking:
             painter.setTransform(QTransform())
@@ -404,7 +404,7 @@ class LayerWidget(BorderedWidget):
                     merge_option.setEnabled(False)
                 else:
                     next_layer = self._image_stack.next_layer(self._layer)
-                    if next_layer is None or next_layer.locked or next_layer.parent_locked or not next_layer.visible \
+                    if next_layer is None or next_layer.locked or next_layer.parent_locked or not next_layer.shown \
                             or not isinstance(next_layer, TransformLayer):
                         merge_option.setEnabled(False)
 
@@ -416,7 +416,7 @@ class LayerWidget(BorderedWidget):
 
             merge_visible_option = _add_action(MENU_OPTION_MERGE_ALL_VISIBLE,
                                                self._image_stack.merge_all_visible)
-            visible_top_layers = [layer for layer in self._image_stack.layer_stack.child_layers if layer.visible]
+            visible_top_layers = [layer for layer in self._image_stack.layer_stack.child_layers if layer.shown]
             can_merge_visible = len(visible_top_layers) > 1 or (len(visible_top_layers) == 1
                                                                 and isinstance(visible_top_layers[0], LayerGroup)
                                                                 and visible_top_layers[0].count > 0)

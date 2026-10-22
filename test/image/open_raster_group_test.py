@@ -47,7 +47,7 @@ class OpenRasterGroupTest(GroupRenderTestCase):
         name = expected.name
         self.assertEqual(type(expected), type(actual), f'type of "{name}"')
         self.assertEqual(name, actual.name)
-        self.assertEqual(expected.get_visible(), actual.get_visible(), f'visibility of "{name}"')
+        self.assertEqual(expected.visible, actual.visible, f'visibility of "{name}"')
         self.assertEqual(expected.opacity, actual.opacity, f'opacity of "{name}"')
         self.assertEqual(expected.composition_mode, actual.composition_mode, f'mode of "{name}"')
         if isinstance(expected, LayerGroup):

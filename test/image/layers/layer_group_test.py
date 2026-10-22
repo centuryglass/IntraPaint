@@ -3,12 +3,15 @@ import sys
 import unittest
 from typing import Callable
 
-from PySide6.QtCore import QSize
-from PySide6.QtGui import QTransform
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QImage, QTransform
 from PySide6.QtWidgets import QApplication
 
+from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.layer_group import LayerGroup
 from src.undo_stack import UndoStack
+from src.util.visual.image_utils import image_data_as_numpy_8bit_readonly, image_is_fully_transparent
 from test.base_test_case import IntraPaintTestCase
 
 IMG_SIZE = QSize(512, 512)
@@ -82,6 +85,61 @@ class LayerGroupTest(IntraPaintTestCase):
         copies.append(text_layer.copy_as_image_layer())
         self.assertTrue(all(copy.visible for copy in copies))
         self.assertTrue(copies[1].get_layer_by_index(0).visible)
+
+    def _nested_group(self) -> tuple[LayerGroup, ImageLayer]:
+        """Adds a nested group holding one layer inside `self.group`, and returns both."""
+        nested = self.image_stack.create_layer_group('nested', layer_parent=self.group)
+        child = self.image_stack.create_layer('nested child', layer_parent=nested)
+        UndoStack().clear()
+        return nested, child
+
+    def test_visibility_toggle_changes_only_its_layer(self) -> None:
+        """Showing or hiding a layer inside hidden groups changes no other layer, and one undo reverts it."""
+        nested, child = self._nested_group()
+        self.group.visible = False
+        everything = [self.group, nested, child, *self.layers]
+        before = [layer.visible for layer in everything]
+        child.visible = False
+        self.assertEqual([layer.visible for layer in everything], [False, True, False, True, True])
+        child.visible = True
+        self.assertEqual([layer.visible for layer in everything], before)
+        UndoStack().undo()
+        self.assertFalse(child.visible)
+        UndoStack().undo()
+        self.assertEqual([layer.visible for layer in everything], before)
+
+    def test_shown_and_hidden_parent(self) -> None:
+        """A layer is shown only when it and every group it is in are visible, and its nearest hidden group is
+        reported."""
+        nested, child = self._nested_group()
+        self.assertEqual((child.shown, child.parent_hidden, child.hidden_parent), (True, False, None))
+        self.group.visible = False
+        self.assertEqual((child.shown, child.hidden_parent), (False, self.group))
+        nested.visible = False
+        self.assertEqual((child.shown, child.hidden_parent, nested.hidden_parent), (False, nested, self.group))
+        self.group.visible = True
+        nested.visible = True
+        child.visible = False
+        self.assertEqual((child.shown, child.parent_hidden), (False, False))
+
+    def test_hiding_a_group_notifies_the_layers_inside(self) -> None:
+        """Hiding a group sends visibility_changed from every layer inside it, with the group as the sender."""
+        nested, child = self._nested_group()
+        received = []
+        for layer in (nested, child):
+            layer.visibility_changed.connect(lambda source, visible: received.append((source, visible)))
+        self.group.visible = False
+        self.assertEqual(received, [(self.group, False), (self.group, False)])
+
+    def test_nested_group_renders_while_its_parent_is_hidden(self) -> None:
+        """A nested group's own image doesn't depend on the visibility of the groups it is in."""
+        nested, child = self._nested_group()
+        self.group.visible = False
+        filled = QImage(child.size, QImage.Format.Format_ARGB32_Premultiplied)
+        filled.fill(Qt.GlobalColor.red)
+        child.image = filled
+        self.image_stack.flush_render()
+        self.assertFalse(image_is_fully_transparent(image_data_as_numpy_8bit_readonly(nested.get_qimage())))
 
 
 if __name__ == '__main__':
