@@ -215,6 +215,23 @@ class DesignFrameTest(IntraPaintTestCase):
         self.assertTrue(all(a != b for a, b in zip([0] + shown, shown)))
         self.assertNotEqual(ring.frame(0.5), faded.convertToFormat(QImage.Format.Format_ARGB32))
 
+    def test_diffusion_ring_fixed_image(self) -> None:
+        """A fixed image is drawn on every loop until the fixed image is cleared."""
+        images = [QImage(8, 8, QImage.Format.Format_ARGB32) for _ in range(3)]
+        for image in images:
+            image.fill(Qt.GlobalColor.red)
+        ring = DiffusionRing(images, image_names=['a', 'b', 'c'], rng=random.Random(1))
+        ring.fixed_image = 2
+        self.assertEqual(ring.current_image, 2)
+        for _ in range(5):
+            ring.next_loop()
+            self.assertEqual(ring.current_image, 2)
+        ring.fixed_image = None
+        ring.next_loop()
+        self.assertNotEqual(ring.current_image, 2)
+        with self.assertRaises(ValueError):
+            ring.fixed_image = 3
+
     def test_design_goldens(self) -> None:
         """Each shipped design draws the same frame as its golden image, on both themes when it depends on them."""
         cases = (('Halftone Press', 'halftone_press', (True, False)),

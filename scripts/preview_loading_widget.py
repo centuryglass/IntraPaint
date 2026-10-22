@@ -1,7 +1,8 @@
 """Opens a window that previews the loading indicator with any of its designs.
 
 Drop-downs choose the design and its variant from everything `load_loading_designs` finds, including new sprite
-sheets added under `resources/loading/`. The other controls set the message, the theme backdrop, play and pause, and
+sheets added under `resources/loading/`. The Diffusion Ring's variants are its images: "(procedural)" cycles through
+all of them as the app does, and a name pins that one image. The other controls set the message, the theme backdrop, play and pause, and
 scrub to any phase. "Export GIF" writes one loop of the current design and options as an infinitely looping GIF at
 the preview's current resolution.
 
@@ -21,6 +22,7 @@ from PySide6.QtGui import QColor, QImage, QPalette, QShowEvent
 from PySide6.QtWidgets import QApplication, QComboBox, QFileDialog, QHBoxLayout, QLabel, QLineEdit, QPushButton, \
     QSlider, QVBoxLayout, QWidget
 
+from src.ui.loading.diffusion_ring import DiffusionRing
 from src.ui.loading.loading_design import LoadingDesign
 from src.ui.loading.loading_designs import load_loading_designs
 from src.ui.widget.loading_widget import LoadingWidget
@@ -100,8 +102,24 @@ class LoadingPreviewWindow(QWidget):
         super().showEvent(event)
         self._sync_controls()
 
-    def _variants(self, name: str) -> list[LoadingDesign]:
-        return [design for design in self._designs if design.name == name]
+    def _variants(self, name: str) -> list[tuple[str, LoadingDesign, Optional[int]]]:
+        """Returns a (label, design, fixed image index) entry for each choice in the variant drop-down."""
+        entries: list[tuple[str, LoadingDesign, Optional[int]]] = []
+        for design in self._designs:
+            if design.name != name:
+                continue
+            if isinstance(design, DiffusionRing):
+                entries.append(('(procedural)', design, None))
+                entries.extend((image_name, design, index) for index, image_name in enumerate(design.image_names))
+            else:
+                entries.append((design.variant or '(procedural)', design, None))
+        return entries
+
+    @staticmethod
+    def _entry_index(entries: list[tuple[str, LoadingDesign, Optional[int]]], design: LoadingDesign) -> int:
+        fixed = design.fixed_image if isinstance(design, DiffusionRing) else None
+        return next(i for i, (_, entry_design, index) in enumerate(entries) if entry_design is design
+                    and index == fixed)
 
     def _sync_controls(self) -> None:
         """Matches the drop-downs, slider and play button to the widget's current design and phase."""
@@ -111,7 +129,7 @@ class LoadingPreviewWindow(QWidget):
         if self._design_box.currentText() != design.name:
             self._design_box.setCurrentText(design.name)
             self._fill_variants(design.name)
-        self._variant_box.setCurrentIndex(self._variants(design.name).index(design))
+        self._variant_box.setCurrentIndex(self._entry_index(self._variants(design.name), design))
         self._phase_slider.setValue(round(self._loading_widget.phase * SLIDER_STEPS))
         for widget in (self._design_box, self._variant_box, self._phase_slider):
             widget.blockSignals(False)
@@ -119,18 +137,25 @@ class LoadingPreviewWindow(QWidget):
 
     def _fill_variants(self, name: str) -> None:
         self._variant_box.clear()
-        self._variant_box.addItems([design.variant or '(procedural)' for design in self._variants(name)])
+        self._variant_box.addItems([label for label, _, _ in self._variants(name)])
 
     def _design_name_changed(self, name: str) -> None:
         self._variant_box.blockSignals(True)
         self._fill_variants(name)
         self._variant_box.blockSignals(False)
-        self._loading_widget.design = self._variants(name)[0]
+        self._select_entry(self._variants(name)[0])
 
     def _variant_changed(self, index: int) -> None:
         variants = self._variants(self._design_box.currentText())
         if 0 <= index < len(variants):
-            self._loading_widget.design = variants[index]
+            self._select_entry(variants[index])
+
+    def _select_entry(self, entry: tuple[str, LoadingDesign, Optional[int]]) -> None:
+        """Shows a drop-down entry, pinning a Diffusion Ring image when the entry names one."""
+        _, design, fixed_image = entry
+        if isinstance(design, DiffusionRing):
+            design.fixed_image = fixed_image
+        self._loading_widget.design = design
 
     def _random_design(self) -> None:
         self._loading_widget.start_new_design()

@@ -61,6 +61,7 @@ def _load_diffusion_ring(folder_path: str, file_names: list[str]) -> Optional[Di
     """Returns one DiffusionRing cycling through every valid ring image, or None if there are none. Images that
     aren't square or don't match the first valid image's size are logged and skipped."""
     images: list[QImage] = []
+    names: list[str] = []
     for file_name in file_names:
         image_path = os.path.join(folder_path, file_name)
         try:
@@ -73,7 +74,8 @@ def _load_diffusion_ring(folder_path: str, file_names: list[str]) -> Optional[Di
             logger.warning(f'Skipping loading design {image_path}: {err}')
             continue
         images.append(image)
-    return DiffusionRing(images) if images else None
+        names.append(os.path.splitext(file_name)[0])
+    return DiffusionRing(images, image_names=names) if images else None
 
 
 def _load_design(folder_name: str, image_path: str) -> LoadingDesign:

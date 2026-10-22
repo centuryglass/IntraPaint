@@ -50,7 +50,7 @@ class DiffusionRing(LoadingDesign):
     """
 
     def __init__(self, images: list[QImage], duration_ms: int = DEFAULT_DURATION_MS,
-                 rng: Optional[random.Random] = None) -> None:
+                 rng: Optional[random.Random] = None, image_names: Optional[list[str]] = None) -> None:
         """
         Parameters
         ----------
@@ -61,6 +61,8 @@ class DiffusionRing(LoadingDesign):
                 Length of one loop, from noise to clean and back.
             rng: Optional[random.Random]
                 Source of randomness for the image order, defaulting to the `random` module's.
+            image_names: Optional[list[str]]
+                A name for each image, usually its file name without the extension. Defaults to the image indices.
         """
         super().__init__(DESIGN_NAME, '', duration_ms)
         if len(images) == 0:
@@ -75,6 +77,10 @@ class DiffusionRing(LoadingDesign):
             self._colors.append(pixels[:, :, :3] / 127.5 - 1)
             if len(self._colors) == 1:
                 self._alpha = pixels[:, :, 3] / 255
+        self.image_names = list(image_names) if image_names is not None else [str(i) for i in range(len(images))]
+        if len(self.image_names) != len(images):
+            raise ValueError(f'Got {len(self.image_names)} image names for {len(images)} images')
+        self._fixed_image: Optional[int] = None
         self._rng = rng if rng is not None else random
         self._current = 0
         self._queue: list[int] = []
@@ -92,10 +98,27 @@ class DiffusionRing(LoadingDesign):
         """Returns the index of the image being drawn."""
         return self._current
 
+    @property
+    def fixed_image(self) -> Optional[int]:
+        """The index of the one image to draw on every loop, or None to cycle through all of them."""
+        return self._fixed_image
+
+    @fixed_image.setter
+    def fixed_image(self, index: Optional[int]) -> None:
+        """Pins the design to one image for previewing a particular asset, or None to resume cycling."""
+        if index is not None and not 0 <= index < len(self._colors):
+            raise ValueError(f'Image index {index} out of range for {len(self._colors)} images')
+        self._fixed_image = index
+        self._queue = []
+        if index is not None:
+            self._current = index
+        self._frame_phase = None
+
     def next_loop(self) -> None:
         """Switches to the next image in a random order that shows each image once before any repeats, and never
-        repeats an image back to back. Call only when the signal level is 0.0, where the switch can't be seen."""
-        if len(self._colors) == 1:
+        repeats an image back to back. Does nothing while `fixed_image` is set. Call only when the signal level is
+        0.0, where the switch can't be seen."""
+        if len(self._colors) == 1 or self._fixed_image is not None:
             return
         if len(self._queue) == 0:
             self._queue = list(range(len(self._colors)))
