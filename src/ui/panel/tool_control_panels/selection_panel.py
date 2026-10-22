@@ -161,8 +161,10 @@ class SelectionPanel(QWidget):
         self._actions_layout.addWidget(clear_pins_button)
         self._actions_layout.addWidget(clear_button)
         self._layout.addWidget(tool_section(SELECTION_SECTION_TITLE, self._actions_layout))
-        self._planner = FitPlanner([_BUTTONS_ITEM, _HINT_ITEM], self._apply_fit,
-                                   lambda: fresh_minimum_size(self))
+        self._planner = FitPlanner([_BUTTONS_ITEM, _HINT_ITEM], self._apply_fit, self._measure_fit)
+
+    def _measure_fit(self) -> QSize:
+        return fresh_minimum_size(self)
 
     @staticmethod
     def _action_button(label: str, icon_path: str, tooltip: str) -> QPushButton:

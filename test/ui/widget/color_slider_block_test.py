@@ -5,7 +5,6 @@ import numpy as np
 from PySide6.QtCore import QEvent, QPointF, Qt
 from PySide6.QtGui import QColor, QKeyEvent, QKeySequence, QPalette
 from PySide6.QtWidgets import QApplication
-from PySide6 import QtTest
 
 from src.config.cache import Cache
 from src.hotkey_filter import HotkeyFilter
@@ -13,7 +12,7 @@ from src.ui.panel.color_panel import ColorControlPanel
 from src.ui.widget.color_picker.color_slider_block import ColorSliderBlock, MODE_RGB, MODE_HSV, MODE_OKLCH, MODES
 from src.ui.widget.color_picker.gradient_slider import GradientSlider
 from src.util.visual import color_math
-from test.base_test_case import IntraPaintTestCase
+from test.base_test_case import IntraPaintTestCase, press_key
 from test.ui.widget.color_picker_test_utils import press, move, release, SignalRecorder
 
 SLIDER_WIDTH = 300
@@ -69,9 +68,10 @@ class GradientSliderTest(IntraPaintTestCase):
         HotkeyFilter.instance().register_keybinding(binding_id, hotkey, QKeySequence(Qt.Key.Key_Left))
         try:
             self.slider.show()
+            self.slider.setFocus()
             self.slider.set_value(50)
             with patch.object(QApplication, 'focusWidget', return_value=self.slider):
-                QtTest.QTest.keyClick(self.slider, Qt.Key.Key_Left)
+                press_key(self.slider, Qt.Key.Key_Left)
         finally:
             HotkeyFilter.instance().remove_keybinding(binding_id)
         self.assertEqual(self.slider.value(), 49.0)

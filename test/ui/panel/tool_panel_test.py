@@ -101,7 +101,8 @@ class ToolPanelTest(IntraPaintTestCase):
         """Returns the narrowest side panel with room across for a row of buttons in `layout`."""
         columns = min(layout.columns, len(self._tool_panel.tool_buttons))
         margins = self._tool_panel._body_layout.contentsMargins()  # pylint: disable=protected-access
-        return columns * layout.edge_length + (columns - 1) * BUTTON_SPACING + margins.left() + margins.right()
+        return columns * layout.edge_length + (columns - 1) * BUTTON_SPACING + margins.left() + margins.right() \
+            + 2 * self._tool_panel.inset
 
     def test_fit_content_gets_base_size_then_the_space_left_over(self) -> None:
         """A fit-aware control panel is measured at its base size in each orientation the panel plans, then gets the

@@ -1,14 +1,17 @@
 """Tests DockPanel: placement by fit in tall, short, wide and narrow panels of both orientations, the "More" overflow,
 decorative controls, control forms, re-planning without rebuilding widgets, scrolling, and a layout snapshot at each
 sample size."""
+import gc
 import os
 import sys
+import weakref
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtWidgets import QApplication, QCheckBox, QLineEdit, QPushButton, QScrollArea, QSlider, QWidget
 
 from src.ui.layout.dock_panel import DockPanel, PanelLayout
 from src.ui.layout.panel_fit import REQUIRED, STRIP_SECTION_MAX_WIDTH, STRIP_SECTION_MIN_WIDTH, Orientation
+from src.ui.widget.panel_section import HEADER_HEIGHT
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
 from test.ui.panel_capture import PanelHost, find_layout_problems, tell_orientation
 
@@ -20,10 +23,10 @@ STRIP = Orientation.STRIP
 # Sample sizes, named by shape. Every control fits in side_tall_narrow, side_wide, strip_wide and strip_regular:
 SAMPLE_SIZES = {
     'side_tall_narrow': (SIDE, QSize(200, 900)),
-    'side_short': (SIDE, QSize(340, 120)),
+    'side_short': (SIDE, QSize(362, 142)),
     'side_wide': (SIDE, QSize(500, 600)),
     'strip_short': (STRIP, QSize(1400, 90)),
-    'strip_wide': (STRIP, QSize(1400, 160)),
+    'strip_wide': (STRIP, QSize(1400, 182)),
     'strip_regular': (STRIP, QSize(900, 240)),
     'strip_narrow': (STRIP, QSize(300, 400)),
     'strip_tiny': (STRIP, QSize(300, 50)),
@@ -58,6 +61,30 @@ class OversizedPanel(DockPanel):
         ui.section('Wide').add(QPushButton('A button label far wider than a narrow side panel'), REQUIRED)
 
 
+class PackedPanel(DockPanel):
+    """Three sections of fixed-height content that pack into strip columns, and a trailing column."""
+
+    def build(self, ui: PanelLayout) -> None:
+        self.set_column_packing(True)
+        self.blocks: list[QWidget] = []
+        for title in ('First', 'Second', 'Third'):
+            block = QWidget()
+            block.setMinimumHeight(100)
+            self.blocks.append(block)
+            ui.section(title).add(block, REQUIRED)
+        self.trailing_button = QPushButton('Trailing')
+
+    def arrange(self, orientation: Orientation) -> None:
+        super().arrange(orientation)
+        self.trailing_layout.addWidget(self.trailing_button)
+        self.set_trailing_visible(orientation == STRIP)
+
+
+def _trailing_column(panel: DockPanel) -> QWidget:
+    """The widget holding the trailing column's scroll area."""
+    return panel.trailing_layout.parentWidget().parentWidget().parentWidget().parentWidget()
+
+
 class DockPanelTest(IntraPaintTestCase):
     """Tests DockPanel with a fake host that starts it in an orientation and reports its size (`tell_orientation`)."""
 
@@ -73,8 +100,21 @@ class DockPanelTest(IntraPaintTestCase):
     def _optional(self) -> list[QWidget]:
         return [self.panel.name_field, self.panel.flag, self.panel.extra, self.panel.only_extra]
 
+    def test_planned_panel_is_freed_without_a_cyclic_collection(self) -> None:
+        """A planned panel is freed when its last reference goes, so its C++ side is never deleted by a cyclic
+        collection during an unrelated Qt call."""
+        panel = SamplePanel()
+        self._host(SIDE, QSize(200, 900), panel)
+        panel_ref = weakref.ref(panel)
+        gc.disable()
+        try:
+            del panel
+            self.assertIsNone(panel_ref())
+        finally:
+            gc.enable()
+
     def test_roomy_panels_show_everything(self) -> None:
-        """A tall, narrow side panel and a wide strip under 170 px tall have room for every control, so nothing moves
+        """A tall, narrow side panel and a wide strip under 190 px tall have room for every control, so nothing moves
         to More."""
         for name in ('side_tall_narrow', 'side_wide', 'strip_wide'):
             with self.subTest(size=name):
@@ -150,12 +190,12 @@ class DockPanelTest(IntraPaintTestCase):
     def test_orientation_follows_the_size_no_matter_its_area(self) -> None:
         """A panel takes the orientation its size suggests, whatever orientation the host reports: a wide space lays
         out as a strip even in a side dock, and a tall one as a side panel even in a bottom dock."""
-        self._host(STRIP, QSize(1400, 160))
+        self._host(STRIP, QSize(1400, 182))
         self.assertEqual(self.panel.orientation, STRIP)
         self._host(STRIP, QSize(200, 900))
         self.assertEqual(self.panel.orientation, SIDE)
         self.assertEqual(self.panel.overflow_widgets, [])
-        self._host(SIDE, QSize(1400, 160))
+        self._host(SIDE, QSize(1400, 182))
         self.assertEqual(self.panel.orientation, STRIP)
         self._host(SIDE, QSize(500, 600))
         self.assertEqual(self.panel.orientation, SIDE)
@@ -283,3 +323,98 @@ class DockPanelTest(IntraPaintTestCase):
         finally:
             host.release()
         self.assert_json_matches_snapshot(result, os.path.join(SNAPSHOT_DIR, 'dock_panel_sample.json'))
+
+    def _packed_columns(self, panel: PackedPanel) -> list[list[str]]:
+        """The titles of each packed column's sections, left to right."""
+        sections = {section.widget: section.title for section in panel.sections}
+        shown = [section for section in panel.sections if not section.widget.isHidden()]
+        by_parent: dict[QWidget, list] = {}
+        for section in shown:
+            by_parent.setdefault(section.widget.parentWidget(), []).append(section)
+        ordered = sorted(by_parent.values(), key=lambda group: group[0].widget.mapTo(panel, QPoint()).x())
+        return [[sections[section.widget] for section in group] for group in ordered]
+
+    def _packed_panel(self, size: QSize) -> PackedPanel:
+        panel = PackedPanel()
+        self._host(STRIP, size, panel)
+        panel.show()
+        return panel
+
+    def test_packed_sections_share_a_column_while_they_fit_the_height(self) -> None:
+        """Two short sections share a column when they fit the strip's height, and split into two columns when the
+        strip shrinks. A section that doesn't fit under the previous one starts a new column."""
+        panel = self._packed_panel(QSize(1400, 600))
+        self.assertEqual(self._packed_columns(panel), [['First', 'Second', 'Third']])
+        self._host(STRIP, QSize(1400, 320 + 2 * panel.inset), panel)
+        self.assertEqual(self._packed_columns(panel), [['First', 'Second'], ['Third']])
+        self._host(STRIP, QSize(1400, 160), panel)
+        self.assertEqual(self._packed_columns(panel), [['First'], ['Second'], ['Third']])
+        self._host(STRIP, QSize(1400, 600), panel)
+        self.assertEqual(self._packed_columns(panel), [['First', 'Second', 'Third']])
+
+    def test_collapsed_section_stacks_above_the_next_one(self) -> None:
+        """A collapsed section's header is short, so the next section fits under it, and opening it re-plans into a new
+        column."""
+        panel = self._packed_panel(QSize(1400, 240))
+        first, second = panel.sections[0].widget, panel.sections[1].widget
+        self.assertEqual(self._packed_columns(panel)[0], ['First'])
+        first.set_expanded(False)
+        self.assertEqual(self._packed_columns(panel)[0], ['First', 'Second'])
+        first.set_expanded(True)
+        self.assertNotEqual(self._packed_columns(panel)[0], ['First', 'Second'])
+        self.assertTrue(second.isVisibleTo(panel))
+
+    def test_collapsed_packed_section_draws_its_summary_below_the_title(self) -> None:
+        """In a packing strip a collapsed section's header is taller than a one-line header, and returns to one line
+        in a side panel."""
+        panel = self._packed_panel(QSize(1400, 600))
+        section = panel.sections[0].widget
+        section.set_summary('512 x 512, batch 4')
+        section.set_expanded(False)
+        collapsed_height = section.header_button.sizeHint().height()
+        section.set_expanded(True)
+        self.assertGreater(collapsed_height, section.header_button.sizeHint().height())
+        section.set_expanded(False)
+        self._host(SIDE, QSize(400, 600), panel)
+        self.assertEqual(section.header_button.sizeHint().height(), HEADER_HEIGHT)
+
+    def test_trailing_column_stays_in_place_while_the_middle_scrolls(self) -> None:
+        """The trailing column sits at the right edge, beside a scroll area whose content scrolls sideways under the
+        strip's width."""
+        panel = PackedPanel()
+        host = PanelHost(panel)
+        try:
+            tell_orientation(panel, STRIP, QSize(500, 130))
+            host.capture(QSize(500, 130))
+            scroll = panel.findChild(QScrollArea)
+            self.assertGreater(scroll.horizontalScrollBar().maximum(), 0)
+            trailing = _trailing_column(panel)
+            self.assertFalse(trailing.isHidden())
+            self.assertEqual(trailing.geometry().right() + 1, panel.width() - panel.inset)
+            scroll.horizontalScrollBar().setValue(scroll.horizontalScrollBar().maximum())
+            self.assertEqual(trailing.geometry().right() + 1, panel.width() - panel.inset)
+            self.assertLessEqual(scroll.geometry().right(), trailing.geometry().left())
+            tell_orientation(panel, SIDE, QSize(400, 600))
+            host.capture(QSize(400, 600))
+            self.assertTrue(trailing.isHidden())
+        finally:
+            host.release()
+
+    def test_packed_minimum_size_does_not_depend_on_history(self) -> None:
+        """The same size gives the same minimum size hint, whatever the panel showed before."""
+        size = QSize(1400, 320)
+        fresh = self._packed_panel(size)
+        fresh_minimum = fresh.minimumSizeHint()
+        used = self._packed_panel(QSize(1400, 600))
+        for visited in (QSize(1400, 160), QSize(300, 400), QSize(1400, 600)):
+            self._host(STRIP if visited.width() > 1000 else SIDE, visited, used)
+        self._host(STRIP, size, used)
+        self.assertEqual(used.minimumSizeHint(), fresh_minimum)
+
+    def test_panels_that_do_not_opt_in_keep_one_column_per_section(self) -> None:
+        """Without `set_column_packing` each strip section sits directly in the section layout, and no trailing column
+        shows."""
+        self._host(*SAMPLE_SIZES['strip_wide'])
+        for section in self.panel.sections:
+            self.assertIs(section.widget.parentWidget(), self.panel.section_layout.parentWidget())
+        self.assertEqual(len(self.panel.findChildren(QScrollArea)), 2)
