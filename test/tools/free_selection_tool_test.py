@@ -4,8 +4,7 @@ from typing import Sequence
 from unittest import mock
 
 import numpy as np
-from PySide6.QtCore import QEvent, QPoint, QRect, Qt
-from PySide6.QtGui import QKeyEvent
+from PySide6.QtCore import QPoint, QRect, Qt
 from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
@@ -13,6 +12,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.tools.free_selection_tool import FreeSelectionTool
 from src.undo_stack import UndoStack
 from src.util.visual.selection_mode import SelectionMode
+from test.base_test_case import press_key
 from test.tools.context_pin_gesture_tests import ContextPinGestureTests
 from test.tools.selection_tool_test_case import SelectionToolTestCase, rect_mask
 
@@ -47,7 +47,7 @@ class FreeSelectionToolTest(ContextPinGestureTests, SelectionToolTestCase):
 
     def _press_key(self, key: Qt.Key) -> None:
         """Sends a key press through the application, where HotkeyFilter handles the tool's keys."""
-        QApplication.sendEvent(self.image_viewer, QKeyEvent(QEvent.Type.KeyPress, key, Qt.KeyboardModifier.NoModifier))
+        press_key(self.image_viewer, key)
 
     def _set_deselect_mode(self) -> None:
         """Switches the tool to deselecting through the shared selection mode."""

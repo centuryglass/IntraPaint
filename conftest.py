@@ -17,6 +17,8 @@ prepare the environment that the Qt-based tests rely on:
   tests that change settings can't rewrite the committed files.
 - Apply the style, theme and font size from the app config fixture, so text metrics and colors match on every
   machine instead of following the platform's default font and palette.
+- Fail any test during which `HotkeyFilter` received an event source that isn't a QObject, the sign of a stale PySide
+  wrapper. Failing where it is first seen narrows down which test left it.
 - Flush C stdio after each test, so output native libraries print is captured with the test.
 - Fail any test that opens a modal dialog or menu. Under the offscreen platform nothing can close
   one, so it would block the whole run until the CI job times out.
@@ -194,6 +196,25 @@ def _fail_on_swallowed_modal(request: pytest.FixtureRequest):
     yield
     if _blocked_modals and not request.node.stash.get(_CALL_FAILED, False):
         pytest.fail(f'Modal dialog blocked during the test: {"; ".join(_blocked_modals)}', pytrace=False)
+
+
+@pytest.fixture(autouse=True)
+def _fail_on_stale_hotkey_source(request: pytest.FixtureRequest):
+    """Fail a test during which `HotkeyFilter.eventFilter` received a source that isn't a QObject.
+
+    The filter returns False for such a source, and PySide would discard an exception raised there, so the hook only
+    records the source's type. A test whose body already failed is left alone, so the failure is reported once.
+    """
+    from src.hotkey_filter import HotkeyFilter  # pylint: disable=import-outside-toplevel
+    stale_types: list[str] = []
+    HotkeyFilter.stale_source_hook = lambda source: stale_types.append(type(source).__qualname__)
+    try:
+        yield
+    finally:
+        HotkeyFilter.stale_source_hook = None
+    if stale_types and not request.node.stash.get(_CALL_FAILED, False):
+        pytest.fail(f'HotkeyFilter received non-QObject event sources, stale PySide wrappers: '
+                    f'{", ".join(sorted(set(stale_types)))}', pytrace=False)
 
 
 # The C runtime libmypaint writes through. The Windows libmypaint build links msvcrt, not Python's own C runtime.
