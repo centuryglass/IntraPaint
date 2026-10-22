@@ -15,6 +15,7 @@ from src.ui.panel.tool_control_panels.free_selection_panel import FreeSelectionP
 from src.ui.panel.tool_control_panels.selection_panel import SelectionPanel
 from src.ui.panel.tool_control_panels.shape_selection_panel import ShapeSelectionPanel
 from src.ui.widget.panel_section import PanelSection
+from src.util.layout import layout_contents
 from src.util.visual.selection_fill_area import FillArea
 from src.util.visual.selection_mode import SelectionMode
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG
@@ -112,8 +113,8 @@ class SelectionPanelsTest(IntraPaintTestCase):
     def test_mode_section_comes_first(self) -> None:
         """Every panel starts with the Mode section, and ends with the Selection section."""
         for name, panel in self.panels.items():
-            sections = [item.widget().title for item in (panel._layout.itemAt(i)  # pylint: disable=protected-access
-                                                         for i in range(panel._layout.count()))]
+            sections = [section.title for section in layout_contents(panel._layout)  # pylint: disable=protected-access
+                        if isinstance(section, PanelSection)]
             self.assertTrue(sections[0].startswith('Mode'), name)
             self.assertEqual(sections[-1], 'Selection', name)
 

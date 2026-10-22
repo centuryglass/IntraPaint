@@ -13,7 +13,7 @@ from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.ui.layout.reactive_layout_widget import ReactiveLayoutWidget
 from src.ui.widget.key_hint_label import KeyHintLabel
-from src.util.layout import clear_layout, wrap_widget_with_key_hints
+from src.util.layout import clear_layout, layout_contents, wrap_widget_with_key_hints
 from src.util.shared_constants import FLOAT_MIN, FLOAT_MAX, MIN_NONZERO, ASPECT_RATIO_CHECK_LABEL, INT_MAX
 from src.util.signals_blocked import signals_blocked
 from src.util.visual.geometry_utils import get_rect_transformation, get_scaled_placement
@@ -150,30 +150,29 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
             for col_num in range(grid.columnCount()):
                 grid.setColumnStretch(col_num, 0)
 
-        def _get_grid_item(row: int, column: int) -> tuple[QWidget | None, int, int]:
-            item = grid.itemAtPosition(row, column)
-            if item is None:
-                return None, 0, 0
-            widget = item.widget()
-            if widget is None:
-                return None, 0, 0
-            index = grid.indexOf(widget)
-            _, _, row_span, column_span = grid.getItemPosition(index)
-            assert row_span is not None
-            assert column_span is not None
-            return widget, row_span, column_span
+        def _grid_widgets() -> dict[tuple[int, int], tuple[QWidget, int, int]]:
+            """Maps every cell a widget covers to the widget and its row and column spans."""
+            cells: dict[tuple[int, int], tuple[QWidget, int, int]] = {}
+            for index, widget in enumerate(layout_contents(grid)):
+                if isinstance(widget, QWidget):
+                    row, column, row_span, column_span = grid.getItemPosition(index)
+                    for covered_row in range(row, row + row_span):
+                        for covered_column in range(column, column + column_span):
+                            cells[(covered_row, covered_column)] = (widget, row_span, column_span)
+            return cells
 
         def _final_grid_adjustments(hide_key_hints=False) -> None:
             row_heights = {}
             column_widths = {}
+            grid_widgets = _grid_widgets()
             for row in range(grid.rowCount()):
                 if row not in row_heights:
                     row_heights[row] = grid.rowStretch(row)
                 for column in range(grid.columnCount()):
                     if column not in column_widths:
                         column_widths[column] = grid.columnStretch(column)
-                    widget, row_span, column_span = _get_grid_item(row, column)
-                    if widget is not None:
+                    if (row, column) in grid_widgets:
+                        widget, row_span, column_span = grid_widgets[(row, column)]
                         widget_size = widget.sizeHint()
                         row_heights[row] = max(row_heights[row], widget_size.height() // row_span)
                         column_widths[column] = max(column_widths[column], widget_size.width() // column_span)

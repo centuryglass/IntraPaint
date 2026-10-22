@@ -15,6 +15,7 @@ to the committed file, then replace the committed file with it. A test that pass
 over from an earlier failure.
 """
 import difflib
+import gc
 import json
 import os
 import tempfile
@@ -24,7 +25,8 @@ from typing import Any, Optional
 import numpy as np
 from PySide6.QtCore import QCoreApplication, QEvent, Qt
 from PySide6.QtGui import QImage, QKeyEvent
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication, QLayoutItem, QWidget
+from shiboken6 import getAllValidWrappers
 
 from src.config.a1111_config import A1111Config
 from src.config.application_config import AppConfig
@@ -222,6 +224,16 @@ def assert_json_matches_snapshot(actual: Any, snapshot_path: str, msg: Optional[
     raise AssertionError(message if msg is None else f'{msg}: {message}')
 
 
+def layout_item_wrapper_count() -> int:
+    """Returns the number of live Python wrappers of layout items (`QWidgetItem`, `QSpacerItem` and the like).
+
+    Only `QLayout.itemAt`, `itemAtPosition` and `takeAt` create these. A test that leaves some behind ran code that
+    wraps items it should not keep. See `test/layout_item_calls_test.py`.
+    """
+    return sum(1 for wrapper in getAllValidWrappers() if isinstance(wrapper, QLayoutItem)
+               and not isinstance(wrapper, QWidget))
+
+
 class IntraPaintTestCase(unittest.TestCase):
     """Base class for IntraPaint tests, keeping tests independent of the order they run in.
 
@@ -239,6 +251,7 @@ class IntraPaintTestCase(unittest.TestCase):
         os.chdir(PROJECT_ROOT)
         reset_singletons()
         self._existing_widgets = parentless_widgets()
+        self._layout_item_wrappers = layout_item_wrapper_count()
 
     def tearDown(self) -> None:
         reset_singletons()
@@ -247,7 +260,12 @@ class IntraPaintTestCase(unittest.TestCase):
         QApplication.clipboard().clear()
         delete_widgets_created_since(self._existing_widgets)
         del self._existing_widgets
+        gc.collect()
+        leaked = layout_item_wrapper_count() - self._layout_item_wrappers
+        del self._layout_item_wrappers
         super().tearDown()
+        self.assertLessEqual(leaked, 0, f'{leaked} layout item wrappers outlived the test (see'
+                                        f' layout_item_wrapper_count)')
 
     def assert_image_matches_golden(self, actual: QImage, golden_path: str, msg: Optional[str] = None) -> None:
         """Asserts that an image has the same pixels as a committed golden image. See assert_image_matches_golden."""
