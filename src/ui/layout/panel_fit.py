@@ -312,7 +312,7 @@ class FitPlanner:
         self._finish = finish
         self._placement: Optional[Placement] = None
         self._orientation: Optional[Orientation] = None
-        # The orientation the latest update asked for, which a flexible update does not plan for:
+        # The orientation the latest update asked for, or None when planning picked it:
         self._requested: Optional[Orientation] = None
         self._available: Optional[QSize] = None
         self._applied = False
@@ -332,12 +332,12 @@ class FitPlanner:
         """The available size being planned for, or from the latest update, or None before the first one."""
         return self._available
 
-    def update(self, orientation: Orientation, available: QSize, force: bool = False, flexible: bool = False) -> bool:
+    def update(self, orientation: Optional[Orientation], available: QSize, force: bool = False) -> bool:
         """Plans for an orientation and available size and applies the result, returning whether the placement or
         orientation changed. Skips planning when neither input changed, unless `force` is set.
 
-        With `flexible` set, `plan_orientation` picks the orientation from the available size and the content's fit;
-        `orientation` only marks whether the input changed. Without it, the orientation is planned directly.
+        With `orientation` None, `plan_orientation` picks the orientation from the available size and the content's
+        fit.
         """
         if self._applied and not force and orientation == self._requested and available == self._available:
             return False
@@ -355,11 +355,12 @@ class FitPlanner:
 
         in_use = None if self._placement is None or self._orientation is None else (self._orientation,
                                                                                      self._placement)
-        if flexible:
+        if orientation is None:
             orientation, placement = plan_orientation(self._items, available, _measure, in_use)
         else:
+            fixed = orientation
             current = self._placement if orientation == self._orientation else None
-            placement = plan_fit(self._items, available, orientation, lambda p: _measure(orientation, p), current)
+            placement = plan_fit(self._items, available, fixed, lambda p: _measure(fixed, p), current)
         if self._prepare is not None and prepared[-1:] != [orientation]:
             self._prepare(orientation)
         self._apply(orientation, placement)

@@ -1,9 +1,8 @@
 """A `QDockWidget` that hosts one main window panel and tells the panel where it is docked.
 
-- A `DockPanel` gets its orientation and the size it fills (which leaves out the dock's title bar) through
-  `set_host_facts`. The orientation comes from the size alone (`src.ui.layout.panel_fit.orientation_for_size`), and
-  the panel plans from them. Other content with a `set_orientation` method gets its orientation from the dock's area
-  (`orientation_for_dock`), until it migrates to `DockPanel`.
+- A `DockPanel` gets the size it fills, which leaves out the dock's title bar, through `set_host_facts`, and picks
+  its own orientation. Other content with a `set_orientation` method gets its orientation from the dock's area
+  (`src.ui.layout.panel_fit.orientation_for_dock`), until it migrates to `DockPanel`.
 - A tab group shows one dock at a time, and the edge rails act as its tabs. Opening a dock with `open_in_group`, its
   key, its toggle action or a mouse drop into a group closes the group's other docks. A dock in the background of a
   group is closed. `show` opens a dock without closing the others, so code opens docks with `open_in_group`.
@@ -26,7 +25,7 @@ from PySide6.QtWidgets import QDockWidget, QMainWindow, QWidget
 
 from src.hotkey_filter import HotkeyFilter
 from src.ui.layout.dock_panel import DockPanel
-from src.ui.layout.panel_fit import Orientation, orientation_for_dock, orientation_for_size
+from src.ui.layout.panel_fit import Orientation, orientation_for_dock
 from src.ui.window.dock_notch import DockNotch
 from src.ui.window.dock_state import read_dock_groups
 from src.ui.window.qt_dock_drag import start_qt_dock_drag
@@ -72,7 +71,7 @@ class PanelDock(QDockWidget):
         self._content: Optional[QWidget] = None
         self._open_when_available = True
         self._showing = False
-        # The orientation last reported to the content:
+        # The orientation last reported to content with `set_orientation`:
         self._orientation: Optional[Orientation] = None
         self._no_title_bar = _NoTitleBar()
         self._floating_title_bar: Optional[QWidget] = None
@@ -261,12 +260,7 @@ class PanelDock(QDockWidget):
         if self._content is None:
             return
         if isinstance(self._content, DockPanel):
-            # The panel plans from the size it fills, so the orientation is its own choice even in an area that
-            # doesn't match its shape:
-            size = self._content.size()
-            orientation = orientation_for_size(size, self._orientation)
-            self._orientation = orientation
-            self._content.set_host_facts(orientation, size)
+            self._content.set_host_facts(self._content.size())
             return
         orientation = orientation_for_dock(self._window.dockWidgetArea(self), self.isFloating(), self.size(),
                                            self._orientation)

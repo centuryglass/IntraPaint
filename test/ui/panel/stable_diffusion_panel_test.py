@@ -23,6 +23,7 @@ from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 from test.base_test_case import IntraPaintTestCase
 from test.ui.panel.tool_panel_test import settle_layouts
+from test.ui.panel_capture import tell_orientation
 
 SIDE = Orientation.SIDE
 STRIP = Orientation.STRIP
@@ -30,7 +31,7 @@ STRIP = Orientation.STRIP
 
 def _host(panel: StableDiffusionPanel, orientation: Orientation, size: QSize) -> None:
     panel.resize(size)
-    panel.set_host_facts(orientation, size)
+    tell_orientation(panel, orientation, size)
     settle_layouts(panel)
 
 

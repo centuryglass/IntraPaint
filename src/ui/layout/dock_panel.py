@@ -1,9 +1,8 @@
 """Base class for panels that show as much as fits in the space their host reports.
 
 A `DockPanel` subclass declares sections and a priority for each control in `build`. The host calls `set_host_facts`
-when the dock's orientation or size changes, and the panel plans again whenever it is resized. The host's orientation
-is informational: the panel takes whichever orientation the size and its content fit best
-(`src.ui.layout.panel_fit.plan_orientation`). Planning
+when the size the panel fills changes, and the panel plans again whenever it is resized. The panel picks its own
+orientation from that size and its content's fit (`src.ui.layout.panel_fit.plan_orientation`). Planning
 (`src.ui.layout.panel_fit`) moves controls between their sections and the overflow area without rebuilding them, so
 their state survives.
 
@@ -152,13 +151,12 @@ class PanelLayout:
 
 
 class DockPanel(QWidget):
-    """A panel that shows as much of its content as fits its dock's orientation and size."""
+    """A panel that shows as much of its content as fits its dock's size, in the orientation that fits it best."""
 
     def __init__(self, name: str = '', icon: Optional[QIcon] = None, key_text: str = '',
                  parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        # The orientation the host reports, and the one the panel is arranged in:
-        self._preferred_orientation = Orientation.SIDE
+        # The orientation the panel is arranged in:
         self._orientation = Orientation.SIDE
         self._arranged_orientation: Optional[Orientation] = None
         self._layout_model = PanelLayout()
@@ -266,11 +264,6 @@ class DockPanel(QWidget):
         return self._orientation
 
     @property
-    def preferred_orientation(self) -> Orientation:
-        """The orientation from the latest host update."""
-        return self._preferred_orientation
-
-    @property
     def available_size(self) -> Optional[QSize]:
         """The size being planned for, or the latest plan's, or None before the first plan."""
         return self._planner.available if self._planner is not None else None
@@ -299,24 +292,26 @@ class DockPanel(QWidget):
         self._extra_items.append((item, apply))
         self._planner = None
 
-    def set_host_facts(self, orientation: Orientation, size: QSize) -> None:
-        """Called by the host when the dock's orientation or size changes, with the size the panel fills. Plans again
-        if either changed. `orientation` is kept as `preferred_orientation`; `src.ui.layout.panel_fit.plan_orientation`
-        picks the orientation from the size and the content's fit."""
-        self._preferred_orientation = orientation
-        self._fit_planner().update(orientation, size, flexible=True)
+    def set_host_facts(self, size: QSize) -> None:
+        """Called by the host when the size the panel fills changes. Plans again if it changed, picking the
+        orientation with `src.ui.layout.panel_fit.plan_orientation`."""
+        self._fit_planner().update(None, size)
+
+    def plan_in(self, orientation: Orientation, size: QSize) -> None:
+        """Plans for `size` in `orientation` alone. Later plans treat it as the arrangement in use, so it holds while
+        it fits as well as the other orientation and `size` is within `HYSTERESIS` of a square."""
+        self._fit_planner().update(orientation, size)
 
     def refit(self) -> None:
         """Plans again for the latest size, after the content's own size changed."""
         planner = self._fit_planner()
         available = planner.available
-        planner.update(self._preferred_orientation, available if available is not None else self.size(), force=True,
-                       flexible=True)
+        planner.update(None, available if available is not None else self.size(), force=True)
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
         """Plans for the new size."""
         super().resizeEvent(event)
-        self._fit_planner().update(self._preferred_orientation, self.size(), flexible=True)
+        self._fit_planner().update(None, self.size())
 
     def arrange(self, orientation: Orientation) -> None:
         """Lays out structure that depends only on the orientation. Called when it changes, before any placement.
