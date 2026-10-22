@@ -3,9 +3,12 @@ import re
 import sys
 
 from PySide6.QtCore import QPoint
+from shiboken6 import delete as sip_delete
 from PySide6.QtGui import QImage, QPalette
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QWidget
 
+from src.config.application_config import AppConfig
+from src.config.key_config import KeyConfig
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.util.visual.keycap import KEYCAP_DEPTH
 from src.util.visual.text_drawing_utils import rich_text_key_hint
@@ -33,6 +36,17 @@ class KeyHintLabelTest(IntraPaintTestCase):
             self.assertEqual(image.pixelColor(QPoint(center_x, y)), ink)
         self.assertEqual(image.pixelColor(QPoint(center_x, bottom - KEYCAP_DEPTH - 1)),
                          palette.color(QPalette.ColorRole.WindowText))
+
+    def test_config_connections_end_with_parent_deletion(self) -> None:
+        """Deleting the label's parent removes its config registrations."""
+        config_key = KeyConfig.SELECTION_ADD_MODIFIER
+        parent = QWidget()
+        label = KeyHintLabel(config_key=config_key, parent=parent)
+        self.assertIn(label, KeyConfig()._connected[config_key])
+        self.assertIn(label, AppConfig()._connected[AppConfig.KEY_HINT_FONT_SIZE])
+        sip_delete(parent)
+        self.assertNotIn(label, KeyConfig()._connected[config_key])
+        self.assertNotIn(label, AppConfig()._connected[AppConfig.KEY_HINT_FONT_SIZE])
 
     def test_text_uses_shadow_color(self) -> None:
         """Key text is drawn in the shadow color, to contrast with the keycap fill."""
