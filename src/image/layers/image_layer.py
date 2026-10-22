@@ -109,7 +109,7 @@ class ImageLayer(TransformLayer):
         """Creates a copy of this layer."""
         layer = ImageLayer(self._image.copy(), self.name + ' copy')
         layer.set_opacity(self.opacity)
-        layer.set_visible(self.visible)
+        layer.set_visible(self.get_visible())
         layer.set_composition_mode(self.composition_mode)
         layer.set_transform(self.transform)
         return layer
@@ -395,7 +395,7 @@ class ImageLayer(TransformLayer):
     def save_state(self) -> Any:
         """Export the current layer state, so it can be restored later."""
         return ImageLayerState(self.name,
-                               self.visible,
+                               self.get_visible(),
                                self.opacity,
                                self.composition_mode,
                                self.transform,

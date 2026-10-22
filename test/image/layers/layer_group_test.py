@@ -62,6 +62,27 @@ class LayerGroupTest(IntraPaintTestCase):
         self.group.visible = True
         self.assertTrue(self.group.visible)
 
+    def test_canvas_resize_undo_keeps_child_visibility_in_hidden_group(self) -> None:
+        """Undoing a canvas resize restores each child's own visibility, not the hidden group's."""
+        text_layer = self.image_stack.create_text_layer(layer_parent=self.group)
+        self.layers[1].visible = False
+        self.group.visible = False
+        self.image_stack.resize_canvas(QSize(600, 600), 10, 10)
+        UndoStack().undo()
+        self.group.visible = True
+        self.assertEqual([layer.visible for layer in (*self.layers, text_layer)], [True, False, True])
+
+    def test_copies_in_hidden_group_keep_own_visibility(self) -> None:
+        """Copying a layer or group inside a hidden group keeps the copy's own visibility."""
+        nested = self.image_stack.create_layer_group('nested', layer_parent=self.group)
+        self.image_stack.create_layer('nested child', layer_parent=nested)
+        text_layer = self.image_stack.create_text_layer(layer_parent=self.group)
+        self.group.visible = False
+        copies = [layer.copy() for layer in (self.layers[0], nested, text_layer)]
+        copies.append(text_layer.copy_as_image_layer())
+        self.assertTrue(all(copy.visible for copy in copies))
+        self.assertTrue(copies[1].get_layer_by_index(0).visible)
+
 
 if __name__ == '__main__':
     unittest.main()

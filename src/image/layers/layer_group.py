@@ -165,7 +165,7 @@ class LayerGroup(LayerParent):
         copy = LayerGroup(self.name + ' (copy)')
         copy.set_opacity(self.opacity)
         copy.set_composition_mode(self.composition_mode)
-        copy.set_visible(self.visible)
+        copy.set_visible(self.get_visible())
         copy.set_isolate(self.isolate)
         for layer in self._layers:
             child_layer_copy = layer.copy()
@@ -685,7 +685,7 @@ class LayerGroupState:
     def __init__(self, layer: LayerGroup) -> None:
         self.name = layer.name
         self.id = layer.id
-        self.visible = layer.visible
+        self.visible = layer.get_visible()
         self.opacity = layer.opacity
         self.mode = layer.composition_mode
         self.isolate = layer.isolate
