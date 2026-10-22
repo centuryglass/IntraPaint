@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Optional, Callable, cast, TypeAlias
 
 from PySide6.QtCore import Qt, QObject, QEvent, Signal, QTimer, SIGNAL
-from PySide6.QtGui import QKeyEvent, QKeySequence
+from PySide6.QtGui import QKeyEvent, QKeySequence, QGuiApplication, QWindow
 from PySide6.QtWidgets import QApplication, QWidget, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox
 
 from src.config.application_config import AppConfig
@@ -22,7 +22,12 @@ KeybindingAction: TypeAlias = Callable[[], bool] | Callable[[], None] | Callable
 
 
 class HotkeyFilter(QObject):
-    """Registers and handles window-level hotkeys."""
+    """Registers and handles window-level hotkeys.
+
+    The filter is installed on each window's QWindow when that window first takes focus, so it sees key presses
+    before any widget does. A key event sent straight to a widget with `QApplication.sendEvent` never reaches a
+    QWindow, so it skips every binding. To reach the bindings, send the key to the window's QWindow.
+    """
 
     shared_instance: Optional['HotkeyFilter'] = None
     modifiers_changed = Signal(Qt.KeyboardModifier)
@@ -63,8 +68,9 @@ class HotkeyFilter(QObject):
         HotkeyFilter.shared_instance = self
         self._bindings: dict[Qt.Key | int, list[HotkeyFilter.KeyBinding]] = {}
         app = QApplication.instance()
-        assert app is not None, 'No QApplication initialized'
-        app.installEventFilter(self)
+        assert isinstance(app, QGuiApplication), 'No QApplication initialized'
+        app.focusWindowChanged.connect(self.watch_window)
+        self.watch_window(QGuiApplication.focusWindow())
         self._default_focus: Optional[QWidget] = None
         self._last_modifier_state = QApplication.keyboardModifiers()
         self._config_bindings: dict[str, Qt.Key | int] = {}
@@ -85,6 +91,14 @@ class HotkeyFilter(QObject):
         self._last_modifier_state = QApplication.keyboardModifiers()
         if self.receivers(SIGNAL('modifiers_changed(Qt::KeyboardModifier)')) > 0:
             self.modifiers_changed.disconnect()
+
+    def watch_window(self, window: Optional[QWindow]) -> None:
+        """Handles key presses sent to a window, ahead of the window's other event filters.
+
+        Watching a window twice doesn't install the filter twice.
+        """
+        if window is not None:
+            window.installEventFilter(self)
 
     def default_focus(self) -> Optional[QWidget]:
         """Returns the widget set as the default input focus, if any."""

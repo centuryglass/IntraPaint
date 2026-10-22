@@ -8,6 +8,8 @@
 
 All three assertions are also available as IntraPaintTestCase methods.
 
+`press_key` sends a key press the way a window receives one, so `HotkeyFilter` bindings handle it.
+
 Updating a golden image or snapshot: run the failing test, check the `*_tested.png` or `*_tested.json` it wrote next
 to the committed file, then replace the committed file with it. A test that passes deletes any `*_tested` file left
 over from an earlier failure.
@@ -20,8 +22,8 @@ import unittest
 from typing import Any, Optional
 
 import numpy as np
-from PySide6.QtCore import QCoreApplication, QEvent
-from PySide6.QtGui import QImage
+from PySide6.QtCore import QCoreApplication, QEvent, Qt
+from PySide6.QtGui import QImage, QKeyEvent
 from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.a1111_config import A1111Config
@@ -82,6 +84,20 @@ def delete_widgets_created_since(existing: set[QWidget]) -> None:
     for widget in parentless_widgets() - existing:
         widget.deleteLater()
     QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+
+
+def press_key(widget: QWidget, key: Qt.Key, modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier) -> None:
+    """Sends a key press to the QWindow of a widget's window, which forwards it to that window's focus widget.
+
+    `HotkeyFilter` only sees key presses sent to a QWindow, so this watches the window first. The window doesn't need
+    to be shown or focused.
+    """
+    window = widget.window()
+    window.winId()  # Creates the QWindow.
+    handle = window.windowHandle()
+    assert handle is not None
+    HotkeyFilter.instance().watch_window(handle)
+    QApplication.sendEvent(handle, QKeyEvent(QEvent.Type.KeyPress, key, modifiers))
 
 
 def tested_image_path(golden_path: str) -> str:

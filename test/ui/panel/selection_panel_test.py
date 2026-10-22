@@ -2,8 +2,7 @@
 import sys
 from unittest.mock import MagicMock
 
-from PySide6.QtCore import QEvent, QPoint, QSize, Qt
-from PySide6.QtGui import QKeyEvent
+from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtWidgets import QApplication, QCheckBox, QLabel, QSpinBox
 
 from src.config.cache import Cache
@@ -19,7 +18,7 @@ from src.ui.widget.panel_section import PanelSection
 from src.util.visual.selection_fill_area import FillArea
 from src.util.visual.selection_mode import SelectionMode
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG
-from test.base_test_case import IntraPaintTestCase
+from test.base_test_case import IntraPaintTestCase, press_key
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -108,8 +107,7 @@ class SelectionPanelsTest(IntraPaintTestCase):
         }
 
     def _press(self, key: Qt.Key) -> None:
-        QApplication.sendEvent(self.panels['free'], QKeyEvent(QEvent.Type.KeyPress, key,
-                                                              Qt.KeyboardModifier.NoModifier))
+        press_key(self.panels['free'], key)
 
     def test_mode_section_comes_first(self) -> None:
         """Every panel starts with the Mode section, and ends with the Selection section."""
