@@ -464,6 +464,13 @@ class SelectionLayerOutlineTest(SelectionLayerOperationTestCase):
         self.assert_selection(rect_mask(QRect(20, 20, 1, 1)))
         self.assertEqual(self._outline_bounds(), [QRect(20, 20, 1, 1)])
 
+    def test_straight_edges_have_only_corner_vertices(self) -> None:
+        """A rectangle's polygon has one vertex per corner, not one per boundary pixel."""
+        self._paint(QRect(4, 6, 20, 12))
+        outline = self.selection_layer.outline
+        self.assertEqual(len(outline), 1)
+        self.assertLessEqual(outline[0].size(), 5)  # Four corners, plus the closing point if the trace repeats one.
+
     def test_disjoint_regions(self) -> None:
         """Separate regions get separate polygons."""
         self.selection_layer.set_image(self._image_with(QRect(2, 2, 5, 5), QRect(20, 4, 3, 8)))
