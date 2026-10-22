@@ -3,8 +3,7 @@
 from unittest import mock
 
 import numpy as np
-from PySide6.QtCore import QEvent, QPoint, QRect, Qt
-from PySide6.QtGui import QKeyEvent
+from PySide6.QtCore import QPoint, QRect, Qt
 from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
@@ -13,6 +12,7 @@ from src.ui.panel.tool_control_panels.shape_selection_panel import ShapeSelectio
 from src.undo_stack import UndoStack
 from src.util.visual.selection_mode import SelectionMode
 from src.util.visual.shape_mode import ShapeMode
+from test.base_test_case import press_key
 from test.tools.context_pin_gesture_tests import ContextPinGestureTests
 from test.tools.selection_tool_test_case import SelectionToolTestCase, rect_mask, mask_bounds
 
@@ -173,8 +173,7 @@ class ShapeSelectionToolTest(ContextPinGestureTests, SelectionToolTestCase):
             self.assertEqual(Cache().get(Cache.SELECTION_MODE), expected.value)
 
     def _press_key(self, key: Qt.Key) -> None:
-        QApplication.sendEvent(self.image_viewer, QKeyEvent(QEvent.Type.KeyPress, key,
-                                                            Qt.KeyboardModifier.NoModifier))
+        press_key(self.image_viewer, key)
 
     def test_repeating_the_tool_key_toggles_the_shape(self) -> None:
         """Pressing the shape selection tool's key while the tool is active switches between rectangle and
