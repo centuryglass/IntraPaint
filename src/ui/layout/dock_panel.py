@@ -31,7 +31,7 @@ from typing import Callable, Optional, Sequence
 
 from PySide6.QtCore import QEvent, QMargins, QSize, Qt
 from PySide6.QtGui import QIcon, QResizeEvent
-from PySide6.QtWidgets import (QApplication, QBoxLayout, QFrame, QHBoxLayout, QLabel, QScrollArea, QSizePolicy,
+from PySide6.QtWidgets import (QApplication, QBoxLayout, QFrame, QHBoxLayout, QLabel, QScrollArea, QSizePolicy, QStyle,
                                QVBoxLayout, QWidget)
 
 from src.ui.layout.panel_fit import (REQUIRED, STRIP_SECTION_MAX_WIDTH, STRIP_SECTION_MIN_WIDTH, FitItem, FitPlanner,
@@ -205,7 +205,9 @@ class DockPanel(QWidget):
         self._scroll.setWidgetResizable(True)
         self._scroll.setFrameShape(QFrame.Shape.NoFrame)
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
+        # The inset keeps content off the window edge. The style supplies it, so it follows the font size and DPI:
+        self._inset = self.style().pixelMetric(QStyle.PixelMetric.PM_LayoutLeftMargin, None, self)
+        outer.setContentsMargins(self._inset, self._inset, self._inset, self._inset)
         outer.addWidget(self._header)
         # The pinned column sits left of the scroll area and the trailing column right of it:
         self._pinned = _PinnedColumn()
@@ -305,6 +307,12 @@ class DockPanel(QWidget):
         back."""
         return self._section_layout
 
+    @property
+    def inset(self) -> int:
+        """The margin between the panel's edges and everything in it, taken from the style. `available_size` is the
+        panel's size less the inset on each side."""
+        return self._inset
+
     def content_margins(self) -> QMargins:
         """Returns the margins between the panel's edges and its scrolled content."""
         return self._body_layout.contentsMargins()
@@ -351,23 +359,28 @@ class DockPanel(QWidget):
     def set_host_facts(self, size: QSize) -> None:
         """Called by the host when the size the panel fills changes. Plans again if it changed, picking the
         orientation with `src.ui.layout.panel_fit.plan_orientation`."""
-        self._fit_planner().update(None, size)
+        self._fit_planner().update(None, self._inside_inset(size))
+
+    def _inside_inset(self, size: QSize) -> QSize:
+        """Returns the size left for planning once the inset around the panel's content is removed."""
+        return QSize(max(size.width() - 2 * self._inset, 0), max(size.height() - 2 * self._inset, 0))
 
     def plan_in(self, orientation: Orientation, size: QSize) -> None:
         """Plans for `size` in `orientation` alone. Later plans treat it as the arrangement in use, so it holds while
         it fits as well as the other orientation and `size` is within `HYSTERESIS` of a square."""
-        self._fit_planner().update(orientation, size)
+        self._fit_planner().update(orientation, self._inside_inset(size))
 
     def refit(self) -> None:
         """Plans again for the latest size, after the content's own size changed."""
         planner = self._fit_planner()
         available = planner.available
-        planner.update(None, available if available is not None else self.size(), force=True)
+        planner.update(None, available if available is not None else self._inside_inset(self.size()),
+                       force=True)
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
         """Plans for the new size."""
         super().resizeEvent(event)
-        self._fit_planner().update(None, self.size())
+        self._fit_planner().update(None, self._inside_inset(self.size()))
 
     def arrange(self, orientation: Orientation) -> None:
         """Lays out structure that depends only on the orientation. Called when it changes, before any placement.

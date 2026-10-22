@@ -2,54 +2,54 @@
   "minimum": {
     "problems": [],
     "size": [
-      59,
-      59
+      81,
+      81
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: QScrollArea is 29x382, minimum 59x59"
+      "squeezed: QScrollArea is 18x382, minimum 59x59"
     ],
     "size": [
-      29,
-      382
+      40,
+      404
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      535,
-      382
+      557,
+      404
     ]
   },
   "short": {
     "problems": [
-      "squeezed: QScrollArea is 535x29, minimum 59x59"
+      "squeezed: QScrollArea is 535x18, minimum 59x59"
     ],
     "size": [
-      535,
-      29
+      557,
+      40
     ]
   },
   "strip_minimum": {
     "problems": [],
     "size": [
-      59,
-      59
+      81,
+      81
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      535,
-      1200
+      557,
+      1212
     ]
   },
   "wide": {
     "problems": [],
     "size": [
-      1605,
-      382
+      1671,
+      404
     ]
   }
 }

@@ -425,7 +425,7 @@ class MainWindowDockTest(IntraPaintTestCase):
                 window.resizeDocks([window.tools_dock], [extent], axis)
                 window.layout().activate()
                 self.assertEqual(panel.orientation, orientation)
-                self.assertEqual(panel.available_size, panel.size())
+                self.assertEqual(panel.available_size, panel.size() - QSize(2 * panel.inset, 2 * panel.inset))
 
     def test_close_saves_dock_layout(self) -> None:
         """Closing the window stores the dock layout next to the window geometry."""
