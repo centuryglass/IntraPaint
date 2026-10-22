@@ -429,14 +429,15 @@ class SelectionLayer(ImageLayer):
             y_offset += final_local_bounds.y()
         else:
             self._outline_polygons = []
-        # Edge detection needs to scale the mask by 3 for cv2 to avoid approximating away the pixel edges:
+        # Scaling the mask by 3 puts contour points on pixel edges instead of pixel centers. CHAIN_APPROX_SIMPLE drops
+        # only the points inside straight runs, so the polygons still trace every pixel edge.
         cv2_image = np.kron(mask, np.ones((3, 3), dtype=np.uint8))
-        contours, _ = cv2.findContours(cv2_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        contours, _ = cv2.findContours(cv2_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         for contour in contours:
-            polygon = QPolygonF()
-            for point in contour:
-                polygon.append(QPointF(round(point[0][0] / 3) + x_offset, round(point[0][1] / 3) + y_offset))
-            self._outline_polygons.append(polygon)
+            points = np.rint(contour[:, 0, :] / 3.0)
+            points[:, 0] += x_offset
+            points[:, 1] += y_offset
+            self._outline_polygons.append(QPolygonF([QPointF(x, y) for x, y in points.tolist()]))
 
     def get_selection_bounds(self) -> Optional[QRect]:
         """Returns the bounds of all selected pixels in image coordinates, inside or outside the generation area.
