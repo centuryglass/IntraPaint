@@ -9,8 +9,10 @@ same functions, so a screenshot shows what a test checked.
   and `find_arrangement_problems` lists stretched fields, empty bands, cramped panels, controls hidden while there is
   room, misplaced leftover space and misaligned neighbors. Their results depend on
   font metrics, which the bundled theme font fixes.
-- A panel that takes a dock orientation is captured with a side and a strip preference, as a left or right dock and a
-  top or bottom dock would tell it. `PanelHost.capture` passes it on.
+- A panel that takes a dock orientation is captured with a side and a strip pass, the way a left or right dock and a
+  top or bottom dock would tell it. A `DockPanel` picks its own orientation and only starts from the pass's
+  (`tell_orientation`), so the passes can differ only where the starting arrangement holds, mainly within
+  `HYSTERESIS` of a square. `PanelHost.capture` passes it on.
 - `SWEEP_WIDTHS` and `SWEEP_HEIGHTS` are a grid of dock sizes between the extremes, for sweep sheets.
 """
 from contextlib import AbstractContextManager, nullcontext
@@ -91,8 +93,11 @@ def _geometries(root: QWidget) -> list[QRect]:
 
 
 def host_orientations(panel: QWidget) -> tuple[Optional[Orientation], ...]:
-    """Returns the orientations to capture a panel with: side and strip for a panel `tell_orientation` can tell, or only
-    None for any other."""
+    """Returns the orientations to capture a panel with: side and strip for a panel `tell_orientation` can tell, or
+    only None for any other.
+
+    For a `DockPanel` the two entries are the arrangements it starts from (see `tell_orientation`).
+    """
     if isinstance(panel, (DockPanel, FitContent)) or hasattr(panel, 'set_orientation'):
         return Orientation.SIDE, Orientation.STRIP
     return (None,)
@@ -101,12 +106,14 @@ def host_orientations(panel: QWidget) -> tuple[Optional[Orientation], ...]:
 def tell_orientation(panel: QWidget, orientation: Orientation, size: QSize) -> None:
     """Tells a panel its orientation the way its host does, with the size it fills.
 
-    - A `DockPanel` gets `set_host_facts`, as from `PanelDock`.
+    - A `DockPanel` is planned in `orientation` with `DockPanel.plan_in`, then gets `set_host_facts` as from
+      `PanelDock`, so it starts from that arrangement and keeps it only where its size and fit allow.
     - `FitContent` gets `set_fit_space`, as from the Tools panel.
     - Other content gets `set_orientation` with the matching `Qt.Orientation`.
     """
     if isinstance(panel, DockPanel):
-        panel.set_host_facts(orientation, size)
+        panel.plan_in(orientation, size)
+        panel.set_host_facts(size)
     elif isinstance(panel, FitContent):
         panel.set_fit_space(orientation, size)
     elif hasattr(panel, 'set_orientation'):
@@ -129,8 +136,8 @@ class PanelHost(QWidget):
         panel.show()
 
     def capture(self, size: QSize, orientation: Optional[Orientation] = None) -> QImage:
-        """Resizes the panel, tells it the orientation if one is given, settles its layouts and returns a render of
-        it."""
+        """Resizes the panel, tells it the orientation if one is given (`tell_orientation`), settles its layouts and
+        returns a render of it."""
         self.resize(size)
         if orientation is not None:
             tell_orientation(self.panel, orientation, size)
@@ -608,6 +615,9 @@ class PanelScene:
         """Returns each capture's size and orientation by capture name: the size case, prefixed with `strip_` for a
         strip capture.
 
+        A `DockPanel` picks its own orientation, so it gets a strip capture only at sizes within `HYSTERESIS` of a
+        square, where its starting arrangement holds either way.
+
         Tells the panel its first orientation before measuring, since a panel keeps the orientation it was last told.
         """
         orientations = self.orientations(panel)
@@ -616,7 +626,9 @@ class PanelScene:
             _settle_layouts(panel)
         sizes = self.sizes(panel)
         return {(f'strip_{case}' if orientation == Orientation.STRIP else case): (size, orientation)
-                for orientation in orientations for case, size in sizes.items()}
+                for orientation in orientations for case, size in sizes.items()
+                if orientation != Orientation.STRIP or not isinstance(panel, DockPanel)
+                or abs(size.width() - size.height()) <= HYSTERESIS}
 
 
 def _snake_case(name: str) -> str:

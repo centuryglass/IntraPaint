@@ -1,9 +1,8 @@
 """A `QDockWidget` that hosts one main window panel and tells the panel where it is docked.
 
-- Orientation comes from the dock's area, floating state and size, through `src.ui.layout.panel_fit`. A `DockPanel`
-  gets it through `set_host_facts` as a preference, with the size the panel fills, which leaves out the dock's title
-  bar. Other content with a `set_orientation` method gets the matching `Qt.Orientation` when the orientation changes,
-  until it migrates to `DockPanel`.
+- A `DockPanel` gets the size it fills, which leaves out the dock's title bar, through `set_host_facts`, and picks
+  its own orientation. Other content with a `set_orientation` method gets its orientation from the dock's area
+  (`src.ui.layout.panel_fit.orientation_for_dock`), until it migrates to `DockPanel`.
 - A tab group shows one dock at a time, and the edge rails act as its tabs. Opening a dock with `open_in_group`, its
   key, its toggle action or a mouse drop into a group closes the group's other docks. A dock in the background of a
   group is closed. `show` opens a dock without closing the others, so code opens docks with `open_in_group`.
@@ -72,7 +71,7 @@ class PanelDock(QDockWidget):
         self._content: Optional[QWidget] = None
         self._open_when_available = True
         self._showing = False
-        # The orientation last reported to the content:
+        # The orientation last reported to content with `set_orientation`:
         self._orientation: Optional[Orientation] = None
         self._no_title_bar = _NoTitleBar()
         self._floating_title_bar: Optional[QWidget] = None
@@ -260,11 +259,12 @@ class PanelDock(QDockWidget):
     def _update_host_facts(self, *_args) -> None:
         if self._content is None:
             return
+        if isinstance(self._content, DockPanel):
+            self._content.set_host_facts(self._content.size())
+            return
         orientation = orientation_for_dock(self._window.dockWidgetArea(self), self.isFloating(), self.size(),
                                            self._orientation)
         changed = orientation != self._orientation
         self._orientation = orientation
-        if isinstance(self._content, DockPanel):
-            self._content.set_host_facts(orientation, self._content.size())
-        elif changed and hasattr(self._content, 'set_orientation'):
+        if changed and hasattr(self._content, 'set_orientation'):
             self._content.set_orientation(qt_orientation(orientation))

@@ -7,7 +7,7 @@ from PySide6.QtCore import QRect, QSize, Qt
 from PySide6.QtWidgets import QApplication, QPushButton, QWidget
 
 from src.ui.layout.dock_panel import DockPanel, PanelLayout
-from src.ui.layout.panel_fit import REQUIRED, Orientation
+from src.ui.layout.panel_fit import REQUIRED
 from test.base_test_case import IntraPaintTestCase
 from test.ui.panel_capture import (ALIGN_TOLERANCE, LEFTOVER_SLACK, find_arrangement_problems, misaligned_edges)
 
@@ -128,7 +128,7 @@ class PanelCaptureTest(IntraPaintTestCase):
     def _sized_panel(self, height: int) -> SizedPanel:
         panel = SizedPanel()
         panel.resize(PANEL_SIZE.width(), height)
-        panel.set_host_facts(Orientation.SIDE, QSize(PANEL_SIZE.width(), height))
+        panel.set_host_facts(QSize(PANEL_SIZE.width(), height))
         return panel
 
     def _hidden_with_room(self, panel: DockPanel) -> list[str]:

@@ -20,6 +20,7 @@ from src.ui.panel.tool_panel import ToolPanel, ButtonLayout, BUTTON_SPACING, MAX
     STRIP_BUTTON_FORMS, STRIP_MAX_COLUMNS, STRIP_NARROW_COLUMNS, strip_button_layout
 from src.util.visual.text_drawing_utils import get_key_display_string
 from test.base_test_case import IntraPaintTestCase
+from test.ui.panel_capture import tell_orientation
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -89,7 +90,7 @@ class ToolPanelTest(IntraPaintTestCase):
 
     def _host(self, orientation: Orientation, size: QSize) -> None:
         """Reports an orientation and size as the dock would, sizes the panel to match, then settles its layouts."""
-        self._tool_panel.set_host_facts(orientation, size)
+        tell_orientation(self._tool_panel, orientation, size)
         self._tool_panel.resize(size)
         settle_layouts(self._tool_panel)
 
@@ -136,7 +137,7 @@ class ToolPanelTest(IntraPaintTestCase):
         for name, (orientation, size) in HOST_SIZES.items():
             with self.subTest(size=name):
                 self._tool_panel.resize(size)
-                self._tool_panel.set_host_facts(orientation, size)
+                tell_orientation(self._tool_panel, orientation, size)
                 widgets = [widget for widget in self._tool_panel.findChildren(QWidget)
                            if widget.isVisibleTo(self._tool_panel)]
                 planned = [widget.geometry() for widget in widgets]

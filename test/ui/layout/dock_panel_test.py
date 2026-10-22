@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QApplication, QCheckBox, QLineEdit, QPushButton, Q
 from src.ui.layout.dock_panel import DockPanel, PanelLayout
 from src.ui.layout.panel_fit import REQUIRED, STRIP_SECTION_MAX_WIDTH, STRIP_SECTION_MIN_WIDTH, Orientation
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
-from test.ui.panel_capture import PanelHost, find_layout_problems
+from test.ui.panel_capture import PanelHost, find_layout_problems, tell_orientation
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -59,7 +59,7 @@ class OversizedPanel(DockPanel):
 
 
 class DockPanelTest(IntraPaintTestCase):
-    """Tests DockPanel with a fake host that calls set_host_facts."""
+    """Tests DockPanel with a fake host that starts it in an orientation and reports its size (`tell_orientation`)."""
 
     def setUp(self) -> None:
         super().setUp()
@@ -68,7 +68,7 @@ class DockPanelTest(IntraPaintTestCase):
     def _host(self, orientation: Orientation, size: QSize, panel: DockPanel | None = None) -> None:
         panel = self.panel if panel is None else panel
         panel.resize(size)
-        panel.set_host_facts(orientation, size)
+        tell_orientation(panel, orientation, size)
 
     def _optional(self) -> list[QWidget]:
         return [self.panel.name_field, self.panel.flag, self.panel.extra, self.panel.only_extra]
@@ -136,24 +136,23 @@ class DockPanelTest(IntraPaintTestCase):
             self.assertTrue(self.panel.flag.isChecked())
 
     def test_unchanged_host_facts_do_not_replan(self) -> None:
-        """Repeating the same orientation and size measures nothing, and a change plans again."""
+        """Repeating the same size measures nothing, and a change plans again."""
         measures: list[QSize] = []
         original_measure = self.panel.measure
         self.panel.measure = lambda: (measures.append(QSize()), original_measure())[1]  # type: ignore[method-assign]
-        self._host(SIDE, QSize(300, 500))
+        self.panel.set_host_facts(QSize(300, 500))
         count = len(measures)
-        self._host(SIDE, QSize(300, 500))
+        self.panel.set_host_facts(QSize(300, 500))
         self.assertEqual(len(measures), count)
-        self._host(SIDE, QSize(310, 500))
+        self.panel.set_host_facts(QSize(310, 500))
         self.assertGreater(len(measures), count)
 
-    def test_orientation_follows_the_shape_when_the_preferred_one_overflows(self) -> None:
-        """A panel keeps the host's orientation while its content fits, and takes the other one when only that one
-        fits, such as a tall, narrow panel in a bottom dock."""
+    def test_orientation_follows_the_size_no_matter_its_area(self) -> None:
+        """A panel takes the orientation its size suggests, whatever orientation the host reports: a wide space lays
+        out as a strip even in a side dock, and a tall one as a side panel even in a bottom dock."""
         self._host(STRIP, QSize(1400, 160))
         self.assertEqual(self.panel.orientation, STRIP)
         self._host(STRIP, QSize(200, 900))
-        self.assertEqual(self.panel.preferred_orientation, STRIP)
         self.assertEqual(self.panel.orientation, SIDE)
         self.assertEqual(self.panel.overflow_widgets, [])
         self._host(SIDE, QSize(1400, 160))
@@ -242,7 +241,7 @@ class DockPanelTest(IntraPaintTestCase):
         try:
             for orientation, size in ((STRIP, QSize(900, 90)), (SIDE, QSize(150, 600))):
                 with self.subTest(orientation=orientation):
-                    panel.set_host_facts(orientation, size)
+                    tell_orientation(panel, orientation, size)
                     host.capture(size)
                     scroll_area = panel.findChild(QScrollArea)
                     cross_bar = scroll_area.verticalScrollBar() if orientation == STRIP \
@@ -265,7 +264,7 @@ class DockPanelTest(IntraPaintTestCase):
         host = PanelHost(self.panel)
         try:
             for name, (orientation, size) in SAMPLE_SIZES.items():
-                self.panel.set_host_facts(orientation, size)
+                tell_orientation(self.panel, orientation, size)
                 host.capture(size)
                 shown = [s for s in self.panel.sections if not s.widget.isHidden()]
                 result[name] = {

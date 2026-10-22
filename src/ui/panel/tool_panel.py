@@ -1,8 +1,8 @@
 """The Tools dock's panel: a grid of tool buttons, a header naming the active tool, and the tool's controls.
 
-- Orientation and size come from the dock (`DockPanel.set_host_facts`), and the panel shows as much as fits
-  (`src.ui.layout.panel_fit`). Side panels show rows of eight buttons with the header under them, then the controls.
-  Strip panels put the header across the top, with the grid left of the controls.
+- Size comes from the dock (`DockPanel.set_host_facts`), and the panel picks an orientation and shows as much as
+  fits (`src.ui.layout.panel_fit`). Side panels show rows of eight buttons with the header under them, then the
+  controls. Strip panels put the header across the top, with the grid left of the controls.
 - The buttons take the largest of `SIDE_BUTTON_FORMS` or `STRIP_BUTTON_FORMS` that fits across the panel. The largest
   strip form is a grid of `STRIP_MAX_COLUMNS` columns, with buttons as tall as the height allows
   (`strip_button_layout`). It uses `STRIP_NARROW_COLUMNS` columns when the height holds them at the same button size.

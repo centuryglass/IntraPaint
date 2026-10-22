@@ -22,6 +22,7 @@ from src.ui.widget.panel_section import PanelSection
 from test.base_test_case import IntraPaintTestCase
 from test.tools.tool_test_case import ToolTestCase
 from test.ui.panel.tool_panel_test import settle_layouts
+from test.ui.panel_capture import tell_orientation
 
 
 SIDE = Orientation.SIDE
@@ -345,5 +346,5 @@ class ToolPanelsOnStrokeBlockTest(ToolTestCase):
         assert isinstance(control_panel, DrawToolPanel)
         for orientation, size, preview in ((SIDE, QSize(260, 1000), BELOW), (STRIP, QSize(1400, 160), BESIDE)):
             with self.subTest(orientation=orientation):
-                tool_panel.set_host_facts(orientation, size)
+                tell_orientation(tool_panel, orientation, size)
                 self.assertEqual(control_panel.stroke_block.arrangement.preview, preview)
