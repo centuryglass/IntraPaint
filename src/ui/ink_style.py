@@ -14,6 +14,7 @@ With `rounded_popups`, menus and tooltips become translucent top-level windows, 
 hard offset shadow. A translucent window needs a compositing window system: on an X11 desktop with no compositor, Qt
 draws the transparent parts black, so the option can be turned off.
 """
+import logging
 from dataclasses import dataclass, fields
 from typing import Optional
 
@@ -23,7 +24,9 @@ from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication
                                QPlainTextEdit, QProxyStyle, QPushButton, QSlider, QStyle, QStyleOption,
                                QStyleOptionButton, QStyleOptionComboBox, QStyleOptionMenuItem, QStyleOptionProgressBar,
                                QStyleOptionSlider, QStyleOptionSpinBox, QStyleOptionTab, QStyleOptionViewItem,
-                               QTabBar, QTextEdit, QWidget, QWidgetItem)
+                               QTabBar, QTextEdit, QWidget)
+
+logger = logging.getLogger(__name__)
 
 State = QStyle.StateFlag
 Primitive = QStyle.PrimitiveElement
@@ -321,13 +324,15 @@ class InkStyle(QProxyStyle):
                   widget: Optional[QWidget] = None, return_data: Optional[object] = None) -> int:
         """Makes scroll bars overlay their content when overlay_scroll_bars is set.
 
-        Qt's layout code sometimes passes a QWidgetItem as `widget`. The base style's binding rejects it with a
-        TypeError, so it is replaced by the item's widget.
+        A `widget` that isn't a QWidget is a stale Python wrapper: Qt passes a QWidget pointer, and PySide returned a
+        wrapper left at that address by a freed object, such as a QLayoutItem. The object it describes no longer
+        exists, so calling its methods reads freed memory. It is logged and replaced by None.
         """
         if hint == QStyle.StyleHint.SH_ScrollBar_Transient:
             return int(self._overlay_scroll_bars)
-        if isinstance(widget, QWidgetItem):
-            widget = widget.widget()
+        if widget is not None and not isinstance(widget, QWidget):
+            logger.warning(f'InkStyle.styleHint got a stale {type(widget).__name__} wrapper as its widget')
+            widget = None
         return super().styleHint(hint, option, widget, return_data)
 
     def sizeFromContents(self, content_type: QStyle.ContentsType, option: Optional[QStyleOption],
