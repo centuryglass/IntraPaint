@@ -66,7 +66,7 @@ class LoadDesignsTest(IntraPaintTestCase):
         designs = load_loading_designs()
         self.assertIsInstance(designs[0], HalftonePress)
         by_label = {design.label: design for design in designs}
-        self.assertIn('Diffusion Ring: color_wheel', by_label)
+        self.assertIn('Diffusion Ring', by_label)
         self.assertIn('Pixel Orbit: ember', by_label)
         pixel_orbit = by_label['Pixel Orbit: ember']
         assert isinstance(pixel_orbit, SpriteSheetDesign)
@@ -100,18 +100,24 @@ class LoadDesignsTest(IntraPaintTestCase):
         self.assertEqual((design.frame_count, design.duration_ms, design.native_size), (5, 1000, 32))
 
     def test_diffusion_ring_variants(self) -> None:
-        """Each image in diffusion_ring is a clean ring variant, with an optional duration."""
-        ring_path = os.path.join(self.resource_dir, 'diffusion_ring', 'small.png')
-        save_image(ring_path, 36, 36)
-        save_json(ring_path.replace('.png', '.json'), {'duration_ms': 3000})
-        design = load_loading_designs(self.resource_dir)[1]
+        """All images in diffusion_ring are loaded into one design. Ones that aren't square or differ in size are
+        skipped."""
+        ring_dir = os.path.join(self.resource_dir, 'diffusion_ring')
+        save_image(os.path.join(ring_dir, 'a.png'), 36, 36)
+        save_image(os.path.join(ring_dir, 'b.png'), 36, 36, Qt.GlobalColor.blue)
+        save_image(os.path.join(ring_dir, 'wide.png'), 72, 36)
+        save_image(os.path.join(ring_dir, 'big.png'), 72, 72)
+        with self.assertLogs('src.ui.loading.loading_designs', 'WARNING') as logs:
+            designs = load_loading_designs(self.resource_dir)
+        self.assertEqual(len(designs), 2)
+        design = designs[1]
         assert isinstance(design, DiffusionRing)
-        self.assertEqual((design.variant, design.duration_ms, design.native_size), ('small', 3000, 36))
+        self.assertEqual((design.label, design.image_count, design.native_size), ('Diffusion Ring', 2, 36))
+        self.assertEqual(len(logs.records), 2)
 
     def test_invalid_files_are_skipped(self) -> None:
         """Files that can't be used are logged and skipped, and other files in the folder are ignored."""
         save_image(os.path.join(self.resource_dir, 'pixel_orbit', 'uneven.png'), 100, 72)
-        save_image(os.path.join(self.resource_dir, 'diffusion_ring', 'wide.png'), 72, 36)
         bad_option_path = os.path.join(self.resource_dir, 'pixel_orbit', 'bad_option.png')
         save_image(bad_option_path, 72, 72)
         save_json(bad_option_path.replace('.png', '.json'), {'frame_size': 'large'})
@@ -123,7 +129,7 @@ class LoadDesignsTest(IntraPaintTestCase):
         with self.assertLogs('src.ui.loading.loading_designs', 'WARNING') as logs:
             designs = load_loading_designs(self.resource_dir)
         self.assertEqual([design.label for design in designs], ['Halftone Press'])
-        self.assertEqual(len(logs.records), 4)
+        self.assertEqual(len(logs.records), 3)
 
 
 class PickDesignTest(IntraPaintTestCase):
@@ -179,7 +185,7 @@ class DesignFrameTest(IntraPaintTestCase):
 
     def test_diffusion_ring_rests_on_clean_image(self) -> None:
         """At the rest phase, the frame is the clean image. At phase 0, it is noise inside the ring's alpha."""
-        ring = self.designs['Diffusion Ring: color_wheel']
+        ring = self.designs['Diffusion Ring']
         assert isinstance(ring, DiffusionRing)
         self.assertEqual(signal_level(0.0), 0.0)
         self.assertEqual(signal_level(ring.rest_phase), 1.0)
@@ -190,10 +196,29 @@ class DesignFrameTest(IntraPaintTestCase):
         for x, y in ((0, 0), (36, 36), (36, 2)):
             self.assertEqual(noisy.pixelColor(x, y).alpha() == 0, clean.pixelColor(x, y).alpha() == 0)
 
+    def test_diffusion_ring_cycles_images_with_shared_alpha(self) -> None:
+        """Each loop shows a different image, every image once before any repeats, all through the first image's
+        alpha, so a switch at signal level 0.0 draws the same pixels."""
+        opaque, faded = QImage(8, 8, QImage.Format.Format_ARGB32), QImage(8, 8, QImage.Format.Format_ARGB32)
+        opaque.fill(QColor(255, 0, 0, 255))
+        faded.fill(QColor(0, 0, 255, 40))
+        ring = DiffusionRing([opaque, faded, opaque.copy(), faded.copy()], rng=random.Random(1))
+        self.assertEqual(ring.current_image, 0)
+        before = ring.frame(0.0)
+        shown = []
+        for _ in range(8):
+            ring.next_loop()
+            shown.append(ring.current_image)
+            self.assertEqual(ring.frame(0.0), before)
+        self.assertEqual(sorted(shown[:4]), [0, 1, 2, 3])
+        self.assertEqual(sorted(shown[4:]), [0, 1, 2, 3])
+        self.assertTrue(all(a != b for a, b in zip([0] + shown, shown)))
+        self.assertNotEqual(ring.frame(0.5), faded.convertToFormat(QImage.Format.Format_ARGB32))
+
     def test_design_goldens(self) -> None:
         """Each shipped design draws the same frame as its golden image, on both themes when it depends on them."""
         cases = (('Halftone Press', 'halftone_press', (True, False)),
-                 ('Diffusion Ring: color_wheel', 'diffusion_ring', (True,)),
+                 ('Diffusion Ring', 'diffusion_ring', (True,)),
                  ('Pixel Orbit: ember', 'pixel_orbit', (True,)))
         for name, file_name, themes in cases:
             for dark in themes:
