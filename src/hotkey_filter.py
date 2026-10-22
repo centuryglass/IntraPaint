@@ -27,6 +27,9 @@ class HotkeyFilter(QObject):
     shared_instance: Optional['HotkeyFilter'] = None
     modifiers_changed = Signal(Qt.KeyboardModifier)
 
+    # Called with each event source that isn't a QObject. Tests set this to fail the running test.
+    stale_source_hook: Optional[Callable[[object], None]] = None
+
     @staticmethod
     def instance() -> 'HotkeyFilter':
         """Returns the shared application hotkey manager."""
@@ -69,6 +72,7 @@ class HotkeyFilter(QObject):
         self._hotkey_timer.setInterval(MODIFIER_TIMER_INTERVAL_MS)
         self._hotkey_timer.timeout.connect(self._check_modifiers)
         self._hotkey_timer.start()
+        self._stale_source_types: set[str] = set()
 
     def _reset(self) -> None:
         """Removes all keybindings, the default focus widget, and all modifiers_changed connections.
@@ -251,10 +255,11 @@ class HotkeyFilter(QObject):
 
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]) -> bool:
         """Check for registered keys and trigger associated actions."""
-        if event is None or (source is not None and not isinstance(source, QObject)):
+        if source is not None and not isinstance(source, QObject):
+            self._report_stale_source(source)
             return False
-        if event.type() != QEvent.Type.KeyPress:
-            return super().eventFilter(source, event)
+        if event is None or event.type() != QEvent.Type.KeyPress:
+            return False
         event = cast(QKeyEvent, event)
 
         # Avoid blocking inputs to text fields:
@@ -326,7 +331,7 @@ class HotkeyFilter(QObject):
             elif not is_text_control_event:
                 return False
         if event.key() not in self._bindings:
-            return super().eventFilter(source, event)
+            return False
         event_handled = False
         for i, binding in enumerate(self._bindings[event.key()]):
             if binding.modifiers != QApplication.keyboardModifiers():
@@ -343,6 +348,19 @@ class HotkeyFilter(QObject):
             logger.debug(f'{event.text()}: not claimed by handler {i} of {len(self._bindings[event.key()])}: '
                          f'got {event_handled}')
         return event_handled
+
+    def _report_stale_source(self, source: object) -> None:
+        """Logs an event source that isn't a QObject, once per type, and passes it to `stale_source_hook`.
+
+        Qt only passes QObjects to event filters, so any other source is a stale PySide wrapper left at a reused
+        address by a freed object, such as a QLayoutItem. The heap may already be corrupt when this runs.
+        """
+        type_name = type(source).__qualname__
+        if type_name not in self._stale_source_types:
+            self._stale_source_types.add(type_name)
+            logger.error(f'Event filter received a non-QObject source of type {type_name}: stale PySide wrapper')
+        if HotkeyFilter.stale_source_hook is not None:
+            HotkeyFilter.stale_source_hook(source)
 
     def _check_modifiers(self):
         """Check for changes in held key modifiers, notifying any registered listeners."""
