@@ -258,7 +258,6 @@ valid for the version it was generated with.
   tied to an issue, prefix it with the issue number (`123-fix-fill-tool-overlap`).
 - **One branch and one PR per piece of work, each branched from `integration`.** A session with several PRs uses a
   separate branch for each. Don't stack PRs unless the maintainer asks.
-- **Delete your working branch from the remote once its PR is merged,** unless there is a reason to keep it.
 - The many other side branches (`comfyui`, `sd-windows`, `zoomMode`, `dev`, etc.) are experiments/one-offs; ignore
   them.
 
@@ -280,8 +279,8 @@ valid for the version it was generated with.
   `integration`, put the fix in a separate PR, stacked on the first if it depends on it. Fixes to tests, comments and
   code the PR itself adds stay in that PR.
 - **A PR closing an issue says `Closes #NN` in its description.**
-- **Subscribe to every PR you open, without asking** (`subscribe_pr_activity` where available), and stay subscribed
-  until it is merged or closed.
+- **In Claude Code, subscribe to every PR you open, without asking** (`subscribe_pr_activity`), and stay subscribed
+  until it is merged or closed. OpenCode agents have no way to subscribe and skip this.
 - **When CI fails on your PR, fix it if your changes caused it.** Push the fix; don't wait for review.
 - **A known intermittent test failure** (one an open issue already tracks) is not fixed in your PR. Read the failed
   job's results, and if they show anything the issue doesn't already record, add it as a comment on that issue (with

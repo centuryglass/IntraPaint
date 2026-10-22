@@ -25,7 +25,7 @@ class LoadingWidget(QWidget):
     """Show an animated loading indicator, with an optional message.
 
     Each time the animation starts, from hidden or paused, the widget picks a random design from its design list,
-    never repeating the previous one.
+    never repeating the previous one. A design is told each time its loop restarts.
     """
 
     def __init__(self, parent: Optional[QWidget] = None, message: str = '',
@@ -76,6 +76,7 @@ class LoadingWidget(QWidget):
         """Picks a new random design and plays it from the start."""
         self._anim.stop()
         self.design = pick_design(self._designs, self._design)
+        self._design.next_loop()
         self._anim.start()
 
     @property
@@ -119,7 +120,10 @@ class LoadingWidget(QWidget):
 
     def phase_setter(self, phase: float) -> None:
         """Sets the current position in the design's loop. Values outside 0.0 to 1.0 wrap."""
-        self._phase = phase % 1.0
+        phase %= 1.0
+        if phase < self._phase and self._anim.state() == QPropertyAnimation.State.Running:
+            self._design.next_loop()
+        self._phase = phase
         self.update()
 
     # noinspection PyTypeChecker

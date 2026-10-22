@@ -5,6 +5,7 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QImage, QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
+from src.ui.loading.diffusion_ring import DiffusionRing
 from src.ui.loading.loading_designs import load_loading_designs
 from src.ui.widget.loading_widget import LoadingWidget
 from test.base_test_case import IntraPaintTestCase
@@ -38,7 +39,7 @@ class LoadingWidgetTest(IntraPaintTestCase):
     def test_pause_holds_rest_frame(self) -> None:
         """Pausing shows the design's rest frame, and unpausing starts a new load with another design."""
         self.widget.show()
-        diffusion_ring = self.by_label['Diffusion Ring: color_wheel']
+        diffusion_ring = self.by_label['Diffusion Ring']
         self.widget.design = diffusion_ring
         self.widget.paused = True
         self.assertTrue(self.widget.paused)
@@ -46,6 +47,22 @@ class LoadingWidgetTest(IntraPaintTestCase):
         self.widget.message = 'Step 2/30'
         self.assertFalse(self.widget.paused)
         self.assertIsNot(self.widget.design, diffusion_ring)
+
+    def test_loop_restart_tells_design(self) -> None:
+        """A running animation's phase wrapping to a new loop calls the design's next_loop, and pausing doesn't."""
+        ring = self.by_label['Diffusion Ring']
+        assert isinstance(ring, DiffusionRing)
+        self.widget.show()
+        self.widget.design = ring
+        shown = ring.current_image
+        self.widget.phase = 0.9
+        self.assertEqual(ring.current_image, shown)
+        self.widget.phase = 0.01
+        self.assertNotEqual(ring.current_image, shown)
+        self.widget.paused = True
+        shown = ring.current_image
+        self.widget.phase = 0.0
+        self.assertEqual(ring.current_image, shown)
 
     def test_pause_before_show(self) -> None:
         """A widget paused before it ever animated still shows a rest frame, as in timelapse mode."""

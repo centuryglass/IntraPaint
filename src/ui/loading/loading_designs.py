@@ -12,7 +12,7 @@ from typing import Optional, Any
 
 from PySide6.QtGui import QImage
 
-from src.ui.loading.diffusion_ring import DiffusionRing, DEFAULT_DURATION_MS as DIFFUSION_DURATION_MS
+from src.ui.loading.diffusion_ring import DiffusionRing
 from src.ui.loading.halftone_press import HalftonePress
 from src.ui.loading.loading_design import LoadingDesign
 from src.ui.loading.sprite_sheet_design import SpriteSheetDesign
@@ -49,17 +49,40 @@ def _int_option(options: dict[str, Any], key: str, default: Optional[int]) -> Op
     return value
 
 
-def _load_design(folder_name: str, image_path: str) -> LoadingDesign:
-    """Loads one asset-backed design variant, raising ValueError if the file or its options are invalid."""
+def _load_image(image_path: str) -> QImage:
+    """Loads an image, raising ValueError if it can't be read."""
     image = QImage(image_path)
     if image.isNull():
         raise ValueError('not a readable image')
+    return image
+
+
+def _load_diffusion_ring(folder_path: str, file_names: list[str]) -> Optional[DiffusionRing]:
+    """Returns one DiffusionRing cycling through every valid ring image, or None if there are none. Images that
+    aren't square or don't match the first valid image's size are logged and skipped."""
+    images: list[QImage] = []
+    names: list[str] = []
+    for file_name in file_names:
+        image_path = os.path.join(folder_path, file_name)
+        try:
+            image = _load_image(image_path)
+            if image.width() != image.height():
+                raise ValueError(f'must be square, got {image.width()}x{image.height()}')
+            if images and image.width() != images[0].width():
+                raise ValueError(f'must match the first image\'s size, {images[0].width()}px, got {image.width()}px')
+        except (ValueError, OSError) as err:
+            logger.warning(f'Skipping loading design {image_path}: {err}')
+            continue
+        images.append(image)
+        names.append(os.path.splitext(file_name)[0])
+    return DiffusionRing(images, image_names=names) if images else None
+
+
+def _load_design(folder_name: str, image_path: str) -> LoadingDesign:
+    """Loads one sprite-sheet design variant, raising ValueError if the file or its options are invalid."""
+    image = _load_image(image_path)
     options = _read_options(image_path)
     variant = os.path.splitext(os.path.basename(image_path))[0]
-    if folder_name == DIFFUSION_RING_DIR:
-        duration_ms = _int_option(options, KEY_DURATION_MS, DIFFUSION_DURATION_MS)
-        assert duration_ms is not None
-        return DiffusionRing(image, variant, duration_ms)
     frame_size = _int_option(options, KEY_FRAME_SIZE, DEFAULT_FRAME_SIZE)
     duration_ms = _int_option(options, KEY_DURATION_MS, DEFAULT_SPRITE_DURATION_MS)
     assert frame_size is not None and duration_ms is not None
@@ -71,8 +94,8 @@ def _load_design(folder_name: str, image_path: str) -> LoadingDesign:
 def load_loading_designs(resource_dir: str = LOADING_RESOURCE_DIR) -> list[LoadingDesign]:
     """Returns the procedural designs, then one design for each valid asset under resource_dir.
 
-    Each subfolder of resource_dir is one design and each PNG in it is one variant. Invalid files are logged and
-    skipped.
+    Each subfolder of resource_dir is one design. In `DIFFUSION_RING_DIR` all the PNGs are images of one design, and
+    in any other folder each PNG is one variant. Invalid files are logged and skipped.
     """
     designs: list[LoadingDesign] = [HalftonePress()]
     if not os.path.isdir(resource_dir):
@@ -82,9 +105,13 @@ def load_loading_designs(resource_dir: str = LOADING_RESOURCE_DIR) -> list[Loadi
         folder_path = os.path.join(resource_dir, folder_name)
         if not os.path.isdir(folder_path):
             continue
-        for file_name in sorted(os.listdir(folder_path)):
-            if not file_name.lower().endswith('.png'):
-                continue
+        file_names = [name for name in sorted(os.listdir(folder_path)) if name.lower().endswith('.png')]
+        if folder_name == DIFFUSION_RING_DIR:
+            ring = _load_diffusion_ring(folder_path, file_names)
+            if ring is not None:
+                designs.append(ring)
+            continue
+        for file_name in file_names:
             image_path = os.path.join(folder_path, file_name)
             try:
                 designs.append(_load_design(folder_name, image_path))

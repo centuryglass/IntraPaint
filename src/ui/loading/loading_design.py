@@ -49,6 +49,9 @@ class LoadingDesign(ABC):
         """
         return None
 
+    def next_loop(self) -> None:
+        """Called each time a loop starts, at phase 0.0, so a design can vary what it draws from loop to loop."""
+
     def fit(self, bounds: QRectF) -> QRectF:
         """Returns the square the design should draw into, centered within a square bounds rectangle."""
         side = min(bounds.width(), bounds.height())
