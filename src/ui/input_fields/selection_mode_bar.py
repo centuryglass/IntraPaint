@@ -88,15 +88,14 @@ class SelectionModeBar(SegmentedControl):
             for config_key in _modifier_config_keys():
                 KeyConfig().connect(self, config_key, self._update_tooltips)
             HotkeyFilter.instance().modifiers_changed.connect(self.set_held_modifiers)
+        self.destroyed.connect(lambda: self._disconnect_config(modifiers))
 
-    # noinspection PyPep8Naming
-    def deleteLater(self) -> None:  # pylint: disable=invalid-name  # Qt override
-        """Disconnect from config before scheduling deletion."""
+    def _disconnect_config(self, modifiers: SelectionModifiers) -> None:
+        """Removes the config registrations. Runs from `destroyed`, so it also covers deletion with a parent."""
         Cache().disconnect(self, Cache.SELECTION_MODE)
-        if self._modifiers != SelectionModifiers.NONE:
+        if modifiers != SelectionModifiers.NONE:
             for config_key in _modifier_config_keys():
                 KeyConfig().disconnect(self, config_key)
-        super().deleteLater()
 
     @property
     def modifiers(self) -> SelectionModifiers:

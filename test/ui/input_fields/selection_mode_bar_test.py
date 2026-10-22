@@ -1,6 +1,8 @@
 """Tests SelectionModeBar: it edits `Cache.SELECTION_MODE` in the fixed order Replace, Add, Subtract, Intersect, hints the
    mode held modifiers select, and names the modifiers in its tooltips."""
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QWidget
+from shiboken6 import delete as sip_delete
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
@@ -19,6 +21,16 @@ class SelectionModeBarTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         Cache().restore_default_options(Cache.SELECTION_MODE)
+
+    def test_config_connections_end_with_parent_deletion(self) -> None:
+        """Deleting the bar's parent removes its config registrations."""
+        parent = QWidget()
+        bar = SelectionModeBar(parent=parent)
+        self.assertIn(bar, Cache()._connected[Cache.SELECTION_MODE])
+        self.assertIn(bar, KeyConfig()._connected[KeyConfig.SELECTION_ADD_MODIFIER])
+        sip_delete(parent)
+        self.assertNotIn(bar, Cache()._connected[Cache.SELECTION_MODE])
+        self.assertNotIn(bar, KeyConfig()._connected[KeyConfig.SELECTION_ADD_MODIFIER])
 
     def test_segment_order_is_fixed(self) -> None:
         """The segments run Replace, Add, Subtract, Intersect."""
