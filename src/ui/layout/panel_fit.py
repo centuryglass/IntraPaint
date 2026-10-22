@@ -26,9 +26,11 @@ as much as fits there. Thresholds live in this module, so DPI normalization (iss
 - `plan_fit` is pure. A `measure` callback returns a placement's minimum size. `FitPlanner` binds it to widgets, and
   `fresh_minimum_size` measures widgets without waiting on the event loop.
 """
+import inspect
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Optional, Protocol, Sequence, runtime_checkable
+from typing import Callable, Optional, Protocol, Sequence, TypeVar, runtime_checkable
+from weakref import WeakMethod
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QApplication, QSizePolicy, QWidget
@@ -290,8 +292,28 @@ def fresh_minimum_size(root: QWidget) -> QSize:
     return hint if root.isWindow() else hint.expandedTo(root.minimumSize())
 
 
+_Result = TypeVar('_Result')
+
+
+def _held_weakly(callback: Callable[..., _Result]) -> Callable[..., _Result]:
+    """Returns a bound method as a callable that holds its object weakly, and any other callable unchanged."""
+    if not inspect.ismethod(callback):
+        return callback
+    method_ref = WeakMethod(callback)
+
+    def _call(*args):
+        method = method_ref()
+        assert method is not None, 'A FitPlanner outlived the object its callbacks belong to'
+        return method(*args)
+    return _call
+
+
 class FitPlanner:
     """Plans one content's placement with `plan_fit`, applies it, and remembers it for hysteresis.
+
+    Callbacks that are bound methods are held weakly, since the content usually owns its planner. A reference cycle
+    leaves a parentless widget to the cyclic garbage collector, which can delete it in C++ during an unrelated Qt call
+    (see `src.util.gc_paused`). A lambda that captures the content still makes a cycle.
 
     - `apply(orientation, placement)` arranges the content's widgets for a placement. Planning applies trial placements
       in any order, so `apply` must leave no trace of earlier ones.
@@ -306,10 +328,10 @@ class FitPlanner:
                  measure: Callable[[], QSize], prepare: Optional[Callable[[Orientation], None]] = None,
                  finish: Optional[Callable[[Orientation], None]] = None) -> None:
         self._items = tuple(items)
-        self._apply = apply
-        self._measure = measure
-        self._prepare = prepare
-        self._finish = finish
+        self._apply = _held_weakly(apply)
+        self._measure = _held_weakly(measure)
+        self._prepare = None if prepare is None else _held_weakly(prepare)
+        self._finish = None if finish is None else _held_weakly(finish)
         self._placement: Optional[Placement] = None
         self._orientation: Optional[Orientation] = None
         # The orientation the latest update asked for, or None when planning picked it:
