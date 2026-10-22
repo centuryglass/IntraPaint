@@ -1,9 +1,22 @@
 """A layout that wraps its widgets onto more lines, and a widget that measures its height at a given width."""
+from functools import partial
 from typing import Optional
 
 from PySide6.QtCore import QPoint, QRect, QSize
 from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QLayout, QLayoutItem, QSizePolicy, QWidget
+from shiboken6 import delete, isValid
+
+
+def _delete_items(items: list[QLayoutItem], *_) -> None:
+    """Deletes a destroyed FlowLayout's items, which QLayout's destructor leaves to the subclass.
+
+    Without this the items leak, and their Python wrappers stay registered after their widgets are gone.
+    """
+    for item in items:
+        if isValid(item):
+            delete(item)
+    items.clear()
 
 
 class FlowLayout(QLayout):
@@ -14,6 +27,8 @@ class FlowLayout(QLayout):
         self._items: list[QLayoutItem] = []
         self._spacing = spacing
         self.setContentsMargins(0, 0, 0, 0)
+        # The callback holds the item list, not the layout, so it doesn't keep the layout alive:
+        self.destroyed.connect(partial(_delete_items, self._items))
 
     def addItem(self, item: QLayoutItem) -> None:  # pylint: disable=invalid-name
         """Adds a layout item after the others."""

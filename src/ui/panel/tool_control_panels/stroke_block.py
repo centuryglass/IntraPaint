@@ -520,7 +520,10 @@ class StrokeToolPanel(QWidget):
 
     def _build_planner(self) -> FitPlanner:
         items = [*self._block.fit_items, *(item for item, _ in self._tool_items)]
-        return FitPlanner(items, self._apply_fit, lambda: fresh_minimum_size(self))
+        return FitPlanner(items, self._apply_fit, self._measure_fit)
+
+    def _measure_fit(self) -> QSize:
+        return fresh_minimum_size(self)
 
     def _apply_fit(self, orientation: Orientation, placement: Placement) -> None:
         block_count = len(self._block.fit_items)

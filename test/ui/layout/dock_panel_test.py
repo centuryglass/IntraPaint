@@ -1,8 +1,10 @@
 """Tests DockPanel: placement by fit in tall, short, wide and narrow panels of both orientations, the "More" overflow,
 decorative controls, control forms, re-planning without rebuilding widgets, scrolling, and a layout snapshot at each
 sample size."""
+import gc
 import os
 import sys
+import weakref
 
 from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtWidgets import QApplication, QCheckBox, QLineEdit, QPushButton, QScrollArea, QSlider, QWidget
@@ -97,6 +99,19 @@ class DockPanelTest(IntraPaintTestCase):
 
     def _optional(self) -> list[QWidget]:
         return [self.panel.name_field, self.panel.flag, self.panel.extra, self.panel.only_extra]
+
+    def test_planned_panel_is_freed_without_a_cyclic_collection(self) -> None:
+        """A planned panel is freed when its last reference goes, so its C++ side is never deleted by a cyclic
+        collection during an unrelated Qt call."""
+        panel = SamplePanel()
+        self._host(SIDE, QSize(200, 900), panel)
+        panel_ref = weakref.ref(panel)
+        gc.disable()
+        try:
+            del panel
+            self.assertIsNone(panel_ref())
+        finally:
+            gc.enable()
 
     def test_roomy_panels_show_everything(self) -> None:
         """A tall, narrow side panel and a wide strip under 190 px tall have room for every control, so nothing moves
