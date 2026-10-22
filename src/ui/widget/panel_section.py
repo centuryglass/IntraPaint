@@ -4,7 +4,9 @@
   the section's values, such as "512 x 512, batch 4". The owner supplies the summary text with `set_summary`, or with
   `bind_summary`, which recomputes it when a bound value changes.
 - Two states decide whether the body shows: the remembered choice (`is_expanded`) and a forced collapse
-  (`set_forced_collapsed`) that a panel without room uses without changing the remembered choice.
+  (`set_forced_collapsed`) that a panel without room uses without changing the remembered choice. A click on the
+  header while forced emits `forced_header_clicked`, and the owner can show the body elsewhere with `detach_body` and
+  `restore_body`.
 - A section can draw its collapsed header as a bar with the summary on a second line (`set_summary_below`), for
   columns too narrow for the title and summary on one line.
 - A section can hide its header (`set_header_visible`), which also shows the body, so a panel too short for headers
@@ -172,6 +174,7 @@ class PanelSection(QWidget):
     """A titled group of controls that collapses to its header line."""
 
     expanded_changed = Signal(bool)
+    forced_header_clicked = Signal()
 
     def __init__(self, title: str, body: QWidget, expanded: bool = True, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -179,6 +182,7 @@ class PanelSection(QWidget):
         self._body = body
         self._expanded = expanded
         self._forced_collapsed = False
+        self._body_detached = False
         self._header_visible = True
         self._summary = ''
         self._summary_fn: Optional[Callable[[], str]] = None
@@ -238,8 +242,8 @@ class PanelSection(QWidget):
             self.expanded_changed.emit(expanded)
 
     def set_forced_collapsed(self, forced: bool) -> None:
-        """Collapses the section regardless of the remembered choice, or lifts that. Header clicks do nothing while
-        forced."""
+        """Collapses the section regardless of the remembered choice, or lifts that. Header clicks emit
+        `forced_header_clicked` instead of toggling while forced."""
         if forced != self._forced_collapsed:
             self._forced_collapsed = forced
             self._apply_state()
@@ -300,12 +304,30 @@ class PanelSection(QWidget):
         if self._summary_fn is not None:
             self.set_summary(self._summary_fn())
 
+    def detach_body(self) -> QWidget:
+        """Takes the body out of the section for the owner to show elsewhere, and returns it. The section keeps its
+        header. `restore_body` puts it back."""
+        self._body_detached = True
+        self.layout().removeWidget(self._body)
+        return self._body
+
+    def restore_body(self) -> None:
+        """Puts a body taken with `detach_body` back under the header, shown or hidden by the section's state."""
+        if self._body_detached:
+            self._body_detached = False
+            self._body.setParent(self)
+            self.layout().addWidget(self._body)
+            self._apply_state()
+
     def _toggle(self) -> None:
-        if not self._forced_collapsed:
+        if self._forced_collapsed:
+            self.forced_header_clicked.emit()
+        else:
             self.set_expanded(not self._expanded)
 
     def _apply_state(self) -> None:
         collapsed = self.is_collapsed()
-        self._body.setVisible(not collapsed)
+        if not self._body_detached:
+            self._body.setVisible(not collapsed)
         self._header_button.set_summary(self._summary, not collapsed)
         self._header_button.setAccessibleDescription(self._summary)
