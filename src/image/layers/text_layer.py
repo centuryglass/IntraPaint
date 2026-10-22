@@ -126,7 +126,7 @@ class TextLayer(TransformLayer):
         """Creates a copy of this layer."""
         layer = TextLayer(self._text_rect)
         layer.set_opacity(self.opacity)
-        layer.set_visible(self.visible)
+        layer.set_visible(self.get_visible())
         layer.set_composition_mode(self.composition_mode)
         layer.set_transform(super()._get_transform())
         return layer
@@ -135,7 +135,7 @@ class TextLayer(TransformLayer):
         """Creates a copy of this layer, rendered as an image layer."""
         layer = ImageLayer(self.get_qimage(), self.name)
         layer.set_opacity(self.opacity)
-        layer.set_visible(self.visible)
+        layer.set_visible(self.get_visible())
         layer.set_composition_mode(self.composition_mode)
         layer.set_transform(self.transform)
         return layer
@@ -170,7 +170,7 @@ class TextLayer(TransformLayer):
     def save_state(self) -> Any:
         """Export the current layer state, so it can be restored later."""
         return TextLayerState(self.name,
-                              self.visible,
+                              self.get_visible(),
                               self.opacity,
                               self.composition_mode,
                               super()._get_transform(),
