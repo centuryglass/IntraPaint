@@ -5,6 +5,27 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLayout, QLayoutItem, QSpacerItem, QWidget, QGridLayout, QHBoxLayout
 
 
+def layout_contents(layout: QLayout) -> list[QWidget | QLayout | None]:
+    """Returns what a layout holds, indexed by layout position: a widget, a nested layout, or None for a spacer.
+
+    Never call `QLayout.itemAt` or `QGridLayout.itemAtPosition` outside `clear_layout`-style `takeAt` loops. The
+    wrapper they return outlives its item when Qt deletes the item with its widget, and the stale wrapper corrupts the
+    heap. This finds contents with `QLayout.indexOf` instead. `test/layout_item_calls_test.py` fails on new calls.
+    """
+    contents: list[QWidget | QLayout | None] = [None] * layout.count()
+    parent = layout.parentWidget()
+    if parent is not None:
+        for child in parent.findChildren(QWidget, options=Qt.FindChildOption.FindDirectChildrenOnly):
+            index = layout.indexOf(child)
+            if 0 <= index < len(contents):
+                contents[index] = child
+    for nested in layout.findChildren(QLayout, options=Qt.FindChildOption.FindDirectChildrenOnly):
+        index = layout.indexOf(nested)
+        if 0 <= index < len(contents):
+            contents[index] = nested
+    return contents
+
+
 def extract_layout_item(item: Optional[QLayoutItem]) -> QWidget | QLayout | QSpacerItem | None:
     """Return the item stored within a QLayoutItem."""
     if item is None or item.isEmpty():

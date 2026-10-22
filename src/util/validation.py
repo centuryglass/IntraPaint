@@ -10,6 +10,7 @@ from PySide6.QtCore import QSize, QRect, QRectF, QSizeF, QMargins, QMarginsF
 from PySide6.QtGui import QColor, Qt, QRegion, QScreen
 from PySide6.QtWidgets import QWidget, QLayout, QSizePolicy, QBoxLayout, QGridLayout
 
+from src.util.layout import layout_contents
 from src.util.shared_constants import MAX_WIDGET_SIZE
 
 
@@ -279,19 +280,11 @@ def layout_debug(widget: QWidget) -> None:
                 _add_item(layout, record['layout'])
         elif isinstance(item, QLayout):
             record['children'] = []
-            for i in range(item.count()):
-                child = item.itemAt(i)
-                assert child is not None
-                child_widget = child.widget()
-                data: dict[str, Any] = {}
-                if child_widget is not None:
-                    _add_item(child_widget, data)
+            for child in layout_contents(item):
+                if child is not None:
+                    data: dict[str, Any] = {}
+                    _add_item(child, data)
                     record['children'].append(data)
-                else:
-                    layout = child.layout()
-                    if layout is not None:
-                        _add_item(layout, data)
-                        record['children'].append(data)
 
     _add_item(widget, layout_data)
     with open('layout-debug.json', 'w', encoding='utf-8') as outfile:

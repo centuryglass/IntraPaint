@@ -172,6 +172,7 @@ class FieldPair(QWidget):
         self._layout.setContentsMargins(0, 0, 0, 0)
         self._layout.addWidget(first)
         self._layout.addWidget(second)
+        self._fields = (first, second)
 
     def set_stacked(self, stacked: bool) -> None:
         """Stacks the fields, or puts them side by side."""
@@ -180,7 +181,7 @@ class FieldPair(QWidget):
     def fits_side_by_side(self, width: int) -> bool:
         """Returns whether both fields fit side by side in `width` without eliding their labels or values."""
         widths = [field.unelided_width() if isinstance(field, NumberField) else field.sizeHint().width()
-                  for field in (self._layout.itemAt(index).widget() for index in range(2))]
+                  for field in self._fields]
         return sum(widths) + max(self._layout.spacing(), 0) <= width
 
     def forms(self, column_width: Callable[[], Optional[int]]) -> tuple[Callable[[], None], Callable[[], None]]:

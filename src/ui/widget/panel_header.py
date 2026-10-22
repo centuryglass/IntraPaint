@@ -400,9 +400,9 @@ class PanelHeader(QWidget):
             self._first_line.insertStretch(2, 1)
         else:
             self._second_line.removeWidget(self._details)
-            stretch = self._first_line.itemAt(2)
-            if stretch is not None and stretch.spacerItem() is not None:
-                self._first_line.removeItem(stretch)
+            stretch = self._first_line.takeAt(2)
+            if stretch is not None and stretch.spacerItem() is None:
+                self._first_line.insertItem(2, stretch)
             self._first_line.insertWidget(2, self._details, stretch=1)
         self._description_label.setWordWrap(wrap)
         self._details.show()

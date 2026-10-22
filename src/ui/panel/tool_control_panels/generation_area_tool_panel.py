@@ -159,13 +159,12 @@ class GenerationAreaToolPanel(QWidget):
 
     def _build_layout(self) -> None:
         while self._layout.count() > 0:
-            item = self._layout.itemAt(0)
+            item = self._layout.takeAt(0)
             assert item is not None
             widget = item.widget()
             assert widget is not None
             if isinstance(widget, Divider):
                 widget.hide()
-            self._layout.takeAt(0)
         for grid_col in range(self._layout.columnCount()):
             self._layout.setColumnStretch(grid_col, 0)
         for grid_row in range(self._layout.rowCount()):

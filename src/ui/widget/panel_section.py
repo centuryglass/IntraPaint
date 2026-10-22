@@ -185,6 +185,7 @@ class PanelSection(QWidget):
         self._header_button = _HeaderButton(title)
         self._header_button.clicked.connect(self._toggle)
         self._actions = QHBoxLayout()
+        self._action_widgets: list[QWidget] = []
         self._actions.setContentsMargins(0, 0, CHEVRON_MARGIN, 0)
         self._actions.setSpacing(ACTION_SPACING)
         header = self._header_layout = QHBoxLayout()
@@ -253,10 +254,8 @@ class PanelSection(QWidget):
         if visible != self._header_visible:
             self._header_visible = visible
             self._header_button.setVisible(visible)
-            for index in range(self._actions.count()):
-                item = self._actions.itemAt(index)
-                if item is not None and item.widget() is not None:
-                    item.widget().setVisible(visible)
+            for widget in self._action_widgets:
+                widget.setVisible(visible)
             # A layout with no widget of its own isn't invalidated by its parent's measure pass:
             self._header_layout.invalidate()
             self._apply_state()
@@ -288,6 +287,7 @@ class PanelSection(QWidget):
     def add_header_widget(self, widget: QWidget) -> None:
         """Adds a small action, such as a flat button, to the right of the header."""
         self._actions.addWidget(widget)
+        self._action_widgets.append(widget)
         widget.setVisible(self._header_visible)
 
     def add_header_keycap(self, key_text: str) -> KeycapBadge:
