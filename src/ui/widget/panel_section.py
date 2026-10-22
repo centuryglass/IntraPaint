@@ -5,6 +5,8 @@
   `bind_summary`, which recomputes it when a bound value changes.
 - Two states decide whether the body shows: the remembered choice (`is_expanded`) and a forced collapse
   (`set_forced_collapsed`) that a panel without room uses without changing the remembered choice.
+- A section can draw its collapsed header as a bar with the summary on a second line (`set_summary_below`), for
+  columns too narrow for the title and summary on one line.
 - A section can hide its header (`set_header_visible`), which also shows the body, so a panel too short for headers
   loses no controls.
 - The section holds no config. The owner stores `is_expanded` per section by connecting `expanded_changed`, and calls
@@ -12,7 +14,7 @@
 """
 from typing import Callable, Optional
 
-from PySide6.QtCore import QEvent, QSize, Qt, Signal
+from PySide6.QtCore import QEvent, QRect, QSize, Qt, Signal
 from PySide6.QtGui import QFont, QFontMetrics, QKeyEvent, QPainter, QPainterPath, QPaintEvent, QPalette, QPen
 from PySide6.QtWidgets import QAbstractButton, QHBoxLayout, QSizePolicy, QVBoxLayout, QWidget
 
@@ -24,6 +26,10 @@ CHEVRON_MARGIN = 4
 TEXT_GAP = 8
 # The summary mixes this much of the background into the text color:
 SUMMARY_DIM_FRACTION = 0.4
+# The collapsed bar's fill mixes this much of the text color into the background:
+BAR_FILL_FRACTION = 0.08
+BAR_RADIUS = 4
+SUMMARY_LINE_PADDING = 4
 ACTION_SPACING = 4
 
 
@@ -44,12 +50,29 @@ class _HeaderButton(QAbstractButton):
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self._summary = ''
         self._expanded = True
+        self._summary_below = False
 
     def set_summary(self, summary: str, expanded: bool) -> None:
         """Changes the summary text and whether the section looks expanded."""
         self._summary = summary
         self._expanded = expanded
+        self.updateGeometry()
         self.update()
+
+    def set_summary_below(self, below: bool) -> None:
+        """Draws the collapsed header as a bar with the summary on a second line, or back as one line."""
+        if below != self._summary_below:
+            self._summary_below = below
+            self.updateGeometry()
+            self.update()
+
+    def _bar_shown(self) -> bool:
+        return self._summary_below and not self._expanded
+
+    def _height(self) -> int:
+        if self._bar_shown() and self._summary != '':
+            return HEADER_HEIGHT + QFontMetrics(self.font()).height() + SUMMARY_LINE_PADDING
+        return HEADER_HEIGHT
 
     def _title_font(self) -> QFont:
         font = QFont(self.font())
@@ -59,11 +82,11 @@ class _HeaderButton(QAbstractButton):
     def sizeHint(self) -> QSize:
         """Returns the chevron and title width at the header height."""
         title_width = QFontMetrics(self._title_font()).horizontalAdvance(self.text())
-        return QSize(int(CHEVRON_MARGIN * 2 + CHEVRON_SIZE + TEXT_GAP + title_width), HEADER_HEIGHT)
+        return QSize(int(CHEVRON_MARGIN * 2 + CHEVRON_SIZE + TEXT_GAP + title_width), self._height())
 
     def minimumSizeHint(self) -> QSize:
         """Returns room for the chevron alone, so a narrow panel can clip the title instead of widening."""
-        return QSize(int(CHEVRON_MARGIN * 2 + CHEVRON_SIZE), HEADER_HEIGHT)
+        return QSize(int(CHEVRON_MARGIN * 2 + CHEVRON_SIZE), self._height())
 
     def paintEvent(self, _event: Optional[QPaintEvent]) -> None:  # pylint: disable=invalid-name
         """Draws the chevron, title and summary in palette colors, with a focus underline for keyboard focus."""
@@ -74,7 +97,17 @@ class _HeaderButton(QAbstractButton):
         background = palette.color(group, QPalette.ColorRole.Window)
         if self.underMouse():
             text = palette.color(group, QPalette.ColorRole.Highlight).lighter(130)
-        center_y = self.height() / 2
+        as_bar = self._bar_shown()
+        if as_bar:
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(_mix(background, palette.color(group, QPalette.ColorRole.WindowText), BAR_FILL_FRACTION))
+            painter.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), BAR_RADIUS, BAR_RADIUS)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
+        # The title line is the whole header, or the top line of a bar with a summary below it:
+        title_height = HEADER_HEIGHT if as_bar and self._summary != '' else self.height()
+        center_y = title_height / 2
         left = float(CHEVRON_MARGIN)
         chevron = QPainterPath()
         half = CHEVRON_SIZE / 2
@@ -94,18 +127,21 @@ class _HeaderButton(QAbstractButton):
         title_font = self._title_font()
         painter.setFont(title_font)
         title_x = int(left + CHEVRON_SIZE + TEXT_GAP)
-        title_rect = self.rect().adjusted(title_x, 0, 0, 0)
+        title_rect = QRect(title_x, 0, max(0, self.width() - title_x), title_height)
         painter.setPen(text)
         title_width = QFontMetrics(title_font).horizontalAdvance(self.text())
         painter.drawText(title_rect, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
                          QFontMetrics(title_font).elidedText(self.text(), Qt.TextElideMode.ElideRight,
                                                              max(0, title_rect.width())))
         summary_x = title_x + title_width + TEXT_GAP
+        summary_below = as_bar and self._summary != ''
+        if summary_below:
+            summary_x = title_x
         if not self._expanded and self._summary != '' and summary_x < self.width():
             painter.setFont(self.font())
             painter.setPen(_mix(palette.color(group, QPalette.ColorRole.WindowText), background,
                                 SUMMARY_DIM_FRACTION))
-            summary_rect = self.rect().adjusted(summary_x, 0, 0, 0)
+            summary_rect = self.rect().adjusted(summary_x, title_height if summary_below else 0, 0, 0)
             painter.drawText(summary_rect, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
                              QFontMetrics(self.font()).elidedText(self._summary, Qt.TextElideMode.ElideRight,
                                                                   summary_rect.width()))
@@ -228,6 +264,11 @@ class PanelSection(QWidget):
     def summary(self) -> str:
         """Returns the summary text shown while the section is collapsed."""
         return self._summary
+
+    def set_summary_below(self, below: bool) -> None:
+        """Draws the collapsed header as a bar with the summary on a second line, or back as one line."""
+        self._header_button.set_summary_below(below)
+        self._header_layout.invalidate()
 
     def set_summary(self, summary: str) -> None:
         """Sets the one-line summary of the section's values, such as "Euler a, 30 steps, CFG 7"."""

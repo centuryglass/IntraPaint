@@ -12,8 +12,10 @@ their state survives.
 - A control with several forms gets a callback per form, largest first. Planning calls the one for the form that fits.
 - The header is a required item. A strip too short for it hides it and moves its More button to the end of the row.
 - A footer set with `set_footer` stays below the scrolled content, and counts toward the panel's minimum size.
-- A subclass can fill a pinned column (`pinned_layout`) that stays left of content that scrolls sideways. While it
-  shows, the footer sits under it.
+- A subclass can fill a pinned column (`pinned_layout`) that stays left of content that scrolls sideways, and a
+  trailing column (`trailing_layout`) that stays right of it. While the pinned column shows, the footer sits under it.
+- A panel opts in to column packing with `set_column_packing`. Its strip stacks sections top to bottom in a column
+  while they fit the strip's height, instead of giving each its own column.
 - Each section is a `src.ui.widget.panel_section.PanelSection`, available as `DockSection.widget` for summaries,
   header actions and remembered expansion. A section with no control left in it hides.
 - Side panels stack sections in one column and scroll vertically. Strip panels put sections in fixed-width columns and
@@ -138,6 +140,31 @@ class _PinnedScrollArea(QScrollArea):
         return QSize(max(self._preferred_width, self.minimumWidth()), super().sizeHint().height())
 
 
+class _PinnedColumn:
+    """A column beside the scrolled content that scrolls vertically on its own: the scroll area, the content it scrolls
+    and the layout of that content."""
+
+    def __init__(self) -> None:
+        self.content = QWidget()
+        self.layout = QVBoxLayout(self.content)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.scroll = _PinnedScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll.setWidget(self.content)
+        self.column = QWidget()
+        self.column_layout = QVBoxLayout(self.column)
+        self.column_layout.setContentsMargins(0, 0, 0, 0)
+        self.column_layout.addWidget(self.scroll, stretch=1)
+        self.column.hide()
+
+    @property
+    def shown(self) -> bool:
+        """Whether the column is shown."""
+        return not self.column.isHidden()
+
+
 @dataclass
 class PanelLayout:
     """Collects the sections a `DockPanel` declares in `build`."""
@@ -166,6 +193,12 @@ class DockPanel(QWidget):
         self._scrolls = False
         self._overflow: list[QWidget] = []
         self._footer: Optional[QWidget] = None
+        self._packs_columns = False
+        self._packed = False
+        # The room the horizontal scroll bar takes from column packing's height, while the content scrolls:
+        self._pack_reserve = 0
+        self._pack_columns: list[QWidget] = []
+        self._pack_plan: list[tuple[QWidget, ...]] = []
 
         self._header = PanelHeader(name, icon, key_text)
         self._scroll = QScrollArea()
@@ -176,23 +209,13 @@ class DockPanel(QWidget):
         self._inset = self.style().pixelMetric(QStyle.PixelMetric.PM_LayoutLeftMargin, None, self)
         outer.setContentsMargins(self._inset, self._inset, self._inset, self._inset)
         outer.addWidget(self._header)
-        # The pinned column sits left of the scroll area, and scrolls vertically on its own:
-        self._pinned_content = QWidget()
-        self._pinned_layout = QVBoxLayout(self._pinned_content)
-        self._pinned_layout.setContentsMargins(0, 0, 0, 0)
-        self._pinned_scroll = _PinnedScrollArea()
-        self._pinned_scroll.setWidgetResizable(True)
-        self._pinned_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self._pinned_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._pinned_scroll.setWidget(self._pinned_content)
-        self._pinned_column = QWidget()
-        self._pinned_column_layout = QVBoxLayout(self._pinned_column)
-        self._pinned_column_layout.setContentsMargins(0, 0, 0, 0)
-        self._pinned_column_layout.addWidget(self._pinned_scroll, stretch=1)
-        self._pinned_column.hide()
+        # The pinned column sits left of the scroll area and the trailing column right of it:
+        self._pinned = _PinnedColumn()
+        # Created by the first use of `trailing_layout`, so panels without one have no widget for it:
+        self._trailing: Optional[_PinnedColumn] = None
         self._scroll_row = QHBoxLayout()
         self._scroll_row.setContentsMargins(0, 0, 0, 0)
-        self._scroll_row.addWidget(self._pinned_column)
+        self._scroll_row.addWidget(self._pinned.column)
         self._scroll_row.addWidget(self._scroll, stretch=1)
         outer.addLayout(self._scroll_row)
 
@@ -212,6 +235,7 @@ class DockPanel(QWidget):
         self.build(self._layout_model)
         for section in self._layout_model.sections:
             self._section_layout.addWidget(section.widget)
+            section.widget.expanded_changed.connect(self._on_section_toggled)
 
     def build(self, ui: PanelLayout) -> None:
         """Declares sections and controls. Subclasses override it. Called once, from the constructor."""
@@ -232,18 +256,50 @@ class DockPanel(QWidget):
         The column takes its content's minimum width, and grows toward the content's maximum width while that leaves
         room for one strip column beside it.
         """
-        return self._pinned_layout
+        return self._pinned.layout
 
     def set_pinned_visible(self, visible: bool) -> None:
         """Shows or hides the pinned column. While it shows, the footer sits under it instead of under the scrolled
         content, and the pinned content scrolls vertically above the footer when the panel is too short for it."""
         if self._footer is not None:
             if visible:
-                self._pinned_column_layout.addWidget(self._footer)
+                self._pinned.column_layout.addWidget(self._footer)
             else:
                 self.layout().addWidget(self._footer)
             self._footer.show()
-        self._pinned_column.setVisible(visible)
+        self._pinned.column.setVisible(visible)
+
+    @property
+    def trailing_layout(self) -> QVBoxLayout:
+        """The layout of a column right of the scrolled content, which stays in place while the content scrolls
+        sideways. Subclasses fill it in `arrange`, and show it with `set_trailing_visible`.
+
+        It follows the pinned column's rules for width and vertical scrolling. The footer never moves into it, so
+        content that is a side panel's footer and a strip's trailing column moves between them in `arrange`.
+        """
+        return self._trailing_column().layout
+
+    def _trailing_column(self) -> _PinnedColumn:
+        if self._trailing is None:
+            self._trailing = _PinnedColumn()
+            self._scroll_row.addWidget(self._trailing.column)
+        return self._trailing
+
+    def set_trailing_visible(self, visible: bool) -> None:
+        """Shows or hides the trailing column."""
+        self._trailing_column().column.setVisible(visible)
+
+    def set_column_packing(self, enabled: bool) -> None:
+        """Opts the panel in or out of column packing. Call it once, from `build` or the constructor.
+
+        A packing strip fills columns top to bottom: a section goes under the previous one in its column when both fit
+        the strip's height, and starts a new column otherwise. A section never splits across columns. Collapsed
+        sections are short, so they stack. Opening or closing a section plans again. In a packing strip a collapsed
+        section draws its summary on a second line, since its column is too narrow for one line.
+
+        Sections a subclass moves out of `section_layout`, such as into the pinned column, stay where it put them.
+        """
+        self._packs_columns = enabled
 
     @property
     def section_layout(self) -> QBoxLayout:
@@ -335,7 +391,9 @@ class DockPanel(QWidget):
         direction = QBoxLayout.Direction.LeftToRight if horizontal else QBoxLayout.Direction.TopToBottom
         self._section_layout.setDirection(direction)
         self._body_layout.setDirection(direction)
+        self._set_packed(horizontal and self._packs_columns)
         for section in self._layout_model.sections:
+            section.widget.set_summary_below(horizontal and self._packs_columns)
             if horizontal:
                 section.widget.setMinimumWidth(STRIP_SECTION_MIN_WIDTH)
                 section.widget.setMaximumWidth(STRIP_SECTION_MAX_WIDTH)
@@ -362,10 +420,14 @@ class DockPanel(QWidget):
 
         A scroll bar narrows the body, so the header is fit to its `header_width` again when that changes.
         """
+        self._pack_reserve = 0
         need = self.measure_content()
         available = self.available_size
         scrolls = available is not None and scroll_extent(need, self._orientation) > scroll_extent(available,
                                                                                                   self._orientation)
+        if scrolls and self._packed:
+            self._pack_reserve = self.scroll_bar_extent()
+            need = self.measure_content()
         if scrolls != self._scrolls:
             self._scrolls = scrolls
             self._fit_header_width()
@@ -378,11 +440,13 @@ class DockPanel(QWidget):
 
     def measure_content(self) -> QSize:
         """Returns the content's minimum size as currently arranged: the header, if shown above the scroll area, over
-        the pinned column and scrolled body, over the footer if it is still below them."""
+        the pinned, scrolled and trailing columns, over the footer if it is still below them."""
+        if self._packed:
+            self._pack_sections()
         content = fresh_minimum_size(self._body)
         spacing = max(self.layout().spacing(), 0)
-        if not self._pinned_column.isHidden():
-            content = self._measure_with_pinned_column(content)
+        if self._pinned.shown or (self._trailing is not None and self._trailing.shown):
+            content = self._measure_with_pinned_columns(content)
         if not self._header.isHidden() and self._header.parentWidget() is self:
             header = fresh_minimum_size(self._header)
             content = QSize(max(content.width(), header.width()), content.height() + spacing + header.height())
@@ -391,35 +455,46 @@ class DockPanel(QWidget):
             content = QSize(max(content.width(), footer.width()), content.height() + spacing + footer.height())
         return content
 
-    def _measure_with_pinned_column(self, body: QSize) -> QSize:
-        """Returns the size of the pinned column beside the scrolled body, and sets the pinned scroll area's widths.
+    def _measure_with_pinned_columns(self, body: QSize) -> QSize:
+        """Returns the size of the shown pinned and trailing columns beside the scrolled body, and sets their scroll
+        areas' widths.
 
-        The pinned content scrolls on its own, so it adds only the scroll area's minimum height. It gets a scroll bar
-        when it is taller than the room it has under the header and over the footer.
+        Each column's content scrolls on its own, so it adds only its scroll area's minimum height. It gets a scroll bar
+        when it is taller than the room it has under the header and over its footer, if it has one.
         """
-        content = fresh_minimum_size(self._pinned_content)
-        column_spacing = max(self._pinned_column_layout.spacing(), 0)
+        available = self.available_size
+        row_spacing = max(self._scroll_row.spacing(), 0)
+        header_height = 0
+        if not self._header.isHidden() and self._header.parentWidget() is self:
+            header_height = fresh_minimum_size(self._header).height() + max(self.layout().spacing(), 0)
         footer = QSize(0, 0)
         if self._footer is not None and not self._footer.isHidden():
             footer = fresh_minimum_size(self._footer)
-        width = content.width() + self._pinned_scroll.frameWidth() * 2
-        available = self.available_size
-        if available is not None:
-            room = available.height() - footer.height() - column_spacing
-            if not self._header.isHidden() and self._header.parentWidget() is self:
-                room -= fresh_minimum_size(self._header).height() + max(self.layout().spacing(), 0)
-            if content.height() > room:
-                width += self._pinned_scroll.verticalScrollBar().sizeHint().width()
-        self._pinned_scroll.setMinimumWidth(width)
-        # It prefers its content's maximum width, less room for one strip column beside it:
-        row_spacing = max(self._scroll_row.spacing(), 0)
-        preferred = self._pinned_content.maximumWidth()
-        if available is not None:
-            preferred = min(preferred, available.width() - row_spacing - STRIP_SECTION_MIN_WIDTH)
-        self._pinned_scroll.set_preferred_width(preferred + width - content.width())
-        column = QSize(max(width, footer.width()),
-                       self._pinned_scroll.minimumSizeHint().height() + column_spacing + footer.height())
-        return QSize(column.width() + row_spacing + body.width(), max(column.height(), body.height()))
+        columns = [column for column in (self._pinned, self._trailing) if column is not None and column.shown]
+        widths: list[int] = []
+        sizes: list[QSize] = []
+        for column in columns:
+            column_footer = footer if column is self._pinned else QSize(0, 0)
+            column_spacing = max(column.column_layout.spacing(), 0) if column_footer.height() > 0 else 0
+            content = fresh_minimum_size(column.content)
+            width = content.width() + column.scroll.frameWidth() * 2
+            if available is not None:
+                room = available.height() - column_footer.height() - column_spacing - header_height
+                if content.height() > room:
+                    width += column.scroll.verticalScrollBar().sizeHint().width()
+            column.scroll.setMinimumWidth(width)
+            widths.append(width)
+            sizes.append(QSize(max(width, column_footer.width()),
+                               column.scroll.minimumSizeHint().height() + column_spacing + column_footer.height()))
+        # Each prefers its content's maximum width, less room for one strip column beside the minimums of the rest:
+        for index, column in enumerate(columns):
+            preferred = column.content.maximumWidth()
+            if available is not None:
+                others = sum(size.width() + row_spacing for other, size in zip(columns, sizes) if other is not column)
+                preferred = min(preferred, available.width() - row_spacing - STRIP_SECTION_MIN_WIDTH - others)
+            column.scroll.set_preferred_width(preferred + widths[index] - fresh_minimum_size(column.content).width())
+        columns_width = sum(size.width() + row_spacing for size in sizes)
+        return QSize(columns_width + body.width(), max(max(size.height() for size in sizes), body.height()))
 
     def measure_with_control(self, control: _Control) -> QSize:
         """Returns the content's minimum size with one more control added in its smallest form, and every control
@@ -534,3 +609,92 @@ class DockPanel(QWidget):
         for section in self._layout_model.sections:
             self._overflow.extend(section.place(self._overflow_layout))
         self.finish_placement()
+
+    def _on_section_toggled(self, _expanded: bool) -> None:
+        """Plans again when a section opens or closes in a packing strip, since its height decides the columns."""
+        if self._packed:
+            self.refit()
+
+    def _set_packed(self, packed: bool) -> None:
+        """Enters or leaves column packing. Leaving puts every section back in `section_layout` in order."""
+        if packed == self._packed:
+            return
+        self._packed = packed
+        if packed:
+            return
+        sections = [section.widget for section in self._layout_model.sections if self._packable(section.widget)]
+        for widget in sections:
+            self._detach(widget)
+        for column in self._pack_columns:
+            self._section_layout.removeWidget(column)
+            column.hide()
+        self._pack_plan = []
+        for widget in sections:
+            self._section_layout.addWidget(widget)
+
+    def _packable(self, widget: QWidget) -> bool:
+        """Whether a section is still where `section_layout` or a packed column holds it."""
+        parent = widget.parentWidget()
+        return parent is self._section_holder or parent in self._pack_columns
+
+    @staticmethod
+    def _detach(widget: QWidget) -> None:
+        parent = widget.parentWidget()
+        if parent is not None and parent.layout() is not None:
+            parent.layout().removeWidget(widget)
+
+    def _column_budget(self) -> int:
+        """Returns the height a packed column has: the strip's, less the header and footer above and below the scrolled
+        content, the body's margins and the horizontal scroll bar's room. It is zero before the first plan, which gives
+        every section its own column."""
+        available = self.available_size
+        if available is None:
+            return 0
+        margins = self._body_layout.contentsMargins()
+        budget = available.height() - self._pack_reserve - margins.top() - margins.bottom()
+        spacing = max(self.layout().spacing(), 0)
+        if not self._header.isHidden() and self._header.parentWidget() is self:
+            budget -= fresh_minimum_size(self._header).height() + spacing
+        if self._footer is not None and not self._footer.isHidden() and self._footer.parentWidget() is self:
+            budget -= fresh_minimum_size(self._footer).height() + spacing
+        return budget
+
+    def _pack_sections(self) -> None:
+        """Splits the shown sections into columns by their measured heights, then moves them into the columns."""
+        widgets = [section.widget for section in self._layout_model.sections
+                   if self._packable(section.widget) and not section.widget.isHidden()]
+        budget = self._column_budget()
+        spacing = max(self._section_layout.spacing(), 0)
+        columns: list[list[QWidget]] = []
+        used = 0
+        for widget in widgets:
+            height = fresh_minimum_size(widget).height()
+            if len(columns) > 0 and used + spacing + height <= budget:
+                columns[-1].append(widget)
+                used += spacing + height
+            else:
+                columns.append([widget])
+                used = height
+        plan = [tuple(column) for column in columns]
+        if plan == self._pack_plan:
+            return
+        self._pack_plan = plan
+        for widget in widgets:
+            self._detach(widget)
+        for column in self._pack_columns:
+            self._section_layout.removeWidget(column)
+        while len(self._pack_columns) < len(plan):
+            column = QWidget()
+            column_layout = QVBoxLayout(column)
+            column_layout.setContentsMargins(0, 0, 0, 0)
+            column_layout.setSpacing(spacing)
+            column_layout.addStretch()
+            self._pack_columns.append(column)
+        for column, column_sections in zip(self._pack_columns, plan):
+            column_layout = column.layout()
+            for widget in column_sections:
+                column_layout.insertWidget(column_layout.count() - 1, widget)
+            self._section_layout.addWidget(column)
+            column.show()
+        for column in self._pack_columns[len(plan):]:
+            column.hide()
