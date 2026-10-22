@@ -20,10 +20,10 @@ STRIP = Orientation.STRIP
 # Sample sizes, named by shape. Every control fits in side_tall_narrow, side_wide, strip_wide and strip_regular:
 SAMPLE_SIZES = {
     'side_tall_narrow': (SIDE, QSize(200, 900)),
-    'side_short': (SIDE, QSize(340, 120)),
+    'side_short': (SIDE, QSize(362, 142)),
     'side_wide': (SIDE, QSize(500, 600)),
     'strip_short': (STRIP, QSize(1400, 90)),
-    'strip_wide': (STRIP, QSize(1400, 160)),
+    'strip_wide': (STRIP, QSize(1400, 182)),
     'strip_regular': (STRIP, QSize(900, 240)),
     'strip_narrow': (STRIP, QSize(300, 400)),
     'strip_tiny': (STRIP, QSize(300, 50)),
@@ -74,7 +74,7 @@ class DockPanelTest(IntraPaintTestCase):
         return [self.panel.name_field, self.panel.flag, self.panel.extra, self.panel.only_extra]
 
     def test_roomy_panels_show_everything(self) -> None:
-        """A tall, narrow side panel and a wide strip under 170 px tall have room for every control, so nothing moves
+        """A tall, narrow side panel and a wide strip under 190 px tall have room for every control, so nothing moves
         to More."""
         for name in ('side_tall_narrow', 'side_wide', 'strip_wide'):
             with self.subTest(size=name):
@@ -150,12 +150,12 @@ class DockPanelTest(IntraPaintTestCase):
     def test_orientation_follows_the_size_no_matter_its_area(self) -> None:
         """A panel takes the orientation its size suggests, whatever orientation the host reports: a wide space lays
         out as a strip even in a side dock, and a tall one as a side panel even in a bottom dock."""
-        self._host(STRIP, QSize(1400, 160))
+        self._host(STRIP, QSize(1400, 182))
         self.assertEqual(self.panel.orientation, STRIP)
         self._host(STRIP, QSize(200, 900))
         self.assertEqual(self.panel.orientation, SIDE)
         self.assertEqual(self.panel.overflow_widgets, [])
-        self._host(SIDE, QSize(1400, 160))
+        self._host(SIDE, QSize(1400, 182))
         self.assertEqual(self.panel.orientation, STRIP)
         self._host(SIDE, QSize(500, 600))
         self.assertEqual(self.panel.orientation, SIDE)

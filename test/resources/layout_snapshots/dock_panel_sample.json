@@ -31,13 +31,13 @@
       "Advanced": [
         0,
         109,
-        182,
+        160,
         79
       ],
       "Stroke": [
         0,
         0,
-        182,
+        160,
         103
       ]
     },
@@ -56,13 +56,13 @@
       "Advanced": [
         0,
         109,
-        482,
+        460,
         79
       ],
       "Stroke": [
         0,
         0,
-        482,
+        460,
         103
       ]
     },
@@ -81,13 +81,13 @@
       "Advanced": [
         0,
         109,
-        282,
+        260,
         79
       ],
       "Stroke": [
         0,
         0,
-        282,
+        260,
         103
       ]
     },
@@ -107,13 +107,13 @@
         246,
         0,
         240,
-        192
+        170
       ],
       "Stroke": [
         0,
         0,
         240,
-        192
+        170
       ]
     },
     "visible_sections": [
@@ -127,7 +127,8 @@
     "orientation": "strip",
     "overflow": [
       "name",
-      "only_extra"
+      "flag",
+      "extra"
     ],
     "problems": [],
     "section_geometry": {
@@ -135,13 +136,13 @@
         246,
         0,
         240,
-        72
+        50
       ],
       "Stroke": [
         0,
         0,
         240,
-        72
+        50
       ]
     },
     "visible_sections": [
@@ -160,7 +161,7 @@
       "only_extra"
     ],
     "problems": [
-      "squeezed: QScrollArea is 300x50, minimum 59x59"
+      "squeezed: QScrollArea is 278x28, minimum 59x59"
     ],
     "section_geometry": {
       "Stroke": [
