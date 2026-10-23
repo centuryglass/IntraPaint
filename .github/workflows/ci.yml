@@ -1,7 +1,8 @@
 name: ci
 
 # Runs the test suite, the lint check and the packaged-build launch test on every push and pull request, so every
-# commit's state is known before it's merged anywhere. workflow_dispatch also allows running it by hand from the Actions tab.
+# commit's state is known before it's merged anywhere. The `changes` job skips those three for markdown/doc-image-only
+# changes. workflow_dispatch also allows running it by hand from the Actions tab.
 on:
   push:
   pull_request:
@@ -16,8 +17,58 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Decides whether the change needs the test, lint and bundle jobs. A change that touches only markdown files and
+  # images under doc/ or examples/ skips them. This job always runs, so the `ci` job below still reports and a
+  # docs-only pull request can satisfy the required check. Anything unclear (manual runs, a new branch, a diff that
+  # can't be computed) runs everything.
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The diff needs both ends of the range and their merge base.
+          fetch-depth: 0
+
+      - name: Look for changes outside docs
+        id: filter
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.event.after }}
+        run: |
+          # Markdown anywhere, or an image file under doc/ or examples/. No code reads these files.
+          docs_only='(\.md$|^(doc|examples)/.*\.(png|jpe?g|gif|webp|svg)$)'
+          if [ "$EVENT" = pull_request ]; then
+            range="$PR_BASE...$PR_HEAD"
+          elif [ "$EVENT" = push ]; then
+            range="$PUSH_BEFORE...$PUSH_AFTER"
+          else
+            range=""
+          fi
+          if [ -n "$range" ] && files=$(git diff --name-only "$range" 2>/dev/null) && [ -n "$files" ]; then
+            echo "Changed files:"
+            echo "$files"
+            if echo "$files" | grep -qvE "$docs_only"; then
+              code=true
+            else
+              code=false
+            fi
+          else
+            echo "No usable diff for '$EVENT'; running everything."
+            code=true
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
   test:
     name: test (python ${{ matrix.python-version }})
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     # The suite takes a few minutes. Anything much longer is a hang, like a modal dialog conftest.py failed to catch.
     timeout-minutes: 20
@@ -98,6 +149,8 @@ jobs:
 
   lint:
     name: lint
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -122,6 +175,8 @@ jobs:
   # works (see scripts/smoke_test_bundle.py). The uploaded artifacts are the release candidates.
   bundle:
     name: bundle (${{ matrix.name }})
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
@@ -188,16 +243,22 @@ jobs:
           retention-days: 14
 
   # A single check to require for merging, so branch protection doesn't need updating whenever the matrix or the
-  # set of jobs changes.
+  # set of jobs changes. The three jobs are skipped, not failed, for a docs-only change; that passes.
   ci:
     name: ci
     if: always()
-    needs: [test, lint, bundle]
+    needs: [changes, test, lint, bundle]
     runs-on: ubuntu-latest
     steps:
       - name: All checks passed
-        if: needs.test.result != 'success' || needs.lint.result != 'success' || needs.bundle.result != 'success'
+        if: |
+          needs.changes.result != 'success' ||
+          (needs.changes.outputs.code == 'true' &&
+            (needs.test.result != 'success' || needs.lint.result != 'success' || needs.bundle.result != 'success')) ||
+          (needs.changes.outputs.code != 'true' &&
+            (needs.test.result != 'skipped' || needs.lint.result != 'skipped' || needs.bundle.result != 'skipped'))
         run: |
+          echo "changes result: ${{ needs.changes.result }} (code changed: ${{ needs.changes.outputs.code }})"
           echo "test result: ${{ needs.test.result }}"
           echo "lint result: ${{ needs.lint.result }}"
           echo "bundle result: ${{ needs.bundle.result }}"
