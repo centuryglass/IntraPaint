@@ -2,9 +2,9 @@
 import math
 from typing import Optional, cast
 
-from PySide6.QtCore import Qt, QObject, QPoint, QPointF, QRect, QRectF, QSize, QMarginsF, Signal, QEvent
+from PySide6.QtCore import Qt, QObject, QPoint, QPointF, QRect, QRectF, QSize, QMarginsF, Signal, QEvent, QMimeData
 from PySide6.QtGui import (QPixmap, QImage, QPainter, QPen, QTransform, QResizeEvent, QMouseEvent, QCursor, QWheelEvent,
-                           QEnterEvent, QSurfaceFormat)
+                           QEnterEvent, QSurfaceFormat, QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent)
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
 from PySide6.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QSizePolicy
 
@@ -442,6 +442,50 @@ class ImageGraphicsView(QGraphicsView):
             self._last_widget_cursor_pos = cursor_point
         if self._cursor_pixmap is not None:
             self.update()
+
+    def accepts_mime_data(self, mime_data: Optional[QMimeData]) -> bool:  # pylint: disable=unused-argument
+        """Returns whether this view claims a drag with `mime_data` and handles its drop itself.
+
+        The base view claims nothing, so every drag passes to the widgets above it. The
+        future canvas drop feature returns True for the formats it applies.
+        """
+        return False
+
+    def dragEnterEvent(self, event: Optional[QDragEnterEvent]) -> None:  # pylint: disable=invalid-name
+        """Claims drags `accepts_mime_data` accepts, and passes all others up the widget chain.
+
+        `QGraphicsScene.dragEnterEvent` accepts every drag enter, and
+        `QApplication.notify` stops a drag's parent walk at the first widget that accepts.
+        Forwarding every drag to the scene would make the viewport claim Qt's Wayland dock
+        drag before it reaches the `QMainWindow`, so no dock could drop over a canvas.
+        """
+        if event is not None and self.accepts_mime_data(event.mimeData()):
+            event.acceptProposedAction()
+        elif event is not None:
+            event.ignore()
+
+    def dragMoveEvent(self, event: Optional[QDragMoveEvent]) -> None:  # pylint: disable=invalid-name
+        """Keeps a claimed drag accepted, or passes an unclaimed one up the widget chain."""
+        if event is not None and self.accepts_mime_data(event.mimeData()):
+            event.acceptProposedAction()
+        elif event is not None:
+            event.ignore()
+
+    def dragLeaveEvent(self, event: Optional[QDragLeaveEvent]) -> None:  # pylint: disable=invalid-name
+        """Leaves the drag unaccepted; a drag `dragEnterEvent` never claimed never entered
+        the scene, so the base handler has no state to clear."""
+        if event is not None:
+            event.ignore()
+
+    def dropEvent(self, event: Optional[QDropEvent]) -> None:  # pylint: disable=invalid-name
+        """Accepts a claimed drop, or passes one the view never claimed up the widget chain.
+
+        The feature whose `accepts_mime_data` returns True applies the drop, usually by
+        overriding this method."""
+        if event is not None and self.accepts_mime_data(event.mimeData()):
+            event.acceptProposedAction()
+        elif event is not None:
+            event.ignore()
 
     def mousePressEvent(self, event: Optional[QMouseEvent], get_result=False) -> Optional[bool]:
         """Custom mousePress handler to deal with QGraphicsView oddities. Child classes must call this implementation

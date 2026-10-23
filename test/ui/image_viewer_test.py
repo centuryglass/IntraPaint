@@ -1,9 +1,9 @@
-"""Tests ImageViewer's context pin markers and what deleting a viewer releases."""
+"""Tests ImageViewer's context pin markers, its drop routing, and what deleting a viewer releases."""
 import sys
 
-from PySide6.QtCore import QCoreApplication, QEvent, QPoint, QRectF, QSize
-from PySide6.QtGui import QColor, QImage, QPainter
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QCoreApplication, QEvent, QMimeData, QObject, QPoint, QRectF, QSize, Qt
+from PySide6.QtGui import QColor, QDragEnterEvent, QImage, QPainter
+from PySide6.QtWidgets import QApplication, QMainWindow
 import shiboken6
 
 from src.image.layers.image_stack import ImageStack
@@ -128,3 +128,87 @@ class MarkerSizeForViewTest(IntraPaintTestCase):
         """Tiny and huge views stay within the marker size limits."""
         self.assertEqual(marker_size_for_view(QSize(10, 10)), MIN_MARKER_SIZE)
         self.assertEqual(marker_size_for_view(QSize(10000, 10000)), MAX_MARKER_SIZE)
+
+
+DOCK_DRAG_MIME = 'application/x-qt-mainwindowdrag-window'
+CLAIMED_DRAG_MIME = 'application/x-intrapaint-test-drop'
+
+
+class _DragWatcher(QObject):
+    """Installed on a top-level window to record whether a DragEnter reached it."""
+
+    def __init__(self, window: QMainWindow) -> None:
+        super().__init__(window)
+        self.window_saw_drag = False
+
+    def eventFilter(self, _watched: QObject, event: QEvent) -> bool:  # pylint: disable=invalid-name
+        """Records a DragEnter, and lets Qt's own drag handling run."""
+        if event.type() == QEvent.Type.DragEnter:
+            self.window_saw_drag = True
+        return False
+
+
+class _DropClaimingViewer(ImageViewer):
+    """An image viewer that claims one sample drag format, as the canvas drop feature will."""
+
+    def accepts_mime_data(self, mime_data: QMimeData) -> bool:
+        """Returns whether the drag carries the claimed sample format."""
+        return mime_data is not None and mime_data.hasFormat(CLAIMED_DRAG_MIME)
+
+
+class ImageViewerDropRoutingTest(IntraPaintTestCase):
+    """Tests that an image view claims only the drags it handles, passing Qt's dock drag up to
+    the main window instead of letting its scene swallow it."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.image_stack = ImageStack(QSize(64, 64), QSize(64, 64), QSize(8, 8), QSize(64, 64))
+        self.viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
+        self.window = QMainWindow()
+        self.window.setCentralWidget(self.viewer)
+        self.window.resize(300, 200)
+        self.window.show()
+        self.watcher = _DragWatcher(self.window)
+        self.window.installEventFilter(self.watcher)
+
+    def tearDown(self) -> None:
+        self.window.hide()
+        super().tearDown()
+
+    @classmethod
+    def _drag_enter(cls, viewer: ImageViewer, mime: QMimeData, action: Qt.DropAction) -> QDragEnterEvent:
+        """Sends a DragEnter for `mime` to `viewer`'s viewport, as a drag over the canvas."""
+        event = QDragEnterEvent(QPoint(50, 50), action, mime, Qt.MouseButton.LeftButton,
+                                Qt.KeyboardModifier.NoModifier)
+        QApplication.sendEvent(viewer.viewport(), event)
+        return event
+
+    def test_dock_drag_passes_up_over_the_view(self) -> None:
+        """A drag a view doesn't claim, like Qt's Wayland dock drag, is ignored at the viewport
+        and reaches the window above the view, so a dock can drop over the canvas."""
+        mime = QMimeData()
+        mime.setData(DOCK_DRAG_MIME, b'')
+        event = self._drag_enter(self.viewer, mime, Qt.DropAction.MoveAction)
+        self.assertFalse(event.isAccepted())
+        self.assertTrue(self.watcher.window_saw_drag)
+
+    def test_claimed_drag_is_accepted_by_the_view(self) -> None:
+        """A drag that `accepts_mime_data` claims is accepted at the view, which stops the
+        drag's parent walk before it reaches the window."""
+        claiming = _DropClaimingViewer(None, self.image_stack, use_keybindings=False)
+        window = QMainWindow()
+        window.setCentralWidget(claiming)
+        window.resize(300, 200)
+        window.show()
+        watcher = _DragWatcher(window)
+        window.installEventFilter(watcher)
+        mime = QMimeData()
+        mime.setData(CLAIMED_DRAG_MIME, b'')
+        event = self._drag_enter(claiming, mime, Qt.DropAction.CopyAction)
+        self.assertTrue(event.isAccepted())
+        self.assertEqual(event.dropAction(), Qt.DropAction.CopyAction)
+        self.assertFalse(watcher.window_saw_drag)
+
+    def test_accepts_mime_data_is_false_by_default(self) -> None:
+        """The base view claims no drag formats, so every drag passes up the widget chain."""
+        self.assertFalse(self.viewer.accepts_mime_data(QMimeData()))
