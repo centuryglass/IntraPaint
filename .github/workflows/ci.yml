@@ -87,7 +87,6 @@ jobs:
       # Belt-and-suspenders: conftest.py also sets this, but making it explicit keeps the job's intent
       # (run Qt with no display) obvious and independent of the test harness.
       QT_QPA_PLATFORM: offscreen
-      COVERAGE_PYTHON: '3.13'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -119,7 +118,8 @@ jobs:
         run: python setup.py build_ext --inplace
 
       # A crashing test leaves a core file in CORE_DIR for the "Native backtraces" step. The runner's default
-      # core_pattern hands cores to apport, which doesn't keep them for this job's Python. Each test step raises its own shell's core size limit.
+      # core_pattern hands cores to apport, which doesn't keep them for this job's Python. The core size limit is
+      # per shell, so "Run tests" raises it in its own.
       - name: Enable core dumps
         run: |
           CORE_DIR=$RUNNER_TEMP/cores
@@ -128,18 +128,9 @@ jobs:
           sudo sysctl -w kernel.core_pattern="$CORE_DIR/core.%p"
 
       - name: Run tests
-        if: matrix.python-version != env.COVERAGE_PYTHON
         run: |
           ulimit -c unlimited
           python -m pytest
-
-      # One matrix leg measures coverage (settings in .coveragerc), since tracing slows the suite. The report goes to
-      # the run's summary page and an artifact. Nothing fails on the percentage yet.
-      - name: Run tests with coverage
-        if: matrix.python-version == env.COVERAGE_PYTHON
-        run: |
-          ulimit -c unlimited
-          coverage run -m pytest
 
       # When a test crashes the interpreter, faulthandler prints only the Python stack (plus unnamed native frames on
       # 3.14). gdb names the native function in every thread, with file and line where a library ships symbols, and
@@ -174,32 +165,6 @@ jobs:
           name: native-backtraces-python-${{ matrix.python-version }}
           path: ${{ runner.temp }}/backtraces/
           if-no-files-found: ignore
-          retention-days: 14
-
-      - name: Coverage report
-        if: matrix.python-version == env.COVERAGE_PYTHON
-        run: |
-          coverage report
-          coverage html
-          {
-            echo "## Coverage"
-            echo
-            coverage report --format=total | sed 's/$/% of src\/ (lines and branches)/'
-            echo
-            echo "<details><summary>Per-file coverage</summary>"
-            echo
-            coverage report --format=markdown
-            echo
-            echo "</details>"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload coverage report
-        if: matrix.python-version == env.COVERAGE_PYTHON
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        with:
-          name: coverage-report
-          path: htmlcov/
-          if-no-files-found: error
           retention-days: 14
 
   lint:
