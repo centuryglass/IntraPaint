@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
 from src.ui.panel.tool_control_panels.stroke_block import StrokeBlock, StrokeToolPanel
+from src.ui.panel.tool_control_panels.stroke_preview import SmudgeStrokePreview
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.smudge_tool_panel'
@@ -21,7 +22,7 @@ STRENGTH_TOOLTIP = _tr('How far the smudge carries color')
 
 class SmudgeToolPanel(StrokeToolPanel):
     """Control panel widget for the smudge tool: the stroke block without a color row, with Opacity read as
-    Strength."""
+    Strength, and a preview of smudging."""
 
     def __init__(self):
         super().__init__(StrokeBlock(size_key=Cache.SMUDGE_TOOL_BRUSH_SIZE,
@@ -32,4 +33,8 @@ class SmudgeToolPanel(StrokeToolPanel):
                                      pressure_opacity_key=Cache.SMUDGE_TOOL_PRESSURE_OPACITY,
                                      hardness_key=Cache.SMUDGE_TOOL_HARDNESS,
                                      pressure_hardness_key=Cache.SMUDGE_TOOL_PRESSURE_HARDNESS,
-                                     antialias_key=Cache.SMUDGE_TOOL_ANTIALIAS))
+                                     antialias_key=Cache.SMUDGE_TOOL_ANTIALIAS,
+                                     preview=SmudgeStrokePreview(Cache.SMUDGE_TOOL_BRUSH_SIZE,
+                                                                 Cache.SMUDGE_TOOL_OPACITY,
+                                                                 Cache.SMUDGE_TOOL_HARDNESS,
+                                                                 Cache.SMUDGE_TOOL_ANTIALIAS)))
