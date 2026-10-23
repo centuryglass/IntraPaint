@@ -12,7 +12,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 
 from PIL import Image
 from PySide6.QtGui import QImage
@@ -219,3 +219,15 @@ def load_request_units(cache_keys: list[str], source_image: Optional[QImage],
         if request_unit is not None:
             units.append(request_unit)
     return units
+
+
+def count_enabled_units(saved_units: Sequence[str]) -> int:
+    """Returns how many saved units have `enabled` set. Units that fail to parse count as off."""
+    count = 0
+    for data in saved_units:
+        try:
+            if SavedControlNetUnit.from_json(data).enabled:
+                count += 1
+        except ValueError:
+            continue
+    return count

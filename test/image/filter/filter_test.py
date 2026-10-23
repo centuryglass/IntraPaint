@@ -44,8 +44,8 @@ TRANSFORMED_SELECTION = QRect(70, 16, 20, 30)
 TRANSFORM = QTransform.fromTranslate(STACK_SIZE.width(), 8).rotate(90)
 
 # Every filter in the Filters menu, with parameter values that change the test pattern. The filters with identity
-# defaults get other values; the rest keep their defaults. Contrast stays at 1.0, since the selection tests would hit
-# the bug that test_contrast_inside_selection_matches_whole_layer pins.
+# defaults get other values; the rest keep their defaults. Contrast stays at 1.0; test_contrast_inside_selection_matches_whole_layer
+# covers other values.
 MENU_FILTERS: tuple[tuple[type[ImageFilter], list[Any]], ...] = (
     (RGBColorBalanceFilter, [2.0, 0.5, 1.0, 1.0]),
     (BrightnessContrastFilter, [1.5, 1.0]),
@@ -207,13 +207,8 @@ class MenuFilterTest(IntraPaintTestCase):
                 expected = merge_in_rect(original, filtered_copy(image_filter, original, parameter_values), SELECTION)
                 self._assert_one_undo_step({layer: expected}, {layer: original})
 
-    @pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/192')
     def test_contrast_inside_selection_matches_whole_layer(self) -> None:
-        """Contrast inside a selection matches contrast on the whole layer.
-
-        PIL's contrast pivots on the mean of the image it is given, and the menu filter passes it the selection's
-        bounds.
-        """
+        """Contrast inside a selection matches contrast on the whole layer."""
         original = opaque_pattern(STACK_SIZE)
         layer = self.image_stack.create_layer('filtered', original)
         self.image_stack.active_layer = layer

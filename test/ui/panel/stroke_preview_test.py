@@ -1,4 +1,4 @@
-"""Tests StrokePreview's timed updates and its real-brush render, for painting and erasing."""
+"""Tests StrokePreview's timed updates and its real-brush render, for painting, erasing and smudging."""
 import os
 from typing import Optional
 
@@ -7,7 +7,8 @@ from PySide6.QtGui import QImage, QPalette
 
 from src.config.cache import Cache
 from src.ui.input_fields.fill_style_combo_box import BRUSH_PATTERN_DENSE_3, BRUSH_PATTERN_SOLID
-from src.ui.panel.tool_control_panels.stroke_preview import DrawStrokePreview, EraseStrokePreview, StrokePreview
+from src.ui.panel.tool_control_panels.stroke_preview import DrawStrokePreview, EraseStrokePreview, SmudgeStrokePreview, StrokePreview
+from src.ui.panel.tool_control_panels.preview_backdrop import backdrop_image
 from src.undo_stack import UndoStack
 from src.util.visual.keycap import keycap_colors
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
@@ -134,3 +135,41 @@ class EraserPreviewTest(IntraPaintTestCase):
                 preview = self.make_preview()
                 self.assert_image_matches_golden(preview.grab().toImage(),
                                                  os.path.join(GOLDEN_DIR, f'erase_{name}.png'))
+
+
+class SmudgePreviewTest(IntraPaintTestCase):
+    """Tests the Smudge tool's preview."""
+
+    def make_preview(self) -> SmudgeStrokePreview:
+        """Returns a visible preview of the Smudge tool's settings."""
+        preview = SmudgeStrokePreview(Cache.SMUDGE_TOOL_BRUSH_SIZE, Cache.SMUDGE_TOOL_OPACITY,
+                                      Cache.SMUDGE_TOOL_HARDNESS, Cache.SMUDGE_TOOL_ANTIALIAS)
+        preview.setFixedSize(PREVIEW_SIZE)
+        preview.show()
+        preview.render_now()
+        return preview
+
+    def test_stroke_changes_the_backdrop(self) -> None:
+        """The rendered stroke differs from the unsmudged backdrop."""
+        Cache().set(Cache.SMUDGE_TOOL_BRUSH_SIZE, 20)
+        Cache().set(Cache.SMUDGE_TOOL_HARDNESS, 1.0)
+        Cache().set(Cache.SMUDGE_TOOL_OPACITY, 1.0)
+        image = self.make_preview().grab().toImage()
+        self.assertNotEqual(image, backdrop_image(PREVIEW_SIZE))
+
+    def test_golden_images(self) -> None:
+        """The render matches golden images for hard, soft and faint smudges."""
+        cases = {
+            'hard': (20, 1.0, 1.0),
+            'soft': (30, 0.3, 1.0),
+            'faint': (30, 1.0, 0.4),
+        }
+        for name, (size, hardness, opacity) in cases.items():
+            with self.subTest(name):
+                Cache().set(Cache.SMUDGE_TOOL_BRUSH_SIZE, size)
+                Cache().set(Cache.SMUDGE_TOOL_HARDNESS, hardness)
+                Cache().set(Cache.SMUDGE_TOOL_OPACITY, opacity)
+                Cache().set(Cache.SMUDGE_TOOL_ANTIALIAS, True)
+                preview = self.make_preview()
+                self.assert_image_matches_golden(preview.grab().toImage(),
+                                                 os.path.join(GOLDEN_DIR, f'smudge_{name}.png'))

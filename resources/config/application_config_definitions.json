@@ -161,6 +161,14 @@
         "default": true,
         "saved": true
     },
+    "static_loading_indicator": {
+        "label": "Use a static loading indicator:",
+        "category": "Interface",
+        "description": "Show a still frame for the whole load instead of an animated loading indicator.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
     "animate_selection_fill": {
         "label": "Animate selected content overlay:",
         "category": "Interface",

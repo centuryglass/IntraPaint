@@ -8,6 +8,7 @@ from PySide6.QtGui import QPainter, QColor, QShowEvent, QHideEvent, QPaintEvent,
     QRadialGradient
 from PySide6.QtWidgets import QWidget
 
+from src.config.application_config import AppConfig
 from src.ui.loading.loading_design import LoadingDesign, MESSAGE_ZONE
 from src.ui.loading.loading_designs import default_loading_designs, pick_design
 
@@ -25,7 +26,9 @@ class LoadingWidget(QWidget):
     """Show an animated loading indicator, with an optional message.
 
     Each time the animation starts, from hidden or paused, the widget picks a random design from its design list,
-    never repeating the previous one. A design is told each time its loop restarts.
+    never repeating the previous one. A design is told each time its loop restarts. With
+    `AppConfig.STATIC_LOADING_INDICATOR` set, a load holds the design's rest frame instead of animating, and message
+    changes keep that frame.
     """
 
     def __init__(self, parent: Optional[QWidget] = None, message: str = '',
@@ -73,11 +76,15 @@ class LoadingWidget(QWidget):
         self.update()
 
     def start_new_design(self) -> None:
-        """Picks a new random design and plays it from the start."""
+        """Picks a new random design and plays it from the start, or holds its rest frame if the indicator is
+        static."""
         self._anim.stop()
         self.design = pick_design(self._designs, self._design)
         self._design.next_loop()
-        self._anim.start()
+        if AppConfig().get(AppConfig.STATIC_LOADING_INDICATOR):
+            self.phase = self._design.rest_phase
+        else:
+            self._anim.start()
 
     @property
     def paused(self) -> bool:

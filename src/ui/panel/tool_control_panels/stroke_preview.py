@@ -1,9 +1,9 @@
 """Stroke previews for the Qt brush tool panels.
 
-`StrokePreview` is the shared base: it draws one sample stroke with a `QtPaintBrush` on a scratch `ImageLayer`, so a
+`StrokePreview` is the shared base: it draws one sample stroke with a layer brush on a scratch `ImageLayer`, so a
 preview honors the same settings as the canvas. A tool's preview is a subclass that overrides the hooks `_new_layer`,
-`_configure_brush` and `_finish`, and adds the inputs those hooks read to `_inputs`. A panel builds its preview and
-passes it to `StrokeBlock`.
+`_new_brush`, `_configure_brush` and `_finish`, and adds the inputs those hooks read to `_inputs`. A panel builds its
+preview and passes it to `StrokeBlock`.
 """
 import math
 from collections.abc import Hashable
@@ -15,9 +15,11 @@ from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from src.config.cache import Cache
 from src.image.brush.qt_paint_brush import QtPaintBrush
+from src.image.brush.smudge_brush import SmudgeBrush
 from src.image.layers.image_layer import ImageLayer
 from src.ui.input_fields.fill_style_combo_box import BRUSH_PATTERN_SOLID, FillStyleComboBox
 from src.ui.panel.tool_control_panels.brush_preview import BrushPreview
+from src.ui.panel.tool_control_panels.preview_backdrop import backdrop_image
 from src.undo_stack import UndoStack
 from src.util.visual.contrast_color import contrast_ratio
 from src.util.visual.keycap import keycap_colors
@@ -63,7 +65,11 @@ class StrokePreview(BrushPreview):
         """Returns the scratch layer the stroke is drawn on. The default is transparent."""
         return ImageLayer(size, 'brush preview')
 
-    def _configure_brush(self, brush: QtPaintBrush) -> None:
+    def _new_brush(self, layer: ImageLayer) -> Any:
+        """Returns the brush that draws the stroke on `layer`. The default is a `QtPaintBrush`."""
+        return QtPaintBrush(layer)
+
+    def _configure_brush(self, brush: Any) -> None:
         """Applies the preview's settings to the brush, except its size. Subclasses extend this."""
         brush.opacity = float(self._value(self._opacity_key, 1.0))
         brush.hardness = float(self._value(self._hardness_key, 1.0))
@@ -98,7 +104,7 @@ class StrokePreview(BrushPreview):
         diameter, points = self._sample_stroke(size)
         with UndoStack().unrecorded():
             layer = self._new_layer(size)
-            brush = QtPaintBrush(layer)
+            brush = self._new_brush(layer)
             brush.brush_size = round(diameter)
             self._configure_brush(brush)
             brush.start_stroke()
@@ -139,7 +145,7 @@ class DrawStrokePreview(StrokePreview):
         return (super()._inputs(), self._color().name(QColor.NameFormat.HexArgb),
                 self._value(self._pattern_key, BRUSH_PATTERN_SOLID))
 
-    def _configure_brush(self, brush: QtPaintBrush) -> None:
+    def _configure_brush(self, brush: Any) -> None:
         super()._configure_brush(brush)
         brush.brush_color = self._color()
         pattern = self._value(self._pattern_key, BRUSH_PATTERN_SOLID)
@@ -166,7 +172,7 @@ class EraseStrokePreview(StrokePreview):
         backdrop.fill(self._backdrop_color())
         return ImageLayer(backdrop, 'brush preview')
 
-    def _configure_brush(self, brush: QtPaintBrush) -> None:
+    def _configure_brush(self, brush: Any) -> None:
         super()._configure_brush(brush)
         brush.eraser = True
 
@@ -178,3 +184,13 @@ class EraseStrokePreview(StrokePreview):
         painter.drawImage(0, 0, layer_image)
         painter.end()
         return result
+
+
+class SmudgeStrokePreview(StrokePreview):
+    """Previews smudging: a `SmudgeBrush` drags the stroke across the shared sample backdrop."""
+
+    def _new_layer(self, size: QSize) -> ImageLayer:
+        return ImageLayer(backdrop_image(size), 'brush preview')
+
+    def _new_brush(self, layer: ImageLayer) -> SmudgeBrush:
+        return SmudgeBrush(layer)
