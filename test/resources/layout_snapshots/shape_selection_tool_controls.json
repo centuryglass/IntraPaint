@@ -2,75 +2,75 @@
   "minimum": {
     "problems": [],
     "size": [
-      206,
+      208,
       254
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: PanelSection[0] is 85x50, minimum 128x50",
-      "squeezed: PanelSection[0]/QWidget is 85x24, minimum 128x24",
-      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 85x24, minimum 128x24",
-      "squeezed: PanelSection[1] is 85x56, minimum 182x56",
-      "squeezed: PanelSection[1]/QWidget is 85x30, minimum 182x30",
+      "squeezed: PanelSection[0] is 86x50, minimum 128x50",
+      "squeezed: PanelSection[0]/QWidget is 86x24, minimum 128x24",
+      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 86x24, minimum 128x24",
+      "squeezed: PanelSection[1] is 86x56, minimum 182x56",
+      "squeezed: PanelSection[1]/QWidget is 86x30, minimum 182x30",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 40x30, minimum 96x30",
-      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 39x30, minimum 80x30",
-      "squeezed: PanelSection[2] is 85x78, minimum 188x78",
-      "squeezed: PanelSection[2]/QWidget is 85x52, minimum 188x52",
-      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 85x24, minimum 188x24",
-      "squeezed: PanelSection[2]/QWidget/CheckBox 'Fixed 1:1 ratio' is 85x22, minimum 109x22"
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 40x30, minimum 80x30",
+      "squeezed: PanelSection[2] is 86x78, minimum 190x78",
+      "squeezed: PanelSection[2]/QWidget is 86x52, minimum 190x52",
+      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 86x24, minimum 190x24",
+      "squeezed: PanelSection[2]/QWidget/CheckBox 'Fixed 1:1 ratio' is 86x22, minimum 109x22"
     ],
     "size": [
-      103,
+      104,
       254
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      206,
+      208,
       254
     ]
   },
   "short": {
     "problems": [
-      "squeezed: PanelSection[0] is 188x33, minimum 128x50",
-      "squeezed: PanelSection[0]/_HeaderButton 'Mode: Add' is 164x17, minimum 16x26",
-      "squeezed: PanelSection[0]/QWidget is 188x16, minimum 128x24",
-      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 188x16, minimum 128x24",
+      "squeezed: PanelSection[0] is 190x33, minimum 128x50",
+      "squeezed: PanelSection[0]/_HeaderButton 'Mode: Add' is 166x17, minimum 16x26",
+      "squeezed: PanelSection[0]/QWidget is 190x16, minimum 128x24",
+      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 190x16, minimum 128x24",
       "squeezed: PanelSection[0]/KeyHintLabel 'Q' is 20x17, minimum 20x23",
-      "squeezed: PanelSection[1] is 188x32, minimum 182x56",
-      "squeezed: PanelSection[1]/_HeaderButton 'Selection' is 184x16, minimum 16x26",
-      "squeezed: PanelSection[1]/QWidget is 188x16, minimum 182x30",
+      "squeezed: PanelSection[1] is 190x32, minimum 182x56",
+      "squeezed: PanelSection[1]/_HeaderButton 'Selection' is 186x16, minimum 16x26",
+      "squeezed: PanelSection[1]/QWidget is 190x16, minimum 182x30",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 96x16, minimum 96x30",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 80x16, minimum 80x30",
-      "squeezed: PanelSection[2] is 188x32, minimum 188x78",
-      "squeezed: PanelSection[2]/_HeaderButton 'Shape' is 184x16, minimum 16x26",
-      "squeezed: PanelSection[2]/QWidget is 188x16, minimum 188x52",
-      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 188x5, minimum 188x24",
-      "squeezed: PanelSection[2]/QWidget/CheckBox 'Fixed 1:1 ratio' is 188x5, minimum 109x22"
+      "squeezed: PanelSection[2] is 190x32, minimum 190x78",
+      "squeezed: PanelSection[2]/_HeaderButton 'Shape' is 186x16, minimum 16x26",
+      "squeezed: PanelSection[2]/QWidget is 190x16, minimum 190x52",
+      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 190x5, minimum 190x24",
+      "squeezed: PanelSection[2]/QWidget/CheckBox 'Fixed 1:1 ratio' is 190x5, minimum 109x22"
     ],
     "size": [
-      206,
+      208,
       127
     ]
   },
   "strip_minimum": {
     "problems": [
-      "squeezed: PanelSection[0] is 59x78, minimum 128x50",
-      "squeezed: PanelSection[0]/QWidget is 59x39, minimum 128x24",
-      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 59x24, minimum 128x24",
-      "squeezed: PanelSection[1] is 58x78, minimum 182x56",
-      "squeezed: PanelSection[1]/QWidget is 58x52, minimum 182x30",
-      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 26x30, minimum 96x30",
+      "squeezed: PanelSection[0] is 60x78, minimum 128x50",
+      "squeezed: PanelSection[0]/QWidget is 60x39, minimum 128x24",
+      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 60x24, minimum 128x24",
+      "squeezed: PanelSection[1] is 59x78, minimum 182x56",
+      "squeezed: PanelSection[1]/QWidget is 59x52, minimum 182x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 27x30, minimum 96x30",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 26x30, minimum 80x30",
-      "squeezed: PanelSection[2] is 59x78, minimum 188x78",
-      "squeezed: PanelSection[2]/QWidget is 59x52, minimum 188x52",
-      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 59x24, minimum 188x24",
+      "squeezed: PanelSection[2] is 59x78, minimum 190x78",
+      "squeezed: PanelSection[2]/QWidget is 59x52, minimum 190x52",
+      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 59x24, minimum 190x24",
       "squeezed: PanelSection[2]/QWidget/CheckBox 'Fixed 1:1 ratio' is 59x22, minimum 109x22"
     ],
     "size": [
-      206,
+      208,
       254
     ]
   },
@@ -85,70 +85,70 @@
       "squeezed: PanelSection[1]/QWidget is 24x52, minimum 182x30",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 9x30, minimum 96x30",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 9x30, minimum 80x30",
-      "squeezed: PanelSection[2] is 24x78, minimum 188x78",
-      "squeezed: PanelSection[2]/QWidget is 24x52, minimum 188x52",
-      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 24x24, minimum 188x24",
-      "squeezed: PanelSection[2]/QWidget/CheckBox 'Fixed 1:1 ratio' is 24x22, minimum 109x22"
+      "squeezed: PanelSection[2] is 25x78, minimum 190x78",
+      "squeezed: PanelSection[2]/QWidget is 25x52, minimum 190x52",
+      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 25x24, minimum 190x24",
+      "squeezed: PanelSection[2]/QWidget/CheckBox 'Fixed 1:1 ratio' is 25x22, minimum 109x22"
     ],
     "size": [
-      103,
+      104,
       254
     ]
   },
   "strip_preferred": {
     "problems": [
-      "squeezed: PanelSection[0] is 59x78, minimum 128x50",
-      "squeezed: PanelSection[0]/QWidget is 59x39, minimum 128x24",
-      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 59x24, minimum 128x24",
-      "squeezed: PanelSection[1] is 58x78, minimum 182x56",
-      "squeezed: PanelSection[1]/QWidget is 58x52, minimum 182x30",
-      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 26x30, minimum 96x30",
+      "squeezed: PanelSection[0] is 60x78, minimum 128x50",
+      "squeezed: PanelSection[0]/QWidget is 60x39, minimum 128x24",
+      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 60x24, minimum 128x24",
+      "squeezed: PanelSection[1] is 59x78, minimum 182x56",
+      "squeezed: PanelSection[1]/QWidget is 59x52, minimum 182x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 27x30, minimum 96x30",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 26x30, minimum 80x30",
-      "squeezed: PanelSection[2] is 59x78, minimum 188x78",
-      "squeezed: PanelSection[2]/QWidget is 59x52, minimum 188x52",
-      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 59x24, minimum 188x24",
+      "squeezed: PanelSection[2] is 59x78, minimum 190x78",
+      "squeezed: PanelSection[2]/QWidget is 59x52, minimum 190x52",
+      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 59x24, minimum 190x24",
       "squeezed: PanelSection[2]/QWidget/CheckBox 'Fixed 1:1 ratio' is 59x22, minimum 109x22"
     ],
     "size": [
-      206,
+      208,
       254
     ]
   },
   "strip_short": {
     "problems": [
-      "squeezed: PanelSection[0] is 59x78, minimum 128x50",
-      "squeezed: PanelSection[0]/QWidget is 59x39, minimum 128x24",
-      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 59x24, minimum 128x24",
-      "squeezed: PanelSection[1] is 58x78, minimum 182x56",
-      "squeezed: PanelSection[1]/QWidget is 58x52, minimum 182x30",
-      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 26x30, minimum 96x30",
+      "squeezed: PanelSection[0] is 60x78, minimum 128x50",
+      "squeezed: PanelSection[0]/QWidget is 60x39, minimum 128x24",
+      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 60x24, minimum 128x24",
+      "squeezed: PanelSection[1] is 59x78, minimum 182x56",
+      "squeezed: PanelSection[1]/QWidget is 59x52, minimum 182x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 27x30, minimum 96x30",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 26x30, minimum 80x30",
-      "squeezed: PanelSection[2] is 59x78, minimum 188x78",
-      "squeezed: PanelSection[2]/QWidget is 59x52, minimum 188x52",
-      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 59x24, minimum 188x24",
+      "squeezed: PanelSection[2] is 59x78, minimum 190x78",
+      "squeezed: PanelSection[2]/QWidget is 59x52, minimum 190x52",
+      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 59x24, minimum 190x24",
       "squeezed: PanelSection[2]/QWidget/CheckBox 'Fixed 1:1 ratio' is 59x22, minimum 109x22"
     ],
     "size": [
-      206,
+      208,
       127
     ]
   },
   "strip_tall": {
     "problems": [
-      "squeezed: PanelSection[0] is 59x78, minimum 128x50",
-      "squeezed: PanelSection[0]/QWidget is 59x39, minimum 128x24",
-      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 59x24, minimum 128x24",
-      "squeezed: PanelSection[1] is 58x78, minimum 182x56",
-      "squeezed: PanelSection[1]/QWidget is 58x52, minimum 182x30",
-      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 26x30, minimum 96x30",
+      "squeezed: PanelSection[0] is 60x78, minimum 128x50",
+      "squeezed: PanelSection[0]/QWidget is 60x39, minimum 128x24",
+      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 60x24, minimum 128x24",
+      "squeezed: PanelSection[1] is 59x78, minimum 182x56",
+      "squeezed: PanelSection[1]/QWidget is 59x52, minimum 182x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 27x30, minimum 96x30",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 26x30, minimum 80x30",
-      "squeezed: PanelSection[2] is 59x78, minimum 188x78",
-      "squeezed: PanelSection[2]/QWidget is 59x52, minimum 188x52",
-      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 59x24, minimum 188x24",
+      "squeezed: PanelSection[2] is 59x78, minimum 190x78",
+      "squeezed: PanelSection[2]/QWidget is 59x52, minimum 190x52",
+      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 59x24, minimum 190x24",
       "squeezed: PanelSection[2]/QWidget/CheckBox 'Fixed 1:1 ratio' is 59x22, minimum 109x22"
     ],
     "size": [
-      206,
+      208,
       1200
     ]
   },
@@ -162,7 +162,7 @@
   "tall": {
     "problems": [],
     "size": [
-      206,
+      208,
       1200
     ]
   },

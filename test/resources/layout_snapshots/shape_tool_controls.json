@@ -41,10 +41,10 @@
       "overlap: PanelSection[1]/QWidget/SliderField and PanelSection[1]/QWidget/PenStyleComboBox share 114x1",
       "overlap: PanelSection[1]/QWidget/SliderField and PanelSection[1]/QWidget/QLabel 'Join' share 31x1",
       "overlap: PanelSection[1]/QWidget/SliderField and PanelSection[1]/QWidget/SegmentedControl share 162x1",
-      "squeezed: PanelSection[0] is 300x34, minimum 296x50",
+      "squeezed: PanelSection[0] is 300x34, minimum 300x50",
       "squeezed: PanelSection[0]/_HeaderButton 'Shape' is 296x17, minimum 16x26",
-      "squeezed: PanelSection[0]/QWidget is 300x17, minimum 296x24",
-      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 300x17, minimum 296x24",
+      "squeezed: PanelSection[0]/QWidget is 300x17, minimum 300x24",
+      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 300x17, minimum 300x24",
       "squeezed: PanelSection[1] is 199x33, minimum 199x118",
       "squeezed: PanelSection[1]/_HeaderButton 'Outline' is 195x17, minimum 16x26",
       "squeezed: PanelSection[1]/QWidget is 199x16, minimum 199x92",
@@ -68,9 +68,9 @@
   },
   "strip_minimum": {
     "problems": [
-      "squeezed: PanelSection[0] is 126x52, minimum 296x52",
-      "squeezed: PanelSection[0]/QWidget is 126x52, minimum 296x52",
-      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 126x24, minimum 296x24",
+      "squeezed: PanelSection[0] is 126x52, minimum 300x52",
+      "squeezed: PanelSection[0]/QWidget is 126x52, minimum 300x52",
+      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 126x24, minimum 300x24",
       "squeezed: PanelSection[1] is 126x92, minimum 199x92",
       "squeezed: PanelSection[1]/QWidget is 126x92, minimum 199x92",
       "squeezed: PanelSection[1]/QWidget/ColorButton is 41x30, minimum 42x30",
@@ -87,9 +87,9 @@
   },
   "strip_narrow": {
     "problems": [
-      "squeezed: PanelSection[0] is 60x52, minimum 296x52",
-      "squeezed: PanelSection[0]/QWidget is 60x52, minimum 296x52",
-      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 60x24, minimum 296x24",
+      "squeezed: PanelSection[0] is 60x52, minimum 300x52",
+      "squeezed: PanelSection[0]/QWidget is 60x52, minimum 300x52",
+      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 60x24, minimum 300x24",
       "squeezed: PanelSection[0]/QWidget/CheckBox 'Antialiasing' is 60x22, minimum 93x22",
       "squeezed: PanelSection[1] is 59x92, minimum 199x92",
       "squeezed: PanelSection[1]/QWidget is 59x92, minimum 199x92",
@@ -112,9 +112,9 @@
   },
   "strip_preferred": {
     "problems": [
-      "squeezed: PanelSection[0] is 126x52, minimum 296x52",
-      "squeezed: PanelSection[0]/QWidget is 126x52, minimum 296x52",
-      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 126x24, minimum 296x24",
+      "squeezed: PanelSection[0] is 126x52, minimum 300x52",
+      "squeezed: PanelSection[0]/QWidget is 126x52, minimum 300x52",
+      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 126x24, minimum 300x24",
       "squeezed: PanelSection[1] is 126x92, minimum 199x92",
       "squeezed: PanelSection[1]/QWidget is 126x92, minimum 199x92",
       "squeezed: PanelSection[1]/QWidget/ColorButton is 41x30, minimum 42x30",
@@ -131,9 +131,9 @@
   },
   "strip_short": {
     "problems": [
-      "squeezed: PanelSection[0] is 126x52, minimum 296x52",
-      "squeezed: PanelSection[0]/QWidget is 126x52, minimum 296x52",
-      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 126x24, minimum 296x24",
+      "squeezed: PanelSection[0] is 126x52, minimum 300x52",
+      "squeezed: PanelSection[0]/QWidget is 126x52, minimum 300x52",
+      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 126x24, minimum 300x24",
       "squeezed: PanelSection[1] is 126x92, minimum 199x92",
       "squeezed: PanelSection[1]/QWidget is 126x92, minimum 199x92",
       "squeezed: PanelSection[1]/QWidget/ColorButton is 41x30, minimum 42x30",
@@ -150,9 +150,9 @@
   },
   "strip_tall": {
     "problems": [
-      "squeezed: PanelSection[0] is 126x52, minimum 296x52",
-      "squeezed: PanelSection[0]/QWidget is 126x52, minimum 296x52",
-      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 126x24, minimum 296x24",
+      "squeezed: PanelSection[0] is 126x52, minimum 300x52",
+      "squeezed: PanelSection[0]/QWidget is 126x52, minimum 300x52",
+      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 126x24, minimum 300x24",
       "squeezed: PanelSection[1] is 126x92, minimum 199x92",
       "squeezed: PanelSection[1]/QWidget is 126x92, minimum 199x92",
       "squeezed: PanelSection[1]/QWidget/ColorButton is 41x30, minimum 42x30",

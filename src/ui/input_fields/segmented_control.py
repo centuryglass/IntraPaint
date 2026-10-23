@@ -12,13 +12,14 @@
 - The widget holds no config state. The owner connects `valueChanged` and calls `set_value` when the bound value
   changes. Colors and fonts are cached and rebuilt on palette and font changes.
 """
+import math
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
 from PySide6.QtCore import QEvent, QPoint, QRect, QRectF, QSize, Qt, Signal
-from PySide6.QtGui import (QColor, QFocusEvent, QFont, QFontMetrics, QHelpEvent, QHoverEvent, QIcon, QKeyEvent,
-                           QMouseEvent, QPainter, QPainterPath, QPaintEvent, QPalette, QPen, QResizeEvent)
+from PySide6.QtGui import (QColor, QFocusEvent, QFont, QFontMetrics, QFontMetricsF, QHelpEvent, QHoverEvent, QIcon,
+                           QKeyEvent, QMouseEvent, QPainter, QPainterPath, QPaintEvent, QPalette, QPen, QResizeEvent)
 from PySide6.QtWidgets import QComboBox, QSizePolicy, QToolTip, QWidget
 
 from src.ui.ink_style import RADIUS, ink_colors
@@ -267,14 +268,15 @@ class SegmentedControl(QWidget):
     # -----------------------------------------------------------------------------------------------------------------
 
     def _content_width(self, segment: Segment) -> int:
-        metrics = QFontMetrics(self.font())
+        # Painting elides against the unrounded advance, so a rounded-down width would elide the label at this size:
+        metrics = QFontMetricsF(self.font())
         show_text = self._display_mode != DisplayMode.ICON
         show_icon = self._display_mode != DisplayMode.LABEL and segment.icon is not None
         width = 0
         if show_icon:
             width += ICON_SIZE
         if show_text:
-            width += metrics.horizontalAdvance(segment.label) + (ICON_TEXT_SPACING if show_icon else 0)
+            width += math.ceil(metrics.horizontalAdvance(segment.label)) + (ICON_TEXT_SPACING if show_icon else 0)
         return width + 2 * SEGMENT_PADDING
 
     def _segment_width_hint(self) -> int:
