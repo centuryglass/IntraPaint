@@ -121,6 +121,17 @@ class StrokeBlockTest(IntraPaintTestCase):
                 self.assertEqual(panel.stroke_block.arrangement.preview, preview)
                 self.assertEqual(preview_widget.isHidden(), preview is None)
 
+    def test_smudge_panel_has_a_smudge_preview(self) -> None:
+        """The Smudge panel's preview takes the same arrangements as Draw's."""
+        panel = SmudgeToolPanel()
+        preview_widget = panel.stroke_block._preview  # pylint: disable=protected-access
+        assert preview_widget is not None
+        for size, preview in ((QSize(260, 900), BELOW), (QSize(420, 900), BESIDE), (QSize(260, 200), None)):
+            with self.subTest(size=size):
+                panel.set_fit_space(SIDE, size)
+                self.assertEqual(panel.stroke_block.arrangement.preview, preview)
+                self.assertEqual(preview_widget.isHidden(), preview is None)
+
     def test_preview_beside_keeps_the_fields_usable(self) -> None:
         """Beside the preview, the fields are at least BESIDE_FIELD_MIN_WIDTH and at most FIELD_COLUMN_MAX_WIDTH
         wide."""
