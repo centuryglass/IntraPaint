@@ -200,7 +200,6 @@ class ImageViewerDropRoutingTest(IntraPaintTestCase):
         window.setCentralWidget(claiming)
         window.resize(300, 200)
         window.show()
-        self.addCleanup(window.hide)
         watcher = _DragWatcher(window)
         window.installEventFilter(watcher)
         mime = QMimeData()
