@@ -5,6 +5,7 @@ from typing import Optional
 from PySide6.QtGui import QColor, Qt, QIcon, QBrush
 
 from src.config.cache import Cache
+from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.brush.qt_paint_brush import QtPaintBrush
@@ -194,7 +195,10 @@ class QtPaintBrushTool(BrushTool):
             brush.hardness = hardness
 
     def set_brush_size(self, new_size: int) -> None:
-        """Ensure brush size also propagates to the appropriate config key."""
+        """Ensure brush size also propagates to the appropriate config key, clamped to that key's range."""
         if self._size_key is not None:
-            Cache().set(self._size_key, new_size)
+            cache = Cache()
+            new_size = int(clamp(new_size, cache.get(self._size_key, RangeKey.MIN),
+                                 cache.get(self._size_key, RangeKey.MAX)))
+            cache.set(self._size_key, new_size)
         super().set_brush_size(new_size)

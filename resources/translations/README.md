@@ -10,3 +10,5 @@ If anyone feels like translating IntraPaint, I'd love to add your translations t
 6. Create a pull release to add the new .ts and .qm files to the project, or just send the files to me. I'll test them and merge them into the main codebase.
 
 Option names in the settings and tool panels (for example the edit modes) are shown translated, but IntraPaint always saves the original English option, so translating them is safe.
+
+AI-generated translations follow a separate process, drafted in [`doc/machine_translation.md`](../../doc/machine_translation.md).

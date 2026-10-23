@@ -47,7 +47,13 @@ jobs:
           if [ "$EVENT" = pull_request ]; then
             range="$PR_BASE...$PR_HEAD"
           elif [ "$EVENT" = push ]; then
-            range="$PUSH_BEFORE...$PUSH_AFTER"
+            # A new branch has an all-zero "before", and a force push's "before" may be gone from the clone. Both
+            # fall back to everything the branch adds over integration.
+            if git cat-file -e "$PUSH_BEFORE^{commit}" 2>/dev/null; then
+              range="$PUSH_BEFORE...$PUSH_AFTER"
+            else
+              range="origin/integration...$PUSH_AFTER"
+            fi
           else
             range=""
           fi
