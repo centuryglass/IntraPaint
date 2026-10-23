@@ -7,7 +7,7 @@
   key, its toggle action or a mouse drop into a group closes the group's other docks. A dock in the background of a
   group is closed. `show` opens a dock without closing the others, so code opens docks with `open_in_group`.
 - A docked dock has no title bar; its rail button names it and moves it, and the notch in its upper-left corner
-  (`DockNotch`) drags it. A floating dock shows the title bar set with
+  (`DockNotch`) drags it. `DockOutline` draws a 1px border around the dock. A floating dock shows the title bar set with
   `set_floating_title_bar`, or Qt's without one, and is dragged by it. `show_title_bar_for_drag` shows Qt's title bar
   while docked, so a rail button or notch drag can hand off to Qt's own dock drag (see `src.ui.window.qt_dock_drag`).
 - The dock's owner can set a badge (`set_badge`), a short text its rail buttons draw while the dock is not showing.
@@ -28,6 +28,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.ui.layout.dock_panel import DockPanel
 from src.ui.layout.panel_fit import Orientation, orientation_for_dock
 from src.ui.window.dock_notch import DockNotch
+from src.ui.window.dock_outline import DockOutline
 from src.ui.window.dock_state import read_dock_groups
 from src.ui.window.qt_dock_drag import start_qt_dock_drag
 
@@ -81,13 +82,16 @@ class PanelDock(QDockWidget):
         self._no_title_bar = _NoTitleBar()
         self._floating_title_bar: Optional[QWidget] = None
         self.setTitleBarWidget(self._no_title_bar)
+        self._outline = DockOutline(self)
         self._notch = DockNotch(self, lambda pos: start_qt_dock_drag(window, self, pos))
         self._notch.move(0, 0)
-        self._notch.raise_()
+        self._raise_overlays()
         self.toggleViewAction().setVisible(False)
         self.toggleViewAction().setIcon(self.windowIcon())
         self.visibilityChanged.connect(self._visibility_changed)
         self.dockLocationChanged.connect(self._update_host_facts)
+        self.dockLocationChanged.connect(self._update_outline)
+        self.topLevelChanged.connect(self._update_outline)
         self.topLevelChanged.connect(self._update_host_facts)
         self.topLevelChanged.connect(self._top_level_changed)
         self.topLevelChanged.connect(self._update_title_bar)
@@ -169,7 +173,7 @@ class PanelDock(QDockWidget):
             return
         self.setWidget(content)
         content.show()
-        self._notch.raise_()
+        self._raise_overlays()
         self.toggleViewAction().setVisible(True)
         if self._open_when_available:
             if any(not mate.isHidden() for mate in self.group_mates()):
@@ -232,8 +236,31 @@ class PanelDock(QDockWidget):
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Updates the content's orientation and size."""
         super().resizeEvent(event)
-        self._notch.raise_()
+        self._outline.setGeometry(self.rect())
+        self._update_outline()
+        self._raise_overlays()
         self._update_host_facts()
+
+    def _raise_overlays(self) -> None:
+        """Puts the outline above the content, and the notch above the outline."""
+        self._outline.raise_()
+        self._notch.raise_()
+
+    def _update_outline(self, *_args) -> None:
+        """Leaves out the outline's edge on the rail's side while docked."""
+        rail_side = {
+            Qt.DockWidgetArea.LeftDockWidgetArea: Qt.Edge.LeftEdge,
+            Qt.DockWidgetArea.RightDockWidgetArea: Qt.Edge.RightEdge,
+            Qt.DockWidgetArea.TopDockWidgetArea: Qt.Edge.TopEdge,
+            Qt.DockWidgetArea.BottomDockWidgetArea: Qt.Edge.BottomEdge,
+        }
+        area = Qt.DockWidgetArea.NoDockWidgetArea if self.isFloating() else self._window.dockWidgetArea(self)
+        self._outline.set_skipped_edge(rail_side.get(area))
+
+    @property
+    def outline(self) -> DockOutline:
+        """The border drawn around the dock's edges."""
+        return self._outline
 
     @property
     def notch(self) -> DockNotch:
@@ -260,7 +287,7 @@ class PanelDock(QDockWidget):
         if self.titleBarWidget() is not wanted:
             self.setTitleBarWidget(wanted)
         self._notch.setVisible(not floating)
-        self._notch.raise_()
+        self._raise_overlays()
 
     def _toggle_action_triggered(self, checked: bool) -> None:
         """Closes the group's other docks when the toggle action opens this one."""
