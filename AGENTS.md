@@ -186,6 +186,10 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
   `setUp` and `tearDown` reset the singletons listed in `reset_singletons`, and `setUp` changes to the project root.
   Tests share one process, so a test that changes any other singleton resets it too. `tearDown` deletes every
   parentless widget the test created, so a widget shared between tests is created in `setUpClass`.
+- **A test fails when it leaves Qt objects in reference cycles** beyond its entry in
+  `test/resources/qt_cycle_baseline.json`, so a change in `src/` that adds a cycle fails the tests that reach it.
+  `test/qt_cycles.py` describes the check, its report of the code in each cycle, and updating the baseline (on Python
+  3.13 only).
 - **Golden images go through `assert_image_matches_golden`**, and JSON snapshots through
   `assert_json_matches_snapshot`, both in `test/base_test_case.py`. Its module docstring covers updating either.
 - **Style and panel layouts are pinned.** `test/ui/style_gallery_test.py` compares each standard control's states with

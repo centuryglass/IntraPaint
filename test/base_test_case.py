@@ -15,7 +15,6 @@ to the committed file, then replace the committed file with it. A test that pass
 over from an earlier failure.
 """
 import difflib
-import gc
 import json
 import os
 import tempfile
@@ -36,6 +35,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker
 from src.util.singleton import Singleton
+from test import qt_cycles
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEST_RESOURCE_DIR = os.path.join(PROJECT_ROOT, 'test', 'resources')
@@ -260,7 +260,7 @@ class IntraPaintTestCase(unittest.TestCase):
         QApplication.clipboard().clear()
         delete_widgets_created_since(self._existing_widgets)
         del self._existing_widgets
-        gc.collect()
+        qt_cycles.collect()
         leaked = layout_item_wrapper_count() - self._layout_item_wrappers
         del self._layout_item_wrappers
         super().tearDown()
