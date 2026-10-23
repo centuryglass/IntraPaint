@@ -5,6 +5,7 @@ preview honors the same settings as the canvas. A tool's preview is a subclass t
 `_new_brush`, `_configure_brush` and `_finish`, and adds the inputs those hooks read to `_inputs`. A panel builds its
 preview and passes it to `StrokeBlock`.
 """
+import json
 import math
 from collections.abc import Hashable
 from typing import Any, Optional
@@ -14,7 +15,9 @@ from PySide6.QtGui import QBrush, QColor, QImage, QPainter, QPalette
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from src.config.cache import Cache
+from src.image.brush.filter_brush import FilterBrush
 from src.image.brush.qt_paint_brush import QtPaintBrush
+from src.image.filter.filter import ImageFilter
 from src.image.brush.smudge_brush import SmudgeBrush
 from src.image.layers.image_layer import ImageLayer
 from src.ui.input_fields.fill_style_combo_box import BRUSH_PATTERN_SOLID, FillStyleComboBox
@@ -194,3 +197,41 @@ class SmudgeStrokePreview(StrokePreview):
 
     def _new_brush(self, layer: ImageLayer) -> SmudgeBrush:
         return SmudgeBrush(layer)
+
+
+class FilterStrokePreview(StrokePreview):
+    """Previews filtering: a `FilterBrush` applies the selected filter and its cached parameters along the stroke
+    over the shared sample backdrop."""
+
+    def __init__(self, filters: list[ImageFilter], size_key: str, opacity_key: Optional[str],
+                 hardness_key: Optional[str], antialias_key: Optional[str] = None, parent: Optional[QWidget] = None,
+                 render_timer: Optional[QTimer] = None) -> None:
+        self._filters = filters
+        super().__init__(size_key, opacity_key, hardness_key, antialias_key,
+                         (Cache.FILTER_TOOL_SELECTED_FILTER, Cache.FILTER_TOOL_CACHED_PARAMETERS), parent,
+                         render_timer)
+
+    def _selected_filter(self) -> Optional[ImageFilter]:
+        name = Cache().get(Cache.FILTER_TOOL_SELECTED_FILTER)
+        return next((img_filter for img_filter in self._filters if img_filter.get_name() == name), None)
+
+    def _inputs(self) -> Hashable:
+        return (super()._inputs(), Cache().get(Cache.FILTER_TOOL_SELECTED_FILTER),
+                Cache().get(Cache.FILTER_TOOL_CACHED_PARAMETERS))
+
+    def _new_layer(self, size: QSize) -> ImageLayer:
+        return ImageLayer(backdrop_image(size), 'brush preview')
+
+    def _new_brush(self, layer: ImageLayer) -> Any:
+        img_filter = self._selected_filter()
+        return QtPaintBrush(layer) if img_filter is None else FilterBrush(img_filter, layer)
+
+    def _configure_brush(self, brush: Any) -> None:
+        super()._configure_brush(brush)
+        if not isinstance(brush, FilterBrush):
+            return
+        img_filter = brush.image_filter
+        try:
+            brush.parameter_values = json.loads(Cache().get(Cache.FILTER_TOOL_CACHED_PARAMETERS))[img_filter.get_name()]
+        except (KeyError, TypeError, ValueError):
+            brush.parameter_values = [param.default_value for param in img_filter.get_parameters()]

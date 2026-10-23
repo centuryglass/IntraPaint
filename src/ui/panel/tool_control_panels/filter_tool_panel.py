@@ -12,6 +12,7 @@ from src.ui.input_fields.segmented_control import DisplayMode, MAX_SEGMENTS, Seg
 from src.ui.input_fields.slider_field import number_field_for_parameter
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.panel.tool_control_panels.stroke_block import StrokeBlock, StrokeToolPanel, tool_section
+from src.ui.panel.tool_control_panels.stroke_preview import FilterStrokePreview
 from src.util.parameter import Parameter, ParamType, TYPE_FLOAT, TYPE_INT, TYPE_STR
 from src.util.shared_constants import ICON_SIZE
 
@@ -33,8 +34,8 @@ STRIP_PARAMETER_COLUMNS = 3
 
 
 class FilterToolPanel(StrokeToolPanel):
-    """Control panel widget for the filter tool: the stroke block with Opacity read as Strength, then the filter
-    section."""
+    """Control panel widget for the filter tool: the stroke block with Opacity read as Strength and a preview of
+    the filter, then the filter section."""
 
     def __init__(self, filter_list: list[ImageFilter]) -> None:
         self._filters = filter_list
@@ -46,7 +47,11 @@ class FilterToolPanel(StrokeToolPanel):
                                      pressure_opacity_key=Cache.FILTER_TOOL_PRESSURE_OPACITY,
                                      hardness_key=Cache.FILTER_TOOL_HARDNESS,
                                      pressure_hardness_key=Cache.FILTER_TOOL_PRESSURE_HARDNESS,
-                                     antialias_key=Cache.FILTER_TOOL_ANTIALIAS))
+                                     antialias_key=Cache.FILTER_TOOL_ANTIALIAS,
+                                     preview=FilterStrokePreview(filter_list, Cache.FILTER_TOOL_BRUSH_SIZE,
+                                                                 Cache.FILTER_TOOL_OPACITY,
+                                                                 Cache.FILTER_TOOL_HARDNESS,
+                                                                 Cache.FILTER_TOOL_ANTIALIAS)))
         self._strip = False
         self._filter_dropdown = Cache().get_control_widget(Cache.FILTER_TOOL_SELECTED_FILTER)
         self._filter_dropdown.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
