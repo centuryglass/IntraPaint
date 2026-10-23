@@ -15,7 +15,7 @@
 from typing import Optional
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QRectF, QSize, Qt
-from PySide6.QtGui import QFont, QFontMetrics, QIcon, QPainter, QPaintEvent, QPalette, QPen, QResizeEvent
+from PySide6.QtGui import QColor, QFont, QFontMetrics, QIcon, QPainter, QPaintEvent, QPalette, QPen, QResizeEvent
 from PySide6.QtWidgets import (QApplication, QFrame, QMainWindow, QPushButton, QSizePolicy, QToolBar, QToolButton,
                                QWidget)
 
@@ -63,6 +63,11 @@ STRIP_BUTTON_PADDING = 6
 # Smallest tool button the recent tools strip draws in a side rail:
 RECENT_TOOL_SIZE = SIDE_RAIL_WIDTH
 RAIL_SPACING = 2
+# A dock's badge is a pill this tall that overhangs the icon's upper right corner:
+BADGE_SIZE = 12
+BADGE_FONT_PIXELS = 9
+BADGE_TEXT_PADDING = 3
+BADGE_OVERHANG = 4
 # Space between a rail's ends and its first and last items:
 RAIL_MARGIN = 2
 # Space before each dock group after a rail's first, with a rule across its middle:
@@ -116,8 +121,11 @@ class RailButton(QToolButton):
         self.setIcon(dock.windowIcon())
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setToolTip('')
-        set_shortcut_tooltip(self, dock.windowTitle(), dock.shortcut_config_key)
+        self._refresh_tooltip = set_shortcut_tooltip(self, dock.windowTitle(), dock.shortcut_config_key,
+                                                     lambda: dock.badge_tooltip if self.badge_text != '' else '')
         dock.visibilityChanged.connect(self.setChecked)
+        dock.visibilityChanged.connect(self._badge_changed)
+        dock.badge_changed.connect(self._badge_changed)
         # A click only runs the dock's toggle, since the checked state follows the dock:
         self.clicked.connect(self._toggle_dock)
         AppConfig().connect(self, AppConfig.TAB_FONT_POINT_SIZE, self._font_changed)
@@ -129,6 +137,15 @@ class RailButton(QToolButton):
     def dock(self) -> PanelDock:
         """Returns the dock this button toggles."""
         return self._dock
+
+    @property
+    def badge_text(self) -> str:
+        """The dock's badge text while this button shows it: the dock is not showing and has a badge. Otherwise ''."""
+        return '' if self._dock.is_showing else self._dock.badge_text
+
+    def _badge_changed(self, *_args) -> None:
+        self._refresh_tooltip()
+        self.update()
 
     def set_placement(self, side: bool, edge: Qt.Edge) -> None:
         """Sets whether the button is drawn for a side rail, and the window edge its rail is on."""
@@ -242,7 +259,28 @@ class RailButton(QToolButton):
                 key_rect = QRectF(text_left + text_width + STRIP_BUTTON_SPACING,
                                   (self.height() - key_size.height()) / 2, key_size.width(), key_size.height())
                 self._draw_keycap(painter, key_rect, key_text, fill, outline, key_color)
+        self._draw_badge(painter, icon_rect, highlight)
         painter.end()
+
+    def _draw_badge(self, painter: QPainter, icon_rect: QRect, accent: QColor) -> None:
+        """Draws `badge_text` in an accent pill over the icon's upper right corner, if there is any."""
+        text = self.badge_text
+        if text == '':
+            return
+        font = QFont(self.font())
+        font.setBold(True)
+        font.setPixelSize(BADGE_FONT_PIXELS)
+        metrics = QFontMetrics(font)
+        width = max(BADGE_SIZE, metrics.horizontalAdvance(text) + 2 * BADGE_TEXT_PADDING)
+        right = min(icon_rect.right() + BADGE_OVERHANG, self.width() - 1)
+        bounds = QRectF(right - width + 1, max(0, icon_rect.top() - BADGE_OVERHANG), width, BADGE_SIZE)
+        palette = self.palette()
+        painter.setPen(QPen(palette.color(QPalette.ColorRole.Window), 1))
+        painter.setBrush(accent)
+        painter.drawRoundedRect(bounds, BADGE_SIZE / 2, BADGE_SIZE / 2)
+        painter.setPen(palette.color(QPalette.ColorRole.HighlightedText))
+        painter.setFont(font)
+        painter.drawText(bounds, Qt.AlignmentFlag.AlignCenter, text)
 
     def _draw_keycap(self, painter: QPainter, bounds: QRectF, text: str, fill, outline, text_color) -> None:
         draw_keycap(painter, bounds, fill, outline)
