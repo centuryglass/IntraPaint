@@ -5,10 +5,10 @@ from enum import Enum
 
 from PySide6.QtCore import QPoint, Qt
 from PySide6 import QtTest
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QFontMetrics, QIcon
 from PySide6.QtWidgets import QApplication
 
-from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
+from src.ui.input_fields.segmented_control import SEGMENT_PADDING, DisplayMode, Segment, SegmentedControl
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -126,6 +126,16 @@ class SegmentedControlTest(IntraPaintTestCase):
         full = control.sizeHint().width()
         control.set_display_mode(DisplayMode.LABEL)
         self.assertLessEqual(control.sizeHint().width(), full)
+
+    def test_labels_fit_unelided_at_size_hint(self) -> None:
+        """At its size hint, each segment has room for its whole label, including the fraction of a pixel a rounded
+        text width would drop."""
+        labels = {Fill.ALL: 'Ellipse', Fill.SELECTED: 'Rectangle', Fill.NONE: 'Polygon'}
+        control = _control(labels, display_mode=DisplayMode.LABEL)
+        metrics = QFontMetrics(control.font())
+        for index, label in enumerate(labels.values()):
+            available = control.segment_rect(index).width() - 2 * SEGMENT_PADDING
+            self.assertEqual(metrics.elidedText(label, Qt.TextElideMode.ElideRight, available), label)
 
     def test_combo_fallback_when_narrow(self) -> None:
         """A control narrower than its segments need shows a combo box that edits the same value."""
