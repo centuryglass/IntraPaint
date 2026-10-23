@@ -5,6 +5,7 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QImage, QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
+from src.config.application_config import AppConfig
 from src.ui.loading.diffusion_ring import DiffusionRing
 from src.ui.loading.loading_designs import load_loading_designs
 from src.ui.widget.loading_widget import LoadingWidget
@@ -47,6 +48,21 @@ class LoadingWidgetTest(IntraPaintTestCase):
         self.widget.message = 'Step 2/30'
         self.assertFalse(self.widget.paused)
         self.assertIsNot(self.widget.design, diffusion_ring)
+
+    def test_static_indicator_holds_rest_frame(self) -> None:
+        """With the static option set, a load holds one design's rest frame, and message changes keep it."""
+        AppConfig().set(AppConfig.STATIC_LOADING_INDICATOR, True)
+        self.widget.show()
+        design = self.widget.design
+        self.assertEqual(self.widget.phase, design.rest_phase)
+        self.assertFalse(self.widget.paused)
+        self.widget.message = 'Step 2/30'
+        self.assertIs(self.widget.design, design)
+        self.assertEqual(self.widget.phase, design.rest_phase)
+        self.widget.hide()
+        self.widget.show()
+        self.assertIsNot(self.widget.design, design)
+        self.assertEqual(self.widget.phase, self.widget.design.rest_phase)
 
     def test_loop_restart_tells_design(self) -> None:
         """A running animation's phase wrapping to a new loop calls the design's next_loop, and pausing doesn't."""

@@ -39,6 +39,7 @@
     },
     "animate_selection_outline": false,
     "animate_outlines_and_previews": true,
+    "static_loading_indicator": false,
     "animate_selection_fill": true,
     "selection_color": "#55ff0000",
     "show_selections_in_generation_options": true,
