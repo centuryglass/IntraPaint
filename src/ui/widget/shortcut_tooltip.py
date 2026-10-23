@@ -3,7 +3,7 @@
 Rich tooltips show a title, a dim description line, and the binding as one keycap per key, drawn by
 `rich_text_key_hints`. Plain tooltips append the binding in parentheses, formatted by `get_key_display_string`.
 """
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Union
 
 from PySide6.QtCore import QEvent, QObject
 from PySide6.QtGui import QColor, QPalette
@@ -63,8 +63,8 @@ class _PaletteWatcher(QObject):
         return False
 
 
-def set_shortcut_tooltip(widget: QWidget, text: str, config_key: Optional[str], description: str = '',
-                         rich_text: bool = True) -> None:
+def set_shortcut_tooltip(widget: QWidget, text: str, config_key: Optional[str],
+                         description: Union[str, Callable[[], str]] = '', rich_text: bool = True) -> Callable[[], None]:
     """Sets a widget's tooltip to `text` plus the key binding stored at `config_key`, updating it if the binding
        or the application palette changes.
 
@@ -76,10 +76,16 @@ def set_shortcut_tooltip(widget: QWidget, text: str, config_key: Optional[str], 
         The tooltip title.
     config_key: Optional[str]
         The `KeyConfig` key holding the binding to show, or None to show none.
-    description: str, default=''
-        A sentence describing the widget, shown under the title. Ignored if `rich_text` is false.
+    description: str or function returning str, default=''
+        A sentence describing the widget, shown under the title. Ignored if `rich_text` is false. A function is called
+        on each refresh, so the description can change.
     rich_text: bool, default=True
         Whether to draw the binding as keycaps instead of a parenthesized suffix.
+
+    Returns
+    -------
+    function
+        Rebuilds the tooltip, for callers whose `description` function now returns something else.
     """
     key_config = KeyConfig()
 
@@ -88,7 +94,9 @@ def set_shortcut_tooltip(widget: QWidget, text: str, config_key: Optional[str], 
 
     def _refresh() -> None:
         if rich_text:
-            widget.setToolTip(rich_shortcut_tooltip_text(text, _keys(), description))
+            widget.setToolTip(rich_shortcut_tooltip_text(text, _keys(),
+                                                         description if isinstance(description, str)
+                                                         else description()))
         else:
             widget.setToolTip(shortcut_tooltip_text(text, _keys()))
 
@@ -96,9 +104,10 @@ def set_shortcut_tooltip(widget: QWidget, text: str, config_key: Optional[str], 
     if rich_text:
         _PaletteWatcher(widget, _refresh)
     if config_key is None:
-        return
+        return _refresh
     key_config.connect(widget, config_key, lambda _keys_value: _refresh())
     widget.destroyed.connect(lambda: KeyConfig().disconnect(widget, config_key))
+    return _refresh
 
 
 def set_step_shortcut_tooltip(widget: QWidget, text: str, decrease_config_key: Optional[str],

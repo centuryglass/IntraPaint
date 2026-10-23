@@ -10,6 +10,7 @@
   (`DockNotch`) drags it. A floating dock shows the title bar set with
   `set_floating_title_bar`, or Qt's without one, and is dragged by it. `show_title_bar_for_drag` shows Qt's title bar
   while docked, so a rail button or notch drag can hand off to Qt's own dock drag (see `src.ui.window.qt_dock_drag`).
+- The dock's owner can set a badge (`set_badge`), a short text its rail buttons draw while the dock is not showing.
 - The dock's key (`shortcut_config_key`) opens and focuses the dock, or closes it if it is already open.
 - A dock with no content is hidden and its toggle action is hidden too. It remembers whether it was open, and opens
   again when content arrives, unless another dock in its group is open by then.
@@ -19,7 +20,7 @@
 from contextlib import contextmanager
 from typing import Iterator, Optional
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QIcon, QResizeEvent
 from PySide6.QtWidgets import QDockWidget, QMainWindow, QWidget
 
@@ -57,6 +58,8 @@ class PanelDock(QDockWidget):
 
     _drop_rule_pauses = 0
 
+    badge_changed = Signal()
+
     def __init__(self, title: str, object_name: str, window: QMainWindow, icon: Optional[QIcon] = None,
                  shortcut_config_key: Optional[str] = None) -> None:
         super().__init__(title, window)
@@ -71,6 +74,8 @@ class PanelDock(QDockWidget):
         self._content: Optional[QWidget] = None
         self._open_when_available = True
         self._showing = False
+        self._badge_text = ''
+        self._badge_tooltip = ''
         # The orientation last reported to content with `set_orientation`:
         self._orientation: Optional[Orientation] = None
         self._no_title_bar = _NoTitleBar()
@@ -124,6 +129,23 @@ class PanelDock(QDockWidget):
     def is_showing(self) -> bool:
         """Whether the dock's content is on screen: open, in a shown window."""
         return self._showing
+
+    @property
+    def badge_text(self) -> str:
+        """Short text the dock's rail buttons show as a badge while the dock is not showing, or '' for none."""
+        return self._badge_text
+
+    @property
+    def badge_tooltip(self) -> str:
+        """Tooltip line describing the badge, or '' for none."""
+        return self._badge_tooltip
+
+    def set_badge(self, text: str, tooltip: str = '') -> None:
+        """Sets the badge text and its tooltip line. Empty text removes the badge."""
+        if text != self._badge_text or tooltip != self._badge_tooltip:
+            self._badge_text = text
+            self._badge_tooltip = tooltip
+            self.badge_changed.emit()
 
     @property
     def open_when_available(self) -> bool:

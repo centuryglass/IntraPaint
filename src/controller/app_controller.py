@@ -63,7 +63,9 @@ from src.controller.image_generation.glid3_xl_generator import Glid3XLGenerator
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.controller.image_generation.null_generator import NullGenerator
 from src.controller.image_generation.sd_comfyui_generator import SDComfyUIGenerator, DEFAULT_COMFYUI_URL
-from src.controller.image_generation.sd_generator import MENU_STABLE_DIFFUSION, STABLE_DIFFUSION_CONFIG_CATEGORY
+from src.controller.image_generation.sd_adapters.controlnet_adapter import count_enabled_units
+from src.controller.image_generation.sd_generator import MENU_STABLE_DIFFUSION, STABLE_DIFFUSION_CONFIG_CATEGORY, \
+    SDGenerator
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator, DEFAULT_WEBUI_URL
 from src.controller.image_generation.test_generator import TestGenerator
 from src.controller.tool_controller import ToolController
@@ -155,6 +157,8 @@ GENERATION_MODE_NONE = 'none'
 GENERATION_MODE_TEST = 'mock'
 GENERATION_MODE_AUTO = 'auto'
 
+CONTROLNET_BADGE_TOOLTIP_ONE = _tr('ControlNet: 1 unit on', 'Tooltip of the ControlNet rail button')
+CONTROLNET_BADGE_TOOLTIP_MANY = _tr('ControlNet: {count} units on', 'Tooltip of the ControlNet rail button')
 MENU_FILE = _tr('File')
 MENU_EDIT = _tr('Edit')
 MENU_IMAGE = _tr('Image')
@@ -547,6 +551,26 @@ class AppController(MenuBuilder):
         for config in (AppConfig(), Cache(), KeyConfig()):
             config.save_pending_changes()
 
+    def _watch_controlnet_badge(self) -> None:
+        """Shows the number of enabled ControlNet units as the ControlNet dock's badge, and keeps it current."""
+        dock = self._window.controlnet_dock
+        generator = self._generator
+        keys = generator.get_controlnet_unit_cache_keys() if isinstance(generator, SDGenerator) \
+            and generator.get_controlnet_panel() is not None else []
+        cache = Cache()
+
+        def _update(*_args) -> None:
+            enabled = count_enabled_units([cache.get(key) for key in keys])
+            if enabled == 0:
+                dock.set_badge('')
+            else:
+                dock.set_badge(str(enabled), CONTROLNET_BADGE_TOOLTIP_ONE if enabled == 1
+                               else CONTROLNET_BADGE_TOOLTIP_MANY.format(count=enabled))
+
+        for key in keys:
+            cache.connect(dock, key, _update)
+        _update()
+
     def load_image_generator(self, generator: ImageGenerator) -> None:
         """Load an image generator, updating controls and settings."""
         # if not generator.is_available():
@@ -584,6 +608,7 @@ class AppController(MenuBuilder):
                 self._generator_control_panel.controlnet_requested.connect(self._window.controlnet_dock.open_in_group)
         self._window.generation_dock.set_content(self._generator_control_panel)
         self._window.controlnet_dock.set_content(self._generator.get_controlnet_panel())
+        self._watch_controlnet_badge()
         if self._generator_window is not None:
             self._generator_window.mark_active_generator(generator)
 

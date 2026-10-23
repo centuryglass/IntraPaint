@@ -15,7 +15,7 @@ from sd_backend_client import ControlNetModel, ControlNetPreprocessor, ControlNe
 from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters import controlnet_adapter
 from src.controller.image_generation.sd_adapters.controlnet_adapter import SavedControlNetUnit, to_request_unit, \
-    load_request_units, CONTROLNET_REUSE_IMAGE_CODE
+    load_request_units, count_enabled_units, CONTROLNET_REUSE_IMAGE_CODE
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
 
 UNIT_DIR = os.path.join(TEST_RESOURCE_DIR, 'controlnet_units')
@@ -153,3 +153,10 @@ class ControlNetAdapterTest(IntraPaintTestCase):
         with self.assertNoLogs(controlnet_adapter.logger):
             units = load_request_units([Cache.CONTROLNET_ARGS_0_WEBUI], _source_image(), True)
         self.assertEqual(units, [])
+
+    def test_count_enabled_units(self) -> None:
+        """Only parseable units with `enabled` set are counted."""
+        on = SavedControlNetUnit(True, '', ControlNetUnit()).to_json()
+        off = SavedControlNetUnit(False, '', ControlNetUnit()).to_json()
+        self.assertEqual(count_enabled_units([on, off, on, 'not json', '']), 2)
+        self.assertEqual(count_enabled_units([]), 0)

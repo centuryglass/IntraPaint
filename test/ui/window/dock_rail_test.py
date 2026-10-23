@@ -247,3 +247,23 @@ class DockRailTest(IntraPaintTestCase):
         self.window.set_image_selector_visible(False)
         self.assertTrue(self.right_rail.isVisible())
 
+
+    def test_badge_shows_only_while_the_dock_is_hidden(self) -> None:
+        """A dock's badge text appears on its button while the dock is behind another in its group, and the tooltip
+        names it."""
+        dock = self.window.generation_dock
+        button = self._button(dock)
+        dock.open_in_group()
+        dock.set_badge('2', 'ControlNet: 2 units on')
+        self.assertEqual(button.badge_text, '')
+        self.assertNotIn('2 units on', button.toolTip())
+        self.window.tools_dock.open_in_group()
+        self.assertEqual(button.badge_text, '2')
+        self.assertIn('ControlNet: 2 units on', button.toolTip())
+        dock.open_in_group()
+        self.assertEqual(button.badge_text, '')
+        self.assertNotIn('2 units on', button.toolTip())
+        self.window.tools_dock.open_in_group()
+        dock.set_badge('')
+        self.assertEqual(button.badge_text, '')
+        self.assertNotIn('2 units on', button.toolTip())
