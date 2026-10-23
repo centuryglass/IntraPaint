@@ -108,6 +108,9 @@ class DockSection:
             decorative: bool = False) -> None:
         """Adds a control. `forms` are callbacks that put it in each of its forms, largest first.
 
+        The section holds `forms` strongly, and its panel owns the section. A form that holds the panel, such as a
+        lambda capturing it or one of its bound methods, makes a reference cycle (see `FitPlanner`).
+
         Raises ValueError for a negative priority, or for a required control marked decorative.
         """
         if priority < REQUIRED:

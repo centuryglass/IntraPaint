@@ -1,6 +1,7 @@
 """Tests the layout checks `hidden with room`, `misplaced leftover` and `misaligned` from `find_arrangement_problems`,
 on small synthetic widget trees."""
 import sys
+from functools import partial
 from typing import Optional
 
 from PySide6.QtCore import QRect, QSize, Qt
@@ -31,8 +32,9 @@ class SizedPanel(DockPanel):
         self.later.setFixedHeight(30)
         section = ui.section('Controls')
         section.add(self.required, REQUIRED)
-        section.add(self.shrinking, 1, (lambda: self.shrinking.setFixedHeight(120),
-                                        lambda: self.shrinking.setFixedHeight(20)))
+        # The panel owns its forms, so they hold the control, not the panel (see `DockSection.add`):
+        section.add(self.shrinking, 1, (partial(self.shrinking.setFixedHeight, 120),
+                                        partial(self.shrinking.setFixedHeight, 20)))
         section.add(self.later, 2)
 
 
