@@ -275,6 +275,17 @@ class ToolPanelsOnStrokeBlockTest(ToolTestCase):
         assert isinstance(panel, FilterToolPanel)
         return panel
 
+    def test_filter_panel_has_a_filter_preview(self) -> None:
+        """The Filter panel's preview takes the same arrangements as Draw's."""
+        panel = self._filter_panel()
+        preview_widget = panel.stroke_block._preview  # pylint: disable=protected-access
+        assert preview_widget is not None
+        for size, preview in ((QSize(260, 900), BELOW), (QSize(420, 900), BESIDE), (QSize(260, 200), None)):
+            with self.subTest(size=size):
+                panel.set_fit_space(SIDE, size)
+                self.assertEqual(panel.stroke_block.arrangement.preview, preview)
+                self.assertEqual(preview_widget.isHidden(), preview is None)
+
     def test_size_field_keeps_its_position_between_tools(self) -> None:
         """Draw, Eraser, Smudge, Clone stamp and Filter put Size first with the same label and geometry."""
         panels = [DrawToolPanel(), EraserToolPanel(), SmudgeToolPanel(), CloneStampToolPanel(),

@@ -1,4 +1,5 @@
 """Tests StrokePreview's timed updates and its real-brush render, for painting, erasing and smudging."""
+import json
 import os
 from typing import Optional
 
@@ -6,12 +7,19 @@ from PySide6.QtCore import QSize, QTimer
 from PySide6.QtGui import QImage, QPalette
 
 from src.config.cache import Cache
+from src.image.filter.blur import BlurFilter
+from src.image.filter.invert import InvertFilter
+from src.image.filter.posterize import PosterizeFilter
+from src.image.filter.sharpen import SharpenFilter
+from src.tools.filter_tool import FilterTool
 from src.ui.input_fields.fill_style_combo_box import BRUSH_PATTERN_DENSE_3, BRUSH_PATTERN_SOLID
-from src.ui.panel.tool_control_panels.stroke_preview import DrawStrokePreview, EraseStrokePreview, SmudgeStrokePreview, StrokePreview
+from src.ui.panel.tool_control_panels.stroke_preview import (DrawStrokePreview, EraseStrokePreview, FilterStrokePreview,
+                                                                 SmudgeStrokePreview, StrokePreview)
 from src.ui.panel.tool_control_panels.preview_backdrop import backdrop_image
 from src.undo_stack import UndoStack
 from src.util.visual.keycap import keycap_colors
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
+from test.tools.tool_test_case import ToolTestCase
 
 PREVIEW_SIZE = QSize(200, 80)
 GOLDEN_DIR = os.path.join(TEST_RESOURCE_DIR, 'brush_previews')
@@ -173,3 +181,56 @@ class SmudgePreviewTest(IntraPaintTestCase):
                 preview = self.make_preview()
                 self.assert_image_matches_golden(preview.grab().toImage(),
                                                  os.path.join(GOLDEN_DIR, f'smudge_{name}.png'))
+
+
+class FilterPreviewTest(ToolTestCase):
+    """Tests the Filter tool's preview."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        tool = FilterTool(self.image_stack, self.image_viewer)
+        self.filters = tool._filters  # pylint: disable=protected-access
+        Cache().update_options(Cache.FILTER_TOOL_SELECTED_FILTER, [f.get_name() for f in self.filters])
+
+    def make_preview(self) -> FilterStrokePreview:
+        """Returns a visible preview of the Filter tool's settings."""
+        preview = FilterStrokePreview(self.filters, Cache.FILTER_TOOL_BRUSH_SIZE, Cache.FILTER_TOOL_OPACITY,
+                                      Cache.FILTER_TOOL_HARDNESS, Cache.FILTER_TOOL_ANTIALIAS)
+        preview.setFixedSize(PREVIEW_SIZE)
+        preview.show()
+        preview.render_now()
+        return preview
+
+    def use_filter(self, filter_type: type, values: Optional[list] = None) -> None:
+        """Selects the filter of a class, with its default parameters unless `values` is given."""
+        img_filter = next(f for f in self.filters if isinstance(f, filter_type))
+        if values is None:
+            values = [param.default_value for param in img_filter.get_parameters()]
+        Cache().set(Cache.FILTER_TOOL_BRUSH_SIZE, 30)
+        Cache().set(Cache.FILTER_TOOL_HARDNESS, 1.0)
+        Cache().set(Cache.FILTER_TOOL_OPACITY, 1.0)
+        Cache().set(Cache.FILTER_TOOL_ANTIALIAS, True)
+        params = json.loads(Cache().get(Cache.FILTER_TOOL_CACHED_PARAMETERS))
+        params[img_filter.get_name()] = values
+        Cache().set(Cache.FILTER_TOOL_CACHED_PARAMETERS, json.dumps(params))
+        Cache().set(Cache.FILTER_TOOL_SELECTED_FILTER, img_filter.get_name())
+
+    def test_stroke_changes_the_backdrop(self) -> None:
+        """The filtered stroke differs from the unfiltered backdrop."""
+        self.use_filter(InvertFilter)
+        self.assertNotEqual(self.make_preview().grab().toImage(), backdrop_image(PREVIEW_SIZE))
+
+    def test_filter_change_makes_the_render_stale(self) -> None:
+        """Selecting another filter schedules a new render."""
+        self.use_filter(InvertFilter)
+        preview = self.make_preview()
+        self.use_filter(SharpenFilter)
+        self.assertFalse(preview.is_current)
+
+    def test_golden_images(self) -> None:
+        """The render matches golden images for inverting, blurring and posterizing."""
+        for name, filter_type in (('invert', InvertFilter), ('blur', BlurFilter), ('posterize', PosterizeFilter)):
+            with self.subTest(name):
+                self.use_filter(filter_type)
+                self.assert_image_matches_golden(self.make_preview().grab().toImage(),
+                                                 os.path.join(GOLDEN_DIR, f'filter_{name}.png'))
