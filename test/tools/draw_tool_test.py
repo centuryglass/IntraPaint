@@ -3,6 +3,7 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QColor
 
 from src.config.cache import Cache
+from src.config.config_entry import RangeKey
 from src.tools.draw_tool import DrawTool
 from src.ui.input_fields.fill_style_combo_box import BRUSH_PATTERN_DENSE_4, BRUSH_PATTERN_SOLID
 from src.undo_stack import UndoStack
@@ -43,6 +44,18 @@ class DrawToolTest(ToolTestCase):
         self.assertEqual(brush.brush_color, QColor(Qt.GlobalColor.red))
         cache.set(Cache.DRAW_TOOL_BRUSH_PATTERN, BRUSH_PATTERN_SOLID)
         self.assertIsNone(brush._pattern_brush)  # pylint: disable=protected-access
+
+    def test_brush_size_stops_at_range_edges(self) -> None:
+        """Size changes past either end of the size range stop at that end."""
+        cache = Cache()
+        minimum = cache.get(Cache.DRAW_TOOL_BRUSH_SIZE, RangeKey.MIN)
+        maximum = cache.get(Cache.DRAW_TOOL_BRUSH_SIZE, RangeKey.MAX)
+        self.draw_tool.set_brush_size(maximum + 50)
+        self.assertEqual(cache.get(Cache.DRAW_TOOL_BRUSH_SIZE), maximum)
+        self.assertEqual(self.draw_tool.brush_size, maximum)
+        self.draw_tool.set_brush_size(minimum - 50)
+        self.assertEqual(cache.get(Cache.DRAW_TOOL_BRUSH_SIZE), minimum)
+        self.assertEqual(self.draw_tool.brush_size, minimum)
 
     def test_drag_draws_on_layer_as_one_undo_step(self) -> None:
         """A mouse drag draws on the active layer, and undoing it restores the layer."""

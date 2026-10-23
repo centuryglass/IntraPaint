@@ -5,6 +5,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.cache import Cache
+from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.brush.smudge_brush import SmudgeBrush
@@ -149,6 +150,9 @@ class SmudgeTool(BrushTool):  # type: ignore
         Cache().set(Cache.SMUDGE_TOOL_HARDNESS, hardness)
 
     def set_brush_size(self, new_size: int) -> None:
-        """Ensure brush size also propagates to the appropriate config key."""
-        Cache().set(Cache.SMUDGE_TOOL_BRUSH_SIZE, new_size)
+        """Ensure brush size also propagates to the appropriate config key, clamped to that key's range."""
+        cache = Cache()
+        new_size = int(clamp(new_size, cache.get(Cache.SMUDGE_TOOL_BRUSH_SIZE, RangeKey.MIN),
+                             cache.get(Cache.SMUDGE_TOOL_BRUSH_SIZE, RangeKey.MAX)))
+        cache.set(Cache.SMUDGE_TOOL_BRUSH_SIZE, new_size)
         super().set_brush_size(new_size)
