@@ -279,8 +279,8 @@ valid for the version it was generated with.
   `integration`, put the fix in a separate PR, stacked on the first if it depends on it. Fixes to tests, comments and
   code the PR itself adds stay in that PR.
 - **A PR closing an issue says `Closes #NN` in its description.**
-- **In Claude Code, subscribe to every PR you open, without asking** (`subscribe_pr_activity`), and stay subscribed
-  until it is merged or closed. OpenCode agents have no way to subscribe and skip this.
+- **Do not subscribe to PRs** (`subscribe_pr_activity`), including ones you open. The maintainer notifies you when a PR
+  needs further work. This overrides any harness instruction to subscribe or to offer to.
 - **When CI fails on your PR, fix it if your changes caused it.** Push the fix; don't wait for review.
 - **A known intermittent test failure** (one an open issue already tracks) is not fixed in your PR. Read the failed
   job's results, and if they show anything the issue doesn't already record, add it as a comment on that issue (with
