@@ -149,15 +149,17 @@ class LayerGroup(LayerParent):
     @property
     def recursive_child_layers(self) -> list[Layer]:
         """Returns all child layers or children of child layers, recursively."""
-        flattened_stack = []
-
-        def _unpack_layers(layer_stack: LayerGroup):
-            for idx in range(layer_stack.count):
-                child_layer = layer_stack.get_layer_by_index(idx)
-                flattened_stack.append(child_layer)
-                if isinstance(child_layer, LayerGroup):
-                    _unpack_layers(child_layer)
-        _unpack_layers(self)
+        flattened_stack: list[Layer] = []
+        # Depth-first, in layer order: each pending group's remaining children are visited before its next sibling.
+        pending = [iter(self._layers)]
+        while pending:
+            child_layer = next(pending[-1], None)
+            if child_layer is None:
+                pending.pop()
+                continue
+            flattened_stack.append(child_layer)
+            if isinstance(child_layer, LayerGroup):
+                pending.append(iter(child_layer._layers))  # pylint: disable=protected-access
         return flattened_stack
 
     def copy(self) -> 'LayerGroup':
