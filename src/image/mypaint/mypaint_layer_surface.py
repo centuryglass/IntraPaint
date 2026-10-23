@@ -208,7 +208,7 @@ class MyPaintLayerSurface(QObject):
         if self._layer.locked or self._layer.parent_locked:
             logger.warning('attempted to draw to a locked layer.')
             return False
-        if not self._layer.visible:
+        if not self._layer.shown:
             logger.warning('attempted to draw to a hidden layer.')
             return False
         return True

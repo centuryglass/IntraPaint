@@ -224,7 +224,7 @@ class LayerTransformTool(BaseTool):
             else:
                 self._initial_transform = layer.transform
                 self._control_panel.set_preview_bounds(layer.bounds)
-                self._transform_outline.setVisible(layer.visible and not layer.size.isEmpty())
+                self._transform_outline.setVisible(layer.shown and not layer.size.isEmpty())
                 self._control_panel.set_preview_transform(self._initial_transform)
                 self._transform_outline.setTransform(self._initial_transform)
             should_enable = (layer is not None and not layer.locked and not layer.parent_locked

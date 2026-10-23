@@ -666,7 +666,7 @@ class GeneratedImageSelector(QWidget):
             warning_message = WARNING_MESSAGE_1_NOT_IMAGE
         elif layer.locked or layer.parent_locked:
             warning_message = WARNING_MESSAGE_1_LAYER_LOCKED
-        elif not layer.visible:
+        elif not layer.shown:
             warning_message = WARNING_MESSAGE_1_LAYER_HIDDEN
         if warning_message is not None:
             warning_title = WARNING_TITLE_INSERT_FAILED.format(layer_name=layer.name)

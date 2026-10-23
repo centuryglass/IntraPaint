@@ -170,7 +170,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
         if layer == image_stack.active_layer:
             layer_data[ATTR_TAG_SELECTED] = BOOLEAN_TRUE_STR
         layer_data[ATTR_TAG_OPACITY] = layer.opacity
-        layer_data[ATTR_TAG_VISIBILITY] = ATTR_VISIBLE if layer.get_visible() else ATTR_HIDDEN
+        layer_data[ATTR_TAG_VISIBILITY] = ATTR_VISIBLE if layer.visible else ATTR_HIDDEN
         image_path = _archive_path(DATA_DIRECTORY_NAME, f'{_layer_file_stem(layer)}.png')
         flattened_image, offset_transform = layer.transformed_image()
         layer_data[ATTR_TAG_X_POS] = round(offset_transform.dx())
@@ -212,7 +212,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
         if layer == image_stack.active_layer:
             stack_data[ATTR_TAG_SELECTED] = BOOLEAN_TRUE_STR
         stack_data[ATTR_TAG_OPACITY] = layer.opacity
-        stack_data[ATTR_TAG_VISIBILITY] = ATTR_VISIBLE if layer.get_visible() else ATTR_HIDDEN
+        stack_data[ATTR_TAG_VISIBILITY] = ATTR_VISIBLE if layer.visible else ATTR_HIDDEN
         stack_data[STACK_TAG_ISOLATION] = ISOLATION_ISOLATE if layer.isolate else ISOLATION_AUTO
         stack_data[DICT_NESTED_CONTENT_NAME] = []
         for child_layer in layer.child_layers:

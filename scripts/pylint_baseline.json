@@ -30,9 +30,6 @@
   "src/image/layers/image_stack.py": {
     "too-many-lines": 1
   },
-  "src/image/layers/layer.py": {
-    "too-many-nested-blocks": 1
-  },
   "src/image/mypaint/numpy_image_utils.py": {
     "invalid-name": 1
   },

@@ -165,7 +165,7 @@ class LayerGroup(LayerParent):
         copy = LayerGroup(self.name + ' (copy)')
         copy.set_opacity(self.opacity)
         copy.set_composition_mode(self.composition_mode)
-        copy.set_visible(self.get_visible())
+        copy.set_visible(self.visible)
         copy.set_isolate(self.isolate)
         for layer in self._layers:
             child_layer_copy = layer.copy()
@@ -223,28 +223,18 @@ class LayerGroup(LayerParent):
     def preview_image(self) -> QImage:
         """Returns the group's own content for its layer panel preview, covering the group's bounds.
 
-        Like an image layer's preview, this ignores the group's own visibility, opacity and composition mode, and
-        the visibility of the groups it is in. Descendants that are hidden themselves, or inside a hidden nested
-        group, stay hidden, so a group whose layers are all hidden has a blank preview.
+        Like an image layer's preview, this ignores the group's own visibility, opacity and composition mode. Rendering
+        never reads the visibility of the groups it is in. Descendants that are hidden themselves, or inside a hidden
+        nested group, stay hidden, so a group whose layers are all hidden has a blank preview.
         """
-        hidden_ancestors: list[Layer] = []
-        ancestor: Optional[Layer] = self
-        while ancestor is not None:
-            if not ancestor.get_visible():
-                hidden_ancestors.append(ancestor)
-            parent = ancestor.layer_parent
-            assert parent is None or isinstance(parent, Layer)
-            ancestor = parent
-        if not hidden_ancestors and self._opacity == 1.0 and self._mode == CompositeMode.NORMAL:
+        if self._visible and self._opacity == 1.0 and self._mode == CompositeMode.NORMAL:
             return self.get_qimage()
         bounds = self.bounds
         image = create_transparent_image(bounds.size())
         opacity, mode = self._opacity, self._mode
         # Rendering reads visibility, opacity and mode, so they change without signals and are restored before
         # anything else can read them.
-        with ExitStack() as stack:
-            for hidden_layer in hidden_ancestors:
-                stack.enter_context(hidden_layer.with_visibility_forced())
+        with self.with_visibility_forced():
             self._opacity, self._mode = 1.0, CompositeMode.NORMAL
             try:
                 self.render(base_image=image, transform=QTransform.fromTranslate(-bounds.x(), -bounds.y()))
@@ -518,9 +508,12 @@ class LayerGroup(LayerParent):
             self.remove_layer(extra_layer)
 
     def set_visible(self, visible: bool) -> None:
-        super().set_visible(visible)
-        for layer in self.recursive_child_layers:
-            layer.visibility_changed.emit(layer, layer.visible)
+        """Sets whether this group is visible, sending `visibility_changed` from every layer inside it with this group
+        as the layer argument."""
+        if visible != self._visible:
+            super().set_visible(visible)
+            for layer in self.recursive_child_layers:
+                layer.visibility_changed.emit(self, visible)
 
     def is_empty(self, bounds: Optional[QRect] = None) -> bool:
         """Returns whether this layer contains only fully transparent pixels, optionally restricting the check to a
@@ -547,7 +540,7 @@ class LayerGroup(LayerParent):
         # Cache all signal-relevant non-image data from this layer and all children, recursive.
         content_change_timestamps: dict[Layer, float] = {}
         layer_names: dict[Layer, str] = {}
-        visibility_states: dict[Layer, bool] = {}
+        visibility_states: dict[Layer, tuple[bool, bool]] = {}
         opacity_states: dict[Layer, float] = {}
         layer_sizes: dict[Layer, QSize] = {}
         layer_modes: dict[Layer, CompositeMode] = {}
@@ -564,7 +557,7 @@ class LayerGroup(LayerParent):
         for layer in all_layers:
             content_change_timestamps[layer] = layer.content_change_timestamp
             layer_names[layer] = layer.name
-            visibility_states[layer] = layer.visible
+            visibility_states[layer] = (layer.visible, layer.shown)
             opacity_states[layer] = layer.opacity
             layer_sizes[layer] = layer.size
             layer_modes[layer] = layer.composition_mode
@@ -605,7 +598,7 @@ class LayerGroup(LayerParent):
                     layer.content_changed.emit(layer, layer.bounds)
                 if layer_names[layer] != layer.name:
                     layer.name_changed.emit(layer, layer.name)
-                if visibility_states[layer] != layer.visible:
+                if visibility_states[layer] != (layer.visible, layer.shown):
                     layer.visibility_changed.emit(layer, layer.visible)
                 if opacity_states[layer] != layer.opacity:
                     layer.opacity_changed.emit(layer, layer.opacity)
@@ -685,7 +678,7 @@ class LayerGroupState:
     def __init__(self, layer: LayerGroup) -> None:
         self.name = layer.name
         self.id = layer.id
-        self.visible = layer.get_visible()
+        self.visible = layer.visible
         self.opacity = layer.opacity
         self.mode = layer.composition_mode
         self.isolate = layer.isolate
