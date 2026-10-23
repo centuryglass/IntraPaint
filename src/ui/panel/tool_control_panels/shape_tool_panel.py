@@ -20,10 +20,9 @@ The panel is a `src.ui.layout.panel_fit.FitContent`, planned in the space the To
 """
 from typing import Optional
 
-from PySide6.QtCore import QEvent, QRegularExpression, QSize, Qt
+from PySide6.QtCore import QEvent, QRegularExpression, Qt
 from PySide6.QtGui import QBrush, QColor, QIcon, QPalette, QPen, QRegularExpressionValidator
-from PySide6.QtWidgets import (QApplication, QCheckBox, QGridLayout, QLabel, QLineEdit, QSizePolicy, QVBoxLayout,
-                               QWidget)
+from PySide6.QtWidgets import QApplication, QCheckBox, QGridLayout, QLabel, QLineEdit, QSizePolicy, QWidget
 
 from src.config.cache import Cache
 from src.ui.ink_style import signal_color
@@ -35,10 +34,9 @@ from src.ui.input_fields.pen_style_combo_box import PenStyleComboBox
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.input_fields.shape_mode_combo_box import ShapeModeComboBox
 from src.ui.input_fields.slider_field import SliderField
-from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel
 from src.ui.layout.label_column_layout import normalize_row_label
-from src.ui.layout.panel_fit import (REQUIRED, STRIP_SECTION_MAX_WIDTH, FitItem, FitPlanner, Orientation, Placement,
-                                     fresh_minimum_size, orientation_for_size)
+from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement
+from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
 from src.ui.widget.color_button import ColorButton
 from src.ui.widget.panel_section import PanelSection
 from src.util.visual.shape_mode import ShapeMode
@@ -113,7 +111,7 @@ def build_dash_pattern_validator(parent: Optional[QWidget] = None) -> QRegularEx
     return QRegularExpressionValidator(QRegularExpression(DASH_PATTERN_REGEX), parent)
 
 
-class ShapeToolPanel(QWidget):
+class ShapeToolPanel(FitToolPanel):
     """Shape tool control panel. Sets shape type, outline properties, and fill properties.
 
     Without a host that calls `set_fit_space`, the panel plans for its own size when resized.
@@ -122,14 +120,8 @@ class ShapeToolPanel(QWidget):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         cache = Cache()
-        self._space: Optional[QSize] = None
-        self._planning = False
-        self._orientation = Orientation.SIDE
         # Whether the Outline rows are paired, which drops the dash pattern's label and hint:
         self._paired = False
-        self._overflow = QWidget()
-        self._overflow_layout = QVBoxLayout(self._overflow)
-        self._overflow_layout.setContentsMargins(0, 0, 0, 0)
         if _shape_mode(cache.get(Cache.SHAPE_TOOL_MODE)) is None:
             cache.set(Cache.SHAPE_TOOL_MODE, ShapeMode.ELLIPSE.display_text())
 
@@ -289,12 +281,6 @@ class ShapeToolPanel(QWidget):
         combo_box.setMinimumContentsLength(MIN_COMBO_CHARACTERS)
         combo_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
-    @staticmethod
-    def _body_grid(body: QWidget) -> QGridLayout:
-        layout = QGridLayout(body)
-        layout.setContentsMargins(0, 0, 0, 0)
-        return layout
-
     def _shape_icon(self, mode: ShapeMode) -> QIcon:
         cache = Cache()
         line_color = self.palette().color(QPalette.ColorRole.WindowText)
@@ -398,48 +384,6 @@ class ShapeToolPanel(QWidget):
     # Layout
     # -----------------------------------------------------------------------------------------------------------------
 
-    def fit_base_size(self, orientation: Orientation) -> QSize:
-        """Returns the minimum size with required items in their smallest forms and Join left out, and keeps that
-        arrangement until the next `set_fit_space`."""
-        return self._planner.base_size(orientation)
-
-    def set_fit_space(self, orientation: Orientation, size: QSize) -> None:
-        """Plans for the space the Tools panel gives the panel."""
-        self._space = QSize(size)
-        self._planner.update(orientation, size)
-
-    def overflow_content(self) -> QWidget:
-        """Returns the widget holding Join while the plan leaves it out."""
-        return self._overflow
-
-    def _measure_fit(self) -> QSize:
-        return fresh_minimum_size(self)
-
-    def _refit(self) -> None:
-        """Plans again after a row appears or disappears: the hosting panel if there is one, or else this panel."""
-        parent = self.parentWidget()
-        while parent is not None:
-            if isinstance(parent, DockPanel):
-                parent.refit()
-                return
-            parent = parent.parentWidget()
-        if self._planner.placement is not None:
-            self._plan_own_size(force=True)
-
-    def _plan_own_size(self, force: bool = False) -> None:
-        """Plans for the space the host gave the panel, or for its own size without a host. Trial placements can
-        resize the panel, and the resize this causes doesn't start another plan."""
-        if self._planning:
-            return
-        self._planning = True
-        try:
-            if self._space is not None:
-                self._planner.update(self._orientation, self._space, force)
-            else:
-                self._planner.update(orientation_for_size(self.size(), self._orientation), self.size(), force)
-        finally:
-            self._planning = False
-
     def _apply_fit(self, orientation: Orientation, placement: Placement) -> None:
         shape_form, arrangement, join_form, headers = placement
         self._orientation = orientation
@@ -463,15 +407,6 @@ class ShapeToolPanel(QWidget):
         self._arrange_sections(strip, not strip and not compact)
         # Moving between the Shape section and the panel reparents the checkbox, which hides it:
         self._antialias_checkbox.show()
-
-    @staticmethod
-    def _clear(layout: QGridLayout, widgets: tuple[QWidget, ...]) -> None:
-        for widget in widgets:
-            layout.removeWidget(widget)
-        for index in range(layout.rowCount()):
-            layout.setRowStretch(index, 0)
-        for index in range(layout.columnCount()):
-            layout.setColumnStretch(index, 0)
 
     def _arrange_shape(self, strip: bool, paired: bool) -> None:
         """Puts the shape type over the Vertices and Inner radius row, with Antialiasing beside the shape type in a
@@ -570,19 +505,3 @@ class ShapeToolPanel(QWidget):
         grid.setColumnStretch(spare_column, 0)
         for section in self._sections:
             self._cap_width(section)
-
-    @staticmethod
-    def _cap_width(widget: QWidget) -> None:
-        """Caps a section at `STRIP_SECTION_MAX_WIDTH`, or at its minimum width if that is wider."""
-        widget.setMaximumWidth(QWIDGETSIZE_MAX)
-        widget.setMaximumWidth(max(STRIP_SECTION_MAX_WIDTH, fresh_minimum_size(widget).width()))
-
-    def event(self, event: QEvent) -> bool:
-        """Forgets the host's space when the panel moves to a new parent, and plans for its own size when resized
-        without a host."""
-        if event.type() == QEvent.Type.ParentChange:
-            self._space = None
-        handled = super().event(event)
-        if event.type() == QEvent.Type.Resize and self._space is None:
-            self._plan_own_size()
-        return handled

@@ -64,6 +64,8 @@ class TextTool(BaseTool):
         self._selection_handler = ClickAndDragSelection(scene)
         self._dragging = False
         self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
+        self._control_panel.set_image_size(image_stack.size)
+        self._image_stack.size_changed.connect(self._control_panel.set_image_size)
         self._last_brush_color = Cache().get_color(Cache.LAST_BRUSH_COLOR, QColor(Qt.GlobalColor.black))
 
         def _use_fixed_aspect_ratio(modifiers: Qt.KeyboardModifier) -> None:

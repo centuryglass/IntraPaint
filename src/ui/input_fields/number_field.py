@@ -211,6 +211,11 @@ class NumberField(QWidget):
         self.setAccessibleName(label)
         self.update()
 
+    def set_suffix(self, suffix: str) -> None:
+        """Changes the text shown after the displayed value."""
+        self._suffix = suffix
+        self._value_changed()
+
     def value_text(self, value: Optional[int | float] = None) -> str:
         """Returns the text shown for a value (the current value by default), including the suffix."""
         if value is None:

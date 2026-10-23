@@ -6,6 +6,7 @@ from src.image.layers.text_layer import TextLayer
 from src.image.text_rect import TextRect
 from src.tools.layer_transform_tool import LayerTransformTool
 from src.tools.text_tool import TextTool, MIN_DRAG_SIZE
+from src.ui.input_fields.geometry_block import HEIGHT, WIDTH, X, Y
 from src.ui.graphics_items.placement_outline import PlacementOutline
 from src.ui.panel.tool_control_panels.text_tool_panel import TextToolPanel
 from src.undo_stack import UndoStack
@@ -134,9 +135,9 @@ class TextToolTest(ToolTestCase):
         """The panel's width and height fields resize the layer, including a height equal to the width."""
         layer = self._drag_new_layer()
         width = layer.size.width()
-        self.panel._height_input.setValue(width)
+        self.panel.geometry_block.field(HEIGHT).set_value(width)
         self.assertEqual(layer.size, QSize(width, width))
-        self.panel._width_input.setValue(width + 20)
+        self.panel.geometry_block.field(WIDTH).set_value(width + 20)
         self.assertEqual(layer.size, QSize(width + 20, width))
         self.assert_panel_matches_layer(layer)
 
@@ -144,8 +145,8 @@ class TextToolTest(ToolTestCase):
         """The panel's X and Y fields move the layer and its outline, one undo step per field."""
         layer = self._drag_new_layer()
         UndoStack().clear()
-        self.panel._x_input.setValue(10)
-        self.panel._y_input.setValue(20)
+        self.panel.geometry_block.field(X).set_value(10)
+        self.panel.geometry_block.field(Y).set_value(20)
         self.assertEqual(layer.offset, QPointF(10, 20))
         self.assert_panel_matches_layer(layer)
         self.assertEqual(UndoStack().undo_count(), 2)
@@ -245,8 +246,8 @@ class TextToolTest(ToolTestCase):
         layer = self._drag_new_layer()
         layer.rotate(90)
         rotation = (layer.transform.m11(), layer.transform.m12(), layer.transform.m21(), layer.transform.m22())
-        self.panel._x_input.setValue(30)
-        self.panel._y_input.setValue(40)
+        self.panel.geometry_block.field(X).set_value(30)
+        self.panel.geometry_block.field(Y).set_value(40)
         self.assertEqual(self.panel.offset, QPoint(30, 40))
         self.assertEqual(layer.transformed_bounds.topLeft(), QPoint(30, 40))
         self.assertEqual((layer.transform.m11(), layer.transform.m12(), layer.transform.m21(),
