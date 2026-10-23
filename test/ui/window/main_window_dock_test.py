@@ -1,6 +1,7 @@
 """Tests MainWindow's docks: the first-run layout, docks without content, keys, saved layouts, the image selector,
 and the orientation and size each dock reports to its panel."""
 import sys
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from PySide6.QtCore import QPoint, QRect, QSize, Qt
@@ -45,8 +46,10 @@ class MainWindowDockTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self._screen_size = LANDSCAPE_SCREEN
-        screen_patch = patch('src.ui.window.main_window.get_screen_size', side_effect=lambda *_: self._screen_size)
+        # The lambda captures this holder, not `self`: the patch holds the lambda, and the test holds the patch.
+        screen = SimpleNamespace(size=LANDSCAPE_SCREEN)
+        self._screen = screen
+        screen_patch = patch('src.ui.window.main_window.get_screen_size', side_effect=lambda *_: screen.size)
         screen_patch.start()
         self.addCleanup(screen_patch.stop)
         test_size = QSize(64, 64)
@@ -105,7 +108,7 @@ class MainWindowDockTest(IntraPaintTestCase):
 
     def test_first_run_layout_on_portrait_screen(self) -> None:
         """On a screen taller than wide, the first-run layout uses the bottom area."""
-        self._screen_size = PORTRAIT_SCREEN
+        self._screen.size = PORTRAIT_SCREEN
         window = self._new_window(QSize(1080, 1700))
         for dock in window.docks:
             self.assertEqual(window.dockWidgetArea(dock), Area.BottomDockWidgetArea)

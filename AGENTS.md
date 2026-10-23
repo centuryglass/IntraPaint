@@ -220,13 +220,11 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
     `ImageStack.flush_render()` before reading them. `test/render_assertions.py` compares region renders, full
     renders and what the view displays.
   - No retry markers. The only allowed markers are `skip`, with a reason and an issue link, and `xfail(strict=True)`.
-  - `pytest-xdist` waits until tests are proven independent of run order, and a coverage-percentage gate waits until
-    coverage is built out.
+  - `pytest-xdist` waits until tests are proven independent of run order.
 - CI (`.github/workflows/ci.yml`) runs on every push and pull request: the suite on Python 3.11-3.14, the lint check
   below, and the `bundle` job (see "Packaging"). Its `ci` job is the single check to require for merging.
-- Coverage is sparse: treat it as a partial safety net, not an authoritative gate. `coverage run -m pytest` then
-  `coverage report` measures it locally; CI's Python 3.13 test leg posts the report to the run summary. The full run
-  takes about 300 seconds.
+- Test coverage is sparse and unmeasured: treat the suite as a partial safety net, not an authoritative gate. The full
+  run takes about 300 seconds.
 
 ## Type checking
 

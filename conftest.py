@@ -27,7 +27,7 @@ prepare the environment that the Qt-based tests rely on:
   PySide lost the exception that caused it (issue #283).
 - Fail any test that leaves PySide wrappers in a reference cycle, beyond its entry in the baseline
   (`test/qt_cycles.py`).
-- Report GC and coverage-lock state when a test runs for two minutes, ahead of pytest's thread dump
+- Report GC state when a test runs for two minutes, ahead of pytest's thread dump
   (`test/hang_diagnostics.py`, issue #390).
 """
 import ctypes
