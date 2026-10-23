@@ -19,12 +19,13 @@ pins Prompt in a column at the left (`DockPanel.pinned_layout`) and packs the re
 - The panel stays unaware of the backend connection. The generator shows `DisabledBanner` through
   `set_disconnected`.
 """
+from functools import partial
 from typing import Callable, Optional, Sequence
 
 from PySide6.QtCore import QEvent, QPointF, QSize, Qt, Signal
 from PySide6.QtGui import QFont, QPainter, QPainterPath, QPalette, QResizeEvent
-from PySide6.QtWidgets import (QApplication, QBoxLayout, QComboBox, QFormLayout, QLabel, QPushButton, QSizePolicy,
-                               QSpacerItem, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QBoxLayout, QComboBox, QFormLayout, QLabel, QPlainTextEdit, QPushButton,
+                               QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -36,7 +37,8 @@ from src.ui.input_fields.size_field import SizeField
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel, PanelLayout
 from src.ui.layout.label_column_layout import LabelColumnLayout, normalize_row_label
-from src.ui.layout.panel_fit import FIELD_MAX_WIDTH, REQUIRED, STRIP_SECTION_MIN_WIDTH, FitItem, Orientation
+from src.ui.layout.panel_fit import (FIELD_MAX_WIDTH, REQUIRED, STRIP_SECTION_MIN_WIDTH, FitItem, Orientation,
+                                     held_weakly)
 from src.ui.widget.disabled_banner import DisabledBanner
 from src.ui.widget.panel_section import PanelSection
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
@@ -286,8 +288,11 @@ class FieldPair(QWidget):
 
         `column_width` returns the width of the strip column the pair sits in, or None in a side panel. A side panel
         stacks the fields when the panel is too narrow for them side by side. A strip has a fixed column width, so it
-        stacks them in both forms when the column is too narrow for both fields' text side by side.
+        stacks them in both forms when the column is too narrow for both fields' text side by side. A bound method
+        `column_width` is held weakly.
         """
+        column_width = held_weakly(column_width)
+
         def _side_by_side() -> None:
             width = column_width()
             self.set_stacked(width is not None and not self.fits_side_by_side(width))
@@ -443,7 +448,7 @@ class StableDiffusionPanel(DockPanel):
         # The negative prompt folds to one line that shows its text:
         self._negative_fold = PanelSection(LABEL_NEGATIVE_PROMPT, self._negative_textbox, expanded=False)
         self._negative_fold.setToolTip(self._negative_textbox.toolTip())
-        self._negative_fold.bind_summary(lambda: ' '.join(self._negative_textbox.toPlainText().split()),
+        self._negative_fold.bind_summary(partial(self._negative_summary, self._negative_textbox),
                                          self._negative_textbox.textChanged)
         self._negative_fold.expanded_changed.connect(lambda _expanded: self.refit())
         section.add(self._negative_fold, REQUIRED)
@@ -471,6 +476,10 @@ class StableDiffusionPanel(DockPanel):
             cache.connect(styles_button, Cache.STYLES, _styles_update)
             _styles_update(cache.get(Cache.STYLES))
 
+    @staticmethod
+    def _negative_summary(textbox: QPlainTextEdit) -> str:
+        return ' '.join(textbox.toPlainText().split())
+
     def _prompt_height_cap(self) -> int:
         """Returns the tallest a prompt box grows in a side panel, or the negative prompt box anywhere."""
         return self._negative_textbox.fontMetrics().lineSpacing() * PROMPT_MAX_LINES + PROMPT_BOX_PADDING
@@ -488,8 +497,10 @@ class StableDiffusionPanel(DockPanel):
         self._mask_section = section
         self._mask_blur_field = config_slider_field(AppConfig(), AppConfig.MASK_BLUR)
         section.add(self._mask_blur_field, REQUIRED)
-        section.widget.bind_summary(lambda: SUMMARY_MASK.format(blur=self._mask_blur_field.value_text()),
-                                    self._mask_blur_field.valueChanged)
+        section.widget.bind_summary(self._mask_summary, self._mask_blur_field.valueChanged)
+
+    def _mask_summary(self) -> str:
+        return SUMMARY_MASK.format(blur=self._mask_blur_field.value_text())
 
     def _build_sampling_section(self, ui: PanelLayout, cache: Cache) -> None:
         section = ui.section(SECTION_TITLE_SAMPLING, collapsible=True, priority=SAMPLING_PRIORITY)
@@ -516,18 +527,19 @@ class StableDiffusionPanel(DockPanel):
         section.add(LabeledRows([(normalize_row_label(cache.get_label(Cache.SAMPLING_METHOD)),
                                   self._sampler_combobox)]), REQUIRED)
 
-        def _sampling_summary() -> str:
-            seed = int(cache.get(Cache.SEED))
-            if seed != RANDOM_SEED:
-                return SUMMARY_SAMPLING_FIXED_SEED.format(seed=seed, steps=cache.get(Cache.SAMPLING_STEPS),
-                                                          guidance=cache.get(Cache.GUIDANCE_SCALE))
-            return SUMMARY_SAMPLING.format(sampler=cache.get(Cache.SAMPLING_METHOD),
-                                           steps=cache.get(Cache.SAMPLING_STEPS),
-                                           guidance=cache.get(Cache.GUIDANCE_SCALE))
-
-        section.widget.bind_summary(_sampling_summary, self._steps_field.valueChanged,
+        section.widget.bind_summary(self._sampling_summary, self._steps_field.valueChanged,
                                     self._guidance_field.valueChanged, self._sampler_combobox.valueChanged,
                                     self._seed_input.valueChanged)
+
+    @staticmethod
+    def _sampling_summary() -> str:
+        cache = Cache()
+        seed = int(cache.get(Cache.SEED))
+        if seed != RANDOM_SEED:
+            return SUMMARY_SAMPLING_FIXED_SEED.format(seed=seed, steps=cache.get(Cache.SAMPLING_STEPS),
+                                                      guidance=cache.get(Cache.GUIDANCE_SCALE))
+        return SUMMARY_SAMPLING.format(sampler=cache.get(Cache.SAMPLING_METHOD), steps=cache.get(Cache.SAMPLING_STEPS),
+                                       guidance=cache.get(Cache.GUIDANCE_SCALE))
 
     def _build_size_section(self, ui: PanelLayout, cache: Cache) -> None:
         section = ui.section(SECTION_TITLE_SIZE, collapsible=True, priority=SIZE_PRIORITY)
@@ -544,18 +556,20 @@ class StableDiffusionPanel(DockPanel):
         self._gen_size_holder.setMaximumWidth(FIELD_MAX_WIDTH)
         size_rows = LabeledRows([(normalize_row_label(cache.get_label(Cache.GENERATION_SIZE)),
                                   self._gen_size_holder)])
-        section.add(size_rows, REQUIRED, (lambda: self._set_size_orientation(Qt.Orientation.Horizontal),
-                                          lambda: self._set_size_orientation(Qt.Orientation.Vertical)))
+        section.add(size_rows, REQUIRED, (partial(self._set_size_orientation, Qt.Orientation.Horizontal),
+                                          partial(self._set_size_orientation, Qt.Orientation.Vertical)))
         self._batch_count_field = config_slider_field(cache, Cache.BATCH_COUNT)
         section.add(self._batch_count_field, REQUIRED)
 
-        def _size_summary() -> str:
-            size = cache.get(Cache.GENERATION_SIZE)
-            return SUMMARY_SIZE.format(width=size.width(), height=size.height(), count=cache.get(Cache.BATCH_COUNT))
-
-        section.widget.bind_summary(_size_summary, self._gen_size_input.valueChanged,
+        section.widget.bind_summary(self._size_summary, self._gen_size_input.valueChanged,
                                     self._batch_count_field.valueChanged)
         section.widget.set_expanded(False)
+
+    @staticmethod
+    def _size_summary() -> str:
+        cache = Cache()
+        size = cache.get(Cache.GENERATION_SIZE)
+        return SUMMARY_SIZE.format(width=size.width(), height=size.height(), count=cache.get(Cache.BATCH_COUNT))
 
     def _set_size_orientation(self, orientation: Qt.Orientation) -> None:
         # Strip columns are wide enough for the boxes side by side, and stacking them only takes more height there:

@@ -74,17 +74,16 @@ class MyPaintBrushToolPanel(StrokeToolPanel):
         self.add_tool_section(self._brush_section, FitItem(REQUIRED, 2), self._apply_brush_form, stretch=True)
         self.add_tool_section(self._dynamics_section, FitItem(DYNAMICS_PRIORITY, 2), self._apply_dynamics_form)
 
-        def _update_summaries(*_args) -> None:
-            path = self._brush_picker.active_brush_path
-            self._brush_section.set_summary(FILE_DEFINED_HINT if path is None
-                                            else BRUSH_SUMMARY.format(brush=brush_name(path), hint=FILE_DEFINED_HINT))
-            self._dynamics_section.set_summary(self._dynamics.summary())
+        self._dynamics.setting_combo.currentIndexChanged.connect(self._update_summaries)
+        self._dynamics.value_field.valueChanged.connect(self._update_summaries)
+        Cache().connect(self, Cache.MYPAINT_BRUSH, self._update_summaries)
+        self._update_summaries()
 
-        self._update_summaries = _update_summaries
-        self._dynamics.setting_combo.currentIndexChanged.connect(_update_summaries)
-        self._dynamics.value_field.valueChanged.connect(_update_summaries)
-        Cache().connect(self, Cache.MYPAINT_BRUSH, _update_summaries)
-        _update_summaries()
+    def _update_summaries(self, *_args) -> None:
+        path = self._brush_picker.active_brush_path
+        self._brush_section.set_summary(FILE_DEFINED_HINT if path is None
+                                        else BRUSH_SUMMARY.format(brush=brush_name(path), hint=FILE_DEFINED_HINT))
+        self._dynamics_section.set_summary(self._dynamics.summary())
 
     @property
     def brush_panel(self) -> MypaintBrushPanel:
