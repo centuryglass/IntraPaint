@@ -124,49 +124,56 @@ class ImagePanel(QWidget):
             image_scale_box.setValue(self._image_viewer.scene_scale)
             self._control_layout.addWidget(self._scale_reset_button)
 
-            scale_signals = [
+            self._image_scale_box = image_scale_box
+            self._scale_signals = [
                 self._image_viewer.scale_changed,
                 image_scale_slider.valueChanged,
                 image_scale_box.valueChanged
             ]
-
-            def on_scale_change(new_scale: float | int) -> None:
-                """Synchronize slider, spin box, panel scale, and zoom button text:"""
-                assert self._scale_reset_button is not None
-                if isinstance(new_scale, int):
-                    float_scale = new_scale / 100
-                    int_scale = new_scale
-                else:
-                    float_scale = new_scale
-                    int_scale = int(float_scale * 100)
-                for scale_signal in scale_signals:
-                    scale_signal.disconnect(on_scale_change)
-                if image_scale_box.value() != float_scale:
-                    image_scale_box.setValue(float_scale)
-                if image_scale_slider.value() != int_scale:
-                    image_scale_slider.setValue(int_scale)
-                if self._image_viewer.scene_scale != float_scale:
-                    self._image_viewer.scene_scale = float_scale
-                for scale_signal in scale_signals:
-                    scale_signal.connect(on_scale_change)
-                if self._image_viewer.is_at_default_view and not self._image_viewer.follow_generation_area:
-                    self._scale_reset_button.setVisible(self._showing_image_gen_controls)
-                    self._scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
-                    self._scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
-                else:
-                    self._scale_reset_button.setVisible(True)
-                    self._scale_reset_button.setText(SCALE_RESET_BUTTON_LABEL)
-                    self._scale_reset_button.setToolTip(SCALE_RESET_BUTTON_TOOLTIP)
-
-            for signal in scale_signals:
-                signal.connect(on_scale_change)
+            for signal in self._scale_signals:
+                signal.connect(self._on_scale_change)
         else:
             self._control_layout = None
             self._control_hint_label = None
             self._control_bar = None
             self._image_scale_slider = None
+            self._image_scale_box = None
+            self._scale_signals = []
             self._scale_reset_button = None
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+    def _on_scale_change(self, new_scale: float | int) -> None:
+        """Synchronize slider, spin box, panel scale, and zoom button text.
+
+        A method rather than a closure, so the panel and its widgets' connections don't form a reference cycle.
+        """
+        assert self._scale_reset_button is not None
+        assert self._image_scale_slider is not None
+        assert self._image_scale_box is not None
+        if isinstance(new_scale, int):
+            float_scale = new_scale / 100
+            int_scale = new_scale
+        else:
+            float_scale = new_scale
+            int_scale = int(float_scale * 100)
+        for scale_signal in self._scale_signals:
+            scale_signal.disconnect(self._on_scale_change)
+        if self._image_scale_box.value() != float_scale:
+            self._image_scale_box.setValue(float_scale)
+        if self._image_scale_slider.value() != int_scale:
+            self._image_scale_slider.setValue(int_scale)
+        if self._image_viewer.scene_scale != float_scale:
+            self._image_viewer.scene_scale = float_scale
+        for scale_signal in self._scale_signals:
+            scale_signal.connect(self._on_scale_change)
+        if self._image_viewer.is_at_default_view and not self._image_viewer.follow_generation_area:
+            self._scale_reset_button.setVisible(self._showing_image_gen_controls)
+            self._scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
+            self._scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
+        else:
+            self._scale_reset_button.setVisible(True)
+            self._scale_reset_button.setText(SCALE_RESET_BUTTON_LABEL)
+            self._scale_reset_button.setToolTip(SCALE_RESET_BUTTON_TOOLTIP)
 
     def _build_ruler_grid(self) -> QWidget:
         """Returns a widget holding the image viewer, with rulers above it and to its left."""
