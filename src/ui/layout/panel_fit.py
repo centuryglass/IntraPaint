@@ -245,10 +245,10 @@ def plan_orientation(items: Sequence[FitItem], available: QSize,
     """Returns the orientation and placement for content in an available size, planning each orientation with
     `plan_fit`.
 
-    - The orientation whose content doesn't overflow the available size wins, then the one that shows more optional
-      items, in fill order, then the one the size's shape suggests, then the one with larger forms. Form sizes come
-      last because forms differ between orientations, so a strip's larger buttons say nothing about which orientation
-      suits the space.
+    - The orientation whose content doesn't overflow the available size wins. When both fit, the one that shows more
+      optional items, in fill order, wins next. Then comes the one the size's shape suggests, then the one with larger
+      forms. Form sizes come last because forms differ between orientations, so a strip's larger buttons say nothing
+      about which orientation suits the space.
     - The shape suggestion comes from `orientation_for_size` with the current orientation as its hysteresis anchor, so
       a square-ish panel keeps its arrangement until the other axis is longer by more than `HYSTERESIS` pixels.
     - `current` is the orientation and placement in use, if any. Another orientation replaces it only once it also
@@ -259,8 +259,11 @@ def plan_orientation(items: Sequence[FitItem], available: QSize,
     def _plan(orientation: Orientation, size: QSize) -> tuple[tuple, Placement]:
         in_use = current[1] if current is not None and current[0] == orientation else None
         placement = plan_fit(items, size, orientation, lambda p: measure(orientation, p), in_use)
-        score = (_overflows(measure(orientation, placement), size), _left_out(items, placement),
-                 orientation != guess, _rank(items, placement))
+        overflows = _overflows(measure(orientation, placement), size)
+        # Content that overflows scrolls, so what it leaves out says nothing about how well the orientation suits the
+        # space:
+        score = (overflows, () if overflows else _left_out(items, placement), orientation != guess,
+                 _rank(items, placement))
         return score, placement
 
     plans = {guess: _plan(guess, available)}

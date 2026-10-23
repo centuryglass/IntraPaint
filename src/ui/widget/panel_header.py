@@ -5,6 +5,7 @@ button and a More button.
   description wraps. A name that still doesn't fit ends with an ellipsis.
 - The header holds no config. `reset_requested` fires when the reset button is clicked, and the owner restores its
   declared keys (see `src.ui.panel.panel_reset`).
+- `add_widget` puts an owner's control, such as a mode selector, on the first line before the reset and More buttons.
 - The More button opens a popover holding the controls that didn't fit in the panel, plus panel commands. The owner
   supplies them with `set_popover_content` and refreshes them in a `more_requested` handler.
 - In a strip too short for the header, the owner hides it and places `more_button` at the end of the panel's row, and
@@ -251,6 +252,8 @@ class PanelHeader(QWidget):
         self._reset_button = _GlyphButton(_GlyphButton.RESET, RESET_TOOLTIP)
         self._more_button = _GlyphButton(_GlyphButton.MORE, MORE_TOOLTIP)
         self._more_button.hide()
+        # Controls added with `add_widget`:
+        self._widgets: list[QWidget] = []
         self._popover = PanelPopover(self)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -318,6 +321,15 @@ class PanelHeader(QWidget):
         self._icon_label.setFixedWidth(max(width, ICON_SIZE))
         self._fit_lines()
 
+    def add_widget(self, widget: QWidget) -> None:
+        """Adds a control to the first line, before the reset and More buttons, and shows it. The first line's width
+        counts it while it is shown, so a header too narrow for it moves the key and description to the second line
+        first."""
+        self._first_line.insertWidget(self._first_line.indexOf(self._reset_button), widget)
+        self._widgets.append(widget)
+        widget.show()
+        self._fit_lines()
+
     def restore_more_button(self) -> None:
         """Puts the More button back at the end of the first line, after its owner moved it elsewhere."""
         self._first_line.addWidget(self._more_button)
@@ -363,7 +375,8 @@ class PanelHeader(QWidget):
         return QSize(self._one_line_width(), self._first_line_height())
 
     def _first_line_height(self) -> int:
-        widgets = [self._icon_label, self._name_label, self._key_badge, self._reset_button, self._more_button]
+        widgets = [self._icon_label, self._name_label, self._key_badge, self._reset_button, self._more_button,
+                   *self._widgets]
         return max(widget.sizeHint().height() for widget in widgets)
 
     def _second_line_indent(self) -> int:
@@ -379,9 +392,11 @@ class PanelHeader(QWidget):
         Measuring text is slow and panel planning reads this often, so the width is kept until something it depends
         on changes.
         """
-        widgets = [self._icon_label, self._key_badge, self._reset_button, self._more_button]
-        key = (tuple(widget.isHidden() for widget in widgets), self._icon_label.minimumWidth(), self._key_badge.text,
-               self._name_label.full_text, self._description_label.isHidden(), self._description_label.text())
+        widgets = [self._icon_label, self._key_badge, self._reset_button, self._more_button, *self._widgets]
+        key = (tuple(widget.isHidden() for widget in widgets),
+               tuple(widget.sizeHint().width() for widget in self._widgets), self._icon_label.minimumWidth(),
+               self._key_badge.text, self._name_label.full_text, self._description_label.isHidden(),
+               self._description_label.text())
         if key == self._one_line_key:
             return self._one_line_cache
         shown = [widget for widget in widgets if not widget.isHidden()]

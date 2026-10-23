@@ -195,6 +195,14 @@ class PlanOrientationTest(IntraPaintTestCase):
         orientation, placement = plan_orientation(items, QSize(150, 400), self._measure(side, strip))
         self.assertEqual((orientation, placement), (STRIP, (0, 0)))
 
+    def test_optional_items_do_not_decide_between_overflowing_orientations(self) -> None:
+        """When neither orientation fits, the suggested one wins even if the other leaves fewer optional items out."""
+        side = StackedContent(SIDE, [(100, 500)], [(100, 100)])
+        strip = StackedContent(STRIP, [(100, 500)], [(10, 0)])
+        items = [FitItem(REQUIRED), FitItem(1)]
+        orientation, _ = plan_orientation(items, QSize(150, 400), self._measure(side, strip))
+        self.assertEqual(orientation, SIDE)
+
     def test_switching_orientation_needs_room_to_spare(self) -> None:
         """Another orientation replaces the current one only once it also wins with HYSTERESIS pixels to spare."""
         # 100 x 200 as a side panel, and 150 x 100 as a strip:

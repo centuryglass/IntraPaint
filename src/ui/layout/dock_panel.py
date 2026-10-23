@@ -14,6 +14,8 @@ their state survives.
 - A footer set with `set_footer` stays below the scrolled content, and counts toward the panel's minimum size.
 - A subclass can fill a pinned column (`pinned_layout`) that stays left of content that scrolls sideways, and a
   trailing column (`trailing_layout`) that stays right of it. While the pinned column shows, the footer sits under it.
+  Each column scrolls vertically when the panel is too short for it, except a trailing column set not to with
+  `set_trailing_scrolls`, which counts toward the panel's minimum height like the footer.
 - A panel opts in to column packing with `set_column_packing`. Its strip stacks sections top to bottom in a column
   while they fit the strip's height, instead of giving each its own column.
 - Each section is a `src.ui.widget.panel_section.PanelSection`, available as `DockSection.widget` for summaries,
@@ -231,6 +233,7 @@ class DockPanel(QWidget):
         self._pinned = _PinnedColumn()
         # Created by the first use of `trailing_layout`, so panels without one have no widget for it:
         self._trailing: Optional[_PinnedColumn] = None
+        self._trailing_scrolls = True
         self._scroll_row = QHBoxLayout()
         self._scroll_row.setContentsMargins(0, 0, 0, 0)
         self._scroll_row.addWidget(self._pinned.column)
@@ -308,6 +311,14 @@ class DockPanel(QWidget):
     def set_trailing_visible(self, visible: bool) -> None:
         """Shows or hides the trailing column."""
         self._trailing_column().column.setVisible(visible)
+
+    def set_trailing_scrolls(self, scrolls: bool) -> None:
+        """Sets whether the trailing column scrolls vertically when the panel is too short for it, the default. A
+        column that doesn't scroll counts its content's minimum height toward the panel's minimum, so content such as a
+        panel's main action stays in view."""
+        self._trailing_scrolls = scrolls
+        self._trailing_column().scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded if scrolls
+                                                                   else Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
     def set_column_packing(self, enabled: bool) -> None:
         """Opts the panel in or out of column packing. Call it once, from `build` or the constructor.
@@ -480,7 +491,8 @@ class DockPanel(QWidget):
         areas' widths.
 
         Each column's content scrolls on its own, so it adds only its scroll area's minimum height. It gets a scroll bar
-        when it is taller than the room it has under the header and over its footer, if it has one.
+        when it is taller than the room it has under the header and over its footer, if it has one. A trailing column
+        set not to scroll adds its content's minimum height instead.
         """
         available = self.available_size
         row_spacing = max(self._scroll_row.spacing(), 0)
@@ -498,14 +510,16 @@ class DockPanel(QWidget):
             column_spacing = max(column.column_layout.spacing(), 0) if column_footer.height() > 0 else 0
             content = fresh_minimum_size(column.content)
             width = content.width() + column.scroll.frameWidth() * 2
-            if available is not None:
+            scrolls = column is not self._trailing or self._trailing_scrolls
+            if available is not None and scrolls:
                 room = available.height() - column_footer.height() - column_spacing - header_height
                 if content.height() > room:
                     width += column.scroll.verticalScrollBar().sizeHint().width()
             column.scroll.setMinimumWidth(width)
             widths.append(width)
-            sizes.append(QSize(max(width, column_footer.width()),
-                               column.scroll.minimumSizeHint().height() + column_spacing + column_footer.height()))
+            column.scroll.setMinimumHeight(0 if scrolls else content.height() + column.scroll.frameWidth() * 2)
+            height = column.scroll.minimumSizeHint().height() if scrolls else column.scroll.minimumHeight()
+            sizes.append(QSize(max(width, column_footer.width()), height + column_spacing + column_footer.height()))
         # Each prefers its content's maximum width, less room for one strip column beside the minimums of the rest:
         for index, column in enumerate(columns):
             preferred = column.content.maximumWidth()
@@ -751,6 +765,8 @@ class DockPanel(QWidget):
             column_layout = column.layout()
             for widget in column_sections:
                 column_layout.insertWidget(column_layout.count() - 1, widget)
+                # Reparenting hides a widget, and only shown sections are packed:
+                widget.show()
             self._section_layout.addWidget(column)
             column.show()
         for column in self._pack_columns[len(plan):]:

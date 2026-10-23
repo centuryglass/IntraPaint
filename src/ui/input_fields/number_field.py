@@ -381,15 +381,18 @@ class NumberField(QWidget):
         painter.setBrush(tile_fill)
         painter.setPen(QPen(colors.accent if enabled else colors.outline, 1))
         painter.drawRoundedRect(tile, PRESSURE_TILE_RADIUS, PRESSURE_TILE_RADIUS)
-        # A pressure curve, from low and flat to high and steep, in a 12 x 12 box centered in the tile.
-        origin = QPointF(link_rect.center()) + QPointF(0.5, 0.5) - QPointF(6.0, 6.0)
-        curve = QPainterPath(origin + QPointF(1.5, 10.5))
-        curve.cubicTo(origin + QPointF(6.0, 10.5), origin + QPointF(8.0, 7.0), origin + QPointF(10.5, 1.5))
         pen = QPen(colors.accent if enabled else colors.label, 1.6)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         painter.setPen(pen)
         painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.drawPath(curve)
+        painter.drawPath(self._link_glyph(QPointF(link_rect.center()) + QPointF(0.5, 0.5) - QPointF(6.0, 6.0)))
+
+    def _link_glyph(self, origin: QPointF) -> QPainterPath:
+        """Returns the link's glyph in a 12 x 12 box at `origin`: a pressure curve, from low and flat to high and steep.
+        Subclasses whose link toggles something else override it."""
+        curve = QPainterPath(origin + QPointF(1.5, 10.5))
+        curve.cubicTo(origin + QPointF(6.0, 10.5), origin + QPointF(8.0, 7.0), origin + QPointF(10.5, 1.5))
+        return curve
 
     def changeEvent(self, event: QEvent) -> None:  # pylint: disable=invalid-name
         """Rebuilds the cached colors and font when the palette, font or enabled state changes."""

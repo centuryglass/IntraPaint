@@ -59,6 +59,7 @@
         "signal": "#ff5145",
         "signal_hover": "#ff6b61",
         "signal_pressed": "#e6453a",
+        "caution": "#e8a33d",
         "canvas_surround": "#303134"
     }
 }
