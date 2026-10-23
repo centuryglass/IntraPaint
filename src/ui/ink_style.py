@@ -92,6 +92,7 @@ class InkColors:
     signal: QColor
     signal_hover: QColor
     signal_pressed: QColor
+    caution: QColor
     canvas_surround: QColor
 
     @staticmethod
@@ -139,6 +140,13 @@ def signal_color() -> Optional[QColor]:
     """Returns the signal color if the application style is InkStyle, or None if it has no signal color."""
     colors = ink_colors()
     return None if colors is None else colors.signal
+
+
+def caution_color() -> Optional[QColor]:
+    """Returns the caution color if the application style is InkStyle, or None if it has no caution color. It marks a
+    setting that changes what an action does, such as an edit mode that ignores the mask."""
+    colors = ink_colors()
+    return None if colors is None else colors.caution
 
 
 def _is_popup(widget: object) -> bool:

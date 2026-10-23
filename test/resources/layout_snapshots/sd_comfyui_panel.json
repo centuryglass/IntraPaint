@@ -1,54 +1,66 @@
 {
   "minimum": {
     "problems": [
-      "squeezed: QWidget is 120x123, minimum 131x93",
-      "clipped: QWidget/_PinnedScrollArea shows 120x89 of 131x89"
+      "squeezed: QWidget[0] is 78x190, minimum 203x59",
+      "clipped: QWidget[0]/_PinnedScrollArea shows 78x190 of 203x190",
+      "clipped: QWidget[0]/_PinnedScrollArea/QWidget[0] shows 78x190 of 192x190",
+      "squeezed: QWidget[1] is 78x190, minimum 226x94",
+      "clipped: QWidget[1]/_PinnedScrollArea shows 78x190 of 226x190",
+      "clipped: QWidget[1]/_PinnedScrollArea/QWidget[0] shows 78x190 of 226x190"
     ],
     "size": [
-      207,
-      145
+      248,
+      212
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: QPushButton 'Generate' is 81x28, minimum 82x28"
+      "squeezed: PanelHeader is 102x44, minimum 108x44",
+      "squeezed: QWidget[2] is 102x124, minimum 110x124",
+      "squeezed: QWidget[2]/QWidget is 102x124, minimum 110x124",
+      "clipped: QWidget[2]/QWidget/SliderField shows 102x30 of 110x30",
+      "squeezed: QWidget[2]/QWidget/FieldPair is 102x54, minimum 110x54",
+      "clipped: QWidget[2]/QWidget/FieldPair/SliderField shows 102x24 of 110x24",
+      "clipped: QWidget[2]/QWidget/FieldPair/ToggledSliderField shows 102x24 of 110x24"
     ],
     "size": [
-      103,
-      461
+      124,
+      509
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      1040,
-      461
+      342,
+      509
     ]
   },
   "short": {
     "problems": [
-      "squeezed: QWidget is 411x50, minimum 131x93",
-      "squeezed: QWidget/_PinnedScrollArea is 411x22, minimum 59x59",
-      "squeezed: QWidget/QPushButton 'Generate' is 411x22, minimum 82x28",
-      "squeezed: QScrollArea is 601x50, minimum 59x59"
+      "squeezed: QWidget[0] is 125x84, minimum 203x59",
+      "clipped: QWidget[0]/_PinnedScrollArea shows 125x84 of 203x84",
+      "clipped: QWidget[0]/_PinnedScrollArea/QWidget[0] shows 125x84 of 192x84",
+      "squeezed: QWidget[1] is 125x84, minimum 226x94",
+      "clipped: QWidget[1]/_PinnedScrollArea shows 125x84 of 226x94",
+      "clipped: QWidget[1]/_PinnedScrollArea/QWidget[0] shows 125x84 of 226x94"
     ],
     "size": [
-      1040,
-      72
+      342,
+      106
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      1040,
-      1383
+      342,
+      1527
     ]
   },
   "wide": {
     "problems": [],
     "size": [
-      3120,
-      461
+      1600,
+      509
     ]
   }
 }

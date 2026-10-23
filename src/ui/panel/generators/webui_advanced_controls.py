@@ -8,7 +8,7 @@ from src.config.cache import Cache
 from src.ui.input_fields.seed_value_spinbox import SeedValueSpinbox
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.panel.generators.stable_diffusion_panel import (SUMMARY_ADVANCED_DEFAULT, AdvancedControls, LabeledRows,
-                                                            config_slider_field)
+                                                            config_slider_field, group_label)
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.generators.webui_advanced_controls'
@@ -19,6 +19,8 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
+GROUP_TITLE_SEED_VARIATION = _tr('Seed variation')
+GROUP_TITLE_OUTPUT = _tr('Output')
 LABEL_LAST_VARIATION_SEED = _tr('Last variation seed')
 LABEL_RESIZE_SEED_FROM = _tr('Resize seed from')
 VARIATION_OFF = _tr('Off', 'Variation strength is zero')
@@ -37,6 +39,7 @@ class WebUIAdvancedControls(AdvancedControls):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
+        layout.addWidget(group_label(GROUP_TITLE_SEED_VARIATION))
         self._subseed_input = SeedValueSpinbox(Cache.WEBUI_SUBSEED, Cache.WEBUI_LAST_SUBSEED)
         layout.addWidget(LabeledRows([(normalize_row_label(cache.get_label(Cache.WEBUI_SUBSEED)),
                                        self._subseed_input)]))
@@ -69,6 +72,7 @@ class WebUIAdvancedControls(AdvancedControls):
 
         self._tiling_checkbox = cache.get_control_widget(Cache.WEBUI_TILING)
         self._face_restore_checkbox = cache.get_control_widget(Cache.WEBUI_RESTORE_FACES)
+        layout.addWidget(group_label(GROUP_TITLE_OUTPUT))
         layout.addWidget(self._tiling_checkbox)
         layout.addWidget(self._face_restore_checkbox)
 

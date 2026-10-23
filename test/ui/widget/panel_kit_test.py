@@ -13,7 +13,7 @@ from src.ui.layout.label_column_layout import LabelColumnLayout, normalize_row_l
 from src.ui.panel.panel_reset import reset_config_keys
 from src.ui.widget.disabled_banner import DisabledBanner
 from src.ui.widget.keycap_badge import KeycapBadge
-from src.ui.widget.panel_header import MORE_TOOLTIP, PanelHeader, PanelPopover, RESET_TOOLTIP
+from src.ui.widget.panel_header import HEADER_SPACING, MORE_TOOLTIP, PanelHeader, PanelPopover, RESET_TOOLTIP
 from src.ui.widget.panel_section import PanelSection
 from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
@@ -154,6 +154,23 @@ class PanelHeaderTest(IntraPaintTestCase):
         self.assertTrue(header.is_wrapped)
         header.resize(1000, header.sizeHint().height())
         self.assertFalse(header.is_wrapped)
+
+    def test_added_widget_sits_before_the_buttons_and_counts_toward_one_line(self) -> None:
+        """A control added with add_widget sits on the first line before More, and widens the first line, so the
+        description moves to the second line sooner."""
+        header = PanelHeader('Image generation')
+        header.set_description('WebUI')
+        header.set_popover_content(QLabel('extra'))
+        header.show()
+        one_line = header.sizeHint().width()
+        control = QPushButton('A mode selector')
+        header.add_widget(control)
+        self.assertEqual(header.sizeHint().width(), one_line + control.sizeHint().width() + HEADER_SPACING)
+        header.resize(header.sizeHint())
+        self.assertFalse(header.is_wrapped)
+        self.assertLess(control.geometry().right(), header.more_button.geometry().left())
+        header.resize(one_line, header.sizeHint().height())
+        self.assertTrue(header.is_wrapped)
 
     def test_long_name_elides_and_keeps_full_text(self) -> None:
         """A name too long for the header ends with an ellipsis, shows its full text as a tooltip, and reads back in

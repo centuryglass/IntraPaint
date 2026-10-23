@@ -416,6 +416,24 @@ class DockPanelTest(IntraPaintTestCase):
         finally:
             host.release()
 
+    def test_trailing_column_set_not_to_scroll_counts_toward_the_minimum_height(self) -> None:
+        """A trailing column scrolls in a strip too short for it, unless `set_trailing_scrolls(False)` makes its
+        content's height part of the panel's minimum."""
+        for scrolls in (True, False):
+            with self.subTest(scrolls=scrolls):
+                panel = PackedPanel()
+                panel.trailing_button.setMinimumHeight(600)
+                panel.set_trailing_scrolls(scrolls)
+                host = PanelHost(panel)
+                try:
+                    tell_orientation(panel, STRIP, QSize(1400, 800))
+                    host.capture(QSize(1400, 800))
+                    self.assertEqual(panel.orientation, STRIP)
+                    self.assertEqual(panel.minimumSizeHint().height() > 600, not scrolls)
+                    self.assertEqual(panel.measure().height() > 600, not scrolls)
+                finally:
+                    host.release()
+
     def test_packed_minimum_size_does_not_depend_on_history(self) -> None:
         """The same size gives the same minimum size hint, whatever the panel showed before."""
         size = QSize(1400, 320)

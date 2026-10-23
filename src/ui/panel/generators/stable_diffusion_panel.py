@@ -1,42 +1,44 @@
 """The Stable Diffusion generation panel, for the WebUI and ComfyUI backends.
 
-It is a `DockPanel` with one column of sections in loop order: Edit mode, Prompt, Inpaint, Output, Sampling,
-Advanced and a ControlNet summary, with Generate pinned below them (`DockPanel.set_footer`). Strip docks pin Edit
-mode, Prompt and Generate in a column at the left (`DockPanel.pinned_layout`), and lay the other sections out as
-top-aligned columns that scroll beside it.
+It is a `DockPanel` that places controls by how often they're used. The action block holds the ones used after every
+generation: denoising strength, batch size, padding and Generate, with Generate last. It is a side panel's footer
+(`DockPanel.set_footer`) and a strip's trailing column (`DockPanel.trailing_layout`), so Generate stays in the
+bottom-right corner and never scrolls. The sections run Prompt, Mask, Sampling, Size and batch, then Advanced. A strip
+pins Prompt in a column at the left (`DockPanel.pinned_layout`) and packs the rest into columns between the two
+(`DockPanel.set_column_packing`).
 
 - Every control is bound to its config value and has one owner here. Backend-specific controls arrive as constructor
   arguments (`webui`) and `set_advanced_content`.
-- The Inpaint section keeps its place in every edit mode: Inpaint shows all its controls, Image to image only denoising
-  strength, and Text to image a one-line note. Widgets inside the section show and hide, so the planner's placement of
-  the section itself never changes.
-- The header's More menu holds the commands that open other windows. The panel emits signals for them and the generator
-  opens the window.
+- The edit mode decides which controls show, and the panel plans again when it changes. The Mask section and padding
+  show in Inpaint only, and denoising strength in Inpaint and Image to image. Outside Inpaint, the header's edit mode
+  selector takes the caution color and a note above Generate names the mode.
+- The edit mode selector sits in the header. A strip puts the header at the top of the prompt column, so the columns
+  beside it get the strip's full height. The prompt column scrolls on its own, so the header never collapses.
+- The header's More menu holds Interrogate and the commands that open other windows. The panel emits signals for them
+  and the generator acts on them.
 - The panel stays unaware of the backend connection. The generator shows `DisabledBanner` through
   `set_disconnected`.
 """
 from typing import Callable, Optional, Sequence
 
-from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QPalette, QResizeEvent
-from PySide6.QtWidgets import (QApplication, QBoxLayout, QCheckBox, QComboBox, QFormLayout, QLabel, QPushButton,
-                               QSizePolicy, QVBoxLayout, QWidget)
+from PySide6.QtCore import QEvent, QPointF, QSize, Qt, Signal
+from PySide6.QtGui import QFont, QPainter, QPainterPath, QPalette, QResizeEvent
+from PySide6.QtWidgets import (QApplication, QBoxLayout, QComboBox, QFormLayout, QLabel, QPushButton, QSizePolicy,
+                               QSpacerItem, QVBoxLayout, QWidget)
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.config import Config
-from src.controller.image_generation.sd_adapters.controlnet_adapter import SavedControlNetUnit
-from src.ui.ink_style import set_primary_button
+from src.ui.ink_style import caution_color, set_primary_button
 from src.ui.input_fields.number_field import NumberField
-from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.input_fields.seed_value_spinbox import SeedValueSpinbox
 from src.ui.input_fields.size_field import SizeField
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel, PanelLayout
 from src.ui.layout.label_column_layout import LabelColumnLayout, normalize_row_label
-from src.ui.layout.panel_fit import (FIELD_MAX_WIDTH, REQUIRED, STRIP_SECTION_MAX_WIDTH, Orientation,
-                                     set_field_width_cap)
+from src.ui.layout.panel_fit import FIELD_MAX_WIDTH, REQUIRED, STRIP_SECTION_MIN_WIDTH, FitItem, Orientation
 from src.ui.widget.disabled_banner import DisabledBanner
+from src.ui.widget.panel_section import PanelSection
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.shared_constants import (BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENERATE, EDIT_MODE_IMG2IMG,
                                        EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG)
@@ -54,59 +56,81 @@ PANEL_TITLE = _tr('Image generation')
 BACKEND_DESCRIPTION_WEBUI = _tr('WebUI')
 BACKEND_DESCRIPTION_COMFYUI = _tr('ComfyUI')
 
-SECTION_TITLE_MODE = _tr('Edit mode')
 SECTION_TITLE_PROMPT = _tr('Prompt')
-SECTION_TITLE_INPAINT = _tr('Inpainting')
-SECTION_TITLE_OUTPUT = _tr('Output')
+SECTION_TITLE_MASK = _tr('Mask')
 SECTION_TITLE_SAMPLING = _tr('Sampling')
+SECTION_TITLE_SIZE = _tr('Size and batch')
 SECTION_TITLE_ADVANCED = _tr('Advanced')
-SECTION_TITLE_CONTROLNET = _tr('ControlNet')
 
+GROUP_TITLE_INPAINT_AND_SIZE = _tr('Inpainting and size')
+GROUP_TITLE_MODEL = _tr('Model')
+
+LABEL_MODEL = _tr('Model')
+LABEL_GUIDANCE = _tr('Guidance')
+LABEL_STEPS = _tr('Steps')
 LABEL_NEGATIVE_PROMPT = _tr('Negative prompt')
 LABEL_LAST_SEED = _tr('Last seed')
-LABEL_FULL_RESOLUTION = _tr('Full resolution')
+PADDING_OFF = _tr('off', 'Inpaint padding while full resolution is off')
 
 BUTTON_TEXT_LORA = _tr('LoRA')
 BUTTON_TOOLTIP_LORA = _tr('Choose LoRA models to add to the prompt')
 BUTTON_TEXT_STYLES = _tr('Styles')
 BUTTON_TOOLTIP_STYLES = _tr('Add saved prompt styles to the prompt')
-BUTTON_TEXT_INTERROGATE = _tr('Interrogate')
-BUTTON_TOOLTIP_INTERROGATE = _tr('Attempt to generate a prompt that describes the current image generation area')
 
+MENU_TEXT_INTERROGATE = _tr('Interrogate')
+TOOLTIP_INTERROGATE = _tr('Attempt to generate a prompt that describes the current image generation area')
 MENU_TEXT_SETUP = _tr('Select image generator...')
 MENU_TEXT_SETTINGS = _tr('Stable Diffusion settings...')
 MENU_TEXT_LCM_MODE = _tr('LCM mode')
 MENU_TEXT_CLEAR_MEMORY = _tr('Clear GPU memory')
 TOOLTIP_CLEAR_MEMORY = _tr('Remove cached models from GPU memory in ComfyUI.')
 
-INPAINT_NOTE_TXT2IMG = _tr('Text to image ignores the canvas, so denoising, masked content and padding do not apply.')
+NOTE_IMG2IMG = _tr('Image to image: ignores the mask')
+NOTE_TXT2IMG = _tr('Text to image: ignores the canvas')
 BANNER_FIX_TEXT = _tr('Setup...')
-CONTROLNET_BUTTON_TOOLTIP = _tr('Open the ControlNet panel')
-CONTROLNET_ALL_OFF = _tr('all units off')
-CONTROLNET_UNIT_ON = _tr('unit {number} on: {preprocessor}', 'ControlNet summary of an enabled unit')
-CONTROLNET_UNITS_ON = _tr('{count} units on', 'ControlNet summary when several units are enabled')
-CONTROLNET_NO_PREPROCESSOR = _tr('no preprocessor')
 
+SUMMARY_MASK = _tr('blur {blur}', 'Mask section summary')
 SUMMARY_SAMPLING = _tr('{sampler}, {steps} steps, CFG {guidance}', 'Sampling section summary')
+SUMMARY_SAMPLING_FIXED_SEED = _tr('seed {seed}, CFG {guidance}, {steps} steps',
+                                  'Sampling section summary while the seed is fixed')
+SUMMARY_SIZE = _tr('{width} x {height}, count {count}', 'Size and batch section summary')
 SUMMARY_ADVANCED_DEFAULT = _tr('defaults')
 
 # The widest the pinned prompt column of a strip grows:
-PROMPT_COLUMN_MAX_WIDTH = 400
+PROMPT_COLUMN_MAX_WIDTH = 300
+# The widest the action block grows as a strip's trailing column:
+ACTION_COLUMN_MAX_WIDTH = 240
 
 # Side panels cap the prompt box at this many lines, and the negative prompt box everywhere. A strip's prompt box takes
 # the pinned column's spare height:
 PROMPT_MAX_LINES = 5
 PROMPT_BOX_PADDING = 12
+# The prompt box is never narrower than this many average characters. A strip with no room for that beside the other
+# columns plans as a side panel:
+PROMPT_MIN_CHARACTERS = 24
 
-# A pair of fields is stacked in this form:
+# Denoising strength is the most used value, so its field is taller than the others:
+DENOISING_FIELD_HEIGHT = 30
+
+# Planning collapses sections to their summaries, and hides the edit mode note, from the highest priority number down:
+NOTE_PRIORITY = 1
+MASK_PRIORITY = 1
+SAMPLING_PRIORITY = 2
+SIZE_PRIORITY = 3
+ADVANCED_PRIORITY = 4
+
+# The action block's batch size and padding pair, in its two forms:
 PAIR_FORM_SIDE_BY_SIDE = 0
 PAIR_FORM_STACKED = 1
 
+# The seed value that means a random seed:
+RANDOM_SEED = -1
+
 
 def config_slider_field(config: Config, key: str, parent: Optional[QWidget] = None, label: Optional[str] = None,
-                        **field_options) -> SliderField:
-    """Returns a `SliderField` bound to a numeric config value with a finite range. Edits write the config, and config
-    changes update the field. `field_options` are passed on to the field, such as `zero_text`.
+                        field_class: type[SliderField] = SliderField, **field_options) -> SliderField:
+    """Returns a `field_class` field bound to a numeric config value with a finite range. Edits write the config, and
+    config changes update the field. `field_options` are passed on to the field, such as `zero_text`.
 
     Raises
     ------
@@ -116,7 +140,7 @@ def config_slider_field(config: Config, key: str, parent: Optional[QWidget] = No
     minimum, maximum, step = config.get_range(key)
     if minimum is None or maximum is None or step is None:
         raise ValueError(f'Config key {key} needs a numeric range')
-    field = SliderField(label if label is not None else normalize_row_label(config.get_label(key)),
+    field = field_class(label if label is not None else normalize_row_label(config.get_label(key)),
                         config.get(key), minimum, maximum, step=step, parent=parent, **field_options)
     field.setToolTip(config.get_tooltip(key))
 
@@ -142,25 +166,94 @@ def option_combo_box(config: Config, key: str, parent: Optional[QWidget] = None)
     return control
 
 
-def controlnet_summary(saved_units: Sequence[str]) -> str:
-    """Returns a one-line description of which saved ControlNet units will apply to the next generation. Units that
-    fail to parse count as off."""
-    enabled: list[tuple[int, SavedControlNetUnit]] = []
-    for index, data in enumerate(saved_units):
-        try:
-            unit = SavedControlNetUnit.from_json(data)
-        except ValueError:
-            continue
-        if unit.enabled:
-            enabled.append((index + 1, unit))
-    if len(enabled) == 0:
-        return CONTROLNET_ALL_OFF
-    if len(enabled) > 1:
-        return CONTROLNET_UNITS_ON.format(count=len(enabled))
-    number, unit = enabled[0]
-    preprocessor = unit.unit.preprocessor
-    return CONTROLNET_UNIT_ON.format(number=number, preprocessor=CONTROLNET_NO_PREPROCESSOR if preprocessor is None
-                                     else preprocessor.typedef.name)
+def group_label(text: str) -> QLabel:
+    """Returns a dim heading for a group of controls inside a section."""
+    label = QLabel(text)
+    label.setForegroundRole(QPalette.ColorRole.PlaceholderText)
+    font = QFont(label.font())
+    font.setWeight(QFont.Weight.DemiBold)
+    label.setFont(font)
+    return label
+
+
+class ToggledSliderField(SliderField):
+    """A `SliderField` whose link toggles the setting its value belongs to, such as padding that applies only at full
+    resolution.
+
+    The toggle is the field's pen pressure link (`set_pressure_link_enabled`, `pressureLinkToggled`), drawn with a
+    full-frame glyph. While it is off, the field reads `off_text` in dim text with no fill, and ignores dragging, typing
+    and stepping. It passes wheel events on, so the wheel scrolls the panel.
+    """
+
+    def __init__(self, label: str, value: int | float, minimum: int | float, maximum: int | float,
+                 parent: Optional[QWidget] = None, off_text: str = '', **kwargs) -> None:
+        # The superclass constructor reads `value_text`:
+        self._off_text = off_text
+        super().__init__(label, value, minimum, maximum, parent=parent, **kwargs)
+        self.set_pressure_link_available(True)
+        self.pressureLinkToggled.connect(self._toggled)
+
+    def is_off(self) -> bool:
+        """Returns whether the toggle is off, so the value doesn't apply."""
+        return not self.pressure_link_enabled()
+
+    def _toggled(self, _enabled: bool) -> None:
+        self._update_accessible_description()
+        self.update()
+
+    def value_text(self, value: Optional[int | float] = None) -> str:
+        """Returns `off_text` for the current value while the toggle is off, and the value's text otherwise."""
+        if value is None and self.is_off():
+            return self._off_text
+        return super().value_text(value)
+
+    def _fill_fraction(self) -> Optional[float]:
+        return None if self.is_off() else super()._fill_fraction()
+
+    def _paint_text(self, painter: QPainter) -> None:
+        if not self.is_off():
+            super()._paint_text(painter)
+            return
+        text = self._colors.text
+        self._colors.text = self._colors.label
+        super()._paint_text(painter)
+        self._colors.text = text
+
+    def _link_glyph(self, origin: QPointF) -> QPainterPath:
+        """Returns four corner brackets, the full-frame glyph."""
+        glyph = QPainterPath()
+        for corner in ((1.0, 4.5, 1.0, 1.0, 4.5, 1.0), (7.5, 1.0, 11.0, 1.0, 11.0, 4.5),
+                       (11.0, 7.5, 11.0, 11.0, 7.5, 11.0), (4.5, 11.0, 1.0, 11.0, 1.0, 7.5)):
+            glyph.moveTo(origin + QPointF(corner[0], corner[1]))
+            glyph.lineTo(origin + QPointF(corner[2], corner[3]))
+            glyph.lineTo(origin + QPointF(corner[4], corner[5]))
+        return glyph
+
+    def mousePressEvent(self, event) -> None:  # pylint: disable=invalid-name
+        """Toggles on a press on the link. While off, ignores other presses."""
+        if self.is_off() and not self._pressure_link_rect().contains(event.position().toPoint()):
+            event.ignore()
+            return
+        super().mousePressEvent(event)
+
+    def wheelEvent(self, event) -> None:  # pylint: disable=invalid-name
+        """Steps the value, or passes the event on while off."""
+        if self.is_off():
+            event.ignore()
+            return
+        super().wheelEvent(event)
+
+    def keyPressEvent(self, event) -> None:  # pylint: disable=invalid-name
+        """Handles keys as `NumberField` does, except that while off only Space, which toggles, does anything."""
+        if self.is_off() and event.key() != Qt.Key.Key_Space:
+            QWidget.keyPressEvent(self, event)
+            return
+        super().keyPressEvent(event)
+
+    def begin_edit(self) -> None:
+        """Opens the text entry, except while off."""
+        if not self.is_off():
+            super().begin_edit()
 
 
 class FieldPair(QWidget):
@@ -178,6 +271,10 @@ class FieldPair(QWidget):
         """Stacks the fields, or puts them side by side."""
         self._layout.setDirection(QBoxLayout.Direction.TopToBottom if stacked else QBoxLayout.Direction.LeftToRight)
 
+    def is_stacked(self) -> bool:
+        """Returns whether the fields are stacked."""
+        return self._layout.direction() == QBoxLayout.Direction.TopToBottom
+
     def fits_side_by_side(self, width: int) -> bool:
         """Returns whether both fields fit side by side in `width` without eliding their labels or values."""
         widths = [field.unelided_width() if isinstance(field, NumberField) else field.sizeHint().width()
@@ -185,20 +282,20 @@ class FieldPair(QWidget):
         return sum(widths) + max(self._layout.spacing(), 0) <= width
 
     def forms(self, column_width: Callable[[], Optional[int]]) -> tuple[Callable[[], None], Callable[[], None]]:
-        """Returns the callbacks that put the pair in each of its forms, largest first, for `DockSection.add`.
+        """Returns the callbacks that put the pair side by side and stacked, for `DockSection.add`.
 
-        `column_width` returns the width of the strip column the pair sits in, or None in a side panel. Forms are
-        largest across the panel first, so a side panel puts the fields side by side first and a strip stacks them
-        first. A strip column too narrow for both fields' text side by side stacks them in both forms.
+        `column_width` returns the width of the strip column the pair sits in, or None in a side panel. A side panel
+        stacks the fields when the panel is too narrow for them side by side. A strip has a fixed column width, so it
+        stacks them in both forms when the column is too narrow for both fields' text side by side.
         """
-        def _side_by_side_first() -> None:
-            self.set_stacked(column_width() is not None)
-
-        def _stacked_first() -> None:
+        def _side_by_side() -> None:
             width = column_width()
-            self.set_stacked(width is None or not self.fits_side_by_side(width))
+            self.set_stacked(width is not None and not self.fits_side_by_side(width))
 
-        return _side_by_side_first, _stacked_first
+        def _stacked() -> None:
+            self.set_stacked(True)
+
+        return _side_by_side, _stacked
 
 
 class HonestSizeHints(QWidget):
@@ -277,7 +374,6 @@ class StableDiffusionPanel(DockPanel):
     clear_memory_requested = Signal()
     setup_requested = Signal()
     settings_requested = Signal()
-    controlnet_requested = Signal()
 
     def __init__(self, webui: bool) -> None:
         # `build` runs in the superclass constructor and needs this:
@@ -288,7 +384,6 @@ class StableDiffusionPanel(DockPanel):
         self.header.set_description(BACKEND_DESCRIPTION_WEBUI if webui else BACKEND_DESCRIPTION_COMFYUI)
         self.header.reset_button.hide()
         self._advanced_controls: Optional[AdvancedControls] = None
-        self._controlnet_keys: list[str] = []
         self.lcm_available_check: Optional[Callable[[], bool]] = None
 
         self._banner = DisabledBanner('', BANNER_FIX_TEXT)
@@ -298,12 +393,8 @@ class StableDiffusionPanel(DockPanel):
         assert isinstance(outer, QVBoxLayout)
         outer.insertWidget(1, self._banner)
 
-        self._generate_button = QPushButton(BUTTON_TEXT_GENERATE)
-        self._generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
-        set_primary_button(self._generate_button)
-        self._generate_button.clicked.connect(self.generate_signal)
-        self.set_footer(self._generate_button)
-
+        self._build_edit_mode_control()
+        self._build_action_block()
         self._build_more_menu()
         self._connect_edit_mode()
 
@@ -313,61 +404,58 @@ class StableDiffusionPanel(DockPanel):
 
     def build(self, ui: PanelLayout) -> None:
         """Declares the sections."""
+        self.set_column_packing(True)
         cache = Cache()
-        self._build_mode_section(ui)
         self._build_prompt_section(ui, cache)
-        self._build_inpaint_section(ui, cache)
-        self._build_output_section(ui, cache)
+        self._build_mask_section(ui)
         self._build_sampling_section(ui, cache)
-        self._build_advanced_section(ui)
-        self._build_controlnet_section(ui)
+        self._build_size_section(ui, cache)
+        self._build_advanced_section(ui, cache)
 
-    def _build_mode_section(self, ui: PanelLayout) -> None:
+    def _build_edit_mode_control(self) -> None:
         cache = Cache()
-        self._mode_section = ui.section(SECTION_TITLE_MODE)
-        self._mode_section.widget.set_header_visible(False)
-        self._edit_mode_control = SegmentedControl(
-            [Segment(mode, cache.get_option_display(mode))
-             for mode in (EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, EDIT_MODE_TXT2IMG)],
-            display_mode=DisplayMode.LABEL, combo_fallback=True)
-        # The control can shrink to its fallback combo box, so its size hint isn't its minimum width, and it is as tall
-        # as that combo box needs:
-        self._edit_mode_control.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        fallback = self._edit_mode_control.findChild(QComboBox)
-        if fallback is not None:
-            self._edit_mode_control.setFixedHeight(max(self._edit_mode_control.sizeHint().height(),
-                                                       fallback.minimumSizeHint().height()))
-        # Like a tab bar, it spans the panel:
-        set_field_width_cap(self._edit_mode_control, None)
-        self._edit_mode_control.setToolTip(cache.get_tooltip(Cache.EDIT_MODE))
-        self._edit_mode_control.set_value(cache.get(Cache.EDIT_MODE))
-        self._mode_section.add(self._edit_mode_control, REQUIRED)
+        combobox = cache.get_control_widget(Cache.EDIT_MODE)
+        assert isinstance(combobox, QComboBox)
+        self._edit_mode_combobox = combobox
+        # It prefers the width of its longest mode, and shrinks to a few characters in a narrow header:
+        combobox.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        combobox.setMinimumContentsLength(3)
+        minimum_width = combobox.minimumSizeHint().width()
+        combobox.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+        combobox.setMinimumWidth(minimum_width)
+        combobox.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        combobox.setToolTip(cache.get_tooltip(Cache.EDIT_MODE))
+        self.header.add_widget(combobox)
 
     def _build_prompt_section(self, ui: PanelLayout, cache: Cache) -> None:
         section = ui.section(SECTION_TITLE_PROMPT)
         self._prompt_section = section
+        # Model sits here and not in the action block, so a wheel turned over denoising strength can't change it by a
+        # near miss:
+        self._model_combobox = option_combo_box(cache, Cache.SD_MODEL)
+        section.add(LabeledRows([(LABEL_MODEL, self._model_combobox)]), REQUIRED)
         self._prompt_textbox = cache.get_control_widget(Cache.PROMPT, multi_line=True)
+        self._prompt_textbox.setMinimumWidth(self._prompt_textbox.fontMetrics().averageCharWidth()
+                                             * PROMPT_MIN_CHARACTERS)
+        section.add(self._prompt_textbox, REQUIRED)
         self._negative_textbox = cache.get_control_widget(Cache.NEGATIVE_PROMPT, multi_line=True)
         self._negative_textbox.setMaximumHeight(self._prompt_height_cap())
-        self._negative_label = QLabel(LABEL_NEGATIVE_PROMPT)
-        self._negative_label.setBuddy(self._negative_textbox)
-        self._negative_label.setToolTip(self._negative_textbox.toolTip())
-        section.add(self._prompt_textbox, REQUIRED)
-        section.add(self._negative_label, REQUIRED)
-        section.add(self._negative_textbox, REQUIRED)
+        # The negative prompt folds to one line that shows its text:
+        self._negative_fold = PanelSection(LABEL_NEGATIVE_PROMPT, self._negative_textbox, expanded=False)
+        self._negative_fold.setToolTip(self._negative_textbox.toolTip())
+        self._negative_fold.bind_summary(lambda: ' '.join(self._negative_textbox.toPlainText().split()),
+                                         self._negative_textbox.textChanged)
+        self._negative_fold.expanded_changed.connect(lambda _expanded: self.refit())
+        section.add(self._negative_fold, REQUIRED)
 
         # Prompt tools open existing windows. Each hides when it has nothing to show:
         self._lora_button = self._header_tool_button(BUTTON_TEXT_LORA, BUTTON_TOOLTIP_LORA, self.lora_requested)
         self._styles_button: Optional[QPushButton] = None
-        self._interrogate_button: Optional[QPushButton] = None
         section.widget.add_header_widget(self._lora_button)
         if self._webui:
             self._styles_button = self._header_tool_button(BUTTON_TEXT_STYLES, BUTTON_TOOLTIP_STYLES,
                                                            self.styles_requested)
             section.widget.add_header_widget(self._styles_button)
-            self._interrogate_button = self._header_tool_button(BUTTON_TEXT_INTERROGATE, BUTTON_TOOLTIP_INTERROGATE,
-                                                                self.interrogate_signal)
-            section.widget.add_header_widget(self._interrogate_button)
 
         def _lora_update(models: list) -> None:
             self._lora_button.setVisible(len(models) > 0)
@@ -385,7 +473,7 @@ class StableDiffusionPanel(DockPanel):
 
     def _prompt_height_cap(self) -> int:
         """Returns the tallest a prompt box grows in a side panel, or the negative prompt box anywhere."""
-        return self._prompt_textbox.fontMetrics().lineSpacing() * PROMPT_MAX_LINES + PROMPT_BOX_PADDING
+        return self._negative_textbox.fontMetrics().lineSpacing() * PROMPT_MAX_LINES + PROMPT_BOX_PADDING
 
     @staticmethod
     def _header_tool_button(text: str, tooltip: str, signal) -> QPushButton:
@@ -395,77 +483,17 @@ class StableDiffusionPanel(DockPanel):
         button.clicked.connect(signal)
         return button
 
-    def _build_inpaint_section(self, ui: PanelLayout, cache: Cache) -> None:
-        section = ui.section(SECTION_TITLE_INPAINT)
-        self._inpaint_section = section
-        body = QWidget()
-        body_layout = QVBoxLayout(body)
-        body_layout.setContentsMargins(0, 0, 0, 0)
+    def _build_mask_section(self, ui: PanelLayout) -> None:
+        section = ui.section(SECTION_TITLE_MASK, collapsible=True, priority=MASK_PRIORITY)
+        self._mask_section = section
+        self._mask_blur_field = config_slider_field(AppConfig(), AppConfig.MASK_BLUR)
+        section.add(self._mask_blur_field, REQUIRED)
+        section.widget.bind_summary(lambda: SUMMARY_MASK.format(blur=self._mask_blur_field.value_text()),
+                                    self._mask_blur_field.valueChanged)
 
-        self._inpaint_note = QLabel(INPAINT_NOTE_TXT2IMG)
-        self._inpaint_note.setWordWrap(True)
-        self._inpaint_note.setForegroundRole(QPalette.ColorRole.PlaceholderText)
-        self._denoising_field = config_slider_field(cache, Cache.DENOISING_STRENGTH, body)
-        self._masked_content_rows: Optional[LabeledRows] = None
-        if self._webui:
-            self._masked_content_combobox = option_combo_box(cache, Cache.MASKED_CONTENT, body)
-            self._masked_content_rows = LabeledRows([(normalize_row_label(cache.get_label(Cache.MASKED_CONTENT)),
-                                                      self._masked_content_combobox)], body)
-        self._full_res_checkbox = QCheckBox(LABEL_FULL_RESOLUTION)
-        self._full_res_checkbox.setToolTip(cache.get_tooltip(Cache.INPAINT_FULL_RES))
-        self._full_res_checkbox.setChecked(bool(cache.get(Cache.INPAINT_FULL_RES)))
-
-        def _full_res_toggled(checked: bool) -> None:
-            if cache.get(Cache.INPAINT_FULL_RES) != checked:
-                cache.set(Cache.INPAINT_FULL_RES, checked)
-
-        self._full_res_checkbox.toggled.connect(_full_res_toggled)
-        self._padding_field = config_slider_field(cache, Cache.INPAINT_FULL_RES_PADDING, body)
-
-        def _full_res_changed(checked: bool) -> None:
-            if self._full_res_checkbox.isChecked() != checked:
-                self._full_res_checkbox.setChecked(checked)
-            self._padding_field.setEnabled(checked)
-
-        cache.connect(self._full_res_checkbox, Cache.INPAINT_FULL_RES, _full_res_changed)
-        _full_res_changed(bool(cache.get(Cache.INPAINT_FULL_RES)))
-        self._full_res_pair = QWidget(body)
-        full_res_layout = QVBoxLayout(self._full_res_pair)
-        full_res_layout.setContentsMargins(0, 0, 0, 0)
-        full_res_layout.addWidget(self._full_res_checkbox)
-        full_res_layout.addWidget(self._padding_field)
-        self._mask_blur_field = config_slider_field(AppConfig(), AppConfig.MASK_BLUR, body)
-
-        for widget in (self._inpaint_note, self._denoising_field, self._masked_content_rows, self._full_res_pair,
-                       self._mask_blur_field):
-            if widget is not None:
-                body_layout.addWidget(widget)
-        section.add(body, REQUIRED)
-
-    def _build_output_section(self, ui: PanelLayout, cache: Cache) -> None:
-        section = ui.section(SECTION_TITLE_OUTPUT)
-        self._output_section = section
-        self._gen_size_input = cache.get_control_widget(Cache.GENERATION_SIZE)
-        # The boxes' width follows their maximum, which is unbounded by default. The maximum image size bounds it, and
-        # never below the current value, so no saved value is clamped:
-        if isinstance(self._gen_size_input, SizeField):
-            self._gen_size_input.maximum = AppConfig().get(AppConfig.MAX_IMAGE_SIZE).expandedTo(
-                self._gen_size_input.value())
-        self._resolution_rule_combobox = option_combo_box(cache, Cache.GENERATION_RESOLUTION_RULE)
-        # The width and height boxes sit side by side, or stacked when the section is too narrow for that:
-        self._gen_size_holder = HonestSizeHints(self._gen_size_input)
-        # Both boxes together are as wide as one field, with each label beside its box:
-        self._gen_size_holder.setMaximumWidth(FIELD_MAX_WIDTH)
-        size_rows = LabeledRows([(normalize_row_label(cache.get_label(Cache.GENERATION_SIZE)), self._gen_size_holder),
-                                 (normalize_row_label(cache.get_label(Cache.GENERATION_RESOLUTION_RULE)),
-                                  self._resolution_rule_combobox)])
-        section.add(size_rows, REQUIRED, (lambda: self._set_size_orientation(Qt.Orientation.Horizontal),
-                                          lambda: self._set_size_orientation(Qt.Orientation.Vertical)))
-        self._batch_size_field = config_slider_field(cache, Cache.BATCH_SIZE)
-        self._batch_count_field = config_slider_field(cache, Cache.BATCH_COUNT)
-        batch_pair = FieldPair(self._batch_size_field, self._batch_count_field)
-        section.add(batch_pair, REQUIRED, batch_pair.forms(self._strip_column_width))
-
+    def _build_sampling_section(self, ui: PanelLayout, cache: Cache) -> None:
+        section = ui.section(SECTION_TITLE_SAMPLING, collapsible=True, priority=SAMPLING_PRIORITY)
+        self._sampling_section = section
         self._seed_input = SeedValueSpinbox(Cache.SEED, Cache.LAST_SEED)
         self._seed_input.setMaximumWidth(FIELD_MAX_WIDTH)
         section.add(LabeledRows([(normalize_row_label(cache.get_label(Cache.SEED)), self._seed_input)]), REQUIRED)
@@ -480,6 +508,55 @@ class StableDiffusionPanel(DockPanel):
         _last_seed_update(cache.get(Cache.LAST_SEED))
         section.add(self._last_seed_label, REQUIRED)
 
+        self._guidance_field = config_slider_field(cache, Cache.GUIDANCE_SCALE, label=LABEL_GUIDANCE)
+        self._steps_field = config_slider_field(cache, Cache.SAMPLING_STEPS, label=LABEL_STEPS)
+        sampling_pair = FieldPair(self._guidance_field, self._steps_field)
+        section.add(sampling_pair, REQUIRED, sampling_pair.forms(self._strip_column_width))
+        self._sampler_combobox = option_combo_box(cache, Cache.SAMPLING_METHOD)
+        section.add(LabeledRows([(normalize_row_label(cache.get_label(Cache.SAMPLING_METHOD)),
+                                  self._sampler_combobox)]), REQUIRED)
+
+        def _sampling_summary() -> str:
+            seed = int(cache.get(Cache.SEED))
+            if seed != RANDOM_SEED:
+                return SUMMARY_SAMPLING_FIXED_SEED.format(seed=seed, steps=cache.get(Cache.SAMPLING_STEPS),
+                                                          guidance=cache.get(Cache.GUIDANCE_SCALE))
+            return SUMMARY_SAMPLING.format(sampler=cache.get(Cache.SAMPLING_METHOD),
+                                           steps=cache.get(Cache.SAMPLING_STEPS),
+                                           guidance=cache.get(Cache.GUIDANCE_SCALE))
+
+        section.widget.bind_summary(_sampling_summary, self._steps_field.valueChanged,
+                                    self._guidance_field.valueChanged, self._sampler_combobox.valueChanged,
+                                    self._seed_input.valueChanged)
+
+    def _build_size_section(self, ui: PanelLayout, cache: Cache) -> None:
+        section = ui.section(SECTION_TITLE_SIZE, collapsible=True, priority=SIZE_PRIORITY)
+        self._size_section = section
+        self._gen_size_input = cache.get_control_widget(Cache.GENERATION_SIZE)
+        # The boxes' width follows their maximum, which is unbounded by default. The maximum image size bounds it, and
+        # never below the current value, so no saved value is clamped:
+        if isinstance(self._gen_size_input, SizeField):
+            self._gen_size_input.maximum = AppConfig().get(AppConfig.MAX_IMAGE_SIZE).expandedTo(
+                self._gen_size_input.value())
+        # The width and height boxes sit side by side, or stacked when the section is too narrow for that:
+        self._gen_size_holder = HonestSizeHints(self._gen_size_input)
+        # Both boxes together are as wide as one field, with each label beside its box:
+        self._gen_size_holder.setMaximumWidth(FIELD_MAX_WIDTH)
+        size_rows = LabeledRows([(normalize_row_label(cache.get_label(Cache.GENERATION_SIZE)),
+                                  self._gen_size_holder)])
+        section.add(size_rows, REQUIRED, (lambda: self._set_size_orientation(Qt.Orientation.Horizontal),
+                                          lambda: self._set_size_orientation(Qt.Orientation.Vertical)))
+        self._batch_count_field = config_slider_field(cache, Cache.BATCH_COUNT)
+        section.add(self._batch_count_field, REQUIRED)
+
+        def _size_summary() -> str:
+            size = cache.get(Cache.GENERATION_SIZE)
+            return SUMMARY_SIZE.format(width=size.width(), height=size.height(), count=cache.get(Cache.BATCH_COUNT))
+
+        section.widget.bind_summary(_size_summary, self._gen_size_input.valueChanged,
+                                    self._batch_count_field.valueChanged)
+        section.widget.set_expanded(False)
+
     def _set_size_orientation(self, orientation: Qt.Orientation) -> None:
         # Strip columns are wide enough for the boxes side by side, and stacking them only takes more height there:
         if self.orientation == Orientation.STRIP:
@@ -487,54 +564,96 @@ class StableDiffusionPanel(DockPanel):
         self._gen_size_input.orientation = orientation
         self._gen_size_holder.updateGeometry()
 
-    def _build_sampling_section(self, ui: PanelLayout, cache: Cache) -> None:
-        section = ui.section(SECTION_TITLE_SAMPLING)
-        self._sampling_section = section
-        self._model_combobox = option_combo_box(cache, Cache.SD_MODEL)
-        self._sampler_combobox = option_combo_box(cache, Cache.SAMPLING_METHOD)
-        section.add(LabeledRows([(normalize_row_label(cache.get_label(Cache.SD_MODEL)), self._model_combobox),
-                                 (normalize_row_label(cache.get_label(Cache.SAMPLING_METHOD)),
-                                  self._sampler_combobox)]), REQUIRED)
-        self._steps_field = config_slider_field(cache, Cache.SAMPLING_STEPS)
-        self._guidance_field = config_slider_field(cache, Cache.GUIDANCE_SCALE)
-        sampling_pair = FieldPair(self._steps_field, self._guidance_field)
-        section.add(sampling_pair, REQUIRED, sampling_pair.forms(self._strip_column_width))
-        self._clip_skip_field = config_slider_field(cache, Cache.CLIP_SKIP)
-        section.add(self._clip_skip_field, REQUIRED)
-
-        def _sampling_summary() -> str:
-            return SUMMARY_SAMPLING.format(sampler=cache.get(Cache.SAMPLING_METHOD),
-                                           steps=cache.get(Cache.SAMPLING_STEPS),
-                                           guidance=cache.get(Cache.GUIDANCE_SCALE))
-
-        section.widget.bind_summary(_sampling_summary, self._steps_field.valueChanged,
-                                    self._guidance_field.valueChanged, self._sampler_combobox.valueChanged)
-
-    def _build_advanced_section(self, ui: PanelLayout) -> None:
-        section = ui.section(SECTION_TITLE_ADVANCED)
+    def _build_advanced_section(self, ui: PanelLayout, cache: Cache) -> None:
+        section = ui.section(SECTION_TITLE_ADVANCED, collapsible=True, priority=ADVANCED_PRIORITY)
         self._advanced_section = section
         self._advanced_body = QWidget()
         self._advanced_layout = QVBoxLayout(self._advanced_body)
         self._advanced_layout.setContentsMargins(0, 0, 0, 0)
+        self._advanced_layout.addWidget(group_label(GROUP_TITLE_INPAINT_AND_SIZE))
+        self._masked_content_rows: Optional[LabeledRows] = None
+        if self._webui:
+            self._masked_content_combobox = option_combo_box(cache, Cache.MASKED_CONTENT)
+            self._masked_content_rows = LabeledRows([(normalize_row_label(cache.get_label(Cache.MASKED_CONTENT)),
+                                                      self._masked_content_combobox)])
+            self._advanced_layout.addWidget(self._masked_content_rows)
+        self._resolution_rule_combobox = option_combo_box(cache, Cache.GENERATION_RESOLUTION_RULE)
+        self._advanced_layout.addWidget(LabeledRows([(normalize_row_label(
+            cache.get_label(Cache.GENERATION_RESOLUTION_RULE)), self._resolution_rule_combobox)]))
+        self._advanced_layout.addWidget(group_label(GROUP_TITLE_MODEL))
+        self._clip_skip_field = config_slider_field(cache, Cache.CLIP_SKIP)
+        self._advanced_layout.addWidget(self._clip_skip_field)
         section.add(self._advanced_body, REQUIRED)
         section.widget.set_expanded(False)
 
-    def _build_controlnet_section(self, ui: PanelLayout) -> None:
-        section = ui.section(SECTION_TITLE_CONTROLNET)
-        self._controlnet_section = section
-        self._controlnet_button = QPushButton()
-        self._controlnet_button.setFlat(True)
-        self._controlnet_button.setToolTip(CONTROLNET_BUTTON_TOOLTIP)
-        self._controlnet_button.setStyleSheet('text-align: left;')
-        self._controlnet_button.clicked.connect(self.controlnet_requested)
-        section.add(self._controlnet_button, REQUIRED)
+    def _build_action_block(self) -> None:
+        """Builds the action block, and pins it as the footer."""
+        cache = Cache()
+        self._denoising_field = config_slider_field(cache, Cache.DENOISING_STRENGTH)
+        self._denoising_field.setFixedHeight(DENOISING_FIELD_HEIGHT)
+        self._batch_size_field = config_slider_field(cache, Cache.BATCH_SIZE)
+        padding_field = config_slider_field(cache, Cache.INPAINT_FULL_RES_PADDING, field_class=ToggledSliderField,
+                                            off_text=PADDING_OFF)
+        assert isinstance(padding_field, ToggledSliderField)
+        self._padding_field = padding_field
+        padding_field.set_pressure_link_tooltip(cache.get_tooltip(Cache.INPAINT_FULL_RES))
+        padding_field.set_pressure_link_enabled(bool(cache.get(Cache.INPAINT_FULL_RES)))
+
+        def _full_res_toggled(enabled: bool) -> None:
+            if cache.get(Cache.INPAINT_FULL_RES) != enabled:
+                cache.set(Cache.INPAINT_FULL_RES, enabled)
+
+        padding_field.pressureLinkToggled.connect(_full_res_toggled)
+        cache.connect(padding_field, Cache.INPAINT_FULL_RES,
+                      lambda enabled, *_: padding_field.set_pressure_link_enabled(bool(enabled)))
+        self._action_pair = FieldPair(self._batch_size_field, padding_field)
+        # Batch size sits at the left edge, under denoising strength, while padding is hidden:
+        for field in (self._batch_size_field, padding_field):
+            self._action_pair.layout().setAlignment(field, Qt.AlignmentFlag.AlignLeft)
+        self.add_fit_item(FitItem(REQUIRED, 2), self._apply_pair_form)
+
+        # The note repeats what the edit mode selector shows, so it hides when the action block has no room for it:
+        self._mode_note = QLabel()
+        self._mode_note.setWordWrap(True)
+        self._note_fits = True
+        self.add_fit_item(FitItem(NOTE_PRIORITY), self._apply_note_form)
+        self._generate_button = QPushButton(BUTTON_TEXT_GENERATE)
+        self._generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
+        set_primary_button(self._generate_button)
+        self._generate_button.clicked.connect(self.generate_signal)
+
+        self._action_block = QWidget()
+        block_layout = QVBoxLayout(self._action_block)
+        block_layout.setContentsMargins(0, 0, 0, 0)
+        block_layout.addWidget(self._denoising_field)
+        block_layout.addWidget(self._action_pair)
+        # Keeps Generate at the bottom of a strip's trailing column. `arrange` closes it in a side panel, where spare
+        # height collects above the footer:
+        self._action_spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        block_layout.addItem(self._action_spacer)
+        block_layout.addWidget(self._mode_note)
+        block_layout.addWidget(self._generate_button)
+        # The footer holds the action block in a side panel, and hides while a strip shows it in the trailing column:
+        self._footer_holder = QWidget()
+        footer_layout = QVBoxLayout(self._footer_holder)
+        footer_layout.setContentsMargins(0, 0, 0, 0)
+        footer_layout.addWidget(self._action_block)
+        self.set_footer(self._footer_holder)
+        self.set_trailing_scrolls(False)
+
+    def _apply_pair_form(self, form: Optional[int]) -> None:
+        self._action_pair.set_stacked(form == PAIR_FORM_STACKED)
+
+    def _apply_note_form(self, form: Optional[int]) -> None:
+        self._note_fits = form is not None
+        self._mode_note.setVisible(self._note_fits and self._mode_note.text() != '')
 
     # ---------------------------------------------------------------------------------------------------------------
     # Backend-specific content
     # ---------------------------------------------------------------------------------------------------------------
 
     def set_advanced_content(self, controls: AdvancedControls) -> None:
-        """Fills the Advanced section with a backend's extra settings, and summarizes them when it is collapsed.
+        """Adds a backend's extra settings to the Advanced section, which summarizes them when it is collapsed.
 
         Raises
         ------
@@ -553,20 +672,6 @@ class StableDiffusionPanel(DockPanel):
         """The backend-specific content of the Advanced section, once set."""
         return self._advanced_controls
 
-    def set_controlnet_cache_keys(self, keys: list[str]) -> None:
-        """Shows the ControlNet summary for the units saved under these Cache keys, or hides it for an empty list."""
-        cache = Cache()
-        self._controlnet_keys = list(keys)
-        for key in keys:
-            cache.connect(self._controlnet_button, key, lambda *_: self.refresh_controlnet_summary())
-        self.refresh_controlnet_summary()
-        self.refit()
-
-    def refresh_controlnet_summary(self) -> None:
-        """Updates the ControlNet summary from the saved units."""
-        cache = Cache()
-        self._controlnet_button.setText(controlnet_summary([cache.get(key) for key in self._controlnet_keys]))
-
     # ---------------------------------------------------------------------------------------------------------------
     # More menu, banner and edit mode
     # ---------------------------------------------------------------------------------------------------------------
@@ -575,6 +680,10 @@ class StableDiffusionPanel(DockPanel):
         self._more_content = QWidget()
         more_layout = QVBoxLayout(self._more_content)
         more_layout.setContentsMargins(0, 0, 0, 0)
+        self._interrogate_menu_button = self._add_more_button(MENU_TEXT_INTERROGATE, more_layout,
+                                                              self.interrogate_signal)
+        self._interrogate_menu_button.setToolTip(TOOLTIP_INTERROGATE)
+        self._interrogate_menu_button.setVisible(self._webui)
         self._setup_menu_button = self._add_more_button(MENU_TEXT_SETUP, more_layout, self.setup_requested)
         self._settings_menu_button = self._add_more_button(MENU_TEXT_SETTINGS, more_layout, self.settings_requested)
         self._lcm_menu_button = self._add_more_button(MENU_TEXT_LCM_MODE, more_layout, self.lcm_mode_requested)
@@ -609,53 +718,79 @@ class StableDiffusionPanel(DockPanel):
 
     def _connect_edit_mode(self) -> None:
         cache = Cache()
+        cache.connect(self, Cache.EDIT_MODE, lambda edit_mode, *_: self._update_edit_mode(edit_mode))
+        self._update_edit_mode(cache.get(Cache.EDIT_MODE))
 
-        def _control_changed(mode: str) -> None:
-            if cache.get(Cache.EDIT_MODE) != mode:
-                cache.set(Cache.EDIT_MODE, mode)
-
-        self._edit_mode_control.valueChanged.connect(_control_changed)
-
-        def _edit_mode_changed(edit_mode: str) -> None:
-            self._edit_mode_control.set_value(edit_mode)
-            self._update_inpaint_section(edit_mode)
-
-        cache.connect(self._edit_mode_control, Cache.EDIT_MODE, _edit_mode_changed)
-        self._update_inpaint_section(cache.get(Cache.EDIT_MODE))
-
-    def _update_inpaint_section(self, edit_mode: str) -> None:
-        """Shows the Inpaint section's controls for the mode. The section itself always shows."""
+    def _update_edit_mode(self, edit_mode: str) -> None:
+        """Shows the controls the edit mode uses, marks a mode other than Inpaint, and plans again."""
         inpaint = edit_mode == EDIT_MODE_INPAINT
-        self._inpaint_note.setVisible(edit_mode == EDIT_MODE_TXT2IMG)
         self._denoising_field.setVisible(edit_mode in (EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG))
+        self._padding_field.setVisible(inpaint)
         if self._masked_content_rows is not None:
             self._masked_content_rows.setVisible(inpaint)
-        self._full_res_pair.setVisible(inpaint)
-        self._mask_blur_field.setVisible(inpaint)
+        notes = {EDIT_MODE_IMG2IMG: NOTE_IMG2IMG, EDIT_MODE_TXT2IMG: NOTE_TXT2IMG}
+        self._mode_note.setText(notes.get(edit_mode, ''))
+        self._mode_note.setVisible(self._note_fits and not inpaint)
+        self._apply_caution(not inpaint)
         self.refit()
+
+    def _apply_caution(self, caution: bool) -> None:
+        """Draws the edit mode selector and the mode note in the caution color, or restores their usual colors."""
+        color = caution_color()
+        combo_palette = QPalette()
+        note_palette = QPalette()
+        if color is not None and caution:
+            for role in (QPalette.ColorRole.Text, QPalette.ColorRole.ButtonText, QPalette.ColorRole.Shadow):
+                combo_palette.setColor(QPalette.ColorGroup.Active, role, color)
+                combo_palette.setColor(QPalette.ColorGroup.Inactive, role, color)
+            note_palette.setColor(QPalette.ColorRole.WindowText, color)
+        self._edit_mode_combobox.setPalette(combo_palette)
+        self._mode_note.setPalette(note_palette)
+
+    def changeEvent(self, event: QEvent) -> None:  # pylint: disable=invalid-name
+        """Takes the caution color from the new style when the style changes."""
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.StyleChange:
+            self._apply_caution(Cache().get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT)
 
     # ---------------------------------------------------------------------------------------------------------------
     # Layout
     # ---------------------------------------------------------------------------------------------------------------
 
     def arrange(self, orientation: Orientation) -> None:
-        """Pins the Edit mode and Prompt sections and Generate in a column at the left of a strip, with the other
-        sections top-aligned beside it. Strip sections shrink to their content's minimum within their column widths,
-        instead of taking their content's preferred width as a floor."""
+        """Pins the Prompt section in a column at the left of a strip and the action block in a column at the right,
+        with the other sections packed into columns between them. Strip sections shrink to their content's minimum
+        within their column widths, instead of taking their content's preferred width as a floor."""
         super().arrange(orientation)
         strip = orientation == Orientation.STRIP
-        pinned_sections = (self._mode_section.widget, self._prompt_section.widget)
+        prompt = self._prompt_section.widget
+        outer = self.layout()
+        assert isinstance(outer, QVBoxLayout)
         if strip:
-            # The pinned column sets its own width, so its sections drop the strip column limits:
-            for widget in pinned_sections:
-                self.pinned_layout.addWidget(widget)
-                widget.setMinimumWidth(0)
-                widget.setMaximumWidth(QWIDGETSIZE_MAX)
+            self.pinned_layout.insertWidget(0, self.header)
+        else:
+            outer.insertWidget(0, self.header)
+        if strip:
+            # The pinned column sets its own width, so the section drops the strip column limits:
+            self.pinned_layout.addWidget(prompt)
+            prompt.setMinimumWidth(0)
+            prompt.setMaximumWidth(QWIDGETSIZE_MAX)
             self.pinned_layout.parentWidget().setMaximumWidth(PROMPT_COLUMN_MAX_WIDTH)
         else:
-            for index, widget in enumerate(pinned_sections):
-                self.section_layout.insertWidget(index, widget)
+            self.section_layout.insertWidget(0, prompt)
         self.set_pinned_visible(strip)
+        if strip:
+            self.trailing_layout.addWidget(self._action_block)
+            self.trailing_layout.parentWidget().setMaximumWidth(ACTION_COLUMN_MAX_WIDTH)
+        else:
+            self._footer_holder.layout().addWidget(self._action_block)
+        self._action_spacer.changeSize(0, 0, QSizePolicy.Policy.Minimum,
+                                       QSizePolicy.Policy.Expanding if strip else QSizePolicy.Policy.Fixed)
+        self._action_block.layout().invalidate()
+        # Reparenting hides a widget:
+        self._action_block.show()
+        self._footer_holder.setVisible(not strip)
+        self.set_trailing_visible(strip)
         self._prompt_textbox.setMaximumHeight(QWIDGETSIZE_MAX if strip else self._prompt_height_cap())
         for section in self.sections:
             if strip:
@@ -663,22 +798,28 @@ class StableDiffusionPanel(DockPanel):
             self.section_layout.setAlignment(section.widget, Qt.AlignmentFlag.AlignTop if strip
                                              else Qt.AlignmentFlag(0))
 
+    def header_width(self, available: QSize) -> int:
+        """Returns the prompt column's widest width in a strip, and the available width in a side panel."""
+        if self.orientation == Orientation.STRIP:
+            return min(available.width(), PROMPT_COLUMN_MAX_WIDTH)
+        return available.width()
+
     def _strip_column_width(self) -> Optional[int]:
-        return STRIP_SECTION_MAX_WIDTH if self.orientation == Orientation.STRIP else None
+        return STRIP_SECTION_MIN_WIDTH if self.orientation == Orientation.STRIP else None
 
     def finish_placement(self) -> None:
-        """Hides the ControlNet section while the backend has no ControlNet units."""
+        """Hides the Mask section outside Inpaint mode."""
         super().finish_placement()
-        self._controlnet_section.widget.setVisible(len(self._controlnet_keys) > 0)
+        self._mask_section.widget.setVisible(Cache().get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT)
 
     # ---------------------------------------------------------------------------------------------------------------
     # Accessors for tests and the generators
     # ---------------------------------------------------------------------------------------------------------------
 
     @property
-    def edit_mode_control(self) -> SegmentedControl:
+    def edit_mode_control(self) -> QComboBox:
         """The edit mode selector."""
-        return self._edit_mode_control
+        return self._edit_mode_combobox
 
     @property
     def generate_button(self) -> QPushButton:
@@ -686,9 +827,29 @@ class StableDiffusionPanel(DockPanel):
         return self._generate_button
 
     @property
-    def inpaint_fields(self) -> list[NumberField]:
-        """The Inpaint section's number fields."""
-        return [self._denoising_field, self._padding_field, self._mask_blur_field]
+    def action_block(self) -> QWidget:
+        """The widget holding denoising strength, batch size, padding and Generate."""
+        return self._action_block
+
+    @property
+    def action_fields(self) -> list[NumberField]:
+        """The action block's number fields: denoising strength, batch size and padding."""
+        return [self._denoising_field, self._batch_size_field, self._padding_field]
+
+    @property
+    def padding_field(self) -> ToggledSliderField:
+        """The padding field, whose toggle turns full resolution inpainting on and off."""
+        return self._padding_field
+
+    @property
+    def model_combobox(self) -> QWidget:
+        """The Stable Diffusion model selector."""
+        return self._model_combobox
+
+    @property
+    def mode_note(self) -> QLabel:
+        """The note above Generate that names an edit mode other than Inpaint."""
+        return self._mode_note
 
     @property
     def banner(self) -> DisabledBanner:
@@ -698,11 +859,10 @@ class StableDiffusionPanel(DockPanel):
     @property
     def prompt_tool_buttons(self) -> list[QPushButton]:
         """The Prompt header's buttons, in display order."""
-        return [button for button in (self._lora_button, self._styles_button, self._interrogate_button)
-                if button is not None]
+        return [button for button in (self._lora_button, self._styles_button) if button is not None]
 
     @property
     def more_menu_buttons(self) -> list[QPushButton]:
-        """The More menu's buttons, in display order."""
-        return [self._setup_menu_button, self._settings_menu_button, self._lcm_menu_button,
-                self._clear_memory_menu_button]
+        """The More menu's buttons, in display order: Interrogate, setup, settings, LCM mode and Clear GPU memory."""
+        return [self._interrogate_menu_button, self._setup_menu_button, self._settings_menu_button,
+                self._lcm_menu_button, self._clear_memory_menu_button]

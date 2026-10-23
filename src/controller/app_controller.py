@@ -581,7 +581,6 @@ class AppController(MenuBuilder):
                 self._generator_control_panel.setup_requested.connect(self.show_generator_window)
                 self._generator_control_panel.settings_requested.connect(
                     lambda: self.show_settings(STABLE_DIFFUSION_CONFIG_CATEGORY))
-                self._generator_control_panel.controlnet_requested.connect(self._window.controlnet_dock.open_in_group)
         self._window.generation_dock.set_content(self._generator_control_panel)
         self._window.controlnet_dock.set_content(self._generator.get_controlnet_panel())
         if self._generator_window is not None:

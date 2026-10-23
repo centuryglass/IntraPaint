@@ -258,8 +258,6 @@ class SDGenerator(ImageGenerator, ABC):
         panel.lcm_mode_requested.connect(self.set_lcm_mode)
         panel.lcm_available_check = lambda: _check_lcm_mode_available(self)
         panel.set_advanced_content(advanced_controls)
-        if self._controlnet_panel is not None:
-            panel.set_controlnet_cache_keys(self.get_controlnet_unit_cache_keys())
         return panel
 
     @abstractmethod
