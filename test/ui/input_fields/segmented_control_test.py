@@ -127,6 +127,16 @@ class SegmentedControlTest(IntraPaintTestCase):
         control.set_display_mode(DisplayMode.LABEL)
         self.assertLessEqual(control.sizeHint().width(), full)
 
+    def test_set_segment_icon_keeps_value_and_label(self) -> None:
+        """Replacing a segment's icon keeps its value, label and tooltip, and allows icon-only display."""
+        control = _control(tooltips={Fill.ALL: 'Everything'})
+        for mode in Fill:
+            control.set_segment_icon(mode.value, QIcon())
+        control.set_display_mode(DisplayMode.ICON)
+        segment = control.segments[0]
+        self.assertEqual((segment.value, segment.label, segment.tooltip), ('all', 'All', 'Everything'))
+        self.assertIsNotNone(segment.icon)
+
     def test_combo_fallback_when_narrow(self) -> None:
         """A control narrower than its segments need shows a combo box that edits the same value."""
         control = _control(combo_fallback=True)

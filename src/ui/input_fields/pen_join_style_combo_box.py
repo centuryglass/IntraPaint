@@ -41,8 +41,10 @@ class PenJoinStyleComboBox(QComboBox):
         return PenJoinStyleComboBox._line_options[name]
 
     @staticmethod
-    def _draw_icon(join_style: Qt.PenJoinStyle, line_color: QColor | Qt.GlobalColor,
-                   bg_color: Optional[QColor | Qt.GlobalColor] = None) -> QPixmap:
+    def draw_icon(join_style: Qt.PenJoinStyle, line_color: QColor | Qt.GlobalColor,
+                  bg_color: Optional[QColor | Qt.GlobalColor] = None) -> QPixmap:
+        """Draws the icon for a join style: a thick corner in the line color, over a contrasting background by
+        default."""
         if bg_color is None:
             bg_color = Qt.GlobalColor.white if line_color.lightness() < 128 else Qt.GlobalColor.black
         draw_icon_size = ICON_SIZE * 4
@@ -62,7 +64,7 @@ class PenJoinStyleComboBox(QComboBox):
         self.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
 
         for style_name, style in PenJoinStyleComboBox._line_options.items():
-            icon = PenJoinStyleComboBox._draw_icon(style, Qt.GlobalColor.black, Qt.GlobalColor.white)
+            icon = PenJoinStyleComboBox.draw_icon(style, Qt.GlobalColor.black, Qt.GlobalColor.white)
             self.addItem(icon, style_name, style)
 
         self.setCurrentText(JOIN_STYLE_ROUND)
@@ -89,7 +91,7 @@ class PenJoinStyleComboBox(QComboBox):
     def set_icon_colors(self, color: QColor, bg_color: Optional[QColor | Qt.GlobalColor] = None) -> None:
         """Updates all icons with new colors."""
         for style_name, style in PenJoinStyleComboBox._line_options.items():
-            icon = PenJoinStyleComboBox._draw_icon(style, color, bg_color)
+            icon = PenJoinStyleComboBox.draw_icon(style, color, bg_color)
             index = self.findText(style_name)
             self.setItemIcon(index, icon)
 
