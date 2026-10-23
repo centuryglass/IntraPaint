@@ -1,12 +1,8 @@
 """Reports what a hung test was doing, for the CI hangs in issue #390.
 
-`faulthandler_timeout` in pytest.ini already dumps every thread's stack after a test runs too long. A hang seen
-under `coverage run` was a main thread blocked acquiring coverage's non-reentrant `data_lock` inside
-`HotkeyFilter.eventFilter`, and that dump can't show whether the same thread already held the lock or whether a
-garbage collection was running. `HangWatchdog` adds both facts to the log shortly before the faulthandler dump.
-
-The watchdog thread and the GC callback live in `test/`, outside coverage's `source`, so coverage doesn't take
-`data_lock` for their frames and they can still run while the main thread is stuck on it.
+`faulthandler_timeout` in pytest.ini already dumps every thread's stack after a test runs too long, but that dump
+can't show whether a garbage collection was running. `HangWatchdog` adds the GC state to the log shortly before the
+faulthandler dump.
 """
 import gc
 import os
@@ -21,20 +17,8 @@ _POLL_SECONDS = 5.0
 _RECENT_GC_LIMIT = 5
 
 
-def _coverage_lock_state() -> str:
-    """Describes whether any active coverage collector's `data_lock` is held."""
-    collector_module = sys.modules.get('coverage.collector')
-    if collector_module is None:
-        return 'coverage not running'
-    states = []
-    for collector in collector_module.Collector._collectors:  # pylint: disable=protected-access
-        lock = getattr(collector, 'data_lock', None)
-        states.append('no lock' if lock is None else ('LOCKED' if lock.locked() else 'free'))
-    return 'coverage data_lock: ' + (', '.join(states) if states else 'no active collector')
-
-
 class HangWatchdog:
-    """Prints the running test's GC and coverage-lock state if it runs longer than `REPORT_AFTER_SECONDS`."""
+    """Prints the running test's GC state if it runs longer than `REPORT_AFTER_SECONDS`."""
 
     def __init__(self) -> None:
         self._test: Optional[str] = None
@@ -108,7 +92,6 @@ class HangWatchdog:
             f'--- hang diagnostics (issue #390): {test} has run {time.monotonic() - self._started:.0f}s ---',
             f'cyclic GC: {gc_state}; enabled={gc.isenabled()}; collections so far={self._gc_collections}',
             f'recent collections: {"; ".join(self._recent_gc) or "none"}',
-            _coverage_lock_state(),
             'main thread Python stack, innermost last:',
             main_stack,
             '--- end hang diagnostics ---',
