@@ -25,6 +25,8 @@ prepare the environment that the Qt-based tests rely on:
 - On Python 3.12 and up, keep the last few exceptions raised in the project's own code. A failure that says a Qt call "returned
   NULL without setting an exception" gets a report section listing them and the test that ran before it, since
   PySide lost the exception that caused it (issue #283).
+- Fail any test that leaves PySide wrappers in a reference cycle, beyond its entry in the baseline
+  (`test/qt_cycles.py`).
 - Report GC and coverage-lock state when a test runs for two minutes, ahead of pytest's thread dump
   (`test/hang_diagnostics.py`, issue #390).
 """
@@ -62,6 +64,7 @@ import pytest
 from PySide6.QtWidgets import (QApplication, QColorDialog, QDialog, QFileDialog, QFontDialog, QInputDialog, QMenu,
                                QMessageBox, QWidget)
 
+from test import qt_cycles
 from test.hang_diagnostics import HangWatchdog
 
 _hang_watchdog = HangWatchdog()
@@ -103,7 +106,10 @@ def pytest_sessionstart(session: pytest.Session) -> None:
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """Remove the temporary config copies and user directories."""
+    """Write the cycle baseline and report when asked to, and remove the temporary config copies and user directories."""
+    qt_cycles.stop()
+    qt_cycles.write_baseline()
+    qt_cycles.write_report()
     if _config_copy_dir is not None:
         shutil.rmtree(_config_copy_dir, ignore_errors=True)
     shutil.rmtree(_user_dir_root, ignore_errors=True)
@@ -173,14 +179,16 @@ def _block_modal_dialogs():
 
 
 _CALL_FAILED = pytest.StashKey[bool]()
+_CALL_XFAILED = pytest.StashKey[bool]()
 
 
 @pytest.hookimpl(wrapper=True)
 def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
-    """Record whether each test's body failed, for _fail_on_swallowed_modal."""
+    """Record whether each test's body failed, or failed as an xfail marker expected, for the checks that follow it."""
     report = yield
     if report.when == 'call':
         item.stash[_CALL_FAILED] = report.failed
+        item.stash[_CALL_XFAILED] = hasattr(report, 'wasxfail')
     return report
 
 
@@ -196,6 +204,30 @@ def _fail_on_swallowed_modal(request: pytest.FixtureRequest):
     yield
     if _blocked_modals and not request.node.stash.get(_CALL_FAILED, False):
         pytest.fail(f'Modal dialog blocked during the test: {"; ".join(_blocked_modals)}', pytrace=False)
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_setup(item: pytest.Item):
+    """Start counting the PySide wrappers in reference cycles once the test's fixtures are set up (test/qt_cycles.py)."""
+    result = yield
+    qt_cycles.start_test()
+    return result
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_teardown(item: pytest.Item, nextitem: Optional[pytest.Item]):
+    """Fail a test whose count of PySide wrappers left in reference cycles doesn't fit its baseline entry.
+
+    This runs after teardown, when pytest has dropped a unittest test's instance and the objects its attributes held.
+    A test whose body failed, even as an xfail marker expected, is left alone: its traceback can hold objects that a
+    passing run frees.
+    """
+    result = yield
+    message = qt_cycles.finish_test(item.nodeid, item.stash.get(_CALL_FAILED, False)
+                                    or item.stash.get(_CALL_XFAILED, False))
+    if message is not None:
+        pytest.fail(message, pytrace=False)
+    return result
 
 
 @pytest.fixture(autouse=True)
