@@ -262,20 +262,21 @@ def _layout_widgets(layout: QLayout) -> list[QWidget]:
     parent = layout.parentWidget()
     if parent is None:
         return []
-    children = parent.findChildren(QWidget, options=Qt.FindChildOption.FindDirectChildrenOnly)
+    return _widgets_in_order(layout, parent.findChildren(QWidget, options=Qt.FindChildOption.FindDirectChildrenOnly))
 
-    def _in_order(current: QLayout) -> list[QWidget]:
-        entries: list[tuple[int, list[QWidget]]] = []
-        for child in children:
-            index = current.indexOf(child)
-            if index >= 0:
-                entries.append((index, [child]))
-        for nested in current.findChildren(QLayout, options=Qt.FindChildOption.FindDirectChildrenOnly):
-            index = current.indexOf(nested)
-            if index >= 0:
-                entries.append((index, _in_order(nested)))
-        return [widget for _, widgets in sorted(entries, key=lambda entry: entry[0]) for widget in widgets]
-    return _in_order(layout)
+
+def _widgets_in_order(layout: QLayout, children: list[QWidget]) -> list[QWidget]:
+    """Returns the widgets in `children` that a layout and its nested layouts manage, in layout order."""
+    entries: list[tuple[int, list[QWidget]]] = []
+    for child in children:
+        index = layout.indexOf(child)
+        if index >= 0:
+            entries.append((index, [child]))
+    for nested in layout.findChildren(QLayout, options=Qt.FindChildOption.FindDirectChildrenOnly):
+        index = layout.indexOf(nested)
+        if index >= 0:
+            entries.append((index, _widgets_in_order(nested, children)))
+    return [widget for _, widgets in sorted(entries, key=lambda entry: entry[0]) for widget in widgets]
 
 
 def _ignores_size(widget: QWidget, orientation: Qt.Orientation) -> bool:
