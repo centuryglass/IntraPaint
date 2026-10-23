@@ -1,5 +1,6 @@
 """Displays polygon outlines as animated dashes with subtle color changes."""
 import sys
+import weakref
 from typing import Optional
 
 from PySide6.QtCore import Qt, Property, QPropertyAnimation, QObject, QPointF, SignalInstance
@@ -21,6 +22,49 @@ SELECTION_PATTERN_0_RESOURCE = f'{PROJECT_DIR}/resources/animated_fill_pattern_0
 SELECTION_PATTERN_1_RESOURCE = f'{PROJECT_DIR}/resources/animated_fill_pattern_1.png'
 
 
+class _Animator(QObject):
+    """Drives an outline's animation offset.
+
+    Holds the outline weakly: the outline owns the animator, so a strong reference back would form a reference cycle
+    through two PySide wrappers.
+    """
+
+    def __init__(self, parent_outline: 'PolygonOutline') -> None:
+        super().__init__()
+        self._parent_ref = weakref.ref(parent_outline)
+        # noinspection PyTypeChecker
+        self._anim = QPropertyAnimation(self, b'animation_offset')
+        self._anim.setLoopCount(-1)
+        self._anim.setStartValue(0)
+        self._anim.setEndValue(MAX_DASH_OFFSET)
+        self._anim.setDuration(ANIM_DURATION)
+
+    @property
+    def animation(self) -> QPropertyAnimation:
+        """Access the wrapped PropertyAnimation."""
+        return self._anim
+
+    def animation_offset_getter(self) -> int:
+        """Access the animation offset value."""
+        outline = self._parent_ref()
+        return 0 if outline is None else outline.animation_offset
+
+    def animation_offset_setter(self, offset: int) -> None:
+        """Updates the animation offset value, stopping the loop if the outline was deleted under it."""
+        outline = self._parent_ref()
+        try:
+            if outline is None:
+                raise RuntimeError('outline collected')
+            outline.animation_offset = offset
+        except RuntimeError:
+            # The outline or its C++ item is gone; an unparented animator would otherwise crash on every further
+            # tick of its endless loop.
+            self._anim.stop()
+
+    # noinspection PyTypeChecker
+    animation_offset = Property(int, animation_offset_getter, animation_offset_setter)
+
+
 class PolygonOutline(QGraphicsPathItem):
     """Displays polygon outlines as animated dashes with subtle color changes."""
 
@@ -38,47 +82,9 @@ class PolygonOutline(QGraphicsPathItem):
         self._scene: Optional[QGraphicsScene] = None
         self._transform_scale = SCALE_MULTIPLIER
 
-        def _update_scale(new_scale):
-            inverse_scale = min(1.0 / new_scale, 1.0) * SCALE_MULTIPLIER
-            if self._transform_scale != inverse_scale:
-                self._transform_scale = inverse_scale
-                self._update_pen_and_brush()
-
         if hasattr(view, 'scale_changed'):
             assert isinstance(view.scale_changed, SignalInstance)
-            view.scale_changed.connect(_update_scale)
-
-        class _Animator(QObject):
-            def __init__(self, parent_outline: PolygonOutline) -> None:
-                super().__init__()
-                self._parent = parent_outline
-                # noinspection PyTypeChecker
-                self._anim = QPropertyAnimation(self, b'animation_offset')
-                self._anim.setLoopCount(-1)
-                self._anim.setStartValue(0)
-                self._anim.setEndValue(MAX_DASH_OFFSET)
-                self._anim.setDuration(ANIM_DURATION)
-
-            @property
-            def animation(self) -> QPropertyAnimation:
-                """Access the wrapped PropertyAnimation."""
-                return self._anim
-
-            def animation_offset_getter(self) -> int:
-                """Access the animation offset value."""
-                return self._parent.animation_offset
-
-            def animation_offset_setter(self, offset: int) -> None:
-                """Updates the animation offset value, stopping the loop if the outline was deleted under it."""
-                try:
-                    self._parent.animation_offset = offset
-                except RuntimeError:
-                    # The outline's C++ item is gone; an unparented animator would otherwise crash on every further
-                    # tick of its endless loop.
-                    self._anim.stop()
-
-            # noinspection PyTypeChecker
-            animation_offset = Property(int, animation_offset_getter, animation_offset_setter)
+            view.scale_changed.connect(self._update_scale)
 
         self._animator = _Animator(self)
 
@@ -103,6 +109,12 @@ class PolygonOutline(QGraphicsPathItem):
         if TIMELAPSE_MODE_FLAG in sys.argv:
             self._animator.animation.stop()
             self._animated_outline = False
+
+    def _update_scale(self, new_scale: float) -> None:
+        inverse_scale = min(1.0 / new_scale, 1.0) * SCALE_MULTIPLIER
+        if self._transform_scale != inverse_scale:
+            self._transform_scale = inverse_scale
+            self._update_pen_and_brush()
 
     def _update_pen_and_brush(self) -> None:
         offset = self._animation_offset
