@@ -16,6 +16,7 @@ The primary image editing window: the canvas in the center, with every other pan
 import logging
 import sys
 from enum import StrEnum
+from functools import partial
 from typing import Callable, Optional
 
 from PySide6.QtCore import Qt, QPoint, QRect, QSize, QObject, QTimer, Signal, QByteArray
@@ -29,6 +30,7 @@ from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.generated_image_selector import GeneratedImageSelector
+from src.ui.layout.panel_fit import held_weakly
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 
@@ -430,7 +432,7 @@ class MainWindow(QMainWindow):
         """Returns the generated image selection screen, creating it on first use."""
         if self._image_selector is None:
             self._image_selector = GeneratedImageSelector(self._image_stack,
-                                                          lambda: self.set_image_selector_visible(False))
+                                                          held_weakly(partial(self.set_image_selector_visible, False)))
             self._image_selector.cancel_generation.connect(self.cancel_generation)
             self._image_selector.previous_options_available.connect(self._report_previous_options_available)
         return self._image_selector
