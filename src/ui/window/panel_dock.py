@@ -19,6 +19,7 @@
 """
 from contextlib import contextmanager
 from typing import Iterator, Optional
+from weakref import ref
 
 from PySide6.QtCore import QPoint, QSize, Qt, Signal
 from PySide6.QtGui import QIcon, QResizeEvent
@@ -60,10 +61,17 @@ class PanelDock(QDockWidget):
 
     badge_changed = Signal()
 
+    @property
+    def _window(self) -> QMainWindow:
+        # Held weakly, since the window holds this object:
+        window = self._window_ref()
+        assert window is not None, 'A dock outlived its window'
+        return window
+
     def __init__(self, title: str, object_name: str, window: QMainWindow, icon: Optional[QIcon] = None,
                  shortcut_config_key: Optional[str] = None) -> None:
         super().__init__(title, window)
-        self._window = window
+        self._window_ref = ref(window)
         self.setObjectName(object_name)
         if icon is not None:
             self.setWindowIcon(icon)

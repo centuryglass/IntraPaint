@@ -6,6 +6,7 @@
 - Right-clicking the bar opens the dock's menu.
 """
 from typing import Callable, Optional
+from weakref import ref
 
 from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QStyle, QToolButton, QWidget
@@ -32,10 +33,17 @@ TITLE_BUTTON_ICON_SIZE = 12
 class FloatingTitleBar(QWidget):
     """Shows a floating dock's rail button, with buttons that dock and close it."""
 
+    @property
+    def _dock(self) -> PanelDock:
+        # Held weakly, since the dock holds its title bar:
+        dock = self._dock_ref()
+        assert dock is not None, 'A floating title bar outlived its dock'
+        return dock
+
     def __init__(self, dock: PanelDock, show_menu: Callable[[PanelDock, QPoint], None]) -> None:
         """`show_menu` opens the dock's menu at a screen position."""
         super().__init__()
-        self._dock = dock
+        self._dock_ref = ref(dock)
         self._button = RailButton(dock)
         self._button.set_placement(False, Qt.Edge.BottomEdge)
         self._button.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)

@@ -11,6 +11,7 @@
 """
 from dataclasses import dataclass
 from typing import Callable, Optional
+from weakref import ref
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QRect, Qt
 from PySide6.QtGui import QCursor, QMouseEvent, QPainter, QPaintEvent, QPalette, QPen
@@ -60,10 +61,17 @@ class _DropMarker(QWidget):
 class RailDrag(QObject):
     """Watches rail buttons for drags, and places their docks where they're dropped."""
 
+    @property
+    def _window(self) -> QMainWindow:
+        # Held weakly, since the window holds it:
+        window = self._window_ref()
+        assert window is not None, 'A rail drag outlived its window'
+        return window
+
     def __init__(self, window: QMainWindow, rails: DockRails, moved: Callable[[], None]) -> None:
         """`moved` is called after a drop within a rail moves a dock."""
         super().__init__(window)
-        self._window = window
+        self._window_ref = ref(window)
         self._rails = rails
         self._moved = moved
         self._marker = _DropMarker()

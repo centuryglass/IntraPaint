@@ -445,9 +445,16 @@ class _RailRule(QFrame):
 class _RailContent(QWidget):
     """The widget a rail holds, which its rail lays out along the rail (`DockRail.place`)."""
 
+    @property
+    def _rail(self) -> 'DockRail':
+        # Held weakly, since the rail holds its content:
+        rail = self._rail_ref()
+        assert rail is not None, 'A rail content outlived its rail'
+        return rail
+
     def __init__(self, rail: 'DockRail') -> None:
         super().__init__()
-        self._rail = rail
+        self._rail_ref = ref(rail)
 
     def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
         """Returns room for every button, rule and the maximum number of recent tools."""
@@ -474,10 +481,17 @@ class DockRail(QToolBar):
     - The recent tools fill the space between the Tools dock's group and the next group. Generate is at the rail's end.
     """
 
+    @property
+    def _window(self) -> QMainWindow:
+        # Held weakly, since the window holds this object:
+        window = self._window_ref()
+        assert window is not None, 'A dock rail outlived its window'
+        return window
+
     def __init__(self, window: QMainWindow, area: Qt.DockWidgetArea, object_name: str) -> None:
         super().__init__(window)
         self.setObjectName(object_name)
-        self._window = window
+        self._window_ref = ref(window)
         self._area = area
         self._side = area in (Qt.DockWidgetArea.LeftDockWidgetArea, Qt.DockWidgetArea.RightDockWidgetArea)
         self.setMovable(False)
@@ -714,9 +728,16 @@ class DockRails(QObject):
     resizes, opens or closes.
     """
 
+    @property
+    def _window(self) -> QMainWindow:
+        # Held weakly, since the window holds this object:
+        window = self._window_ref()
+        assert window is not None, 'The dock rails outlived its window'
+        return window
+
     def __init__(self, window: QMainWindow) -> None:
         super().__init__(window)
-        self._window = window
+        self._window_ref = ref(window)
         self._rails: dict[Qt.DockWidgetArea, DockRail] = {}
         for area, name in ((Qt.DockWidgetArea.LeftDockWidgetArea, 'left_rail'),
                            (Qt.DockWidgetArea.RightDockWidgetArea, 'right_rail'),
