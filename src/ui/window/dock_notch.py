@@ -11,6 +11,8 @@ from PySide6.QtCore import QPoint, QPointF, Qt
 from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPaintEvent, QPalette, QPolygonF, QRegion
 from PySide6.QtWidgets import QApplication, QWidget
 
+from src.ui.layout.panel_fit import held_weakly
+
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.window.dock_notch'
 
@@ -30,9 +32,10 @@ class DockNotch(QWidget):
     """A corner triangle that starts a drag of its dock."""
 
     def __init__(self, parent: QWidget, start_drag: Callable[[QPoint], None]) -> None:
-        """`start_drag` is called with the pointer's screen position once a press has moved far enough to be a drag."""
+        """`start_drag` is called with the pointer's screen position once a press has moved far enough to be a drag. A
+           bound method is held weakly, so it can belong to the dock that owns this notch."""
         super().__init__(parent)
-        self._start_drag = start_drag
+        self._start_drag = held_weakly(start_drag)
         self._press_pos: Optional[QPoint] = None
         self.setFixedSize(NOTCH_SIZE, NOTCH_SIZE)
         # The mask limits hit testing, the cursor and the tooltip to the triangle:

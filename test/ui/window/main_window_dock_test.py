@@ -46,10 +46,11 @@ class MainWindowDockTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        # The lambda captures this holder, not `self`: the patch holds the lambda, and the test holds the patch.
+        # The lambda captures this holder, not `self`: the patch holds the lambda, and the test holds the patch. The lambda replaces the function outright, since a
+        # mock would keep the window it is called with.
         screen = SimpleNamespace(size=LANDSCAPE_SCREEN)
         self._screen = screen
-        screen_patch = patch('src.ui.window.main_window.get_screen_size', side_effect=lambda *_: screen.size)
+        screen_patch = patch('src.ui.window.main_window.get_screen_size', new=lambda *_: screen.size)
         screen_patch.start()
         self.addCleanup(screen_patch.stop)
         test_size = QSize(64, 64)

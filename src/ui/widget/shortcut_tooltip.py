@@ -4,6 +4,7 @@ Rich tooltips show a title, a dim description line, and the binding as one keyca
 `rich_text_key_hints`. Plain tooltips append the binding in parentheses, formatted by `get_key_display_string`.
 """
 from typing import Callable, List, Optional, Union
+from weakref import ref
 
 from PySide6.QtCore import QEvent, QObject
 from PySide6.QtGui import QColor, QPalette
@@ -92,13 +93,19 @@ def set_shortcut_tooltip(widget: QWidget, text: str, config_key: Optional[str],
     def _keys() -> str:
         return '' if config_key is None else key_config.get(config_key)
 
+    # The widget's owner may store the returned refresher on the widget, so it holds the widget weakly:
+    widget_ref = ref(widget)
+
     def _refresh() -> None:
+        target = widget_ref()
+        if target is None:
+            return
         if rich_text:
-            widget.setToolTip(rich_shortcut_tooltip_text(text, _keys(),
+            target.setToolTip(rich_shortcut_tooltip_text(text, _keys(),
                                                          description if isinstance(description, str)
                                                          else description()))
         else:
-            widget.setToolTip(shortcut_tooltip_text(text, _keys()))
+            target.setToolTip(shortcut_tooltip_text(text, _keys()))
 
     _refresh()
     if rich_text:

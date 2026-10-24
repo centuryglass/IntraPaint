@@ -1,6 +1,7 @@
 """A QGraphicsView meant for displaying image content without using scrollbars."""
 import math
 from typing import Optional, cast
+from weakref import ref
 
 from PySide6.QtCore import Qt, QObject, QPoint, QPointF, QRect, QRectF, QSize, QMarginsF, Signal, QEvent, QMimeData
 from PySide6.QtGui import (QPixmap, QImage, QPainter, QPen, QTransform, QResizeEvent, QMouseEvent, QCursor, QWheelEvent,
@@ -38,7 +39,8 @@ class ImageGraphicsView(QGraphicsView):
         self._content_size: QSize = QSize(0, 0)
         self._content_rect: Optional[QRect] = None
         self._background: Optional[QPixmap] = None
-        self._event_filters: list[QObject] = []
+        # Weak references, excluding this view, which filters its own events:
+        self._event_filters: list[ref[QObject]] = []
         self._last_widget_cursor_pos: Optional[QPoint] = None
         self._last_scene_cursor_pos: Optional[QPointF] = None
         self._cursor_pixmap: Optional[QPixmap] = None
@@ -426,15 +428,19 @@ class ImageGraphicsView(QGraphicsView):
 
     def installEventFilter(self, event_filter: Optional[QObject]) -> None:
         """Extend default event filter management to deal with QGraphicsView mouse event oddities."""
-        if event_filter is not None and event_filter not in self._event_filters:
-            self._event_filters.append(event_filter)
+        if event_filter is not None and event_filter is not self and event_filter not in self._live_event_filters():
+            self._event_filters.append(ref(event_filter))
         super().installEventFilter(event_filter)
 
     def removeEventFilter(self, event_filter: Optional[QObject]) -> None:
         """Extend default event filter management to deal with QGraphicsView mouse event oddities."""
-        if event_filter in self._event_filters:
-            self._event_filters.remove(event_filter)
+        self._event_filters = [filter_ref for filter_ref in self._event_filters
+                               if filter_ref() is not None and filter_ref() is not event_filter]
         super().removeEventFilter(event_filter)
+
+    def _live_event_filters(self) -> list[QObject]:
+        return [event_filter for event_filter in (filter_ref() for filter_ref in self._event_filters)
+                if event_filter is not None]
 
     def _pixmap_cursor_update(self, cursor_point: QPoint) -> None:
         """If a pixmap cursor is in use, keep last cursor point updated and force a redraw when the mouse moves."""
@@ -545,8 +551,8 @@ class ImageGraphicsView(QGraphicsView):
         propagation.
         """
         assert event is not None
-        for event_filter in self._event_filters:
-            if event_filter is not self and event_filter.eventFilter(self, event):
+        for event_filter in self._live_event_filters():
+            if event_filter.eventFilter(self, event):
                 event.accept()
                 return
         super().wheelEvent(event)
@@ -569,7 +575,7 @@ class ImageGraphicsView(QGraphicsView):
         """
         view_event = self._view_event(viewport_event)
         viewport_event.accept()
-        for event_filter in self._event_filters:
+        for event_filter in (self, *self._live_event_filters()):
             if event_filter.eventFilter(self, view_event):
                 return True
         return False

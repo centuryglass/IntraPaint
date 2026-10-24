@@ -1,6 +1,7 @@
 """Outlines a region in a variable QGraphicsView, adjusting line width based on view scale."""
 import sys
 from typing import Optional
+from weakref import ref
 
 from PySide6.QtCore import Qt, QPropertyAnimation, QRectF, QRect, Property
 from PySide6.QtGui import QPainter, QPen, QPainterPath, QColor, QShowEvent, QHideEvent
@@ -25,6 +26,12 @@ class Outline(QGraphicsObject):
     - If animated, dotted lines will slowly move to increase visibility.
     """
 
+    @property
+    def _view(self) -> Optional[QGraphicsView]:
+        # Held weakly, since the view holds its scene's items:
+        view = self._view_ref()
+        return view
+
     def __init__(self,
                  scene: QGraphicsScene,
                  view: QGraphicsView,
@@ -32,7 +39,7 @@ class Outline(QGraphicsObject):
                  cosmetic_line_draw: bool = False):
         super().__init__(parent)
         self._rect = QRectF()
-        self._view = view
+        self._view_ref = ref(view)
         self._animated = False
         self._dash_pattern = [2, 2, 4, 2, 2, 2]
         self._dash_offset = 0

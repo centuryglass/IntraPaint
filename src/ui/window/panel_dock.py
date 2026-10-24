@@ -19,8 +19,9 @@
 """
 from contextlib import contextmanager
 from typing import Iterator, Optional
+from weakref import ref
 
-from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtCore import QPoint, QSize, Qt, Signal
 from PySide6.QtGui import QIcon, QResizeEvent
 from PySide6.QtWidgets import QDockWidget, QMainWindow, QWidget
 
@@ -60,10 +61,17 @@ class PanelDock(QDockWidget):
 
     badge_changed = Signal()
 
+    @property
+    def _window(self) -> QMainWindow:
+        # Held weakly, since the window holds this object:
+        window = self._window_ref()
+        assert window is not None, 'A dock outlived its window'
+        return window
+
     def __init__(self, title: str, object_name: str, window: QMainWindow, icon: Optional[QIcon] = None,
                  shortcut_config_key: Optional[str] = None) -> None:
         super().__init__(title, window)
-        self._window = window
+        self._window_ref = ref(window)
         self.setObjectName(object_name)
         if icon is not None:
             self.setWindowIcon(icon)
@@ -81,7 +89,7 @@ class PanelDock(QDockWidget):
         self._no_title_bar = _NoTitleBar()
         self._floating_title_bar: Optional[QWidget] = None
         self.setTitleBarWidget(self._no_title_bar)
-        self._notch = DockNotch(self, lambda pos: start_qt_dock_drag(window, self, pos))
+        self._notch = DockNotch(self, self._start_notch_drag)
         self._notch.move(0, 0)
         self._notch.raise_()
         self.toggleViewAction().setVisible(False)
@@ -234,6 +242,9 @@ class PanelDock(QDockWidget):
         super().resizeEvent(event)
         self._notch.raise_()
         self._update_host_facts()
+
+    def _start_notch_drag(self, global_pos: QPoint) -> None:
+        start_qt_dock_drag(self._window, self, global_pos)
 
     @property
     def notch(self) -> DockNotch:
