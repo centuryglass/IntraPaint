@@ -1,5 +1,6 @@
 """Fills in all bounds except an inner rectangular region with a solid color."""
 from typing import Optional
+from weakref import ref
 
 from PySide6.QtCore import Qt, QRectF, QPoint, QRect
 from PySide6.QtGui import QPainter, QPainterPath, QColor
@@ -12,13 +13,20 @@ class Border(QGraphicsItem):
     Useful for dynamically cropping scene content to highlight an area.
     """
 
+    @property
+    def _view(self) -> QGraphicsView:
+        # Held weakly, since the view holds its scene's items:
+        view = self._view_ref()
+        assert view is not None, 'A border outlived its view'
+        return view
+
     def __init__(self,
                  scene: QGraphicsScene,
                  view: QGraphicsView,
                  parent: Optional[QGraphicsItem] = None):
         super().__init__(parent)
         self._rect = QRectF()
-        self._view = view
+        self._view_ref = ref(view)
         self._color = QColor(Qt.GlobalColor.black)
         scene.addItem(self)
 

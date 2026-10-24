@@ -68,6 +68,13 @@ class _Animator(QObject):
 class PolygonOutline(QGraphicsPathItem):
     """Displays polygon outlines as animated dashes with subtle color changes."""
 
+    @property
+    def _view(self) -> QGraphicsView:
+        # Held weakly, since the view holds its scene's items:
+        view = self._view_ref()
+        assert view is not None, 'A polygon outline outlived its view'
+        return view
+
     def __init__(self,
                  view: QGraphicsView,
                  polygons: Optional[list[QPolygonF]] = None,
@@ -75,7 +82,7 @@ class PolygonOutline(QGraphicsPathItem):
         super().__init__(parent)
         self._offset = QPointF()
         self._height_offset = 0.0
-        self._view = view
+        self._view_ref = weakref.ref(view)
         self._animated_outline = True
         self._animation_offset = 0
         self._animated_fill = True
