@@ -34,6 +34,17 @@ PREVIEW_STAMP_SPACING = 0.2
 PREVIEW_CHECKER_TILE_SIZE = 6
 
 
+def wave_points(left: float, right: float, center_y: float, amplitude: float, spacing: float) -> list[QPointF]:
+    """Returns points along one period of a sine wave from `left` to `right`, `spacing` apart."""
+    span = max(right - left, 1.0)
+    points = []
+    x = left
+    while x <= right:
+        points.append(QPointF(x, center_y + amplitude * math.sin((x - left) / span * 2 * math.pi)))
+        x += spacing
+    return points
+
+
 class StrokePreview(BrushPreview):
     """Previews a sample stroke of the size, opacity, hardness and antialiasing in `Cache`.
 
@@ -93,14 +104,7 @@ class StrokePreview(BrushPreview):
             return diameter, []
         amplitude = max((available - diameter) / 2, 0.0)
         spacing = max(1.0, diameter * PREVIEW_STAMP_SPACING)
-        center_y = size.height() / 2
-        span = max(right - left, 1.0)
-        points = []
-        x = left
-        while x <= right:
-            points.append(QPointF(x, center_y + amplitude * math.sin((x - left) / span * 2 * math.pi)))
-            x += spacing
-        return diameter, points
+        return diameter, wave_points(left, right, size.height() / 2, amplitude, spacing)
 
     def _render(self, size: QSize) -> QImage:
         """Draws the sample stroke with a `QtPaintBrush` on a scratch layer, keeping its edits out of undo history."""

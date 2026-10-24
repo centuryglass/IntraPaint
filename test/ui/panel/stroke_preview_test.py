@@ -1,9 +1,10 @@
-"""Tests StrokePreview's timed updates and its real-brush render, for painting, erasing and smudging."""
+"""Tests StrokePreview's timed updates and its real-brush render, for painting, erasing, smudging, filtering and
+clone stamping."""
 import json
 import os
 from typing import Optional
 
-from PySide6.QtCore import QSize, QTimer
+from PySide6.QtCore import QPoint, QSize, QTimer
 from PySide6.QtGui import QImage, QPalette
 
 from src.config.cache import Cache
@@ -12,6 +13,8 @@ from src.image.filter.invert import InvertFilter
 from src.image.filter.posterize import PosterizeFilter
 from src.image.filter.sharpen import SharpenFilter
 from src.tools.filter_tool import FilterTool
+from src.ui.panel.tool_control_panels.clone_stamp_preview import (CloneStampStrokePreview, SOURCE_MODE_DYNAMIC_OFFSET,
+                                                                  SOURCE_MODE_FIXED_OFFSET, SOURCE_MODE_STATIC)
 from src.ui.input_fields.fill_style_combo_box import BRUSH_PATTERN_DENSE_3, BRUSH_PATTERN_SOLID
 from src.ui.panel.tool_control_panels.stroke_preview import (DrawStrokePreview, EraseStrokePreview, FilterStrokePreview,
                                                                  SmudgeStrokePreview, StrokePreview)
@@ -234,3 +237,86 @@ class FilterPreviewTest(ToolTestCase):
                 self.use_filter(filter_type)
                 self.assert_image_matches_golden(self.make_preview().grab().toImage(),
                                                  os.path.join(GOLDEN_DIR, f'filter_{name}.png'))
+
+
+class CloneStampPreviewTest(IntraPaintTestCase):
+    """Tests the Clone stamp tool's preview."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        Cache().update_options(Cache.CLONE_STAMP_TOOL_SOURCE_MODE,
+                               [SOURCE_MODE_FIXED_OFFSET, SOURCE_MODE_DYNAMIC_OFFSET, SOURCE_MODE_STATIC])
+        Cache().set(Cache.CLONE_STAMP_TOOL_BRUSH_SIZE, 30)
+        Cache().set(Cache.CLONE_STAMP_TOOL_HARDNESS, 0.8)
+        Cache().set(Cache.CLONE_STAMP_TOOL_OPACITY, 1.0)
+        Cache().set(Cache.CLONE_STAMP_TOOL_ANTIALIAS, True)
+
+    def make_preview(self, mode: str, source_xy: QPoint = QPoint(),
+                     timer: Optional[QTimer] = None) -> CloneStampStrokePreview:
+        """Returns a visible preview of the Clone stamp tool's settings in a source mode."""
+        Cache().set(Cache.CLONE_STAMP_TOOL_SOURCE_MODE, mode)
+        preview = CloneStampStrokePreview(Cache.CLONE_STAMP_TOOL_BRUSH_SIZE, Cache.CLONE_STAMP_TOOL_OPACITY,
+                                          Cache.CLONE_STAMP_TOOL_HARDNESS, Cache.CLONE_STAMP_TOOL_ANTIALIAS,
+                                          render_timer=timer)
+        preview.set_source_xy(source_xy)
+        preview.setFixedSize(PREVIEW_SIZE)
+        preview.show()
+        preview.render_now()
+        return preview
+
+    def test_stroke_changes_the_backdrop(self) -> None:
+        """Each mode's render differs from the plain backdrop, and from the other modes'."""
+        renders = {mode: self.make_preview(mode).grab().toImage()
+                   for mode in (SOURCE_MODE_FIXED_OFFSET, SOURCE_MODE_DYNAMIC_OFFSET, SOURCE_MODE_STATIC)}
+        for mode, image in renders.items():
+            with self.subTest(mode):
+                self.assertNotEqual(image, backdrop_image(PREVIEW_SIZE))
+        self.assertEqual(len({image.bits().tobytes() for image in renders.values()}), len(renders))
+
+    def test_offset_changes_make_the_render_stale(self) -> None:
+        """A new offset schedules a render in the offset modes."""
+        for mode in (SOURCE_MODE_FIXED_OFFSET, SOURCE_MODE_DYNAMIC_OFFSET):
+            with self.subTest(mode):
+                timer = QTimer()
+                preview = self.make_preview(mode, timer=timer)
+                preview.set_source_xy(QPoint(0, -50))
+                self.assertFalse(preview.is_current)
+                timer.timeout.emit()
+                self.assertTrue(preview.is_current)
+
+    def test_fixed_position_ignores_the_source_coordinates(self) -> None:
+        """A fixed position has no anchor in the preview, so new coordinates keep the current render."""
+        preview = self.make_preview(SOURCE_MODE_STATIC)
+        preview.set_source_xy(QPoint(300, 40))
+        self.assertTrue(preview.is_current)
+
+    def test_mode_change_makes_the_render_stale(self) -> None:
+        """Selecting another source mode schedules a new render."""
+        preview = self.make_preview(SOURCE_MODE_FIXED_OFFSET)
+        Cache().set(Cache.CLONE_STAMP_TOOL_SOURCE_MODE, SOURCE_MODE_STATIC)
+        self.assertFalse(preview.is_current)
+
+    def test_offset_direction_moves_the_source(self) -> None:
+        """Opposite offsets give different renders."""
+        left = self.make_preview(SOURCE_MODE_FIXED_OFFSET, QPoint(-100, 0)).grab().toImage()
+        right = self.make_preview(SOURCE_MODE_FIXED_OFFSET, QPoint(100, 0)).grab().toImage()
+        self.assertNotEqual(left, right)
+
+    def test_rendering_leaves_undo_history_alone(self) -> None:
+        """The scratch layer's edits are not recorded."""
+        before = UndoStack().undo_count()
+        self.make_preview(SOURCE_MODE_DYNAMIC_OFFSET)
+        self.assertEqual(UndoStack().undo_count(), before)
+
+    def test_golden_images(self) -> None:
+        """The render matches a golden image for each source mode, and for an offset with a vertical part."""
+        cases = {
+            'fixed_offset': (SOURCE_MODE_FIXED_OFFSET, QPoint()),
+            'fixed_offset_diagonal': (SOURCE_MODE_FIXED_OFFSET, QPoint(-120, 40)),
+            'dynamic_offset': (SOURCE_MODE_DYNAMIC_OFFSET, QPoint()),
+            'fixed_position': (SOURCE_MODE_STATIC, QPoint()),
+        }
+        for name, (mode, source_xy) in cases.items():
+            with self.subTest(name):
+                self.assert_image_matches_golden(self.make_preview(mode, source_xy).grab().toImage(),
+                                                 os.path.join(GOLDEN_DIR, f'clone_{name}.png'))

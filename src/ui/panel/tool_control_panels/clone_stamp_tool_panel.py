@@ -7,6 +7,8 @@ from PySide6.QtWidgets import QApplication, QGridLayout, QWidget
 from src.config.cache import Cache
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
+from src.ui.panel.tool_control_panels.clone_stamp_preview import (CloneStampStrokePreview, SOURCE_MODE_DYNAMIC_OFFSET,
+                                                                  SOURCE_MODE_FIXED_OFFSET, SOURCE_MODE_STATIC)
 from src.ui.panel.tool_control_panels.stroke_block import StrokeBlock, StrokeToolPanel, tool_section
 from src.util.shared_constants import INT_MAX, INT_MIN
 
@@ -25,27 +27,26 @@ LABEL_TEXT_OFFSET_Y = _tr('Offset Y')
 LABEL_TEXT_POSITION_X = _tr('Source X')
 LABEL_TEXT_POSITION_Y = _tr('Source Y')
 
-# Stored `Cache.CLONE_STAMP_TOOL_SOURCE_MODE` values; they match `src.tools.clone_stamp_tool` and the options in
-# cache_value_definitions.json. The segmented control binds these raw values, never the translated labels.
-SOURCE_MODE_FIXED_OFFSET = 'Fixed offset'
-SOURCE_MODE_DYNAMIC_OFFSET = 'Dynamic offset'
-SOURCE_MODE_STATIC = 'Fixed position'
-
 
 class CloneStampToolPanel(StrokeToolPanel):
-    """Control panel widget for the clone stamp tool: the stroke block, then a Source section."""
+    """Control panel widget for the clone stamp tool: the stroke block with a preview of clone stamping, then a Source
+    section."""
 
     source_xy_change = Signal(QPoint)
 
     def __init__(self) -> None:
         cache = Cache()
+        preview = CloneStampStrokePreview(Cache.CLONE_STAMP_TOOL_BRUSH_SIZE, Cache.CLONE_STAMP_TOOL_OPACITY,
+                                          Cache.CLONE_STAMP_TOOL_HARDNESS, Cache.CLONE_STAMP_TOOL_ANTIALIAS)
         super().__init__(StrokeBlock(size_key=Cache.CLONE_STAMP_TOOL_BRUSH_SIZE,
                                      pressure_size_key=Cache.CLONE_STAMP_TOOL_PRESSURE_SIZE,
                                      opacity_key=Cache.CLONE_STAMP_TOOL_OPACITY,
                                      pressure_opacity_key=Cache.CLONE_STAMP_TOOL_PRESSURE_OPACITY,
                                      hardness_key=Cache.CLONE_STAMP_TOOL_HARDNESS,
                                      pressure_hardness_key=Cache.CLONE_STAMP_TOOL_PRESSURE_HARDNESS,
-                                     antialias_key=Cache.CLONE_STAMP_TOOL_ANTIALIAS))
+                                     antialias_key=Cache.CLONE_STAMP_TOOL_ANTIALIAS,
+                                     preview=preview))
+        self._preview = preview
         self._source_xy = QPoint()
         self._source_mode_control = SegmentedControl(
             [Segment(mode, cache.get_option_display(mode))
@@ -84,12 +85,14 @@ class CloneStampToolPanel(StrokeToolPanel):
             if new_x == self._source_xy.x():
                 return
             self._source_xy.setX(int(new_x))
+            self._preview.set_source_xy(self._source_xy)
             self.source_xy_change.emit(QPoint(self._source_xy))
 
         def _update_y(new_y: int | float) -> None:
             if new_y == self._source_xy.y():
                 return
             self._source_xy.setY(int(new_y))
+            self._preview.set_source_xy(self._source_xy)
             self.source_xy_change.emit(QPoint(self._source_xy))
 
         self._x_field.valueChanged.connect(_update_x)
