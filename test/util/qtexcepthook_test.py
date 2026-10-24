@@ -1,5 +1,4 @@
 """Tests that the exception hook shows one dialog at a time and still logs every exception."""
-import sys
 from unittest.mock import patch
 
 from src.util.qtexcepthook import QtExceptHook
@@ -7,10 +6,13 @@ from test.base_test_case import IntraPaintTestCase
 
 
 def _exc_info() -> tuple:
-    try:
-        raise ValueError('test error')
-    except ValueError:
-        return sys.exc_info()
+    """Returns exception info for an exception that was never raised, so it has no traceback.
+
+    A raised exception's traceback keeps the frame that raised it alive, and that frame keeps the calling test's frame
+    alive. The test holds the hook and its dialog, so the patched `sys.__excepthook__` recording the arguments would
+    leave them in a reference cycle.
+    """
+    return ValueError, ValueError('test error'), None
 
 
 class QtExceptHookTest(IntraPaintTestCase):
