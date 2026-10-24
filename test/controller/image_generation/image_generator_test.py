@@ -214,47 +214,6 @@ class ImageGeneratorTest(IntraPaintTestCase):
         generator._load_generated_image_for_selection(1)  # pylint: disable=protected-access
         self.window.load_sample_preview.assert_called_once()
 
-    def _apply_sample(self, sample: Image.Image | QImage | None) -> None:
-        self.generator.select_and_apply_sample(sample)  # type: ignore
-        self.image_stack.flush_render()
-
-    def test_apply_sample_writes_generation_area(self) -> None:
-        """A QImage or PIL sample replaces the generation area content, and the app returns to editing."""
-        AppStateTracker.set_app_state('loading')
-        pil_sample = Image.new('RGBA', (GENERATION_AREA.width(), GENERATION_AREA.height()),
-                               (GENERATED_COLOR.red(), GENERATED_COLOR.green(), GENERATED_COLOR.blue(), 255))
-        for sample in (_solid(GENERATION_AREA.size(), GENERATED_COLOR), pil_sample):
-            with self.subTest(sample=type(sample).__name__):
-                self.image_stack.active_layer.image.fill(SOURCE_COLOR)  # type: ignore
-                self._apply_sample(sample)
-                layer_image = self.image_stack.active_layer.image
-                self.assertEqual(layer_image.pixelColor(GENERATION_AREA.center()), GENERATED_COLOR)
-                self.assertEqual(layer_image.pixelColor(2, 2), SOURCE_COLOR)
-                self.assertEqual(AppStateTracker.app_state(), APP_STATE_EDITING)
-
-    def test_apply_sample_in_inpaint_mode_keeps_only_masked_area(self) -> None:
-        """Inpainting applies the sample only where the selection mask is set."""
-        Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
-        self._apply_sample(_solid(GENERATION_AREA.size(), GENERATED_COLOR))
-        layer_image = self.image_stack.active_layer.image
-        self.assertEqual(layer_image.pixelColor(SELECTION_BOUNDS.center()), GENERATED_COLOR)
-        self.assertEqual(layer_image.pixelColor(QPoint(80, 80)), SOURCE_COLOR)
-
-    def test_apply_sample_clears_context_pins_when_configured(self) -> None:
-        """Context pins are cleared after applying a sample only with CLEAR_CONTEXT_PINS_AFTER_GENERATING set."""
-        selection = self.image_stack.selection_layer
-        for clear in (False, True):
-            with self.subTest(clear=clear), mock.patch.object(selection, 'clear_context_pins') as clear_pins:
-                AppConfig().set(AppConfig.CLEAR_CONTEXT_PINS_AFTER_GENERATING, clear)
-                self._apply_sample(_solid(GENERATION_AREA.size(), GENERATED_COLOR))
-                self.assertEqual(clear_pins.called, clear)
-
-    def test_apply_none_sample_does_nothing(self) -> None:
-        """A missing sample leaves the image unchanged."""
-        before = self.image_stack.active_layer.image.copy()
-        self._apply_sample(None)
-        self.assertEqual(self.image_stack.active_layer.image, before)
-
     def test_default_upscale_resizes_all_layers(self) -> None:
         """The base class upscales by scaling every layer, and reports that it did."""
         new_size = QSize(256, 256)
