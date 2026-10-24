@@ -241,7 +241,5 @@
   "test/ui/window/dock_rail_test.py::DockRailTest::test_recent_tools_fill_only_the_space_left_over": 143,
   "test/ui/window/dock_rail_test.py::DockRailTest::test_recent_tools_stop_before_the_next_group": 143,
   "test/ui/window/dock_rail_test.py::DockRailTest::test_side_rail_is_narrow_with_a_button_per_dock_with_content": 143,
-  "test/util/main_thread_test.py::MainThreadTest::test_async_task_requires_main_thread": 1,
-  "test/util/qtexcepthook_test.py::QtExceptHookTest::test_dialog_available_after_close": 2,
-  "test/util/qtexcepthook_test.py::QtExceptHookTest::test_nested_exception_does_not_reopen_dialog": 2
+  "test/util/main_thread_test.py::MainThreadTest::test_async_task_requires_main_thread": 1
 }
