@@ -415,7 +415,7 @@
   "test/ui/window/main_window_dock_test.py::MainWindowDockTest::test_large_layout_restores_inside_small_window": 528,
   "test/ui/window/main_window_dock_test.py::MainWindowDockTest::test_no_tab_bars_after_reset": 177,
   "test/ui/window/main_window_dock_test.py::MainWindowDockTest::test_offscreen_floating_dock_moves_on_screen": 351,
-  "test/ui/window/main_window_dock_test.py::MainWindowDockTest::test_opening_a_dock_closes_the_rest_of_its_group": 177,
+  "test/ui/window/main_window_dock_test.py::MainWindowDockTest::test_opening_a_dock_closes_the_rest_of_its_group": 176,
   "test/ui/window/main_window_dock_test.py::MainWindowDockTest::test_replaced_content_is_detached": 176,
   "test/ui/window/main_window_dock_test.py::MainWindowDockTest::test_reset_layout_brings_back_moved_and_closed_docks": 176,
   "test/ui/window/main_window_dock_test.py::MainWindowDockTest::test_restored_front_tab_survives_late_content": 348,

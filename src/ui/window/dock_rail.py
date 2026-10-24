@@ -12,7 +12,9 @@
   recent tools fill only the space the other buttons leave, so they never raise the window's minimum size. Their
   maximum count is `AppConfig.TOOLBAR_TOOL_BUTTON_COUNT`.
 """
+from functools import partial
 from typing import Optional
+from weakref import ref
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QIcon, QPainter, QPaintEvent, QPalette, QPen, QResizeEvent
@@ -25,6 +27,7 @@ from src.config.key_config import KeyConfig
 from src.controller.tool_controller import ToolController
 from src.tools.base_tool import BaseTool
 from src.ui.ink_style import set_primary_button
+from src.ui.layout.panel_fit import held_weakly
 from src.ui.widget.shortcut_tooltip import set_shortcut_tooltip
 from src.ui.widget.tool_button import ToolButton
 from src.ui.window.dock_groups import docked_groups
@@ -111,7 +114,7 @@ class RailButton(QToolButton):
 
     def __init__(self, dock: PanelDock) -> None:
         super().__init__()
-        self._dock = dock
+        self._dock_ref = ref(dock)
         self._side = True
         self._edge = Qt.Edge.LeftEdge
         self.setAutoRaise(True)
@@ -122,7 +125,7 @@ class RailButton(QToolButton):
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setToolTip('')
         self._refresh_tooltip = set_shortcut_tooltip(self, dock.windowTitle(), dock.shortcut_config_key,
-                                                     lambda: dock.badge_tooltip if self.badge_text != '' else '')
+                                                     held_weakly(self._tooltip_description))
         dock.visibilityChanged.connect(self.setChecked)
         dock.visibilityChanged.connect(self._badge_changed)
         dock.badge_changed.connect(self._badge_changed)
@@ -134,6 +137,13 @@ class RailButton(QToolButton):
         self.setFont(self._label_font())
 
     @property
+    def _dock(self) -> PanelDock:
+        # Held weakly, since the dock's floating title bar holds this button:
+        dock = self._dock_ref()
+        assert dock is not None, 'A rail button outlived its dock'
+        return dock
+
+    @property
     def dock(self) -> PanelDock:
         """Returns the dock this button toggles."""
         return self._dock
@@ -142,6 +152,9 @@ class RailButton(QToolButton):
     def badge_text(self) -> str:
         """The dock's badge text while this button shows it: the dock is not showing and has a badge. Otherwise ''."""
         return '' if self._dock.is_showing else self._dock.badge_text
+
+    def _tooltip_description(self) -> str:
+        return self._dock.badge_tooltip if self.badge_text != '' else ''
 
     def _badge_changed(self, *_args) -> None:
         self._refresh_tooltip()
@@ -751,7 +764,7 @@ class DockRails(QObject):
         button = RailButton(dock)
         self._docks.append((dock, button))
         self._dock_areas[dock] = default_area
-        dock.dockLocationChanged.connect(lambda area, moved=dock: self._dock_moved(moved, area))
+        dock.dockLocationChanged.connect(held_weakly(partial(self._dock_moved, dock)))
         dock.toggleViewAction().changed.connect(self.sync)
         dock.topLevelChanged.connect(self.sync)
         dock.installEventFilter(self)
