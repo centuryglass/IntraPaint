@@ -1,27 +1,30 @@
 # Stable Diffusion Image Generation Controls
 
-This guide covers the controls IntraPaint provides for AI image generation.  To access these controls, first install and configure Stable Diffusion following instructions [here](./stable_diffusion_setup.md), and activate it in the [generator selection window](./menu_options.md#image-generator-selection-window).  
+This guide covers the controls IntraPaint provides for AI image generation.  To access these controls, first install and configure Stable Diffusion following the [Stable Diffusion setup guide](./stable_diffusion_setup.md), and activate it in the [generator selection window](./menu_options.md#image-generator-selection-window).  
 
 When setting up Stable Diffusion, you have the option to choose between using
-[ComfyUI](https://github.com/comfyanonymous/ComfyUI?tab=readme-ov-file#comfyui), the 
-[Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#stable-diffusion-web-ui), 
+[ComfyUI](https://github.com/comfyanonymous/ComfyUI?tab=readme-ov-file#comfyui), the
+[Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#stable-diffusion-web-ui),
 [WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#stable-diffusion-webui-forge),
 or [WebUI reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge?tab=readme-ov-file#stable-diffusion-webui-forgereforge)
 to handle IntraPaint's AI image generation requests. In most cases these options will all work the same within IntraPaint,
 but there are a few minor differences in the available controls.
 
-
 ---
+
 ## Table of Contents
+
 1. [Image Generation Panel](#image-generation-panel)
 2. [ControlNet Panel](#controlnet-panel)
 3. [Stable Diffusion settings](#stable-diffusion-settings)
 4. [Prompt control formatting](#prompt-control-formatting)
 5. [Denoising strength comparisons](#denoising-strength-comparisons)
 6. [Sampling methods](#sampling-methods)
+
 ---
 
 ## Image Generation Panel
+
 This panel is the main place where you'll control image generation.
 
 <img src="./labeled_screenshots/gen_panel.png" alt="Screenshot of the image generation panel, with specific elements numbered."/>
@@ -35,10 +38,10 @@ This panel is the main place where you'll control image generation.
 4. **"Stable Diffusion model" dropdown**: Selects which Stable Diffusion model file will be used for image generation.  If you're using the WebUI generator, changing this value will immediately load the new model, while ComfyUI will wait to load the model until the next time you start image generation.
 5. **"Sampling method" dropdown**: Selects between different mathematical approaches to dividing the image generation process into steps.  The differences between these can be subtle, see [sampling methods](#sampling-methods) below for more details.
 6. **"Masked content" dropdown** (WebUI generator only): Controls how selected areas are processed when inpainting, usually best left unchanged. Available options:
-    - **original**: Make no changes to inpainting content before generating. This is the best option in most circumstances.
-    - **fill**:  Fill the inpainting selection with a solid color before generating. This is sometimes useful when trying to completely remove elements, but is usually best done manually with the brush tool.
-    - **latent noise**:  Fill the inpainting selection with random noise before generating.  When used with denoising strength set around 0.7-0.8, this can be useful for filling in empty space around an existing image.
-    - **latent nothing**:  Completely zeroes out the inpainting content before generating.
+   - **original**: Make no changes to inpainting content before generating. This is the best option in most circumstances.
+   - **fill**:  Fill the inpainting selection with a solid color before generating. This is sometimes useful when trying to completely remove elements, but is usually best done manually with the brush tool.
+   - **latent noise**:  Fill the inpainting selection with random noise before generating.  When used with denoising strength set around 0.7-0.8, this can be useful for filling in empty space around an existing image.
+   - **latent nothing**:  Completely zeroes out the inpainting content before generating.
 7. **CLIP skip**: Sets how many final image generation steps are taken without the guidance of the CLIP image recognition module. Increasing this number can sometimes improve generated image aesthetics, but it will also reduce adherence to the prompt.  In most cases this is best left at 1, but some models recommend setting it to 2.
 8. **Prompt**: Describe in plain text exactly what kind of imagery the model should generate. Prompts can also use various control formats to affect image generation, see [prompt control formatting](#prompt-control-formatting) below for details.
 9. **Negative Prompt**: Describe in plain text exactly what kind of imagery the model should *not* generate. All prompt control formats also work on the negative prompt.
@@ -51,8 +54,8 @@ This panel is the main place where you'll control image generation.
 16. **"Inpaint Full Resolution" checkbox**:  When inpainting, crop to selected content within the generated area, increasing detail quality at the cost of situational awareness. Refer to the [inpainting guide](./inpainting_guide.md) for more details about using this effectively.
 17. **"Inpaint Full Resolution" padding slider**:  When "inpaint full resolution" is checked, this controls how much extra padding space is left around selected content when cropping for inpainting. This allows you to finely balance the trade-offs between detail quality and situational awareness.
 18. **"Seed" input**: A number used to control randomness during image generation.  If all other factors are unchanged, using the same seed value should produce the same images each time. If set to -1, a different random seed will be used each time you generate images.
-     - **18a. "Reuse last seed" button**:  Replaces the seed with the one in the "Last seed" box.
-     - **18b. "Randomize seed" button**: Sets the seed value to -1, so that a random value will be used for each image generation.
+    - **18a. "Reuse last seed" button**:  Replaces the seed with the one in the "Last seed" box.
+    - **18b. "Randomize seed" button**: Sets the seed value to -1, so that a random value will be used for each image generation.
 19. **Last seed value**: Shows the seed used the last time the generate button was pressed.
 20. **Interrogate button** (WebUI generator ornly): Use AI image analysis to automatically generate a description of the section of the image in the image generation area.  The new description will replace the current prompt.
 21. **Generate button**: Click to trigger AI image generation, creating or altering image content to insert into the [image generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](./controls.md#generated-image-selection-view).
@@ -60,16 +63,17 @@ This panel is the main place where you'll control image generation.
 ---
 
 ### Image Generation Panel "Extras" Tab: WebUI generator
+
 These options, found under the "Extras" tab, will only be available if you're using the Stable Diffusion WebUI image generator.
 
 <img src="./labeled_screenshots/gen_panel_webui_extras.png" alt="Screenshot of the image generation panel WebUI extras tab, with specific elements numbered."/>
 
-1. **"Variation seed" input**:  A number used to control the randomized variations between image in the same batch when the "Variation strength" control is used. If set to -1, a random seed will be used each time 
-     - **18a. "Reuse last seed" button**:  Replaces the variation seed with the one in the "Last variation seed" box.
-     - **18b. "Randomize seed" button**: Sets the variation seed value to -1, so that a random value will be used for each image generation.
+1. **"Variation seed" input**:  A number used to control the randomized variations between image in the same batch when the "Variation strength" control is used. If set to -1, a random seed will be used each time
+   - **18a. "Reuse last seed" button**:  Replaces the variation seed with the one in the "Last variation seed" box.
+   - **18b. "Randomize seed" button**: Sets the variation seed value to -1, so that a random value will be used for each image generation.
 2. **Last variation seed value**: Shows the variation seed used the last time the generate button was pressed.
 3. **"Variation strength" slider**:  Controls how similar that images in the same batch should be.  The higher the value, the more significant that differences will be.  At 0.0, it's disabled, and variations between images will be completely random.
-4. **"Resize seed from alternate resolution" checkbox**: Even if prompt, seed, and all other settings are unchanged, altering the image generation resolution can completely change the results of image generation.  This option counters that effect, so that you can completely regenerate an image at a different resolution and still expect the final image to be very similar. 
+4. **"Resize seed from alternate resolution" checkbox**: Even if prompt, seed, and all other settings are unchanged, altering the image generation resolution can completely change the results of image generation.  This option counters that effect, so that you can completely regenerate an image at a different resolution and still expect the final image to be very similar.
 5. **"Resize seed from alternate resolution" size setting**: Sets what resolution the "Resize seed from alternate resolution" setting should target.  If you're trying to recreate a generated image at a new size, you'll want to set this to the original image generation size.
 6. **"Tiling" checkbox**: If checked, Stable Diffusion will attempt to generate images that can be seamlessly repeated in a grid. This is mostly useful for generating texture files and tiling wallpapers.
 7. **"Restore faces" checkbox**: If checked, apply an extra face restoration model to generated images. This option is rarely useful, most recent Stable Diffusion models already produce better results than dedicated face restoration models.
@@ -78,6 +82,7 @@ These options, found under the "Extras" tab, will only be available if you're us
 ---
 
 ### Image Generation Panel "Extras" Tab: ComfyUI generator
+
 These options, found under the "Extras" tab, will only be available if you're using the Stable Diffusion ComfyUI image generator.
 
 <img src="./labeled_screenshots/gen_panel_comfyui_extras.png" alt="Screenshot of the image generation panel WebUI extras tab, with specific elements numbered."/>
@@ -89,14 +94,11 @@ These options, found under the "Extras" tab, will only be available if you're us
 5. **"Clear Memory" button**: This button sends a request to ComfyUI to free up memory and unload cached models.  This might be useful if you're seeing worse performance after switching between multiple models, but it will probably make the next set of generated images load slightly slower.
 6. **Generate button**: A copy of the image generation button from the "Main" tab, included for convenience. All generate buttons have identical behavior.
 
-
 ## ControlNet Panel
 
 [ControlNet](https://github.com/lllyasviel/ControlNet) is an add-on for Stable Diffusion that lets you restrict image generation in useful ways, usually by forcing it to not change parts of a source image.  The first three examples under [this section of the README](../README.md#why-combine-ai-and-traditional-tools) all use the ControlNet sketch module to preserve initial image composition.
 
-
 If the ControlNet tab isn't visible or isn't working properly, refer to [this section of the FAQ](../README.md#q-where-are-the-controlnet-options).
-
 
 ControlNet works with two components: a **preprocessor**, and an AI **model**. The preprocessor identifies the elements that need to be preserved, and the model forces Stable Diffusion to preserve those elements.  Not all preprocessors and models are compatible, but it's usually obvious from their names which ones are meant to be used together.
 The wide variety of ControlNet preprocessors and models available can be challenging to sort through, but I've found [this guide](https://education.civitai.com/civitai-guide-to-controlnet/#what-do-the-models-do) to be extremely helpful for sorting through them all.
@@ -146,7 +148,9 @@ When a Stable Diffusion image generator is active, extra options will be availab
 5. **Cancel button**: Discards all changes and closes the settings window.
 
 ---
+
 ## Prompt control formatting:
+
 Prompt text can be formatted in various ways to control its behavior. These controls are provided by the [Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Features) and can be altered by various webui extensions.
 
 | Control             | Example                                             | Description                                                                                                                                                |
@@ -160,6 +164,7 @@ Prompt text can be formatted in various ways to control its behavior. These cont
 | Composable prompts  | `photograph of a house:0.5 AND charcoal sketch:1.0` | Sections split by AND are treated as individual prompts, to be applied simultaneously. The numbers at the end control how much that prompt is prioritized. |
 
 ## Denoising strength comparisons
+
 The examples below were created by applying increasing denoising strengths to a small elliptical area within an AI-generated image using inpainting mode. All other parameters remain the same for each option.
 
 | Strength       | Example                                                                    | Description                                                                                                                                                                                                                                                                                                                                                                  |
@@ -176,9 +181,10 @@ The examples below were created by applying increasing denoising strengths to a 
 | 0.9            | ![0.9 denoising strength example](../examples/denoising/denoising_0.9.png) | A tiny increase in detail over the last step, but errors at the edges of the inpainting selection become even more pronounced.                                                                                                                                                                                                                                               |
 | 1.0            | ![1.0 denoising strength example](../examples/denoising/denoising_1.0.png) | Details become strikingly different, original image content is completely lost. The shape of the inpainting selection and the area outside the selection still have some influence on the image, but not much.                                                                                                                                                               |
 
-
 ## Sampling methods
+
 The sampling method controls how the image diffusion process is divided into smaller steps to produce the final image. Each of these will tend towards slightly different results, but the differences are usually minor. Here's a brief glossary:
+
 - Euler: The simplest sampling process, usually a good default.
 - UniPC (Unified Predictor-Corrector): A more efficient sampling method that can produce decent images in 5-10 steps.
 - Ancestral (A) samplers: Any sampler ending in "A" adds extra randomness to the process.
@@ -190,21 +196,22 @@ The sampling method controls how the image diffusion process is divided into sma
 - Turbo: Extremely fast image generation (1 step), but requires an SDXL Turbo model.
 
 ### AI upscaling with IntraPaint:
+
 For an overview of the basic image scaling interface, see the [menu option guide's image scaling section](./menu_options.md#scale-image-window).
 
 #### Prerequisites for effective upscaling:
-1. For the absolute best results, you'll need ControlNet support and the ControlNet tile model.  See [this section](../README.md#q-where-are-the-controlnet-options) if the ControlNet tab and upscaling options aren't showing up.
-2. The default installation of ControlNet only includes a version of the tile model that supports Stable Diffusion 1.5, so make sure you're not using an SDXL model.  If you do want to use SDXL, you'll need to find and install an SDXL control model within the Stable Diffusion WebUI.  Once you've done that, you'll also need to go to the Stable Diffusion tab in IntraPaint's settings, and update the "ControlNet tiled upscaling model" option with the new model's name. 
-3. If you've installed the [ultimate-upscale-for-automatic1111 extension](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111), or [ComfyUI UltimateSDUpscale custom nodes](https://github.com/ssitu/ComfyUI_UltimateSDUpscale?tab=readme-ov-file), IntraPaint will use them to improve tiled upscaling.
-   * If you're using the Stable Diffusion WebUI image generator, you can open http://localhost:7680 in a web browser, and from there follow [these instructions](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111/wiki/How-to) to install the extension.
-   * If you're using the Stable Diffusion ComfyUI image generator, you can use [ComfyUI Manager](https://github.com/ltdrdata/ComfyUI-Manager?tab=readme-ov-file#comfyui-manager) to install the custom nodes, or use git to [clone the ComfyUI_UltimateSDUpscale repository in the ComfyUI/custom_nodes/ directory](https://github.com/ssitu/ComfyUI_UltimateSDUpscale?tab=readme-ov-file#installation).
 
+1. For the absolute best results, you'll need ControlNet support and the ControlNet tile model.  See [this section](../README.md#q-where-are-the-controlnet-options) if the ControlNet tab and upscaling options aren't showing up.
+2. The default installation of ControlNet only includes a version of the tile model that supports Stable Diffusion 1.5, so make sure you're not using an SDXL model.  If you do want to use SDXL, you'll need to find and install an SDXL control model within the Stable Diffusion WebUI.  Once you've done that, you'll also need to go to the Stable Diffusion tab in IntraPaint's settings, and update the "ControlNet tiled upscaling model" option with the new model's name.
+3. If you've installed the [ultimate-upscale-for-automatic1111 extension](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111), or [ComfyUI UltimateSDUpscale custom nodes](https://github.com/ssitu/ComfyUI_UltimateSDUpscale?tab=readme-ov-file), IntraPaint will use them to improve tiled upscaling.
+   - If you're using the Stable Diffusion WebUI image generator, you can open <http://localhost:7680> in a web browser, and from there follow [these instructions](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111/wiki/How-to) to install the extension.
+   - If you're using the Stable Diffusion ComfyUI image generator, you can use [ComfyUI Manager](https://github.com/ltdrdata/ComfyUI-Manager?tab=readme-ov-file#comfyui-manager) to install the custom nodes, or use git to [clone the ComfyUI_UltimateSDUpscale repository in the ComfyUI/custom_nodes/ directory](https://github.com/ssitu/ComfyUI_UltimateSDUpscale?tab=readme-ov-file#installation).
 
 #### Steps for getting the best results:
+
 1. When using ControlNet tiled upscaling, the settings you enter into the image generation panel affect the results. Make sure to select appropriate values:
-   * **Prompt**: Should accurately describe your entire image, ideally without being too focused on specific details.
-   * **Generation Size**: Set this to the resolution your model works best at, *not* the resolution of the final image.
-   * **Denoising Strength**: Keep this value relatively low, certainly no higher than 0.5. If you didn't install the ultimate upscale extension, you may need to reduce it even more.
+   - **Prompt**: Should accurately describe your entire image, ideally without being too focused on specific details.
+   - **Generation Size**: Set this to the resolution your model works best at, *not* the resolution of the final image.
+   - **Denoising Strength**: Keep this value relatively low, certainly no higher than 0.5. If you didn't install the ultimate upscale extension, you may need to reduce it even more.
 2. Select an initial upscaler from the "Upscale Method" dropdown that works well with the type of image you're adjusting, as this gets used as an initial step even when ControlNet upscaling is active.  I've found SwinIR_4x to be a good choice in most cases.
 3. Make sure the "ControlNet tiled upscaling" checkbox is both visible and checked. If it isn't, only the basic upscaling method will be used.
-

@@ -1,0 +1,30 @@
+# Rule settings for scripts/markdown_lint.py (the CI markdown gate).
+extensions:
+  markdown-tables:
+    enabled: true
+  front-matter:
+    enabled: true
+
+plugins:
+  line-length:
+    line_length: 120
+    code_block_line_length: 120
+    heading_line_length: 120
+    tables: false
+  # Duplicate headings are fine under different parents (doc/tool_guide.md repeats its per-tool subsections).
+  no-duplicate-heading:
+    siblings_only: true
+  # Trailing colons are accepted in headings.
+  no-trailing-punctuation:
+    punctuation: ".,;!"
+  # Docs embed images and tables as HTML to control sizing and alignment.
+  no-inline-html:
+    enabled: false
+  # Some docs use several top-level headings for their parts, and CLAUDE.md starts with an import line.
+  single-title:
+    enabled: false
+  first-line-heading:
+    enabled: false
+  # Tables are not aligned into columns.
+  table-column-style:
+    enabled: false
