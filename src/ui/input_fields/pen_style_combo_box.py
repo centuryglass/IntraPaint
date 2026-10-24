@@ -20,12 +20,25 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-LINE_STYLE_SOLID = _tr('Solid')
-LINE_STYLE_DASH = _tr('Dash')
-LINE_STYLE_DOTTED = _tr('Dotted')
-LINE_STYLE_DASH_DOT = _tr('Dash-dot')
-LINE_STYLE_DASH_DOT_DOT = _tr('Dash-dot-dot')
-LINE_STYLE_CUSTOM = _tr('Custom pattern')
+LINE_STYLE_SOLID = 'Solid'
+LINE_STYLE_DASH = 'Dash'
+LINE_STYLE_DOTTED = 'Dotted'
+LINE_STYLE_DASH_DOT = 'Dash-dot'
+LINE_STYLE_DASH_DOT_DOT = 'Dash-dot-dot'
+LINE_STYLE_CUSTOM = 'Custom pattern'
+
+# Translated item text for each option name. The option names are what `Cache` stores.
+_LINE_LABELS = {
+    LINE_STYLE_SOLID: _tr('Solid'),
+    LINE_STYLE_DASH: _tr('Dash'),
+    LINE_STYLE_DOTTED: _tr('Dotted'),
+    LINE_STYLE_DASH_DOT: _tr('Dash-dot'),
+    LINE_STYLE_DASH_DOT_DOT: _tr('Dash-dot-dot'),
+    LINE_STYLE_CUSTOM: _tr('Custom pattern'),
+}
+
+# Item data role holding the untranslated option name that is saved in `Cache`; the item text is its translation.
+KEY_ROLE = Qt.ItemDataRole.UserRole + 1
 
 ICON_LINE_WIDTH = 8
 
@@ -44,7 +57,7 @@ class PenStyleComboBox(QComboBox):
 
     @staticmethod
     def get_pen_style(name: str) -> Qt.PenStyle:
-        """Get the pen style associated with a particular name."""
+        """Get the pen style associated with an untranslated option name (the `LINE_STYLE_*` constants)."""
         return PenStyleComboBox._line_options[name]
 
     @staticmethod
@@ -86,34 +99,42 @@ class PenStyleComboBox(QComboBox):
 
         for style_name, style in PenStyleComboBox._line_options.items():
             icon = PenStyleComboBox._draw_icon(style, Qt.GlobalColor.black, Qt.GlobalColor.white)
-            self.addItem(icon, style_name, style)
+            self.addItem(icon, _LINE_LABELS[style_name], style)
+            self.setItemData(self.count() - 1, style_name, KEY_ROLE)
 
-        self.setCurrentText(LINE_STYLE_SOLID)
+        self.set_option(LINE_STYLE_SOLID)
 
         if cache_key is None:
             return
 
         self.setToolTip(Cache().get_tooltip(cache_key))
 
-        def _update_config(new_style_name: str) -> None:
-            Cache().set(cache_key, new_style_name)
-        self.currentTextChanged.connect(_update_config)
+        def _update_config(_: int) -> None:
+            Cache().set(cache_key, self.option())
+        self.currentIndexChanged.connect(_update_config)
 
         def _update_from_config(new_style_name: str) -> None:
-            if new_style_name in PenStyleComboBox._line_options and self.currentText() != new_style_name:
-                self.setCurrentText(new_style_name)
+            if new_style_name in PenStyleComboBox._line_options and self.option() != new_style_name:
+                self.set_option(new_style_name)
         Cache().connect(self, cache_key, _update_from_config)
         _update_from_config(Cache().get(cache_key))
 
-        def _apply_change_to_config(new_style_name: str) -> None:
-            Cache().set(cache_key, new_style_name)
-        self.currentTextChanged.connect(_apply_change_to_config)
+    def option(self) -> str:
+        """Returns the untranslated name of the selected option."""
+        return str(self.currentData(KEY_ROLE))
+
+    def set_option(self, style_name: str) -> None:
+        """Selects an option by its untranslated name."""
+        index = self.findData(style_name, KEY_ROLE)
+        if index < 0:
+            raise ValueError(f'Unknown line style {style_name}')
+        self.setCurrentIndex(index)
 
     def set_icon_colors(self, color: QColor, bg_color: Optional[QColor | Qt.GlobalColor] = None) -> None:
         """Updates all icons with new colors."""
         for style_name, style in PenStyleComboBox._line_options.items():
             icon = PenStyleComboBox._draw_icon(style, color, bg_color)
-            index = self.findText(style_name)
+            index = self.findData(style_name, KEY_ROLE)
             self.setItemIcon(index, icon)
 
     def value(self) -> Qt.PenStyle:
@@ -128,6 +149,6 @@ class PenStyleComboBox(QComboBox):
             value = value.style()
         for text, style in PenStyleComboBox._line_options.items():
             if style == value:
-                self.setCurrentText(text)
+                self.set_option(text)
                 return
         raise ValueError(f'Pen style {value} not supported')

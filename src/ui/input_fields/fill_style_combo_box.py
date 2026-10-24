@@ -17,21 +17,43 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-BRUSH_PATTERN_SOLID = _tr('Solid')
-BRUSH_PATTERN_NONE = _tr('None')
-BRUSH_PATTERN_DENSE_1 = _tr('Dithered, 94%')
-BRUSH_PATTERN_DENSE_2 = _tr('Dithered, 88%')
-BRUSH_PATTERN_DENSE_3 = _tr('Dithered, 62%')
-BRUSH_PATTERN_DENSE_4 = _tr('Dithered, 50%')
-BRUSH_PATTERN_DENSE_5 = _tr('Dithered, 38%')
-BRUSH_PATTERN_DENSE_6 = _tr('Dithered, 12%')
-BRUSH_PATTERN_DENSE_7 = _tr('Dithered, 6%')
-BRUSH_PATTERN_HORIZONTAL = _tr('Horizontal lines')
-BRUSH_PATTERN_VERTICAL = _tr('Vertical lines')
-BRUSH_PATTERN_CROSSED = _tr('Crossed lines')
-BRUSH_PATTERN_DIAGONAL_1 = _tr('Diagonal lines 1')
-BRUSH_PATTERN_DIAGONAL_2 = _tr('Diagonal lines 2')
-BRUSH_PATTERN_DIAGONAL_CROSSED = _tr('Diagonal crossed lines')
+BRUSH_PATTERN_SOLID = 'Solid'
+BRUSH_PATTERN_NONE = 'None'
+BRUSH_PATTERN_DENSE_1 = 'Dithered, 94%'
+BRUSH_PATTERN_DENSE_2 = 'Dithered, 88%'
+BRUSH_PATTERN_DENSE_3 = 'Dithered, 62%'
+BRUSH_PATTERN_DENSE_4 = 'Dithered, 50%'
+BRUSH_PATTERN_DENSE_5 = 'Dithered, 38%'
+BRUSH_PATTERN_DENSE_6 = 'Dithered, 12%'
+BRUSH_PATTERN_DENSE_7 = 'Dithered, 6%'
+BRUSH_PATTERN_HORIZONTAL = 'Horizontal lines'
+BRUSH_PATTERN_VERTICAL = 'Vertical lines'
+BRUSH_PATTERN_CROSSED = 'Crossed lines'
+BRUSH_PATTERN_DIAGONAL_1 = 'Diagonal lines 1'
+BRUSH_PATTERN_DIAGONAL_2 = 'Diagonal lines 2'
+BRUSH_PATTERN_DIAGONAL_CROSSED = 'Diagonal crossed lines'
+
+# Translated item text for each option name. The option names are what `Cache` stores.
+_PATTERN_LABELS = {
+    BRUSH_PATTERN_SOLID: _tr('Solid'),
+    BRUSH_PATTERN_NONE: _tr('None'),
+    BRUSH_PATTERN_DENSE_1: _tr('Dithered, 94%'),
+    BRUSH_PATTERN_DENSE_2: _tr('Dithered, 88%'),
+    BRUSH_PATTERN_DENSE_3: _tr('Dithered, 62%'),
+    BRUSH_PATTERN_DENSE_4: _tr('Dithered, 50%'),
+    BRUSH_PATTERN_DENSE_5: _tr('Dithered, 38%'),
+    BRUSH_PATTERN_DENSE_6: _tr('Dithered, 12%'),
+    BRUSH_PATTERN_DENSE_7: _tr('Dithered, 6%'),
+    BRUSH_PATTERN_DIAGONAL_1: _tr('Diagonal lines 1'),
+    BRUSH_PATTERN_DIAGONAL_2: _tr('Diagonal lines 2'),
+    BRUSH_PATTERN_HORIZONTAL: _tr('Horizontal lines'),
+    BRUSH_PATTERN_VERTICAL: _tr('Vertical lines'),
+    BRUSH_PATTERN_CROSSED: _tr('Crossed lines'),
+    BRUSH_PATTERN_DIAGONAL_CROSSED: _tr('Diagonal crossed lines'),
+}
+
+# Item data role holding the untranslated option name that is saved in `Cache`; the item text is its translation.
+KEY_ROLE = Qt.ItemDataRole.UserRole + 1
 
 
 class FillStyleComboBox(QComboBox):
@@ -57,7 +79,7 @@ class FillStyleComboBox(QComboBox):
 
     @staticmethod
     def get_style(name: str) -> Qt.BrushStyle:
-        """Returns the brush style associated with a particular name."""
+        """Returns the brush style associated with an untranslated option name (the `BRUSH_PATTERN_*` constants)."""
         return FillStyleComboBox._brush_styles[name]
 
     def __init__(self, cache_key: Optional[str] = None, include_no_fill_option=False,
@@ -69,27 +91,35 @@ class FillStyleComboBox(QComboBox):
             if brush_name == BRUSH_PATTERN_NONE and not include_no_fill_option:
                 continue
             icon = FillStyleComboBox._draw_icon(brush_style, Qt.GlobalColor.black, Qt.GlobalColor.white)
-            self.addItem(icon, brush_name, brush_style)
+            self.addItem(icon, _PATTERN_LABELS[brush_name], brush_style)
+            self.setItemData(self.count() - 1, brush_name, KEY_ROLE)
 
-        self.setCurrentText(BRUSH_PATTERN_SOLID)
+        self.set_option(BRUSH_PATTERN_SOLID)
 
         if cache_key is None:
             return
         self.setToolTip(Cache().get_tooltip(cache_key))
 
-        def _update_config(new_brush_name: str) -> None:
-            Cache().set(cache_key, new_brush_name)
-        self.currentTextChanged.connect(_update_config)
+        def _update_config(_: int) -> None:
+            Cache().set(cache_key, self.option())
+        self.currentIndexChanged.connect(_update_config)
 
         def _update_from_config(new_pattern_name: str) -> None:
-            if new_pattern_name in FillStyleComboBox._brush_styles and self.currentText() != new_pattern_name:
-                self.setCurrentText(new_pattern_name)
+            if self.findData(new_pattern_name, KEY_ROLE) >= 0 and self.option() != new_pattern_name:
+                self.set_option(new_pattern_name)
         Cache().connect(self, cache_key, _update_from_config)
         _update_from_config(Cache().get(cache_key))
 
-        def _apply_change_to_config(new_pattern_name: str) -> None:
-            Cache().set(cache_key, new_pattern_name)
-        self.currentTextChanged.connect(_apply_change_to_config)
+    def option(self) -> str:
+        """Returns the untranslated name of the selected option."""
+        return str(self.currentData(KEY_ROLE))
+
+    def set_option(self, pattern_name: str) -> None:
+        """Selects an option by its untranslated name."""
+        index = self.findData(pattern_name, KEY_ROLE)
+        if index < 0:
+            raise ValueError(f'Unknown brush pattern {pattern_name}')
+        self.setCurrentIndex(index)
 
     @staticmethod
     def _draw_icon(brush_style: Qt.BrushStyle, color: QColor | Qt.GlobalColor,
@@ -109,7 +139,7 @@ class FillStyleComboBox(QComboBox):
         bg_color = Qt.GlobalColor.white if color.lightness() < 128 else Qt.GlobalColor.black
         for brush_name, brush_style in FillStyleComboBox._brush_styles.items():
             icon = FillStyleComboBox._draw_icon(brush_style, color, bg_color)
-            index = self.findText(brush_name)
+            index = self.findData(brush_name, KEY_ROLE)
             self.setItemIcon(index, icon)
 
     def value(self) -> Qt.BrushStyle:
@@ -122,6 +152,6 @@ class FillStyleComboBox(QComboBox):
         """Sets the current value from a brush or brush style."""
         for text, brush in FillStyleComboBox._brush_styles.items():
             if brush.style() == value:
-                self.setCurrentText(text)
+                self.set_option(text)
                 return
         raise ValueError(f'Brush style {value} not supported')
