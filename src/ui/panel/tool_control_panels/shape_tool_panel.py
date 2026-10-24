@@ -6,8 +6,8 @@ The panel is a view over the shape tool's `Cache` values:
 - Fill: the fill color with the fill pattern.
 - Antialiasing: at the bottom of a side panel, and in the Shape column of a strip.
 
-The shape type and join controls store the same labels in `Cache` that the shape tool reads (`ShapeMode.display_text`
-and the `PenJoinStyleComboBox` labels). Their segment values are the untranslated `ShapeMode` and join style names.
+The shape type and join controls save untranslated names in `Cache` (`ShapeMode.name` and the `JOIN_STYLE_*`
+constants), which the shape tool reads. Their segment values are the `ShapeMode` and `_JOIN_STYLES` names.
 
 The panel is a `src.ui.layout.panel_fit.FitContent`, planned in the space the Tools panel gives it:
 - Side: one column. The roomy arrangement puts Outline and Fill side by side, the compact one stacks them. The shape
@@ -28,7 +28,8 @@ from src.config.cache import Cache
 from src.ui.ink_style import signal_color
 from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.input_fields.number_field import NumberField
-from src.ui.input_fields.pen_join_style_combo_box import (JOIN_STYLE_BEVEL, JOIN_STYLE_MITER, JOIN_STYLE_ROUND,
+from src.ui.input_fields.pen_join_style_combo_box import (JOIN_STYLE_BEVEL, JOIN_STYLE_LABELS, JOIN_STYLE_MITER,
+                                                          JOIN_STYLE_ROUND,
                                                           PenJoinStyleComboBox)
 from src.ui.input_fields.pen_style_combo_box import PenStyleComboBox
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
@@ -98,9 +99,9 @@ def _shape_mode(mode_text: str) -> Optional[ShapeMode]:
         return None
 
 
-def _join_name(join_text: str) -> Optional[str]:
-    for name, (label, _) in _JOIN_STYLES.items():
-        if label == join_text:
+def _join_name(join_option: str) -> Optional[str]:
+    for name, (option, _) in _JOIN_STYLES.items():
+        if option == join_option:
             return name
     return None
 
@@ -123,14 +124,14 @@ class ShapeToolPanel(FitToolPanel):
         # Whether the Outline rows are paired, which drops the dash pattern's label and hint:
         self._paired = False
         if _shape_mode(cache.get(Cache.SHAPE_TOOL_MODE)) is None:
-            cache.set(Cache.SHAPE_TOOL_MODE, ShapeMode.ELLIPSE.display_text())
+            cache.set(Cache.SHAPE_TOOL_MODE, ShapeMode.ELLIPSE.name)
 
         # Shape section:
         self._shape_control = SegmentedControl([Segment(mode.name, mode.display_text(), self._shape_icon(mode))
                                                 for mode in ShapeMode], DisplayMode.LABEL, parent=self)
         self._shape_control.setToolTip(cache.get_tooltip(Cache.SHAPE_TOOL_MODE))
         self._shape_control.valueChanged.connect(
-            lambda name: cache.set(Cache.SHAPE_TOOL_MODE, ShapeMode[name].display_text()))
+            lambda name: cache.set(Cache.SHAPE_TOOL_MODE, ShapeMode[name].name))
         self._vertex_field = self._bound_field(Cache.SHAPE_TOOL_VERTEX_COUNT, VERTICES_LABEL)
         self._inner_radius_field = self._bound_field(Cache.SHAPE_TOOL_STAR_INNER_POINT_FRACTION, INNER_RADIUS_LABEL,
                                                      step=0.01, page_step=0.1)
@@ -166,7 +167,7 @@ class ShapeToolPanel(FitToolPanel):
         self._dash_textbox.textChanged.connect(self._update_dash_hint)
         self._update_dash_hint()
         self._join_label = QLabel(JOIN_LABEL, self)
-        self._join_control = SegmentedControl([Segment(name, label, None) for name, (label, _) in
+        self._join_control = SegmentedControl([Segment(name, JOIN_STYLE_LABELS[option], None) for name, (option, _) in
                                                _JOIN_STYLES.items()], DisplayMode.LABEL, parent=self)
         self._join_control.setToolTip(cache.get_tooltip(Cache.SHAPE_TOOL_LINE_JOIN_STYLE))
         self._join_control.valueChanged.connect(

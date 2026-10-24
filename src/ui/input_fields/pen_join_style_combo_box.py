@@ -17,9 +17,19 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-JOIN_STYLE_ROUND = _tr('Round')
-JOIN_STYLE_BEVEL = _tr('Bevel')
-JOIN_STYLE_MITER = _tr('Miter')
+JOIN_STYLE_ROUND = 'Round'
+JOIN_STYLE_BEVEL = 'Bevel'
+JOIN_STYLE_MITER = 'Miter'
+
+# Translated item text for each option name. The option names are what `Cache` stores.
+JOIN_STYLE_LABELS = {
+    JOIN_STYLE_ROUND: _tr('Round'),
+    JOIN_STYLE_BEVEL: _tr('Bevel'),
+    JOIN_STYLE_MITER: _tr('Miter'),
+}
+
+# Item data role holding the untranslated option name that is saved in `Cache`; the item text is its translation.
+KEY_ROLE = Qt.ItemDataRole.UserRole + 1
 
 ICON_LINE_WIDTH = 64
 
@@ -37,7 +47,7 @@ class PenJoinStyleComboBox(QComboBox):
 
     @staticmethod
     def get_join_style(name: str) -> Qt.PenJoinStyle:
-        """Get the pen join style associated with a particular name."""
+        """Get the pen join style associated with an untranslated option name (the `JOIN_STYLE_*` constants)."""
         return PenJoinStyleComboBox._line_options[name]
 
     @staticmethod
@@ -65,34 +75,42 @@ class PenJoinStyleComboBox(QComboBox):
 
         for style_name, style in PenJoinStyleComboBox._line_options.items():
             icon = PenJoinStyleComboBox.draw_icon(style, Qt.GlobalColor.black, Qt.GlobalColor.white)
-            self.addItem(icon, style_name, style)
+            self.addItem(icon, JOIN_STYLE_LABELS[style_name], style)
+            self.setItemData(self.count() - 1, style_name, KEY_ROLE)
 
-        self.setCurrentText(JOIN_STYLE_ROUND)
+        self.set_option(JOIN_STYLE_ROUND)
 
         if cache_key is None:
             return
 
         self.setToolTip(Cache().get_tooltip(cache_key))
 
-        def _update_config(new_style_name: str) -> None:
-            Cache().set(cache_key, new_style_name)
-        self.currentTextChanged.connect(_update_config)
+        def _update_config(_: int) -> None:
+            Cache().set(cache_key, self.option())
+        self.currentIndexChanged.connect(_update_config)
 
         def _update_from_config(new_style_name: str) -> None:
-            if new_style_name in PenJoinStyleComboBox._line_options and self.currentText() != new_style_name:
-                self.setCurrentText(new_style_name)
+            if new_style_name in PenJoinStyleComboBox._line_options and self.option() != new_style_name:
+                self.set_option(new_style_name)
         Cache().connect(self, cache_key, _update_from_config)
         _update_from_config(Cache().get(cache_key))
 
-        def _apply_change_to_config(new_style_name: str) -> None:
-            Cache().set(cache_key, new_style_name)
-        self.currentTextChanged.connect(_apply_change_to_config)
+    def option(self) -> str:
+        """Returns the untranslated name of the selected option."""
+        return str(self.currentData(KEY_ROLE))
+
+    def set_option(self, style_name: str) -> None:
+        """Selects an option by its untranslated name."""
+        index = self.findData(style_name, KEY_ROLE)
+        if index < 0:
+            raise ValueError(f'Unknown join style {style_name}')
+        self.setCurrentIndex(index)
 
     def set_icon_colors(self, color: QColor, bg_color: Optional[QColor | Qt.GlobalColor] = None) -> None:
         """Updates all icons with new colors."""
         for style_name, style in PenJoinStyleComboBox._line_options.items():
             icon = PenJoinStyleComboBox.draw_icon(style, color, bg_color)
-            index = self.findText(style_name)
+            index = self.findData(style_name, KEY_ROLE)
             self.setItemIcon(index, icon)
 
     def value(self) -> Qt.PenJoinStyle:
@@ -107,6 +125,6 @@ class PenJoinStyleComboBox(QComboBox):
             value = value.joinStyle()
         for text, style in PenJoinStyleComboBox._line_options.items():
             if style == value:
-                self.setCurrentText(text)
+                self.set_option(text)
                 return
         raise ValueError(f'Pen join style {value} not supported')

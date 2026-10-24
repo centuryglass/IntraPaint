@@ -28,7 +28,8 @@ check against: Simplified Chinese, Japanese and Korean. Spanish, German, French 
 
 ### 1. English glossary (once, for all languages)
 
-Before any per-language work, extract the terms the UI depends on into one English glossary. For each term, record:
+Before any per-language work, extract the terms the UI depends on into one English glossary,
+[`doc/translation/glossary.md`](translation/glossary.md). For each term, record:
 
 - a short definition, in IntraPaint's sense of the word;
 - where it appears (panel, menu, setting) and one example string;
@@ -67,8 +68,7 @@ A short style section follows the table: formality (for example, polite or plain
 capitalization and punctuation conventions. An "open questions" list closes the file, as the first thing a future
 native-speaking reviewer should check.
 
-Per-language glossaries live beside this document as `doc/translation/<language code>.md` (location to be confirmed
-by the pilot).
+Per-language glossaries live beside the English glossary as `doc/translation/<language code>.md`.
 
 ### 3. Glossary review
 

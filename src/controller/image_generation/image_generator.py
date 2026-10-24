@@ -3,23 +3,21 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Optional, Any
 
-from PIL import Image
 from PySide6.QtCore import QPoint, QRect, QSize, Signal, QTimer, QObject, SignalInstance
 from PySide6.QtGui import QImage, QPainter
 from PySide6.QtWidgets import QApplication, QWidget
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
-from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
+from src.util.application_state import AppStateTracker, APP_STATE_LOADING
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import MenuBuilder
 from src.util.shared_constants import EDIT_MODE_INPAINT, PIL_SCALING_MODES
-from src.util.visual.pil_image_utils import pil_image_to_qimage, pil_image_scaling
+from src.util.visual.pil_image_utils import pil_image_scaling
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = 'controller.image_generation.image_generator'
@@ -243,31 +241,6 @@ class ImageGenerator(MenuBuilder, ABC):
         Generators whose backend blends results through a blurred mask override this to cover the blur's reach.
         """
         return self._image_stack.selection_layer.mask_image
-
-    def select_and_apply_sample(self, sample_image: Image.Image | QImage) -> None:
-        """Apply an AI-generated image change to the edited image.
-
-        Parameters
-        ----------
-        sample_image : PIL Image
-            Data to be inserted into the edited image generation area bounds.
-        """
-        if sample_image is not None:
-            if isinstance(sample_image, Image.Image):
-                image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-            else:
-                image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-            if Cache().get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT:
-                inpaint_mask = self.get_paste_mask()
-                painter = QPainter(image)
-                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-                painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)
-                painter.end()
-            layer = self._image_stack.active_layer
-            self._image_stack.set_generation_area_content(image, layer)
-            if AppConfig().get(AppConfig.CLEAR_CONTEXT_PINS_AFTER_GENERATING):
-                self._image_stack.selection_layer.clear_context_pins()
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
 
     def _load_generated_image_for_selection(self, index: int) -> None:
         assert len(self._generated_images) > index

@@ -20,7 +20,7 @@ from PySide6.QtWidgets import QAbstractButton, QApplication, QGridLayout, QSizeP
 
 from src.ui.input_fields.number_field import FIELD_HEIGHT, NumberField
 from src.ui.ink_style import ink_colors
-from src.util.shared_constants import FLOAT_MAX, FLOAT_MIN, MIN_NONZERO
+from src.util.shared_constants import FLOAT_MAX, FLOAT_MIN
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.input_fields.geometry_block'
@@ -173,6 +173,7 @@ class GeometryBlock(QWidget):
 
     valueChanged = Signal(str, object)
     ratioLockToggled = Signal(bool)
+    temporaryLockToggled = Signal(bool)
 
     def __init__(self, show_scale: bool = False, show_angle: bool = False, integer: bool = True,
                  parent: Optional[QWidget] = None) -> None:
@@ -193,7 +194,8 @@ class GeometryBlock(QWidget):
         self._grid.setContentsMargins(0, 0, 0, 0)
         self._grid.setSpacing(GRID_SPACING)
         pixel_step = 1 if integer else FLOAT_PIXEL_STEP
-        pixel_min = 1 if integer else MIN_NONZERO
+        # Fields snap to a step grid that starts at their minimum, so a fractional minimum is one step:
+        pixel_min = 1 if integer else FLOAT_PIXEL_STEP
         pixel_limit = None if integer else FLOAT_MIN
         limit_max = None if integer else FLOAT_MAX
         zero: int | float = 0 if integer else 0.0
@@ -310,13 +312,15 @@ class GeometryBlock(QWidget):
         return self._temporary_lock
 
     def set_temporary_lock(self, held: bool) -> None:
-        """Locks the ratio while a modifier is held, without changing the stored setting."""
+        """Locks the ratio while a modifier is held, without changing the stored setting. Emits
+        `temporaryLockToggled` if it changed."""
         if held == self._temporary_lock:
             return
         self._temporary_lock = held
         if self.effective_ratio_locked():
             self._capture_ratios()
         self._lock.set_temporary(held and not self._lock.isChecked())
+        self.temporaryLockToggled.emit(held)
 
     def effective_ratio_locked(self) -> bool:
         """Returns whether edits currently keep the ratio, from either the stored setting or a held modifier."""
