@@ -96,7 +96,8 @@ class ImageViewer(ImageGraphicsView):
         self._context_pin_items: list[ContextPinItem] = []
         self._context_pin_marker_size = DEFAULT_MARKER_SIZE
         selection_layer.context_pins_changed.connect(self._context_pins_change_slot)
-        Cache().connect(self, Cache.INPAINT_FULL_RES, self._selection_content_change_slot)
+        for full_res_key in (Cache.INPAINT_FULL_RES, Cache.WEBUI_TILING, Cache.WEBUI_TILING_AVAILABLE):
+            Cache().connect(self, full_res_key, self._selection_content_change_slot)
         Cache().connect(self, Cache.INPAINT_FULL_RES_PADDING, self._selection_content_change_slot)
 
         # pixel outline
@@ -233,7 +234,7 @@ class ImageViewer(ImageGraphicsView):
         self._generation_area_outline.outlined_region = generation_area
         self._generation_area_border.windowed_area = generation_area.toAlignedRect()
         self._generation_area_selection_outline.setVisible(
-            image_loaded and Cache().get(Cache.INPAINT_OPTIONS_AVAILABLE) and Cache().get(Cache.INPAINT_FULL_RES)
+            image_loaded and Cache().get(Cache.INPAINT_OPTIONS_AVAILABLE) and Cache().inpaint_full_res_in_effect()
             and self._generation_area_outline.isVisible())
         self._active_layer_outline.setVisible(True)
         self._active_layer_outline.outlined_region = QRectF(self._image_stack.active_layer.bounds)

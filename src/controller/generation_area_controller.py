@@ -52,7 +52,7 @@ def apply_generation_area_frame(image_stack: ImageStack, size: QSize) -> None:
     position = None
     if mode != FOLLOW_SELECTION_OFF:
         cache = Cache()
-        padding = cache.get(Cache.INPAINT_FULL_RES_PADDING) if cache.get(Cache.INPAINT_FULL_RES) else 0
+        padding = cache.get(Cache.INPAINT_FULL_RES_PADDING) if cache.inpaint_full_res_in_effect() else 0
         selection_layer = image_stack.selection_layer
         target = follow_selection_target(selection_layer.get_selection_bounds(), selection_layer.context_pins,
                                          padding)
@@ -125,7 +125,7 @@ class GenerationAreaController(QObject):
         if (skipped_for_history or mode == FOLLOW_SELECTION_OFF or not self.generation_area_visible
                 or cache.get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT):
             return
-        padding = cache.get(Cache.INPAINT_FULL_RES_PADDING) if cache.get(Cache.INPAINT_FULL_RES) else 0
+        padding = cache.get(Cache.INPAINT_FULL_RES_PADDING) if cache.inpaint_full_res_in_effect() else 0
         target = follow_selection_target(*selection_state, padding)
         if target is None:
             return

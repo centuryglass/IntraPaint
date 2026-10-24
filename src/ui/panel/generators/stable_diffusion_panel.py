@@ -73,6 +73,10 @@ LABEL_STEPS = _tr('Steps')
 LABEL_NEGATIVE_PROMPT = _tr('Negative prompt')
 LABEL_LAST_SEED = _tr('Last seed')
 PADDING_OFF = _tr('off', 'Inpaint padding while full resolution is off')
+TOOLTIP_FULL_RES_TILING = _tr('Inpainting ignores full resolution while tiling is on.')
+BUTTON_TEXT_TILING_ON = _tr('Tiling on')
+BUTTON_TOOLTIP_TILING_ON = _tr('Generated images tile, and inpainting ignores full resolution. Click to turn tiling '
+                               'off.')
 
 BUTTON_TEXT_LORA = _tr('LoRA')
 BUTTON_TOOLTIP_LORA = _tr('Choose LoRA models to add to the prompt')
@@ -184,13 +188,15 @@ class ToggledSliderField(SliderField):
 
     The toggle is the field's pen pressure link (`set_pressure_link_enabled`, `pressureLinkToggled`), drawn with a
     full-frame glyph. While it is off, the field reads `off_text` in dim text with no fill, and ignores dragging, typing
-    and stepping. It passes wheel events on, so the wheel scrolls the panel.
+    and stepping. It passes wheel events on, so the wheel scrolls the panel. While locked (`set_toggle_locked`),
+    clicks and Space leave the toggle as it is.
     """
 
     def __init__(self, label: str, value: int | float, minimum: int | float, maximum: int | float,
                  parent: Optional[QWidget] = None, off_text: str = '', **kwargs) -> None:
         # The superclass constructor reads `value_text`:
         self._off_text = off_text
+        self._toggle_locked = False
         super().__init__(label, value, minimum, maximum, parent=parent, **kwargs)
         self.set_pressure_link_available(True)
         self.pressureLinkToggled.connect(self._toggled)
@@ -198,6 +204,14 @@ class ToggledSliderField(SliderField):
     def is_off(self) -> bool:
         """Returns whether the toggle is off, so the value doesn't apply."""
         return not self.pressure_link_enabled()
+
+    def set_toggle_locked(self, locked: bool) -> None:
+        """Locks or unlocks the toggle against clicks and Space. `set_pressure_link_enabled` still changes it."""
+        self._toggle_locked = locked
+
+    def toggle_locked(self) -> bool:
+        """Returns whether clicks and Space leave the toggle as it is."""
+        return self._toggle_locked
 
     def _toggled(self, _enabled: bool) -> None:
         self._update_accessible_description()
@@ -232,7 +246,10 @@ class ToggledSliderField(SliderField):
         return glyph
 
     def mousePressEvent(self, event) -> None:  # pylint: disable=invalid-name
-        """Toggles on a press on the link. While off, ignores other presses."""
+        """Toggles on a press on the link, unless locked. While off, ignores other presses."""
+        if self._toggle_locked and self._pressure_link_rect().contains(event.position().toPoint()):
+            event.accept()
+            return
         if self.is_off() and not self._pressure_link_rect().contains(event.position().toPoint()):
             event.ignore()
             return
@@ -246,7 +263,11 @@ class ToggledSliderField(SliderField):
         super().wheelEvent(event)
 
     def keyPressEvent(self, event) -> None:  # pylint: disable=invalid-name
-        """Handles keys as `NumberField` does, except that while off only Space, which toggles, does anything."""
+        """Handles keys as `NumberField` does, except that while off only Space, which toggles, does anything. While
+        locked, Space does nothing."""
+        if self._toggle_locked and event.key() == Qt.Key.Key_Space:
+            event.accept()
+            return
         if self.is_off() and event.key() != Qt.Key.Key_Space:
             QWidget.keyPressEvent(self, event)
             return
@@ -610,16 +631,24 @@ class StableDiffusionPanel(DockPanel):
                                             off_text=PADDING_OFF)
         assert isinstance(padding_field, ToggledSliderField)
         self._padding_field = padding_field
-        padding_field.set_pressure_link_tooltip(cache.get_tooltip(Cache.INPAINT_FULL_RES))
-        padding_field.set_pressure_link_enabled(bool(cache.get(Cache.INPAINT_FULL_RES)))
 
         def _full_res_toggled(enabled: bool) -> None:
-            if cache.get(Cache.INPAINT_FULL_RES) != enabled:
+            if not padding_field.toggle_locked() and cache.get(Cache.INPAINT_FULL_RES) != enabled:
                 cache.set(Cache.INPAINT_FULL_RES, enabled)
 
         padding_field.pressureLinkToggled.connect(_full_res_toggled)
-        cache.connect(padding_field, Cache.INPAINT_FULL_RES,
-                      lambda enabled, *_: padding_field.set_pressure_link_enabled(bool(enabled)))
+
+        # Tiling shows full resolution as off and locks its toggle, leaving the saved value for when tiling ends:
+        def _sync_full_res_toggle(*_) -> None:
+            tiling = cache.tiling_in_effect()
+            padding_field.set_toggle_locked(tiling)
+            padding_field.set_pressure_link_tooltip(TOOLTIP_FULL_RES_TILING if tiling
+                                                    else cache.get_tooltip(Cache.INPAINT_FULL_RES))
+            padding_field.set_pressure_link_enabled(cache.inpaint_full_res_in_effect())
+
+        for full_res_key in (Cache.INPAINT_FULL_RES, Cache.WEBUI_TILING, Cache.WEBUI_TILING_AVAILABLE):
+            cache.connect(padding_field, full_res_key, _sync_full_res_toggle)
+        _sync_full_res_toggle()
         self._action_pair = FieldPair(self._batch_size_field, padding_field)
         # Batch size sits at the left edge, under denoising strength, while padding is hidden:
         for field in (self._batch_size_field, padding_field):
@@ -631,6 +660,14 @@ class StableDiffusionPanel(DockPanel):
         self._mode_note.setWordWrap(True)
         self._note_fits = True
         self.add_fit_item(FitItem(NOTE_PRIORITY), self._apply_note_form)
+        # Tiling carries over between sessions, so the action block shows it while it is on:
+        self._tiling_button = QPushButton(BUTTON_TEXT_TILING_ON)
+        self._tiling_button.setToolTip(BUTTON_TOOLTIP_TILING_ON)
+        self._tiling_button.setFlat(True)
+        self._tiling_button.clicked.connect(lambda: Cache().set(Cache.WEBUI_TILING, False))
+        for tiling_key in (Cache.WEBUI_TILING, Cache.WEBUI_TILING_AVAILABLE):
+            cache.connect(self._tiling_button, tiling_key, self._update_tiling_button)
+        self._tiling_button.setVisible(self._webui and cache.tiling_in_effect())
         self._generate_button = QPushButton(BUTTON_TEXT_GENERATE)
         self._generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
         set_primary_button(self._generate_button)
@@ -645,6 +682,7 @@ class StableDiffusionPanel(DockPanel):
         # height collects above the footer:
         self._action_spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         block_layout.addItem(self._action_spacer)
+        block_layout.addWidget(self._tiling_button)
         block_layout.addWidget(self._mode_note)
         block_layout.addWidget(self._generate_button)
         # The footer holds the action block in a side panel, and hides while a strip shows it in the trailing column:
@@ -657,6 +695,10 @@ class StableDiffusionPanel(DockPanel):
 
     def _apply_pair_form(self, form: Optional[int]) -> None:
         self._action_pair.set_stacked(form == PAIR_FORM_STACKED)
+
+    def _update_tiling_button(self, *_) -> None:
+        self._tiling_button.setVisible(self._webui and Cache().tiling_in_effect())
+        self.refit()
 
     def _apply_note_form(self, form: Optional[int]) -> None:
         self._note_fits = form is not None
@@ -749,17 +791,24 @@ class StableDiffusionPanel(DockPanel):
         self.refit()
 
     def _apply_caution(self, caution: bool) -> None:
-        """Draws the edit mode selector and the mode note in the caution color, or restores their usual colors."""
+        """Draws the edit mode selector and the mode note in the caution color, or restores their usual colors. The
+        tiling button always takes the caution color."""
         color = caution_color()
         combo_palette = QPalette()
         note_palette = QPalette()
-        if color is not None and caution:
+        tiling_palette = QPalette()
+        if color is not None:
             for role in (QPalette.ColorRole.Text, QPalette.ColorRole.ButtonText, QPalette.ColorRole.Shadow):
-                combo_palette.setColor(QPalette.ColorGroup.Active, role, color)
-                combo_palette.setColor(QPalette.ColorGroup.Inactive, role, color)
-            note_palette.setColor(QPalette.ColorRole.WindowText, color)
+                tiling_palette.setColor(QPalette.ColorGroup.Active, role, color)
+                tiling_palette.setColor(QPalette.ColorGroup.Inactive, role, color)
+                if caution:
+                    combo_palette.setColor(QPalette.ColorGroup.Active, role, color)
+                    combo_palette.setColor(QPalette.ColorGroup.Inactive, role, color)
+            if caution:
+                note_palette.setColor(QPalette.ColorRole.WindowText, color)
         self._edit_mode_combobox.setPalette(combo_palette)
         self._mode_note.setPalette(note_palette)
+        self._tiling_button.setPalette(tiling_palette)
 
     def changeEvent(self, event: QEvent) -> None:  # pylint: disable=invalid-name
         """Takes the caution color from the new style when the style changes."""
@@ -859,6 +908,11 @@ class StableDiffusionPanel(DockPanel):
     def model_combobox(self) -> QWidget:
         """The Stable Diffusion model selector."""
         return self._model_combobox
+
+    @property
+    def tiling_button(self) -> QPushButton:
+        """The button above Generate that shows while tiling is on, and turns it off."""
+        return self._tiling_button
 
     @property
     def mode_note(self) -> QLabel:

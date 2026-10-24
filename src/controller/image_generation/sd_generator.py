@@ -410,7 +410,7 @@ class SDGenerator(ImageGenerator, ABC):
             image_size = cache.get(Cache.GENERATION_SIZE)
         else:
             image_size = gen_area.size()
-        if edit_mode != EDIT_MODE_INPAINT or not cache.get(Cache.INPAINT_FULL_RES):
+        if edit_mode != EDIT_MODE_INPAINT or not cache.inpaint_full_res_in_effect():
             return QRect(QPoint(), image_size)
 
         selection_layer = self._image_stack.selection_layer
@@ -469,7 +469,7 @@ class SDGenerator(ImageGenerator, ABC):
     def _context_pins_change_inpaint_crop(self) -> bool:
         """Returns whether context pins change the inpaint full-res crop of the current inpainting settings."""
         cache = Cache()
-        if cache.get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT or not cache.get(Cache.INPAINT_FULL_RES):
+        if cache.get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT or not cache.inpaint_full_res_in_effect():
             return False
         selection_layer = self._image_stack.selection_layer
         return selection_layer.get_selection_gen_area() \

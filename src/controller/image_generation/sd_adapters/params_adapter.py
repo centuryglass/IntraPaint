@@ -149,7 +149,7 @@ def build_webui_body(edit_mode: str, source_image: Optional[QImage] = None,
         body.include_init_images = False
     if edit_mode == EDIT_MODE_INPAINT:
         body.inpainting_mask_invert = 0
-        body.inpaint_full_res = cache.get(Cache.INPAINT_FULL_RES)
+        body.inpaint_full_res = cache.inpaint_full_res_in_effect()
         body.inpaint_full_res_padding = cache.get(Cache.INPAINT_FULL_RES_PADDING)
         body.inpainting_fill = InpaintFillOption(cache.get_option_index(Cache.MASKED_CONTENT))
     else:

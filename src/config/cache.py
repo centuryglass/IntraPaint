@@ -84,6 +84,19 @@ class Cache(Config, metaclass=Singleton):
         except (ValueError, TypeError):
             return False
 
+    def tiling_in_effect(self) -> bool:
+        """Returns whether generated images tile: the WebUI generator is connected and its tiling option is on."""
+        return bool(self.get(Cache.WEBUI_TILING_AVAILABLE) and self.get(Cache.WEBUI_TILING))
+
+    def inpaint_full_res_in_effect(self) -> bool:
+        """Returns whether inpainting crops the generation area to the masked region. Read this, not
+        `Cache.INPAINT_FULL_RES` alone, wherever the crop is drawn or applied.
+
+        Tiling turns the crop off and leaves `Cache.INPAINT_FULL_RES` as the user set it. A crop's edges wrap only to
+        each other, so a tiling crop never tiles with the image around it.
+        """
+        return bool(self.get(Cache.INPAINT_FULL_RES)) and not self.tiling_in_effect()
+
     def _check_bounds(self) -> None:
         to_clear = []
         to_update = []
@@ -246,3 +259,4 @@ class Cache(Config, metaclass=Singleton):
     WEBUI_SUBSEED: str
     WEBUI_SUBSEED_STRENGTH: str
     WEBUI_TILING: str
+    WEBUI_TILING_AVAILABLE: str

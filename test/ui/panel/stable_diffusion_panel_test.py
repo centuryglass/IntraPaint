@@ -1,7 +1,7 @@
 """Tests the Stable Diffusion generation panel: its sections, the action block, edit mode handling, bindings to config
 values, prompt tools, More menu, Advanced section and where each control sits in both orientations."""
-from PySide6.QtCore import QPoint, QPointF, QSize, Qt
-from PySide6.QtGui import QPalette, QWheelEvent
+from PySide6.QtCore import QEvent, QPoint, QPointF, QSize, Qt
+from PySide6.QtGui import QKeyEvent, QPalette, QWheelEvent
 from PySide6.QtWidgets import QApplication, QBoxLayout, QPushButton, QScrollArea, QWidget
 
 from src.config.application_config import AppConfig
@@ -150,6 +150,51 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         cache.set(Cache.INPAINT_FULL_RES, True)
         self.assertFalse(padding.is_off())
         self.assertNotEqual(padding.value_text(), PADDING_OFF)
+
+    def test_tiling_locks_full_resolution_off_and_keeps_the_setting(self) -> None:
+        """While tiling is on, the padding field reads off and its toggle ignores clicks and Space. Full resolution
+        stays set, so it comes back when tiling ends."""
+        cache = Cache()
+        padding = self.panel.padding_field
+        cache.set(Cache.INPAINT_FULL_RES, True)
+        cache.set(Cache.WEBUI_TILING_AVAILABLE, True)
+        cache.set(Cache.WEBUI_TILING, True)
+        self.assertTrue(padding.is_off())
+        self.assertTrue(padding.toggle_locked())
+        self.assertTrue(cache.get(Cache.INPAINT_FULL_RES))
+        space = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Space, Qt.KeyboardModifier.NoModifier, ' ')
+        QApplication.sendEvent(padding, space)
+        self.assertTrue(padding.is_off())
+        self.assertTrue(cache.get(Cache.INPAINT_FULL_RES))
+        cache.set(Cache.WEBUI_TILING, False)
+        self.assertFalse(padding.is_off())
+        self.assertFalse(padding.toggle_locked())
+
+    def test_tiling_button_shows_while_tiling_and_turns_it_off(self) -> None:
+        """The action block's tiling button shows in the caution color while tiling is on, and clicking it turns
+        tiling off."""
+        cache = Cache()
+        button = self.panel.tiling_button
+        self.assertTrue(self.panel.action_block.isAncestorOf(button))
+        self.assertFalse(self._visible(button))
+        cache.set(Cache.WEBUI_TILING, True)
+        self.assertFalse(self._visible(button), 'Tiling only applies while the WebUI is connected')
+        cache.set(Cache.WEBUI_TILING_AVAILABLE, True)
+        self.assertTrue(self._visible(button))
+        color = caution_color()
+        if color is not None:
+            self.assertEqual(button.palette().color(QPalette.ColorGroup.Active, QPalette.ColorRole.ButtonText), color)
+        button.click()
+        self.assertFalse(cache.get(Cache.WEBUI_TILING))
+        self.assertFalse(self._visible(button))
+
+    def test_comfyui_panel_never_shows_the_tiling_button(self) -> None:
+        """ComfyUI has no tiling option, so its panel hides the button whatever the WebUI's setting is."""
+        cache = Cache()
+        cache.set(Cache.WEBUI_TILING_AVAILABLE, True)
+        cache.set(Cache.WEBUI_TILING, True)
+        panel = StableDiffusionPanel(False)
+        self.assertFalse(self._visible(panel.tiling_button))
 
     def test_moved_controls_are_reachable_in_their_new_places(self) -> None:
         """Model is in the Prompt section, Interrogate in the More menu, and full resolution in the padding field."""

@@ -462,25 +462,25 @@ class SelectionLayer(ImageLayer):
     def get_selection_gen_area(self, ignore_config: bool = False, include_context_pins: bool = True) -> Optional[QRect]:
         """Returns the smallest QRect within the generation area containing all masked areas and pins, plus padding.
 
-        Used for showing the actual area visible to the image model when the Config.INPAINT_FULL_RES config option is
-        set to true. The padding amount is set by the Config.INPAINT_FULL_RES_PADDING config option, measured in
-        pixels. Context pins only count while some of the generation area is selected, and pins outside the generation
-        area stretch the bounds to its edge. The returned rectangle uses image coordinates.
+        Used for showing the actual area visible to the image model while `Cache.inpaint_full_res_in_effect` is true.
+        The padding amount is set by the Config.INPAINT_FULL_RES_PADDING config option, measured in pixels. Context
+        pins only count while some of the generation area is selected, and pins outside the generation area stretch the
+        bounds to its edge. The returned rectangle uses image coordinates.
 
         Parameters
         ----------
         ignore_config : bool
-            If true, return the masked area bounds even when Config.INPAINT_FULL_RES is disabled in config.
+            If true, return the masked area bounds even when `Cache.inpaint_full_res_in_effect` is false.
         include_context_pins : bool
             If false, return the bounds the selection would have without any context pins.
         Returns
         -------
         QRect or None
            Rectangle containing all non-transparent selected content plus padding, or None if the selection is empty
-           or config.get(Config.INPAINT_FULL_RES) is false and ignore_config is false.
+           or `Cache.inpaint_full_res_in_effect` is false and ignore_config is false.
         """
         cache = Cache()
-        if (not ignore_config and not cache.get(Cache.INPAINT_FULL_RES)) or self._bounding_box is None:
+        if (not ignore_config and not cache.inpaint_full_res_in_effect()) or self._bounding_box is None:
             return None
         padding = cache.get(Cache.INPAINT_FULL_RES_PADDING)
         pad_x, pad_y = padding, padding
