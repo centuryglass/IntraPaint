@@ -270,7 +270,7 @@ valid for the version it was generated with.
   and directs gets the answer first, and the work proceeds only if the answer leaves the plan unchanged.
 - **Open a PR against `integration` once work is complete and checked, without waiting to be asked.** This overrides
   a coding agent's default of only opening a PR on explicit request. Run `pytest` and `scripts/pylint_check.py`
-  first. Agents may also commit and push to their working branch and create issues without asking.
+  first. A PR that changes only Markdown files skips both. Agents may also commit and push to their working branch and create issues without asking.
 - **PR titles use [Conventional Commits](https://www.conventionalcommits.org/) format:** `type: summary`, with a type
   such as `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `build`, `ci` or `chore`, and an optional scope
   (`fix(layers): ...`). Mark a breaking change with `!` (`feat!: ...`). PRs into `integration` are squash-merged, so
