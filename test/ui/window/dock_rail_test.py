@@ -29,7 +29,7 @@ class DockRailTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        screen_patch = patch('src.ui.window.main_window.get_screen_size', return_value=LARGE_SCREEN)
+        screen_patch = patch('src.ui.window.main_window.get_screen_size', new=lambda *_: LARGE_SCREEN)
         screen_patch.start()
         self.addCleanup(screen_patch.stop)
         size = QSize(64, 64)

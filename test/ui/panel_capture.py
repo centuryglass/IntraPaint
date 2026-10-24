@@ -584,7 +584,7 @@ _LARGE_SCREEN = QSize(8192, 8192)
 
 
 def _large_screen() -> AbstractContextManager:
-    return patch('src.ui.window.main_window.get_screen_size', return_value=_LARGE_SCREEN)
+    return patch('src.ui.window.main_window.get_screen_size', new=lambda *_: _LARGE_SCREEN)
 
 
 @dataclass(frozen=True)

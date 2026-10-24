@@ -24,7 +24,7 @@ class DockMenuTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        screen_patch = patch('src.ui.window.main_window.get_screen_size', return_value=QSize(4000, 3000))
+        screen_patch = patch('src.ui.window.main_window.get_screen_size', new=lambda *_: QSize(4000, 3000))
         screen_patch.start()
         self.addCleanup(screen_patch.stop)
         test_size = QSize(64, 64)
