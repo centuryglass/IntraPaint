@@ -43,7 +43,7 @@ from PySide6.QtWidgets import (QApplication, QBoxLayout, QFrame, QHBoxLayout, QL
                                QVBoxLayout, QWidget)
 
 from src.ui.layout.panel_fit import (REQUIRED, STRIP_SECTION_MAX_WIDTH, STRIP_SECTION_MIN_WIDTH, FitItem, FitPlanner,
-                                     Orientation, Placement, fresh_minimum_size, scroll_extent)
+                                     Orientation, Placement, fresh_minimum_size, held_weakly, scroll_extent)
 from src.ui.widget.panel_header import PanelHeader, PanelPopover
 from src.ui.widget.panel_section import PanelSection
 
@@ -108,8 +108,8 @@ class DockSection:
             decorative: bool = False) -> None:
         """Adds a control. `forms` are callbacks that put it in each of its forms, largest first.
 
-        The section holds `forms` strongly, and its panel owns the section. A form that holds the panel, such as a
-        lambda capturing it or one of its bound methods, makes a reference cycle (see `FitPlanner`).
+        The section holds bound-method forms weakly, since its panel owns the section. A lambda that captures the panel
+        still makes a reference cycle (see `FitPlanner`).
 
         Raises ValueError for a negative priority, or for a required control marked decorative.
         """
@@ -117,7 +117,7 @@ class DockSection:
             raise ValueError(f'Invalid priority {priority}')
         if decorative and priority == REQUIRED:
             raise ValueError('A required control is always shown, so it cannot be decorative')
-        self._controls.append(_Control(widget, priority, tuple(forms), decorative))
+        self._controls.append(_Control(widget, priority, tuple(held_weakly(form) for form in forms), decorative))
         self._layout.addWidget(widget)
 
     def place(self, overflow_layout: QBoxLayout) -> list[QWidget]:
@@ -385,9 +385,10 @@ class DockPanel(QWidget):
         """Adds an item for planning beside the sections' controls. `apply` puts it in a form by index, or with None
         leaves an optional item out.
 
-        Items added here fill after the header and before section controls of the same priority, in the order added.
+        Items added here fill after the header and before section controls of the same priority, in the order added. A
+        bound-method `apply` is held weakly (see `DockSection.add`).
         """
-        self._extra_items.append((item, apply))
+        self._extra_items.append((item, held_weakly(apply)))
         self._planner = None
 
     def set_host_facts(self, size: QSize) -> None:

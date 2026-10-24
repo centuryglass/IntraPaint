@@ -20,6 +20,7 @@ from PySide6.QtCore import QEvent, QRect, QSize, Qt, Signal
 from PySide6.QtGui import QFont, QFontMetrics, QKeyEvent, QPainter, QPainterPath, QPaintEvent, QPalette, QPen
 from PySide6.QtWidgets import QAbstractButton, QHBoxLayout, QSizePolicy, QVBoxLayout, QWidget
 
+from src.ui.layout.panel_fit import held_weakly
 from src.ui.widget.keycap_badge import KeycapBadge
 
 HEADER_HEIGHT = 26
@@ -281,9 +282,10 @@ class PanelSection(QWidget):
     def bind_summary(self, summary_fn: Callable[[], str], *change_signals) -> None:
         """Sets the summary from `summary_fn()` now, and again whenever any of the signals is emitted.
 
-        The signals are the controls' value-changed signals, and are emitted on the main thread.
+        The signals are the controls' value-changed signals, and are emitted on the main thread. A bound method is held
+        weakly, since the section's panel usually owns it.
         """
-        self._summary_fn = summary_fn
+        self._summary_fn = held_weakly(summary_fn)
         for signal in change_signals:
             signal.connect(self._refresh_summary)
         self._refresh_summary()

@@ -28,6 +28,7 @@ as much as fits there. Thresholds live in this module, so DPI normalization (iss
 """
 import inspect
 from dataclasses import dataclass
+from functools import partial
 from enum import Enum
 from typing import Callable, Optional, Protocol, Sequence, TypeVar, runtime_checkable
 from weakref import WeakMethod
@@ -298,16 +299,23 @@ def fresh_minimum_size(root: QWidget) -> QSize:
 _Result = TypeVar('_Result')
 
 
-def _held_weakly(callback: Callable[..., _Result]) -> Callable[..., _Result]:
-    """Returns a bound method as a callable that holds its object weakly, and any other callable unchanged."""
-    if not inspect.ismethod(callback):
-        return callback
-    method_ref = WeakMethod(callback)
+def held_weakly(callback: Callable[..., _Result]) -> Callable[..., _Result]:
+    """Returns a bound method, or a `partial` of one, as a callable that holds its object weakly. Any other callable
+    is returned unchanged.
 
-    def _call(*args):
-        method = method_ref()
-        assert method is not None, 'A FitPlanner outlived the object its callbacks belong to'
-        return method(*args)
+    The callable asserts if called after the method's object is gone. Owners of such callbacks, such as `FitPlanner`,
+    `DockSection` and `PanelSection`, are normally owned by that object.
+    """
+    method = callback.func if isinstance(callback, partial) else callback
+    if not inspect.ismethod(method):
+        return callback
+    bound_args, bound_keywords = (callback.args, callback.keywords) if isinstance(callback, partial) else ((), {})
+    method_ref = WeakMethod(method)
+
+    def _call(*args, **keywords):
+        live_method = method_ref()
+        assert live_method is not None, 'A weakly held callback outlived the object it belongs to'
+        return live_method(*bound_args, *args, **{**bound_keywords, **keywords})
     return _call
 
 
@@ -331,10 +339,10 @@ class FitPlanner:
                  measure: Callable[[], QSize], prepare: Optional[Callable[[Orientation], None]] = None,
                  finish: Optional[Callable[[Orientation], None]] = None) -> None:
         self._items = tuple(items)
-        self._apply = _held_weakly(apply)
-        self._measure = _held_weakly(measure)
-        self._prepare = None if prepare is None else _held_weakly(prepare)
-        self._finish = None if finish is None else _held_weakly(finish)
+        self._apply = held_weakly(apply)
+        self._measure = held_weakly(measure)
+        self._prepare = None if prepare is None else held_weakly(prepare)
+        self._finish = None if finish is None else held_weakly(finish)
         self._placement: Optional[Placement] = None
         self._orientation: Optional[Orientation] = None
         # The orientation the latest update asked for, or None when planning picked it:
