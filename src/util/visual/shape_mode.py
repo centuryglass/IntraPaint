@@ -42,22 +42,16 @@ class ShapeMode(Enum):
 
     @staticmethod
     def is_valid_mode_str(mode_str: str) -> bool:
-        """Return whether a string is a valid ShapeMode label."""
-        return mode_str in (SHAPE_MODE_STAR_LABEL, SHAPE_MODE_RECTANGLE_LABEL, SHAPE_MODE_POLYGON_LABEL,
-                            SHAPE_MODE_STAR_LABEL)
+        """Return whether a string is the untranslated name (`ShapeMode.name`) of a ShapeMode."""
+        return mode_str in ShapeMode.__members__
 
     @staticmethod
-    def from_text(display_text: str) -> 'ShapeMode':
-        """Gets the appropriate mode for a given mode name."""
-        mode_names = {
-            SHAPE_MODE_ELLIPSE_LABEL: ShapeMode.ELLIPSE,
-            SHAPE_MODE_RECTANGLE_LABEL: ShapeMode.RECTANGLE,
-            SHAPE_MODE_POLYGON_LABEL: ShapeMode.POLYGON,
-            SHAPE_MODE_STAR_LABEL: ShapeMode.STAR
-        }
-        if display_text in mode_names:
-            return mode_names[display_text]
-        raise ValueError(f'Invalid mode name {display_text}')
+    def from_text(mode_name: str) -> 'ShapeMode':
+        """Gets the mode for an untranslated mode name, the form saved in `Cache`. Raises ValueError for any other
+        string, including translated display text."""
+        if ShapeMode.is_valid_mode_str(mode_name):
+            return ShapeMode[mode_name]
+        raise ValueError(f'Invalid mode name {mode_name}')
 
     def painter_path(self, bounds: QRect, radius: Optional[float], vertex_count: Optional[int] = None,
                      inner_radius: Optional[float] = None, angle_offset: float = 0.0) -> QPainterPath:

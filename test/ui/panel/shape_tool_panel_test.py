@@ -23,7 +23,7 @@ class ShapeToolPanelTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        Cache().set(Cache.SHAPE_TOOL_MODE, ShapeMode.ELLIPSE.display_text())
+        Cache().set(Cache.SHAPE_TOOL_MODE, ShapeMode.ELLIPSE.name)
         Cache().set(Cache.SHAPE_TOOL_LINE_STYLE, LINE_STYLE_SOLID)
         self.panel = ShapeToolPanel()
 
@@ -40,25 +40,25 @@ class ShapeToolPanelTest(IntraPaintTestCase):
             self.assertNotEqual(validator.validate(text, len(text))[0], QValidator.State.Acceptable, text)
 
     def test_shape_type_shows_only_its_rows(self) -> None:
-        """Vertices shows for polygons and stars, and Inner radius for stars only. The stored value is the label the
-        shape tool reads."""
+        """Vertices shows for polygons and stars, and Inner radius for stars only. The stored value is the untranslated
+        mode name the shape tool reads."""
         expected = {ShapeMode.ELLIPSE: (False, False), ShapeMode.RECTANGLE: (False, False),
                     ShapeMode.POLYGON: (True, False), ShapeMode.STAR: (True, True)}
         for mode, (vertices, inner_radius) in expected.items():
             self.panel.shape_control.set_value(mode.name)
-            self.assertEqual(Cache().get(Cache.SHAPE_TOOL_MODE), mode.display_text())
+            self.assertEqual(Cache().get(Cache.SHAPE_TOOL_MODE), mode.name)
             self.assertEqual(not self.panel.vertex_field.isHidden(), vertices, mode)
             self.assertEqual(not self.panel.inner_radius_field.isHidden(), inner_radius, mode)
 
     def test_cache_changes_update_controls(self) -> None:
         """Values set elsewhere, such as by reset, show in the shape type and join controls."""
-        Cache().set(Cache.SHAPE_TOOL_MODE, ShapeMode.STAR.display_text())
+        Cache().set(Cache.SHAPE_TOOL_MODE, ShapeMode.STAR.name)
         self.assertEqual(self.panel.shape_control.value(), ShapeMode.STAR.name)
         Cache().set(Cache.SHAPE_TOOL_LINE_JOIN_STYLE, JOIN_STYLE_MITER)
         self.assertEqual(self.panel.join_control.value(), 'MITER')
 
-    def test_join_stores_its_label(self) -> None:
-        """The join control stores the label the shape tool reads."""
+    def test_join_stores_its_option_name(self) -> None:
+        """The join control stores the untranslated option name the shape tool reads."""
         self.panel.join_control.set_value('BEVEL')
         self.assertEqual(Cache().get(Cache.SHAPE_TOOL_LINE_JOIN_STYLE), JOIN_STYLE_BEVEL)
 

@@ -49,7 +49,7 @@ class ShapeSelectionPanel(SelectionPanel):
                      else ICON_PATH_ELLIPSE) for mode in SHAPE_MODES], DisplayMode.ICON_AND_LABEL, parent=self)
         self._shape_control.set_value(ShapeMode.RECTANGLE.name)
         self._shape_control.valueChanged.connect(
-            lambda value: self.tool_mode_changed.emit(ShapeMode[value].display_text()))
+            lambda value: self.tool_mode_changed.emit(ShapeMode[value].name))
 
         fixed_ratio = Cache().get_control_widget(Cache.SHAPE_SELECTION_FIXED_ASPECT)
         if isinstance(fixed_ratio, QCheckBox):
