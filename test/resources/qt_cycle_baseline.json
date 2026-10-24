@@ -449,7 +449,5 @@
   "test/ui/window/rail_drag_test.py::RailDragTest::test_notch_shows_only_while_docked_and_above_the_content": 176,
   "test/ui/window/rail_drag_test.py::RailDragTest::test_short_notch_press_does_not_drag": 176,
   "test/ui/window/rail_drag_test.py::RailDragTest::test_short_press_is_a_click": 176,
-  "test/util/main_thread_test.py::MainThreadTest::test_async_task_requires_main_thread": 1,
-  "test/util/qtexcepthook_test.py::QtExceptHookTest::test_dialog_available_after_close": 2,
-  "test/util/qtexcepthook_test.py::QtExceptHookTest::test_nested_exception_does_not_reopen_dialog": 2
+  "test/util/main_thread_test.py::MainThreadTest::test_async_task_requires_main_thread": 1
 }
