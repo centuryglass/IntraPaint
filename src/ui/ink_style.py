@@ -14,17 +14,21 @@ With `rounded_popups`, menus and tooltips become translucent top-level windows, 
 hard offset shadow. A translucent window needs a compositing window system: on an X11 desktop with no compositor, Qt
 draws the transparent parts black, so the option can be turned off.
 """
+# pylint: disable=too-many-lines
+# One style class: every element it overrides has to go through its drawPrimitive/drawControl dispatch.
 import logging
 from dataclasses import dataclass, fields
 from typing import Optional
 
 from PySide6.QtCore import QPointF, QRect, QRectF, QSize, Qt
 from PySide6.QtGui import QBrush, QColor, QFont, QFontMetrics, QPainter, QPainterPath, QPalette, QPen, QPolygonF
-from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication, QCheckBox, QLabel, QMenu,
+from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication, QCheckBox, QLabel, QMainWindow, QMenu,
                                QPlainTextEdit, QProxyStyle, QPushButton, QSlider, QStyle, QStyleOption,
                                QStyleOptionButton, QStyleOptionComboBox, QStyleOptionMenuItem, QStyleOptionProgressBar,
-                               QStyleOptionSlider, QStyleOptionSpinBox, QStyleOptionTab, QStyleOptionViewItem,
-                               QTabBar, QTextEdit, QWidget)
+                               QStyleOptionSlider, QStyleOptionSpinBox, QStyleOptionTab, QStyleOptionToolBar,
+                               QStyleOptionViewItem, QTabBar, QTextEdit, QWidget)
+
+from src.ui.ink_dock_edges import draw_dock_separator, draw_rail_edge
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +98,7 @@ class InkColors:
     signal_pressed: QColor
     caution: QColor
     canvas_surround: QColor
+    panel_edge: QColor
 
     @staticmethod
     def from_theme_data(color_data: dict[str, str]) -> 'InkColors':
@@ -447,6 +452,10 @@ class InkStyle(QProxyStyle):
             _draw_box(painter, option.rect, None, option.palette.color(Role.Shadow), 0)
         elif element == Primitive.PE_PanelItemViewItem and isinstance(option, QStyleOptionViewItem):
             self._draw_item_view_row(painter, option)
+        elif element == Primitive.PE_IndicatorDockWidgetResizeHandle:
+            draw_dock_separator(painter, option, self._colors.panel_edge)
+        elif element == Primitive.PE_FrameDockWidget:
+            _draw_box(painter, option.rect, None, self._colors.panel_edge, 0)
         else:
             super().drawPrimitive(element, option, painter, widget)
 
@@ -611,6 +620,10 @@ class InkStyle(QProxyStyle):
                                                                   DIM_TEXT_WINDOW_FRACTION))
                 label_option.palette = palette
             super().drawControl(element, label_option, painter, widget)
+        elif element == Control.CE_ToolBar and isinstance(option, QStyleOptionToolBar) \
+                and widget is not None and isinstance(widget.parentWidget(), QMainWindow):
+            super().drawControl(element, option, painter, widget)
+            draw_rail_edge(painter, option, self._colors.panel_edge)
         elif element == Control.CE_MenuEmptyArea and self._rounded_popups:
             return
         elif element == Control.CE_MenuItem and isinstance(option, QStyleOptionMenuItem):
