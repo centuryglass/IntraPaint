@@ -214,9 +214,9 @@ class ImageGenerator(MenuBuilder, ABC):
             assert self._window is not None
             self._window.set_is_loading(False)
             self._generating = False
-            inpaint_task.error_signal.disconnect(handle_error)
-            inpaint_task.status_signal.disconnect(self._apply_status_update)
-            inpaint_task.finish_signal.disconnect(_finished)
+            # Disconnecting by slot would make this closure refer to itself, a cycle that holds the task:
+            for signal in (inpaint_task.error_signal, inpaint_task.status_signal, inpaint_task.finish_signal):
+                signal.disconnect()
             expected_count = Cache().get(Cache.BATCH_COUNT) * Cache().get(Cache.BATCH_SIZE)
             for idx, image in enumerate(self._generated_images):
                 if image.isNull() or idx >= expected_count:
