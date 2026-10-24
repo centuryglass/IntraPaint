@@ -8,6 +8,7 @@ from PySide6.QtGui import QColor, QImage
 from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
+from src.controller.image_generation.generation_session import GenerationSession
 from src.controller.image_generation.test_generator import TestGenerator
 from src.image.layers.image_stack import ImageStack
 from src.ui.generated_image_selector import GeneratedImageSelector, LABEL_TEXT_IMAGE_OPTION, ORIGINAL_CONTENT_LABEL
@@ -46,7 +47,7 @@ class GeneratedImageSelectorViewTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE)
-        self.selector = GeneratedImageSelector(self.image_stack, lambda: None)
+        self.selector = GeneratedImageSelector(self.image_stack, GenerationSession(self.image_stack), lambda: None)
         self.selector.resize(400, 300)
         self.selector._zoom_to_option(0, True)
 
@@ -101,7 +102,7 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
         cache.set(Cache.EDIT_SIZE, IMAGE_SIZE)
         self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE)
         self.image_stack.load_image(_solid(QColor(200, 10, 10)))
-        self.selector = GeneratedImageSelector(self.image_stack, lambda: None)
+        self.selector = GeneratedImageSelector(self.image_stack, GenerationSession(self.image_stack), lambda: None)
         self.selector.resize(400, 300)
 
     def _fill_batch(self) -> None:
@@ -120,37 +121,37 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
         self.image_stack.flush_render()
         current = self.image_stack.qimage_generation_area_content()
         self.selector.start_new_options()
-        self.assertEqual(self.selector._option_data.option_images[0], current)
+        self.assertEqual(self.selector._session.current.option_images[0], current)
         self.assertEqual(len(self.selector._option_items), OPTION_COUNT + 1)
-        self.assertFalse(self.selector._option_data.has_results())
+        self.assertFalse(self.selector._session.current.has_results())
 
     def test_snapshot_uses_generation_area_mask_crop(self) -> None:
         """The batch's mask is the generation area crop, the size the option images are applied at."""
         self.image_stack.generation_area = QRect(QPoint(0, 0), QSize(32, 32))
         select_rect(self.image_stack, QRect(QPoint(4, 4), QSize(8, 8)))
         self.selector.start_new_options()
-        batch = self.selector._option_data
+        batch = self.selector._session.current
         self.assertEqual(batch.mask_image.size(), QSize(32, 32))
         self.assertNotEqual(batch.mask_image.size(), self.image_stack.selection_layer.image.size())
 
     def test_snapshot_stores_raw_edit_mode(self) -> None:
         """The batch stores the value `Cache.EDIT_MODE` holds, not a translated label."""
-        self.assertEqual(self.selector._option_data.edit_mode, Cache().get(Cache.EDIT_MODE))
+        self.assertEqual(self.selector._session.current.edit_mode, Cache().get(Cache.EDIT_MODE))
 
     def test_archive_skips_batch_without_results(self) -> None:
         """Archiving a batch of placeholders stores nothing."""
         emissions = self._record_availability()
         self.selector.archive_current_options()
-        self.assertIsNone(self.selector._prev_options)
+        self.assertIsNone(self.selector._session.previous)
         self.assertFalse(self.selector.can_restore_previous())
         self.assertEqual(emissions, [])
 
     def test_archive_keeps_completed_batch(self) -> None:
         """Archiving a completed batch stores it, without its placeholders."""
         self._fill_batch()
-        batch = self.selector._option_data
+        batch = self.selector._session.current
         self.selector.archive_current_options()
-        self.assertIs(self.selector._prev_options, batch)
+        self.assertIs(self.selector._session.previous, batch)
         self.assertEqual(len(batch.option_images), OPTION_COUNT + 1)
         self.assertNotIn(batch.loading_image, batch.option_images)
 
@@ -168,7 +169,7 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
         self.selector.archive_current_options()
         emissions = self._record_availability()
         self.image_stack.load_image(_solid(QColor(0, 0, 255), self.image_stack.size))
-        self.assertIsNone(self.selector._prev_options)
+        self.assertIsNone(self.selector._session.previous)
         self.assertFalse(self.selector.can_restore_previous())
         self.assertEqual(emissions, [False])
 
@@ -215,7 +216,7 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
         self.assertEqual([item.text for item in self.selector._option_items],
                          [ORIGINAL_CONTENT_LABEL, LABEL_TEXT_IMAGE_OPTION.format(index=1),
                           LABEL_TEXT_IMAGE_OPTION.format(index=3)])
-        self.assertEqual(self.selector._option_data.option_images[1:], [_option_image(0), _option_image(2)])
+        self.assertEqual(self.selector._session.current.option_images[1:], [_option_image(0), _option_image(2)])
 
     def test_restore_shows_current_content_in_first_slot(self) -> None:
         """The first option of a re-opened batch is what is on the canvas now, not the batch's original."""
@@ -226,7 +227,7 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
         current = self.image_stack.qimage_generation_area_content()
 
         self.selector.restore_previous_options()
-        self.assertEqual(self.selector._option_data.option_images[0], current)
+        self.assertEqual(self.selector._session.current.option_images[0], current)
         self.assertEqual(self.selector._option_items[0].full_image, current)
 
     def test_restore_is_repeatable(self) -> None:
@@ -243,7 +244,7 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
         select_rect(self.image_stack, QRect(QPoint(0, 0), QSize(16, 16)))
         self.selector.start_new_options()
         self._fill_batch()
-        saved_change_bounds = self.selector._option_data.change_bounds
+        saved_change_bounds = self.selector._session.current.change_bounds
         self.selector.archive_current_options()
 
         select_rect(self.image_stack, QRect(QPoint(48, 48), QSize(16, 16)))
@@ -279,11 +280,11 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
         # The batch captured in setUp saw no selection; re-capture so this one carries the mask:
         self.selector.start_new_options()
         self._fill_batch()
-        batch = self.selector._option_data
+        batch = self.selector._session.current
         self.selector.archive_current_options()
         self._switch_live_mode_to_img2img()
         self.selector.restore_previous_options()
-        self.assertIs(self.selector._option_data, batch)
+        self.assertIs(self.selector._session.current, batch)
 
         applied = Mock()
         with patch.object(self.image_stack, 'set_generation_area_content', applied):
@@ -348,14 +349,14 @@ class GeneratedImageSelectorWindowTest(IntraPaintTestCase):
         """Re-opening shows the stored batch instead of a new batch of loading placeholders."""
         select_rect(self.image_stack, QRect(QPoint(0, 0), QSize(16, 16)))
         self._run_completed_generation()
-        stored = self.selector._option_data
+        stored = self.selector._session.current
         self.window.set_image_selector_visible(False)
 
         self.assertTrue(self.window.can_restore_previous_options())
         self.window.restore_previous_image_selection_options()
         self.assertTrue(self.window.is_image_selector_visible())
         self.assertIs(self.window._image_selector, self.selector)
-        self.assertIs(self.selector._option_data, stored)
+        self.assertIs(self.selector._session.current, stored)
         self.assertEqual(len(self.selector._option_items), OPTION_COUNT + 1)
         for idx in range(1, len(self.selector._option_items)):
             self.assertEqual(self.selector._option_items[idx].full_image, _option_image(idx - 1))
@@ -369,8 +370,8 @@ class GeneratedImageSelectorWindowTest(IntraPaintTestCase):
         current = self.image_stack.qimage_generation_area_content()
 
         self.window.show_generated_options()
-        self.assertEqual(self.selector._option_data.option_images[0], current)
-        self.assertIn(self.selector._option_data.loading_image, self.selector._option_data.option_images)
+        self.assertEqual(self.selector._session.current.option_images[0], current)
+        self.assertIn(self.selector._session.current.loading_image, self.selector._session.current.option_images)
 
     def test_cancel_keeps_the_batch_reopenable(self) -> None:
         """Closing with the Cancel button keeps the batch, and the tooltip no longer claims it is discarded."""
@@ -436,20 +437,20 @@ class GeneratedImageSelectorWindowTest(IntraPaintTestCase):
         """A result that arrives after the screen closed is ignored instead of raising in the delivery timer."""
         self._deliver_only(2)
         self.window.set_image_selector_visible(False)
-        stored_images = list(self.selector._option_data.option_images)
+        stored_images = list(self.selector._session.current.option_images)
         self.window.load_sample_preview(_option_image(4), 4)
-        self.assertEqual(self.selector._option_data.option_images, stored_images)
+        self.assertEqual(self.selector._session.current.option_images, stored_images)
 
     def test_late_preview_cannot_reach_a_reopened_batch(self) -> None:
         """A late result from an older run has no slot in a re-opened batch, and is ignored rather than raising."""
         self._deliver_only(2)
         self.window.set_image_selector_visible(False)
         self.window.restore_previous_image_selection_options()
-        stored_images = list(self.selector._option_data.option_images)
+        stored_images = list(self.selector._session.current.option_images)
         # The re-opened batch is on screen and shorter than the run's placeholder row:
         self.assertTrue(self.window.is_image_selector_visible())
         self.window.load_sample_preview(_option_image(4), 4)
-        self.assertEqual(self.selector._option_data.option_images, stored_images)
+        self.assertEqual(self.selector._session.current.option_images, stored_images)
         self.assertEqual(len(self.selector._option_items), len(stored_images))
 
 
@@ -495,18 +496,18 @@ class GeneratedImageSelectorGenerationTest(IntraPaintTestCase):
         selector = self._generate()
         self.assertTrue(self.window.is_image_selector_visible())
         self.assertEqual(len(selector._option_items), OPTION_COUNT + 1)
-        self.assertNotIn(selector._option_data.loading_image, selector._option_data.option_images)
+        self.assertNotIn(selector._session.current.loading_image, selector._session.current.option_images)
 
     def test_reopening_after_a_real_generation_shows_the_generated_images(self) -> None:
         """The headline regression: closing and re-opening shows the run's images, not a fresh placeholder batch."""
         selector = self._generate()
-        generated = list(selector._option_data.option_images)
-        batch = selector._option_data
+        generated = list(selector._session.current.option_images)
+        batch = selector._session.current
         self.window.set_image_selector_visible(False)
 
         self.window.restore_previous_image_selection_options()
-        self.assertIs(selector._option_data, batch)
-        self.assertNotIn(selector._option_data.loading_image, selector._option_data.option_images)
+        self.assertIs(selector._session.current, batch)
+        self.assertNotIn(selector._session.current.loading_image, selector._session.current.option_images)
         self.assertEqual(len(selector._option_items), len(generated))
         for idx in range(1, len(generated)):
             self.assertEqual(selector._option_items[idx].full_image, generated[idx])

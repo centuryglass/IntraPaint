@@ -29,6 +29,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
+from src.controller.image_generation.generation_session import GenerationSession
 from src.ui.generated_image_selector import GeneratedImageSelector
 from src.ui.layout.panel_fit import held_weakly
 from src.ui.panel.image_panel import ImagePanel
@@ -142,6 +143,7 @@ class MainWindow(QMainWindow):
 
         # Initialize UI/editing data model:
         self._image_stack = image_stack
+        self._generation_session = GenerationSession(image_stack)
         self._image_selector: Optional[GeneratedImageSelector] = None
         self._previous_options_available = False
 
@@ -432,6 +434,7 @@ class MainWindow(QMainWindow):
         """Returns the generated image selection screen, creating it on first use."""
         if self._image_selector is None:
             self._image_selector = GeneratedImageSelector(self._image_stack,
+                                                          self._generation_session,
                                                           held_weakly(partial(self.set_image_selector_visible, False)))
             self._image_selector.cancel_generation.connect(self.cancel_generation)
             self._image_selector.previous_options_available.connect(self._report_previous_options_available)
