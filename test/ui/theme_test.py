@@ -2,8 +2,8 @@
 import json
 import sys
 
-from PySide6.QtGui import QFont, QFontInfo, QPalette
-from PySide6.QtWidgets import QApplication, QPushButton, QStyle
+from PySide6.QtGui import QColor, QFont, QFontInfo, QImage, QPainter, QPalette
+from PySide6.QtWidgets import QApplication, QPushButton, QStyle, QStyleOption
 
 from src.ui.ink_style import InkColors, InkStyle, STICKER_OFFSET, set_primary_button
 from src.ui.theme import (INK_THEME_PATH, THEME_INK, THEME_SYSTEM, apply_overlay_scroll_bars, apply_rounded_popups,
@@ -123,6 +123,21 @@ class ThemeTest(IntraPaintTestCase):
         for color_data in ({}, {**_load_theme_data()['style_colors'], 'accent_wash': 'not a color'}):
             with self.assertRaises(ValueError):
                 InkColors.from_theme_data(color_data)
+
+    def test_dock_edges_use_panel_edge_color(self):
+        """Floating dock frames and main window separators are drawn in the panel edge color."""
+        edge = app.style().colors.panel_edge
+        for element, rect_size, probe in ((QStyle.PrimitiveElement.PE_FrameDockWidget, (20, 20), (0, 10)),
+                                          (QStyle.PrimitiveElement.PE_IndicatorDockWidgetResizeHandle, (6, 20),
+                                           (2, 10))):
+            image = QImage(*rect_size, QImage.Format.Format_ARGB32)
+            image.fill(QColor('black'))
+            option = QStyleOption()
+            option.rect = image.rect()
+            painter = QPainter(image)
+            app.style().drawPrimitive(element, option, painter, None)
+            painter.end()
+            self.assertEqual(edge.name(), image.pixelColor(*probe).name())
 
     def test_primary_button_makes_room_for_its_offset(self):
         """A primary button is taller by its raised offset, and wide enough for its bolder label."""

@@ -60,6 +60,7 @@
         "signal_hover": "#ff6b61",
         "signal_pressed": "#e6453a",
         "caution": "#e8a33d",
-        "canvas_surround": "#303134"
+        "canvas_surround": "#303134",
+        "panel_edge": "#737577"
     }
 }
