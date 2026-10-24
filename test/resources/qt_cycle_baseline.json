@@ -95,6 +95,7 @@
   "test/tools/layer_transform_tool_test.py::LayerTransformToolTest::test_panel_scale_keeps_center": 63,
   "test/tools/layer_transform_tool_test.py::LayerTransformToolTest::test_panel_size": 63,
   "test/tools/layer_transform_tool_test.py::LayerTransformToolTest::test_panel_x_under_rotation": 63,
+  "test/tools/layer_transform_tool_test.py::LayerTransformToolTest::test_ratio_lock_survives_layer_change": 63,
   "test/tools/layer_transform_tool_test.py::LayerTransformToolTest::test_reset_transformation": 63,
   "test/tools/layer_transform_tool_test.py::LayerTransformToolTest::test_rotation_about_moved_origin": 63,
   "test/tools/selection_brush_tool_test.py::SelectionBrushStrokeTest::test_each_stroke_is_one_undo_step": 38,

@@ -227,6 +227,8 @@ class LayerTransformTool(BaseTool):
                 self._transform_outline.setVisible(layer.shown and not layer.size.isEmpty())
                 self._control_panel.set_preview_transform(self._initial_transform)
                 self._transform_outline.setTransform(self._initial_transform)
+                # Resetting the outline unlocks its ratio, and the lock follows the transform just loaded:
+                self._transform_outline.preserve_aspect_ratio = self._control_panel.preserve_aspect_ratio
             should_enable = (layer is not None and not layer.locked and not layer.parent_locked
                              and not self._layer.size.isEmpty())
             self._control_panel.setEnabled(should_enable)

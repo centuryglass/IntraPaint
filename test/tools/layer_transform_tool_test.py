@@ -252,5 +252,16 @@ class LayerTransformToolTest(ToolTestCase):
         self.assertEqual(self.outline.transformation_origin, QPointF(25, 25))
 
 
+    def test_ratio_lock_survives_layer_change(self) -> None:
+        """With "Keep aspect ratio" on, canvas edits to the next selected layer keep its ratio."""
+        image = QImage(LAYER_WIDTH, LAYER_HEIGHT, QImage.Format.Format_ARGB32_Premultiplied)
+        other_layer = self.image_stack.create_layer(image_data=image)
+        self.panel.preserve_aspect_ratio = True
+        self.panel.preserve_aspect_ratio_changed.emit(True)
+        self.image_stack.active_layer = other_layer
+        self.assertTrue(self.outline.preserve_aspect_ratio)
+        self.tool.set_width(LAYER_WIDTH * 2.0)
+        self.assertAlmostEqual(self.outline.height, LAYER_HEIGHT * 2.0, places=2)
+
 if __name__ == '__main__':
     unittest.main()
