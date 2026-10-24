@@ -49,26 +49,22 @@ class ShapeModeComboBox(QComboBox):
             icon = ShapeModeComboBox.draw_icon(mode, QPen(Qt.GlobalColor.black), QBrush(Qt.GlobalColor.white))
             self.addItem(icon, mode_name, mode)
 
-        self.setCurrentText(ShapeMode.ELLIPSE.display_text())
+        self.setValue(ShapeMode.ELLIPSE)
 
         if cache_key is None:
             return
 
         self.setToolTip(Cache().get_tooltip(cache_key))
 
-        def _update_config(new_mode_name: str) -> None:
-            Cache().set(cache_key, new_mode_name)
-        self.currentTextChanged.connect(_update_config)
+        def _update_config(_: int) -> None:
+            Cache().set(cache_key, self.value().name)
+        self.currentIndexChanged.connect(_update_config)
 
         def _update_from_config(new_mode_name: str) -> None:
-            if ShapeMode.is_valid_mode_str(new_mode_name) and self.currentText() != new_mode_name:
-                self.setCurrentText(new_mode_name)
+            if ShapeMode.is_valid_mode_str(new_mode_name) and self.value().name != new_mode_name:
+                self.setValue(ShapeMode[new_mode_name])
         Cache().connect(self, cache_key, _update_from_config)
         _update_from_config(Cache().get(cache_key))
-
-        def _apply_change_to_config(new_style_name: str) -> None:
-            Cache().set(cache_key, new_style_name)
-        self.currentTextChanged.connect(_apply_change_to_config)
 
     def update_icon_style(self, line_pen: QPen, fill_brush: QBrush, vertex_count=3, inner_radius_fraction=0.5) -> None:
         """Updates all icons with new outline and fill styles."""
@@ -85,5 +81,4 @@ class ShapeModeComboBox(QComboBox):
 
     def setValue(self, value: ShapeMode) -> None:
         """Sets the current selected shape mode."""
-        mode_name = value.display_text()
-        self.setCurrentText(mode_name)
+        self.setCurrentIndex(self.findData(value))
