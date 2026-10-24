@@ -36,7 +36,6 @@ KNOWN_PROBLEMS: dict[str, dict[str, tuple[int, ...]]] = {
     'color_panel': {'squeezed': (412,)},
     'tools_panel_fill_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 426),
     'tools_panel_eyedropper_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 413),
-    'tools_panel_layer_transform_tool': _each(_OVERLAP_CLIPPED_SQUEEZED, 318),
     'tools_panel_generation_area_tool': {'clipped': (323,), 'squeezed': (323,)},
     'tools_panel_my_paint_brush_tool': {'clipped': (455,)},
 }

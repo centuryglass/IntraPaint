@@ -1,21 +1,37 @@
-"""Control panel for the layer transformation tool."""
-from typing import Callable, Optional
+"""Layer transform tool control panel: the shared `GeometryBlock` with its Scale and Angle rows, Revert and Clear
+transform, and a preview of the layer over the image.
 
-from PySide6.QtCore import QRect, QPoint, QSize, QRectF, Signal, SignalInstance
-from PySide6.QtGui import QPaintEvent, QTransform, QColor, Qt, QPolygonF, QPainter, QPen, QKeySequence
-from PySide6.QtWidgets import QSizePolicy, QApplication, QGridLayout, QWidget, QPushButton
+The panel is a view over the transform tool's outline. It emits a signal per field the user changes, and the tool sets
+the fields back with the panel's properties, which emit nothing.
 
-from src.config.cache import Cache
+- The geometry block shows at every size. Its ratio lock is "Keep aspect ratio", and links W:H and Scale X:Scale Y.
+  Holding the fixed-aspect modifier locks it temporarily without changing the stored setting.
+  `preserve_aspect_ratio_changed` carries whether either one locks the ratio, which the tool's outline also follows.
+- Revert restores the transform the layer had when the tool selected it. Clear transform removes the transform, in
+  the danger weight and apart from Revert.
+- The preview shows the layer over the image bounds, with a legend. It is decorative: it hides where it doesn't fit,
+  and takes spare space up to `PREVIEW_MAX_SIZE`.
+
+The panel is a `src.ui.layout.panel_fit.FitContent`, planned in the space the Tools panel gives it:
+- Side: one column, with the buttons under the fields and the preview under them.
+- Strip: a geometry column, then the preview. The buttons go under the fields when the strip's height holds both, and
+  in a column of their own beside them otherwise. A short strip puts the block's position and size rows on one line.
+"""
+from typing import Optional
+
+from PySide6.QtCore import QPoint, QRect, QRectF, QSize, Qt, Signal
+from PySide6.QtGui import QColor, QPainter, QPaintEvent, QPalette, QPen, QPixmap, QPolygonF, QTransform
+from PySide6.QtWidgets import (QApplication, QBoxLayout, QGridLayout, QHBoxLayout, QLabel, QPushButton, QSizePolicy,
+                               QVBoxLayout, QWidget)
+
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
-from src.ui.input_fields.check_box import CheckBox
-from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
-from src.ui.layout.reactive_layout_widget import ReactiveLayoutWidget
-from src.ui.widget.key_hint_label import KeyHintLabel
-from src.util.layout import clear_layout, layout_contents, wrap_widget_with_key_hints
-from src.util.shared_constants import FLOAT_MIN, FLOAT_MAX, MIN_NONZERO, ASPECT_RATIO_CHECK_LABEL, INT_MAX
-from src.util.signals_blocked import signals_blocked
+from src.ui.button_weight import ButtonWeight, set_button_weight
+from src.ui.input_fields.geometry_block import (ANGLE, HEIGHT, SCALE_X, SCALE_Y, WIDTH, X, Y, GeometryBlock,
+                                                bind_step_keys)
+from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement
+from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
 from src.util.visual.geometry_utils import get_rect_transformation, get_scaled_placement
 from src.util.visual.image_utils import get_transparency_tile_pixmap
 
@@ -28,22 +44,44 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-X_LABEL = _tr('X:')
-Y_LABEL = _tr('Y:')
-X_SCALE_LABEL = _tr('X-Scale:')
-Y_SCALE_LABEL = _tr('Y-Scale:')
-WIDTH_LABEL = _tr('W:')
-HEIGHT_LABEL = _tr('H:')
-DEGREE_LABEL = _tr('Angle:')
-RESET_BUTTON_TEXT = _tr('Reset')
-CLEAR_BUTTON_TEXT = _tr('Clear')
+REVERT_BUTTON_TEXT = _tr('Revert')
+REVERT_BUTTON_TOOLTIP = _tr('Restore the transform this layer had when you selected it')
+CLEAR_BUTTON_TEXT = _tr('Clear transform')
+CLEAR_BUTTON_TOOLTIP = _tr('Remove all movement, scaling and rotation from this layer')
+LEGEND_IMAGE = _tr('Image')
+LEGEND_LAYER = _tr('Layer')
 
-SCALE_STEP = 0.05
-CONTROL_GRID_SPACING = 10
+SECTION_SPACING = 10
+PREVIEW_MIN_SIZE = QSize(120, 90)
+PREVIEW_MAX_SIZE = QSize(300, 300)
+PREVIEW_MARGIN = 4
+LEGEND_SWATCH_SIZE = 10
+IMAGE_BOUNDS_ALPHA = 0.3
+LAYER_OUTLINE_WIDTH = 3
+
+# The planned items, in placement order:
+GEOMETRY_ITEM = FitItem(REQUIRED, 2)
+ACTIONS_ITEM = FitItem(REQUIRED, 2)
+PREVIEW_ITEM = FitItem(1)
+# Forms of the geometry item:
+STACKED = 0
+HORIZONTAL = 1
+# Forms of the actions item:
+UNDER = 0
+BESIDE = 1
 
 
-class LayerTransformToolPanel(ReactiveLayoutWidget):
-    """Control panel for the layer transformation tool."""
+def _image_bounds_color() -> QColor:
+    color = QColor(Qt.GlobalColor.black)
+    color.setAlphaF(IMAGE_BOUNDS_ALPHA)
+    return color
+
+
+class LayerTransformToolPanel(FitToolPanel):
+    """Layer transform tool control panel.
+
+    Without a host that calls `set_fit_space`, the panel plans for its own size when resized.
+    """
 
     x_changed = Signal(float)
     y_changed = Signal(float)
@@ -56,372 +94,275 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
     reset_signal = Signal()
     clear_signal = Signal()
 
-    def __init__(self, image_stack: ImageStack):
-        super().__init__()
-        self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
-        self._layout = QGridLayout(self)
-        self._preview = _TransformPreview(image_stack.size, QRectF(), QTransform())
-        image_stack.size_changed.connect(self._preview.set_image_size)
+    def __init__(self, image_stack: ImageStack, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self._geometry = GeometryBlock(show_scale=True, show_angle=True, integer=False, parent=self)
+        self._geometry.set_image_size(image_stack.size)
+        image_stack.size_changed.connect(self._geometry.set_image_size)
+        field_signals = {X: self.x_changed, Y: self.y_changed, WIDTH: self.width_changed,
+                         HEIGHT: self.height_changed, SCALE_X: self.x_scale_changed, SCALE_Y: self.y_scale_changed,
+                         ANGLE: self.angle_changed}
+        self._geometry.valueChanged.connect(lambda name, value: field_signals[name].emit(float(value)))
 
         def _key_predicate() -> bool:
-            return (self.isVisible() and self.isEnabled() and not image_stack.active_layer.locked
-                    and not image_stack.active_layer.parent_locked)
+            active_layer = image_stack.active_layer
+            return (self.isVisible() and self.isEnabled() and active_layer is not None and not active_layer.locked
+                    and not active_layer.parent_locked)
 
-        def _init_control(default_val: float | int, min_val: float | int, max_val: float | int, signal: SignalInstance,
-                          text: str, down_key: Optional[str] = None, up_key: Optional[str] = None):
-            new_control = IntSliderSpinbox(parent=self) if isinstance(default_val, int) else FloatSliderSpinbox()
-            new_control.set_slider_included(False)
-            new_control.setRange(min_val, max_val)
-            new_control.setValue(default_val)
-            new_control.setText(text)
-            if down_key is not None and up_key is not None:
-                HotkeyFilter.instance().bind_slider_controls(new_control, down_key, up_key, _key_predicate)
-            new_control.valueChanged.connect(signal)
-            return new_control
+        bind_step_keys(self._geometry, HotkeyFilter.instance(), KeyConfig, _key_predicate)
+        self._geometry.ratioLockToggled.connect(self._lock_changed)
+        self._geometry.temporaryLockToggled.connect(self._lock_changed)
 
-        self._x_pos_box = _init_control(0.0, FLOAT_MIN, FLOAT_MAX, self.x_changed, X_LABEL,
-                                        KeyConfig.MOVE_LEFT, KeyConfig.MOVE_RIGHT)
-        self._y_pos_box = _init_control(0.0, FLOAT_MIN, FLOAT_MAX, self.y_changed, Y_LABEL,
-                                        KeyConfig.MOVE_UP, KeyConfig.MOVE_DOWN)
-        edit_size = Cache().get(Cache.EDIT_SIZE)
-        self._width_box = _init_control(float(edit_size.width()), MIN_NONZERO, FLOAT_MAX, self.width_changed,
-                                        WIDTH_LABEL, KeyConfig.PAN_LEFT, KeyConfig.PAN_RIGHT)
-        self._height_box = _init_control(float(edit_size.height()), MIN_NONZERO, FLOAT_MAX, self.height_changed,
-                                         HEIGHT_LABEL, KeyConfig.PAN_DOWN, KeyConfig.PAN_UP)
-
-        self._x_scale_box = _init_control(1.0, FLOAT_MIN, FLOAT_MAX, self.x_scale_changed, X_SCALE_LABEL)
-        self._y_scale_box = _init_control(1.0, FLOAT_MIN, FLOAT_MAX, self.y_scale_changed, Y_SCALE_LABEL)
-
-        for scale_box in (self._y_scale_box, self._x_scale_box):
-            scale_box.setSingleStep(SCALE_STEP)
-        self._rotate_box = _init_control(0.0, FLOAT_MIN, FLOAT_MAX, self.angle_changed, DEGREE_LABEL,
-                                         KeyConfig.ROTATE_CCW_KEY, KeyConfig.ROTATE_CW_KEY)
-        self._aspect_ratio_checkbox = CheckBox()
-        self._aspect_ratio_checkbox.setText(ASPECT_RATIO_CHECK_LABEL)
-        self._aspect_ratio_checkbox.valueChanged.connect(self.preserve_aspect_ratio_changed)
-        self._modifier_set_aspect_ratio = False
-
-        # Holding the aspect ratio modifier should enable fixed aspect ratio and releasing it should reset it, but
-        # make sure the modifier is ignored if it's explicitly checked.
-        def _set_checkbox_when_modifier_held(modifiers: Qt.KeyboardModifier) -> None:
-            if self.isVisible() and not self._aspect_ratio_checkbox.isChecked() and \
-                    KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER, held_modifiers=modifiers):
-                self._modifier_set_aspect_ratio = True
-                self._aspect_ratio_checkbox.setChecked(True)
-            elif self.isVisible() and self._aspect_ratio_checkbox.isChecked() and self._modifier_set_aspect_ratio \
-                    and not KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER, held_modifiers=modifiers):
-                self._aspect_ratio_checkbox.setChecked(False)
-
-        HotkeyFilter.instance().modifiers_changed.connect(_set_checkbox_when_modifier_held)
-
-        self._down_keys: dict[QWidget, tuple[QKeySequence, str]] = {}
-        self._up_keys: dict[QWidget, tuple[QKeySequence, str]] = {}
-
-        self._reset_button = QPushButton()
-        self._reset_button.setText(RESET_BUTTON_TEXT)
-        self._reset_button.setMinimumHeight(self._reset_button.sizeHint().height())
-        self._reset_button.clicked.connect(self.reset_signal)
-
-        self._clear_button = QPushButton()
-        self._clear_button.setText(CLEAR_BUTTON_TEXT)
-        self._clear_button.setMinimumHeight(self._clear_button.sizeHint().height())
+        self._revert_button = QPushButton(REVERT_BUTTON_TEXT, self)
+        self._revert_button.setToolTip(REVERT_BUTTON_TOOLTIP)
+        self._revert_button.clicked.connect(self.reset_signal)
+        self._clear_button = QPushButton(CLEAR_BUTTON_TEXT, self)
+        self._clear_button.setToolTip(CLEAR_BUTTON_TOOLTIP)
+        set_button_weight(self._clear_button, ButtonWeight.DANGER)
         self._clear_button.clicked.connect(self.clear_signal)
+        self._actions = QWidget(self)
+        self._actions_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._actions)
+        self._actions_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.setContentsMargins(0, 0, 0, 0)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Ignored)
-        grid = self._layout
-        grid.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        grid.setSpacing(CONTROL_GRID_SPACING)
+        self._preview = _TransformPreview(image_stack.size, self)
+        image_stack.size_changed.connect(self._preview.set_image_size)
+        self._preview_box = QWidget(self)
+        preview_layout = QVBoxLayout(self._preview_box)
+        preview_layout.setContentsMargins(0, 0, 0, 0)
+        preview_layout.addWidget(self._preview, stretch=1)
+        preview_layout.addLayout(self._build_legend())
+        # Height past the preview's cap goes below the legend:
+        preview_layout.addStretch(0)
 
-        self._aspect_ratio_hint = KeyHintLabel(None, KeyConfig.FIXED_ASPECT_MODIFIER, parent=self)
-        self._aspect_ratio_wrapper = wrap_widget_with_key_hints(self._aspect_ratio_checkbox,
-                                                                right_hint=self._aspect_ratio_hint,
-                                                                alignment=Qt.AlignmentFlag.AlignLeft)
+        self._grid = QGridLayout(self)
+        self._grid.setContentsMargins(0, 0, 0, 0)
+        self._grid.setSpacing(SECTION_SPACING)
 
-        controls = [self._x_pos_box, self._y_pos_box, self._width_box, self._height_box, self._x_scale_box,
-                    self._y_scale_box, self._rotate_box, self._aspect_ratio_wrapper, self._clear_button,
-                    self._reset_button]
+        self._planner = FitPlanner([GEOMETRY_ITEM, ACTIONS_ITEM, PREVIEW_ITEM], self._apply_fit, self._measure_fit)
+        self._apply_fit(Orientation.SIDE, (STACKED, UNDER, 0))
 
-        # Layout setup functions:
-        def _clear_grid() -> None:
-            clear_layout(grid, unparent=False, hide=True)
-            for row_num in range(grid.rowCount()):
-                grid.setRowStretch(row_num, 0)
-            for col_num in range(grid.columnCount()):
-                grid.setColumnStretch(col_num, 0)
+    def _build_legend(self) -> QHBoxLayout:
+        """Returns a row naming the preview's image bounds and layer, each beside a swatch drawn as the preview draws
+        it."""
+        legend = QHBoxLayout()
+        legend.setContentsMargins(0, 0, 0, 0)
+        dim_palette = QPalette(self.palette())
+        dim_palette.setColor(QPalette.ColorRole.WindowText, self.palette().color(QPalette.ColorRole.PlaceholderText))
+        for text, fill, outline in ((LEGEND_IMAGE, _image_bounds_color(), None),
+                                    (LEGEND_LAYER, QColor(Qt.GlobalColor.white), QColor(Qt.GlobalColor.black))):
+            swatch = QPixmap(LEGEND_SWATCH_SIZE, LEGEND_SWATCH_SIZE)
+            swatch.fill(Qt.GlobalColor.transparent)
+            painter = QPainter(swatch)
+            painter.fillRect(swatch.rect(), fill)
+            if outline is not None:
+                painter.setPen(QPen(outline, 1))
+                painter.drawRect(swatch.rect().adjusted(0, 0, -1, -1))
+            painter.end()
+            swatch_label = QLabel(self)
+            swatch_label.setPixmap(swatch)
+            text_label = QLabel(text, self)
+            text_label.setPalette(dim_palette)
+            legend.addWidget(swatch_label)
+            legend.addWidget(text_label)
+        legend.addStretch(1)
+        return legend
 
-        def _grid_widgets() -> dict[tuple[int, int], tuple[QWidget, int, int]]:
-            """Maps every cell a widget covers to the widget and its row and column spans."""
-            cells: dict[tuple[int, int], tuple[QWidget, int, int]] = {}
-            for index, widget in enumerate(layout_contents(grid)):
-                if isinstance(widget, QWidget):
-                    row, column, row_span, column_span = grid.getItemPosition(index)
-                    for covered_row in range(row, row + row_span):
-                        for covered_column in range(column, column + column_span):
-                            cells[(covered_row, covered_column)] = (widget, row_span, column_span)
-            return cells
+    # -----------------------------------------------------------------------------------------------------------------
+    # Values
+    # -----------------------------------------------------------------------------------------------------------------
 
-        def _final_grid_adjustments(hide_key_hints=False) -> None:
-            row_heights = {}
-            column_widths = {}
-            grid_widgets = _grid_widgets()
-            for row in range(grid.rowCount()):
-                if row not in row_heights:
-                    row_heights[row] = grid.rowStretch(row)
-                for column in range(grid.columnCount()):
-                    if column not in column_widths:
-                        column_widths[column] = grid.columnStretch(column)
-                    if (row, column) in grid_widgets:
-                        widget, row_span, column_span = grid_widgets[(row, column)]
-                        widget_size = widget.sizeHint()
-                        row_heights[row] = max(row_heights[row], widget_size.height() // row_span)
-                        column_widths[column] = max(column_widths[column], widget_size.width() // column_span)
-            for row, stretch in row_heights.items():
-                grid.setRowStretch(row, stretch)
-            for column, stretch in column_widths.items():
-                grid.setColumnStretch(column, stretch)
-            spinbox_map: dict[int, list[IntSliderSpinbox | FloatSliderSpinbox]] = {}
-            for control_widget in controls:
-                control_idx = grid.indexOf(control_widget)
-                if control_idx < 0:
-                    continue
-                control_widget.show()
-                if isinstance(control_widget, (IntSliderSpinbox, FloatSliderSpinbox)):
-                    control_widget.set_key_hints_visible(not hide_key_hints)
-                    _, column, _, _ = grid.getItemPosition(control_idx)
-                    if column not in spinbox_map:
-                        spinbox_map[column] = []
-                    spinbox_map[column].append(control_widget)
-            for spinbox_column in spinbox_map.values():
-                IntSliderSpinbox.align_slider_spinboxes(spinbox_column)
-            self._aspect_ratio_hint.setVisible(not hide_key_hints)
-            if grid.indexOf(self._preview) >= 0:
-                self._preview.show()
+    @property
+    def geometry_block(self) -> GeometryBlock:
+        """The position, size, scale and angle fields."""
+        return self._geometry
 
-        def _layout_minimum(build_layout: Callable[[], None]) -> QSize:
-            """Builds a layout mode and returns the smallest size that fits it."""
-            build_layout()
-            return grid.minimumSize().grownBy(self.contentsMargins())
+    @property
+    def revert_button(self) -> QPushButton:
+        """The button that restores the layer's transform from when it was selected."""
+        return self._revert_button
 
-        # Wide layout: 3x3 control grid
-        wide_layout: tuple[tuple[QWidget, int, int], ...] = (
-            (self._x_pos_box, 1, 0),
-            (self._y_pos_box, 1, 1),
-            (self._rotate_box, 1, 2),
-            (self._width_box, 2, 0),
-            (self._height_box, 2, 1),
-            (self._aspect_ratio_wrapper, 2, 2),
-            (self._x_scale_box, 3, 0),
-            (self._y_scale_box, 3, 1),
-            (self._clear_button, 3, 2),
-            (self._reset_button, 3, 8)
-        )
-        wide_layout_row_stretch = {0: 50, 4: 100}
+    @property
+    def clear_button(self) -> QPushButton:
+        """The button that removes the layer's transform."""
+        return self._clear_button
 
-        def _build_wide_layout() -> None:
-            _clear_grid()
-            for widget, row, column in wide_layout:
-                grid.addWidget(widget, row, column)
-            for row, row_stretch in wide_layout_row_stretch.items():
-                grid.setRowStretch(row, row_stretch)
-            _final_grid_adjustments()
-
-        # Extra wide layout: wide layout + preview
-        def _build_extra_wide_layout() -> None:
-            _build_wide_layout()
-            grid.addWidget(self._preview, 0, 12, grid.rowCount(), 1)
-            preview_stretch = 0
-            for row in range(grid.rowCount()):
-                preview_stretch += grid.rowStretch(row)
-            grid.setColumnStretch(12, preview_stretch)
-            self._preview.show()
-
-        # Tall layout: one column
-        tall_layout: tuple[tuple[QWidget, int, int, int], ...] = (
-            (self._x_pos_box, 0, 0, 2),
-            (self._y_pos_box, 1, 0, 2),
-            (self._width_box, 2, 0, 2),
-            (self._height_box, 3, 0, 2),
-            (self._x_scale_box, 4, 0, 2),
-            (self._y_scale_box, 5, 0, 2),
-            (self._rotate_box, 6, 0, 2),
-            (self._aspect_ratio_wrapper, 7, 0, 2),
-            (self._reset_button, 8, 0, 1),
-            (self._clear_button, 8, 1, 1)
-        )
-
-        def _build_tall_layout() -> None:
-            _clear_grid()
-            for widget, row, col, col_stretch in tall_layout:
-                grid.addWidget(widget, row, col, 1, col_stretch)
-            _final_grid_adjustments()
-
-        # Extra tall layout: add preview
-        extra_tall_row_stretch = {0: 30, 1: 30, 2: 100, 13: 30}
-
-        def _build_extra_tall_layout() -> None:
-            _clear_grid()
-            for row, row_stretch in extra_tall_row_stretch.items():
-                grid.setRowStretch(row, row_stretch)
-            grid.addWidget(self._preview, 1, 1, 1, 4)
-            for widget, row, col, col_stretch in tall_layout:
-                grid.addWidget(widget, row + 3, col, 1, col_stretch)
-            _final_grid_adjustments()
-
-        # Reduced layout: leave out the scale controls and key hints
-        self._reduced_layout: tuple[tuple[QWidget, int, int, int], ...] = (
-            (self._x_pos_box, 0, 0, 2),
-            (self._y_pos_box, 1, 0, 2),
-            (self._width_box, 2, 0, 2),
-            (self._height_box, 3, 0, 2),
-            (self._rotate_box, 4, 0, 2),
-            (self._aspect_ratio_wrapper, 5, 0, 2),
-            (self._reset_button, 6, 0, 1),
-            (self._clear_button, 6, 1, 1)
-        )
-
-        def _build_reduced_layout() -> None:
-            _clear_grid()
-            for widget, row, col, col_stretch in self._reduced_layout:
-                grid.addWidget(widget, row, col, 1, col_stretch)
-            _final_grid_adjustments(True)
-
-        # Each mode's range starts at the size its layout needs, so no mode is chosen where it would squeeze its rows.
-        wide_layout_size = _layout_minimum(_build_wide_layout)
-        extra_wide_layout_size = _layout_minimum(_build_extra_wide_layout)
-        tall_layout_size = _layout_minimum(_build_tall_layout)
-        extra_tall_layout_size = _layout_minimum(_build_extra_tall_layout)
-        reduced_layout_size = _layout_minimum(_build_reduced_layout)
-        self.setMinimumSize(min(tall_layout_size.width(), reduced_layout_size.width()),
-                            min(wide_layout_size.height(), reduced_layout_size.height()))
-
-        self.add_default_layout_mode(_build_reduced_layout)
-        self.add_layout_mode('wide layout', _build_wide_layout, wide_layout_size,
-                             QSize(extra_wide_layout_size.width() - 1, INT_MAX))
-        self.add_layout_mode('extra wide layout', _build_extra_wide_layout, extra_wide_layout_size,
-                             QSize(INT_MAX, INT_MAX))
-        self.add_layout_mode('tall layout', _build_tall_layout, tall_layout_size,
-                             QSize(wide_layout_size.width() - 1, extra_tall_layout_size.height() - 1))
-        self.add_layout_mode('extra tall layout', _build_extra_tall_layout, extra_tall_layout_size,
-                             QSize(wide_layout_size.width() - 1, INT_MAX))
+    @property
+    def preview(self) -> QWidget:
+        """The preview with its legend."""
+        return self._preview_box
 
     @property
     def x_position(self) -> float:
         """Accesses the layer's transformed x-position value."""
-        return self._x_pos_box.value()
+        return float(self._geometry.value(X))
 
     @x_position.setter
     def x_position(self, x: float) -> None:
-        with signals_blocked(self._x_pos_box):
-            self._x_pos_box.setValue(x)
+        self._geometry.set_value(X, x)
 
     @property
     def y_position(self) -> float:
         """Accesses the layer's transformed y-position value."""
-        return self._y_pos_box.value()
+        return float(self._geometry.value(Y))
 
     @y_position.setter
     def y_position(self, y: float) -> None:
-        with signals_blocked(self._y_pos_box):
-            self._y_pos_box.setValue(y)
+        self._geometry.set_value(Y, y)
 
     @property
     def layer_width(self) -> float:
         """Accesses the layer's transformed width value."""
-        return self._width_box.value()
+        return float(self._geometry.value(WIDTH))
 
     @layer_width.setter
     def layer_width(self, width: float) -> None:
-        with signals_blocked(self._width_box):
-            self._width_box.setValue(width)
+        self._geometry.set_value(WIDTH, width)
 
     @property
     def layer_height(self) -> float:
         """Accesses the layer's transformed height value."""
-        return self._height_box.value()
+        return float(self._geometry.value(HEIGHT))
 
     @layer_height.setter
     def layer_height(self, height: float) -> None:
-        with signals_blocked(self._height_box):
-            self._height_box.setValue(height)
+        self._geometry.set_value(HEIGHT, height)
 
     @property
     def x_scale(self) -> float:
         """Accesses the layer's transformed x-scale value."""
-        return self._x_scale_box.value()
+        return float(self._geometry.value(SCALE_X))
 
     @x_scale.setter
     def x_scale(self, x: float) -> None:
-        with signals_blocked(self._x_scale_box):
-            self._x_scale_box.setValue(x)
+        self._geometry.set_value(SCALE_X, x)
 
     @property
     def y_scale(self) -> float:
-        """Accesses the layer's transformed y-position value."""
-        return self._y_scale_box.value()
+        """Accesses the layer's transformed y-scale value."""
+        return float(self._geometry.value(SCALE_Y))
 
     @y_scale.setter
     def y_scale(self, y: float) -> None:
-        with signals_blocked(self._y_scale_box):
-            self._y_scale_box.setValue(y)
+        self._geometry.set_value(SCALE_Y, y)
 
     @property
     def rotation(self) -> float:
-        """Accesses the layer's transformation angle"""
-        return self._rotate_box.value()
+        """Accesses the layer's transformation angle."""
+        return float(self._geometry.value(ANGLE))
 
     @rotation.setter
     def rotation(self, rotation: float) -> None:
-        """Accesses the layer's transformation angle"""
-        with signals_blocked(self._rotate_box):
-            self._rotate_box.setValue(rotation)
+        self._geometry.set_value(ANGLE, rotation)
 
     @property
     def preserve_aspect_ratio(self) -> bool:
-        """Accesses whether aspect ratio is fixed"""
-        return self._aspect_ratio_checkbox.isChecked()
+        """Accesses the stored "Keep aspect ratio" setting, which the temporary lock doesn't change."""
+        return self._geometry.ratio_locked()
 
     @preserve_aspect_ratio.setter
     def preserve_aspect_ratio(self, preserve_ratio: bool) -> None:
-        with signals_blocked(self._aspect_ratio_checkbox):
-            self._aspect_ratio_checkbox.setChecked(preserve_ratio)
+        self._geometry.blockSignals(True)
+        try:
+            self._geometry.set_ratio_locked(preserve_ratio)
+        finally:
+            self._geometry.blockSignals(False)
+
+    def _lock_changed(self, _locked: bool) -> None:
+        self.preserve_aspect_ratio_changed.emit(self._geometry.effective_ratio_locked())
 
     def set_preview_bounds(self, bounds: QRect) -> None:
         """Update the preview widget bounds"""
-        self._preview.set_layer_bounds(bounds)
+        self._preview.set_layer_bounds(QRectF(bounds))
 
     def set_preview_transform(self, transform: QTransform) -> None:
         """Update the preview widget transformation"""
         self._preview.set_transform(transform)
 
+    # -----------------------------------------------------------------------------------------------------------------
+    # Layout
+    # -----------------------------------------------------------------------------------------------------------------
+
+    def _apply_fit(self, orientation: Orientation, placement: Placement) -> None:
+        geometry_form, actions_form, preview_form = placement
+        self._orientation = orientation
+        strip = orientation == Orientation.STRIP
+        beside = strip and actions_form == BESIDE
+        preview = preview_form is not None
+        self._geometry.set_horizontal(strip and geometry_form == HORIZONTAL)
+        self._arrange_actions(beside)
+        grid = self._grid
+        self._clear(grid, (self._geometry, self._actions, self._preview_box))
+        top = Qt.AlignmentFlag.AlignTop
+        grid.addWidget(self._geometry, 0, 0, top)
+        if strip:
+            if beside:
+                grid.addWidget(self._actions, 0, 1, 2, 1)
+            else:
+                grid.addWidget(self._actions, 1, 0, top)
+            used_columns = 2 if beside else 1
+            if preview:
+                grid.addWidget(self._preview_box, 0, used_columns, 2, 1)
+                used_columns += 1
+            grid.setRowStretch(1, 1)
+        else:
+            grid.addWidget(self._actions, 1, 0, top)
+            if preview:
+                grid.addWidget(self._preview_box, 2, 0)
+            grid.setRowStretch(2 if preview else 3, 1)
+            used_columns = 1
+        # Spare width goes to the fields and the preview, up to their caps, and not to a column of buttons:
+        for column in range(used_columns):
+            grid.setColumnStretch(column, 0 if beside and column == 1 else 1)
+        grid.setColumnStretch(used_columns, 0)
+        self._preview_box.setVisible(preview)
+        self._cap_width(self._geometry)
+        if beside:
+            self._actions.setMaximumWidth(self._actions.sizeHint().width())
+        else:
+            self._cap_width(self._actions)
+
+    def _arrange_actions(self, column: bool) -> None:
+        """Puts Revert and Clear transform in a row, or a column, with spare room between them."""
+        layout = self._actions_layout
+        while layout.count() > 0:
+            layout.takeAt(0)
+        layout.setDirection(QBoxLayout.Direction.TopToBottom if column else QBoxLayout.Direction.LeftToRight)
+        layout.addWidget(self._revert_button)
+        layout.addStretch(1)
+        layout.addWidget(self._clear_button)
+        self._actions.setSizePolicy(QSizePolicy.Policy.Preferred,
+                                    QSizePolicy.Policy.Expanding if column else QSizePolicy.Policy.Fixed)
+
 
 class _TransformPreview(QWidget):
+    """Draws the layer's transformed bounds over the image bounds, scaled to fit."""
 
-    def __init__(self, image_size: QSize, layer_bounds: QRectF, layer_transform: QTransform) -> None:
-        super().__init__()
+    def __init__(self, image_size: QSize, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
         self._image_size = image_size
-        self._layer_bounds = layer_bounds
-        self._layer_transform = layer_transform
-        self._brush = Qt.GlobalColor.white
-        self._pen = QPen(Qt.GlobalColor.black, 3)
+        self._layer_bounds = QRectF()
+        self._layer_transform = QTransform()
+        self._brush = QColor(Qt.GlobalColor.white)
+        self._pen = QPen(Qt.GlobalColor.black, LAYER_OUTLINE_WIDTH)
         self._pen.setCosmetic(True)
         self._background = get_transparency_tile_pixmap(image_size)
-        self.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.setMaximumSize(PREVIEW_MAX_SIZE)
 
-    def sizeHint(self) -> QSize:
-        """Preview size is capped at 200x200."""
-        return QSize(200, 200)
+    def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the smallest size the preview is drawn at."""
+        return PREVIEW_MIN_SIZE
 
-    def minimumSizeHint(self) -> QSize:
-        """Preview size is capped at 200x200."""
-        return self.sizeHint()
+    def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the smallest size the preview is drawn at."""
+        return PREVIEW_MIN_SIZE
 
     def set_image_size(self, new_size: QSize) -> None:
         """Update the previewed size of the edited image."""
         self._image_size = new_size
         self.update()
 
-    def set_layer_bounds(self, new_bounds: QRect) -> None:
+    def set_layer_bounds(self, new_bounds: QRectF) -> None:
         """Update the previewed layer bounds."""
         self._layer_bounds = new_bounds
         self.update()
@@ -431,7 +372,7 @@ class _TransformPreview(QWidget):
         self._layer_transform = new_transform
         self.update()
 
-    def paintEvent(self, _event: Optional[QPaintEvent]) -> None:
+    def paintEvent(self, _event: Optional[QPaintEvent]) -> None:  # pylint: disable=invalid-name
         """Draw the transformed layer over the image bounds."""
         painter = QPainter(self)
         painter.drawTiledPixmap(QRect(QPoint(), self.size()), self._background)
@@ -439,12 +380,10 @@ class _TransformPreview(QWidget):
         final_image_poly = self._layer_transform.map(QPolygonF(self._layer_bounds))
         assert isinstance(final_image_poly, QPolygonF)
         full_bounds = image_bounds.united(final_image_poly.boundingRect().toRect())
-        scaled_full_bounds = get_scaled_placement(self.size(), full_bounds.size(), 4)
+        scaled_full_bounds = get_scaled_placement(self.size(), full_bounds.size(), PREVIEW_MARGIN)
         initial_transform = get_rect_transformation(full_bounds, scaled_full_bounds)
-        image_bounds_color = QColor(Qt.GlobalColor.black)
-        image_bounds_color.setAlphaF(0.3)
         painter.setTransform(initial_transform)
-        painter.fillRect(image_bounds, image_bounds_color)
+        painter.fillRect(image_bounds, _image_bounds_color())
         if not self._layer_bounds.isNull():
             painter.setTransform(self._layer_transform, True)
             painter.setPen(self._pen)
