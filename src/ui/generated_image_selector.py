@@ -18,6 +18,7 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.image_generation.apply_option import apply_generated_image, ApplyResult
+from src.controller.image_generation.generation_session import GenerationSession
 from src.ui.ink_style import set_signal
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
@@ -129,56 +130,12 @@ ZOOM_CONTROL_HINT = _tr("""
 VIEW_BACKGROUND = Qt.GlobalColor.black
 
 
-class _OptionData:
-    """One batch of generated options, with the generation context needed to apply or re-open them later.
-
-    Options are applied with the batch's own mask, generation area and edit mode, so changing the selection or edit
-    mode after generating doesn't change what an option inserts. `edit_mode` is the untranslated value `Cache.EDIT_MODE`
-    holds. `mask_image` is the generator's paste mask (`ImageGenerator.get_paste_mask`) when one is given, and the
-    selection mask otherwise.
-    """
-
-    def __init__(self, image_stack: ImageStack, paste_mask: Optional[QImage] = None) -> None:
-        self.option_images: list[QImage] = [image_stack.qimage_generation_area_content()]
-        self.generation_area = image_stack.generation_area
-        self.selection_polys = image_stack.selection_layer.outline
-        self.mask_image = paste_mask if paste_mask is not None else image_stack.selection_layer.mask_image
-        self.edit_mode = Cache().get(Cache.EDIT_MODE)
-        change_bounds = image_stack.selection_layer.get_selection_gen_area(True)
-        if change_bounds is None or change_bounds == self.generation_area:
-            # The whole generation area changed, so "zoom to changes" has nothing smaller to zoom to.
-            self.change_bounds: Optional[QRect] = None
-        else:
-            # Relative to the generation area, the coordinate space of the option images:
-            self.change_bounds = change_bounds.translated(-self.generation_area.x(), -self.generation_area.y())
-
-        self.loading_image = QImage(self.generation_area.size(),
-                                     QImage.Format.Format_ARGB32_Premultiplied)
-        self.loading_image.fill(Qt.GlobalColor.black)
-        painter = QPainter(self.loading_image)
-        painter.setPen(Qt.GlobalColor.white)
-        painter.drawText(QRect(0, 0, self.loading_image.width(), self.loading_image.height()),
-                         Qt.AlignmentFlag.AlignCenter,
-                         LOADING_IMG_TEXT)
-        painter.end()
-
-    def has_results(self) -> bool:
-        """Returns whether at least one generated image has replaced its loading placeholder."""
-        return any(image is not self.loading_image for image in self.option_images[1:])
-
-    def discard_placeholders(self) -> list[int]:
-        """Removes loading placeholders from `option_images`, returning the indices of the images that remain."""
-        kept = [i for i, image in enumerate(self.option_images) if image is not self.loading_image]
-        self.option_images = [self.option_images[i] for i in kept]
-        return kept
-
-
 class GeneratedImageSelector(QWidget):
     """Shows all images from an image generation operation, allows the user to select one or discard all of them.
 
-    Closing the selector stores the batch it showed if any images arrived, and `restore_previous_options` shows it
-    again until another document is loaded. Callers pick the batch before showing the selector, with
-    `start_new_options` or `restore_previous_options`.
+    The batches belong to the `GenerationSession`. Closing the selector stores the batch it showed if any images
+    arrived, and `restore_previous_options` shows it again until another document is loaded. Callers pick the batch
+    before showing the selector, with `start_new_options` or `restore_previous_options`.
     """
 
     cancel_generation = Signal()
@@ -187,20 +144,15 @@ class GeneratedImageSelector(QWidget):
 
     def __init__(self,
                  image_stack: ImageStack,
+                 session: GenerationSession,
                  close_selector: Callable) -> None:
         super().__init__(None)
         self._image_stack = image_stack
-        self._option_data: _OptionData
-        self._prev_options: Optional[_OptionData] = None
-        # Scene items for `_prev_options`, by option index. Re-opening reuses them, because building an item rescales
-        # its image.
+        self._session = session
+        # Scene items for the session's previous batch, by option index. Re-opening reuses them, because building an
+        # item rescales its image.
         self._prev_option_items: list['_ImageOption'] = []
-        self._previous_options_available = False
-        # False while a re-opened batch is showing, which has no placeholders left to fill:
-        self._accepting_results = False
-        # True once `archive_current_options` has stored the batch that is showing:
-        self._showing_archived = False
-        image_stack.size_changed.connect(self._on_image_stack_resized)
+        session.previous_options_available.connect(self.previous_options_available)
         image_stack.document_changed.connect(self._on_document_changed)
 
         self._close_selector = close_selector
@@ -318,7 +270,7 @@ class GeneratedImageSelector(QWidget):
         self.start_new_options()
 
     def _rebuild_scene(self, include_loading_images: bool, reused_items: Optional[list['_ImageOption']] = None) -> None:
-        """Rebuilds the view's scene items, checkboxes and zoom state from the batch in `_option_data`.
+        """Rebuilds the view's scene items, checkboxes and zoom state from the session's current batch.
 
         Parameters
         ----------
@@ -327,11 +279,10 @@ class GeneratedImageSelector(QWidget):
         reused_items : list[_ImageOption], optional
             Existing items for the batch's options, by index. An index without an item gets a new one.
         """
-        self._showing_archived = False
         # Clear old scene:
         scene = self._view.scene()
         assert scene is not None
-        batch = self._option_data
+        batch = self._session.current
         for scene_item_list in (self._selections, self._outlines, self._option_items):
             assert isinstance(scene_item_list, list)
             while len(scene_item_list) > 0:
@@ -385,8 +336,7 @@ class GeneratedImageSelector(QWidget):
 
         Inpainted options are clipped by paste_mask when they are applied, or by the selection if it is None.
         """
-        self._accepting_results = True
-        self._option_data = _OptionData(self._image_stack, paste_mask)
+        self._session.begin(LOADING_IMG_TEXT, paste_mask)
         self._rebuild_scene(include_loading_images=True)
 
     def archive_current_options(self) -> None:
@@ -394,50 +344,24 @@ class GeneratedImageSelector(QWidget):
 
         Only the first call for each showing stores anything, so every path that closes the selector can call it.
         """
-        batch = self._option_data
-        if not self._showing_archived and batch.has_results():
-            # `_option_items` still matches `option_images` index for index until the placeholders are dropped:
-            kept = batch.discard_placeholders()
+        # `_option_items` still matches the batch's images index for index until the placeholders are dropped:
+        kept = self._session.archive_current()
+        if kept is not None:
             self._prev_option_items = [self._option_items[i] for i in kept]
-            self._prev_options = batch
-            self._showing_archived = True
-        self._report_previous_options_available()
 
     def can_restore_previous(self) -> bool:
         """Returns whether a batch is stored and its generation area is still within the image."""
-        if self._prev_options is None:
-            return False
-        return self._image_stack.bounds.contains(self._prev_options.generation_area)
+        return self._session.can_restore_previous()
 
     def restore_previous_options(self) -> None:
         """Shows the stored batch again."""
-        if not self.can_restore_previous():
-            raise RuntimeError('No previous options found!')
-        batch = self._prev_options
-        assert batch is not None
-        self._accepting_results = False
-        # The first option shows the current canvas content, so each option can be compared with it:
-        batch.option_images[0] = self._image_stack.qimage_generation_area_content()
+        batch = self._session.restore_previous()
         self._prev_option_items[0] = _ImageOption(batch.option_images[0], ORIGINAL_CONTENT_LABEL)
-        self._option_data = batch
         self._rebuild_scene(include_loading_images=False, reused_items=self._prev_option_items)
 
     def _on_document_changed(self) -> None:
-        """Drops the stored batch, which belongs to the replaced document."""
-        self._prev_options = None
+        """Drops the scene items of the stored batch, which belongs to the replaced document."""
         self._prev_option_items = []
-        self._report_previous_options_available()
-
-    def _on_image_stack_resized(self, _size: QSize) -> None:
-        """Re-checks `can_restore_previous`, which a resize can change."""
-        self._report_previous_options_available()
-
-    def _report_previous_options_available(self) -> None:
-        """Emits `previous_options_available` when the answer changes."""
-        available = self.can_restore_previous()
-        if available != self._previous_options_available:
-            self._previous_options_available = available
-            self.previous_options_available.emit(available)
 
     def _close_and_archive(self) -> None:
         """Stores the batch that is showing, then closes the selector."""
@@ -450,14 +374,14 @@ class GeneratedImageSelector(QWidget):
         if len(self._selections) != idx:
             raise RuntimeError(f'Generating selection outline {idx}, unexpected outline count {len(self._selections)}'
                                f' found.')
-        selection_crop = QPolygonF(QRectF(self._option_data.generation_area))
-        origin = self._option_data.generation_area.topLeft()
+        selection_crop = QPolygonF(QRectF(self._session.current.generation_area))
+        origin = self._session.current.generation_area.topLeft()
         selection_polys = (poly.intersected(selection_crop).translated(-origin.x(), -origin.y())
-                           for poly in self._option_data.selection_polys)
+                           for poly in self._session.current.selection_polys)
         polys = [QPolygonF(poly) for poly in selection_polys]
         outline = SelectionOutline(self._view, polys)
         outline.show_overlay = False
-        outline.setScale(self._image_stack.width / self._option_data.generation_area.width())
+        outline.setScale(self._image_stack.width / self._session.current.generation_area.width())
         outline.setVisible(AppConfig().get(AppConfig.SHOW_SELECTIONS_IN_GENERATION_OPTIONS))
         self._selections.append(outline)
 
@@ -470,7 +394,7 @@ class GeneratedImageSelector(QWidget):
         self._option_items.append(new_option)
         idx = len(self._option_items) - 1
         # Add selections if the batch was inpainted:
-        if self._option_data.edit_mode == EDIT_MODE_INPAINT:
+        if self._session.current.edit_mode == EDIT_MODE_INPAINT:
             self._add_option_selection_outline(idx)
         assert len(self._outlines) == len(self._option_items) - 1
         self._outlines.append(Outline(scene, self._view))
@@ -478,20 +402,19 @@ class GeneratedImageSelector(QWidget):
 
     def add_image_option(self, image: QImage, idx: int) -> None:
         """Add an image to the list of generated image options."""
-        if not self._accepting_results:
+        if not self._session.accepting_results:
             # A re-opened batch has no placeholders, so this is a late result from an earlier run.
             logger.info(f'Ignored image option {idx}: the batch showing was re-opened')
             return
         if not 0 <= idx < len(self._option_items):
             raise IndexError(f'invalid index {idx}, max is {len(self._option_items)}')
         idx += 1  # Original image gets index zero
-        assert len(self._option_data.option_images) == len(self._option_items)
+        assert len(self._session.current.option_images) == len(self._option_items)
+        self._session.add_image(image, idx - 1)
         if idx == len(self._option_items):
             self._add_option_item(_ImageOption(image, LABEL_TEXT_IMAGE_OPTION.format(index=idx)))
-            self._option_data.option_images.append(image)
         else:
             self._option_items[idx].image = image
-            self._option_data.option_images[idx] = image
             self._outlines[idx].outlined_region = self._option_items[idx].bounds
         self._apply_ideal_image_arrangement()
 
@@ -654,8 +577,8 @@ class GeneratedImageSelector(QWidget):
         """
         new_layer_name = self._option_items[option_index].text
         outcome = apply_generated_image(self._image_stack, self._option_items[option_index].image, layer,
-                                        self._option_data.generation_area, self._option_data.edit_mode,
-                                        self._option_data.mask_image, new_layer_name, clear_context_pins)
+                                        self._session.current.generation_area, self._session.current.edit_mode,
+                                        self._session.current.mask_image, new_layer_name, clear_context_pins)
         if outcome.result is not ApplyResult.APPLIED:
             warning_message = {ApplyResult.BLOCKED_NOT_IMAGE_LAYER: WARNING_MESSAGE_1_NOT_IMAGE,
                                ApplyResult.BLOCKED_LOCKED: WARNING_MESSAGE_1_LAYER_LOCKED,
@@ -777,7 +700,7 @@ class GeneratedImageSelector(QWidget):
             if len(self._selections) > idx:
                 selection = self._selections[idx]
                 selection.setZValue(self._option_items[idx].zValue() + 1)
-                scale = self._option_items[idx].bounds.width() / self._option_data.generation_area.width()
+                scale = self._option_items[idx].bounds.width() / self._session.current.generation_area.width()
                 selection.setScale(scale)
                 selection.move_to(QPointF(x / selection.scale(), y / selection.scale()))
 
