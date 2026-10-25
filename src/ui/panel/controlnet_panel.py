@@ -279,9 +279,11 @@ class ControlNetPanel(BorderedWidget):
 
         def image_path_update(text: str):
             """Update config when the selected control image changes."""
-            if self._reuse_image_checkbox.isChecked() and text != '':
+            if self._reuse_image_checkbox.isChecked():
+                if text == '':
+                    return
                 self._reuse_image_checkbox.setCheckState(Qt.CheckState.Unchecked)
-                self._saved.image_string = text
+            self._saved.image_string = text
             self._schedule_cache_update()
 
         self._image_path_edit.textChanged.connect(image_path_update)
