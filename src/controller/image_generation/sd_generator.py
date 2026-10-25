@@ -565,7 +565,6 @@ class SDGenerator(ImageGenerator, ABC):
                                                            control_keys,
                                                            self._show_extended_controlnet_options)
                         controlnet_panel.request_preview.connect(self.controlnet_preprocessor_preview)
-                        controlnet_panel.generate_signal.connect(self.start_and_manage_image_generation)
                         self._controlnet_panel = controlnet_panel
                 except (KeyError, RuntimeError) as err:
                     logger.error(f'Loading ControlNet failed. {err.__class__}: {err}')

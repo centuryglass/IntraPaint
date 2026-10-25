@@ -11,8 +11,8 @@ saved values are edited.
   "Edit settings" opens the sections with live controls, and editing them doesn't turn the unit on.
 - The control image is the generation area or an image file. The two map to `CONTROLNET_REUSE_IMAGE_CODE` and the
   file's path in `SavedControlNetUnit.image_string`.
-- The sections run Control image, Preprocessor, then Strength. Generate is the footer of a side panel. A strip pins the
-  header, tabs, Enabled and Generate in a column at the left.
+- The sections run Control image, Preprocessor, then Strength. A strip pins the header, tabs and Enabled in a column
+  at the left.
 """
 import logging
 from dataclasses import dataclass, field
@@ -30,7 +30,6 @@ from sd_backend_client import CONTROLNET_MODEL_NONE, PREPROCESSOR_NONE, PREPROCE
 from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTROLNET_REUSE_IMAGE_CODE, \
     SavedControlNetUnit, select_preprocessor
-from src.ui.ink_style import set_primary_button
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
@@ -43,9 +42,7 @@ from src.ui.widget.elided_label import ElidedLabel
 from src.ui.widget.image_widget import ImageWidget
 from src.ui.widget.parameter_def_widget import create_parameter_field, create_parameter_widget, \
     is_numeric_field_parameter
-from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.parameter_def_labels import parameter_label, parameter_tooltip
-from src.util.shared_constants import BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENERATE
 from src.util.signals_blocked import signals_blocked
 
 logger = logging.getLogger(__name__)
@@ -255,7 +252,6 @@ class ControlNetPanel(DockPanel):
     """Edits the ControlNet units of a Stable Diffusion backend, one at a time."""
 
     request_preview = Signal(PreprocessorParams, str)
-    generate_signal = Signal()
 
     def __init__(self,
                  preprocessors: list[ControlNetPreprocessor],
@@ -304,7 +300,6 @@ class ControlNetPanel(DockPanel):
         self._cache_timer.setInterval(CACHE_SAVE_TIMER_INTERVAL)
         self._cache_timer.timeout.connect(self._save_data_to_cache)
 
-        self._build_footer()
         self._connect_controls()
         self._load_unit(0)
         for index in range(len(self._units)):
@@ -441,14 +436,6 @@ class ControlNetPanel(DockPanel):
         slider.setToolTip(param.description)
         slider.setMaximumWidth(FIELD_MAX_WIDTH)
         return slider
-
-    def _build_footer(self) -> None:
-        self._generate_button = QPushButton(BUTTON_TEXT_GENERATE)
-        self._generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
-        set_primary_button(self._generate_button)
-        self._generate_button.clicked.connect(self.generate_signal)
-        AppStateTracker.set_enabled_states(self._generate_button, [APP_STATE_EDITING])
-        self.set_footer(self._generate_button)
 
     def _connect_controls(self) -> None:
         self._tab_bar.currentChanged.connect(self._select_unit)
@@ -923,14 +910,14 @@ class ControlNetPanel(DockPanel):
     # ---------------------------------------------------------------------------------------------------------------
 
     def arrange(self, orientation: Orientation) -> None:
-        """Pins the header and the unit section in a column at the left of a strip, with Generate under them."""
+        """Pins the header and the unit section in a column at the left of a strip."""
         super().arrange(orientation)
         strip = orientation == Orientation.STRIP
         unit = self._unit_section.widget
         outer = self.layout()
         assert isinstance(outer, QVBoxLayout)
         if strip:
-            # The pinned layout ends with a stretch, added in the constructor, that keeps Generate at the bottom:
+            # The pinned layout ends with a stretch, added in the constructor, that keeps its content at the top:
             self.pinned_layout.insertWidget(0, self.header)
             self.pinned_layout.insertWidget(1, unit)
             unit.setMinimumWidth(0)
@@ -972,11 +959,6 @@ class ControlNetPanel(DockPanel):
     def tab_bar(self) -> QTabBar:
         """The unit tabs."""
         return self._tab_bar
-
-    @property
-    def generate_button(self) -> QPushButton:
-        """The Generate button."""
-        return self._generate_button
 
     @property
     def strength_fields(self) -> list[NumberField]:

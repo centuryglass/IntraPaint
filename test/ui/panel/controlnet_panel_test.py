@@ -12,7 +12,6 @@ from src.ui.input_fields.slider_field import SliderField
 from src.ui.panel.controlnet_panel import ControlNetPanel, SOURCE_GENERATION_AREA_VALUE, SOURCE_IMAGE_FILE_VALUE
 from src.ui.widget.parameter_def_widget import create_parameter_field, create_parameter_widget, parameter_label, \
     parameter_tooltip
-from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
 
 CANNY = 'canny'
@@ -292,15 +291,6 @@ class ControlNetPanelTest(IntraPaintTestCase):
         self.assertEqual(saved.unit.control_strength, 1.0)
         assert saved.unit.preprocessor is not None
         self.assertEqual(saved.unit.preprocessor.typedef.name, CANNY)
-
-    def test_generate_button_requests_generation(self) -> None:
-        """The footer's Generate button emits generate_signal."""
-        AppStateTracker.set_app_state(APP_STATE_EDITING)
-        panel = self._panel()
-        requests: list[bool] = []
-        panel.generate_signal.connect(lambda: requests.append(True))
-        panel.generate_button.click()
-        self.assertEqual(requests, [True])
 
 
 class ParameterDefWidgetTest(IntraPaintTestCase):
