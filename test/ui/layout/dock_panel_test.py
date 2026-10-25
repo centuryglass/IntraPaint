@@ -51,6 +51,18 @@ class SamplePanel(DockPanel):
         advanced.add(self.only_extra, 3)
 
 
+class MeasureCountingPanel(SamplePanel):
+    """A `SamplePanel` that counts its `measure` calls."""
+
+    def __init__(self) -> None:
+        self.measure_count = 0
+        super().__init__()
+
+    def measure(self) -> QSize:
+        self.measure_count += 1
+        return super().measure()
+
+
 class CollapsiblePanel(DockPanel):
     """A required slider, an optional field, and a collapsible section of tall required content with a summary."""
 
@@ -193,15 +205,13 @@ class DockPanelTest(IntraPaintTestCase):
 
     def test_unchanged_host_facts_do_not_replan(self) -> None:
         """Repeating the same size measures nothing, and a change plans again."""
-        measures: list[QSize] = []
-        original_measure = self.panel.measure
-        self.panel.measure = lambda: (measures.append(QSize()), original_measure())[1]  # type: ignore[method-assign]
-        self.panel.set_host_facts(QSize(300, 500))
-        count = len(measures)
-        self.panel.set_host_facts(QSize(300, 500))
-        self.assertEqual(len(measures), count)
-        self.panel.set_host_facts(QSize(310, 500))
-        self.assertGreater(len(measures), count)
+        panel = MeasureCountingPanel()
+        panel.set_host_facts(QSize(300, 500))
+        count = panel.measure_count
+        panel.set_host_facts(QSize(300, 500))
+        self.assertEqual(panel.measure_count, count)
+        panel.set_host_facts(QSize(310, 500))
+        self.assertGreater(panel.measure_count, count)
 
     def test_orientation_follows_the_size_no_matter_its_area(self) -> None:
         """A panel takes the orientation its size suggests, whatever orientation the host reports: a wide space lays

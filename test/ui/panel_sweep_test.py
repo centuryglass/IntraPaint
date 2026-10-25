@@ -60,6 +60,8 @@ SWEEP_SCENE_NAMES = (
     'navigation_panel',
     'sd_webui_panel',
     'sd_comfyui_panel',
+    'controlnet_webui_panel',
+    'controlnet_comfyui_panel',
     'tools_panel_my_paint_brush_tool',
     'tools_panel_draw_tool',
     'tools_panel_eraser_tool',

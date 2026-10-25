@@ -510,7 +510,8 @@ class NavigationWindow(ImagePanel):
             if reset is not None:
                 grid.addWidget(reset, 4, 0, Qt.AlignmentFlag.AlignLeft)
 
-    def resizeEvent(self, _event: Optional[QResizeEvent]) -> None:
-        """Save navigation window bounds changes when visible."""
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+        """Hide non-essential controls that don't fit, and save navigation window bounds changes when visible."""
+        super().resizeEvent(event)
         if self.isVisible():
             Cache().save_bounds(Cache.SAVED_NAVIGATION_WINDOW_POS, self)
