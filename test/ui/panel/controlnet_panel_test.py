@@ -78,6 +78,15 @@ class ControlNetPanelTest(IntraPaintTestCase):
         self.assertEqual(panel._control_end_slider.value(), 0.6)  # type: ignore[union-attr]
         self.assertEqual(panel._control_unit.control_end, 0.6)
 
+    def test_typed_image_path_is_saved(self) -> None:
+        """A control image path typed into the path field is saved, like one chosen with the file picker."""
+        Cache().set(CACHE_KEY, '')
+        panel = self._panel()
+        panel._reuse_image_checkbox.setChecked(False)
+        panel._image_path_edit.setText('control.png')
+        panel._save_data_to_cache()
+        self.assertEqual(self._saved().image_string, 'control.png')
+
     def test_loads_legacy_saved_unit(self) -> None:
         """A unit saved by an older version opens with its values."""
         with open(f'{TEST_RESOURCE_DIR}/controlnet_units/legacy_comfyui_unit.json', encoding='utf-8') as file:
