@@ -1,12 +1,16 @@
-"""Tests the navigation window's zoom tool: right-button context pin editing and the viewport gestures."""
+"""Tests the navigation window's zoom controls as it resizes, and its zoom tool's right-button context pin editing and
+viewport gestures."""
 from unittest import mock
 
 from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtWidgets import QApplication
 
+from src.image.layers.image_stack import ImageStack
 from src.ui.image_viewer import ImageViewer
-from src.ui.window.navigation_window import ZoomTool
+from src.ui.panel.image_panel import MIN_WIDTH_SHOWING_SCALE_SLIDER
+from src.ui.window.navigation_window import NavigationWindow, ZoomTool
 from src.undo_stack import UndoStack
+from test.base_test_case import IntraPaintTestCase
 from test.tools.tool_test_case import ToolTestCase
 
 RIGHT = Qt.MouseButton.RightButton
@@ -62,3 +66,26 @@ class ZoomToolTest(ToolTestCase):
             self.mouse_drag([QPoint(10, 10), QPoint(50, 40)])
         move_view.assert_not_called()
         zoom_to_bounds.assert_called_once()
+
+
+class NavigationWindowResizeTest(IntraPaintTestCase):
+    """Resizes the floating navigation window, which has the image panel's zoom controls."""
+
+    def test_resize_hides_scale_slider_that_does_not_fit(self) -> None:
+        """Resizing the window runs the image panel's visibility checks, so the scale slider hides when narrow."""
+        image_stack = ImageStack(QSize(128, 96), QSize(128, 96), QSize(8, 8), QSize(2048, 2048))
+        main_viewer = ImageViewer(None, image_stack, use_keybindings=False)
+        window = NavigationWindow(image_stack, main_viewer)
+        window.show()
+        try:
+            # pylint: disable-next=protected-access
+            slider = window._image_scale_slider
+            assert slider is not None
+            window.resize(MIN_WIDTH_SHOWING_SCALE_SLIDER + 100, 400)
+            self.assertTrue(slider.isVisibleTo(window))
+            window.resize(MIN_WIDTH_SHOWING_SCALE_SLIDER - 100, 400)
+            self.assertFalse(slider.isVisibleTo(window))
+        finally:
+            window.close()
+            window.deleteLater()
+            main_viewer.deleteLater()
