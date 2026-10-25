@@ -1330,10 +1330,20 @@
         "label": "Tiling",
         "category": "Cache",
         "subcategory": "WebUI",
-        "description": "Generate tiling images that can be seamlessly repeated.",
+        "description": "Generate tiling images that can be seamlessly repeated. Inpainting ignores Inpaint Full Resolution while tiling is on.",
         "type": "bool",
         "default": false,
         "saved": true
+    },
+    "webui_tiling_available": {
+        "label": "Tiling available",
+        "category": "Cache",
+        "subcategory": "WebUI",
+        "description": "Whether the WebUI generator is connected, so its tiling option applies.",
+        "type": "bool",
+        "default": false,
+        "saved": false,
+        "translate": false
     },
     "webui_restore_faces": {
         "label": "Restore faces",

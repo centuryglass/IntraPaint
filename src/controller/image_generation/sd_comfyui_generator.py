@@ -448,7 +448,7 @@ class SDComfyUIGenerator(SDGenerator):
         gen_area = self._image_stack.generation_area
         inpaint_inner_bounds = QRect(QPoint(), gen_area.size())
 
-        if edit_mode == EDIT_MODE_INPAINT and cache.get(Cache.INPAINT_FULL_RES):
+        if edit_mode == EDIT_MODE_INPAINT and cache.inpaint_full_res_in_effect():
             inpaint_inner_bounds = self._inpaint_gen_area_crop_bounds()
             if inpaint_inner_bounds.size() != source_image.size():
                 original_source_image = source_image

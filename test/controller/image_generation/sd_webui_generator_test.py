@@ -136,6 +136,19 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         for image in self.generated_images.values():
             self.assertEqual(image.size(), GENERATION_SIZE)
 
+    def test_inpaint_full_res_tiling(self) -> None:
+        """Tiling sends inpainting requests with full resolution off, and leaves the full resolution setting on."""
+        cache = Cache()
+        cache.set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
+        cache.set(Cache.INPAINT_FULL_RES, True)
+        cache.set(Cache.WEBUI_TILING_AVAILABLE, True)
+        cache.set(Cache.WEBUI_TILING, True)
+        self._generate_and_check('inpaint_full_res_tiling')
+        body = self.backend.posts()[0].arguments['body']
+        self.assertTrue(body['tiling'])
+        self.assertFalse(body['inpaint_full_res'])
+        self.assertTrue(cache.get(Cache.INPAINT_FULL_RES))
+
     def test_inpaint_controlnet_reusing_generation_area(self) -> None:
         """A ControlNet unit reusing the generation area sends no image of its own when inpainting."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
@@ -173,6 +186,16 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         self.assertTrue(Cache().get(Cache.INPAINT_OPTIONS_AVAILABLE))
         generator.disconnect_or_disable()
         self.assertFalse(Cache().get(Cache.INPAINT_OPTIONS_AVAILABLE))
+
+    def test_disconnect_ends_tiling(self) -> None:
+        """Disconnecting the WebUI stops its tiling option from turning off full resolution inpainting."""
+        cache = Cache()
+        cache.set(Cache.INPAINT_FULL_RES, True)
+        cache.set(Cache.WEBUI_TILING, True)
+        cache.set(Cache.WEBUI_TILING_AVAILABLE, True)
+        self.assertFalse(cache.inpaint_full_res_in_effect())
+        self.generator.clear_cached_generator_data()
+        self.assertTrue(cache.inpaint_full_res_in_effect())
 
     def test_upscale_basic(self) -> None:
         """Upscaling without Stable Diffusion sends the whole image to the extras endpoint."""

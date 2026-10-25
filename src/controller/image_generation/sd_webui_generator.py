@@ -330,6 +330,7 @@ class SDWebUIGenerator(SDGenerator):
            load and cache any generator-specific API data."""
         assert self._webservice is not None
         cache = Cache()
+        cache.set(Cache.WEBUI_TILING_AVAILABLE, True)
         try:
             # Synchronize local config options with remote WebUI settings:
             for cross_config_key in (Cache.SD_MODEL, Cache.CLIP_SKIP):
@@ -413,6 +414,7 @@ class SDWebUIGenerator(SDGenerator):
         cache = Cache()
         for list_key in (Cache.SCRIPTS_TXT2IMG, Cache.SCRIPTS_IMG2IMG, Cache.STYLES):
             cache.set(list_key, [])
+        cache.set(Cache.WEBUI_TILING_AVAILABLE, False)
 
     def load_lora_thumbnail(self, lora_info: Optional[dict[str, str]]) -> Optional[QImage]:
         """Attempt to load a LoRA model thumbnail image from the API."""
