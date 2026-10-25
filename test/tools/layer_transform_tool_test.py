@@ -252,7 +252,6 @@ class LayerTransformToolTest(ToolTestCase):
         self.assertEqual(self.outline.rect(), QRectF(0, 0, 50, 50))
         self.assertEqual(self.outline.transformation_origin, QPointF(25, 25))
 
-
     def test_temporary_ratio_lock_reaches_outline(self) -> None:
         """Holding the fixed-aspect modifier keeps canvas edits at the layer's ratio without changing the stored
         "Keep aspect ratio" setting."""
@@ -264,6 +263,17 @@ class LayerTransformToolTest(ToolTestCase):
         self.assertAlmostEqual(self.outline.height, LAYER_HEIGHT * 2.0, places=2)
         block.set_temporary_lock(False)
         self.assertFalse(self.outline.preserve_aspect_ratio)
+
+    def test_ratio_lock_survives_layer_change(self) -> None:
+        """With "Keep aspect ratio" on, canvas edits to the next selected layer keep its ratio."""
+        image = QImage(LAYER_WIDTH, LAYER_HEIGHT, QImage.Format.Format_ARGB32_Premultiplied)
+        other_layer = self.image_stack.create_layer(image_data=image)
+        self.panel.geometry_block.set_ratio_locked(True)
+        self.image_stack.active_layer = other_layer
+        self.assertTrue(self.outline.preserve_aspect_ratio)
+        self.tool.set_width(LAYER_WIDTH * 2.0)
+        self.assertAlmostEqual(self.outline.height, LAYER_HEIGHT * 2.0, places=2)
+
 
 if __name__ == '__main__':
     unittest.main()
