@@ -212,7 +212,8 @@ class NavigationWindow(ImagePanel):
     def _main_scale_change_slot(self, _scale: float) -> None:
         self._main_view_outline.outlined_region = self._main_image_viewer.visible_scene_bounds
 
-    def resizeEvent(self, _event: Optional[QResizeEvent]) -> None:
-        """Save navigation window bounds changes when visible."""
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+        """Hide non-essential controls that don't fit, and save navigation window bounds changes when visible."""
+        super().resizeEvent(event)
         if self.isVisible():
             Cache().save_bounds(Cache.SAVED_NAVIGATION_WINDOW_POS, self)
