@@ -1,0 +1,52 @@
+{
+  "minimum": {
+    "problems": [
+      "squeezed: QWidget is 132x93, minimum 143x93",
+      "clipped: QWidget/_PinnedScrollArea shows 132x59 of 143x59"
+    ],
+    "size": [
+      219,
+      115
+    ]
+  },
+  "narrow": {
+    "problems": [],
+    "size": [
+      109,
+      385
+    ]
+  },
+  "preferred": {
+    "problems": [],
+    "size": [
+      586,
+      385
+    ]
+  },
+  "short": {
+    "problems": [
+      "squeezed: QWidget is 251x35, minimum 143x93",
+      "squeezed: QWidget/_PinnedScrollArea is 251x15, minimum 59x59",
+      "squeezed: QWidget/QPushButton 'Generate' is 251x14, minimum 82x28",
+      "squeezed: QScrollArea is 307x35, minimum 59x59"
+    ],
+    "size": [
+      586,
+      57
+    ]
+  },
+  "tall": {
+    "problems": [],
+    "size": [
+      586,
+      1200
+    ]
+  },
+  "wide": {
+    "problems": [],
+    "size": [
+      1758,
+      385
+    ]
+  }
+}

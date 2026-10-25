@@ -25,7 +25,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.controlnet_panel import TabbedControlNetPanel
+from src.ui.panel.controlnet_panel import ControlNetPanel
 from src.ui.panel.generators.stable_diffusion_panel import AdvancedControls, StableDiffusionPanel
 from src.ui.window.extra_network_window import ExtraNetworkWindow
 from src.ui.window.main_window import MainWindow
@@ -230,7 +230,7 @@ class SDGenerator(ImageGenerator, ABC):
         self._connected = False
         self._control_panel: Optional[StableDiffusionPanel] = None
         self._preview = QImage(SD_PREVIEW_IMAGE)
-        self._controlnet_panel: Optional[TabbedControlNetPanel] = None
+        self._controlnet_panel: Optional[ControlNetPanel] = None
         self._scaling_mode_cache_key = scaling_mode_cache_key
         self._show_extended_controlnet_options = show_extended_controlnet_options
         self._active_handle: Optional[GenerationHandle] = None
@@ -559,12 +559,13 @@ class SDGenerator(ImageGenerator, ABC):
                     control_types = self.get_controlnet_types()
                     control_keys = self.get_controlnet_unit_cache_keys()
                     if len(controlnet_preprocessor_list) > 0 and len(control_types) > 0:
-                        controlnet_panel = TabbedControlNetPanel(controlnet_preprocessor_list,
-                                                                 controlnet_model_list,
-                                                                 control_types,
-                                                                 control_keys,
-                                                                 self._show_extended_controlnet_options)
+                        controlnet_panel = ControlNetPanel(controlnet_preprocessor_list,
+                                                           controlnet_model_list,
+                                                           control_types,
+                                                           control_keys,
+                                                           self._show_extended_controlnet_options)
                         controlnet_panel.request_preview.connect(self.controlnet_preprocessor_preview)
+                        controlnet_panel.generate_signal.connect(self.start_and_manage_image_generation)
                         self._controlnet_panel = controlnet_panel
                 except (KeyError, RuntimeError) as err:
                     logger.error(f'Loading ControlNet failed. {err.__class__}: {err}')
