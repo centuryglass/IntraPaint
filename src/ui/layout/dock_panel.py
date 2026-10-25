@@ -37,11 +37,13 @@ from dataclasses import dataclass, field
 from functools import partial
 from typing import Callable, Optional, Sequence
 
-from PySide6.QtCore import QEvent, QMargins, QSize, Qt
-from PySide6.QtGui import QIcon, QResizeEvent
+from PySide6.QtCore import QEvent, QMargins, QObject, QPointF, QSize, Qt
+from PySide6.QtGui import QIcon, QPaintEvent, QPainter, QPalette, QPen, QResizeEvent
 from PySide6.QtWidgets import (QApplication, QBoxLayout, QFrame, QHBoxLayout, QLabel, QScrollArea, QSizePolicy, QStyle,
                                QVBoxLayout, QWidget)
 
+from src.ui.ink_style import InkStyle
+from src.ui.layout.bordered_widget import DEFAULT_LINE_WIDTH
 from src.ui.layout.panel_fit import (REQUIRED, STRIP_SECTION_MAX_WIDTH, STRIP_SECTION_MIN_WIDTH, FitItem, FitPlanner,
                                      Orientation, Placement, fresh_minimum_size, held_weakly, scroll_extent)
 from src.ui.widget.panel_header import PanelHeader, PanelPopover
@@ -184,6 +186,36 @@ class _PinnedColumn:
         return not self.column.isHidden()
 
 
+class PanelDivider(QWidget):
+    """A line between a pinned or trailing column, or a footer, and the content beside or above it. Drawn in the
+    Ink theme's `InkColors.panel_edge` (the color panel outlines use), inset from its ends so it doesn't read as a
+    panel of its own."""
+
+    def __init__(self, orientation: Qt.Orientation = Qt.Orientation.Vertical) -> None:
+        super().__init__()
+        self._orientation = orientation
+        if orientation == Qt.Orientation.Vertical:
+            self.setFixedWidth(DEFAULT_LINE_WIDTH)
+        else:
+            self.setFixedHeight(DEFAULT_LINE_WIDTH)
+
+    def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
+        """Draws the inset line."""
+        gap = self.style().pixelMetric(QStyle.PixelMetric.PM_LayoutLeftMargin, None, self)
+        style = self.style()
+        color = style.colors.panel_edge if isinstance(style, InkStyle) else self.palette().color(
+            QPalette.ColorRole.Shadow)
+        painter = QPainter(self)
+        painter.setPen(QPen(color, DEFAULT_LINE_WIDTH))
+        if self._orientation == Qt.Orientation.Vertical:
+            x = DEFAULT_LINE_WIDTH / 2
+            painter.drawLine(QPointF(x, gap), QPointF(x, self.height() - gap))
+        else:
+            y = DEFAULT_LINE_WIDTH / 2
+            painter.drawLine(QPointF(gap, y), QPointF(self.width() - gap, y))
+        painter.end()
+
+
 @dataclass
 class PanelLayout:
     """Collects the sections a `DockPanel` declares in `build`."""
@@ -234,12 +266,18 @@ class DockPanel(QWidget):
         outer.addWidget(self._header)
         # The pinned column sits left of the scroll area and the trailing column right of it:
         self._pinned = _PinnedColumn()
+        self._pinned_divider = PanelDivider()
+        self._pinned_divider.hide()
         # Created by the first use of `trailing_layout`, so panels without one have no widget for it:
         self._trailing: Optional[_PinnedColumn] = None
+        self._trailing_divider: Optional[PanelDivider] = None
+        # Created by `set_footer`, so panels without one have no widget for it:
+        self._footer_divider: Optional[PanelDivider] = None
         self._trailing_scrolls = True
         self._scroll_row = QHBoxLayout()
         self._scroll_row.setContentsMargins(0, 0, 0, 0)
         self._scroll_row.addWidget(self._pinned.column)
+        self._scroll_row.addWidget(self._pinned_divider)
         self._scroll_row.addWidget(self._scroll, stretch=1)
         outer.addLayout(self._scroll_row)
 
@@ -272,7 +310,20 @@ class DockPanel(QWidget):
         if self._footer is not None:
             raise RuntimeError('Tried to set a footer twice')
         self._footer = footer
+        self._footer_divider = PanelDivider(Qt.Orientation.Horizontal)
+        self._footer_divider.hide()
+        self.layout().addWidget(self._footer_divider)
         self.layout().addWidget(footer)
+        footer.installEventFilter(self)
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # pylint: disable=invalid-name
+        """Keeps the footer's divider shown exactly while the footer itself is shown, however its visibility changes."""
+        if watched is self._footer and self._footer_divider is not None:
+            if event.type() == QEvent.Type.Show:
+                self._footer_divider.show()
+            elif event.type() == QEvent.Type.Hide:
+                self._footer_divider.hide()
+        return super().eventFilter(watched, event)
 
     @property
     def pinned_layout(self) -> QVBoxLayout:
@@ -288,12 +339,16 @@ class DockPanel(QWidget):
         """Shows or hides the pinned column. While it shows, the footer sits under it instead of under the scrolled
         content, and the pinned content scrolls vertically above the footer when the panel is too short for it."""
         if self._footer is not None:
+            assert self._footer_divider is not None
             if visible:
+                self._pinned.column_layout.addWidget(self._footer_divider)
                 self._pinned.column_layout.addWidget(self._footer)
             else:
+                self.layout().addWidget(self._footer_divider)
                 self.layout().addWidget(self._footer)
             self._footer.show()
         self._pinned.column.setVisible(visible)
+        self._pinned_divider.setVisible(visible)
 
     @property
     def trailing_layout(self) -> QVBoxLayout:
@@ -308,12 +363,17 @@ class DockPanel(QWidget):
     def _trailing_column(self) -> _PinnedColumn:
         if self._trailing is None:
             self._trailing = _PinnedColumn()
+            self._trailing_divider = PanelDivider()
+            self._trailing_divider.hide()
+            self._scroll_row.addWidget(self._trailing_divider)
             self._scroll_row.addWidget(self._trailing.column)
         return self._trailing
 
     def set_trailing_visible(self, visible: bool) -> None:
         """Shows or hides the trailing column."""
         self._trailing_column().column.setVisible(visible)
+        assert self._trailing_divider is not None
+        self._trailing_divider.setVisible(visible)
 
     def set_trailing_scrolls(self, scrolls: bool) -> None:
         """Sets whether the trailing column scrolls vertically when the panel is too short for it, the default. A
@@ -486,8 +546,11 @@ class DockPanel(QWidget):
             header = fresh_minimum_size(self._header)
             content = QSize(max(content.width(), header.width()), content.height() + spacing + header.height())
         if self._footer is not None and not self._footer.isHidden() and self._footer.parentWidget() is self:
+            assert self._footer_divider is not None
             footer = fresh_minimum_size(self._footer)
-            content = QSize(max(content.width(), footer.width()), content.height() + spacing + footer.height())
+            divider_height = self._footer_divider.height() + spacing
+            content = QSize(max(content.width(), footer.width()),
+                            content.height() + spacing + divider_height + footer.height())
         return content
 
     def _measure_with_pinned_columns(self, body: QSize) -> QSize:
@@ -506,12 +569,14 @@ class DockPanel(QWidget):
         footer = QSize(0, 0)
         if self._footer is not None and not self._footer.isHidden():
             footer = fresh_minimum_size(self._footer)
+            assert self._footer_divider is not None
+            footer = QSize(footer.width(), footer.height() + self._footer_divider.height())
         columns = [column for column in (self._pinned, self._trailing) if column is not None and column.shown]
         widths: list[int] = []
         sizes: list[QSize] = []
         for column in columns:
             column_footer = footer if column is self._pinned else QSize(0, 0)
-            column_spacing = max(column.column_layout.spacing(), 0) if column_footer.height() > 0 else 0
+            column_spacing = (2 * max(column.column_layout.spacing(), 0)) if column_footer.height() > 0 else 0
             content = fresh_minimum_size(column.content)
             width = content.width() + column.scroll.frameWidth() * 2
             scrolls = column is not self._trailing or self._trailing_scrolls
@@ -532,6 +597,11 @@ class DockPanel(QWidget):
                 preferred = min(preferred, available.width() - row_spacing - STRIP_SECTION_MIN_WIDTH - others)
             column.scroll.set_preferred_width(preferred + widths[index] - fresh_minimum_size(column.content).width())
         columns_width = sum(size.width() + row_spacing for size in sizes)
+        if self._pinned.shown:
+            columns_width += self._pinned_divider.width() + row_spacing
+        if self._trailing is not None and self._trailing.shown:
+            assert self._trailing_divider is not None
+            columns_width += self._trailing_divider.width() + row_spacing
         return QSize(columns_width + body.width(), max(max(size.height() for size in sizes), body.height()))
 
     def measure_with_control(self, control: _Control) -> QSize:
@@ -731,7 +801,8 @@ class DockPanel(QWidget):
         if not self._header.isHidden() and self._header.parentWidget() is self:
             budget -= fresh_minimum_size(self._header).height() + spacing
         if self._footer is not None and not self._footer.isHidden() and self._footer.parentWidget() is self:
-            budget -= fresh_minimum_size(self._footer).height() + spacing
+            assert self._footer_divider is not None
+            budget -= fresh_minimum_size(self._footer).height() + self._footer_divider.height() + 2 * spacing
         return budget
 
     def _pack_sections(self) -> None:
