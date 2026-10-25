@@ -7,7 +7,6 @@ import sys
 import time
 from typing import Callable, Optional, cast
 
-from PIL import Image
 from PySide6.QtCore import Qt, QRect, QSize, QSizeF, QRectF, QEvent, Signal, QPointF, QObject, QPoint
 from PySide6.QtGui import QImage, QResizeEvent, QPixmap, QPainter, QWheelEvent, QMouseEvent, \
     QPainterPath, QKeyEvent, QPolygonF, QSinglePointEvent, QAction
@@ -18,8 +17,8 @@ from PySide6.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel,
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.controller.image_generation.apply_option import apply_generated_image, ApplyResult
 from src.ui.ink_style import set_signal
-from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.ui.graphics_items.outline import Outline
@@ -35,7 +34,7 @@ from src.util.validation import assert_valid_index
 from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.visual.image_format_utils import save_image
 from src.util.visual.image_utils import get_standard_qt_icon, get_transparency_tile_pixmap
-from src.util.visual.pil_image_utils import pil_image_to_qimage, pil_image_scaling
+from src.util.visual.pil_image_utils import pil_image_scaling
 from src.util.visual.text_drawing_utils import max_font_size, get_key_display_string, left_button_hint_text, \
     middle_button_hint_text, vertical_scroll_hint_text
 
@@ -648,43 +647,29 @@ class GeneratedImageSelector(QWidget):
         self._option_pos_offset = QPointF(0.0, 0.0)
         self._option_scale_ratio = 1.0
 
-    def _insert_option_into_layer(self, option_index: int, layer: Layer):
-        """Apply an AI-generated image change to the edited image."""
-        sample_image = self._option_items[option_index].image
-        if isinstance(sample_image, Image.Image):
-            image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-        else:
-            image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-        if self._option_data.edit_mode == EDIT_MODE_INPAINT:
-            inpaint_mask = self._option_data.mask_image
-            painter = QPainter(image)
-            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-            painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)
-            painter.end()
-        warning_message: Optional[str] = None
-        if not isinstance(layer, ImageLayer):
-            warning_message = WARNING_MESSAGE_1_NOT_IMAGE
-        elif layer.locked or layer.parent_locked:
-            warning_message = WARNING_MESSAGE_1_LAYER_LOCKED
-        elif not layer.shown:
-            warning_message = WARNING_MESSAGE_1_LAYER_HIDDEN
-        if warning_message is not None:
-            warning_title = WARNING_TITLE_INSERT_FAILED.format(layer_name=layer.name)
-            new_layer_name = self._option_items[option_index].text
+    def _insert_option_into_layer(self, option_index: int, layer: Layer, clear_context_pins: bool = False) -> Layer:
+        """Applies an option to `layer` with the batch's own context, warning if it went to a new layer instead.
+
+        Returns the layer that received the content.
+        """
+        new_layer_name = self._option_items[option_index].text
+        outcome = apply_generated_image(self._image_stack, self._option_items[option_index].image, layer,
+                                        self._option_data.generation_area, self._option_data.edit_mode,
+                                        self._option_data.mask_image, new_layer_name, clear_context_pins)
+        if outcome.result is not ApplyResult.APPLIED:
+            warning_message = {ApplyResult.BLOCKED_NOT_IMAGE_LAYER: WARNING_MESSAGE_1_NOT_IMAGE,
+                               ApplyResult.BLOCKED_LOCKED: WARNING_MESSAGE_1_LAYER_LOCKED,
+                               ApplyResult.BLOCKED_HIDDEN: WARNING_MESSAGE_1_LAYER_HIDDEN}[outcome.result]
             warning_message += WARNING_MESSAGE_2_CREATED_NEW.format(new_layer_name=new_layer_name)
-            layer = self._image_stack.create_layer(layer_name=new_layer_name)
-            assert warning_message is not None
-            show_warning_dialog(None, warning_title, warning_message, AppConfig.WARN_WHEN_LOCK_FORCES_LAYER_CREATE)
-        self._image_stack.generation_area = self._option_data.generation_area
-        self._image_stack.set_generation_area_content(image, layer)
-        if self._image_stack.active_layer != layer:
-            self._image_stack.active_layer = layer
+            show_warning_dialog(None, WARNING_TITLE_INSERT_FAILED.format(layer_name=layer.name), warning_message,
+                                AppConfig.WARN_WHEN_LOCK_FORCES_LAYER_CREATE)
+        return outcome.layer
 
     def _select_option_and_close(self, option_index: int) -> None:
         """Insert the selection and close this selector."""
         if option_index != 0:
             layer = self._image_stack.active_layer
-            self._insert_option_into_layer(option_index, layer)
+            self._insert_option_into_layer(option_index, layer, True)
         AppStateTracker.set_app_state(APP_STATE_EDITING)
         self._close_and_archive()
 

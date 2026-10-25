@@ -51,10 +51,10 @@ In priority order:
 
 ## Running
 
-```
+```bash
 pip install -r requirements.txt
 python IntraPaint.py            # --help for options; --mode selects the generation backend
-pip install -r requirements-dev.txt   # for development: adds pytest, pylint, pyinstaller and pur
+pip install -r requirements-dev.txt   # for development: adds pytest, pylint, pymarkdownlnt, pyinstaller and pur
 ```
 
 - On launch, `IntraPaint.py` auto-builds the Cython `image_fill` module if it's missing. To build it manually:
@@ -246,6 +246,14 @@ gains messages beyond `scripts/pylint_baseline.json`, or when fixed messages lea
 messages, rerun it with `--update-baseline` and commit the baseline. Run it with Python 3.13: the baseline is only
 valid for the version it was generated with.
 
+## Markdown
+
+`python scripts/markdown_lint.py` is CI's Markdown gate (PyMarkdown, configured by `.pymarkdown.yaml`). It checks every
+tracked `.md` file except the generated `doc/CHANGELOG.md` and the vendored GLID-3-XL doc. Lines are limited to 120
+characters, except in the user-facing guides listed in `LONG_LINE_DOCS` in the script; wrapping a guide's lines is a
+reason to remove it from that list. `python scripts/markdown_lint.py --fix` applies the fixes PyMarkdown can make
+itself. It runs on every change, including Markdown-only ones.
+
 ## Git & releases
 
 - **Hard rule:** `integration` is the development branch. Changes only reach it via PR; direct pushes are blocked.
@@ -270,7 +278,8 @@ valid for the version it was generated with.
   and directs gets the answer first, and the work proceeds only if the answer leaves the plan unchanged.
 - **Open a PR against `integration` once work is complete and checked, without waiting to be asked.** This overrides
   a coding agent's default of only opening a PR on explicit request. Run `pytest` and `scripts/pylint_check.py`
-  first. A PR that changes only Markdown files skips both. Agents may also commit and push to their working branch and create issues without asking.
+  first, and `scripts/markdown_lint.py` for Markdown changes. A PR that changes only Markdown files skips the first
+  two. Agents may also commit and push to their working branch and create issues without asking.
 - **PR titles use [Conventional Commits](https://www.conventionalcommits.org/) format:** `type: summary`, with a type
   such as `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `build`, `ci` or `chore`, and an optional scope
   (`fix(layers): ...`). Mark a breaking change with `!` (`feat!: ...`). PRs into `integration` are squash-merged, so

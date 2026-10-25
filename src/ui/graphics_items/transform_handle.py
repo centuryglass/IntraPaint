@@ -36,7 +36,6 @@ class TransformHandle(QGraphicsObject):
         self._handle_id = handle_id
         self.setToolTip(handle_id)
         self._last_pos = None
-        self._parent = parent
         self.setAcceptedMouseButtons(Qt.MouseButton.LeftButton)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
         self._brush = Qt.GlobalColor.black
@@ -121,8 +120,10 @@ class TransformHandle(QGraphicsObject):
         return path
 
     def _get_parent_transform_params(self) -> tuple[float, float, float]:
-        _, _, scale_x, scale_y, angle = extract_transform_parameters(self._parent.transform(),
-                                                                     self._parent.boundingRect().center())
+        parent = self.parentItem()
+        assert parent is not None
+        _, _, scale_x, scale_y, angle = extract_transform_parameters(parent.transform(),
+                                                                     parent.boundingRect().center())
         return scale_x, scale_y, angle
 
     def paint(self,

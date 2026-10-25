@@ -1214,7 +1214,7 @@
         "translate": false
     },
     "controlnet_args_2_webui": {
-        "label": "ControlNet Settings (third layer, ComfyUI API)",
+        "label": "ControlNet Settings (third layer, WebUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
         "description": "ComfyUI API third layer ControlNet extension settings.",
@@ -1244,7 +1244,7 @@
         "translate": false
     },
     "controlnet_args_2_comfyui": {
-        "label": "ControlNet Settings (third layer, WebUI API)",
+        "label": "ControlNet Settings (third layer, ComfyUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
         "description": "ComfyUI API third layer ControlNet extension settings.",
@@ -1317,7 +1317,7 @@
         "translate": false
     },
     "webui_cached_scaling_mode": {
-        "label": "Cached ComfyUI scaling mode",
+        "label": "Cached WebUI scaling mode",
         "category": "Cache",
         "subcategory": "ComfyUI",
         "description": "Last generator upscale mode used with the ComfyUI image generator",
@@ -1358,7 +1358,7 @@
         "label": "Variation seed:",
         "category": "Cache",
         "subcategory": "WebUI",
-        "description": "Controls randomness across imagees generated in the same batch.",
+        "description": "Controls randomness across images generated in the same batch.",
         "type": "int",
         "default": -1,
         "range_options": {
@@ -1420,7 +1420,7 @@
         "saved": true
     },
     "generator_scaling_modes": {
-        "label": "Image generator caling modes:",
+        "label": "Image generator scaling modes:",
         "category": "Cache",
         "subcategory": "Image generation",
         "description": "Scaling modes provided by the connected image generator",

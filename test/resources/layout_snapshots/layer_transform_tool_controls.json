@@ -2,55 +2,113 @@
   "minimum": {
     "problems": [],
     "size": [
-      277,
-      358
+      256,
+      272
     ]
   },
   "narrow": {
-    "problems": [],
+    "problems": [
+      "overlap: GeometryBlock/_GeometryField[0] and GeometryBlock/QWidget share 24x24",
+      "overlap: GeometryBlock/_GeometryField[0] and GeometryBlock/_GeometryField[1] share 28x24",
+      "overlap: GeometryBlock/_GeometryField[2] and GeometryBlock/RatioLockButton share 24x24",
+      "overlap: GeometryBlock/_GeometryField[2] and GeometryBlock/_GeometryField[3] share 28x24",
+      "overlap: GeometryBlock/_GeometryField[4] and GeometryBlock/_GeometryField[5] share 28x24",
+      "squeezed: GeometryBlock is 128x114, minimum 256x114",
+      "clipped: GeometryBlock/_GeometryField[1] shows 46x24 of 110x24",
+      "clipped: GeometryBlock/_GeometryField[3] shows 46x24 of 110x24",
+      "clipped: GeometryBlock/_GeometryField[5] shows 46x24 of 110x24",
+      "squeezed: QWidget[0] is 128x25, minimum 191x25",
+      "squeezed: QWidget[0]/QPushButton 'Revert' is 61x25, minimum 80x25",
+      "squeezed: QWidget[0]/QPushButton 'Clear transform' is 61x25, minimum 105x25"
+    ],
     "size": [
-      138,
-      300
+      128,
+      272
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      400,
-      300
+      300,
+      272
     ]
   },
   "short": {
     "problems": [
-      "squeezed: FloatSliderSpinbox[0] is 382x15, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[0]/QLabel 'X:' is 37x11, minimum 12x17",
-      "squeezed: FloatSliderSpinbox[0]/QDoubleSpinBox is 339x11, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[1] is 382x14, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[1]/QLabel 'Y:' is 37x10, minimum 11x17",
-      "squeezed: FloatSliderSpinbox[1]/QDoubleSpinBox is 339x10, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[2] is 382x15, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[2]/QLabel 'Angle:' is 37x11, minimum 37x17",
-      "squeezed: FloatSliderSpinbox[2]/QDoubleSpinBox is 339x11, minimum 107x26",
-      "squeezed: FloatSliderSpinbox[3] is 382x15, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[3]/QLabel 'W:' is 37x11, minimum 16x17",
-      "squeezed: FloatSliderSpinbox[3]/QDoubleSpinBox is 339x11, minimum 102x26",
-      "squeezed: FloatSliderSpinbox[4] is 382x14, minimum 150x30",
-      "squeezed: FloatSliderSpinbox[4]/QLabel 'H:' is 37x10, minimum 13x17",
-      "squeezed: FloatSliderSpinbox[4]/QDoubleSpinBox is 339x10, minimum 102x26",
-      "squeezed: QWidget is 382x14, minimum 129x24",
-      "squeezed: QWidget/CheckBox 'Keep aspect ratio' is 127x12, minimum 127x22",
-      "clipped: QPushButton 'Clear' shows 186x23 of 186x25",
-      "clipped: QPushButton 'Reset' shows 186x23 of 186x25"
+      "squeezed: GeometryBlock is 300x101, minimum 256x114",
+      "clipped: GeometryBlock/_GeometryField[6] shows 132x20 of 132x24"
     ],
     "size": [
-      400,
-      179
+      300,
+      136
+    ]
+  },
+  "strip_minimum": {
+    "problems": [],
+    "size": [
+      256,
+      272
+    ]
+  },
+  "strip_narrow": {
+    "problems": [
+      "overlap: GeometryBlock/_GeometryField[0] and GeometryBlock/QWidget share 24x24",
+      "overlap: GeometryBlock/_GeometryField[0] and GeometryBlock/_GeometryField[1] share 28x24",
+      "overlap: GeometryBlock/_GeometryField[2] and GeometryBlock/RatioLockButton share 24x24",
+      "overlap: GeometryBlock/_GeometryField[2] and GeometryBlock/_GeometryField[3] share 28x24",
+      "overlap: GeometryBlock/_GeometryField[4] and GeometryBlock/_GeometryField[5] share 28x24",
+      "squeezed: GeometryBlock is 128x114, minimum 256x114",
+      "clipped: GeometryBlock/_GeometryField[1] shows 46x24 of 110x24",
+      "clipped: GeometryBlock/_GeometryField[3] shows 46x24 of 110x24",
+      "clipped: GeometryBlock/_GeometryField[5] shows 46x24 of 110x24",
+      "squeezed: QWidget[0] is 128x25, minimum 191x25",
+      "squeezed: QWidget[0]/QPushButton 'Revert' is 61x25, minimum 80x25",
+      "squeezed: QWidget[0]/QPushButton 'Clear transform' is 61x25, minimum 105x25"
+    ],
+    "size": [
+      128,
+      272
+    ]
+  },
+  "strip_preferred": {
+    "problems": [],
+    "size": [
+      300,
+      272
+    ]
+  },
+  "strip_short": {
+    "problems": [
+      "overlap: GeometryBlock/_GeometryField[0] and GeometryBlock/QWidget share 24x24",
+      "overlap: GeometryBlock/_GeometryField[2] and GeometryBlock/RatioLockButton share 24x24",
+      "squeezed: GeometryBlock is 185x114, minimum 256x114",
+      "clipped: GeometryBlock/_GeometryField[1] shows 74x24 of 110x24",
+      "clipped: GeometryBlock/_GeometryField[3] shows 74x24 of 110x24",
+      "clipped: GeometryBlock/_GeometryField[5] shows 74x24 of 110x24"
+    ],
+    "size": [
+      300,
+      136
+    ]
+  },
+  "strip_tall": {
+    "problems": [],
+    "size": [
+      300,
+      1200
+    ]
+  },
+  "strip_wide": {
+    "problems": [],
+    "size": [
+      1600,
+      272
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      400,
+      300,
       1200
     ]
   },
@@ -58,7 +116,7 @@
     "problems": [],
     "size": [
       1600,
-      300
+      272
     ]
   }
 }

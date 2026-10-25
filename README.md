@@ -7,7 +7,9 @@ the efficiency of AI tools for a more seamless creative process. IntraPaint is a
 support is possible with manual setup and compilation.
 
 ---
+
 # Table of Contents:
+
 1. [Getting Started](#getting-started-with-intrapaint)
 2. [Key Features](#key-features)
 3. [Use Cases](#why-combine-ai-and-traditional-tools)
@@ -23,36 +25,36 @@ support is possible with manual setup and compilation.
 8. [FAQ](#faq)
 9. [Alternatives](#alternatives)
 10. [Contributing](#contributing)
+
 ---
 
 ## Getting Started with IntraPaint:
 
-
-| ![example-1.png](./examples/main-example-1.png) |    ![example-2.png](./examples/main-example-2.png)    | 
-|:-----------------------------------------------:|:-----------------------------------------------------:| 
+| ![example-1.png](./examples/main-example-1.png) |    ![example-2.png](./examples/main-example-2.png)    |
+|:-----------------------------------------------:|:-----------------------------------------------------:|
 |   *1. Draw and paint with conventional tools*   | *2. Select areas for AI editing and provide a prompt* |
 
-
-| ![example-3.png](./examples/main-example-3.png) | ![example-4.png](./examples/main-example-4.png) | 
-|:-----------------------------------------------:|:-----------------------------------------------:| 
+| ![example-3.png](./examples/main-example-3.png) | ![example-4.png](./examples/main-example-4.png) |
+|:-----------------------------------------------:|:-----------------------------------------------:|
 |       *3. Choose from generated options*        |        *4. Refine and repeat as needed.*        |
-
 
 ## Key Features:
 
 ### AI image generation features:
+
 - Integrates with Stable Diffusion, running locally or remotely (via API) using [Forge WebUI](https://github.com/lllyasviel/stable-diffusion-webui-forge) or [Automatic1111 WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui).
 - Supports **text-to-image**, **image-to-image**, and **inpainting**, allowing users to generate new images, refine existing ones, or apply specific edits using natural language prompts.
 - Advanced AI guidance through **ControlNet modules**, enabling features like depth mapping, recoloring, pose replication, and more.
 - **AI upscaling** via Stable Diffusion + ControlNet or other specialized models.
 
-
 ### Traditional Image Editing Tools:
+
 - Full-featured layer stack with advanced blending modes, layer groups, and transformations.
 - Digital painting capabilities powered by the [libmypaint](https://github.com/mypaint/libmypaint) brush engine, with full support for pressure-sensitive drawing tablets.
 - Standard tools such as selection, text editing, paint bucket, filters, and more are available even when AI features are disabled.
 
 ## Why Combine AI and Traditional Tools?
+
 - Automate repetitive tasks: Focus on drawing what matters to you, and let the AI handle the rest.
 - Explore creative alternatives: Quickly iterate on multiple ideas without manually creating each variation.
 - Complete control in one package: Use familiar editing tools without needing to export files to another application.
@@ -79,6 +81,7 @@ Generate images with greater detail and precision by using guided inpainting to 
 ---
 
 ### More examples:
+
 All images below were created using IntraPaint:
 <table>
     <tr>
@@ -139,11 +142,13 @@ All images below were created using IntraPaint:
         </td>
     </tr>
 </table>
+
 ---
 
 ## Installation and Setup:
 
 ### Pre-packaged builds:
+
 Pre-compiled versions for x86_64 Linux and Windows are available on the [releases page](https://github.com/centuryglass/IntraPaint/releases).
 
 - Windows: [IntraPaint.exe](https://github.com/centuryglass/IntraPaint/releases/latest/download/IntraPaint.exe)
@@ -152,29 +157,30 @@ Pre-compiled versions for x86_64 Linux and Windows are available on the [release
 No installation is required to use non-AI features. Just run the executable directly.
 
 ### Install from GitHub:
+
 On other systems, you will need to use git and python to install IntraPaint.  Make sure you have git, python 3.11 or
 greater, and pip installed and added to your system's PATH variable.  On some systems, you might need to change
 "python" to "python3" and "pip" to "pip3" in the commands below. Using a Python virtual environment is also
 recommended, but not required.  Run the following commands to install and start IntraPaint:
 
-```
+```bash
 git clone https://github.com/centuryglass/IntraPaint
 cd IntraPaint
 pip install -r requirements.txt
 python IntraPaint.py
 ```
 
-
 ## AI image generation setup (Stable Diffusion):
+
 To use AI features, you'll need a running Stable Diffusion client (either [ComfyUI](https://github.com/comfyanonymous/ComfyUI?tab=readme-ov-file#comfyui),
 [Forge WebUI](https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#stable-diffusion-webui-forge) or the
 [Automatic1111 WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#stable-diffusion-web-ui)) with API access enabled.  The simplest method for getting this is through. [Stability Matrix](https://github.com/LykosAI/StabilityMatrix).
 
 1. Download and install Stability Matrix for your system:
-   * [Windows 10, 11](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip)
-   * [Linux AppImage](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip)
-   * [Arch Linux AUR](https://aur.archlinux.org/packages/stabilitymatrix)
-   * [macOS, Apple Silicon](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg)
+   - [Windows 10, 11](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip)
+   - [Linux AppImage](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip)
+   - [Arch Linux AUR](https://aur.archlinux.org/packages/stabilitymatrix)
+   - [macOS, Apple Silicon](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg)
 2. Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI reForge", "Stable Diffusion WebUI Forge", "Stable Diffusion WebUI", or "ComfyUI" and wait for it to install.
 3. If you chose any of the WebUI options, click the gear icon next to package you just installed to the open launch options. Scroll to the bottom of the launch options, add `--api` to "Extra Launch Arguments", and click "Save"
 4. Click "Launch", and wait for the Stable Diffusion client to finish starting.
@@ -182,10 +188,10 @@ To use AI features, you'll need a running Stable Diffusion client (either [Comfy
 
 More detailed instructions and a comparison of the available options can be found on the [Stable Diffusion setup guide](./doc/stable_diffusion_setup.md).
 
-
 ### Guides and tutorials
 
 ### IntraPaint Documentation:
+
 - [IntraPaint Controls](./doc/controls.md): An overview of the main application interface.
 - [IntraPaint Tools](./doc/tool_guide.md): Guides to each of IntraPaint's image editing tools.
 - [Main Menu Options](./doc/menu_options.md): Detailed guide to all main menu options.
@@ -194,11 +200,12 @@ More detailed instructions and a comparison of the available options can be foun
 - [Guide to AI Inpainting](./doc/inpainting_guide.md): Tips and tricks for effective AI inpainting.
 
 ### Related Resources
+
 These are third-party resources that I've found useful, I did not create or contribute to them.
 
 - [The Ultimate Guide to ControlNet](https://education.civitai.com/civitai-guide-to-controlnet/#what-do-the-models-do): An in-depth overview of ControlNet's capabilities.
 - [Stable Diffusion Samplers: A Comprehensive Guide](https://stable-diffusion-art.com/samplers/): Explains what the difference between Euler A/DPM++/UniPC/etc. is, and why you might want to choose any particular option.
-- [Automatic1111 WebUI Features](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Features): All prompt-related features listed here will work within IntraPaint. 
+- [Automatic1111 WebUI Features](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Features): All prompt-related features listed here will work within IntraPaint.
 
 ### FAQ:
 
@@ -217,8 +224,8 @@ and ControlNet models have been downloaded.
 *If using WebUI Forge*:  The most recent version of the Forge WebUI (as of 8/30/24) does not have a working ControlNet
 API. Use Git to revert to commit `a9e0c38`, or install the [v0.0.17 release](https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/previous/webui_forge_cu121_torch21_f0017.7z).
 
-*If using the Automatic1111 WebUI*: The ControlNet panel only appears after you've installed the sd-webui-controlnet 
-extension.  Installation instructions and links to required ControlNet model files can be found [here](https://github.com/Mikubill/sd-webui-controlnet).
+*If using the Automatic1111 WebUI*: The ControlNet panel only appears after you've installed the sd-webui-controlnet
+extension.  Installation instructions and links to required ControlNet model files can be found on the [ControlNet extension page](https://github.com/Mikubill/sd-webui-controlnet).
 
 *If using ComfyUI*: You shouldn't need to do anything besides downloading ControlNet model files.
 
@@ -226,14 +233,15 @@ extension.  Installation instructions and links to required ControlNet model fil
 
 #### Q: Wasn't there something else here before?
 
-Version 0.1.0 of IntraPaint, released July 2022, was a much simpler program that used the old [GLID-3-XL](https://github.com/Jack000/glid-3-xl) AI image generation model for inpainting. You can still access that version at https://github.com/centuryglass/IntraPaint/tree/0.1-release
+Version 0.1.0 of IntraPaint, released July 2022, was a much simpler program that used the old [GLID-3-XL](https://github.com/Jack000/glid-3-xl) AI image generation model for inpainting. You can still access that version at <https://github.com/centuryglass/IntraPaint/tree/0.1-release>
 
 ### Alternatives:
+
 - The [Krita AI Plugin](https://github.com/Acly/krita-ai-diffusion) shares many of the same goals as IntraPaint and executes them very well. If you already use [Krita](https://krita-artists.org/) or [ComfyUI](https://github.com/comfyanonymous/ComfyUI), this could be a great option for you.  This is the only item on this list that I've personally tested.
 - Several plugins exist for [GIMP](https://www.gimp.org/) with similar functionality:
-  * [Stable-Gimpfusion](https://github.com/ArtBIT/stable-gimpfusion)
-  * [gimp-stable-diffusion](https://github.com/blueturtleai/gimp-stable-diffusion)
-  * [Stable Boy](https://github.com/thndrbrrr/gimp-stable-boy)
+  - [Stable-Gimpfusion](https://github.com/ArtBIT/stable-gimpfusion)
+  - [gimp-stable-diffusion](https://github.com/blueturtleai/gimp-stable-diffusion)
+  - [Stable Boy](https://github.com/thndrbrrr/gimp-stable-boy)
 
 ## Contributing:
 
