@@ -674,6 +674,38 @@ def stable_diffusion_panel(webui: bool) -> DockPanel:
     return panel
 
 
+def controlnet_panel(webui: bool) -> DockPanel:
+    """Returns a ControlNet panel with sample preprocessors, models and control types, as its generator creates it for
+    a backend."""
+    # pylint: disable=import-outside-toplevel
+    from sd_backend_client import CONTROLNET_MODEL_NONE, PREPROCESSOR_NONE, PREPROCESSOR_RES_PARAM_KEY, \
+        ControlNetPreprocessor, ParameterDef
+    from src.config.cache import Cache
+    from src.ui.panel.controlnet_panel import ControlNetPanel
+    canny = ControlNetPreprocessor(name='canny', parameters=[
+        ParameterDef(key=PREPROCESSOR_RES_PARAM_KEY, default_value=512, display_name='Resolution', min_val=64,
+                     max_val=2048, step_val=8),
+        ParameterDef(key='threshold_a', default_value=100, display_name='Low threshold', min_val=1, max_val=255,
+                     step_val=1),
+        ParameterDef(key='threshold_b', default_value=200, display_name='High threshold', min_val=1, max_val=255,
+                     step_val=1)])
+    depth = ControlNetPreprocessor(name='depth_midas', parameters=[
+        ParameterDef(key=PREPROCESSOR_RES_PARAM_KEY, default_value=512, display_name='Resolution', min_val=64,
+                     max_val=2048, step_val=8)])
+    models = [CONTROLNET_MODEL_NONE, 'control_v11p_sd15_canny', 'control_v11f1p_sd15_depth']
+    control_types = {
+        'All': {'module_list': [PREPROCESSOR_NONE, 'canny', 'depth_midas'], 'model_list': models,
+                'default_option': 'canny', 'default_model': models[1]},
+        'Canny': {'module_list': [PREPROCESSOR_NONE, 'canny'], 'model_list': models[:2], 'default_option': 'canny',
+                  'default_model': models[1]},
+        'Depth': {'module_list': [PREPROCESSOR_NONE, 'depth_midas'], 'model_list': [models[0], models[2]],
+                  'default_option': 'depth_midas', 'default_model': models[2]}}
+    keys = [Cache.CONTROLNET_ARGS_0_WEBUI, Cache.CONTROLNET_ARGS_1_WEBUI, Cache.CONTROLNET_ARGS_2_WEBUI] if webui \
+        else [Cache.CONTROLNET_ARGS_0_COMFYUI, Cache.CONTROLNET_ARGS_1_COMFYUI, Cache.CONTROLNET_ARGS_2_COMFYUI]
+    return ControlNetPanel([ControlNetPreprocessor(name=PREPROCESSOR_NONE), canny, depth], models, control_types,
+                           keys, webui)
+
+
 def panel_scenes(controller: 'AppController') -> list[PanelScene]:
     """Returns every panel scene for a mock-mode AppController, in capture order.
 
@@ -690,6 +722,8 @@ def panel_scenes(controller: 'AppController') -> list[PanelScene]:
         PanelScene('navigation_panel', lambda c: c._tool_panel_navigation_panel),
         PanelScene('sd_webui_panel', lambda _c: stable_diffusion_panel(True)),
         PanelScene('sd_comfyui_panel', lambda _c: stable_diffusion_panel(False)),
+        PanelScene('controlnet_webui_panel', lambda _c: controlnet_panel(True)),
+        PanelScene('controlnet_comfyui_panel', lambda _c: controlnet_panel(False)),
         *_tool_control_scenes(controller),
     ]
 

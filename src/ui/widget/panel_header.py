@@ -15,9 +15,10 @@ from typing import Optional
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QIcon, QPainter, QPainterPath, QPalette, QPen, QResizeEvent
-from PySide6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QLabel, QSizePolicy, QStyle, QStyleOptionToolButton,
+from PySide6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QLabel, QStyle, QStyleOptionToolButton,
                                QToolButton, QVBoxLayout, QWidget)
 
+from src.ui.widget.elided_label import ElidedLabel
 from src.ui.widget.keycap_badge import KeycapBadge
 from src.ui.widget.shortcut_tooltip import shortcut_tooltip_text
 
@@ -99,51 +100,6 @@ class _GlyphButton(QToolButton):
             arrow.closeSubpath()
             painter.drawPath(arrow)
         painter.end()
-
-
-class _ElidedLabel(QLabel):
-    """A one-line label that ends its text with an ellipsis when it is too narrow, and shows the full text as a
-    tooltip then."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._full_text = ''
-        self.setMinimumWidth(1)
-        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-
-    @property
-    def full_text(self) -> str:
-        """Returns the text before eliding."""
-        return self._full_text
-
-    def set_full_text(self, text: str) -> None:
-        """Changes the text, eliding it to the current width."""
-        self._full_text = text
-        self.updateGeometry()
-        self._elide()
-
-    def full_text_width(self) -> int:
-        """Returns the width the full text needs, with a pixel to spare on each side for rounding."""
-        return self.fontMetrics().horizontalAdvance(self._full_text) + 2
-
-    def sizeHint(self) -> QSize:
-        """Returns the size of the full text."""
-        return QSize(self.full_text_width(), super().sizeHint().height())
-
-    def minimumSizeHint(self) -> QSize:
-        """Returns a width of one pixel, since the text elides to fit."""
-        return QSize(1, super().minimumSizeHint().height())
-
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
-        """Elides the text to the new width."""
-        super().resizeEvent(event)
-        self._elide()
-
-    def _elide(self) -> None:
-        shown = self._full_text if self.width() >= self.full_text_width() \
-            else self.fontMetrics().elidedText(self._full_text, Qt.TextElideMode.ElideRight, self.width())
-        self.setText(shown)
-        self.setToolTip(self._full_text if shown != self._full_text else '')
 
 
 class PanelPopover(QFrame):
@@ -232,7 +188,7 @@ class PanelHeader(QWidget):
         self._icon_label = _IconLabel()
         self._icon_label.setFixedSize(ICON_SIZE, ICON_SIZE)
         self._icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._name_label = _ElidedLabel()
+        self._name_label = ElidedLabel()
         self._key_badge = self._make_key_badge()
         self._description_label = QLabel()
         self._description_label.setForegroundRole(QPalette.ColorRole.PlaceholderText)
@@ -402,7 +358,7 @@ class PanelHeader(QWidget):
         shown = [widget for widget in widgets if not widget.isHidden()]
         width = sum(widget.sizeHint().width() for widget in shown) + self._name_label.full_text_width()
         if not self._description_label.isHidden():
-            # A pixel to spare on each side for rounding, as `_ElidedLabel.full_text_width` has:
+            # A pixel to spare on each side for rounding, as `ElidedLabel.full_text_width` has:
             width += self._description_label.fontMetrics().horizontalAdvance(self._description_label.text()) + 2
             width += HEADER_SPACING
         self._one_line_key = key
