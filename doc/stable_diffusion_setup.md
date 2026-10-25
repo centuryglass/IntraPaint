@@ -11,23 +11,25 @@ available.
 [Stability Matrix setup section](#option-1-stability-matrix) and pick "Stable Diffusion WebUI reForge"** when asked to choose between Stable Diffusion packages.
 
 ---
+
 ## Table of Contents
+
 1. [Stable Diffusion generator options compared](#stable-diffusion-generator-options-compared)
-    - [Stable Diffusion WebUI](#stable-diffusion-webui)
-        * [IntraPaint features exclusive to the WebUI generator](#intrapaint-features-exclusive-to-the-webui-generator)
-    - [ComfyUI](#comfyui)
-        * [IntraPaint features exclusive to the ComfyUI generator](#intrapaint-features-exclusive-to-the-comfyui-generator)
+   - [Stable Diffusion WebUI](#stable-diffusion-webui)
+     - [IntraPaint features exclusive to the WebUI generator](#intrapaint-features-exclusive-to-the-webui-generator)
+   - [ComfyUI](#comfyui)
+     - [IntraPaint features exclusive to the ComfyUI generator](#intrapaint-features-exclusive-to-the-comfyui-generator)
 2. [Stable Diffusion model files](#stable-diffusion-model-files)
 3. [Installation and setup](#installation-and-setup)
-    - [Option 1: Stability Matrix](#option-1-stability-matrix)
-    - [Option 2: WebUI Forge package install](#option-2-webui-forge-package-install)
-    - [Option 3: ComfyUI package install](#option-3-comfyui-package-install)
-    - [Option 4: Manual setup with git, Python, and Anaconda](#option-4-manual-setup-with-git-python-and-anaconda)
+   - [Option 1: Stability Matrix](#option-1-stability-matrix)
+   - [Option 2: WebUI Forge package install](#option-2-webui-forge-package-install)
+   - [Option 3: ComfyUI package install](#option-3-comfyui-package-install)
+   - [Option 4: Manual setup with git, Python, and Anaconda](#option-4-manual-setup-with-git-python-and-anaconda)
 4. [Extra feature setup](#extra-feature-setup)
-    - [ControlNet](#controlnet)
-    - [Upscaling models and the Ultimate SD Upscaler](#upscaling-models-and-the-ultimate-sd-upscaler)
-       * [WebUI/WebUI Forge installation](#webuiwebui-forgewebui-reforge-installation)
-       * [ComfyUI installation](#comfyui-installation)
+   - [ControlNet](#controlnet)
+   - [Upscaling models and the Ultimate SD Upscaler](#upscaling-models-and-the-ultimate-sd-upscaler)
+     - [WebUI/WebUI Forge installation](#webuiwebui-forgewebui-reforge-installation)
+     - [ComfyUI installation](#comfyui-installation)
 
 ---
 
@@ -35,30 +37,29 @@ available.
 
 There are two popular programs available for running Stable Diffusion that IntraPaint can use for image generation:
 the **Stable Diffusion WebUI**, and **ComfyUI**. Both options are nearly equivalent when used with IntraPaint, but each
-provides a few minor exclusive features. 
+provides a few minor exclusive features.
 
 Each of these programs also comes with its own interface, which can be accessed through a web browser. These interfaces
-are less suited for a digital art workflow than IntraPaint, but are occasionally worth using for tasks like bulk 
+are less suited for a digital art workflow than IntraPaint, but are occasionally worth using for tasks like bulk
 image generation or loading extensions.
-
-
 
 ---
 
 ### Stable Diffusion WebUI
-The Stable Diffusion WebUI is one of the first interfaces created for using Stable Diffusion to see widespread use. 
+
+The Stable Diffusion WebUI is one of the first interfaces created for using Stable Diffusion to see widespread use.
 Several independent versions of the WebUI exist, with varying goals.  IntraPaint supports the [original Stable Diffusion WebUI
 (A1111)](https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#stable-diffusion-web-ui),
 [WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#stable-diffusion-webui-forge),
 and [WebUI reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge?tab=readme-ov-file#stable-diffusion-webui-forgereforge).
-Currently, **WebUI reForge is the recommended version** for use with IntraPaint. 
-
+Currently, **WebUI reForge is the recommended version** for use with IntraPaint.
 
 | ![Screenshot of the Stable Diffusion WebUI interface.](./generator_screenshots/webui.png) |
 |:-----------------------------------------------------------------------------------------:|
 |                      The original Stable Diffusion WebUI interface.                       |
 
 A brief comparison of the three WebUI options:
+
 - **The original (A1111) Stable Diffusion WebUI** is much less efficient than the alternatives, and performs poorly on older graphics cards.  It has the most powerful ControlNet capabilities, but it's also the only one where you need to manually install ControlNet as an extension.
 - **Stable Diffusion WebUI Forge** comes with vastly improved performance compared to the original WebUI, but it also comes with a lot of experimental features that break extension support. IntraPaint cannot use ControlNet through WebUI Forge unless you downgrade it to an older version.
 - **Stable Diffusion WebUI reForge** includes all the performance enhancements from WebUI Forge, without any of the experimental features that break compatibility.
@@ -72,10 +73,10 @@ A brief comparison of the three WebUI options:
 - The [Stable Diffusion settings tab](./stable-diffusion.md#stable-diffusion-settings) provides some WebUI-exclusive options that let you directly control how the generator caches and loads AI models.
 - When using the WebUI generator with a dedicated inpainting model, that model will automatically be configured for improved inpainting. When using the ComfyUI generator, you need to check an option in the [ComfyUI extras tab](./stable-diffusion.md#image-generation-panel-extras-tab-comfyui-generator) to properly load inpainting models.
 - Options from the [WebUI extras tab](./stable-diffusion.md#image-generation-panel-extras-tab-webui-generator) are exclusive to the WebUI image generator:
-   * Batch variation controls, which lets you set how similar different images within the same batch will be.
-   * Seed resize controls, which help you regenerate similar images at different sizes.
-   * The "Tiling" checkbox, which lets you generate images that can be seamlessly tiled.
-   * The "Restore faces" checkbox, which applies a secondary facial restoration AI to correct issues with face generation.
+  - Batch variation controls, which lets you set how similar different images within the same batch will be.
+  - Seed resize controls, which help you regenerate similar images at different sizes.
+  - The "Tiling" checkbox, which lets you generate images that can be seamlessly tiled.
+  - The "Restore faces" checkbox, which applies a secondary facial restoration AI to correct issues with face generation.
 
 ---
 
@@ -88,17 +89,16 @@ with complex and powerful node-based controls.
 |:----------------------------------------------------------------------------:|
 |                            The ComfyUI interface.                            |
 
- Its speed and efficiency are at least as good as WebUI Forge and reForge, if not slightly better. It is much more 
+ Its speed and efficiency are at least as good as WebUI Forge and reForge, if not slightly better. It is much more
 flexible than any of the WebUI options, but the learning curve is also much steeper.
-
 
 ### IntraPaint features exclusive to the ComfyUI generator
 
 - Only the ComfyUI generator supports queued image generation. If you attempt to generate images with the ComfyUI generator active and some other program is using ComfyUI for image generation, you will be placed in a queue, and the loading screen will tell you your position in that queue.  When using the WebUI generator, image generation will immedately abort if you attempt it under the same circumstances.
 - Options from the [ComfyUI extras tab](./stable-diffusion.md#image-generation-panel-extras-tab-comfyui-generator) are exclusive to the ComfyUI image generator:
-  * The option to apply a specific config file when loading models, instead of selecting one automatically.
-  * Tiled VAE encoding/decoding controls, which can decrease the amount of memory needed for generating very large images.
-  * A "Clear Memory" button, that makes the ComfyUI generator unload cached AI models from memory and otherwise free up memory resources.
+  - The option to apply a specific config file when loading models, instead of selecting one automatically.
+  - Tiled VAE encoding/decoding controls, which can decrease the amount of memory needed for generating very large images.
+  - A "Clear Memory" button, that makes the ComfyUI generator unload cached AI models from memory and otherwise free up memory resources.
 
 ---
 
@@ -136,17 +136,17 @@ all three supported WebUI versions can be easily installed through Stability Mat
 |                       The main Stability Matrix interface.                       |
 
 1. First, download the appropriate version of Stability Matrix for your system:
-   * [Windows 10, 11](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip)
-   * [macOS, Apple Silicon](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg)
-   * [Linux AppImage](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip)
-   * [Arch Linux AUR](https://aur.archlinux.org/packages/stabilitymatrix)
+   - [Windows 10, 11](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip)
+   - [macOS, Apple Silicon](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg)
+   - [Linux AppImage](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip)
+   - [Arch Linux AUR](https://aur.archlinux.org/packages/stabilitymatrix)
 2. Extract and launch the downloaded file. On the first launch it will ask you to select a data directory, and ask you to select a package to install.  If you aren't sure which to pick, **Stable Diffusion WebUI reForge** is the recommended option, but **Stable Diffusion WebUI**, **Stable Diffusion WebUI Forge**, and **ComfyUI** will all also work with IntraPaint.
 3. If you've already downloaded Stable Diffusion or ControlNet models, go to the **Checkpoint Manager** tab on the left. Click the **⋯** menu button on the upper right, and choose **"Models Folder"**, and it will open the folder you need in the system file manager.  Copy Stable Diffusion models into the **"StableDiffusion"** subfolder.
 4. Next add any ControlNet models you've downloaded. Although the folder from the last step does contain a ControlNet section, it doesn't seem to properly share ControlNet models from that folder with Stable Diffusion. The location where you should actually put ControlNet models within the Stability Matrix data folder depends on which package you chose:
-   * reForge: `Packages/Stable Diffusion WebUI reForge/models/ControlNet`
-   * Forge: `Packages/Stable Diffusion WebUI Forge/models/ControlNet`
-   * Original WebUI: `Packages/Stable Diffusion WebUI/models/ControlNet`
-   * ComfyUI: `Packages/ComfyUI/models/controlnet`
+   - reForge: `Packages/Stable Diffusion WebUI reForge/models/ControlNet`
+   - Forge: `Packages/Stable Diffusion WebUI Forge/models/ControlNet`
+   - Original WebUI: `Packages/Stable Diffusion WebUI/models/ControlNet`
+   - ComfyUI: `Packages/ComfyUI/models/controlnet`
 5. For **WebUI packages only**, you'll need to enable API access. Skip this step if you installed ComfyUI. <br/> Click the settings button next to the WebUI package: <br/> ![settings button location image](./generator_screenshots/matrix_launch_settings.png) <br/> Scroll to the bottom of the list, add `--api` to the **Extra Launch Arguments** section, and click save. </br> ![Stability Matrix API flag screenshot](./generator_screenshots/matrix_add_api_flag.png)
 6. Click the **Launch** button under the Stable Diffusion package you installed. A log screen will open up, showing the status of the package as it starts up.  This might take a couple of minutes the first time it runs, as it finishes the last few parts of the setup process.
 7. Once the **"Open Web UI"** button appears at the top of the window, Stable Diffusion is ready to use. If you launch IntraPaint on the same computer, it will automatically connect to Stable Diffusion.  If IntraPaint is already running, you can also use the [image generator selection window](./menu_options.md#image-generator-selection-window) to activate the appropriate Stable Diffusion image generator.
@@ -158,7 +158,7 @@ If you use one of the older versions, this option supports all WebUI features, i
 work outside of Windows and requires a bit more file management, but it's still a good option if you don't need the
 extra features in Stability Matrix.
 
-1. Download the last stable package version [here](https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/previous/webui_forge_cu121_torch21_f0017.7z). There are several other options linked on the [WebUI Forge README](https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#installing-forge),  but newer versions may cause compatibility issues.
+1. Download the last stable [Forge package version](https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/previous/webui_forge_cu121_torch21_f0017.7z). There are several other options linked on the [WebUI Forge README](https://github.com/lllyasviel/stable-diffusion-webui-forge?tab=readme-ov-file#installing-forge),  but newer versions may cause compatibility issues.
 2. Extract the downloaded package into a new folder. If you're not using Windows 11, you may need to install [7-Zip](https://www.7-zip.org) to extract the compressed files.
 3. Within the new WebUI-Forge folder, open the `webui\webui-user.bat` file in a text editor. Find the `set COMMANDLINE_ARGS=` line near the top of the file, and change it to `set COMMANDLINE_ARGS=--api`.  Save and close the file. This step is needed to make the WebUI acceptimage generation requests from IntraPaint.
 4. If you haven't already found at least one Stable Diffusion model file, do that now. Copy it into the WebUI-Forge folder under `webui\models\Stable-diffusion`.
@@ -177,7 +177,6 @@ ComfyUI also provides a pre-packaged Windows version you can download and run, i
 5. Launch the **run_nvidia_gpu.bat** file in the ComfyUI folder to start Stable Diffusion. A terminal window will open and print startup information as Comfy initializes.
 6. Once you see `To see the GUI go to: http://127.0.0.1:8188` in the terminal window, Stable Diffusion is ready to use. Restart IntraPaint, or activate the "Stable Diffusion ComfyUI API" generator in the [image generator selection window](./menu_options.md#image-generator-selection-window) to start using IntraPaint's AI image generation features.
 
-
 ### Option 4: Manual setup with git, Python, and Anaconda
 
 This method requires a lot more technical knowledge than the previous ones, but it also provides the most flexibility
@@ -185,6 +184,7 @@ and requires the least amount of storage space. This is only recommended if you'
 and debugged Python dependency issues before.
 
 Because this option isn't recommended, IntraPaint won't provide a full guide, but here's some resources that should help:
+
 - [AUTOMATIC1111/stable-diffusion-webui: install on Windows using Anaconda](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Install-and-Run-on-NVidia-GPUs#alternative-installation-on-windows-using-conda)
 - [Using Git to switch between WebUI versions](https://github.com/continue-revolution/sd-webui-animatediff/blob/forge/master/docs/how-to-use.md#you-have-a1111-and-you-know-git)
 - [ComfyUI Manual installation](https://github.com/comfyanonymous/ComfyUI?tab=readme-ov-file#manual-install-windows-linux)
@@ -192,6 +192,7 @@ Because this option isn't recommended, IntraPaint won't provide a full guide, bu
 ---
 
 ## Extra feature setup
+
 A few features supported by IntraPaint require a bit more setup, depending on which approach you used to install Stable Diffusion.
 
 ### ControlNet
@@ -222,8 +223,8 @@ The setup process is identical for all versions of the WebUI:
 #### ComfyUI installation
 
 1. To install ComfyUI extensions, you'll first want to install the [ComfyUI Manager](https://github.com/ltdrdata/ComfyUI-Manager).
-   * If you installed ComfyUI using Stability Matrix, click the "Extension" button (with the puzzle piece icon) within ComfyUI's entry on the packages tab. Search for "ComfyUI-Manager", select it from the list, and click the "Install" button at the bottom.
-   * If you didn't use Stability Matrix, [follow the installation instructions on the ComfyUI-Manager GitHub page](https://github.com/ltdrdata/ComfyUI-Manager?tab=readme-ov-file#installation).
+   - If you installed ComfyUI using Stability Matrix, click the "Extension" button (with the puzzle piece icon) within ComfyUI's entry on the packages tab. Search for "ComfyUI-Manager", select it from the list, and click the "Install" button at the bottom.
+   - If you didn't use Stability Matrix, [follow the installation instructions on the ComfyUI-Manager GitHub page](https://github.com/ltdrdata/ComfyUI-Manager?tab=readme-ov-file#installation).
 2. Once you restart ComfyUI, you should now see a "Manager" button near the bottom right. Click it, and the **ComfyUI Manager Menu** will open.
 3. In the manager menu, click **"Custom Nodes Manager"**, and a list of extensions should open.
 4. In the search box at the top, enter "UltimateSDUpscale", and the list should filter down to only one option. Click the "Install" button next to it and wait.

@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QCheckBox, QGridLayout, QLabel
 
 from src.config.cache import Cache
 from src.tools.filter_tool import FilterTool
+from src.ui.panel.tool_control_panels.clone_stamp_preview import CloneStampStrokePreview
 from src.ui.panel.tool_control_panels.clone_stamp_tool_panel import CloneStampToolPanel
 from src.ui.panel.tool_control_panels.draw_tool_panel import DrawToolPanel
 from src.ui.panel.tool_control_panels.eraser_tool_panel import EraserToolPanel
@@ -286,6 +287,21 @@ class ToolPanelsOnStrokeBlockTest(ToolTestCase):
                 self.assertEqual(panel.stroke_block.arrangement.preview, preview)
                 self.assertEqual(preview_widget.isHidden(), preview is None)
 
+    def test_clone_stamp_panel_has_a_clone_stamp_preview(self) -> None:
+        """The Clone stamp panel's preview takes the same arrangements as Draw's in every source mode."""
+        Cache().update_options(Cache.CLONE_STAMP_TOOL_SOURCE_MODE,
+                               ['Fixed offset', 'Dynamic offset', 'Fixed position'])
+        panel = CloneStampToolPanel()
+        preview_widget = panel.stroke_block._preview  # pylint: disable=protected-access
+        assert isinstance(preview_widget, CloneStampStrokePreview)
+        for mode in ('Fixed offset', 'Dynamic offset', 'Fixed position'):
+            Cache().set(Cache.CLONE_STAMP_TOOL_SOURCE_MODE, mode)
+            for size, preview in ((QSize(260, 900), BELOW), (QSize(420, 900), BESIDE), (QSize(260, 200), None)):
+                with self.subTest(mode=mode, size=size):
+                    panel.set_fit_space(SIDE, size)
+                    self.assertEqual(panel.stroke_block.arrangement.preview, preview)
+                    self.assertEqual(preview_widget.isHidden(), preview is None)
+
     def test_size_field_keeps_its_position_between_tools(self) -> None:
         """Draw, Eraser, Smudge, Clone stamp and Filter put Size first with the same label and geometry."""
         panels = [DrawToolPanel(), EraserToolPanel(), SmudgeToolPanel(), CloneStampToolPanel(),
@@ -331,6 +347,18 @@ class ToolPanelsOnStrokeBlockTest(ToolTestCase):
         self.assertEqual(points[-1], QPoint(5, 0))
         panel.source_xy = QPoint(7, 9)
         self.assertEqual(panel.source_xy, QPoint(7, 9))
+
+    def test_clone_stamp_source_xy_reaches_the_preview(self) -> None:
+        """A new offset in the fields makes the preview's render stale."""
+        Cache().set(Cache.CLONE_STAMP_TOOL_SOURCE_MODE, 'Fixed offset')
+        panel = CloneStampToolPanel()
+        preview = panel.stroke_block._preview  # pylint: disable=protected-access
+        assert preview is not None
+        preview.setFixedSize(QSize(200, 80))
+        preview.render_now()
+        self.assertTrue(preview.is_current)
+        panel.source_xy = QPoint(-40, 12)
+        self.assertFalse(preview.is_current)
 
     def test_fill_threshold_is_an_integer_field_bound_to_cache(self) -> None:
         """The Color threshold field uses the Cache range as whole numbers and stores a float."""

@@ -1,11 +1,14 @@
 # Main menu options
+
 This guide explains all of IntraPaint's menu options. All menu option shortcuts are configurable
 
 ---
+
 ## Table of Contents
+
 1. [File menu](#file-menu)
    - [New image](#new-image-ctrln)
-       * [New image window](#new-image-window)
+     - [New image window](#new-image-window)
    - [Save](#save-ctrls)
    - [Save as](#save-as-ctrlalts)
    - [Load image](#load-image-ctrlo)
@@ -20,25 +23,25 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Paste](#paste-ctrlv)
    - [Clear](#clear-delete)
    - [Settings](#settings-f9)
-       * [Settings window](#settings-window)
+     - [Settings window](#settings-window)
 3. [View menu](#view-menu)
    - [Zoom and view](#zoom-and-view)
    - [Panels](#panels)
    - [Show navigation window](#show-navigation-window-ctrlaltw)
-       * [Navigation window](#navigation-window)
+     - [Navigation window](#navigation-window)
 4. [Image menu](#image-menu)
    - [Resize canvas](#resize-canvas-f2)
-       * [Resize image canvas window](#resize-image-canvas-window)
+     - [Resize image canvas window](#resize-image-canvas-window)
    - [Scale image](#scale-image-f3)
-       * [Scale image window](#scale-image-window)
+     - [Scale image window](#scale-image-window)
    - [Crop image to selection](#crop-image-to-selection-ctrlaltc)
    - [Crop image to generation area](#crop-image-to-generation-area-ctrlaltg)
    - [Resize image to content](#resize-image-to-content-ctrlaltr)
    - [Update metadata](#update-metadata-ctrlaltd)
    - [Select image generator](#select-image-generator-f11)
-       * [Image generator selection window](#image-generator-selection-window)
+     - [Image generator selection window](#image-generator-selection-window)
    - [Generate](#generate-f4)
-4. [Selection menu](#selection-menu)
+5. [Selection menu](#selection-menu)
    - [Select all](#select-all-ctrla)
    - [Deselect all](#deselect-all-ctrld)
    - [Invert selection](#invert-selection-ctrli)
@@ -46,21 +49,21 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Expand selection](#expand-selection-ctrl)
    - [Shrink selection](#shrink-selection-ctrl-)
    - [Clear context pins](#clear-context-pins-ctrlaltp)
-5. [Layers menu](#layers-menu)
+6. [Layers menu](#layers-menu)
    - [Show layer window](#show-layer-window-f7)
-      * [Layer window](#layer-window)
+     - [Layer window](#layer-window)
    - [Select](#select)
-      * [Select previous layer](#select-previous-layer-ctrlpgup)
-      * [Select next layer](#select-next-layer-ctrlpgdown)
+     - [Select previous layer](#select-previous-layer-ctrlpgup)
+     - [Select next layer](#select-next-layer-ctrlpgdown)
    - [Move](#move)
-      * [Move layer up](#move-layer-up-ctrlhome)
-      * [Move layer down](#move-layer-down-ctrlend)
-      * [Move layer to top](#move-layer-to-top-ctrlshifthome)
+     - [Move layer up](#move-layer-up-ctrlhome)
+     - [Move layer down](#move-layer-down-ctrlend)
+     - [Move layer to top](#move-layer-to-top-ctrlshifthome)
    - [Transform](#transform)
-      * [Mirror layer horizontally](#mirror-layer-horizontally-ctrlshifth)
-      * [Mirror layer vertically](#mirror-layer-vertically-ctrlshiftv)
-      * [Rotate layer 90° CW](#rotate-layer-90-cw-ctrlshiftr)
-      * [Rotate layer 90° CCW](#rotate-layer-90-ccw-ctrlshiftl)
+     - [Mirror layer horizontally](#mirror-layer-horizontally-ctrlshifth)
+     - [Mirror layer vertically](#mirror-layer-vertically-ctrlshiftv)
+     - [Rotate layer 90° CW](#rotate-layer-90-cw-ctrlshiftr)
+     - [Rotate layer 90° CCW](#rotate-layer-90-ccw-ctrlshiftl)
    - [New layer](#new-layer-ctrlshiftn)
    - [New layer group](#new-layer-group-ctrlshiftg)
    - [Copy layer](#copy-layer-ctrlshiftc)
@@ -71,7 +74,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Merge all visible](#merge-all-visible-ctrlshiftaltm)
    - [Crop layer to selection](#crop-layer-to-selection-ctrlshifte)
    - [Crop layer to contents](#crop-layer-to-contents-ctrlshiftp)
-6. [Filters menu](#filters-menu)
+7. [Filters menu](#filters-menu)
    - [RGBA color balance](#rgba-color-balance-ctrl1)
    - [Brightness/contrast](#brightnesscontrast-ctrl2)
    - [Blur](#blur-ctrl3)
@@ -79,12 +82,13 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Posterize](#posterize-ctrl5)
    - [Saturation](#saturation-ctrl6)
    - [Invert](#invert-ctrl7)
-7. [Stable Diffusion menu](#stable-diffusion-menu)
+8. [Stable Diffusion menu](#stable-diffusion-menu)
    - [View saved prompt styles](#view-saved-prompt-styles-ctrlalt1)
    - [View LoRA models](#view-lora-models-ctrlalt2)
    - [LCM mode](#lcm-mode-f10)
-8. [Help menu](#help-menu)
+9. [Help menu](#help-menu)
    - [Open IntraPaint help pages](#open-intrapaint-help-pages-f1)
+
 ---
 
 ## File menu
@@ -128,6 +132,7 @@ Reload the current image from its file, discarding all changes made since the la
 Exit IntraPaint, discarding unsaved changes.
 
 ---
+
 ## Edit menu
 
 The main options in the edit menu (undo, redo, cut, copy, paste, clear), all behave differently if text is selected for editing.  If currently editing text, IntraPaint will try and apply the action to the text first.  If it can't, it will instead apply the action to the image as usual.
@@ -150,21 +155,17 @@ Restore an action that was previously reversed using undo.
 
 When an unlocked, visible [layer](#show-layer-window-f7) is active, and part of that layer is [selected](./tool_guide.md#selection-tools), choosing cut will replace the selected areas with transparency, and cache the removed image data for [pasting](#paste-ctrlv) until something else gets cut or copied.
 
-
 When text is selected and focused, this will instead clear the selected text and place it in the system clipboard.
 
 ### Copy (Ctrl+C)
 
 When a visible [layer](#show-layer-window-f7) is active, and part of that layer is [selected](./tool_guide.md#selection-tools), choosing copy will cache the selected areas so that they can be duplicated using [paste](#paste-ctrlv).  Copy and cut only act on the active layer, and will not affect other layers.  If you want to copy across all visible layers, select the main layer group (the top item) in the layer panel.
 
-
-
 When text is selected and focused, this will instead copy that text into the system clipboard.
 
 ### Paste (Ctrl+V)
 
 Creates a new image layer from selected image content.  The new layer will be placed above the current active layer, or at the top of the group if the active layer is an unlocked group.  It can then be moved using the [layer transformation tool](./tool_guide.md#-transform-layer-tool-t), or merged into another layer with the [merge down option](#merge-layer-down-ctrlshiftm).
-
 
 If a text field is focused and the system clipboard is not empty, this will instead paste that text into the text field.
 
@@ -199,6 +200,7 @@ Opens a window where you can edit IntraPaint's saved settings. Hold your mouse o
 Actions that change how the image is shown, without changing the image.
 
 ### Zoom and view
+
 - **Zoom in** and **Zoom out**: Change the zoom one step, with Ctrl+Shift+= and Ctrl+Shift+-. The Page Up and Page Down keys (configurable under Navigation) also zoom.
 - **Reset view** (Ctrl+Alt+0): Fit the whole image in the view and center it.
 - **Zoom to generation area** (Ctrl+Alt+Z): Center the view on the image generation area. Does nothing while the generation area is hidden.
@@ -206,36 +208,42 @@ Actions that change how the image is shown, without changing the image.
 - **Show/hide rulers** (Ctrl+Alt+Shift+R): Show or hide the rulers beside the image.
 
 ### Panels
+
 Lists each panel docked around the image: Tools, Image Generation, ControlNet, Layers, Color, and Navigation. Select one to show or hide it. A panel only appears in the list while it has something to show, so Image Generation needs a configured image generator and ControlNet needs a generator that supports it.
 
 #### Reset panel layout (Ctrl+Alt+Shift+P)
+
 Puts every panel back where it starts on first run, in two tabbed groups on the right side of the window (or at the bottom on a screen taller than it is wide), and opens all of them.
 
 #### Move all panels to edge
+
 Stacks every panel in one group along the chosen window edge: Left, Right, Top, or Bottom. The first open panel stays open, and the others are closed until you open them from their icons.
 
 ### Show navigation window (Ctrl+Alt+W)
+
 Opens another window with a view of the entire edited image. This can be used to adjust the image viewport within the main window, and to move the image generation area.  The Navigation tab on the tool panel behaves identically to this window.
 
 ### Basic controls
+
 The navigation window uses the same basic mouse controls as the main window:
 
 - **Middle-click and drag, or Ctrl + left-click and drag**: Pan image content.
 - **Mouse scroll wheel**: Zoom in or zoom out.
 
 Additional controls vary depending on which option is active: "Move gen. area" or "Move view".  If AI image generation is inactive, only the "**Move view"** mode will be available:
- 
+
 - **Left-click**: Move the main window viewport so that its upper-left corner is at the clicked spot.
 - **Right-click and drag**: Draw a rectangle that covers where the main window viewport should be.  When the mouse button is released, the viewport will update to match the window.
 
 When **"Move gen. area"** is active, mouse controls match the [image generation area tool](./tool_guide.md#-image-generation-area-tool-g), without its resize handles:
- 
+
 - **Left-click and drag inside the area**: Move the image generation area, keeping the spot you grabbed under the pointer.
 - **Left-click and drag outside the area**: Center the image generation area on the clicked spot, then keep moving it while you drag.
 - **Right-click**: Resize the image generation area, without changing its position.
 - **Shift + scroll wheel**: Change the "Inpaint Full Resolution" padding.
 
 #### Navigation window
+
 <img src="./labeled_screenshots/navigation.png" alt="Screenshot of the navigation window, with specific elements numbered."/>
 
 1. **Image scale slider**: Set the scale the image is drawn within the navigation window.
@@ -246,7 +254,6 @@ When **"Move gen. area"** is active, mouse controls match the [image generation 
 6. **Image generation area outline**: The dotted rectangle shows the area within the image selected for AI image generation.  This won't be shown if AI image generation is inactive.
 7. **"Inpaint full resolution" outline**: This inner rectangle shows the reduced area within the image generation area that will be used for inpainting if "inpaint full resolution" is selected.  This won't be visible if nothing is selected, if "inpaint full resolution" is unchecked, or if AI image generation is unavailable.
 8. **Selected image content**: All selected areas are also visible within the navigation window.
-
 
 ## Image menu
 
@@ -266,8 +273,8 @@ Opens a window that lets you change the image size without scaling image content
    - **Do not expand layers**: Layers will not be expanded.
 4. **"Crop layers to new image bounds" checkbox**: If checked, any layer content outside the new image bounds will be cropped. If any locked layers or layers in locked groups are outside the new image bounds, the image will not change.
 5. **Preview image**:  Shows a preview of the image with the new size and offset applied.
-    - 5a. **New image bounds**:  This rectangle shows where the new image bounds will be. Once resized, if the image is saved in any format other than .ora, the content outside of this rectangle will not be saved.
-    - 5b. **Cropped/excluded image content**:  Original image content that lies outside the new bounds is highlighted.  If "crop layers to new image bounds" is selected, it's highlighted in red to indicate that the those are the areas that will be cropped.
+   - 5a. **New image bounds**:  This rectangle shows where the new image bounds will be. Once resized, if the image is saved in any format other than .ora, the content outside of this rectangle will not be saved.
+   - 5b. **Cropped/excluded image content**:  Original image content that lies outside the new bounds is highlighted.  If "crop layers to new image bounds" is selected, it's highlighted in red to indicate that the those are the areas that will be cropped.
 6. **Center button**:  Adjusts the offset to center the new image bounds over the old image bounds.
 7. **"Resize image canvas" button**:  Closes the window, resizes the image, and crops and/or expands layers as necessary.
 8. **Cancel button**:  Closes the window, making no changes to the image.
@@ -308,16 +315,21 @@ Scaling the image behaves differently depending on whether AI upscaling is in us
 11. **Cancel button**: Closes the scaling window without making changes.
 
 ### Crop image to selection (Ctrl+Alt+C)
+
 Crops the image to the largest rectangle that contains all [selected content](./tool_guide.md#selection-tools).  This will be applied to every layer in the image.  If any locked layers aren't totally within the selected area, this will fail, and an error message will list which layers blocked the change.  Any text layers that need to be cropped will first need to be converted to image layers, and a popup will appear asking to confirm or deny the change.
 
 ### Crop image to generation area (Ctrl+Alt+G)
+
 Crops the image to the [image generation area](./tool_guide.md#-image-generation-area-tool-g). Layer cropping, locked layers, and text layers are handled exactly as they are in "Crop image to selection".  Like all functionality related to the image generation area, this option is hidden when there's no AI image generator connected.
 
 ### Resize image to content (Ctrl+Alt+R)
+
 Resizes the image to fit all layers. This does not alter layer data.
 
 ### Update metadata (Ctrl+Alt+D)
+
 IntraPaint can read and write the following AI image generation parameters in image file metadata:
+
 - Prompt
 - Negative prompt
 - Generation size
@@ -329,9 +341,11 @@ IntraPaint can read and write the following AI image generation parameters in im
 It does this in a format compatible with the Stable Diffusion WebUI, so IntraPaint can load those values directly into the image generation panel when the image is opened in IntraPaint.  When saving, IntraPaint will ask you if you want to save this metadata to the file, and you have the option to make it always save metadata automatically, or never save automatically or ask again.  If automatic metadata updates are disabled, choosing "update metadata" will manually prepare the metadata update, so it'll be written to the image file on the next save.
 
 ### Select image generator (F11)
+
 Opens a window where you can enable or disable AI image generation, or select alternate AI image generators.  IntraPaint still provides limited support for the obsolete GLID-3-XL image generator, but in most cases you'll probably want to use the Stable Diffusion image generator instead.  Support for other AI image generators may become available in the future.
 
 #### Image Generator Selection window
+
 <img src="./labeled_screenshots/generator_window.png" alt="Screenshot of the image generator selection window, with specific elements numbered."/>
 
 1. The list of available image generation modes. The active mode will be underlined.  Click any option to show more information on the right.
@@ -345,7 +359,6 @@ Opens a window where you can enable or disable AI image generation, or select al
 4. **Status section**: Lists any issues detected that would prevent the generator from being used.
 5. **"Activate" button**:  Click to try and activate the selected generator.
 
-
 ### Generate (F4)
 
 Triggers AI image generation, creating or altering image content to insert into the [image generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](./controls.md#generated-image-selection-view). This has the same effect as the Generate button on the [Image Generation Panel](./stable-diffusion.md#image-generation-panel).  This option will only be available if [an image generator is configured and active](./stable_diffusion_setup.md).
@@ -357,24 +370,31 @@ Triggers AI image generation, creating or altering image content to insert into 
 The selection menu controls what image content is selected for editing. See [selection tools](./tool_guide.md#selection-tools) for more information on the way IntraPaint uses image selection.  None of the options in the selection menu alter image content in the selected areas.
 
 ### Select all (Ctrl+A)
+
 Selects everything in the entire image across all layers, only excluding completely transparent areas.
 
 ### Deselect all (Ctrl+D)
+
 Removes all selections.
 
 ### Invert selection (Ctrl+I)
-Swaps selected and deselected areas.  Every spot that wasn't selected will be selected, and every spot that was selected will be deselected. 
+
+Swaps selected and deselected areas.  Every spot that wasn't selected will be selected, and every spot that was selected will be deselected.
 
 ### Select layer content (Ctrl+Shift+A)
+
 Removes any previous selections, and selects all pixels in the current active layer or layer group that aren't completely transparent.
 
 ### Expand selection (Ctrl+=)
+
 Expands all selected areas in all directions by one pixel.
 
 ### Shrink selection (Ctrl+-)
+
 Shrinks all selected areas by one pixel.
 
 ### Clear context pins (Ctrl+Alt+P)
+
 Removes every context pin. Context pins are added and removed by right-clicking with the [selection brush](./tool_guide.md#-selection-brush-tool-s), and stretch the "Inpaint Full Resolution" crop without being inpainted. Clearing the selection leaves them in place. To remove pins automatically whenever you apply a generated image, enable **"Clear context pins after generating"** in [settings](#settings-f9) under the **"Stable Diffusion"** category.
 
 ---
@@ -396,6 +416,7 @@ The entire image itself is treated as a layer group, which can be selected and e
 This opens a window you can use to manage image layers.  Layer controls are also available as one of the options on the tool tab under the [tool control panel](./controls.md#main-view).
 
 #### Layer window
+
 <img src="./labeled_screenshots/layers.png" alt="Screenshot of the layer window, with specific elements numbered."/>
 
 Click and drag any layer to move it within the list.  Right-click a layer to show more options for editing that layer.
@@ -403,7 +424,7 @@ Click and drag any layer to move it within the list.  Right-click a layer to sho
 1. **Opacity slider**: Controls the opacity of the active layer.
 2. **Layer mode**:  Sets the blending/compositing mode of the active layer, controlling how its content is rendered into the image.  See the [W3 Compositing and Blending Standard](https://www.w3.org/TR/compositing-1/) for in-depth descriptions and example images of the available modes.
 3. **Main layer group**:  The group that contains all layers in the image.  Unlike other layer groups, this one cannot be locked, deleted, or moved.
-4. **Open layer group**: A layer group containing several inner layers. Clicking the arrow icon shows and hides the inner layers. 
+4. **Open layer group**: A layer group containing several inner layers. Clicking the arrow icon shows and hides the inner layers.
 5. **Active layer**:  The active layer, a text layer.  Active layer status is indicated by the outline and highlighting.  Only one layer can be active at a time, and most tools and layer menu options are applied to the active layer only.
 6. **Image layers**: Several image layers, shown in the order that they're stacked within the image. All drawing and painting tools work by editing an active image layer.
 7. **Closed layer group**: Another layer group below all other image content, hidden so that its contents are preserved but not seen.
@@ -419,25 +440,30 @@ Click and drag any layer to move it within the list.  Right-click a layer to sho
 17. **Move up button**: Click to move the active layer down within the layer stack.
 18. **Merge down button**: Click to merge the active layer with the one beneath it.  This will only work when both layers are visible and unlocked.
 
-
 ### Select:
+
 Options for changing which layer is currently active.
 
 #### Select previous layer (Ctrl+PgUp)
+
 Selects the layer directly above the current active layer as the new active layer.
 
 - If the current active layer is the top layer in a layer group, this will select the entire group as the active layer.
 - If the next layer up is a layer group, this will select the bottom layer within that group.
 
 #### Select next layer (Ctrl+PgDown)
+
 Selects the layer directly below the current active layer as the new active layer.
-- If the current active layer is a layer group, this will select the topmost layer within that group. 
+
+- If the current active layer is a layer group, this will select the topmost layer within that group.
 - If the current active layer is the last one in a layer group, this will select the first layer below the group.
 
 ### Move:
+
 Options for changing the order of layers within the image.
 
 #### Move layer up (Ctrl+Home)
+
 Moves the active layer up within the layer stack.
 
 - If the next layer up is an unlocked layer group, this moves the layer into that group, placing it at the bottom of the group.
@@ -445,6 +471,7 @@ Moves the active layer up within the layer stack.
 - Otherwise, this swaps the layer's position with the one above it.
 
 #### Move layer down (Ctrl+End)
+
 Moves the active layer down within the layer stack.
 
 - If the next layer down is an unlocked layer group, this moves the layer into that group, placing it at the top of the group.
@@ -452,37 +479,49 @@ Moves the active layer down within the layer stack.
 - Otherwise, this swaps the layer's position with the one below it.
 
 #### Move layer to top (Ctrl+Shift+Home)
+
 Moves the active layer above all other layers.
 
 ### Transform:
+
 Applies basic transformations to the active layer. All of these transformations transform the layer without moving its center.
 
 #### Mirror layer horizontally (Ctrl+Shift+H)
+
 Flips the active layer from left to right.
 
 #### Mirror layer vertically (Ctrl+Shift+V)
+
 Flips the active layer from top to bottom.
 
 #### Rotate layer 90° CW (Ctrl+Shift+R)
+
 Rotates the layer ninety degrees clockwise.
 
 #### Rotate layer 90° CCW (Ctrl+Shift+L)
+
 Rotates the layer ninety degrees counter-clockwise.
 
 ### New layer (Ctrl+Shift+N)
+
 Creates a new image layer.  If the active layer is an unlocked layer group, the new layer will be placed within that group at the top. Otherwise, the new layer will be placed directly above the active layer. New image layers will always start with the same size and position as the main image bounds.
 
 ### New layer group (Ctrl+Shift+G)
+
 Creates a new layer group.  If the active layer is an unlocked layer group, the new group will be placed within that group at the top. Otherwise, the new group will be placed directly above the active layer.
 
 ### Copy layer (Ctrl+Shift+C)
+
 Creates a new copy of the current active layer, placing it above the active layer.
 
 ### Delete layer (Ctrl+Shift+D)
+
 Deletes the active layer, selecting the next layer below it as the new active layer.
 
 ### Flatten layer (Ctrl+Shift+F)
+
 Attempts to simplify the active layer as much as possible without changing the overall appearance of the image.  This makes the following changes:
+
 - If a layer group is active, all layers within that group will be merged into a single image layer.
 - If a text layer is active, it will be converted into an image layer.
 - If the layer is scaled or rotated, the transformation will be applied directly to layer image data, resetting the layer's scale to 1.0 and rotation to zero degrees.
@@ -492,18 +531,23 @@ Attempts to simplify the active layer as much as possible without changing the o
 If none of these changes are relevant for the current active layer, the "flatten layer" option will be disabled.
 
 ### Merge layer down (Ctrl+Shift+M)
+
 Attempts to merge a layer with the one beneath it.  This will only be allowed when both layers are unlocked and visible, both are within the same group, and neither layer is also a group.
 
 ### Merge group (Ctrl+Shift+Alt+G)
+
 Merges the active layer group into a single image layer.  This is only available when a non-empty unlocked layer group is active.  The resulting image layer keeps the group's name and replaces it in the stack.
 
 ### Merge all visible (Ctrl+Shift+Alt+M)
+
 Merges every visible top-level layer into a single new image layer named "Merged".  Hidden top-level layers are left in place.  This requires at least two visible layers, or one visible layer group with contents.  Locked layers that would be removed will block the operation.
 
 ### Crop layer to selection (Ctrl+Shift+E)
+
 Finds the smallest rectangle that contains all selected content within the active layer's bounds, and crops the layer to fit that rectangle.  This will fail if nothing is selected within the layer bounds.
 
 ### Crop layer to contents (Ctrl+Shift+P)
+
 Crops the layer to the smallest rectangle within the layer that only excludes completely transparent pixels.  This will fail if the entire layer is completely transparent.
 
 ---
@@ -560,7 +604,6 @@ This filter inverts image pixel color. It has no filter-specific controls.
 
 This menu is only available when a Stable Diffusion image generator is active.  Each of these options will only be provided if IntraPaint detects that the image generator supports it.
 
-
 ### View saved prompt styles (Ctrl+Alt+1)
 
 This option opens a window where you can access prompt presets saved with the Stable Diffusion WebUI's [prompt style feature](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Features#styles).  If you haven't saved any prompt presets within the WebUI or you're using the ComfyUI generator, this option won't be visible.
@@ -570,7 +613,7 @@ I'd like to provide support for adding and editing styles directly within IntraP
 <img src="./labeled_screenshots/prompt_style_window.png" alt="Screenshot of the prompt style window, with specific elements numbered."/>
 
 1. **Prompt style list**:  Shows the list of all saved style presets, with the selected one highlighted.
-2. **Prompt style name**:  Shows the name of the selected prompt preset. 
+2. **Prompt style name**:  Shows the name of the selected prompt preset.
 3. **Prompt text**:  The image generation prompt stored in the selected preset.
 4. **Negative prompt text**:  The negative image generation prompt stored in the selected preset.
 5. **"Add to prompt" button**:  If clicked, the selected preset's prompt and negative prompt are added to the end of the prompt and negative prompt sections in the [image generation panel](./stable-diffusion.md#image-generation-panel).
@@ -581,9 +624,7 @@ I'd like to provide support for adding and editing styles directly within IntraP
 
 This option opens a window where you can view and select between LoRA models. LoRA models provide extensions to Stable Diffusion models, usually to introduce new concepts or styles not found in the original training data.  LoRA model files need to be copied to the **models/Lora** directory within the Stable Diffusion WebUI or the **models/loras** directory within ComfyUI before IntraPaint can use them.  This menu option will only appear if IntraPaint detects at least one available LoRA model.
 
-
 LoRA models are activated by adding text to the prompt in the **\<lora:LORA_NAME:LORA_STRENGTH>** format. LORA_NAME needs to be replaced by the name of the LoRA model's file without the extension, and LORA_STRENGTH should be replaced with a multiplier controlling how strongly the LoRA will be applied, usually defaulting to 1.0.
-
 
 <img src="./labeled_screenshots/lora_window.png" alt="Screenshot of the LoRA window, with specific elements numbered."/>
 
@@ -594,6 +635,7 @@ LoRA models are activated by adding text to the prompt in the **\<lora:LORA_NAME
 5. **Close button**:  Close the LoRA window.
 
 ### LCM Mode [F10]
+
 This option is only visible when using Stable Diffusion, when the LCM LoRA model and support for the LCM sampler are detected.  LCM mode dramatically decreases image generation time, and gives more predictable but less creative results. Selecting this option adjusts image generation parameters to match the settings needed by LCM models:
 
 - The image sampling mode is set to LCM
@@ -608,4 +650,5 @@ This option is only visible when using Stable Diffusion, when the LCM LoRA model
 This menu provides resources to help you use IntraPaint.
 
 ### Open IntraPaint help pages [F1]
+
 Opens the [IntraPaint documentation index page](./help_index.md) in a web browser.

@@ -1,11 +1,11 @@
 # IntraPaint Tools
 
-
 This guide covers the editing tools found within the "Tools" panel. and the extra options found under the "Tools" menu. All hotkeys can be changed in settings (F9) under the keybindings tab.
 
-
 ---
+
 ## Table of Contents
+
 1. [Shared controls](#shared-controls)
 2. [Image editing tools](#image-editing-tools)
    - [Brush tool](#-brush-tool-b)
@@ -19,16 +19,19 @@ This guide covers the editing tools found within the "Tools" panel. and the extr
    - [Text tool](#-text-tool-x)
    - [Shape tool](#-shape-tool-shifts)
    - [Transform layer tool](#-transform-layer-tool-t)
-3[Selection Tools](#selection-tools)
+3. [Selection Tools](#selection-tools)
    - [Free selection tool](#-free-selection-tool-l)
    - [Selection brush tool](#-selection-brush-tool-s)
    - [Rectangle/Ellipse selection tool](#-rectangleellipse-selection-r)
    - [Selection fill tool](#-selection-fill-tool-a)
-4[Image generation area tool](#-image-generation-area-tool-g)
+4. [Image generation area tool](#-image-generation-area-tool-g)
+
 ---
 
 ## Shared controls
+
 All tools share the same set of basic controls for adjusting the image viewport.
+
 - **Middle-click and drag, or Ctrl + left-click and drag**: Pan image content.
 - **Mouse scroll wheel, Page Up, or Page Down**: Zoom in or zoom out.
 - **Shift+Z**: Zoom in on the image generation area, or reset the zoom level.
@@ -36,18 +39,22 @@ All tools share the same set of basic controls for adjusting the image viewport.
 - **Escape, while any input has keyboard focus**: Return keyboard focus to the image.
 
 The following controls are shared by most tools, but certain tools will override them:
+
 - **Arrow keys**: Move the image generation area. This is ignored if Stable Diffusion AI image generation is inactive.
 - **Ctrl + arrow keys**: Pan image content.
 
 Each tool also has a key assigned to it that will activate that tool, active whenever you're not entering text.  These keys are configurable in settings under "Keybindings", and are shown in the bottom right corner of each tool icon.
 
 ---
+
 ## Image editing tools
 
 ### ![Brush tool icon](./tool_icons/brush_icon.png) Brush tool (B)
+
 Draw, paint, blur, smudge, or erase within the image using the [MyPaint](https://mypaint.app/) brush engine. This tool provides a wide variety of brushes, emulating various traditional art tools.  IntraPaint's brush options are from the public-domain [MyPaint brush project](https://github.com/mypaint/mypaint-brushes).
 
 #### Basic controls
+
 - **Left-click**: Draw within the image.
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
@@ -56,12 +63,13 @@ Draw, paint, blur, smudge, or erase within the image using the [MyPaint](https:/
 - **Hold Alt**: Increase speed when changing brush size using keyboard keys.
 
 #### User interface
+
 <img src="./labeled_screenshots/tools/brush.png" alt="Screenshot of the brush tool controls, with specific elements numbered."/>
 
 1. **Brush size slider**: Actual brush stroke width may exceed this size, depending on brush type and tablet pen pressure.
 2. **Brush color button**:  Opens a color dialog to change brush color.
 3. **"Paint selection only" checkbox**:  When checked, the brush will only make changes within [selected](#selection-tools) content.
-4. **Brush category tabs**: Switch between different MyPaint brush categories. 
+4. **Brush category tabs**: Switch between different MyPaint brush categories.
    - The first category, **Favorites** is customizable.
    - Any .myb brush files added to the custom brush directory (defined in settings under **Files/Added MyPaint brush directory**) will appear in a new category at the end of the list.
 5. **Brush icons**: Click to select a new brush, right-click to add or remove the brush from the Favorites category.
@@ -73,10 +81,13 @@ Draw, paint, blur, smudge, or erase within the image using the [MyPaint](https:/
    - [tanda](../examples/brushes_tanda.png)
 
 ---
+
 ### ![Draw tool icon](./tool_icons/pen_icon.png) Draw tool (D)
+
 A basic brush tool with easily adjustable properties.
 
 #### Basic controls
+
 - **Left-click**: Draw within the image.
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
@@ -87,6 +98,7 @@ A basic brush tool with easily adjustable properties.
 - **Hold Ctrl**: Temporarily switch to the color picker tool.
 
 #### User interface
+
 <img src="./labeled_screenshots/tools/draw.png" alt="Screenshot of the draw tool controls, with specific elements numbered."/>
 
 1. **Brush size slider**: Sets the exact brush width.
@@ -100,10 +112,13 @@ A basic brush tool with easily adjustable properties.
 9. Examples of available brush settings.
 
 ---
+
 ### ![Eraser tool icon](./tool_icons/eraser_icon.png) Eraser tool (E)
+
 Erase image content.
 
 #### Basic controls
+
 - **Left-click**: Erase within the image.
 - **Hold shift and left-click**: Erase a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the eraser to follow a fixed angle.
@@ -113,6 +128,7 @@ Erase image content.
 - **Hold Alt**: Increase speed when changing size, opacity, or hardness using keyboard keys.
 
 #### User interface
+
 <img src="./labeled_screenshots/tools/eraser.png" alt="Screenshot of the eraser tool controls, with specific elements numbered."/>
 
 1. **Eraser size slider**: Sets the exact eraser width.
@@ -120,18 +136,22 @@ Erase image content.
 3. **Eraser hardness slider**: Sets the brush edge hardness. At 1.0 eraser edges are completely solid, at 0.0 eraser edges fade evenly from the center.
 4. **Tablet pen pressure controls**:  These controls are only visible after IntraPaint first detects a connected drawing tablet.  Pen pressure can be connected to any combination of size, opacity, and hardness, to scale those values down as pressure decreases.
 5. **Antialiasing checkbox**:  When checked, extra smoothing will be applied to jagged pixel edges when erasing. This is most useful when hardness is near 1.0.
-6. **"Erase in selection only" checkbox**:  When checked, the eraser will only make changes within [selected](#selection-tools) content. 
+6. **"Erase in selection only" checkbox**:  When checked, the eraser will only make changes within [selected](#selection-tools) content.
 7. Examples of available brush settings.
 
 ---
+
 ### ![Fill tool icon](./tool_icons/fill_icon.png) Fill tool (F)
+
 Fill connected image areas with solid colors or basic patterns.
 
 #### Basic controls
+
 - **Left-click**: Fill connected areas with colors matching the clicked spot with the selected color.
 - **Hold Ctrl**: Temporarily switch to the color picker tool.
 
 #### User interface
+
 <img src="./labeled_screenshots/tools/fill.png"  alt="Screenshot of the fill tool controls, with specific elements numbered."/>
 
 1. **Brush color button**:  Opens a color dialog to change brush color.
@@ -142,12 +162,15 @@ Fill connected image areas with solid colors or basic patterns.
 6. Examples of different fill patterns and behaviors.
 
 ---
+
 ### ![Filter brush tool icon](./tool_icons/filter_icon.png) Filter Brush tool (I)
+
 Apply any image filter to the image using brush strokes.
 
 This tool uses the same filters that are found in the Filters menu.  See [Filter menu documentation](./menu_options.md#filters-menu) for more information about individual filters and their tool panel options.
 
 #### Basic controls
+
 - **Left-click**: Draw within the image.
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
@@ -157,6 +180,7 @@ This tool uses the same filters that are found in the Filters menu.  See [Filter
 - **Hold Alt**: Increase speed when changing size, opacity, or hardness using keyboard keys.
 
 #### User interface
+
 <img src="./labeled_screenshots/tools/filter.png" alt="Screenshot of the filter brush tool controls, with specific elements numbered."/>
 
 1. **Filter selection dropdown**: Choose between any of the available filters.  These are the current options:
@@ -167,7 +191,7 @@ This tool uses the same filters that are found in the Filters menu.  See [Filter
    - **Posterize filter**: Reduce color depth within the image.
    - **Saturation filter**: Adjust saturation levels of image colors.
    - **Invert filter**: Invert image pixel colors.
-2. **Filter-specific options**: These change based on the selected filter.  Hold the mouse over any control to see a description of what it does. 
+2. **Filter-specific options**: These change based on the selected filter.  Hold the mouse over any control to see a description of what it does.
 3. **Brush size slider**: Sets the exact brush width.
 4. **Brush opacity slider**: Sets the exact brush opacity, between 0.0 (fully transparent) and 1.0 (fully opaque).
 5. **Brush hardness slider**: Sets the brush edge hardness. At 1.0 brush edges are completely solid, at 0.0 brush edges fade evenly from the center.
@@ -177,10 +201,13 @@ This tool uses the same filters that are found in the Filters menu.  See [Filter
 9. Examples of available filters.
 
 ---
+
 ### ![Smudge tool icon](./tool_icons/smudge_icon.png) Smudge tool (M)
+
 Smudge image content to adjust the placement of image elements and smooth away unwanted details.
 
 #### Basic controls
+
 - **Left-click and drag**: Smudge image content.
 - **Hold shift and left-click**: Smudge a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the cursor to follow a fixed angle.
@@ -190,8 +217,8 @@ Smudge image content to adjust the placement of image elements and smooth away u
 - **Hold Alt**: Increase speed when changing size, opacity, or hardness.
 
 #### User interface
-<img src="./labeled_screenshots/tools/smudge.png" alt="Screenshot of the smudge tool controls, with specific elements numbered."/>
 
+<img src="./labeled_screenshots/tools/smudge.png" alt="Screenshot of the smudge tool controls, with specific elements numbered."/>
 
 1. **Size slider**: Sets the cursor size, adjusting how large of an area gets smudged.
 2. **Opacity slider**: Sets the smudging strength, between 0.0 (image content doesn't move at all) and 1.0 (image content continues moving no matter how far you drag).
@@ -202,10 +229,13 @@ Smudge image content to adjust the placement of image elements and smooth away u
 7. Examples showing how opacity and hardness impact smudging.
 
 ---
+
 ### ![Clone stamp tool icon](./tool_icons/stamp_icon.png) Clone stamp tool (N)
+
 Copy image content from one area to another using a brush.
 
 #### Basic controls
+
 - **Right-click**: Select a sample point within the image. The sample point will remain stationary until you start drawing or pick a new point.
 - **Left-click**: Draw into the image, copying content from the sample point.  Once you start drawing, the sample point will begin moving with the cursor.
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
@@ -216,6 +246,7 @@ Copy image content from one area to another using a brush.
 - **Hold Alt**: Increase speed when changing size, opacity, or hardness using keyboard keys.
 
 #### User interface
+
 <img src="./labeled_screenshots/tools/clone_stamp.png"  alt="Screenshot of the clone stamp tool controls, with specific elements numbered."/>
 
 1. **Offset inputs**: Controls the exact offset from the cursor to the copy sampling point.
@@ -233,6 +264,7 @@ Copy image content from one area to another using a brush.
 10. This example shows how image content gets copied from the sample area to the cursor as individual brush strokes.
 
 ---
+
 ### ![Color Picker tool icon](./tool_icons/eyedropper_icon.png) Color Picker tool (C)
 
 Selects the color used by the brush, draw, and fill tools.  **Left-click** any spot within the image to copy the color at that spot.
@@ -262,10 +294,13 @@ Dragging the wheel or a slider changes the color right away. A color is added to
 mouse, enter a hex code, click a swatch or pick a screen color.
 
 ---
+
 ### ![Text tool icon](./tool_icons/text_icon.png) Text tool (X)
+
 Create and edit text within the image.  Each piece of text remains within its own layer, and can be edited with the text tool until explicitly converted to an image layer. Saving and re-opening the image, even in the layered .ora format, converts all text layers to image layers.
 
 #### Basic controls
+
 - **Left-click and drag within the active text layer**:  Move the layer within the image.
 - **Left-click and drag active text layer corners**:  Resize the text layer, unless "Resize Bounds to Text" is checked.
 - **Left-click and drag outsize of an active text layer**:  Create a new text layer.
@@ -276,6 +311,7 @@ Create and edit text within the image.  Each piece of text remains within its ow
 - **Hold Alt**: Increase speed when changing text size or placement using keyboard keys.
 
 #### User interface, first page:
+
 <img src="./labeled_screenshots/tools/text-1.png" alt="Screenshot of the text tool controls, with specific elements numbered."/>
 
 1. **Text preview image**: A preview of the text and settings currently entered into the text tool controls.
@@ -291,22 +327,27 @@ Create and edit text within the image.  Each piece of text remains within its ow
 11. Various inactive text layers
 
 #### User interface, continued:
+
 <img src="./labeled_screenshots/tools/text-2.png" alt="Screenshot of the rest of the tool controls, with specific elements numbered."/>
 
-12. **Font list**: Choose between any font installed on your computer. IntraPaint will also load additional fonts from a configurable folder. View or update the location of the custom font folder in the settings under **"Files/Added font directory"**.
-13. **Text style checkboxes**: Choose between various font styling options. Not all fonts will support all of these options.
-14. **Text alignment dropdown**: Choose how text will be horizontally aligned within the text layer.
-15. **Stretch field**: Controls how widely the text is rendered, as a percentage of the default width.
+1. **Font list**: Choose between any font installed on your computer. IntraPaint will also load additional fonts from a configurable folder. View or update the location of the custom font folder in the settings under **"Files/Added font directory"**.
+2. **Text style checkboxes**: Choose between various font styling options. Not all fonts will support all of these options.
+3. **Text alignment dropdown**: Choose how text will be horizontally aligned within the text layer.
+4. **Stretch field**: Controls how widely the text is rendered, as a percentage of the default width.
 
 ---
+
 ### ![Shape tool icon](./tool_icons/shape_icon.png) Shape tool (Shift+S)
+
 Draws geometric shapes within the image.
 
 #### Basic controls
+
 - **Left-click and drag**: Draw a shape into the image.
 - **Hold Shift**: Restricts new shapes to a 1:1 aspect ratio.
 
 #### User interface
+
 <img src="./labeled_screenshots/tools/shape.png"  alt="Screenshot of the shape tool controls, with specific elements numbered.">
 
 1. **Shape Type dropdown**: Selects the type of shape to draw. Options are ellipse, rectangle, polygon, and star.
@@ -323,10 +364,13 @@ Draws geometric shapes within the image.
 12. Examples of different shape options, fill patterns, and line styles.
 
 ---
+
 ### ![Transform Layer tool icon](./tool_icons/layer_transform_icon.png) Transform layer tool (T)
+
 Move, scale, or rotate image layers or layer groups. Transformations are lossless when editing, or when saving in the .ora file format.
 
 #### Basic controls
+
 - **Left-click outside the active layer**: Activate the topmost visible layer at the clicked point.
 - **Left-click and drag within the active layer**: Move the layer within the image.
 - **Double-click the active layer**: Switch between scaling and rotation modes.
@@ -339,6 +383,7 @@ Move, scale, or rotate image layers or layer groups. Transformations are lossles
 - **Hold Alt**: Increase speed when changing layer scale, position, or rotation using keyboard keys.
 
 #### User interface
+
 <img src="./labeled_screenshots/tools/transform.png" alt="Screenshot of the layer transformation tool controls, with specific elements numbered."/>
 
 1. **X and Y position inputs**: Sets the position of the layer within the image, after applying scale and rotation.
@@ -352,10 +397,13 @@ Move, scale, or rotate image layers or layer groups. Transformations are lossles
 9. An inactive transformed layer.  To change which layer is transformed, use the layer panel or layer menu to set it as the active layer.
 
 ---
+
 ## Selection tools:
+
 Selected content is marked with an animated outline and a transparent red overlay.  Outline animation and selection color can be changed in the Settings (F9) under the interface tab.
 
 ### Selection properties:
+
 - In the **Edit menu**, the **cut, copy, paste, and clear** options act on selected content.
 - The **Selection menu** provides tools for editing the selection bounds.
 - The [brush](#-brush-tool-b), [draw](#-draw-tool-d), [eraser](#-eraser-tool-e), [fill](#-fill-tool-f), [filter brush](#-filter-brush-tool-i), [smudge](#-smudge-tool-m) and [clone stamp](#-clone-stamp-tool-n) can all be set to only make changes within selected areas.
@@ -363,13 +411,16 @@ Selected content is marked with an animated outline and a transparent red overla
 - When the image generation mode is set to "Inpaint" (the default), image generation will only affect selected areas.
 
 ### Selection modes:
+
 Every selection tool has a **selection mode toggle**, four buttons that set how a new selection combines with the existing one. The setting is shared by all selection tools.
+
 - **Add** (the default): Add the new area to the selection.
 - **Subtract**: Remove the new area from the selection.
 - **Replace**: Discard the existing selection, and select only the new area.
 - **Intersect**: Keep only the part of the existing selection that overlaps the new area.
 
 Holding a modifier key when a selection starts overrides the toggle for that one selection. Each button shows the keys that select its mode, and while they are held, the toggle highlights the mode they select:
+
 - **Hold Shift**: Add.
 - **Hold Alt**: Subtract.
 - **Hold Shift+Alt**: Intersect.
@@ -380,10 +431,13 @@ The rectangle/ellipse and free selection tools and the selection fill tool use a
 **On Linux, Alt+drag may move the window instead.** Many window managers (including XFCE, Cinnamon, MATE and KDE Plasma 5) use Alt+drag to move windows, and IntraPaint never sees the press. Either change the window manager's window-move key to Super, or bind IntraPaint's **Selection Subtract Modifier** to a different key such as Meta. The same applies to the other Alt shortcuts, such as the fixed-angle drawing modifier.
 
 ---
+
 ### ![Free Selection tool icon](./tool_icons/free_selection_icon.png) Free selection tool (L)
+
 Select areas by outlining them.
 
 #### Basic controls:
+
 - **Left-click**: Add a new point to the new selection outline.
 - **Return key, or click the first point**: Close the outline and apply it to the selection using the current [selection mode](#selection-modes), as long as there are at least two other points in the outline. The selection modifiers only count when held while clicking the first point.
 - **Click and drag any other point**: Points within the outline can be adjusted until the selection is closed.
@@ -391,6 +445,7 @@ Select areas by outlining them.
 - **"Q" key**: Cycle through the selection modes: Add, Subtract, Replace, then Intersect.
 
 #### User interface
+
 <img src="./labeled_screenshots/tools/free_select.png" alt="Screenshot of the free selection tool controls, with specific elements numbered."/>
 
 1. **Selection mode toggle**: Choose the [selection mode](#selection-modes).
@@ -402,10 +457,13 @@ Select areas by outlining them.
 7. Previously selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
 
 ---
+
 ### ![Selection Brush tool icon](./tool_icons/selection_icon.png) Selection brush tool (S)
+
 Select content by drawing over it in the image, similar to the brush tool.  If using a pressure sensitive drawing tablet, the brush size will scale down with pen pressure.
 
 #### Basic controls
+
 - **Left-click**: Select content within the image, using the current [selection mode](#selection-modes). In Replace and Intersect modes, each stroke starts from a cleared selection, and Intersect keeps the part of the old selection that the stroke covers.
 - **Right-click**: Add a context pin, or remove the pin under the cursor. A pin stretches the "Inpaint Full Resolution" crop to include its spot, without selecting it for inpainting. Pins stay until you remove them or use [Clear context pins](./menu_options.md#clear-context-pins-ctrlaltp).
 - **Right-click and drag**: Drag a new pin into place, or drag an existing pin to move it. Releasing a dragged pin outside the image removes it.
@@ -417,6 +475,7 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 - **"Q" key**: Cycle through the selection modes: Add, Subtract, Replace, then Intersect.
 
 #### User interface
+
 <img src="./labeled_screenshots/tools/brush_select.png" alt="Screenshot of the free selection tool controls, with specific elements numbered."/>
 
 1. **Brush size slider**: Change the size of the selection brush.
@@ -428,20 +487,25 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 7. A context pin. The cropped bounds stretch to include it, but the pinned spot isn't selected for inpainting.
 
 When the Stable Diffusion AI image generator is active, the panel also shows these controls:
+
 - **"Inpaint Full Resolution" checkbox**: When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
 - **"Inpaint Full Resolution padding" slider**: Only visible when "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
 
 ---
+
 ### ![Rectangle/Ellipse Selection tool icon](./tool_icons/shape_selection_icon.png) Rectangle/ellipse selection (R)
+
 Select or deselect rectangular or elliptical regions in the image.
 
 #### Basic controls
+
 - **Left-click and drag**: Apply a region to the selection using the current [selection mode](#selection-modes).
 - **Hold Shift, Alt or Ctrl+Shift before pressing**: Add to the selection, subtract from it, or replace it, whatever the mode is. Shift and Alt together intersect.
 - **"Q" key**: Toggle between rectangle and ellipse selection.
 - **Press Shift while dragging**: Restricts new selections to a 1:1 aspect ratio. Shift held before pressing only adds; release it and press it again during the drag to also fix the aspect ratio.
 
 #### User interface
+
 <img src="./labeled_screenshots/tools/shape_select.png"  alt="Screenshot of the shape selection tool controls, with specific elements numbered."/>
 
 1. **Selection mode toggle**: Choose the [selection mode](#selection-modes).
@@ -454,14 +518,18 @@ Select or deselect rectangular or elliptical regions in the image.
 7. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
 
 ---
+
 ### ![Selection Fill tool icon](./tool_icons/selection_fill_icon.png) Selection fill tool (A)
+
 Select content based on connected regions and color similarity.
 
 #### Basic controls
+
 - **Left-click**: Apply connected areas with colors that match the clicked spot to the selection, using the current [selection mode](#selection-modes).
 - **Hold Shift, Alt or Ctrl+Shift while clicking**: Add to the selection, subtract from it, or replace it, whatever the mode is. Shift and Alt together intersect.
 
 #### User interface
+
 <img src="./labeled_screenshots/tools/fill_select.png" alt="Screenshot of the fill selection tool controls, with specific elements numbered."/>
 
 0. **Selection mode toggle**: Choose the [selection mode](#selection-modes).
@@ -474,11 +542,13 @@ Select content based on connected regions and color similarity.
 7. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
 
 ---
+
 ## ![Image Generation Area tool icon](./tool_icons/gen_area_icon.png) Image Generation Area tool (G)
 
 Controls the area of the image in use for AI image generation. AI generators are restricted to certain resolutions, but this tool lets you use them with images of any size.  When you click "Generate", the AI generator will only act on the area selected by this tool, and only content within this area will influence generated imagery.  See the [inpainting guide](./inpainting_guide.md) for more details.
 
 ### Basic controls
+
 - **Left-click and drag inside the area**: Move the image generation area, keeping the spot you grabbed under the pointer.
 - **Left-click and drag outside the area**: Center the image generation area on the clicked spot, then keep moving it while you drag.
 - **Left-click and drag a handle**: Resize the image generation area. While this tool is active, the area's outline has eight square handles. Corner handles keep the area's aspect ratio, and edge handles move one side.
@@ -491,9 +561,11 @@ Controls the area of the image in use for AI image generation. AI generators are
 Each drag is one undo step. Resizing applies the resolution rule as the size changes, and adds the finished size to the recent area sizes.
 
 ### Following the selection
+
 In inpainting mode, the generation area moves after you change the selection or its context pins, so that it contains them along with the "Inpaint Full Resolution" padding. It moves only as far as needed, never changes size, and centers on a selection too large to fit. Undo and redo never move it, and moving it by hand isn't overridden until the selection changes again. Change this with **"Generation area follows selection"** in [settings](./menu_options.md#settings-f9) under the **"Editing"** category: **"Minimal move"** (default), **"Center on selection"**, or **"Off"**.
 
 ### User interface
+
 <img src="./labeled_screenshots/tools/gen_area.png" alt="Screenshot of the generation area tool controls, with specific elements numbered."/>
 
 1. **X-coordinate slider**: Sets the position of the generation area's left edge within the image.
