@@ -155,7 +155,6 @@
   "test/ui/input_fields/geometry_block_test.py::GeometryBlockTest::test_step_keys_respect_predicate_and_list_in_tooltips": 8,
   "test/ui/layout/dock_panel_test.py::DockPanelTest::test_control_forms": 1,
   "test/ui/layout/dock_panel_test.py::DockPanelTest::test_decorative_control_hides_instead_of_moving_to_more": 1,
-  "test/ui/layout/dock_panel_test.py::DockPanelTest::test_unchanged_host_facts_do_not_replan": 44,
   "test/ui/layout/reflowing_button_group_test.py::ReflowingButtonGroupTest::test_column_when_buttons_do_not_fit": 5,
   "test/ui/layout/reflowing_button_group_test.py::ReflowingButtonGroupTest::test_hiding_a_button_rechecks_layout": 5,
   "test/ui/layout/reflowing_button_group_test.py::ReflowingButtonGroupTest::test_minimum_width_allows_column": 5,
