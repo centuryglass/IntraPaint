@@ -78,9 +78,9 @@ class ImagePanel(QWidget):
         AppConfig().connect(self, AppConfig.SHOW_TOOL_CONTROL_HINTS, self._show_control_hint_config_slot)
         self._control_bar.addAction(self._hide_hint_action if AppConfig().get(AppConfig.SHOW_TOOL_CONTROL_HINTS)
                                     else self._show_hint_action)
-        self._layout.addWidget(self._control_bar, stretch=1)
 
         if include_zoom_controls:
+            self._layout.addWidget(self._control_bar, stretch=1)
             self._control_layout: Optional[QHBoxLayout] = QHBoxLayout(self._control_bar)
             self._control_hint_label: Optional[QLabel] = QLabel('')
             assert self._control_layout is not None
@@ -135,6 +135,8 @@ class ImagePanel(QWidget):
         else:
             self._control_layout = None
             self._control_hint_label = None
+            self._control_bar.hide()
+            self._control_bar.deleteLater()
             self._control_bar = None
             self._image_scale_slider = None
             self._image_scale_box = None
@@ -283,7 +285,8 @@ class ImagePanel(QWidget):
     def setEnabled(self, enabled: bool) -> None:
         """Override setEnabled to ensure it does not apply to tab bars."""
         self._image_viewer.setEnabled(enabled)
-        self._control_bar.setEnabled(enabled)
+        if self._control_bar is not None:
+            self._control_bar.setEnabled(enabled)
 
     @property
     def image_viewer(self) -> ImageViewer:

@@ -43,8 +43,8 @@ POPOVER_MARGIN = 8
 POPOVER_GAP = 2
 
 
-class _GlyphButton(QToolButton):
-    """A flat tool button drawing a vector glyph in the palette's text color, so it follows palette changes."""
+class GlyphButton(QToolButton):
+    """A flat tool button drawing a reset or More glyph in the palette's text color, so it follows palette changes."""
 
     RESET = 'reset'
     MORE = 'more'
@@ -249,8 +249,8 @@ class PanelHeader(QWidget):
         # `_one_line_width`'s inputs and result:
         self._one_line_key: Optional[tuple] = None
         self._one_line_cache = 0
-        self._reset_button = _GlyphButton(_GlyphButton.RESET, RESET_TOOLTIP)
-        self._more_button = _GlyphButton(_GlyphButton.MORE, MORE_TOOLTIP)
+        self._reset_button = GlyphButton(GlyphButton.RESET, RESET_TOOLTIP)
+        self._more_button = GlyphButton(GlyphButton.MORE, MORE_TOOLTIP)
         self._more_button.hide()
         # Controls added with `add_widget`:
         self._widgets: list[QWidget] = []

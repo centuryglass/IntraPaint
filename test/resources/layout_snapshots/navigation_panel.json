@@ -2,44 +2,48 @@
   "minimum": {
     "problems": [],
     "size": [
-      294,
-      124
+      100,
+      109
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: QWidget[1] is 129x33, minimum 276x33",
-      "squeezed: QWidget[1]/DualToggle/Label 'Move gen. area' is 61x29, minimum 135x29",
-      "squeezed: QWidget[1]/DualToggle/Label 'Move view' is 61x29, minimum 108x29"
+      "squeezed: _NavigationBody is 32x361, minimum 82x91",
+      "clipped: _NavigationBody/ImageViewer shows 32x61 of 61x61",
+      "clipped: _NavigationBody/ImageViewer/QWidget[2] shows 31x59 of 59x59",
+      "squeezed: _NavigationBody/QWidget is 32x24, minimum 82x24",
+      "squeezed: _NavigationBody/QWidget/SegmentedControl is 14x24, minimum 64x24"
     ],
     "size": [
-      147,
-      124
+      50,
+      379
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      294,
-      124
+      349,
+      379
     ]
   },
   "short": {
     "problems": [
-      "squeezed: ImageViewer is 276x16, minimum 61x61",
-      "squeezed: QWidget[1] is 276x16, minimum 276x33",
-      "squeezed: QWidget[1]/DualToggle/Label 'Move gen. area' is 135x12, minimum 135x29",
-      "squeezed: QWidget[1]/DualToggle/Label 'Move view' is 135x12, minimum 108x29"
+      "squeezed: _NavigationBody is 331x36, minimum 82x91",
+      "clipped: _NavigationBody/ImageViewer shows 61x36 of 61x61",
+      "clipped: _NavigationBody/ImageViewer/QWidget[2] shows 59x35 of 59x59",
+      "squeezed: _NavigationBody/QWidget is 264x36, minimum 248x47",
+      "squeezed: _NavigationBody/QWidget/SegmentedControl is 248x15, minimum 248x24",
+      "squeezed: _NavigationBody/QWidget/QLabel 'Drag: pan, Shift+drag: d' is 264x15, minimum 217x17"
     ],
     "size": [
-      294,
-      62
+      349,
+      54
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      294,
+      349,
       1200
     ]
   },
@@ -47,7 +51,7 @@
     "problems": [],
     "size": [
       1600,
-      124
+      379
     ]
   }
 }
