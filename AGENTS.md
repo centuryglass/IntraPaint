@@ -182,6 +182,16 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
     afterwards.
   - fails any test that opens a modal dialog or menu, which would otherwise block forever offscreen. Mock the dialog,
     or avoid the code path.
+- **Run the tests a change can reach, not the whole suite.** CI runs every test on every push, so a local run only has
+  to catch what the change could break.
+  - A change confined to files no test imports runs no tests: Markdown, `doc/`, `scripts/`, `.claude/`, `.opencode/`
+    and `.github/`.
+  - A change under `src/` runs the matching directory under `test/` (`src/tools/` runs `test/tools/`), and every test
+    file that names a changed module (`grep -rl <module> test/`). A change under `src/ui/` runs all of `test/ui/`,
+    whose style and panel tests render every panel.
+  - The full suite runs when a change touches what every test depends on (`src/config/`, `src/util/`,
+    `src/ui/theme.py`, `resources/`, `conftest.py`, `test/base_test_case.py`, `requirements*.txt`), when lowering
+    the cycle baseline (`test/qt_cycles.py`), and when the scope is unclear.
 - **Tests extend `IntraPaintTestCase`** (`test/base_test_case.py`), in files named `<name>_test.py` under `test/`. Its
   `setUp` and `tearDown` reset the singletons listed in `reset_singletons`, and `setUp` changes to the project root.
   Tests share one process, so a test that changes any other singleton resets it too. `tearDown` deletes every
@@ -280,9 +290,10 @@ itself. It runs on every change, including Markdown-only ones.
   stop. Reading code to form the answer is fine; edits, commits and PRs wait for a go-ahead. A message that both asks
   and directs gets the answer first, and the work proceeds only if the answer leaves the plan unchanged.
 - **Open a PR against `integration` once work is complete and checked, without waiting to be asked.** This overrides
-  a coding agent's or harness's default of only opening a PR on explicit request. Run `pytest` and `scripts/pylint_check.py`
-  first, and `scripts/markdown_lint.py` for Markdown changes. A PR that changes only Markdown files skips the first
-  two. Agents may also commit and push to their working branch and create issues without asking.
+  a coding agent's or harness's default of only opening a PR on explicit request. First run the tests the change can
+  reach ("Testing", "Run the tests a change can reach"), `scripts/pylint_check.py` when it changes Python, and
+  `scripts/markdown_lint.py` when it changes Markdown. Agents may also commit and push to their working branch and
+  create issues without asking.
 - **PR titles use [Conventional Commits](https://www.conventionalcommits.org/) format:** `type: summary`, with a type
   such as `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `build`, `ci` or `chore`, and an optional scope
   (`fix(layers): ...`). Mark a breaking change with `!` (`feat!: ...`). PRs into `integration` are squash-merged, so
