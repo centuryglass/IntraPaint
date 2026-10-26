@@ -85,7 +85,6 @@ class SdGeneratorTestCase(IntraPaintTestCase):
             painter.end()
 
         cache = Cache()
-        cache.restore_default_options(Cache.EDIT_MODE)
         cache.set(Cache.GENERATION_SIZE, GENERATION_SIZE)
         cache.set(Cache.PROMPT, f'a lighthouse on a cliff <lora:{LORA_NAME}:0.8>')
         cache.set(Cache.NEGATIVE_PROMPT, 'blurry')

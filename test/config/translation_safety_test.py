@@ -73,7 +73,6 @@ class OptionDisplayTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        Cache().restore_default_options(Cache.EDIT_MODE)
         self._translate = QApplication.translate
 
         def _shout(context: str, text: str, *args, **kwargs) -> str:

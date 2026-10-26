@@ -30,7 +30,6 @@ class SelectionPanelTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         cache = Cache()
-        cache.restore_default_options(Cache.EDIT_MODE)
         cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, True)
         cache.set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         self.image_stack = ImageStack(QSize(256, 256), QSize(128, 128), QSize(8, 8), QSize(1024, 1024))
@@ -94,8 +93,6 @@ class SelectionPanelsTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        Cache().restore_default_options(Cache.SELECTION_MODE)
-        Cache().restore_default_options(Cache.SELECTION_FILL_AREA)
         self.image_stack = ImageStack(QSize(256, 256), QSize(128, 128), QSize(8, 8), QSize(1024, 1024))
         self.layer = self.image_stack.selection_layer
         self.tools = {name: MagicMock(is_active=False) for name in ('brush', 'fill', 'free', 'shape')}

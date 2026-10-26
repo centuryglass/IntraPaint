@@ -2,9 +2,6 @@
   "(repository)": {
     "duplicate-code": 42
   },
-  "src/config/config.py": {
-    "protected-access": 4
-  },
   "src/controller/app_controller.py": {
     "fixme": 2,
     "too-many-lines": 1

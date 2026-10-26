@@ -729,26 +729,12 @@ def panel_scenes(controller: 'AppController') -> list[PanelScene]:
 
 
 def mock_app_controller() -> 'AppController':
-    """Restores config option lists with restore_option_lists, then returns a new AppController in mock mode."""
+    """Returns a new AppController in mock mode."""
     # pylint: disable=import-outside-toplevel
     from src.controller.app_controller import AppController
     from src.util.arg_parser import build_arg_parser
-    restore_option_lists()
     args = build_arg_parser(include_edit_params=False).parse_args([])
     args.mode = 'mock'
     args.server_url = ''
     args.fast_ngrok_connection = False
     return AppController(args)
-
-
-def restore_option_lists() -> None:
-    """Restores every AppConfig and Cache option list to its definition, so combo boxes hold all their options.
-
-    IntraPaintTestCase's config reset trims option lists to the default value alone.
-    """
-    # pylint: disable=import-outside-toplevel
-    from src.config.application_config import AppConfig
-    from src.config.cache import Cache
-    for config in (AppConfig(), Cache()):
-        for key in config.get_keys():
-            config.restore_default_options(key)

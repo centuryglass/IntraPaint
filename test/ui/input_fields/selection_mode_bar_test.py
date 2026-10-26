@@ -18,10 +18,6 @@ CTRL = Qt.KeyboardModifier.ControlModifier
 class SelectionModeBarTest(IntraPaintTestCase):
     """Tests SelectionModeBar."""
 
-    def setUp(self) -> None:
-        super().setUp()
-        Cache().restore_default_options(Cache.SELECTION_MODE)
-
     def test_config_connections_end_with_parent_deletion(self) -> None:
         """Deleting the bar's parent removes its config registrations."""
         parent = QWidget()

@@ -29,7 +29,6 @@ class TabbedColorPickerTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        Cache().restore_default_options(Cache.COLOR_SLIDER_MODE)
         self.picker = TabbedColorPicker()
         self.picker.set_current_color(QColor('#336699'))
         self.picker.ring_square.resize(WIDGET_SIZE, WIDGET_SIZE)

@@ -1,5 +1,6 @@
 """Represents configurable typed values loaded from JSON definitions."""
 import logging
+from copy import deepcopy
 from typing import Any, Optional
 
 from PySide6.QtCore import QSize
@@ -10,6 +11,10 @@ from src.util.parameter import Parameter, get_parameter_type, TYPE_DICT, TYPE_IN
 logger = logging.getLogger(__name__)
 
 VALUE_KEY = 'value'
+
+# The attributes `ConfigEntry.snapshot_state` copies. An attribute that tests can change and that is missing here
+# carries over from one test to the next.
+_STATE_ATTRIBUTES = ('_value', '_default_value', '_options', '_default_options', '_minimum', '_maximum', '_step')
 
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -145,6 +150,15 @@ class ConfigEntry(Parameter):
         if isinstance(self._value, dict):
             return self._value.copy()
         return self._value
+
+    def snapshot_state(self) -> dict[str, Any]:
+        """Returns a copy of the entry's value, default, options and range, for `restore_state`."""
+        return {name: deepcopy(getattr(self, name)) for name in _STATE_ATTRIBUTES}
+
+    def restore_state(self, state: dict[str, Any]) -> None:
+        """Restores the value, default, options and range saved by `snapshot_state`. `state` stays unchanged."""
+        for name, value in state.items():
+            setattr(self, name, deepcopy(value))
 
     def default_options(self) -> Optional[ParamTypeList]:
         """Returns a copy of the list of default options provided when the entry was created, if any."""
