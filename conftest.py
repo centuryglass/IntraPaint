@@ -95,14 +95,8 @@ def pytest_sessionstart(session: pytest.Session) -> None:
         shutil.copyfile(os.path.join(_CONFIG_FIXTURE_DIR, file_name), copy_path)
         config = config_class(copy_path)
         assert config.json_path == copy_path, f'{config_class.__name__} was created before pytest_sessionstart'
-    from src.ui.theme import apply_font_point_size, apply_overlay_scroll_bars, apply_rounded_popups, apply_style, \
-        apply_theme
-    app_config = AppConfig()
-    apply_overlay_scroll_bars(app_config.get(AppConfig.OVERLAY_SCROLL_BARS))
-    apply_rounded_popups(app_config.get(AppConfig.ROUNDED_POPUPS))
-    apply_style(app_config.get(AppConfig.STYLE))
-    apply_theme(app_config.get(AppConfig.THEME))
-    apply_font_point_size(app_config.get(AppConfig.FONT_POINT_SIZE))
+    from test.base_test_case import apply_fixture_appearance
+    apply_fixture_appearance()
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:

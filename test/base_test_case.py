@@ -24,7 +24,7 @@ from unittest.mock import MagicMock
 
 import numpy as np
 from PySide6.QtCore import QCoreApplication, QEvent, Qt, SignalInstance
-from PySide6.QtGui import QImage, QKeyEvent
+from PySide6.QtGui import QImage, QKeyEvent, QPalette
 from PySide6.QtWidgets import QApplication, QLayoutItem, QWidget
 from shiboken6 import getAllValidWrappers
 
@@ -33,6 +33,8 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
+from src.ui.theme import apply_font_point_size, apply_overlay_scroll_bars, apply_rounded_popups, apply_style, \
+    apply_theme
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker
 from src.util.singleton import Singleton
@@ -48,6 +50,29 @@ TESTED_SNAPSHOT_SUFFIX = '_tested.json'
 # Image comparisons convert both images to this format, so a format difference alone can't fail a test. Switching it to
 # ARGB32 breaks existing goldens: unpremultiplying rounds visually identical pixels to different values.
 COMPARISON_FORMAT = QImage.Format.Format_ARGB32_Premultiplied
+
+
+def apply_fixture_appearance() -> None:
+    """Applies the style, theme and font size from the app config fixture to the application."""
+    app_config = AppConfig()
+    apply_overlay_scroll_bars(app_config.get(AppConfig.OVERLAY_SCROLL_BARS))
+    apply_rounded_popups(app_config.get(AppConfig.ROUNDED_POPUPS))
+    apply_style(app_config.get(AppConfig.STYLE))
+    apply_theme(app_config.get(AppConfig.THEME))
+    apply_font_point_size(app_config.get(AppConfig.FONT_POINT_SIZE))
+
+
+def app_appearance() -> dict[str, Any]:
+    """Returns the application-wide font, style, stylesheet and palette, which every widget's layout depends on."""
+    app = QApplication.instance()
+    assert isinstance(app, QApplication)
+    style = app.style()
+    return {
+        'font': app.font().toString(),
+        'style': f'{type(style).__name__}({style.name()})',
+        'stylesheet': app.styleSheet(),
+        'palette': QPalette(app.palette())
+    }
 
 
 def reset_singletons() -> None:
@@ -241,8 +266,11 @@ class IntraPaintTestCase(unittest.TestCase):
     Config values, config connections, the undo history, app state and hotkey bindings are singletons that persist
     across tests. They're reset before each test, so it starts from the test config defaults, and again after it, so it
     can't leave state behind for tests that don't use this class. Widgets with no parent that the test created are
-    deleted after it, with their children, and the system clipboard is cleared. The working directory is the project root during every test, since resources
-    and the config definitions load from paths relative to it.
+    deleted after it, with their children, and the system clipboard is cleared. The working directory is the project
+    root during every test, since resources and the config definitions load from paths relative to it.
+
+    A test fails if it changes the application's font, style, stylesheet or palette without restoring them, since every
+    later test's layout depends on them. The fixture appearance is reapplied after such a test.
 
     Subclasses that override setUp or tearDown must call the superclass implementation: setUp first, tearDown last.
     """
@@ -253,6 +281,7 @@ class IntraPaintTestCase(unittest.TestCase):
         reset_singletons()
         self._existing_widgets = parentless_widgets()
         self._layout_item_wrappers = layout_item_wrapper_count()
+        self._appearance = app_appearance()
 
     def tearDown(self) -> None:
         reset_singletons()
@@ -264,9 +293,14 @@ class IntraPaintTestCase(unittest.TestCase):
         qt_cycles.collect()
         leaked = layout_item_wrapper_count() - self._layout_item_wrappers
         del self._layout_item_wrappers
+        changed_appearance = [key for key, value in app_appearance().items() if value != self._appearance[key]]
+        del self._appearance
+        if len(changed_appearance) > 0:
+            apply_fixture_appearance()
         super().tearDown()
         self.assertLessEqual(leaked, 0, f'{leaked} layout item wrappers outlived the test (see'
                                         f' layout_item_wrapper_count)')
+        self.assertEqual(changed_appearance, [], 'The test changed the application appearance without restoring it')
 
     def connect_mock(self, signal: SignalInstance) -> MagicMock:
         """Returns a MagicMock connected to `signal`, disconnected and cleared when the test ends.

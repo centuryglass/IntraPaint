@@ -24,6 +24,7 @@ updates:
       - dependency-name: sd-backend-client
       - dependency-name: cython
       - dependency-name: pytest
+      - dependency-name: pytest-random-order
       - dependency-name: pylint
       - dependency-name: pymarkdownlnt
     groups:

@@ -54,7 +54,7 @@ In priority order:
 ```bash
 pip install -r requirements.txt
 python IntraPaint.py            # --help for options; --mode selects the generation backend
-pip install -r requirements-dev.txt   # for development: adds pytest, pylint, pymarkdownlnt, pyinstaller and pur
+pip install -r requirements-dev.txt   # for development: adds the test, lint and packaging tools
 ```
 
 - On launch, `IntraPaint.py` auto-builds the Cython `image_fill` module if it's missing. To build it manually:
@@ -230,7 +230,10 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
     `ImageStack.flush_render()` before reading them. `test/render_assertions.py` compares region renders, full
     renders and what the view displays.
   - No retry markers. The only allowed markers are `skip`, with a reason and an issue link, and `xfail(strict=True)`.
-  - `pytest-xdist` waits until tests are proven independent of run order.
+  - **Tests don't depend on run order.** `pytest --random-order-bucket=global` shuffles the whole suite, and
+    `.github/workflows/random-order.yml` runs it that way every week. `IntraPaintTestCase` fails a test that leaves the
+    application's font, style, stylesheet or palette changed.
+  - `pytest-xdist` waits until the weekly shuffled runs stay green.
 - CI (`.github/workflows/ci.yml`) runs on every push and pull request: the suite on Python 3.11-3.14, the lint check
   below, and the `bundle` job (see "Packaging"). Its `ci` job is the single check to require for merging.
 - Test coverage is sparse and unmeasured: treat the suite as a partial safety net, not an authoritative gate. A full
