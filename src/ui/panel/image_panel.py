@@ -298,8 +298,9 @@ class ImagePanel(QWidget):
         if isinstance(self._control_hint_label, QLabel):
             self._control_hint_label.setText(hint_text)
 
-    def resizeEvent(self, _event: Optional[QResizeEvent]) -> None:
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
         """Hide non-essential UI elements if there's not enough space."""
+        super().resizeEvent(event)
         self._update_widget_visibility()
 
     def _show_control_hint_config_slot(self, show_hints: bool):
