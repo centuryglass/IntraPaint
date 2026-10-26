@@ -58,8 +58,7 @@ from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT, EDIT
 from test.base_test_case import reset_singletons
 from test.ui.panel_capture import (SWEEP_HEIGHTS, SWEEP_WIDTHS, PanelHost, PanelScene, find_arrangement_problems,
                                    find_layout_problems, is_hint, layout_report, layout_widget_rects, misaligned_edges,
-                                   mock_app_controller, panel_scenes, restore_option_lists,
-                                   tools_panel_scenes)
+                                   mock_app_controller, panel_scenes, tools_panel_scenes)
 from test.ui.ui_capture import (CELL_MARGIN, GALLERY_CONTROLS, GalleryControl, gallery_cell_rect,
                                 render_gallery_control)
 
@@ -149,7 +148,6 @@ def _set_up_config(config_dir: str, edit_mode: Optional[str]) -> None:
         config_class(copy_path)
     reset_singletons()
     if edit_mode is not None:
-        restore_option_lists()
         Cache().set(Cache.EDIT_MODE, edit_mode)
 
 

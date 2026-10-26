@@ -35,7 +35,6 @@ class ToolTestCase(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        Cache().restore_default_options(Cache.SELECTION_MODE)
         self.image_stack = ImageStack(self.IMAGE_SIZE, self.IMAGE_SIZE, self.IMAGE_SIZE, self.IMAGE_SIZE)
         self.image_panel = ImagePanel(self.image_stack, include_zoom_controls=False, use_keybindings=False)
         self.image_viewer = self.image_panel.image_viewer

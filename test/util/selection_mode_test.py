@@ -45,7 +45,6 @@ class SelectionModeTest(IntraPaintTestCase):
 
     def test_stored_mode_matches_cache_options(self) -> None:
         """Every mode is an option of the cache value."""
-        Cache().restore_default_options(Cache.SELECTION_MODE)
         self.assertEqual(Cache().get_options(Cache.SELECTION_MODE), [mode.value for mode in SelectionMode])
 
     def test_modifiers_override_stored_mode(self) -> None:

@@ -195,21 +195,22 @@ class Config:
                 self._read_from_json()
             else:
                 self._write_to_json()
+        # The state `_reset` restores:
+        self._initial_state = {key: entry.snapshot_state() for key, entry in self._entries.items()}
 
-    # noinspection PyProtectedMember
     def _reset(self) -> None:
-        """Discard all changes and connections, and reload from JSON. For testing use only.
+        """Restores every entry to its state at the end of construction, and discards all connections. For testing use
+        only.
 
-        Option lists shrink to the default value alone, so a test that sets another option calls
-        `restore_default_options` first.
+        Pending saves are cancelled, so a change made before the reset never reaches the JSON file.
         """
+        self._save_timer.stop()
         with self._lock:
-            self._connected = {}
             for key, entry in self._entries.items():
+                entry.restore_state(self._initial_state[key])
                 self._connected[key] = {}
-                entry._value = entry.default_value
-                if entry._options is not None and len(entry._options) > 0 and entry.default_value is not None:
-                    entry._options = [entry.default_value]
+            for key in self._option_connected:
+                self._option_connected[key] = {}
 
     def _adjust_defaults(self) -> None:
         """Override this to perform any adjustments to default values needed before file IO, e.g. loading list options

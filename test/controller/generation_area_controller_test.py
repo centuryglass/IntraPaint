@@ -29,7 +29,6 @@ class GenerationAreaControllerTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.image_stack = ImageStack(IMAGE_SIZE, INITIAL_AREA_SIZE, QSize(8, 8), QSize(10240, 10240))
-        Cache().restore_default_options(Cache.GENERATION_RESOLUTION_RULE)
         Cache().set(Cache.GENERATION_RESOLUTION_RULE, RESOLUTION_RULE_MATCH_AREA_UPSCALED)
         AppConfig().set(AppConfig.GENERATION_RESOLUTION_MIN_SIDE, 512)
         Cache().set(Cache.GENERATION_SIZE, QSize(640, 640))
@@ -123,10 +122,8 @@ class FollowSelectionTest(IntraPaintTestCase):
     def setUp(self) -> None:
         super().setUp()
         config = AppConfig()
-        config.restore_default_options(AppConfig.GENERATION_AREA_FOLLOW_SELECTION)
         config.set(AppConfig.GENERATION_AREA_FOLLOW_SELECTION, FOLLOW_SELECTION_MINIMAL)
         cache = Cache()
-        cache.restore_default_options(Cache.EDIT_MODE)
         cache.set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         cache.set(Cache.INPAINT_FULL_RES, True)
         cache.set(Cache.INPAINT_FULL_RES_PADDING, 0)

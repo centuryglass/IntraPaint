@@ -362,6 +362,55 @@ class ConfigTest(IntraPaintTestCase):
         self.assertEqual(config.get(INT_KEY, RangeKey.MAX), 20)
         self.assertEqual(config.get(INT_KEY, RangeKey.STEP), 2)
 
+    def test_reset_restores_loaded_state(self) -> None:
+        """`_reset` restores the values, options and ranges the config had once constructed, not the definition's."""
+        saved_values = {STR_KEY: 'saved', OPTION_KEY: 'second', INT_KEY: {'min': 2, 'max': 20, 'step': 2, 'value': 15}}
+        self._write_saved_values(saved_values)
+        config = self._config()
+        config.set(STR_KEY, 'changed', save_change=False)
+        config.update_options(OPTION_KEY, ['x', 'y'])
+        config.set(DICT_KEY, 7, save_change=False, inner_key='inner')
+        config._entries[INT_KEY].maximum = 30  # pylint: disable=protected-access
+        config._reset()  # pylint: disable=protected-access
+        self.assertEqual(config.get(STR_KEY), 'saved')
+        self.assertEqual(config.get(OPTION_KEY), 'second')
+        self.assertEqual(config.get_options(OPTION_KEY), ['first', 'second'])
+        self.assertEqual(config.get_default(OPTION_KEY), 'first')
+        self.assertEqual(config.get(DICT_KEY), DEFAULT_VALUES[DICT_KEY])
+        self.assertEqual(config.get(INT_KEY), 15)
+        self.assertEqual(config.get(INT_KEY, RangeKey.MAX), 20)
+
+    def test_reset_survives_changes_to_restored_values(self) -> None:
+        """A change after one `_reset` doesn't reach the state the next `_reset` restores."""
+        config = self._config()
+        config._reset()  # pylint: disable=protected-access
+        config.set(DICT_KEY, 7, save_change=False, inner_key='inner')
+        config.add_option(OPTION_KEY, 'third')
+        config._reset()  # pylint: disable=protected-access
+        self.assertEqual(config.get(DICT_KEY), DEFAULT_VALUES[DICT_KEY])
+        self.assertEqual(config.get_options(OPTION_KEY), ['first', 'second'])
+
+    def test_reset_discards_connections(self) -> None:
+        """Value and option callbacks connected before `_reset` don't run after it."""
+        config = self._config()
+        values: list[Any] = []
+        option_lists: list[list[Any]] = []
+        config.connect(self, OPTION_KEY, values.append)
+        config.connect_to_option_changes(self, OPTION_KEY, option_lists.append)
+        config._reset()  # pylint: disable=protected-access
+        config.update_options(OPTION_KEY, ['x', 'y'])
+        self.assertEqual(values, [])
+        self.assertEqual(option_lists, [])
+
+    def test_reset_cancels_pending_save(self) -> None:
+        """A change saved before `_reset` never reaches the JSON file."""
+        config = self._config()
+        saved_values = self._read_saved_values()
+        config.set(STR_KEY, 'changed')
+        config._reset()  # pylint: disable=protected-access
+        self.assertFalse(config._save_timer.isActive())  # pylint: disable=protected-access
+        self.assertEqual(self._read_saved_values(), saved_values)
+
     def test_load_invalid_json_restores_defaults(self) -> None:
         """A saved file that isn't valid JSON loads as defaults, and is replaced with the defaults."""
         with open(self.json_path, 'w', encoding='utf-8') as file:

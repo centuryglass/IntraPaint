@@ -122,7 +122,6 @@ class ColorSliderBlockTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        Cache().restore_default_options(Cache.COLOR_SLIDER_MODE)
         self.block = ColorSliderBlock()
         self.block.resize(SLIDER_WIDTH, self.block.sizeHint().height())
         self.block.set_color(QColor('#80cc3366'))
@@ -214,7 +213,6 @@ class ColorPanelSlidersTabTest(IntraPaintTestCase):
         super().setUp()
         Cache().set(Cache.LAST_BRUSH_COLOR, '#ff336699')
         Cache().set(Cache.RECENT_COLORS, [])
-        Cache().restore_default_options(Cache.COLOR_SLIDER_MODE)
         self.panel = ColorControlPanel()
         self.block = self.panel.slider_block
         self.block.set_mode(MODE_RGB)

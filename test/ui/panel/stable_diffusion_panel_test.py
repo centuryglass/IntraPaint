@@ -41,8 +41,6 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        # The base test case trims option lists to the default, and edit mode needs all three:
-        Cache().restore_default_options(Cache.EDIT_MODE)
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         AppStateTracker().set_app_state(APP_STATE_EDITING)
         self.panel = StableDiffusionPanel(True)

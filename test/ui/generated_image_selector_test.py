@@ -252,10 +252,8 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
         self.assertEqual(self.selector._change_bounds, saved_change_bounds)
 
     def _switch_live_mode_to_img2img(self) -> None:
-        """Moves the app's current mode away from the batch's inpaint mode. The test fixture's option list is
-        narrowed, so the defaults have to be restored before the value can change."""
+        """Moves the app's current mode away from the batch's inpaint mode."""
         cache = Cache()
-        cache.restore_default_options(Cache.EDIT_MODE)
         cache.set(Cache.EDIT_MODE, EDIT_MODE_IMG2IMG)
 
     def test_rebuild_uses_batch_edit_mode_not_live_cache(self) -> None:

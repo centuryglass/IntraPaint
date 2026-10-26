@@ -72,7 +72,6 @@ class ImageGeneratorTest(IntraPaintTestCase):
             painter.fillRect(SELECTION_BOUNDS, Qt.GlobalColor.black)
             painter.end()
         cache = Cache()
-        cache.restore_default_options(Cache.EDIT_MODE)
         cache.set(Cache.GENERATION_SIZE, GENERATION_AREA.size())
         cache.set(Cache.BATCH_COUNT, BATCH_COUNT)
         cache.set(Cache.BATCH_SIZE, BATCH_SIZE)
