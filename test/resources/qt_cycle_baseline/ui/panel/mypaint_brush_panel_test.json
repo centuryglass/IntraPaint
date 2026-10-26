@@ -1,0 +1,7 @@
+{
+  "MyPaintBrushToolPanelTest::test_block_has_size_only": 66,
+  "MyPaintBrushToolPanelTest::test_compact_strip_chip_keeps_the_whole_name": 66,
+  "MyPaintBrushToolPanelTest::test_long_dynamics_description_gets_its_whole_height": 66,
+  "MyPaintBrushToolPanelTest::test_side_forms_follow_fit": 66,
+  "MyPaintBrushToolPanelTest::test_strip_forms_follow_fit": 66
+}
