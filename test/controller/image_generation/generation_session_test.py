@@ -1,6 +1,10 @@
 """Tests for GenerationSession: current and previous batch ownership, without a selection widget."""
 import sys
 
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
+
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QColor, QImage
 from PySide6.QtWidgets import QApplication
@@ -8,6 +12,9 @@ from PySide6.QtWidgets import QApplication
 from src.config.cache import Cache
 from src.controller.image_generation.generation_session import GenerationSession
 from src.image.layers.image_stack import ImageStack
+from src.controller.image_generation.apply_option import ApplyResult
+from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_SELECTION
+from src.util.shared_constants import EDIT_MODE_TXT2IMG
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -94,3 +101,46 @@ class GenerationSessionTest(IntraPaintTestCase):
         self.image_stack.load_image(_solid(QColor(5, 5, 5)))
         self.assertFalse(self.session.can_restore_previous())
         self.assertEqual(self.availability, [True, False])
+
+    def test_choose_applies_to_active_layer_and_returns_to_editing(self) -> None:
+        """Choosing a generated option writes it to the active layer and leaves the selection state."""
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_TXT2IMG)  # inpainting would clip the option by the empty selection
+        self._begin_with_results()
+        AppStateTracker.set_app_state(APP_STATE_SELECTION)
+        outcome = self.session.choose(1, 'Option 1')
+        self.image_stack.flush_render()
+        assert outcome is not None
+        self.assertEqual(outcome.result, ApplyResult.APPLIED)
+        self.assertEqual(AppStateTracker.app_state(), APP_STATE_EDITING)
+        self.assertEqual(self.image_stack.qimage_generation_area_content().pixelColor(5, 5), QColor(0, 255, 0))
+
+    def test_choose_original_applies_nothing(self) -> None:
+        """Choosing option zero leaves the image alone and still returns to editing."""
+        self._begin_with_results()
+        AppStateTracker.set_app_state(APP_STATE_SELECTION)
+        self.assertIsNone(self.session.choose(0, 'Original'))
+        self.assertEqual(AppStateTracker.app_state(), APP_STATE_EDITING)
+
+    def test_choose_reports_locked_layer_fallback(self) -> None:
+        """A locked target layer sends the option to a new layer and the outcome says why."""
+        self._begin_with_results()
+        self.image_stack.active_layer.locked = True
+        outcome = self.session.choose(1, 'Option 1')
+        assert outcome is not None
+        self.assertEqual(outcome.result, ApplyResult.BLOCKED_LOCKED)
+        self.assertEqual(outcome.layer.name, 'Option 1')
+
+    def test_send_to_new_layer(self) -> None:
+        """The option lands on a new layer named for it."""
+        self._begin_with_results()
+        layer = self.session.send_to_new_layer(1, 'Option 1')
+        self.assertEqual(layer.name, 'Option 1')
+        self.assertIs(self.image_stack.active_layer, layer)
+
+    def test_save_to_file_writes_option(self) -> None:
+        """Saving passes the chosen option's image and the path on to the image writer."""
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_TXT2IMG)
+        self._begin_with_results()
+        with patch('src.controller.image_generation.generation_session.save_image') as save:
+            self.session.save_to_file(1, str(Path(tempfile.gettempdir()) / 'option.png'))
+        self.assertEqual(save.call_args.args[0].pixelColor(5, 5), QColor(0, 255, 0))

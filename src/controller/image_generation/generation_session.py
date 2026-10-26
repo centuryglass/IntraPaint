@@ -1,6 +1,8 @@
-"""Owns the current and previous batch of generated image options for the open document.
+"""Owns the current and previous batch of generated image options for the open document, and the edits that
+write an option out of a batch.
 
-The selection screen shows whichever batch the session holds. The session lives on the main thread.
+The selection screen shows whichever batch the session holds. The session lives on the main thread and opens no
+dialogs: `apply` and `choose` return an outcome for the caller to report.
 """
 import logging
 from typing import Optional
@@ -8,8 +10,12 @@ from typing import Optional
 from PySide6.QtCore import QObject, QSize, Signal
 from PySide6.QtGui import QImage
 
+from src.controller.image_generation.apply_option import apply_generated_image, ApplyOutcome
 from src.controller.image_generation.generated_image_batch import GeneratedImageBatch
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.layer import Layer
+from src.util.application_state import AppStateTracker, APP_STATE_EDITING
+from src.util.visual.image_format_utils import save_image
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +118,36 @@ class GenerationSession(QObject):
         batch.option_images[0] = self._image_stack.qimage_generation_area_content()
         self._current = batch
         return batch
+
+    def apply(self, option_index: int, layer: Layer, layer_name: str, clear_context_pins: bool = False) -> ApplyOutcome:
+        """Writes an option of the current batch into `layer`, using the batch's own mask, area and edit mode.
+
+        `layer_name` names the layer created if `layer` can't take the content. See `apply_generated_image`.
+        """
+        batch = self.current
+        return apply_generated_image(self._image_stack, batch.edit_image(option_index), layer, batch.generation_area,
+                                     batch.edit_mode, batch.mask_image, layer_name, clear_context_pins)
+
+    def choose(self, option_index: int, layer_name: str) -> Optional[ApplyOutcome]:
+        """Finishes the selection: applies the option to the active layer unless it is the original content, clears
+        context pins per `AppConfig.CLEAR_CONTEXT_PINS_AFTER_GENERATING`, and returns to the editing state.
+
+        Returns None when the original content was chosen and nothing was applied.
+        """
+        outcome = None
+        if option_index != 0:
+            outcome = self.apply(option_index, self._image_stack.active_layer, layer_name, True)
+        AppStateTracker.set_app_state(APP_STATE_EDITING)
+        return outcome
+
+    def send_to_new_layer(self, option_index: int, layer_name: str) -> Layer:
+        """Applies an option of the current batch to a new layer and returns that layer."""
+        new_layer = self._image_stack.create_layer(layer_name=layer_name)
+        return self.apply(option_index, new_layer, layer_name).layer
+
+    def save_to_file(self, option_index: int, path: str) -> None:
+        """Saves an option of the current batch to `path` at its largest available resolution."""
+        save_image(self.current.full_image(option_index), path)
 
     def _on_document_changed(self) -> None:
         """Drops the stored batch, which belongs to the replaced document."""

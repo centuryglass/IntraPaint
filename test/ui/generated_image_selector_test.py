@@ -286,7 +286,7 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
 
         applied = Mock()
         with patch.object(self.image_stack, 'set_generation_area_content', applied):
-            self.selector._insert_option_into_layer(1, self.image_stack.active_layer)
+            self.selector._session.apply(1, self.image_stack.active_layer, 'Option 1')
         image = applied.call_args.args[0]
         self.assertEqual(image.pixelColor(4, 4).alpha(), 255)
         self.assertEqual(image.pixelColor(40, 40).alpha(), 0)
@@ -300,7 +300,7 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
 
         applied = Mock()
         with patch.object(self.image_stack, 'set_generation_area_content', applied):
-            self.selector._insert_option_into_layer(1, self.image_stack.active_layer)
+            self.selector._session.apply(1, self.image_stack.active_layer, 'Option 1')
         image = applied.call_args.args[0]
         self.assertEqual(image.pixelColor(4, 4).alpha(), 128)
         self.assertEqual(image.pixelColor(40, 40).alpha(), 128)
