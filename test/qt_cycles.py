@@ -13,10 +13,12 @@ pass `isinstance` checks for a Qt class, are safe to free at any time.
 `BASELINE_DIR` lists the tests that already leave such cycles, with the most wrappers each has left. It holds one JSON
 file per test module (`test/foo/bar_test.py` is `foo/bar_test.json`), so PRs that change counts in different modules
 don't conflict. A test fails when it leaves more than its entry, or none at all, so the entry of a test whose cycles
-are fixed gets removed. A test can leave a few fewer wrappers than its entry depending on which tests ran before it, so
-a count under the entry passes. Lower entries after a fix by running the affected tests with `UPDATE_ENV_VAR=1`, which
-rewrites the entries of the tests that ran and passed instead of failing them and keeps the other entries. A module's
-file is deleted when its last entry goes.
+are fixed gets removed. A count under the entry passes.
+
+Update entries by running only the affected tests with `UPDATE_ENV_VAR=1`. That rewrites the entries of the tests that
+ran and passed instead of failing them, and keeps every other entry. A test's count doesn't depend on which tests ran
+before it, so the full suite isn't needed. CI's full run on `BASELINE_PYTHON` checks the result. A module's file is
+deleted when its last entry goes.
 
 Counts differ between Python versions, since each version leaves different garbage, so they are compared and
 recorded only on `BASELINE_PYTHON`. Every version still frees cycles at the fixed points.
