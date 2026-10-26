@@ -1,0 +1,7 @@
+{
+  "ReflowingButtonGroupTest::test_column_when_buttons_do_not_fit": 5,
+  "ReflowingButtonGroupTest::test_hiding_a_button_rechecks_layout": 5,
+  "ReflowingButtonGroupTest::test_minimum_width_allows_column": 5,
+  "ReflowingButtonGroupTest::test_parent_layout_height_follows_width": 5,
+  "ReflowingButtonGroupTest::test_row_when_buttons_fit": 5
+}

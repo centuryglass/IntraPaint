@@ -1,0 +1,5 @@
+{
+  "LayerPanelTest::test_drop_into_nested_group": 12,
+  "LayerPanelTest::test_merge_and_flatten_tracked_with_undo": 8,
+  "LayerPanelTest::test_remove_layers_tracked_with_undo": 6
+}
