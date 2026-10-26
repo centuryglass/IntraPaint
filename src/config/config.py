@@ -52,8 +52,9 @@ DUPLICATE_KEY_ERROR = _tr('Tried to add duplicate config entry for key "{key}"')
 SAVE_DELAY_MS = 10
 
 
-# Keep in step with the file/context pairs in `scripts/build_translations.py`.
-_DEFINITION_TR_CONTEXTS = {
+# The translation context of each definition file's labels, descriptions, categories and options.
+# `scripts/build_translations.py` extracts them to these contexts.
+DEFINITION_TR_CONTEXTS = {
     'a1111_setting_definitions.json': 'config.a1111_config',
     'application_config_definitions.json': 'config.application_config',
     'cache_value_definitions.json': 'config.cache',
@@ -62,8 +63,8 @@ _DEFINITION_TR_CONTEXTS = {
 
 
 def _definition_tr_context(definition_path: str) -> str:
-    """Returns the translation context `scripts/build_translations.py` writes a definition file's strings to."""
-    return _DEFINITION_TR_CONTEXTS.get(os.path.basename(definition_path), '')
+    """Returns the translation context of a definition file's strings (`DEFINITION_TR_CONTEXTS`)."""
+    return DEFINITION_TR_CONTEXTS.get(os.path.basename(definition_path), '')
 
 
 class Config:

@@ -113,8 +113,10 @@ Config is JSON-backed and typed, with `get()` / `set()` / `connect()` (signal on
 
 - **Translate all user-facing strings.** Wrap them in the Qt translation helper: files define a `TR_ID` and a local
   `_tr()` wrapper around `QApplication.translate`. Follow the existing pattern in the file you're editing; don't emit
-  raw user-visible text. Pass `_tr` a single-quoted or triple-double-quoted literal: `scripts/build_translations.py`
-  only extracts `_tr('` and `_tr("""`.
+  raw user-visible text. Pass `_tr` a string literal, with runtime values as `str.format` placeholders. A change that
+  adds or edits a translated string, or a config definition's label, description or options, commits the
+  `resources/translations/main.ts` that `python scripts/build_translations.py` regenerates; CI's lint job fails
+  without it.
 - **Ask the maintainer before adding a dependency,** and keep them minimal. Every new package has to survive both
   PyInstaller builds and the exact-pin policy under "Running".
 - **Optional dependencies stay optional.** Packages listed only in `optional-requirements.txt` (themes, `spnav`, the
@@ -184,8 +186,8 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
     or avoid the code path.
 - **Run the tests a change can reach, not the whole suite.** CI runs every test on every push, so a local run only has
   to catch what the change could break.
-  - A change confined to files no test imports runs no tests: Markdown, `doc/`, `scripts/`, `.claude/`, `.opencode/`
-    and `.github/`.
+  - A change confined to files no test imports runs no tests: Markdown, `doc/`, `scripts/` (except
+    `build_translations.py`, which `test/scripts/` tests), `.claude/`, `.opencode/` and `.github/`.
   - A change under `src/` runs the matching directory under `test/` (`src/tools/` runs `test/tools/`), and every test
     file that names a changed module (`grep -rl <module> test/`). A change under `src/ui/` runs all of `test/ui/`,
     whose style and panel tests render every panel.

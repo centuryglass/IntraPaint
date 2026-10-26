@@ -83,6 +83,12 @@ SD_BASE_DESCRIPTION = _tr("""
 IMAGE_PREVIEW_STABILITY_MATRIX_CHECKPOINTS = f'{PROJECT_DIR}/resources/help_docs/stability_matrix_checkpoint_tab.png'
 IMAGE_PREVIEW_STABILITY_MATRIX_MODELS = f'{PROJECT_DIR}/resources/help_docs/stability_matrix_model_browser_tab.png'
 IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES = f'{PROJECT_DIR}/resources/help_docs/stability_matrix_packages_tab.png'
+# The image placeholders in INSTALLATION_STABILITY_MATRIX:
+STABILITY_MATRIX_ICONS = {
+    'packages_icon': IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES,
+    'checkpoints_icon': IMAGE_PREVIEW_STABILITY_MATRIX_CHECKPOINTS,
+    'models_icon': IMAGE_PREVIEW_STABILITY_MATRIX_MODELS
+}
 
 INSTALLATION_STABILITY_MATRIX = _tr("""
 <h3>Stability Matrix installation and setup</h3>
@@ -114,25 +120,25 @@ INSTALLATION_STABILITY_MATRIX = _tr("""
     <li>
         Extract and launch the downloaded file. On the first launch it will ask you to select a data directory, and ask
         you to select a package to install. Choose <b>"{generator_package}"</b>, and wait for installation to finish.
-        From here, Stability-Matrix will go to the <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES + """'/>
+        From here, Stability-Matrix will go to the <img src='{packages_icon}'/>
         <b>Packages</b> tab, where you can configure or launch the WebUI, or install alternate Stable Diffusion
         packages.<br/>
     </li>
     <li>
         If you've already downloaded Stable Diffusion or ControlNet models, go to the 
-         <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_CHECKPOINTS + """'/><b>Checkpoint Manager</b> tab on the left.
+         <img src='{checkpoints_icon}'/><b>Checkpoint Manager</b> tab on the left.
          Click the "<big>⋯</big>" menu button on the upper right, and choose "Models Folder", and it will open the 
          folder you need in the system file manager.  Copy Stable Diffusion models into the "StableDiffusion"
          subfolder, and copy any ControlNet models to the "ControlNet" subfolder.<br/>
     </li>
     <li>
         If you haven't downloaded any Stable Diffusion models yet, you can do that in Stability Matrix.
-        Go to the <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_MODELS + """'/><b>Model Browser</b> tab to find and
+        Go to the <img src='{models_icon}'/><b>Model Browser</b> tab to find and
         download a Stable Diffusion model file.<br/>
     </li>
     {post_install_generator_setup}
     <li>
-        On the <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES + """'/><b>Packages</b> tab, click the
+        On the <img src='{packages_icon}'/><b>Packages</b> tab, click the
         <b>Launch</b> button under <b>"{generator_package}"</b>.  A log screen will open up, showing the status of the
         package as it starts up.<br/>
     </li>

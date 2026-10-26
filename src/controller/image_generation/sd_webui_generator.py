@@ -20,7 +20,7 @@ from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qim
 from src.controller.image_generation.sd_adapters.params_adapter import build_webui_body, build_upscale_params
 from src.controller.image_generation.sd_generator import SD_BASE_DESCRIPTION, STABLE_DIFFUSION_CONFIG_CATEGORY, \
     SDGenerator, INSTALLATION_STABILITY_MATRIX, GETTING_SD_MODELS, IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES, \
-    MENU_STABLE_DIFFUSION
+    MENU_STABLE_DIFFUSION, STABILITY_MATRIX_ICONS
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
@@ -87,7 +87,7 @@ SD_WEBUI_GENERATOR_SETUP_OPTIONS = _tr("""
 <p>
     To use the Stable Diffusion WebUI generator, you will to download at least one Stable Diffusion model file, 
     install the WebUI, enable API access, and start the WebUI.  This guide will explain each of those steps.
-</p>""" + GETTING_SD_MODELS + """
+</p>""") + GETTING_SD_MODELS + _tr("""
 <hr/>
 <h2>Installing Stable Diffusion WebUI: Available options</h2>
 <p>
@@ -107,20 +107,22 @@ SD_WEBUI_GENERATOR_SETUP_OPTIONS = _tr("""
 IMAGE_PREVIEW_STABILITY_MATRIX_SETTINGS = f'{PROJECT_DIR}/resources/help_docs/stability_matrix_settings_button.png'
 SD_WEBUI_GENERATOR_STABILITY_MATRIX_CONFIG = _tr("""
     <li>
-        On the <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES + """'/><b>Packages</b> tab, click the
-        <img src='""" + IMAGE_PREVIEW_STABILITY_MATRIX_SETTINGS + """'/><b>Settings</b> button next to the WebUI
+        On the <img src='{packages_icon}'/><b>Packages</b> tab, click the
+        <img src='{settings_icon}'/><b>Settings</b> button next to the WebUI
         package to open the launch options.  Scroll to the bottom of the list, and find the <b>"Extra Launch Arguments"
         </b> text field. Enter <b>--api</b> into that text field, and click the <b>"Save"</b> button.  This step is
          needed to make the WebUI accept image generation requests from IntraPaint.
         <br/>
     </li>
-""")
+""").format(packages_icon=IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES,
+         settings_icon=IMAGE_PREVIEW_STABILITY_MATRIX_SETTINGS)
 
 SD_WEBUI_GENERATOR_STABILITY_MATRIX_PACKAGE = 'Stable Diffusion WebUI reForge'
 
 SD_WEBUI_GENERATOR_SETUP_STABILITY_MATRIX = INSTALLATION_STABILITY_MATRIX.format(
     generator_package=SD_WEBUI_GENERATOR_STABILITY_MATRIX_PACKAGE,
-    post_install_generator_setup=SD_WEBUI_GENERATOR_STABILITY_MATRIX_CONFIG
+    post_install_generator_setup=SD_WEBUI_GENERATOR_STABILITY_MATRIX_CONFIG,
+    **STABILITY_MATRIX_ICONS
 )
 
 SD_WEBUI_GENERATOR_SETUP_ALTERNATIVES = _tr("""
