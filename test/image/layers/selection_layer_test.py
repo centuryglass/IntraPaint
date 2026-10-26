@@ -6,7 +6,6 @@ how the layer stores its mask (#26) must reproduce them.
 """
 import sys
 from typing import Callable, Optional
-from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -43,8 +42,7 @@ class SelectionLayerContextPinTest(IntraPaintTestCase):
         self.image_stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(1024, 1024))
         self.image_stack.generation_area = GENERATION_AREA
         self.selection_layer = self.image_stack.selection_layer
-        self.pins_changed = MagicMock()
-        self.selection_layer.context_pins_changed.connect(self.pins_changed)
+        self.pins_changed = self.connect_mock(self.selection_layer.context_pins_changed)
         UndoStack().clear()
 
     def _select(self, bounds: QRect) -> None:

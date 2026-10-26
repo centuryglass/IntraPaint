@@ -49,6 +49,8 @@
   "test/image/layers/image_stack_merge_test.py::MergeGroupTest::test_merge_group_over_opaque_layer": 4,
   "test/image/layers/image_stack_merge_test.py::MergeGroupTest::test_merge_group_with_hidden_child": 4,
   "test/image/layers/image_stack_merge_test.py::MergeGroupTest::test_merge_nested_group": 7,
+  "test/image/layers/image_stack_test.py::ImageStackTest::test_merge_all_visible_with_active_layer_in_group": 3,
+  "test/image/layers/image_stack_test.py::ImageStackTest::test_remove_last_group_containing_active_layer": 3,
   "test/image/layers/layer_group_test.py::LayerGroupTest::test_copies_in_hidden_group_keep_own_visibility": 3,
   "test/tools/free_selection_tool_test.py::FreeSelectionToolTest::test_alt_subtracts": 38,
   "test/tools/free_selection_tool_test.py::FreeSelectionToolTest::test_clicking_first_point_closes_polygon": 42,

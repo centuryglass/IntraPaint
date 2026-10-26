@@ -20,9 +20,10 @@ import os
 import tempfile
 import unittest
 from typing import Any, Optional
+from unittest.mock import MagicMock
 
 import numpy as np
-from PySide6.QtCore import QCoreApplication, QEvent, Qt
+from PySide6.QtCore import QCoreApplication, QEvent, Qt, SignalInstance
 from PySide6.QtGui import QImage, QKeyEvent
 from PySide6.QtWidgets import QApplication, QLayoutItem, QWidget
 from shiboken6 import getAllValidWrappers
@@ -266,6 +267,22 @@ class IntraPaintTestCase(unittest.TestCase):
         super().tearDown()
         self.assertLessEqual(leaked, 0, f'{leaked} layout item wrappers outlived the test (see'
                                         f' layout_item_wrapper_count)')
+
+    def connect_mock(self, signal: SignalInstance) -> MagicMock:
+        """Returns a MagicMock connected to `signal`, disconnected and cleared when the test ends.
+
+        Qt holds a connected mock where the garbage collector can't see it, so a mock left connected keeps every
+        argument it recorded alive for the rest of the run. A `MagicMock` is itself a reference cycle, so its recorded
+        arguments are also cleared, or the cycle check counts a recorded wrapper such as the signal's sender.
+        """
+        listener = MagicMock()
+        signal.connect(listener)
+
+        def _release() -> None:
+            signal.disconnect(listener)
+            listener.reset_mock()
+        self.addCleanup(_release)
+        return listener
 
     def assert_image_matches_golden(self, actual: QImage, golden_path: str, msg: Optional[str] = None) -> None:
         """Asserts that an image has the same pixels as a committed golden image. See assert_image_matches_golden."""
