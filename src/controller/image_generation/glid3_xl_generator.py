@@ -47,7 +47,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 DEFAULT_GLID_MODEL = 'models/inpaint.pt'
 MIN_GLID_VRAM = 8000000000  # This is just a rough estimate.
-GLID_CONFIG_CATEGORY = QApplication.translate('application_config', 'GLID-3-XL')
+GLID_CONFIG_CATEGORY = QApplication.translate('config.application_config', 'GLID-3-XL')
 GLID_GENERATOR_NAME = _tr('GLID-3-XL image generation')
 GLID_GENERATOR_DESCRIPTION = _tr("""
 <h1>GLID-3-XL</h1>
@@ -100,16 +100,16 @@ GLID_GIT_SETUP = _tr("""
     You are currently running the pre-packaged version of IntraPaint, which excludes some of the components needed to
     run GLID-3-XL. You will need to switch to the Git version by running the following commands in a terminal window:
 </p>
-""" + rich_text_code_block('git clone https://github.com/centuryglass/IntraPaint.git\n'
-                           'conda create -n intrapaint-glid\n'
-                           'conda activate intrapaint-glid\n'
-                           'conda install pip\n'
-                           'pip install -r requirements.txt') + """
+{commands}
 <p>
     When following the instructions below, make sure you run all terminal commands in this new IntraPaint folder with
     the "intrapaint-glid" anaconda environment active.
 </p>
-""")
+""").format(commands=rich_text_code_block('git clone https://github.com/centuryglass/IntraPaint.git\n'
+                                          'conda create -n intrapaint-glid\n'
+                                          'conda activate intrapaint-glid\n'
+                                          'conda install pip\n'
+                                          'pip install -r requirements.txt'))
 GLID_DEP_SETUP = _tr("""
 <h3>Installing dependencies:</h3>
 <ol>
@@ -119,9 +119,7 @@ GLID_DEP_SETUP = _tr("""
     </li>
     <li>
         Run the following commands to install additional dependencies:
-        """ + rich_text_code_block('pip install -r requirements-glid.txt\n'
-                                   'git clone https://github.com/CompVis/taming-transformers.git\n'
-                                   'git clone https://github.com/CompVis/latent-diffusion.git') + """
+        {commands}
     </li>
     <li>
         Download one or more GLID-3-XL inpainting models, and place them in the "IntraPaint/models/" directory.
@@ -139,7 +137,9 @@ GLID_DEP_SETUP = _tr("""
                 Trained on the LAION large logo dataset.
             </li>
         </ul>
-    </li>""")
+    </li>""").format(commands=rich_text_code_block('pip install -r requirements-glid.txt\n'
+                                                   'git clone https://github.com/CompVis/taming-transformers.git\n'
+                                                   'git clone https://github.com/CompVis/latent-diffusion.git'))
 GLID_SETUP_FINAL = _tr("""
     <li>
         Start IntraPaint by running "<code>python IntraPaint.py</code>". If you are using a model other than the default

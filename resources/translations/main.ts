@@ -1,4908 +1,3687 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
-<TS version="2.1" language="en_US">
-  <context>
-    <name>application_config</name>
+<TS version="2.1" sourcelanguage="en_US">
+<context>
+    <name>config.a1111_config</name>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="237"/>
-      <source>Stable Diffusion</source>
-      <translation/>
+        <location filename="../../src/config/a1111_config.py"/>
+        <source>key "{key}" had unexpected type {value_type}, value {value}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="35"/>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="50"/>
-      <location filename="../../src/controller/app_controller.py" line="238"/>
-      <source>GLID-3-XL</source>
-      <translation/>
+        <location filename="../config/a1111_setting_definitions.json"/>
+        <source>Stable Diffusion Model:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="239"/>
-      <source>Developer</source>
-      <translation/>
+        <location filename="../config/a1111_setting_definitions.json"/>
+        <source>Active image generation model</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+    <message>
+        <location filename="../config/a1111_setting_definitions.json"/>
+        <source>Stable Diffusion</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/a1111_setting_definitions.json"/>
+        <source>Stable Diffusion WebUI image generator</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/a1111_setting_definitions.json"/>
+        <source>Only keep one model on GPU/TPU</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/a1111_setting_definitions.json"/>
+        <source>If selected, checkpoints after the first are cached in RAM instead</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/a1111_setting_definitions.json"/>
+        <source>Max checkpoints loaded:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/a1111_setting_definitions.json"/>
+        <source>Number of image generation models to keep in memory.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/a1111_setting_definitions.json"/>
+        <source>Stable Diffusion VAE model:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/a1111_setting_definitions.json"/>
+        <source>VAE model used for final image data creation.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/a1111_setting_definitions.json"/>
+        <source>Stable Diffusion VAE models cached:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/a1111_setting_definitions.json"/>
+        <source>Number of VAE models to keep in memory.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/a1111_setting_definitions.json"/>
+        <source>CLIP skip:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/a1111_setting_definitions.json"/>
+        <source>Number of final image generation steps taken without prompt guidance.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>config.application_config</name>
     <message>
-      <location filename="../../src/ui/modal/settings_modal.py" line="42"/>
-      <source>Files</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <location filename="../../src/controller/image_generation/sd_generator.py"/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Stable Diffusion</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_generator.py" line="176"/>
-      <source>Stable Diffusion</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <location filename="../../src/controller/image_generation/glid3_webservice_generator.py"/>
+        <location filename="../../src/controller/image_generation/glid3_xl_generator.py"/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>GLID-3-XL</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="3"/>
-      <source>Style:</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Developer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="6"/>
-      <source>Qt style to use for the user interface</source>
-      <translation/>
+        <location filename="../../src/ui/modal/settings_modal.py"/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Files</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="8"/>
-      <source>Fusion</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Style:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="4"/>
-      <source>Interface</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Qt style to use for the user interface</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="5"/>
-      <source>Appearance</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Fusion</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="14"/>
-      <source>Theme:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Interface</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="17"/>
-      <source>Theme to use for the user interface (may require restart)</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Appearance</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="19"/>
-      <source>intrapaint_ink</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Theme:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="20"/>
-      <source>None</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Theme to use for the user interface (may require restart)</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="5"/>
-      <source>Appearance</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>intrapaint_ink</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="25"/>
-      <source>Overlay scroll bars:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>None</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="28"/>
-      <source>With the IntraPaint Ink theme, draw thin scroll bars over the content they scroll, instead of beside it.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Overlay scroll bars:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="5"/>
-      <source>Appearance</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>With the IntraPaint Ink theme, draw thin scroll bars over the content they scroll, instead of beside it.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="34"/>
-      <source>Rounded menus and tooltips:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Rounded menus and tooltips:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="37"/>
-      <source>With the IntraPaint Ink theme, draw menus and tooltips with rounded corners and a shadow. This needs a compositing window manager: turn it off if they show black corners on X11 (may require restart).</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>With the IntraPaint Ink theme, draw menus and tooltips with rounded corners and a shadow. This needs a compositing window manager: turn it off if they show black corners on X11 (may require restart).</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="5"/>
-      <source>Appearance</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Font size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="43"/>
-      <source>Font size:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Font point size to use for user interface text (may require restart)</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="46"/>
-      <source>Font point size to use for user interface text (may require restart)</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Tab font size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="5"/>
-      <source>Appearance</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Font point size to use for panel rail labels (may require restart)</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="57"/>
-      <source>Tab font size:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Key hint font size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="60"/>
-      <source>Font point size to use for panel rail labels (may require restart)</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Font point size to use for key hint labels.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="5"/>
-      <source>Appearance</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Maximum recent tool icons:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="71"/>
-      <source>Key hint font size:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Most recent-tool buttons to show in the panel rail. Fewer show when the window is too short for them.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="74"/>
-      <source>Font point size to use for key hint labels.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Layout</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="5"/>
-      <source>Appearance</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Show active tool control hints:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="85"/>
-      <source>Maximum recent tool icons:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Show control hints for the active tool below the image.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="88"/>
-      <source>Most recent-tool buttons to show in the panel rail. Fewer show when the window is too short for them.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Show rulers:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="87"/>
-      <source>Layout</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Show rulers with image pixel coordinates above and to the left of the image.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="99"/>
-      <source>Show active tool control hints:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Highlight generation area and selection on rulers:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="102"/>
-      <source>Show control hints for the active tool below the image.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Mark the image generation area and the selection's bounds with bars along the rulers.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="87"/>
-      <source>Layout</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Ruler generation area color:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="108"/>
-      <source>Show rulers:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Color of the image generation area's bar on the rulers. Leave empty to use the theme's accent color. The selection's bar uses the selection overlay color. Both are drawn opaque, lightened or darkened as needed to stand out against the ruler.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="111"/>
-      <source>Show rulers with image pixel coordinates above and to the left of the image.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Ruler font size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="87"/>
-      <source>Layout</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Font point size for ruler labels. The rulers' thickness scales with it.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="117"/>
-      <source>Highlight generation area and selection on rulers:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Animate selected content outlines</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="120"/>
-      <source>Mark the image generation area and the selection's bounds with bars along the rulers.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Enable or disable animated selection outlines</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="87"/>
-      <source>Layout</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Animate area outlines and preview lines</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="126"/>
-      <source>Ruler generation area color:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Enable or disable animation on the image generation area outline, selected content area outline, and line previews.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="129"/>
-      <source>Color of the image generation area's bar on the rulers. Leave empty to use the theme's accent color. The selection's bar uses the selection overlay color. Both are drawn opaque, lightened or darkened as needed to stand out against the ruler.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Use a static loading indicator:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="87"/>
-      <source>Layout</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Show a still frame for the whole load instead of an animated loading indicator.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="135"/>
-      <source>Ruler font size:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Animate selected content overlay:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="138"/>
-      <source>Font point size for ruler labels. The rulers' thickness scales with it.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Enable or disable selection overlay animation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="87"/>
-      <source>Layout</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Selection overlay color:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="149"/>
-      <source>Animate selected content outlines</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Overlay color used to highlight selected image areas</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="151"/>
-      <source>Enable or disable animated selection outlines</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Show selections in generated image options:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="157"/>
-      <source>Animate area outlines and preview lines</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Draw the selection borders when choosing inpainted image options.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="159"/>
-      <source>Enable or disable animation on the image generation area outline, selected content area outline, and line previews.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Show generated images zoomed to changes:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="165"/>
-      <source>Animate selected content overlay:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>When zooming in on individual inpainting options, focus the change region.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="167"/>
-      <source>Enable or disable selection overlay animation</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Show generated image options at original size</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="173"/>
-      <source>Selection overlay color:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Preview AI-generated image options at their original size, instead of the size they would be scaled to if inserted into the generation area..</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="175"/>
-      <source>Overlay color used to highlight selected image areas</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>OpenGL acceleration:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="181"/>
-      <source>Show selections in generated image options:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Use OpenGL to accelerate image rendering.  Currently somewhat buggy, breaks several layer rendering modes.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="183"/>
-      <source>Draw the selection borders when choosing inpainted image options.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Default image size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="189"/>
-      <source>Show generated images zoomed to changes:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Default size when creating new images</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="191"/>
-      <source>When zooming in on individual inpainting options, focus the change region.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Editing</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="197"/>
-      <source>Show generated image options at original size</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Size</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="199"/>
-      <source>Preview AI-generated image options at their original size, instead of the size they would be scaled to if inserted into the generation area..</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Maximum image size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="205"/>
-      <source>OpenGL acceleration:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Maximum size to allow when creating or resizing images</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="207"/>
-      <source>Use OpenGL to accelerate image rendering.  Currently somewhat buggy, breaks several layer rendering modes.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Maximum editing size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="206"/>
-      <source>Developer</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Maximum size in pixels of the area selected for editing</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="213"/>
-      <source>Default image size:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Minimum generation area size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="216"/>
-      <source>Default size when creating new images</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Minimum size in pixels of the AI image generation area</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="214"/>
-      <source>Editing</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Maximum generation area size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="215"/>
-      <source>Size</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Maximum size in pixels of the AI image generation area</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="222"/>
-      <source>Maximum image size:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Minimum generation resolution:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="225"/>
-      <source>Maximum size to allow when creating or resizing images</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Minimum size in pixels allowed for AI image generation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="215"/>
-      <source>Size</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Minimum upscaled resolution side:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="231"/>
-      <source>Maximum editing size:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>With the 'Match area, upscale small areas' resolution rule, generation areas with a shorter side below this size are scaled up by a whole-number factor until the shorter side reaches it.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="234"/>
-      <source>Maximum size in pixels of the area selected for editing</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Generation area follows selection:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="215"/>
-      <source>Size</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>In inpainting mode, how the generation area moves after the selection or context pins change. 'Minimal move' moves it only as far as needed to contain the selection, its context pins and padding. 'Center on selection' centers it on them. 'Off' leaves it in place. The area is never resized, and undo and redo never move it.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="240"/>
-      <source>Minimum generation area size:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Minimal move</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="243"/>
-      <source>Minimum size in pixels of the AI image generation area</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Center on selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="215"/>
-      <source>Size</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Off</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="249"/>
-      <source>Maximum generation area size:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Favorite MyPaint brushes:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="252"/>
-      <source>Maximum size in pixels of the AI image generation area</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Brushes to list in the 'Favorites' tab of the brush selection window</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="215"/>
-      <source>Size</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Maximum undo count:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="258"/>
-      <source>Minimum generation resolution:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Number of actions that can be reversed using the 'undo' option. Changes apply after restarting IntraPaint.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="261"/>
-      <source>Minimum size in pixels allowed for AI image generation</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>'Speed modifier' key multiplier:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="215"/>
-      <source>Size</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Controls how much faster keyboard and mouse wheel changes happen when the 'speed modifier' key is held down</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="267"/>
-      <source>Minimum upscaled resolution side:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Saved colors:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="270"/>
-      <source>With the 'Match area, upscale small areas' resolution rule, generation areas with a shorter side below this size are scaled up by a whole-number factor until the shorter side reaches it.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Colors saved in the color picker's Palettes tab, at most 64.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="215"/>
-      <source>Size</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Upscale mode:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="281"/>
-      <source>Generation area follows selection:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="284"/>
-      <source>In inpainting mode, how the generation area moves after the selection or context pins change. 'Minimal move' moves it only as far as needed to contain the selection, its context pins and padding. 'Center on selection' centers it on them. 'Off' leaves it in place. The area is never resized, and undo and redo never move it.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Downscale mode:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="284"/>
-      <source>Minimal move</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="284"/>
-      <source>Center on selection</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Pen tablet pressure curve:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="284"/>
-      <source>Off</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Controls how pen tablet pressure values are applied. The x-axis represents the pressure value reported by the drawing tablet, and the y-axis represents the actual pressure value IntraPaint will register when it receives that value.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="215"/>
-      <source>Size</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Drawing tablet settings</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="296"/>
-      <source>Favorite MyPaint brushes:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Image interrogation model (WebUI only):</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="298"/>
-      <source>Brushes to list in the 'Favorites' tab of the brush selection window</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="323"/>
-      <source>Maximum undo count:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Mask blur:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="325"/>
-      <source>Number of actions that can be reversed using the 'undo' option. Changes apply after restarting IntraPaint.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>How much to blur the inpainting mask, in pixels at the generation size, so generated content blends smoothly into the original image.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="331"/>
-      <source>'Speed modifier' key multiplier:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Clear context pins after generating</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="333"/>
-      <source>Controls how much faster keyboard and mouse wheel changes happen when the 'speed modifier' key is held down</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Remove all context pins when a generated image is applied to the image.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="339"/>
-      <source>Saved colors:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>GLID-3-XL model path:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="341"/>
-      <source>Colors saved in the color picker's Palettes tab, at most 64.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Path to the main GLID-3-XL model file</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="347"/>
-      <source>Upscale mode:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Models</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="349"/>
-      <source>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>BERT model path:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="356"/>
-      <source>Downscale mode:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Path to the BERT language model file</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="358"/>
-      <source>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>GLID-3-XL VAE model path:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="365"/>
-      <source>Pen tablet pressure curve:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Path to the VAE latent image encoding/decoding model file</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="367"/>
-      <source>Controls how pen tablet pressure values are applied. The x-axis represents the pressure value reported by the drawing tablet, and the y-axis represents the actual pressure value IntraPaint will register when it receives that value.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>CLIP model name:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="366"/>
-      <source>Drawing tablet settings</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Name of the CLIP language model to use.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="373"/>
-      <source>Image interrogation model (WebUI only):</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Enable global error handler:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="375"/>
-      <source>Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="374"/>
-      <source>Stable Diffusion</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Warn about keybinding issues:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="381"/>
-      <source>Mask blur:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Show an alert when keybinding issues are found on startup.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="383"/>
-      <source>How much to blur the inpainting mask, in pixels at the generation size, so generated content blends smoothly into the original image.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Alerts</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="394"/>
-      <source>Clear context pins after generating</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Warn when saving without layers:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="396"/>
-      <source>Remove all context pins when a generated image is applied to the image.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Show a warning popup when saving a multi-layer image in a format that discards layer data.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="402"/>
-      <source>GLID-3-XL model path:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Warn when saving without transparency:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="405"/>
-      <source>Path to the main GLID-3-XL model file</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Show a warning popup when saving an image with transparency in a format that doesn't support it.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="402"/>
-      <source>GLID-3-XL</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Warn when saving without metadata:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="404"/>
-      <source>Models</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Show a warning popup when saving an image in a format that discards metadata.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="411"/>
-      <source>BERT model path:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Warn when saving in a format that cannot be loaded:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="414"/>
-      <source>Path to the BERT language model file</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Show a warning popup when saving an image in a format that can't be loaded.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="404"/>
-      <source>Models</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Warn when saving in a format that changes image size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="420"/>
-      <source>GLID-3-XL VAE model path:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Show a warning popup when saving an image in a format requires a specific resolution.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="423"/>
-      <source>Path to the VAE latent image encoding/decoding model file</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Warn when saving in a format that removes color:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="404"/>
-      <source>Models</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Show a warning popup when saving an image in a format that does not support color.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="429"/>
-      <source>CLIP model name:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Warn when loading libmypaint fails:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="432"/>
-      <source>Name of the CLIP language model to use.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Show a warning popup when the brush tool cannot be used because of missing libraries.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="404"/>
-      <source>Models</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Always save metadata:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="438"/>
-      <source>Enable global error handler:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Always save metadata when no previous metadata exists(confirm), never do that(cancel), or ask every time(always_ask).</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="440"/>
-      <source>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>confirm</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="446"/>
-      <source>Warn about keybinding issues:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>cancel</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="448"/>
-      <source>Show an alert when keybinding issues are found on startup.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>always_ask</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="447"/>
-      <source>Alerts</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Always update metadata:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="454"/>
-      <source>Warn when saving without layers:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Always update metadata when images are saved(confirm), never do that(cancel), or ask every time(always_ask).</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="456"/>
-      <source>Show a warning popup when saving a multi-layer image in a format that discards layer data.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Warn when cropping deletes layers:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="462"/>
-      <source>Warn when saving without transparency:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Warn when cropping the image or a layer group deletes one or more layers.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="464"/>
-      <source>Show a warning popup when saving an image with transparency in a format that doesn't support it.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Warn when layer lock or visibility forces new layer creation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="470"/>
-      <source>Warn when saving without metadata:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Warn when image generation creates a new layer because it cannot insert into the active layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="472"/>
-      <source>Show a warning popup when saving an image in a format that discards metadata.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Added font directory:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="478"/>
-      <source>Warn when saving in a format that cannot be loaded:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Directory to search for additional font files to load</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="480"/>
-      <source>Show a warning popup when saving an image in a format that can't be loaded.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Added MyPaint brush directory:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="486"/>
-      <source>Warn when saving in a format that changes image size:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Directory to search for additional MyPaint brush files to load</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="488"/>
-      <source>Show a warning popup when saving an image in a format requires a specific resolution.</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>libmypaint library directory:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="494"/>
-      <source>Warn when saving in a format that removes color:</source>
-      <translation/>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Directory to search for libmypaint library files if unable to load default libraries</source>
+        <translation type="unfinished"></translation>
     </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="496"/>
-      <source>Show a warning popup when saving an image in a format that does not support color.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="502"/>
-      <source>Warn when loading libmypaint fails:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="504"/>
-      <source>Show a warning popup when the brush tool cannot be used because of missing libraries.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="510"/>
-      <source>Always save metadata:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="512"/>
-      <source>Always save metadata when no previous metadata exists(confirm), never do that(cancel), or ask every time(always_ask).</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="512"/>
-      <source>confirm</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="512"/>
-      <source>cancel</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="512"/>
-      <source>always_ask</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="524"/>
-      <source>Always update metadata:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="526"/>
-      <source>Always update metadata when images are saved(confirm), never do that(cancel), or ask every time(always_ask).</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="512"/>
-      <source>confirm</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="512"/>
-      <source>cancel</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="512"/>
-      <source>always_ask</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="538"/>
-      <source>Warn when cropping deletes layers:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="540"/>
-      <source>Warn when cropping the image or a layer group deletes one or more layers.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="546"/>
-      <source>Warn when layer lock or visibility forces new layer creation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="548"/>
-      <source>Warn when image generation creates a new layer because it cannot insert into the active layer.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="554"/>
-      <source>Added font directory:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="556"/>
-      <source>Directory to search for additional font files to load</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="555"/>
-      <source>Files</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="562"/>
-      <source>Added MyPaint brush directory:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="564"/>
-      <source>Directory to search for additional MyPaint brush files to load</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="570"/>
-      <source>libmypaint library directory:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="572"/>
-      <source>Directory to search for libmypaint library files if unable to load default libraries</source>
-      <translation/>
-    </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>config.cache</name>
     <message>
-      <location filename="../../src/config/cache.py" line="26"/>
-      <source>None</source>
-      <translation/>
+        <location filename="../../src/config/cache.py"/>
+        <source>None</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="3"/>
-      <source>Editing size:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Editing size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="5"/>
-      <source>Current/initial size in pixels of the area selected for editing</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Current/initial size in pixels of the area selected for editing</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="4"/>
-      <source>Cache</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Cache</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="11"/>
-      <source>Generation size:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Generation size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="13"/>
-      <source>Current/initial size in pixels used for AI image generation</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Current/initial size in pixels used for AI image generation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="19"/>
-      <source>Resolution rule:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Resolution rule:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="21"/>
-      <source>How the generation resolution follows generation area size changes. 'Match area' sets the resolution to the area size. 'Match area, upscale small areas' also scales small areas up by a whole-number factor until the shorter side reaches the minimum set in settings. 'Manual' leaves the resolution alone. Editing the resolution by hand selects 'Manual'.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>How the generation resolution follows generation area size changes. 'Match area' sets the resolution to the area size. 'Match area, upscale small areas' also scales small areas up by a whole-number factor until the shorter side reaches the minimum set in settings. 'Manual' leaves the resolution alone. Editing the resolution by hand selects 'Manual'.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="21"/>
-      <source>Match area</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Match area</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="21"/>
-      <source>Match area, upscale small areas</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Match area, upscale small areas</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="21"/>
-      <source>Manual</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Manual</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="51"/>
-      <source>Foreground color</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Foreground color</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="53"/>
-      <source>Foreground color, used to paint with the brush, draw, fill and text tools. The key keeps its older name so existing cache files still load.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Foreground color, used to paint with the brush, draw, fill and text tools. The key keeps its older name so existing cache files still load.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="59"/>
-      <source>Background color</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Background color</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="61"/>
-      <source>Background color, swapped with the foreground color by the swap colors shortcut.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Background color, swapped with the foreground color by the swap colors shortcut.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="76"/>
-      <source>Color slider mode:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Color slider mode:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="78"/>
-      <source>Color model the color picker's sliders edit.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Color model the color picker's sliders edit.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="80"/>
-      <source>RGB</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>RGB</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="81"/>
-      <source>HSV</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>HSV</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="81"/>
-      <source>OKLCH</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>OKLCH</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="86"/>
-      <source>Second color slider mode:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Second color slider mode:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="88"/>
-      <source>Color model of the second slider block, shown in wide color picker layouts.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Color model of the second slider block, shown in wide color picker layouts.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="80"/>
-      <source>RGB</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>New image background color:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="81"/>
-      <source>HSV</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Last new image background color</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="81"/>
-      <source>OKLCH</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Text background color:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="96"/>
-      <source>New image background color:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Last background color (text tool)</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="98"/>
-      <source>Last new image background color</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Text Tool</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="104"/>
-      <source>Text background color:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Color threshold:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="107"/>
-      <source>Last background color (text tool)</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Sets how closely colors need to match the clicked color to be selected. 0.0 only changes exact matching colors, higher values are more permissive.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="106"/>
-      <source>Text Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Pattern:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="150"/>
-      <source>Color threshold:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Fill tool Qt brush style to apply</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="152"/>
-      <source>Sets how closely colors need to match the clicked color to be selected. 0.0 only changes exact matching colors, higher values are more permissive.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Fill Tool</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="163"/>
-      <source>Pattern:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Sample Merged</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="166"/>
-      <source>Fill tool Qt brush style to apply</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>If checked, fill based on the entire image contents, not just the current layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="165"/>
-      <source>Fill Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Fill area</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="172"/>
-      <source>Sample Merged</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Which area Selection fill selects: 'Connected' selects the connected region matching the clicked color, 'By color' selects every pixel within the color threshold of the clicked color, and 'Holes' selects the enclosed gaps in the current selection.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="174"/>
-      <source>If checked, fill based on the entire image contents, not just the current layer</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Connected</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="180"/>
-      <source>Fill area</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>By color</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="183"/>
-      <source>Which area Selection fill selects: 'Connected' selects the connected region matching the clicked color, 'By color' selects every pixel within the color threshold of the clicked color, and 'Holes' selects the enclosed gaps in the current selection.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Holes</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="183"/>
-      <source>Connected</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="183"/>
-      <source>By color</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Paint selection only</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="183"/>
-      <source>Holes</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>If checked, only paint within the selection bounds</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="182"/>
-      <source>Selection</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="195"/>
-      <source>Paint selection only</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Current/initial brush size (in pixels) for the MyPaint brush tool.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="197"/>
-      <source>If checked, only paint within the selection bounds</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Paint Tool</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="213"/>
-      <source>Size:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Selection mode:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="216"/>
-      <source>Current/initial brush size (in pixels) for the MyPaint brush tool.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>How new selection shapes combine with the existing selection: 'Add' adds to it, 'Subtract' removes from it, 'Replace' discards it, and 'Intersect' keeps only the overlap. The selection add and subtract modifiers override this for one gesture.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="205"/>
-      <source>Paint Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Add</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="227"/>
-      <source>Selection mode:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Subtract</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="230"/>
-      <source>How new selection shapes combine with the existing selection: 'Add' adds to it, 'Subtract' removes from it, 'Replace' discards it, and 'Intersect' keeps only the overlap. The selection add and subtract modifiers override this for one gesture.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Replace</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="230"/>
-      <source>Add</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Intersect</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="230"/>
-      <source>Subtract</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Fixed 1:1 aspect ratio</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="230"/>
-      <source>Replace</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>If checked, rectangle and ellipse selections are always square or circular, as if the fixed aspect ratio modifier were held.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="230"/>
-      <source>Intersect</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Current/initial brush size (in pixels) for the selection tool.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="182"/>
-      <source>Selection</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Brush Selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="243"/>
-      <source>Fixed 1:1 aspect ratio</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Current/initial brush size (in pixels) for the draw tool.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="246"/>
-      <source>If checked, rectangle and ellipse selections are always square or circular, as if the fixed aspect ratio modifier were held.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Draw Tool</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="182"/>
-      <source>Selection</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Opacity:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="213"/>
-      <source>Size:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Draw tool color opacity</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="255"/>
-      <source>Current/initial brush size (in pixels) for the selection tool.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Hardness:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="254"/>
-      <source>Brush Selection</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Draw tool brush hardness</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="213"/>
-      <source>Size:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Pen pressure=size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="269"/>
-      <source>Current/initial brush size (in pixels) for the draw tool.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Drawing tablet pen pressure affects draw tool brush size.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="268"/>
-      <source>Draw Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Pen pressure=opacity:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="280"/>
-      <source>Opacity:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Drawing tablet pen pressure affects draw tool brush opacity.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="283"/>
-      <source>Draw tool color opacity</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Pen pressure=hardness:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="268"/>
-      <source>Draw Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Drawing tablet pen pressure affects draw tool brush hardness.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="294"/>
-      <source>Hardness:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Draw tool Qt brush style to apply</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="297"/>
-      <source>Draw tool brush hardness</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Antialiasing</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="268"/>
-      <source>Draw Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Smooth out jagged edges.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="308"/>
-      <source>Pen pressure=size:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Eraser size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="311"/>
-      <source>Drawing tablet pen pressure affects draw tool brush size.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Current/initial brush size (in pixels) for the eraser tool.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="268"/>
-      <source>Draw Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Eraser Tool</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="317"/>
-      <source>Pen pressure=opacity:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Filter:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="320"/>
-      <source>Drawing tablet pen pressure affects draw tool brush opacity.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Selected image filter</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="268"/>
-      <source>Draw Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Filter Tool</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="326"/>
-      <source>Pen pressure=hardness:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Filter parameters:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="329"/>
-      <source>Drawing tablet pen pressure affects draw tool brush hardness.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Cached parameters for all filters</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="268"/>
-      <source>Draw Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Current/initial brush size (in pixels) for the filter tool.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="163"/>
-      <source>Pattern:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Filter tool color opacity</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="338"/>
-      <source>Draw tool Qt brush style to apply</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Filter tool brush hardness</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="268"/>
-      <source>Draw Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Drawing tablet pen pressure affects filter tool brush size.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="344"/>
-      <source>Antialiasing</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Drawing tablet pen pressure affects filter tool brush opacity.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="347"/>
-      <source>Smooth out jagged edges.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Drawing tablet pen pressure affects filter tool brush hardness.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="268"/>
-      <source>Draw Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Current/initial brush size (in pixels) for the smudge tool.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="353"/>
-      <source>Eraser size:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Smudge Tool</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="356"/>
-      <source>Current/initial brush size (in pixels) for the eraser tool.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Smudge tool color opacity</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="355"/>
-      <source>Eraser Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Smudge tool brush hardness</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="280"/>
-      <source>Opacity:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Drawing tablet pen pressure affects smudge tool brush size.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="283"/>
-      <source>Draw tool color opacity</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Drawing tablet pen pressure affects smudge tool brush opacity.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="355"/>
-      <source>Eraser Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Drawing tablet pen pressure affects smudge tool brush hardness.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="294"/>
-      <source>Hardness:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Current/initial brush size (in pixels) for the clone stamp tool.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="297"/>
-      <source>Draw tool brush hardness</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Clone Stamp Tool</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="355"/>
-      <source>Eraser Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Clone stamp tool color opacity</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="308"/>
-      <source>Pen pressure=size:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Clone stamp tool brush hardness</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="311"/>
-      <source>Drawing tablet pen pressure affects draw tool brush size.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Drawing tablet pen pressure affects clone stamp tool brush size.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="355"/>
-      <source>Eraser Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Drawing tablet pen pressure affects clone stamp tool brush opacity.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="317"/>
-      <source>Pen pressure=opacity:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Drawing tablet pen pressure affects clone stamp tool brush hardness.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="320"/>
-      <source>Drawing tablet pen pressure affects draw tool brush opacity.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Source mode:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="355"/>
-      <source>Eraser Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Control if and when the source point tracks cursor movement.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="326"/>
-      <source>Pen pressure=hardness:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Fixed offset</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="329"/>
-      <source>Drawing tablet pen pressure affects draw tool brush hardness.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Dynamic offset</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="355"/>
-      <source>Eraser Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Fixed position</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="344"/>
-      <source>Antialiasing</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Shape Type:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="347"/>
-      <source>Smooth out jagged edges.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Type of shape to draw.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="355"/>
-      <source>Eraser Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Shape Tool</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="431"/>
-      <source>Filter:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Vertex count:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="434"/>
-      <source>Selected image filter</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Polygon vertex count.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="433"/>
-      <source>Filter Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Inner radius fraction:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="441"/>
-      <source>Filter parameters:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Distance from the center to inner star points, as a fraction of the distance to the outer points</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="444"/>
-      <source>Cached parameters for all filters</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Line color</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="433"/>
-      <source>Filter Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Shape outline color.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="213"/>
-      <source>Size:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Line style:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="453"/>
-      <source>Current/initial brush size (in pixels) for the filter tool.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Shape outline drawing style.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="433"/>
-      <source>Filter Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Line join style:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="280"/>
-      <source>Opacity:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Shape outline connection drawing style.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="467"/>
-      <source>Filter tool color opacity</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Dash pattern:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="433"/>
-      <source>Filter Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Dash length followed by space length, for any number of dash/space pairs.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="294"/>
-      <source>Hardness:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Line width:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="481"/>
-      <source>Filter tool brush hardness</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Shape tool line width.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="433"/>
-      <source>Filter Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Shape fill pattern</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="308"/>
-      <source>Pen pressure=size:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Fill Color</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="495"/>
-      <source>Drawing tablet pen pressure affects filter tool brush size.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Shape fill color.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="433"/>
-      <source>Filter Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Saved main window geometry</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="317"/>
-      <source>Pen pressure=opacity:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>JSON with the main window's normal bounds, window state and display when it last closed.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="504"/>
-      <source>Drawing tablet pen pressure affects filter tool brush opacity.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Window placement</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="433"/>
-      <source>Filter Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Saved panel layout</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="326"/>
-      <source>Pen pressure=hardness:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Base64 QMainWindow.saveState data with the panel docks' placement when the window last closed.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="513"/>
-      <source>Drawing tablet pen pressure affects filter tool brush hardness.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Saved layer window placement</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="433"/>
-      <source>Filter Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>display, position, and size where the layer window last was.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="344"/>
-      <source>Antialiasing</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Prompt:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="347"/>
-      <source>Smooth out jagged edges.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Description that generated images should match.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="433"/>
-      <source>Filter Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Image generation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="213"/>
-      <source>Size:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Negative prompt:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="531"/>
-      <source>Current/initial brush size (in pixels) for the smudge tool.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Description that generated images should not match.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="530"/>
-      <source>Smudge Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Guidance scale:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="280"/>
-      <source>Opacity:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Controls how strongly the prompt and negative prompt are applied.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="545"/>
-      <source>Smudge tool color opacity</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Batch size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="530"/>
-      <source>Smudge Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Number of image options to simultaneously create in a single image editing operation.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="294"/>
-      <source>Hardness:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Batch count:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="559"/>
-      <source>Smudge tool brush hardness</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="530"/>
-      <source>Smudge Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Edit mode:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="308"/>
-      <source>Pen pressure=size:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Stable Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="573"/>
-      <source>Drawing tablet pen pressure affects smudge tool brush size.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Inpaint</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="530"/>
-      <source>Smudge Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Image to Image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="317"/>
-      <source>Pen pressure=opacity:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Text to Image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="582"/>
-      <source>Drawing tablet pen pressure affects smudge tool brush opacity.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Masked content:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="530"/>
-      <source>Smudge Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="326"/>
-      <source>Pen pressure=hardness:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>fill</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="591"/>
-      <source>Drawing tablet pen pressure affects smudge tool brush hardness.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>original</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="530"/>
-      <source>Smudge Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>latent noise</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="344"/>
-      <source>Antialiasing</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>latent nothing</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="347"/>
-      <source>Smooth out jagged edges.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Sampling steps:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="530"/>
-      <source>Smudge Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different Stable Diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="213"/>
-      <source>Size:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Denoising strength:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="609"/>
-      <source>Current/initial brush size (in pixels) for the clone stamp tool.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="608"/>
-      <source>Clone Stamp Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Sampling method:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="280"/>
-      <source>Opacity:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="623"/>
-      <source>Clone stamp tool color opacity</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Scheduler:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="608"/>
-      <source>Clone Stamp Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Algorithm used to divide  the image generation process into steps.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="294"/>
-      <source>Hardness:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>default</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="637"/>
-      <source>Clone stamp tool brush hardness</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Layer expand mode:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="608"/>
-      <source>Clone Stamp Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Sets which layers should be expanded to fill the image when resized</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="308"/>
-      <source>Pen pressure=size:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Expand all unlocked layers</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="651"/>
-      <source>Drawing tablet pen pressure affects clone stamp tool brush size.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Only expand full-image layers</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="608"/>
-      <source>Clone Stamp Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Do not expand layers</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="317"/>
-      <source>Pen pressure=opacity:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Resize image canvas</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="660"/>
-      <source>Drawing tablet pen pressure affects clone stamp tool brush opacity.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Crop layers to new image bounds</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="608"/>
-      <source>Clone Stamp Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Sets whether layers should be cropped to image bounds when the image is resized.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="326"/>
-      <source>Pen pressure=hardness:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Seed:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="669"/>
-      <source>Drawing tablet pen pressure affects clone stamp tool brush hardness.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="608"/>
-      <source>Clone Stamp Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Last seed:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="344"/>
-      <source>Antialiasing</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Last seed used for image generation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="347"/>
-      <source>Smooth out jagged edges.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Inpaint Full Resolution</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="608"/>
-      <source>Clone Stamp Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="684"/>
-      <source>Source mode:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Padding:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="687"/>
-      <source>Control if and when the source point tracks cursor movement.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="689"/>
-      <source>Fixed offset</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Detail reference count (cutn):</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="692"/>
-      <source>Dynamic offset</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Determines how many random cutouts from the input image are used to guide image generation (GLID-3-XL). Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="693"/>
-      <source>Fixed position</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Skip steps:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="608"/>
-      <source>Clone Stamp Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Number of diffusion steps to skip (GLID-3-XL). Higher values will result in faster image generation with decreased detail and accuracy.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="699"/>
-      <source>Shape Type:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Stable Diffusion model:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="702"/>
-      <source>Type of shape to draw.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Stable Diffusion model to use for image generation.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="701"/>
-      <source>Shape Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>CLIP skip:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="708"/>
-      <source>Vertex count:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Number of final image generation steps to take without the prompt applied.  Usually best left at one, but some models produce better results at two.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="711"/>
-      <source>Polygon vertex count.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Model config:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="701"/>
-      <source>Shape Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Configuration file used when loading image generation models.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="722"/>
-      <source>Inner radius fraction:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>auto</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="725"/>
-      <source>Distance from the center to inner star points, as a fraction of the distance to the outer points</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>ComfyUI</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="701"/>
-      <source>Shape Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Load checkpoint as inpainting model</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="736"/>
-      <source>Line color</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Load the selected Stable Diffusion model as an inpainting model.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="739"/>
-      <source>Shape outline color.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Use tiled VAE image encoding</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="701"/>
-      <source>Shape Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Encode and decode latent images in tiled blocks, decreasing GPU memory use.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="745"/>
-      <source>Line style:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>VAE tile size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="748"/>
-      <source>Shape outline drawing style.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Tile size when using tiled VAE encoding/decoding.  Smaller values decrease memory further, but may increase image generation time.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="701"/>
-      <source>Shape Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Tiling</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="754"/>
-      <source>Line join style:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Generate tiling images that can be seamlessly repeated. Inpainting ignores Inpaint Full Resolution while tiling is on.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="757"/>
-      <source>Shape outline connection drawing style.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>WebUI</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="701"/>
-      <source>Shape Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Restore faces</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="763"/>
-      <source>Dash pattern:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Use a face restoration model to correct image data after Stable Diffusion runs. In most cases you'll probably get better results without it.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="766"/>
-      <source>Dash length followed by space length, for any number of dash/space pairs.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Variation seed:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="701"/>
-      <source>Shape Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Controls randomness across images generated in the same batch.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="772"/>
-      <source>Line width:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Last variation seed:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="775"/>
-      <source>Shape tool line width.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Last variation seed used for image generation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="701"/>
-      <source>Shape Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Variation strength:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="163"/>
-      <source>Pattern:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Controls the amount of variation within images in the same batch. Lower values will have less variation. If set to zero, this setting is ignored.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="789"/>
-      <source>Shape fill pattern</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Resize seed from alternate resolution</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="701"/>
-      <source>Shape Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>If enabled, reusing the same seed value will produce a similar image even if the resolution changes.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="795"/>
-      <source>Fill Color</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Resize from resolution:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="798"/>
-      <source>Shape fill color.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Generated images using the same seed will match images created at this resolution, regardless of generation size.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="701"/>
-      <source>Shape Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Image scaling behavior:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="344"/>
-      <source>Antialiasing</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Controls how multi-layer images are scaled.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="347"/>
-      <source>Smooth out jagged edges.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Independent layer scaling</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="701"/>
-      <source>Shape Tool</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Scale merged, keep source layers</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="813"/>
-      <source>Saved main window geometry</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Scale merged, discard source layers</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="816"/>
-      <source>JSON with the main window's normal bounds, window state and display when it last closed.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Stable Diffusion upscaling:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="815"/>
-      <source>Window placement</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>If selected, Stable Diffusion will be used for upscaling, and settings within the Image Generation panel will affect the upscaling process.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="822"/>
-      <source>Saved panel layout</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>ControlNet</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="825"/>
-      <source>Base64 QMainWindow.saveState data with the panel docks' placement when the window last closed.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Controls how much freedom Stable Diffusion will be given to adjust the image during upscaling.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="815"/>
-      <source>Window placement</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Stable Diffusion Upscale</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="831"/>
-      <source>Saved layer window placement</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Step count:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="834"/>
-      <source>display, position, and size where the layer window last was.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Number of diffusion steps to use when upscaling with Stable Diffusion</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="815"/>
-      <source>Window placement</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Tile ControlNet model list:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="849"/>
-      <source>Prompt:</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>List of ControlNet tile model options for Stable Diffusion upscaling.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="852"/>
-      <source>Description that generated images should match.</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Use the "Ultimate SD Upscale" script:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>If selected, the "Ultimate SD Upscale" script will be used for enhanced image upscaling</source>
+        <translation type="unfinished"></translation>
     </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="858"/>
-      <source>Negative prompt:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="861"/>
-      <source>Description that generated images should not match.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="867"/>
-      <source>Guidance scale:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="870"/>
-      <source>Controls how strongly the prompt and negative prompt are applied.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="881"/>
-      <source>Batch size:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="884"/>
-      <source>Number of image options to simultaneously create in a single image editing operation.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="895"/>
-      <source>Batch count:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="898"/>
-      <source>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="909"/>
-      <source>Edit mode:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="912"/>
-      <source>Stable Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="912"/>
-      <source>Inpaint</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="912"/>
-      <source>Image to Image</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="912"/>
-      <source>Text to Image</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="924"/>
-      <source>Masked content:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="927"/>
-      <source>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="53"/>
-      <source>fill</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="927"/>
-      <source>original</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="927"/>
-      <source>latent noise</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="927"/>
-      <source>latent nothing</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="940"/>
-      <source>Sampling steps:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="943"/>
-      <source>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different Stable Diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="954"/>
-      <source>Denoising strength:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="957"/>
-      <source>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="968"/>
-      <source>Sampling method:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="971"/>
-      <source>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="978"/>
-      <source>Scheduler:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="981"/>
-      <source>Algorithm used to divide  the image generation process into steps.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="7"/>
-      <source>default</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="989"/>
-      <source>Layer expand mode:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="992"/>
-      <source>Sets which layers should be expanded to fill the image when resized</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="996"/>
-      <source>Expand all unlocked layers</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="994"/>
-      <source>Only expand full-image layers</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="998"/>
-      <source>Do not expand layers</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="991"/>
-      <source>Resize image canvas</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1005"/>
-      <source>Crop layers to new image bounds</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1008"/>
-      <source>Sets whether layers should be cropped to image bounds when the image is resized.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="991"/>
-      <source>Resize image canvas</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1014"/>
-      <source>Seed:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1017"/>
-      <source>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1028"/>
-      <source>Last seed:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1031"/>
-      <source>Last seed used for image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1047"/>
-      <source>Inpaint Full Resolution</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1050"/>
-      <source>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1056"/>
-      <source>Padding:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1059"/>
-      <source>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1115"/>
-      <source>Detail reference count (cutn):</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1118"/>
-      <source>Determines how many random cutouts from the input image are used to guide image generation (GLID-3-XL). Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1129"/>
-      <source>Skip steps:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1132"/>
-      <source>Number of diffusion steps to skip (GLID-3-XL). Higher values will result in faster image generation with decreased detail and accuracy.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1173"/>
-      <source>Stable Diffusion model:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1176"/>
-      <source>Stable Diffusion model to use for image generation.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1183"/>
-      <source>CLIP skip:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1186"/>
-      <source>Number of final image generation steps to take without the prompt applied.  Usually best left at one, but some models produce better results at two.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1267"/>
-      <source>Model config:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1270"/>
-      <source>Configuration file used when loading image generation models.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1272"/>
-      <source>auto</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1153"/>
-      <source>ComfyUI</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1278"/>
-      <source>Load checkpoint as inpainting model</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1281"/>
-      <source>Load the selected Stable Diffusion model as an inpainting model.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1153"/>
-      <source>ComfyUI</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1287"/>
-      <source>Use tiled VAE image encoding</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1290"/>
-      <source>Encode and decode latent images in tiled blocks, decreasing GPU memory use.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1153"/>
-      <source>ComfyUI</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1296"/>
-      <source>VAE tile size:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1299"/>
-      <source>Tile size when using tiled VAE encoding/decoding.  Smaller values decrease memory further, but may increase image generation time.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1153"/>
-      <source>ComfyUI</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1330"/>
-      <source>Tiling</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1333"/>
-      <source>Generate tiling images that can be seamlessly repeated.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1143"/>
-      <source>WebUI</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1339"/>
-      <source>Restore faces</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1342"/>
-      <source>Use a face restoration model to correct image data after Stable Diffusion runs. In most cases you'll probably get better results without it.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1143"/>
-      <source>WebUI</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1348"/>
-      <source>Variation seed:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1351"/>
-      <source>Controls randomness across imagees generated in the same batch.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1143"/>
-      <source>WebUI</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1362"/>
-      <source>Last variation seed:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1365"/>
-      <source>Last variation seed used for image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1371"/>
-      <source>Variation strength:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1374"/>
-      <source>Controls the amount of variation within images in the same batch. Lower values will have less variation. If set to zero, this setting is ignored.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1143"/>
-      <source>WebUI</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1385"/>
-      <source>Resize seed from alternate resolution</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1388"/>
-      <source>If enabled, reusing the same seed value will produce a similar image even if the resolution changes.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1143"/>
-      <source>WebUI</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1394"/>
-      <source>Resize from resolution:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1397"/>
-      <source>Generated images using the same seed will match images created at this resolution, regardless of generation size.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1143"/>
-      <source>WebUI</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1423"/>
-      <source>Image scaling behavior:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1426"/>
-      <source>Controls how multi-layer images are scaled.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1430"/>
-      <source>Independent layer scaling</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1428"/>
-      <source>Scale merged, keep source layers</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1432"/>
-      <source>Scale merged, discard source layers</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Image generation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1458"/>
-      <source>Stable Diffusion upscaling:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1461"/>
-      <source>If selected, Stable Diffusion will be used for upscaling, and settings within the Image Generation panel will affect the upscaling process.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1197"/>
-      <source>ControlNet</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="954"/>
-      <source>Denoising strength:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1470"/>
-      <source>Controls how much freedom Stable Diffusion will be given to adjust the image during upscaling.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1440"/>
-      <source>Stable Diffusion Upscale</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1481"/>
-      <source>Step count:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1484"/>
-      <source>Number of diffusion steps to use when upscaling with Stable Diffusion</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1440"/>
-      <source>Stable Diffusion Upscale</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1495"/>
-      <source>Tile ControlNet model list:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1498"/>
-      <source>List of ControlNet tile model options for Stable Diffusion upscaling.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1440"/>
-      <source>Stable Diffusion Upscale</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json"/>
-      <source>Use the "Ultimate SD Upscale" script:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json"/>
-      <source>If selected, the "Ultimate SD Upscale" script will be used for enhanced image upscaling</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1197"/>
-      <source>ControlNet</source>
-      <translation/>
-    </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>config.config</name>
     <message>
-      <location filename="../../src/config/config.py" line="41"/>
-      <source>Config definition file not found at {definition_path}</source>
-      <translation/>
+        <location filename="../../src/config/config.py"/>
+        <source>Config definition file not found at {definition_path}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="42"/>
-      <source>Config value definition for {key} had invalid data type {value_type}</source>
-      <translation/>
+        <location filename="../../src/config/config.py"/>
+        <source>Config value definition for {key} had invalid data type {value_type}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="43"/>
-      <source>Loading {key} failed: {err}</source>
-      <translation/>
+        <location filename="../../src/config/config.py"/>
+        <source>Loading {key} failed: {err}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="44"/>
-      <source>Reading JSON config definitions failed: {err}</source>
-      <translation/>
+        <location filename="../../src/config/config.py"/>
+        <source>Reading JSON config definitions failed: {err}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="45"/>
-      <source>Reading JSON config values failed: {err}</source>
-      <translation/>
+        <location filename="../../src/config/config.py"/>
+        <source>Reading JSON config values failed: {err}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="46"/>
-      <source>Tried to access unknown config value "{key}"</source>
-      <translation/>
+        <location filename="../../src/config/config.py"/>
+        <source>Tried to access unknown config value "{key}"</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="47"/>
-      <source>Tried to track fixed options for key "{key}", which does not have a fixed list of options.</source>
-      <translation/>
+        <location filename="../../src/config/config.py"/>
+        <source>Tried to track fixed options for key "{key}", which does not have a fixed list of options.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="49"/>
-      <source>Tried to get key code "{key}", found "{code_string}"</source>
-      <translation/>
+        <location filename="../../src/config/config.py"/>
+        <source>Tried to get key code "{key}", found "{code_string}"</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="50"/>
-      <source>Tried to add duplicate config entry for key "{key}"</source>
-      <translation/>
+        <location filename="../../src/config/config.py"/>
+        <source>Tried to add duplicate config entry for key "{key}"</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>config.config_entry</name>
     <message>
-      <location filename="../../src/config/config_entry.py" line="24"/>
-      <source>Tried to set "{key}.{inner_key}" to value "{value}", but {key} is type "{type_name}"</source>
-      <translation/>
+        <location filename="../../src/config/config_entry.py"/>
+        <source>Tried to set "{key}.{inner_key}" to value "{value}", but {key} is type "{type_name}"</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/config_entry.py" line="26"/>
-      <source>Tried to read {key}.{inner_key} from type {type_name}</source>
-      <translation/>
+        <location filename="../../src/config/config_entry.py"/>
+        <source>Tried to read {key}.{inner_key} from type {type_name}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/config_entry.py" line="27"/>
-      <source>Config value "{key}" does not have an associated options list</source>
-      <translation/>
+        <location filename="../../src/config/config_entry.py"/>
+        <source>Config value "{key}" does not have an associated options list</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/config_entry.py" line="28"/>
-      <source>unexpected type:</source>
-      <translation/>
+        <location filename="../../src/config/config_entry.py"/>
+        <source>unexpected type:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/config_entry.py" line="29"/>
-      <source>{key}: missing value</source>
-      <translation/>
+        <location filename="../../src/config/config_entry.py"/>
+        <source>{key}: missing value</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>config.key_config</name>
     <message>
-      <location filename="../../src/config/key_config.py" line="31"/>
-      <source>Warning</source>
-      <translation/>
+        <location filename="../../src/config/key_config.py"/>
+        <source>Warning</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/key_config.py" line="32"/>
-      <source>Errors found in configurable key bindings:
+        <location filename="../../src/config/key_config.py"/>
+        <source>Errors found in configurable key bindings:
 </source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/key_config.py" line="33"/>
-      <source>Invalid key for speed_modifier option: found {speed_modifier}, expected {modifiers}</source>
-      <translation/>
+        <location filename="../../src/config/key_config.py"/>
+        <source>Invalid key for speed_modifier option: found {speed_modifier}, expected {modifiers}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/key_config.py" line="34"/>
-      <source>"{key_binding_name}" should be a modifier key (Ctrl, Alt, Shift), found "{key_value}"</source>
-      <translation/>
+        <location filename="../../src/config/key_config.py"/>
+        <source>"{key_binding_name}" should be a modifier key (Ctrl, Alt, Shift), found "{key_value}"</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/key_config.py" line="35"/>
-      <source>"{key_binding_name}" assigned unexpected modifier key "{key_value}", this may cause problems</source>
-      <translation/>
+        <location filename="../../src/config/key_config.py"/>
+        <source>"{key_binding_name}" assigned unexpected modifier key "{key_value}", this may cause problems</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/key_config.py" line="37"/>
-      <source>"{key_binding_name}" value "{key_value}" is not a recognized key</source>
-      <translation/>
+        <location filename="../../src/config/key_config.py"/>
+        <source>"{key_binding_name}" value "{key_value}" is not a recognized key</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/key_config.py" line="38"/>
-      <source>"{key_binding_name}" is set to {key_value}, but {speed_modifier} is the speed modifier key. This will cause {key_str} to always operate at 10x speed.</source>
-      <translation/>
+        <location filename="../../src/config/key_config.py"/>
+        <source>"{key_binding_name}" is set to {key_value}, but {speed_modifier} is the speed modifier key. This will cause {key_str} to always operate at 10x speed.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/key_config.py" line="41"/>
-      <source>{key_binding_name} is not set</source>
-      <translation/>
+        <location filename="../../src/config/key_config.py"/>
+        <source>{key_binding_name} is not set</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/key_config.py" line="42"/>
-      <source>Key "{key_str}" is shared between options {key_names}, some keys may not work.</source>
-      <translation/>
+        <location filename="../../src/config/key_config.py"/>
+        <source>Key "{key_str}" is shared between options {key_names}, some keys may not work.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/config/key_config.py" line="43"/>
-      <source>{key_binding_name} (with speed modifier)</source>
-      <translation/>
+        <location filename="../../src/config/key_config.py"/>
+        <source>{key_binding_name} (with speed modifier)</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="3"/>
-      <source>Key Speed Modifier:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Key Speed Modifier:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="6"/>
-      <source>If this key is held, movement/zoom/pan/scroll/etc. operations will go faster. (avoid changing, Shift and Ctrl are the only other working options and those cause various conflicts.)</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>If this key is held, movement/zoom/pan/scroll/etc. operations will go faster. (avoid changing, Shift and Ctrl are the only other working options and those cause various conflicts.)</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="4"/>
-      <source>Keybindings</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Keybindings</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="5"/>
-      <source>Modifiers</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Modifiers</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="12"/>
-      <source>Line Drawing Modifier:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Line Drawing Modifier:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="15"/>
-      <source>When held, drawing tools will draw a line from the last point.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>When held, drawing tools will draw a line from the last point.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="5"/>
-      <source>Modifiers</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Fixed Angle Modifier:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="21"/>
-      <source>Fixed Angle Modifier:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>When held, drawing tools will be constrained to a fixed angle.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="24"/>
-      <source>When held, drawing tools will be constrained to a fixed angle.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Pan View Modifier:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="5"/>
-      <source>Modifiers</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>When held, click and drag to pan the image view</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="30"/>
-      <source>Pan View Modifier:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Selection Add Modifier:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="33"/>
-      <source>When held, click and drag to pan the image view</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>When held as a selection gesture starts, the gesture adds to the selection whatever the selection mode is. Held together with the subtract modifier, the gesture intersects with the selection.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="5"/>
-      <source>Modifiers</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Selection Subtract Modifier:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="39"/>
-      <source>Selection Add Modifier:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>When held as a selection gesture starts, the gesture subtracts from the selection whatever the selection mode is. On Linux, many window managers (XFCE, Cinnamon, MATE, KDE Plasma 5) use Alt+drag to move windows, and the press never reaches IntraPaint. Either change the window manager's window-move modifier to Super, or bind this to another modifier such as Meta.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="42"/>
-      <source>When held as a selection gesture starts, the gesture adds to the selection whatever the selection mode is. Held together with the subtract modifier, the gesture intersects with the selection.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Selection Replace Modifier:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="5"/>
-      <source>Modifiers</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>When held as a selection gesture starts, the gesture replaces the selection whatever the selection mode is. It takes priority over the add and subtract modifiers.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="48"/>
-      <source>Selection Subtract Modifier:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Fixed Aspect Ratio Modifier:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="51"/>
-      <source>When held as a selection gesture starts, the gesture subtracts from the selection whatever the selection mode is. On Linux, many window managers (XFCE, Cinnamon, MATE, KDE Plasma 5) use Alt+drag to move windows, and the press never reaches IntraPaint. Either change the window manager's window-move modifier to Super, or bind this to another modifier such as Meta.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>When held, shape and transform tools will keep a fixed aspect ratio.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="5"/>
-      <source>Modifiers</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Color Picker Override Modifier:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="57"/>
-      <source>Selection Replace Modifier:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>When held, temporarily switch from the brush or fill tool to the color picker.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="60"/>
-      <source>When held as a selection gesture starts, the gesture replaces the selection whatever the selection mode is. It takes priority over the add and subtract modifiers.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Padding Scroll Modifier:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="5"/>
-      <source>Modifiers</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>When held, the scroll wheel changes Inpaint Full Resolution padding over the image or the navigation panel, with any tool.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="66"/>
-      <source>Fixed Aspect Ratio Modifier:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Zoom in:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="69"/>
-      <source>When held, shape and transform tools will keep a fixed aspect ratio.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Zoom in on image content</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="5"/>
-      <source>Modifiers</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Navigation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="75"/>
-      <source>Color Picker Override Modifier:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Zoom out:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="78"/>
-      <source>When held, temporarily switch from the brush or fill tool to the color picker.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Zoom out on image content</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="5"/>
-      <source>Modifiers</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Toggle zoom:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="84"/>
-      <source>Padding Scroll Modifier:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch between close-up and zoomed out views</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="87"/>
-      <source>When held, the scroll wheel changes Inpaint Full Resolution padding over the image or the navigation panel, with any tool.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Pan left/decrease width:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="5"/>
-      <source>Modifiers</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Scroll the image view left, or decrease layer width in the layer transformation and text tools.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="93"/>
-      <source>Zoom in:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Pan right/increase width:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="96"/>
-      <source>Zoom in on image content</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Scroll the image view right, or increase layer width in the layer transformation and text tools.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="95"/>
-      <source>Navigation</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Pan up/increase height:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="102"/>
-      <source>Zoom out:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Scroll the image view up, or increase layer height in the layer transformation and text tools.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="105"/>
-      <source>Zoom out on image content</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Pan down/decrease height:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="95"/>
-      <source>Navigation</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Scroll the image view down, or decrease layer height in the layer transformation and text tools.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="111"/>
-      <source>Toggle zoom:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move left:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="114"/>
-      <source>Switch between close-up and zoomed out views</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move the image generation area left, move active layer left, or view previous generated image option</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="95"/>
-      <source>Navigation</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move right:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="120"/>
-      <source>Pan left/decrease width:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move the image generation area right, move active layer right, or view next generated image option</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="123"/>
-      <source>Scroll the image view left, or decrease layer width in the layer transformation and text tools.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move up:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="95"/>
-      <source>Navigation</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move the image generation area up, move active layer up, or zoom in on first generated image option</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="129"/>
-      <source>Pan right/increase width:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move down:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="132"/>
-      <source>Scroll the image view right, or increase layer width in the layer transformation and text tools.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move the image generation area down, move active layer down, or zoom to show all generated image options</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="95"/>
-      <source>Navigation</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show/hide Tools panel:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="138"/>
-      <source>Pan up/increase height:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show and focus the Tools panel, or hide it if it is showing</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="141"/>
-      <source>Scroll the image view up, or increase layer height in the layer transformation and text tools.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show/hide Image Generation panel:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="95"/>
-      <source>Navigation</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show and focus the Image Generation panel, or hide it if it is showing</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="147"/>
-      <source>Pan down/decrease height:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show/hide ControlNet panel:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="150"/>
-      <source>Scroll the image view down, or decrease layer height in the layer transformation and text tools.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show and focus the ControlNet panel, or hide it if it is showing</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="95"/>
-      <source>Navigation</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the draw tool:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="156"/>
-      <source>Move left:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Activate the draw tool to draw into the image.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="159"/>
-      <source>Move the image generation area left, move active layer left, or view previous generated image option</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Tool Selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="95"/>
-      <source>Navigation</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the eraser tool:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="165"/>
-      <source>Move right:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Activate the eraser tool to erase image content.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="168"/>
-      <source>Move the image generation area right, move active layer right, or view next generated image option</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the filter tool:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="95"/>
-      <source>Navigation</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Activate the filter tool to apply image filters to brush strokes.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="174"/>
-      <source>Move up:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the smudge tool:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="177"/>
-      <source>Move the image generation area up, move active layer up, or zoom in on first generated image option</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Activate the smudge tool to smudge image content.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="95"/>
-      <source>Navigation</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the clone stamp tool:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="183"/>
-      <source>Move down:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Activate the clone stamp tool to copy image content.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="186"/>
-      <source>Move the image generation area down, move active layer down, or zoom to show all generated image options</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the color picker tool:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="95"/>
-      <source>Navigation</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Activate the color picker tool to change the brush color.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="192"/>
-      <source>Show/hide Tools panel:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the layer transformation tool:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="195"/>
-      <source>Show and focus the Tools panel, or hide it if it is showing</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Activate the layer transformation tool to move, scale, or rotate layers.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="95"/>
-      <source>Navigation</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the selection brush tool:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="201"/>
-      <source>Show/hide Image Generation panel:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Activate the selection brush tool to mark areas for editing.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="204"/>
-      <source>Show and focus the Image Generation panel, or hide it if it is showing</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the area selection tool:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="95"/>
-      <source>Navigation</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Activate the area selection tool to mark areas for editing.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="210"/>
-      <source>Show/hide ControlNet panel:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the shape selection tool:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="213"/>
-      <source>Show and focus the ControlNet panel, or hide it if it is showing</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Activate the shape selection tool to mark areas for editing.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="95"/>
-      <source>Navigation</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the free selection tool:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="219"/>
-      <source>Switch to the draw tool:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Activate the free selection tool to mark areas for editing.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="222"/>
-      <source>Activate the draw tool to draw into the image.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the fill tool:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="221"/>
-      <source>Tool Selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Activate the fill tool to fill areas with solid colors.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="228"/>
-      <source>Switch to the eraser tool:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the text tool:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="231"/>
-      <source>Activate the eraser tool to erase image content.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Activate the text tool.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="221"/>
-      <source>Tool Selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the shape drawing tool:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="237"/>
-      <source>Switch to the filter tool:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Activate the shape drawing tool.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="240"/>
-      <source>Activate the filter tool to apply image filters to brush strokes.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the image generation area selection tool:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="221"/>
-      <source>Tool Selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Activate the generation area tool to pick an image area for AI image generation.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="246"/>
-      <source>Switch to the smudge tool:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Previous generation area size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="249"/>
-      <source>Activate the smudge tool to smudge image content.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch the generation area back to the size used before the current one. Pressing it again switches back.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="221"/>
-      <source>Tool Selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the brush tool:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="255"/>
-      <source>Switch to the clone stamp tool:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Activate the brush tool to paint into the image.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="258"/>
-      <source>Activate the clone stamp tool to copy image content.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Decrease brush size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="221"/>
-      <source>Tool Selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Decrease the size of the active brush</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="264"/>
-      <source>Switch to the color picker tool:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Tool Shortcuts</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="267"/>
-      <source>Activate the color picker tool to change the brush color.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Increase brush size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="221"/>
-      <source>Tool Selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Increase the size of the active brush</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="273"/>
-      <source>Switch to the layer transformation tool:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Decrease brush opacity:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="276"/>
-      <source>Activate the layer transformation tool to move, scale, or rotate layers.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Decrease the opacity of the active brush</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="221"/>
-      <source>Tool Selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Increase brush opacity:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="282"/>
-      <source>Switch to the selection brush tool:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Increase the opacity of the active brush</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="285"/>
-      <source>Activate the selection brush tool to mark areas for editing.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Decrease brush hardness:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="221"/>
-      <source>Tool Selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Decrease the hardness of the active brush</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="291"/>
-      <source>Switch to the area selection tool:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Increase brush hardness:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="294"/>
-      <source>Activate the area selection tool to mark areas for editing.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Increase the hardness of the active brush</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="221"/>
-      <source>Tool Selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Rotate layer counter-clockwise/text size down:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="300"/>
-      <source>Switch to the shape selection tool:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Rotates the layer when the layer transformation tool is active, or decrease font size in the text tool.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="303"/>
-      <source>Activate the shape selection tool to mark areas for editing.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Rotate layer clockwise/text size up:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="221"/>
-      <source>Tool Selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Rotates the layer when the layer transformation tool is active, or increase font size in the text tool.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="309"/>
-      <source>Switch to the free selection tool:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Cycle selection mode</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="312"/>
-      <source>Activate the free selection tool to mark areas for editing.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Steps the selection mode through Replace, Add, Subtract and Intersect while a selection tool is active.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="221"/>
-      <source>Tool Selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Toggle sample merged</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="318"/>
-      <source>Switch to the fill tool:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Toggles the Sample merged option while the selection fill tool is active. Unbound by default.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="321"/>
-      <source>Activate the fill tool to fill areas with solid colors.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Toggle selection shape</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="221"/>
-      <source>Tool Selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switches between rectangle and ellipse while the shape selection tool is active. Pressing the shape selection tool's own key again does the same. Unbound by default.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="327"/>
-      <source>Switch to the text tool:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>New image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="330"/>
-      <source>Activate the text tool.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Open a new image for editing.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="221"/>
-      <source>Tool Selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Menu Shortcuts</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="336"/>
-      <source>Switch to the shape drawing tool:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>File Menu</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="339"/>
-      <source>Activate the shape drawing tool.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Save</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="221"/>
-      <source>Tool Selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Save current image as .png or .ora.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="345"/>
-      <source>Switch to the image generation area selection tool:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Save as</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="348"/>
-      <source>Activate the generation area tool to pick an image area for AI image generation.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Save current image as .png or .inpt at a new file path.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="221"/>
-      <source>Tool Selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Load image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="354"/>
-      <source>Previous generation area size:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Open an image file for editing.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="357"/>
-      <source>Switch the generation area back to the size used before the current one. Pressing it again switches back.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Open as layers</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="95"/>
-      <source>Navigation</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Open images as new layers.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="363"/>
-      <source>Switch to the brush tool:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Reload</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="366"/>
-      <source>Activate the brush tool to paint into the image.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Reload the image from its file.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="221"/>
-      <source>Tool Selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Quit</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="372"/>
-      <source>Decrease brush size:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Closes the application.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="375"/>
-      <source>Decrease the size of the active brush</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Undo</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="374"/>
-      <source>Tool Shortcuts</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Undo the last action taken</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="381"/>
-      <source>Increase brush size:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Edit Menu</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="384"/>
-      <source>Increase the size of the active brush</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Redo</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="374"/>
-      <source>Tool Shortcuts</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Re-apply the last action reversed with undo.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="390"/>
-      <source>Decrease brush opacity:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Cut</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="393"/>
-      <source>Decrease the opacity of the active brush</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Remove selected image content in the active layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="374"/>
-      <source>Tool Shortcuts</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Copy</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="399"/>
-      <source>Increase brush opacity:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Copy selected image content in the active layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="402"/>
-      <source>Increase the opacity of the active brush</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Paste</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="374"/>
-      <source>Tool Shortcuts</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Insert copied image data into a new layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="408"/>
-      <source>Decrease brush hardness:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Clear</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="411"/>
-      <source>Decrease the hardness of the active brush</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Delete selected image content in the active layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="374"/>
-      <source>Tool Shortcuts</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Swap colors</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="417"/>
-      <source>Increase brush hardness:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Swap the foreground and background colors.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="420"/>
-      <source>Increase the hardness of the active brush</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Reset colors</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="374"/>
-      <source>Tool Shortcuts</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set the foreground color to black and the background color to white.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="426"/>
-      <source>Rotate layer counter-clockwise/text size down:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Settings</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="429"/>
-      <source>Rotates the layer when the layer transformation tool is active, or decrease font size in the text tool.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Open the application settings window.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="374"/>
-      <source>Tool Shortcuts</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Zoom in</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="435"/>
-      <source>Rotate layer clockwise/text size up:</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Zoom in on image content.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="438"/>
-      <source>Rotates the layer when the layer transformation tool is active, or increase font size in the text tool.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>View Menu</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="374"/>
-      <source>Tool Shortcuts</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Zoom out</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="444"/>
-      <source>Cycle selection mode</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Zoom out from image content.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="447"/>
-      <source>Steps the selection mode through Replace, Add, Subtract and Intersect while a selection tool is active.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Reset view</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="374"/>
-      <source>Tool Shortcuts</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Fit the whole image in the view and center it.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="453"/>
-      <source>Toggle sample merged</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Zoom to generation area</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="456"/>
-      <source>Toggles the Sample merged option while the selection fill tool is active. Unbound by default.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Center the view on the image generation area and zoom to fit it.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="374"/>
-      <source>Tool Shortcuts</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show/hide tool control hints</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="462"/>
-      <source>Toggle selection shape</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show or hide the active tool control hints below the image.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="465"/>
-      <source>Switches between rectangle and ellipse while the shape selection tool is active. Pressing the shape selection tool's own key again does the same. Unbound by default.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show navigation window</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="374"/>
-      <source>Tool Shortcuts</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Open a navigation window showing the entire edited image.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="471"/>
-      <source>New image</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Reset panel layout</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="474"/>
-      <source>Open a new image for editing.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Put every panel back where it starts on first run, and open it.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="472"/>
-      <source>Menu Shortcuts</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show/hide rulers</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="473"/>
-      <source>File Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show or hide the rulers beside the image.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="480"/>
-      <source>Save</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Resize canvas</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="483"/>
-      <source>Save current image as .png or .ora.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Change the image size without scaling layers.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="473"/>
-      <source>File Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Image Menu</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="489"/>
-      <source>Save as</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Scale image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="492"/>
-      <source>Save current image as .png or .inpt at a new file path.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Scale image content to a new size.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="473"/>
-      <source>File Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Crop image to selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="498"/>
-      <source>Load image</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Crop the image to fit the current selected area.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="501"/>
-      <source>Open an image file for editing.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Crop image to generation area</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="473"/>
-      <source>File Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Crop the image to fit image generation area.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="507"/>
-      <source>Open as layers</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Resize image to content</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="510"/>
-      <source>Open images as new layers.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Resize the image to fit all layers</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="473"/>
-      <source>File Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Update metadata</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="516"/>
-      <source>Reload</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Update image metadata that will be saved with the file.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="519"/>
-      <source>Reload the image from its file.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Select image generator</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="473"/>
-      <source>File Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Selects an AI image generator</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="525"/>
-      <source>Quit</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Generate</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="528"/>
-      <source>Closes the application.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Start AI image generation.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="473"/>
-      <source>File Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Reopen last generated options</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="534"/>
-      <source>Undo</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Reopens the last batch of generated images so another option can be chosen.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="537"/>
-      <source>Undo the last action taken</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Select all</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="536"/>
-      <source>Edit Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Select the entire image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="543"/>
-      <source>Redo</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Selection Menu</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="546"/>
-      <source>Re-apply the last action reversed with undo.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Deselect all</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="536"/>
-      <source>Edit Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Clear the selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="552"/>
-      <source>Cut</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Invert selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="555"/>
-      <source>Remove selected image content in the active layer.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Swap selected and unselected areas</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="536"/>
-      <source>Edit Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Select layer content</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="561"/>
-      <source>Copy</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Select all non-transparent pixels in the active layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="564"/>
-      <source>Copy selected image content in the active layer.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Expand selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="536"/>
-      <source>Edit Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Expand the selection bounds</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="570"/>
-      <source>Paste</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Shrink selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="573"/>
-      <source>Insert copied image data into a new layer.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Shrink the selection bounds</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="536"/>
-      <source>Edit Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Clear context pins</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="579"/>
-      <source>Clear</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Remove all context pins</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="582"/>
-      <source>Delete selected image content in the active layer.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show layer window</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="536"/>
-      <source>Edit Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Open the image layer panel in a new window.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="588"/>
-      <source>Swap colors</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Layer Menu</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="591"/>
-      <source>Swap the foreground and background colors.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>New layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="536"/>
-      <source>Edit Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Create a new layer above the active layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="597"/>
-      <source>Reset colors</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>New layer group</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="600"/>
-      <source>Set the foreground color to black and the background color to white.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Create a new layer group above the active layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="536"/>
-      <source>Edit Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Copy layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="606"/>
-      <source>Settings</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Create a copy of the active layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="609"/>
-      <source>Open the application settings window.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Delete layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="536"/>
-      <source>Edit Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Delete the active layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="93"/>
-      <source>Zoom in</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Select previous layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="618"/>
-      <source>Zoom in on image content.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the next layer up.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="617"/>
-      <source>View Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Select next layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="102"/>
-      <source>Zoom out</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Switch to the next layer down.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="627"/>
-      <source>Zoom out from image content.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move layer up</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="617"/>
-      <source>View Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move the active layer up</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="633"/>
-      <source>Reset view</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move layer down</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="636"/>
-      <source>Fit the whole image in the view and center it.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move the active layer down</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="617"/>
-      <source>View Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move layer to top</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="642"/>
-      <source>Zoom to generation area</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move the active layer above all others</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="645"/>
-      <source>Center the view on the image generation area and zoom to fit it.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Merge layer down</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="617"/>
-      <source>View Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Merge the active layer with the one below it</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="651"/>
-      <source>Show/hide tool control hints</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Merge group</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="654"/>
-      <source>Show or hide the active tool control hints below the image.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Merge the active layer group into a single image layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="617"/>
-      <source>View Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Merge all visible</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="660"/>
-      <source>Show navigation window</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Merge all visible layers into a single image layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="663"/>
-      <source>Open a navigation window showing the entire edited image.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Flatten layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="617"/>
-      <source>View Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Simplify a layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="669"/>
-      <source>Reset panel layout</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Layer to image size</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="672"/>
-      <source>Put every panel back where it starts on first run, and open it.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Expand or crop the active layer to match the image bounds.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="617"/>
-      <source>View Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Crop layer to selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="678"/>
-      <source>Show/hide rulers</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Crop the layer to fit the current selected area.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="681"/>
-      <source>Show or hide the rulers beside the image.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Crop layer to contents</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="617"/>
-      <source>View Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Crop transparent borders in the active layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="687"/>
-      <source>Resize canvas</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Mirror layer horizontally</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="690"/>
-      <source>Change the image size without scaling layers.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Flip layer content horizontally</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="689"/>
-      <source>Image Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Mirror layer vertically</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="696"/>
-      <source>Scale image</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Flip layer content vertically</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="699"/>
-      <source>Scale image content to a new size.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Rotate layer 90° CW</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="689"/>
-      <source>Image Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Rotate the active layer 90 degrees clockwise.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="705"/>
-      <source>Crop image to selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Rotate layer 90° CCW</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="708"/>
-      <source>Crop the image to fit the current selected area.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Rotate the active layer 90 degrees counter-clockwise.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="689"/>
-      <source>Image Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>RGBA color balance</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="714"/>
-      <source>Crop image to generation area</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Adjust RGBA color channels</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="717"/>
-      <source>Crop the image to fit image generation area.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Filter Menu</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="689"/>
-      <source>Image Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Brightness/contrast</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="723"/>
-      <source>Resize image to content</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Adjust image brightness/contrast</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="726"/>
-      <source>Resize the image to fit all layers</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Blur</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="689"/>
-      <source>Image Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Image blurring</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="732"/>
-      <source>Update metadata</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Sharpen</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="735"/>
-      <source>Update image metadata that will be saved with the file.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Sharpen image details</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="689"/>
-      <source>Image Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Posterize</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="741"/>
-      <source>Select image generator</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Simplify layer color palette</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="744"/>
-      <source>Selects an AI image generator</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Saturation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="689"/>
-      <source>Image Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Adjust image color saturation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="750"/>
-      <source>Generate</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Invert</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="753"/>
-      <source>Start AI image generation.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Invert image colors</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="689"/>
-      <source>Image Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>View saved prompt styles</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="759"/>
-      <source>Reopen last generated options</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Access saved Stable Diffusion prompt styles</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="762"/>
-      <source>Reopens the last batch of generated images so another option can be chosen.</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Stable Diffusion Menu</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="689"/>
-      <source>Image Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>View LoRA models</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="768"/>
-      <source>Select all</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Access available LoRA models.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="771"/>
-      <source>Select the entire image</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>LCM mode</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="770"/>
-      <source>Selection Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Apply appropriate settings for the LCM LoRA.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="777"/>
-      <source>Deselect all</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Clear GPU memory</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="780"/>
-      <source>Clear the selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Remove cached models from GPU memory in ComfyUI.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="770"/>
-      <source>Selection Menu</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Open IntraPaint help pages</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="786"/>
-      <source>Invert selection</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Open a page with links to all of IntraPaint's documentation and tutorials in a web browser.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="789"/>
-      <source>Swap selected and unselected areas</source>
-      <translation/>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Help Menu</source>
+        <translation type="unfinished"></translation>
     </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="770"/>
-      <source>Selection Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="795"/>
-      <source>Select layer content</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="798"/>
-      <source>Select all non-transparent pixels in the active layer</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="770"/>
-      <source>Selection Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="804"/>
-      <source>Expand selection</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="807"/>
-      <source>Expand the selection bounds</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="770"/>
-      <source>Selection Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="813"/>
-      <source>Shrink selection</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="816"/>
-      <source>Shrink the selection bounds</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="770"/>
-      <source>Selection Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="822"/>
-      <source>Clear context pins</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="825"/>
-      <source>Remove all context pins</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="770"/>
-      <source>Selection Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="831"/>
-      <source>Show layer window</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="834"/>
-      <source>Open the image layer panel in a new window.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="840"/>
-      <source>New layer</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="843"/>
-      <source>Create a new layer above the active layer.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="849"/>
-      <source>New layer group</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="852"/>
-      <source>Create a new layer group above the active layer.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="858"/>
-      <source>Copy layer</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="861"/>
-      <source>Create a copy of the active layer.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="867"/>
-      <source>Delete layer</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="870"/>
-      <source>Delete the active layer.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="876"/>
-      <source>Select previous layer</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="879"/>
-      <source>Switch to the next layer up.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="885"/>
-      <source>Select next layer</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="888"/>
-      <source>Switch to the next layer down.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="894"/>
-      <source>Move layer up</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="897"/>
-      <source>Move the active layer up</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="903"/>
-      <source>Move layer down</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="906"/>
-      <source>Move the active layer down</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="912"/>
-      <source>Move layer to top</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="915"/>
-      <source>Move the active layer above all others</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="921"/>
-      <source>Merge layer down</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="924"/>
-      <source>Merge the active layer with the one below it</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="930"/>
-      <source>Merge group</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="933"/>
-      <source>Merge the active layer group into a single image layer</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="939"/>
-      <source>Merge all visible</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="942"/>
-      <source>Merge all visible layers into a single image layer</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="948"/>
-      <source>Flatten layer</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="951"/>
-      <source>Simplify a layer</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="957"/>
-      <source>Layer to image size</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="960"/>
-      <source>Expand or crop the active layer to match the image bounds.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="966"/>
-      <source>Crop layer to selection</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="969"/>
-      <source>Crop the layer to fit the current selected area.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="975"/>
-      <source>Crop layer to contents</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="978"/>
-      <source>Crop transparent borders in the active layer.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="984"/>
-      <source>Mirror layer horizontally</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="987"/>
-      <source>Flip layer content horizontally</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="992"/>
-      <source>Mirror layer vertically</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="995"/>
-      <source>Flip layer content vertically</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1000"/>
-      <source>Rotate layer 90° CW</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1003"/>
-      <source>Rotate the active layer 90 degrees clockwise.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1008"/>
-      <source>Rotate layer 90° CCW</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1011"/>
-      <source>Rotate the active layer 90 degrees counter-clockwise.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="833"/>
-      <source>Layer Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1017"/>
-      <source>RGBA color balance</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1020"/>
-      <source>Adjust RGBA color channels</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1019"/>
-      <source>Filter Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1026"/>
-      <source>Brightness/contrast</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1029"/>
-      <source>Adjust image brightness/contrast</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1019"/>
-      <source>Filter Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1035"/>
-      <source>Blur</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1038"/>
-      <source>Image blurring</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1019"/>
-      <source>Filter Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1044"/>
-      <source>Sharpen</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1047"/>
-      <source>Sharpen image details</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1019"/>
-      <source>Filter Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1053"/>
-      <source>Posterize</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1056"/>
-      <source>Simplify layer color palette</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1019"/>
-      <source>Filter Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1062"/>
-      <source>Saturation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1065"/>
-      <source>Adjust image color saturation</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1019"/>
-      <source>Filter Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="786"/>
-      <source>Invert</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1074"/>
-      <source>Invert image colors</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1019"/>
-      <source>Filter Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1080"/>
-      <source>View saved prompt styles</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1083"/>
-      <source>Access saved Stable Diffusion prompt styles</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1082"/>
-      <source>Stable Diffusion Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1089"/>
-      <source>View LoRA models</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1092"/>
-      <source>Access available LoRA models.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1082"/>
-      <source>Stable Diffusion Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1098"/>
-      <source>LCM mode</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1101"/>
-      <source>Apply appropriate settings for the LCM LoRA.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1082"/>
-      <source>Stable Diffusion Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1107"/>
-      <source>Clear GPU memory</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1110"/>
-      <source>Remove cached models from GPU memory in ComfyUI.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1082"/>
-      <source>Stable Diffusion Menu</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1116"/>
-      <source>Open IntraPaint help pages</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1119"/>
-      <source>Open a page with links to all of IntraPaint's documentation and tutorials in a web browser.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="1118"/>
-      <source>Help Menu</source>
-      <translation/>
-    </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>controller.app_controller</name>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="147"/>
-      <source>Restart required</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Restart required</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="148"/>
-      <source>The new maximum undo count will apply after IntraPaint is restarted.</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>The new maximum undo count will apply after IntraPaint is restarted.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="158"/>
-      <source>File</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>ControlNet: 1 unit on</source>
+        <comment>Tooltip of the ControlNet rail button</comment>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="159"/>
-      <source>Edit</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>ControlNet: {count} units on</source>
+        <comment>Tooltip of the ControlNet rail button</comment>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="160"/>
-      <source>Image</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>File</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="161"/>
-      <source>View</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Edit</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="162"/>
-      <source>Panels</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="164"/>
-      <source>Selection</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>View</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="165"/>
-      <source>Layers</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Panels</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="166"/>
-      <source>Filters</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="167"/>
-      <source>Help</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Layers</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="169"/>
-      <source>Move</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Filters</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="170"/>
-      <source>Select</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Help</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="171"/>
-      <source>Transform</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Move</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="175"/>
-      <source>Loading image generator failed</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Select</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="176"/>
-      <source>Unable to load the {generator_name} image generator</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Transform</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="177"/>
-      <source>Quit now?</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Loading image generator failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="178"/>
-      <source>All unsaved changes will be lost.</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Unable to load the {generator_name} image generator</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="179"/>
-      <source>Create new image?</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Quit now?</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="193"/>
-      <location filename="../../src/controller/app_controller.py" line="180"/>
-      <source>This will discard all unsaved changes.</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>All unsaved changes will be lost.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="181"/>
-      <source>Save failed</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Create new image?</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="182"/>
-      <source>Open failed</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>This will discard all unsaved changes.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="183"/>
-      <source>Saving as "{file_path}" failed due to an unknown error, try saving in a different format or to a different disk.</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Save failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="185"/>
-      <source>Saving files with the  "{extension}" extension is not supported, try again with a supported image file format.</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Open failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="187"/>
-      <source>Tried to save with no file extension as "{file_path}", add a valid image file extension and try again.</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Saving as "{file_path}" failed due to an unknown error, try saving in a different format or to a different disk.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="189"/>
-      <source>Reload failed</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Saving files with the  "{extension}" extension is not supported, try again with a supported image file format.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="190"/>
-      <source>Image path "{file_path}" is not a valid image file.</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Tried to save with no file extension as "{file_path}", add a valid image file extension and try again.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="191"/>
-      <source>Enter an image path or click "Open Image" first.</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Reload failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="192"/>
-      <source>Reload image?</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Image path "{file_path}" is not a valid image file.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="194"/>
-      <source>Metadata updated</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Enter an image path or click "Open Image" first.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="195"/>
-      <source>On save, current image generation parameters will be stored within the image</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Reload image?</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="196"/>
-      <source>Opening layers failed</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Metadata updated</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="197"/>
-      <source>Could not open the following images: </source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>On save, current image generation parameters will be stored within the image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="198"/>
-      <source>Open every frame?</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Opening layers failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="199"/>
-      <source>{file_name} has {frame_count} frames. Opening each one as a layer will use about {size_gb:.1f} GB of memory.
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Could not open the following images: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Open every frame?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>{file_name} has {frame_count} frames. Opening each one as a layer will use about {size_gb:.1f} GB of memory.
 
 Choose "No" to open only the first frame.</source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="205"/>
-      <source>Save image generation metadata?</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Save image generation metadata?</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="206"/>
-      <source>No image metadata is cached, would you like to save image generation parameters to this image?</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>No image metadata is cached, would you like to save image generation parameters to this image?</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="208"/>
-      <source>Update image generation metadata?</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Update image generation metadata?</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="209"/>
-      <source>Image generation parameters have changed, would you like this image to be saved with the most recent values?</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Image generation parameters have changed, would you like this image to be saved with the most recent values?</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="213"/>
-      <source>Image saved without layer data</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Image saved without layer data</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="214"/>
-      <source>To save layer data, images must be saved in .ora format.</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>To save layer data, images must be saved in .ora format.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="216"/>
-      <source>Image saved without full transparency</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Image saved without full transparency</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="217"/>
-      <source>To preserve transparency, save using one of the following file formats: {alpha_formats}</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>To preserve transparency, save using one of the following file formats: {alpha_formats}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="220"/>
-      <source>Image saved without image generation metadata</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Image saved without image generation metadata</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="221"/>
-      <source>To preserve image generation metadata, save using one of the following file formats: {metadata_formats}</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>To preserve image generation metadata, save using one of the following file formats: {metadata_formats}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="224"/>
-      <source>Image saved in a write-only format</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Image saved in a write-only format</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="225"/>
-      <source>IntraPaint can write images in the {file_format} format, but cannot load them. Use another file format if you want to be able to load this image in IntraPaint again.</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>IntraPaint can write images in the {file_format} format, but cannot load them. Use another file format if you want to be able to load this image in IntraPaint again.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="228"/>
-      <source>Image saved in a format that changes size</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Image saved in a format that changes size</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="229"/>
-      <source>The image is {width_px}x{height_px}, but the {file_format} format saves all images at {saved_width_px}x{saved_height_px} resolution. Use another file format if you want to preserve the original image size.</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>The image is {width_px}x{height_px}, but the {file_format} format saves all images at {saved_width_px}x{saved_height_px} resolution. Use another file format if you want to preserve the original image size.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="233"/>
-      <source>Image saved without color</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Image saved without color</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="234"/>
-      <source>The {file_format} format saves the image without color. Use another format if you want to preserve image colors.</source>
-      <translation/>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>The {file_format} format saves the image without color. Use another format if you want to preserve image colors.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>controller.image_generation.glid3_webservice_generator</name>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="36"/>
-      <source>GLID-3-XL image generation server</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/glid3_webservice_generator.py"/>
+        <source>GLID-3-XL image generation server</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="38"/>
-      <source>&lt;h2&gt;GLID-3-XL server setup&lt;/h2&gt;</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/glid3_webservice_generator.py"/>
+        <source>&lt;h2&gt;GLID-3-XL server setup&lt;/h2&gt;</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="52"/>
-      <source>
+        <location filename="../../src/controller/image_generation/glid3_webservice_generator.py"/>
+        <source>
+&lt;h3&gt;GLID-3-XL server setup:&lt;/h3&gt;
+&lt;ol&gt;
+    &lt;li&gt;
+        If you are running the pre-packaged version of IntraPaint, or if you want to manage the GLID-3-XL server
+        separately, run the following to get the required code and set up a new anaconda virtual environment:
+        {commands}
+    &lt;/li&gt;
+</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_generation/glid3_webservice_generator.py"/>
+        <source>
     &lt;li&gt;
         Start the server by running "&lt;code&gt;python IntraPaint_server.py&lt;/code&gt;". If you are using a model other than the
         default inpaint.pt, instead run "&lt;code&gt;python Intrapaint_server.py --model_path models/model.pt&lt;/code&gt;", replacing
@@ -4920,11 +3699,11 @@ Choose "No" to open only the first frame.</source>
     the ngrok service formerly used to handle external connections. 
 &lt;/p&gt;
 </source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="75"/>
-      <source>
+        <location filename="../../src/controller/image_generation/glid3_webservice_generator.py"/>
+        <source>
 &lt;h2&gt;Colab server setup&lt;/h2&gt;
 &lt;p&gt;
     This is the easier way to set up this mode. It does not require a powerful GPU, but it does require an internet
@@ -4977,29 +3756,29 @@ Choose "No" to open only the first frame.</source>
         Click the "activate" button below these instructions, and enter that URL when prompted.
     &lt;/li&gt;'
 &lt;/ol&gt;</source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="128"/>
-      <source>No GLID-3-XL server address was provided.</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/glid3_webservice_generator.py"/>
+        <source>No GLID-3-XL server address was provided.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="129"/>
-      <source>Could not find a valid GLID-3-XL server at "{server_address}"</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/glid3_webservice_generator.py"/>
+        <source>Could not find a valid GLID-3-XL server at "{server_address}"</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>controller.image_generation.glid3_xl_generator</name>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="51"/>
-      <source>GLID-3-XL image generation</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/glid3_xl_generator.py"/>
+        <source>GLID-3-XL image generation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="52"/>
-      <source>
+        <location filename="../../src/controller/image_generation/glid3_xl_generator.py"/>
+        <source>
 &lt;h1&gt;GLID-3-XL&lt;/h1&gt;
 &lt;p&gt;
     GLID-3-XL was the best inpainting model available until August 2022, and the first model supported by IntraPaint.
@@ -5014,28 +3793,28 @@ Choose "No" to open only the first frame.</source>
     &lt;li&gt;Some stylistic flexibility, but limited ability to understand complex prompts.&lt;/li&gt;
 &lt;/ul&gt;
 </source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="70"/>
-      <source>
+        <location filename="../../src/controller/image_generation/glid3_xl_generator.py"/>
+        <source>
 &lt;h2&gt;GLID-3-XL server setup&lt;/h2&gt;</source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="71"/>
-      <source>
+        <location filename="../../src/controller/image_generation/glid3_xl_generator.py"/>
+        <source>
 &lt;h2&gt;GLID-3-XL server setup&lt;/h2&gt;
 &lt;p&gt;
      Because GLID-3-XL is mainly a historical curiosity at this point, few steps have been taken to simplify the
     setup process. As the software involved becomes increasingly outdated, further steps may be necessary to get this
     generator to work.
 &lt;/p&gt;</source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="78"/>
-      <source>
+        <location filename="../../src/controller/image_generation/glid3_xl_generator.py"/>
+        <source>
 &lt;h3&gt;Prerequisites:&lt;/h3&gt;
 &lt;p&gt;
     Running GLID-3-XL requires a NVIDIA GPU with at least 8GB of VRAM. Other GPUs or slightly less memory might work,
@@ -5054,11 +3833,59 @@ Choose "No" to open only the first frame.</source>
     perform other configuration steps. Refer to the sites linked above for full documentation.
 &lt;/p&gt;
 </source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="143"/>
-      <source>
+        <location filename="../../src/controller/image_generation/glid3_xl_generator.py"/>
+        <source>
+&lt;h3&gt;IntraPaint setup via Git:&lt;/h3&gt;
+&lt;p&gt;
+    You are currently running the pre-packaged version of IntraPaint, which excludes some of the components needed to
+    run GLID-3-XL. You will need to switch to the Git version by running the following commands in a terminal window:
+&lt;/p&gt;
+{commands}
+&lt;p&gt;
+    When following the instructions below, make sure you run all terminal commands in this new IntraPaint folder with
+    the "intrapaint-glid" anaconda environment active.
+&lt;/p&gt;
+</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_generation/glid3_xl_generator.py"/>
+        <source>
+&lt;h3&gt;Installing dependencies:&lt;/h3&gt;
+&lt;ol&gt;
+    &lt;li&gt;
+        Within the the terminal in the IntraPaint directory, install the appropriate versions of torch and torchvision
+        using the commands found &lt;a href="https://pytorch.org/get-started/locally/"&gt;here&lt;/a&gt;.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Run the following commands to install additional dependencies:
+        {commands}
+    &lt;/li&gt;
+    &lt;li&gt;
+        Download one or more GLID-3-XL inpainting models, and place them in the "IntraPaint/models/" directory.
+        These are the main options available:
+        &lt;ul&gt;
+            &lt;li&gt;
+                &lt;a href="https://dall-3.com/models/glid-3-xl/"&gt;inpaint.pt&lt;/a&gt;: The original GLID-3-XL inpainting model.
+            &lt;/li&gt;
+            &lt;li&gt;
+                &lt;a href="https://huggingface.co/laion/ongo/resolve/main/ongo.pt"&gt;ongo.pt&lt;/a&gt;: Trained by
+                LAION on paintings from the Wikiart dataset.
+            &lt;/li&gt;
+            &lt;li&gt;
+                &lt;a href="https://huggingface.co/laion/erlich/resolve/main/model/ema_0.9999_120000.pt"&gt;erlich.pt&lt;/a&gt;:
+                Trained on the LAION large logo dataset.
+            &lt;/li&gt;
+        &lt;/ul&gt;
+    &lt;/li&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_generation/glid3_xl_generator.py"/>
+        <source>
     &lt;li&gt;
         Start IntraPaint by running "&lt;code&gt;python IntraPaint.py&lt;/code&gt;". If you are using a model other than the default
         inpaint.pt, instead run "&lt;code&gt;python Intrapaint_server.py  --model_path models/model.pt&lt;/code&gt;", replacing
@@ -5067,118 +3894,118 @@ Choose "No" to open only the first frame.</source>
 &lt;/ol&gt;
 &lt;p&gt;Once these steps are completed, you should be able to activate this generator without any errors.&lt;/p&gt;
 </source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="158"/>
-      <source>Required dependencies are missing: &lt;code&gt;{dependency_list}&lt;/code&gt;</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/glid3_xl_generator.py"/>
+        <source>Required dependencies are missing: &lt;code&gt;{dependency_list}&lt;/code&gt;</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="159"/>
-      <source>Not enough VRAM for the GLID-3-XL generator: {mem_free} free memory found, expected at least {min_vram}</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/glid3_xl_generator.py"/>
+        <source>Not enough VRAM for the GLID-3-XL generator: {mem_free} free memory found, expected at least {min_vram}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="161"/>
-      <source>{model_name} model file expected at "{model_path}" is missing</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/glid3_xl_generator.py"/>
+        <source>{model_name} model file expected at "{model_path}" is missing</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="165"/>
-      <source>Missing required {repo_name} repository, please run `git clone {repo_url}` within the IntraPaint directory.</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/glid3_xl_generator.py"/>
+        <source>Missing required {repo_name} repository, please run `git clone {repo_url}` within the IntraPaint directory.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>controller.image_generation.image_generator</name>
     <message>
-      <location filename="../../src/controller/image_generation/image_generator.py" line="33"/>
-      <source>Inpainting failure</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/image_generator.py"/>
+        <source>Inpainting failure</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/image_generator.py" line="34"/>
-      <source>Save failed</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/image_generator.py"/>
+        <source>Save failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/image_generator.py" line="35"/>
-      <source>Failed</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/image_generator.py"/>
+        <source>Failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/image_generator.py" line="36"/>
-      <source>Existing image generation operation not yet finished, wait a little longer.</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/image_generator.py"/>
+        <source>Existing image generation operation not yet finished, wait a little longer.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>controller.image_generation.null_generator</name>
     <message>
-      <location filename="../../src/controller/image_generation/null_generator.py" line="24"/>
-      <source>No image generator</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/null_generator.py"/>
+        <source>No image generator</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/null_generator.py" line="25"/>
-      <source>&lt;p&gt;IntraPaint does not need an image generator to function.  If you don't want to set up an image generator, you can still use it like any other image editor.</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/null_generator.py"/>
+        <source>&lt;p&gt;IntraPaint does not need an image generator to function.  If you don't want to set up an image generator, you can still use it like any other image editor.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/null_generator.py" line="27"/>
-      <source>This option has no setup requirements.</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/null_generator.py"/>
+        <source>This option has no setup requirements.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>controller.image_generation.sd_adapters.progress_adapter</name>
     <message>
-      <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py" line="24"/>
-      <source>Waiting, position {queue_number} in queue.</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py"/>
+        <source>Waiting, position {queue_number} in queue.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py" line="25"/>
-      <source>Waiting...</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py"/>
+        <source>Waiting...</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py" line="26"/>
-      <source>Generating...</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py"/>
+        <source>Generating...</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py" line="27"/>
-      <source>Batch {batch_num} of {num_batches}:</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py"/>
+        <source>Batch {batch_num} of {num_batches}:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py" line="28"/>
-      <source>ETA: {minutes}:{seconds}</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py"/>
+        <source>ETA: {minutes}:{seconds}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py" line="29"/>
-      <source>ETA: {seconds}s</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/sd_adapters/progress_adapter.py"/>
+        <source>ETA: {seconds}s</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>controller.image_generation.sd_comfyui_generator</name>
     <message>
-      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="44"/>
-      <source>Stable Diffusion ComfyUI API</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/sd_comfyui_generator.py"/>
+        <source>Stable Diffusion ComfyUI API</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="45"/>
-      <source>&lt;h2&gt;Stable Diffusion: via ComfyUI API&lt;/h2&gt;</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/sd_comfyui_generator.py"/>
+        <source>&lt;h2&gt;Stable Diffusion: via ComfyUI API&lt;/h2&gt;</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="46"/>
-      <source>
+        <location filename="../../src/controller/image_generation/sd_comfyui_generator.py"/>
+        <source>
 &lt;h3&gt;About ComfyUI&lt;/h3&gt;
 &lt;p&gt;
     &lt;a href="https://www.comfy.org/"&gt;ComfyUI&lt;/a&gt; is a popular Stable Diffusion interface with complex and powerful
@@ -5192,11 +4019,40 @@ Choose "No" to open only the first frame.</source>
     browser at &lt;a href="http://localhost:8188/"&gt;localhost:8188&lt;/a&gt;.
 &lt;/p&gt;
 </source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_comfyui_generator.py" line="89"/>
-      <source>
+        <location filename="../../src/controller/image_generation/sd_comfyui_generator.py"/>
+        <source>
+&lt;h1&gt;Stable Diffusion ComfyUI Generator Setup&lt;/h1&gt;
+&lt;p&gt;
+    To use the Stable Diffusion ComfyUI generator, you will to download at least one Stable Diffusion model file, 
+    install ComfyUI, and start it.  This guide will explain each of those steps.
+&lt;/p&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_generation/sd_comfyui_generator.py"/>
+        <source>
+&lt;hr/&gt;
+&lt;h2&gt;Installing ComfyUI: Available options&lt;/h2&gt;
+&lt;p&gt;
+    There are a few different ways you can install ComfyUI. The recommended method is to use
+    &lt;a href="https://github.com/LykosAI/StabilityMatrix?tab=readme-ov-file#stability-matrix"&gt;Stability Matrix&lt;/a&gt;,
+    but other methods are covered here for the sake of completeness.
+&lt;/p&gt;
+&lt;hr/&gt;
+&lt;h2&gt;Option 1: Stability Matrix&lt;/h2&gt;
+&lt;p&gt;
+    Installation through Stability Matrix is the recommended method. This method is the simplest option, provides a lot
+    of helpful extra resources, and supports Windows, macOS and Linux.  This method also lets you easily install and use
+    Stable Diffusion WebUI, the other Stable Diffusion client that IntraPaint can use.
+&lt;/p&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_generation/sd_comfyui_generator.py"/>
+        <source>
 &lt;hr/&gt;
 &lt;h2&gt;Option 2: Prepackaged Windows version&lt;/h2&gt;
 &lt;p&gt;
@@ -5246,14 +4102,14 @@ Choose "No" to open only the first frame.</source>
     probably help you find a solution.
 &lt;/p&gt;
 </source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>controller.image_generation.sd_generator</name>
     <message>
-      <location filename="../../src/controller/image_generation/sd_generator.py" line="54"/>
-      <source>
+        <location filename="../../src/controller/image_generation/sd_generator.py"/>
+        <source>
 &lt;p&gt;
     Released in August 2022, Stable Diffusion remains the most versatile and useful free image generation model.
 &lt;/p&gt;
@@ -5281,11 +4137,78 @@ Choose "No" to open only the first frame.</source>
     &lt;/li&gt;
 &lt;/ul&gt;
 </source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_generator.py" line="151"/>
-      <source>
+        <location filename="../../src/controller/image_generation/sd_generator.py"/>
+        <source>
+&lt;h3&gt;Stability Matrix installation and setup&lt;/h3&gt;
+&lt;ol&gt;
+    &lt;li&gt;
+        Download the appropriate version of Stability Matrix for your system:
+        &lt;ul&gt;
+            &lt;li&gt;
+                &lt;a
+                 href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip"
+                 &gt;Windows 10, 11
+                &lt;/a&gt;
+            &lt;/li&gt;
+            &lt;li&gt;
+                &lt;a
+              href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg"
+                 &gt;macOS, Apple Silicon
+                &lt;/a&gt;
+            &lt;/li&gt;
+            &lt;li&gt;
+                &lt;a
+                href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip"
+                &gt;Linux AppImage
+                &lt;/a&gt;
+            &lt;/li&gt;
+            &lt;li&gt;&lt;a href="https://aur.archlinux.org/packages/stabilitymatrix"&gt; Arch Linux AUR&lt;/a&gt;&lt;/li&gt;
+        &lt;/ul&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        Extract and launch the downloaded file. On the first launch it will ask you to select a data directory, and ask
+        you to select a package to install. Choose &lt;b&gt;"{generator_package}"&lt;/b&gt;, and wait for installation to finish.
+        From here, Stability-Matrix will go to the &lt;img src='{packages_icon}'/&gt;
+        &lt;b&gt;Packages&lt;/b&gt; tab, where you can configure or launch the WebUI, or install alternate Stable Diffusion
+        packages.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        If you've already downloaded Stable Diffusion or ControlNet models, go to the 
+         &lt;img src='{checkpoints_icon}'/&gt;&lt;b&gt;Checkpoint Manager&lt;/b&gt; tab on the left.
+         Click the "&lt;big&gt;⋯&lt;/big&gt;" menu button on the upper right, and choose "Models Folder", and it will open the 
+         folder you need in the system file manager.  Copy Stable Diffusion models into the "StableDiffusion"
+         subfolder, and copy any ControlNet models to the "ControlNet" subfolder.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        If you haven't downloaded any Stable Diffusion models yet, you can do that in Stability Matrix.
+        Go to the &lt;img src='{models_icon}'/&gt;&lt;b&gt;Model Browser&lt;/b&gt; tab to find and
+        download a Stable Diffusion model file.&lt;br/&gt;
+    &lt;/li&gt;
+    {post_install_generator_setup}
+    &lt;li&gt;
+        On the &lt;img src='{packages_icon}'/&gt;&lt;b&gt;Packages&lt;/b&gt; tab, click the
+        &lt;b&gt;Launch&lt;/b&gt; button under &lt;b&gt;"{generator_package}"&lt;/b&gt;.  A log screen will open up, showing the status of the
+        package as it starts up.&lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        Once the &lt;b&gt;"Open Web UI"&lt;/b&gt; button appears at the top of the window, Stable Diffusion is ready to use.  Back
+        in IntraPaint, click the "Activate" button below to connect to Stable Diffusion. &lt;br/&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        In the future, the only steps you'll need to repeat from this list are launching Stability Matrix and clicking
+        the "Launch" button. If you do this before launching IntraPaint, it will automatically connect to this image
+        generator on startup.
+    &lt;/li&gt;
+&lt;/ol&gt;
+</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_generation/sd_generator.py"/>
+        <source>
 &lt;h2&gt;Getting Stable Diffusion Model Files&lt;/h2&gt;
 &lt;p&gt;
     To use Stable Diffusion, you'll need at least one Stable Diffusion model file.  These files (also called
@@ -5304,34 +4227,34 @@ Choose "No" to open only the first frame.</source>
     GitHub wiki&lt;/a&gt;.
 &lt;/p&gt;
 </source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_generator.py" line="172"/>
-      <source>ControlNet preview failed</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/sd_generator.py"/>
+        <source>ControlNet preview failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_generator.py" line="173"/>
-      <source>Loading ControlNet preprocessor preview failed: {err}</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/sd_generator.py"/>
+        <source>Loading ControlNet preprocessor preview failed: {err}</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>controller.image_generation.sd_webui_generator</name>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="50"/>
-      <source>Stable Diffusion WebUI API</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
+        <source>Stable Diffusion WebUI API</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="51"/>
-      <source>&lt;h2&gt;Stable Diffusion: via WebUI API&lt;/h2&gt;</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
+        <source>&lt;h2&gt;Stable Diffusion: via WebUI API&lt;/h2&gt;</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="52"/>
-      <source>
+        <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
+        <source>
 &lt;h3&gt;About the Stable Diffusion WebUI&lt;/h3&gt;
 &lt;p&gt;
     The &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui?tab=readme-ov-file#stable-diffusion-web-ui"&gt;
@@ -5359,11 +4282,55 @@ Choose "No" to open only the first frame.</source>
     WebUI Forge without any of the compatibility issues. &lt;b&gt;This is the recommended version to use with IntraPaint&lt;/b&gt;.
 &lt;/p&gt;
 </source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="126"/>
-      <source>
+        <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
+        <source>
+&lt;h1&gt;Stable Diffusion WebUI Generator Setup&lt;/h1&gt;
+&lt;p&gt;
+    To use the Stable Diffusion WebUI generator, you will to download at least one Stable Diffusion model file, 
+    install the WebUI, enable API access, and start the WebUI.  This guide will explain each of those steps.
+&lt;/p&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
+        <source>
+&lt;hr/&gt;
+&lt;h2&gt;Installing Stable Diffusion WebUI: Available options&lt;/h2&gt;
+&lt;p&gt;
+    There are a few different ways you can install the WebUI. The recommended method is to use
+    &lt;a href="https://github.com/LykosAI/StabilityMatrix?tab=readme-ov-file#stability-matrix"&gt;Stability Matrix&lt;/a&gt;,
+    but other methods are covered here for the sake of completeness.
+&lt;/p&gt;
+&lt;hr/&gt;
+&lt;h2&gt;Option 1: Stability Matrix&lt;/h2&gt;
+&lt;p&gt;
+    Installation through Stability Matrix is the recommended method. This method is the simplest option, provides a lot
+    of helpful extra resources, and supports Windows, macOS and Linux.  This method also lets you switch between the
+    original WebUI and the Forge version easily, or even install ComfyUI if you want to try IntraPaint's
+    Stable Diffusion ComfyUI image generator.
+&lt;/p&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
+        <source>
+    &lt;li&gt;
+        On the &lt;img src='{packages_icon}'/&gt;&lt;b&gt;Packages&lt;/b&gt; tab, click the
+        &lt;img src='{settings_icon}'/&gt;&lt;b&gt;Settings&lt;/b&gt; button next to the WebUI
+        package to open the launch options.  Scroll to the bottom of the list, and find the &lt;b&gt;"Extra Launch Arguments"
+        &lt;/b&gt; text field. Enter &lt;b&gt;--api&lt;/b&gt; into that text field, and click the &lt;b&gt;"Save"&lt;/b&gt; button.  This step is
+         needed to make the WebUI accept image generation requests from IntraPaint.
+        &lt;br/&gt;
+    &lt;/li&gt;
+</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
+        <source>
 &lt;hr/&gt;
 &lt;h2&gt;Option 2: WebUI Forge one-click installer&lt;/h2&gt;
 &lt;p&gt;
@@ -5423,1122 +4390,1113 @@ Choose "No" to open only the first frame.</source>
     probably help you find a solution.
 &lt;/p&gt;
 </source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="193"/>
-      <source>Updating prompt styles failed</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
+        <source>Updating prompt styles failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="195"/>
-      <source>Failed to load Stable Diffusion settings</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
+        <source>Failed to load Stable Diffusion settings</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="196"/>
-      <source>Failed to save Stable Diffusion settings</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
+        <source>Failed to save Stable Diffusion settings</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="197"/>
-      <source>The connection to the Stable Diffusion WebUI image generator was lost. Connected generator settings will not be available.</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
+        <source>The connection to the Stable Diffusion WebUI image generator was lost. Connected generator settings will not be available.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="199"/>
-      <source>The connection to the Stable Diffusion WebUI image generator was lost. Any changes to connected generator settings were not saved.</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/sd_webui_generator.py"/>
+        <source>The connection to the Stable Diffusion WebUI image generator was lost. Any changes to connected generator settings were not saved.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>controller.image_generation.test_generator</name>
     <message>
-      <location filename="../../src/controller/image_generation/test_generator.py" line="31"/>
-      <source>Test/development image generator</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/test_generator.py"/>
+        <source>Test/development image generator</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/test_generator.py" line="32"/>
-      <source>Mock image generator, for testing and development</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/test_generator.py"/>
+        <source>Mock image generator, for testing and development</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/test_generator.py" line="33"/>
-      <source>No setup required.</source>
-      <translation/>
+        <location filename="../../src/controller/image_generation/test_generator.py"/>
+        <source>No setup required.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>controller.tool_controller</name>
     <message>
-      <location filename="../../src/controller/tool_controller.py" line="53"/>
-      <source>Failed to load libmypaint brush library files</source>
-      <translation/>
+        <location filename="../../src/controller/tool_controller.py"/>
+        <source>Failed to load libmypaint brush library files</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/controller/tool_controller.py" line="54"/>
-      <source>The brush tool will not be available unless this is fixed.</source>
-      <translation/>
+        <location filename="../../src/controller/tool_controller.py"/>
+        <source>The brush tool will not be available unless this is fixed.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>excepthook</name>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="139"/>
-      <source>Bug Detected</source>
-      <translation/>
+        <location filename="../../src/util/qtexcepthook.py"/>
+        <source>Bug Detected</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="140"/>
-      <source>&lt;big&gt;&lt;b&gt;A programming error has been detected during the execution of this program.&lt;/b&gt;&lt;/big&gt;</source>
-      <translation/>
+        <location filename="../../src/util/qtexcepthook.py"/>
+        <source>&lt;big&gt;&lt;b&gt;A programming error has been detected during the execution of this program.&lt;/b&gt;&lt;/big&gt;</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="143"/>
-      <source>It probably isn't fatal, but should be reported to the developers nonetheless.</source>
-      <translation/>
+        <location filename="../../src/util/qtexcepthook.py"/>
+        <source>It probably isn't fatal, but should be reported to the developers nonetheless.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="147"/>
-      <source>Report Bug...</source>
-      <translation/>
+        <location filename="../../src/util/qtexcepthook.py"/>
+        <source>Report Bug...</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="151"/>
-      <source>Copy Traceback...</source>
-      <translation/>
+        <location filename="../../src/util/qtexcepthook.py"/>
+        <source>Copy Traceback...</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="156"/>
-      <source>
+        <location filename="../../src/util/qtexcepthook.py"/>
+        <source>
 
 Please remember to include the traceback from the Details expander.</source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="175"/>
-      <source>Traceback Copied</source>
-      <translation/>
+        <location filename="../../src/util/qtexcepthook.py"/>
+        <source>Traceback Copied</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="176"/>
-      <source>The traceback has now been copied to the clipboard.</source>
-      <translation/>
+        <location filename="../../src/util/qtexcepthook.py"/>
+        <source>The traceback has now been copied to the clipboard.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="258"/>
-      <source>SMTP Failure</source>
-      <translation/>
+        <location filename="../../src/util/qtexcepthook.py"/>
+        <source>SMTP Failure</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="259"/>
-      <source>An error was encountered while attempting to send your bug report. Please submit it manually.</source>
-      <translation/>
+        <location filename="../../src/util/qtexcepthook.py"/>
+        <source>An error was encountered while attempting to send your bug report. Please submit it manually.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="263"/>
-      <source>Bug Reported</source>
-      <translation/>
+        <location filename="../../src/util/qtexcepthook.py"/>
+        <source>Bug Reported</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="264"/>
-      <source>Your bug report was successfully sent.</source>
-      <translation/>
+        <location filename="../../src/util/qtexcepthook.py"/>
+        <source>Your bug report was successfully sent.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>image.animation</name>
     <message>
-      <location filename="../../src/image/animation.py" line="26"/>
-      <source>Frame {frame_number}</source>
-      <translation/>
+        <location filename="../../src/image/animation.py"/>
+        <source>Frame {frame_number}</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>image.composite_mode</name>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="33"/>
-      <source>Normal</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Normal</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="34"/>
-      <source>Multiply</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Multiply</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="35"/>
-      <source>Screen</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Screen</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="36"/>
-      <source>Overlay</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Overlay</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="37"/>
-      <source>Darken</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Darken</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="38"/>
-      <source>Lighten</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Lighten</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="39"/>
-      <source>Color Dodge</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Color Dodge</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="40"/>
-      <source>Color Burn</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Color Burn</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="41"/>
-      <source>Hard Light</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Hard Light</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="42"/>
-      <source>Soft Light</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Soft Light</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="43"/>
-      <source>Difference</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Difference</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="44"/>
-      <source>Color</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Color</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="45"/>
-      <source>Luminosity</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Luminosity</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="46"/>
-      <source>Hue</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Hue</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="47"/>
-      <source>Saturation</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Saturation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="48"/>
-      <source>Plus</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Plus</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="49"/>
-      <source>Destination In</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Destination In</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="50"/>
-      <source>Destination Out</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Destination Out</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="51"/>
-      <source>Source Atop</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Source Atop</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="52"/>
-      <source>Destination Atop</source>
-      <translation/>
+        <location filename="../../src/image/composite_mode.py"/>
+        <source>Destination Atop</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>image.filter.blur</name>
     <message>
-      <location filename="../../src/image/filter/blur.py" line="23"/>
-      <source>Simple</source>
-      <translation/>
+        <location filename="../../src/image/filter/blur.py"/>
+        <source>Simple</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/blur.py" line="24"/>
-      <source>Box</source>
-      <translation/>
+        <location filename="../../src/image/filter/blur.py"/>
+        <source>Box</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/blur.py" line="25"/>
-      <source>Gaussian</source>
-      <translation/>
+        <location filename="../../src/image/filter/blur.py"/>
+        <source>Gaussian</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/blur.py" line="27"/>
-      <source>Blur</source>
-      <translation/>
+        <location filename="../../src/image/filter/blur.py"/>
+        <source>Blur</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/blur.py" line="28"/>
-      <source>Blur the image</source>
-      <translation/>
+        <location filename="../../src/image/filter/blur.py"/>
+        <source>Blur the image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/blur.py" line="30"/>
-      <source>Blurring mode:</source>
-      <translation/>
+        <location filename="../../src/image/filter/blur.py"/>
+        <source>Blurring mode:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/blur.py" line="31"/>
-      <source>Image blurring algorithm</source>
-      <translation/>
+        <location filename="../../src/image/filter/blur.py"/>
+        <source>Image blurring algorithm</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/blur.py" line="33"/>
-      <source>Radius:</source>
-      <translation/>
+        <location filename="../../src/image/filter/blur.py"/>
+        <source>Radius:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/blur.py" line="34"/>
-      <source>Pixel blur radius (no effect in simple mode).</source>
-      <translation/>
+        <location filename="../../src/image/filter/blur.py"/>
+        <source>Pixel blur radius (no effect in simple mode).</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>image.filter.brightness_contrast</name>
     <message>
-      <location filename="../../src/image/filter/brightness_contrast.py" line="23"/>
-      <source>Brightness/Contrast</source>
-      <translation/>
+        <location filename="../../src/image/filter/brightness_contrast.py"/>
+        <source>Brightness/Contrast</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/brightness_contrast.py" line="24"/>
-      <source>Adjust image brightness and contrast.</source>
-      <translation/>
+        <location filename="../../src/image/filter/brightness_contrast.py"/>
+        <source>Adjust image brightness and contrast.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/brightness_contrast.py" line="26"/>
-      <source>Brightness:</source>
-      <translation/>
+        <location filename="../../src/image/filter/brightness_contrast.py"/>
+        <source>Brightness:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/brightness_contrast.py" line="27"/>
-      <source>Contrast</source>
-      <translation/>
+        <location filename="../../src/image/filter/brightness_contrast.py"/>
+        <source>Contrast</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>image.filter.filter</name>
     <message>
-      <location filename="../../src/image/filter/filter.py" line="34"/>
-      <source>Apply image filter</source>
-      <translation/>
+        <location filename="../../src/image/filter/filter.py"/>
+        <source>Apply image filter</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>image.filter.invert</name>
     <message>
-      <location filename="../../src/image/filter/invert.py" line="22"/>
-      <source>Invert</source>
-      <translation/>
+        <location filename="../../src/image/filter/invert.py"/>
+        <source>Invert</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/invert.py" line="23"/>
-      <source>Invert image colors</source>
-      <translation/>
+        <location filename="../../src/image/filter/invert.py"/>
+        <source>Invert image colors</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>image.filter.posterize</name>
     <message>
-      <location filename="../../src/image/filter/posterize.py" line="25"/>
-      <source>Posterize</source>
-      <translation/>
+        <location filename="../../src/image/filter/posterize.py"/>
+        <source>Posterize</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/posterize.py" line="26"/>
-      <source>Reduce color range by reducing image color bit count.</source>
-      <translation/>
+        <location filename="../../src/image/filter/posterize.py"/>
+        <source>Reduce color range by reducing image color bit count.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/posterize.py" line="27"/>
-      <source>Bit Count:</source>
-      <translation/>
+        <location filename="../../src/image/filter/posterize.py"/>
+        <source>Bit Count:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/posterize.py" line="28"/>
-      <source>Image color bits to preserve (1-8)</source>
-      <translation/>
+        <location filename="../../src/image/filter/posterize.py"/>
+        <source>Image color bits to preserve (1-8)</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>image.filter.rgb_color_balance</name>
     <message>
-      <location filename="../../src/image/filter/rgb_color_balance.py" line="24"/>
-      <source>RGBA Color Balance</source>
-      <translation/>
+        <location filename="../../src/image/filter/rgb_color_balance.py"/>
+        <source>RGBA Color Balance</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/rgb_color_balance.py" line="25"/>
-      <source>Adjust color balance</source>
-      <translation/>
+        <location filename="../../src/image/filter/rgb_color_balance.py"/>
+        <source>Adjust color balance</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/rgb_color_balance.py" line="27"/>
-      <source>Red</source>
-      <translation/>
+        <location filename="../../src/image/filter/rgb_color_balance.py"/>
+        <source>Red</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/rgb_color_balance.py" line="28"/>
-      <source>Green</source>
-      <translation/>
+        <location filename="../../src/image/filter/rgb_color_balance.py"/>
+        <source>Green</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/rgb_color_balance.py" line="29"/>
-      <source>Blue</source>
-      <translation/>
+        <location filename="../../src/image/filter/rgb_color_balance.py"/>
+        <source>Blue</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/rgb_color_balance.py" line="30"/>
-      <source>Alpha</source>
-      <translation/>
+        <location filename="../../src/image/filter/rgb_color_balance.py"/>
+        <source>Alpha</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>image.filter.saturation</name>
     <message>
-      <location filename="../../src/image/filter/saturation.py" line="27"/>
-      <location filename="../../src/image/filter/saturation.py" line="24"/>
-      <source>Saturation</source>
-      <translation/>
+        <location filename="../../src/image/filter/saturation.py"/>
+        <source>Saturation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/saturation.py" line="25"/>
-      <source>Adjust image color saturation</source>
-      <translation/>
+        <location filename="../../src/image/filter/saturation.py"/>
+        <source>Adjust image color saturation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/saturation.py" line="28"/>
-      <source>Saturation multiplier</source>
-      <translation/>
+        <location filename="../../src/image/filter/saturation.py"/>
+        <source>Saturation multiplier</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>image.filter.sharpen</name>
     <message>
-      <location filename="../../src/image/filter/sharpen.py" line="24"/>
-      <source>Sharpen</source>
-      <translation/>
+        <location filename="../../src/image/filter/sharpen.py"/>
+        <source>Sharpen</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/sharpen.py" line="25"/>
-      <source>Sharpen the image</source>
-      <translation/>
+        <location filename="../../src/image/filter/sharpen.py"/>
+        <source>Sharpen the image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/sharpen.py" line="27"/>
-      <source>Factor</source>
-      <translation/>
+        <location filename="../../src/image/filter/sharpen.py"/>
+        <source>Factor</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/filter/sharpen.py" line="28"/>
-      <source>Sharpness factor (1.0: no change)</source>
-      <translation/>
+        <location filename="../../src/image/filter/sharpen.py"/>
+        <source>Sharpness factor (1.0: no change)</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
-    <name>image.layer.layer</name>
-    <message>
-      <location filename="../../src/image/layers/layer.py" line="28"/>
-      <source>Showing layer failed</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../../src/image/layers/layer.py" line="29"/>
-      <source>Cannot show layer "{layer_name}", parent layer "{parent_name}" is locked and hidden.</source>
-      <translation/>
-    </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>image.layers.image_layer</name>
     <message>
-      <location filename="../../src/image/layers/image_layer.py" line="28"/>
-      <source>Layer cropping failed</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_layer.py"/>
+        <source>Layer cropping failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_layer.py" line="29"/>
-      <source>Layer has no image content.</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_layer.py"/>
+        <source>Layer has no image content.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_layer.py" line="30"/>
-      <source>Layer is already cropped to fit image content.</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_layer.py"/>
+        <source>Layer is already cropped to fit image content.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_layer.py" line="31"/>
-      <source>No layer content is selected.</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_layer.py"/>
+        <source>No layer content is selected.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_layer.py" line="32"/>
-      <source>Selection contains the entire layer.</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_layer.py"/>
+        <source>Selection contains the entire layer.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>image.layers.image_stack</name>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="46"/>
-      <source>new image</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>new image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="47"/>
-      <source>merge layers</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>merge layers</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="48"/>
-      <source>merge visible layers</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>merge visible layers</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="49"/>
-      <source>resize layer to image</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>resize layer to image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="50"/>
-      <source>cut/clear selection</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>cut/clear selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="51"/>
-      <source>resize image canvas</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>resize image canvas</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="52"/>
-      <source>crop layer to selection</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>crop layer to selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="53"/>
-      <source>Merged</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Merged</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="57"/>
-      <source>Paste layer</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Paste layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="64"/>
-      <source>Resizing image canvas failed</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Resizing image canvas failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="65"/>
-      <source>Image scaling failed</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Image scaling failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="66"/>
-      <source>Locked layer {layer_name} would be affected, unlock the layer before retrying</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Locked layer {layer_name} would be affected, unlock the layer before retrying</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="68"/>
-      <source>Locked layers {comma_separated_layer_names} would be affected, unlock these layers before retrying.</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Locked layers {comma_separated_layer_names} would be affected, unlock these layers before retrying.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="71"/>
-      <source>Crop to selection bounds failed</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Crop to selection bounds failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="72"/>
-      <source>Nothing is selected, select an area in the image first.</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Nothing is selected, select an area in the image first.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="73"/>
-      <source>The selection does not cover any part of the layer.</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>The selection does not cover any part of the layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="74"/>
-      <source>The selection does not cut out any part of the layer.</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>The selection does not cut out any part of the layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="75"/>
-      <source>All selected layers are either fully covered by the selection or do not intersect with it at all.</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>All selected layers are either fully covered by the selection or do not intersect with it at all.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="78"/>
-      <source>Error: tried to change a locked layer</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Error: tried to change a locked layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="79"/>
-      <source>Unlock the layer before attempting any changes.</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Unlock the layer before attempting any changes.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="81"/>
-      <source>Merging layers failed</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Merging layers failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="82"/>
-      <source>Only visible layers can be merged.</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Only visible layers can be merged.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="83"/>
-      <source>Flattening layer failed</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Flattening layer failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="84"/>
-      <source>Only visible layers can be flattened.</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Only visible layers can be flattened.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="85"/>
-      <source>The layer below is a layer group, flatten the group into a single image layer first.</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>The layer below is a layer group, flatten the group into a single image layer first.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="88"/>
-      <source>Layer "{layer_name}" is in a locked group</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Layer "{layer_name}" is in a locked group</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="89"/>
-      <source>Unlock the layer group before trying to change layers within the group.</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Unlock the layer group before trying to change layers within the group.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="91"/>
-      <source>Blocked action on main layer group</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Blocked action on main layer group</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="92"/>
-      <source>To edit the main layer group, edit its layers individually or use the options under the Image menu.</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>To edit the main layer group, edit its layers individually or use the options under the Image menu.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="95"/>
-      <source>Warning: cropping deleted layer(s)</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Warning: cropping deleted layer(s)</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="96"/>
-      <source>&lt;p&gt;Cropping the image deleted the following layers:&lt;/p&gt;&lt;ul&gt;{layer_names}&lt;/ul&gt;</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>&lt;p&gt;Cropping the image deleted the following layers:&lt;/p&gt;&lt;ul&gt;{layer_names}&lt;/ul&gt;</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="98"/>
-      <source>Hidden layers will be deleted</source>
-      <translation/>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Hidden layers will be deleted</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+    <message>
+        <location filename="../../src/image/layers/image_stack.py"/>
+        <source>Merging will delete the following hidden layers within groups: {layer_names}. Continue?</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>image.layers.selection_layer</name>
     <message>
-      <location filename="../../src/image/layers/selection_layer.py" line="31"/>
-      <source>Selection</source>
-      <translation/>
+        <location filename="../../src/image/layers/selection_layer.py"/>
+        <source>Selection</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>image.layers.text_layer</name>
     <message>
-      <location filename="../../src/image/layers/text_layer.py" line="25"/>
-      <source>Convert text layer to image?</source>
-      <translation/>
+        <location filename="../../src/image/layers/text_layer.py"/>
+        <source>Convert text layer to image?</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/text_layer.py" line="26"/>
-      <source>Attempted action: &lt;b&gt;{action_name}&lt;/b&gt;. To complete this action, layer "{layer_name}" must be converted to an image layer, and you will no longer be able to edit it with the text tool. Continue?</source>
-      <translation/>
+        <location filename="../../src/image/layers/text_layer.py"/>
+        <source>Attempted action: &lt;b&gt;{action_name}&lt;/b&gt;. To complete this action, layer "{layer_name}" must be converted to an image layer, and you will no longer be able to edit it with the text tool. Continue?</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/text_layer.py" line="30"/>
-      <source>Convert text layers to image?</source>
-      <translation/>
+        <location filename="../../src/image/layers/text_layer.py"/>
+        <source>Convert text layers to image?</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/text_layer.py" line="31"/>
-      <source>Attempted action: &lt;b&gt;{action_name}&lt;/b&gt;. To complete this action,{num_text_layers} text layers must be converted to image layers, and you will no longer be able to edit them with the text tool. Continue?</source>
-      <translation/>
+        <location filename="../../src/image/layers/text_layer.py"/>
+        <source>Attempted action: &lt;b&gt;{action_name}&lt;/b&gt;. To complete this action,{num_text_layers} text layers must be converted to image layers, and you will no longer be able to edit them with the text tool. Continue?</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>tools.base_tool</name>
     <message>
-      <location filename="../../src/tools/base_tool.py" line="39"/>
-      <source>{modifier_or_modifiers}+{left_mouse_icon} or {middle_mouse_icon}, drag: pan view</source>
-      <translation/>
+        <location filename="../../src/tools/base_tool.py"/>
+        <source>{modifier_or_modifiers}+{left_mouse_icon} or {middle_mouse_icon}, drag: pan view</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/base_tool.py" line="40"/>
-      <source>{v_scroll_icon}: zoom</source>
-      <translation/>
+        <location filename="../../src/tools/base_tool.py"/>
+        <source>{v_scroll_icon}: zoom</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/base_tool.py" line="41"/>
-      <source>{modifier_or_modifiers}: Fixed aspect ratio</source>
-      <translation/>
+        <location filename="../../src/tools/base_tool.py"/>
+        <source>{modifier_or_modifiers}: Fixed aspect ratio</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>tools.brush_tool</name>
     <message>
-      <location filename="../../src/tools/mypaint_brush_tool.py" line="34"/>
-      <source>Brush</source>
-      <translation/>
+        <location filename="../../src/tools/brush_tool.py"/>
+        <source>{modifier_or_modifiers}+{left_mouse_icon}: draw line</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/mypaint_brush_tool.py" line="35"/>
-      <source>Paint into the image</source>
-      <translation/>
+        <location filename="../../src/tools/brush_tool.py"/>
+        <source>{modifier_or_modifiers}: fixed angle</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/mypaint_brush_tool.py" line="36"/>
-      <source>{left_mouse_icon}: draw</source>
-      <translation/>
+        <location filename="../../src/tools/mypaint_brush_tool.py"/>
+        <source>Brush</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/brush_tool.py" line="40"/>
-      <source>{modifier_or_modifiers}+{left_mouse_icon}: draw line</source>
-      <translation/>
+        <location filename="../../src/tools/mypaint_brush_tool.py"/>
+        <source>Paint into the image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/brush_tool.py" line="41"/>
-      <source>{modifier_or_modifiers}: fixed angle</source>
-      <translation/>
+        <location filename="../../src/tools/mypaint_brush_tool.py"/>
+        <source>{left_mouse_icon}: draw</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>tools.clone_stamp_tool</name>
     <message>
-      <location filename="../../src/tools/clone_stamp_tool.py" line="33"/>
-      <source>Clone Stamp</source>
-      <translation/>
+        <location filename="../../src/tools/clone_stamp_tool.py"/>
+        <source>Clone Stamp</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/clone_stamp_tool.py" line="34"/>
-      <source>Copy image content from one area to another</source>
-      <translation/>
+        <location filename="../../src/tools/clone_stamp_tool.py"/>
+        <source>Copy image content from one area to another</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/clone_stamp_tool.py" line="35"/>
-      <source>{right_mouse_icon}: set source - {left_mouse_icon}: draw</source>
-      <translation/>
+        <location filename="../../src/tools/clone_stamp_tool.py"/>
+        <source>{right_mouse_icon}: set source - {left_mouse_icon}: draw</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/clone_stamp_tool.py" line="38"/>
-      <source>Offset:</source>
-      <translation/>
+        <location filename="../../src/tools/clone_stamp_tool.py"/>
+        <source>Offset:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/clone_stamp_tool.py" line="39"/>
-      <source>Position:</source>
-      <translation/>
+        <location filename="../../src/tools/clone_stamp_tool.py"/>
+        <source>Position:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/clone_stamp_tool.py" line="40"/>
-      <source>Update selection only</source>
-      <translation/>
+        <location filename="../../src/tools/clone_stamp_tool.py"/>
+        <source>Update selection only</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>tools.draw_tool</name>
     <message>
-      <location filename="../../src/tools/draw_tool.py" line="29"/>
-      <source>Draw</source>
-      <translation/>
+        <location filename="../../src/tools/draw_tool.py"/>
+        <source>Draw</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/draw_tool.py" line="30"/>
-      <source>Draw into the image</source>
-      <translation/>
+        <location filename="../../src/tools/draw_tool.py"/>
+        <source>Draw into the image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/draw_tool.py" line="31"/>
-      <source>{left_mouse_icon}: draw</source>
-      <translation/>
+        <location filename="../../src/tools/draw_tool.py"/>
+        <source>{left_mouse_icon}: draw</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>tools.eraser_tool</name>
     <message>
-      <location filename="../../src/tools/eraser_tool.py" line="28"/>
-      <source>Erase</source>
-      <translation/>
+        <location filename="../../src/tools/eraser_tool.py"/>
+        <source>Erase</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/eraser_tool.py" line="29"/>
-      <source>Erase image layer content</source>
-      <translation/>
+        <location filename="../../src/tools/eraser_tool.py"/>
+        <source>Erase image layer content</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/eraser_tool.py" line="30"/>
-      <source>{left_mouse_icon}: erase</source>
-      <translation/>
+        <location filename="../../src/tools/eraser_tool.py"/>
+        <source>{left_mouse_icon}: erase</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>tools.eyedropper_tool</name>
     <message>
-      <location filename="../../src/tools/eyedropper_tool.py" line="30"/>
-      <source>Color Picker</source>
-      <translation/>
+        <location filename="../../src/tools/eyedropper_tool.py"/>
+        <source>Color Picker</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/eyedropper_tool.py" line="31"/>
-      <source>Select a brush color</source>
-      <translation/>
+        <location filename="../../src/tools/eyedropper_tool.py"/>
+        <source>Select a brush color</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/eyedropper_tool.py" line="32"/>
-      <source>{left_mouse_icon}: pick color - </source>
-      <translation/>
+        <location filename="../../src/tools/eyedropper_tool.py"/>
+        <source>{left_mouse_icon}: pick color - </source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>tools.fill_tool</name>
     <message>
-      <location filename="../../src/tools/fill_tool.py" line="35"/>
-      <source>Color fill</source>
-      <translation/>
+        <location filename="../../src/tools/fill_tool.py"/>
+        <source>Color fill</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/fill_tool.py" line="36"/>
-      <source>Fill areas with solid colors</source>
-      <translation/>
+        <location filename="../../src/tools/fill_tool.py"/>
+        <source>Fill areas with solid colors</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/fill_tool.py" line="37"/>
-      <source>{left_mouse_icon}: fill</source>
-      <translation/>
+        <location filename="../../src/tools/fill_tool.py"/>
+        <source>{left_mouse_icon}: fill</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>tools.filter_tool</name>
     <message>
-      <location filename="../../src/tools/filter_tool.py" line="38"/>
-      <source>Filter Brush</source>
-      <translation/>
+        <location filename="../../src/tools/filter_tool.py"/>
+        <source>Filter Brush</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/filter_tool.py" line="39"/>
-      <source>Draw to apply an image filter</source>
-      <translation/>
+        <location filename="../../src/tools/filter_tool.py"/>
+        <source>Draw to apply an image filter</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/filter_tool.py" line="40"/>
-      <source>{left_mouse_icon}: filter</source>
-      <translation/>
+        <location filename="../../src/tools/filter_tool.py"/>
+        <source>{left_mouse_icon}: filter</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>tools.generation_area_tool</name>
     <message>
-      <location filename="../../src/tools/generation_area_tool.py" line="36"/>
-      <source>Set Image Generation Area</source>
-      <translation/>
+        <location filename="../../src/tools/generation_area_tool.py"/>
+        <source>Set Image Generation Area</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/generation_area_tool.py" line="37"/>
-      <source>Select an image region for AI image generation</source>
-      <translation/>
+        <location filename="../../src/tools/generation_area_tool.py"/>
+        <source>Select an image region for AI image generation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/generation_area_tool.py" line="38"/>
-      <source>{left_mouse_icon}: move area - {right_mouse_icon}: resize area</source>
-      <translation/>
+        <location filename="../../src/tools/generation_area_tool.py"/>
+        <source>{left_mouse_icon}: move area - {right_mouse_icon}: resize area</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/generation_area_tool.py" line="39"/>
-      <source>{left_mouse_icon}: move area, or drag a handle to resize - {right_mouse_icon}: resize area</source>
-      <translation/>
+        <location filename="../../src/tools/generation_area_tool.py"/>
+        <source>{left_mouse_icon}: move area, or drag a handle to resize - {right_mouse_icon}: resize area</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/generation_area_tool.py" line="41"/>
-      <source>{modifier_or_modifiers}: free aspect ratio on corner handles, fixed aspect ratio with {right_mouse_icon}</source>
-      <translation/>
+        <location filename="../../src/tools/generation_area_tool.py"/>
+        <source>{modifier_or_modifiers}: free aspect ratio on corner handles, fixed aspect ratio with {right_mouse_icon}</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>tools.lasso_selection_tool</name>
     <message>
-      <location filename="../../src/tools/free_selection_tool.py" line="33"/>
-      <source>Free selection</source>
-      <translation/>
+        <location filename="../../src/tools/free_selection_tool.py"/>
+        <source>Free selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/free_selection_tool.py" line="34"/>
-      <source>Select or deselect polygonal areas</source>
-      <translation/>
+        <location filename="../../src/tools/free_selection_tool.py"/>
+        <source>Select or deselect polygonal areas</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/free_selection_tool.py" line="35"/>
-      <source>{left_mouse_icon}: add or move point&lt;br/&gt;{enter_key} or {left_mouse_icon}+first point: finish selection&lt;br/&gt;{escape_key}: cancel selection&lt;br/&gt;{right_mouse_icon}: add, move or remove context pin</source>
-      <translation/>
+        <location filename="../../src/tools/free_selection_tool.py"/>
+        <source>{left_mouse_icon}: add or move point&lt;br/&gt;{enter_key} or {left_mouse_icon}+first point: finish selection&lt;br/&gt;{escape_key}: cancel selection&lt;br/&gt;{right_mouse_icon}: add, move or remove context pin</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>tools.layer_transform_tool</name>
     <message>
-      <location filename="../../src/tools/layer_transform_tool.py" line="34"/>
-      <source>Transform Layers</source>
-      <translation/>
+        <location filename="../../src/tools/layer_transform_tool.py"/>
+        <source>Transform Layers</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/layer_transform_tool.py" line="35"/>
-      <source>Move, scale, or rotate the active layer.</source>
-      <translation/>
+        <location filename="../../src/tools/layer_transform_tool.py"/>
+        <source>Move, scale, or rotate the active layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/layer_transform_tool.py" line="36"/>
-      <source>{left_mouse_icon}: select layer&lt;br/&gt;{left_mouse_icon}, drag: move layer</source>
-      <translation/>
+        <location filename="../../src/tools/layer_transform_tool.py"/>
+        <source>{left_mouse_icon}: select layer&lt;br/&gt;{left_mouse_icon}, drag: move layer</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>tools.selection_fill_tool</name>
     <message>
-      <location filename="../../src/tools/selection_fill_tool.py" line="36"/>
-      <source>Selection fill</source>
-      <translation/>
+        <location filename="../../src/tools/selection_fill_tool.py"/>
+        <source>Selection fill</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/selection_fill_tool.py" line="37"/>
-      <source>Select areas with solid colors</source>
-      <translation/>
+        <location filename="../../src/tools/selection_fill_tool.py"/>
+        <source>Select areas with solid colors</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/selection_fill_tool.py" line="38"/>
-      <source>{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin</source>
-      <translation/>
+        <location filename="../../src/tools/selection_fill_tool.py"/>
+        <source>{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>tools.selection_tool</name>
     <message>
-      <location filename="../../src/tools/selection_brush_tool.py" line="33"/>
-      <source>Selection Brush</source>
-      <translation/>
+        <location filename="../../src/tools/selection_brush_tool.py"/>
+        <source>Selection Brush</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/selection_brush_tool.py" line="34"/>
-      <source>Draw to select areas for editing or inpainting.</source>
-      <translation/>
+        <location filename="../../src/tools/selection_brush_tool.py"/>
+        <source>Draw to select areas for editing or inpainting.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/selection_brush_tool.py" line="35"/>
-      <source>{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin</source>
-      <translation/>
+        <location filename="../../src/tools/selection_brush_tool.py"/>
+        <source>{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>tools.shape_selection_tool</name>
     <message>
-      <location filename="../../src/tools/shape_selection_tool.py" line="33"/>
-      <source>Rectangle/Ellipse selection</source>
-      <translation/>
+        <location filename="../../src/tools/shape_selection_tool.py"/>
+        <source>Rectangle/Ellipse selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/shape_selection_tool.py" line="34"/>
-      <source>Select or deselect rectangles or ellipses</source>
-      <translation/>
+        <location filename="../../src/tools/shape_selection_tool.py"/>
+        <source>Select or deselect rectangles or ellipses</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/shape_selection_tool.py" line="35"/>
-      <source>{left_mouse_icon}, drag: select - {right_mouse_icon}: add, move or remove context pin</source>
-      <translation/>
+        <location filename="../../src/tools/shape_selection_tool.py"/>
+        <source>{left_mouse_icon}, drag: select - {right_mouse_icon}: add, move or remove context pin</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>tools.shape_tool</name>
     <message>
-      <location filename="../../src/tools/shape_tool.py" line="36"/>
-      <source>Draw Shapes</source>
-      <translation/>
+        <location filename="../../src/tools/shape_tool.py"/>
+        <source>Draw Shapes</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/shape_tool.py" line="37"/>
-      <source>Create rectangles, ellipses, and other polygons</source>
-      <translation/>
+        <location filename="../../src/tools/shape_tool.py"/>
+        <source>Create rectangles, ellipses, and other polygons</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/shape_tool.py" line="38"/>
-      <source>{left_mouse_icon}, drag: draw shape</source>
-      <translation/>
+        <location filename="../../src/tools/shape_tool.py"/>
+        <source>{left_mouse_icon}, drag: draw shape</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>tools.smudge_tool</name>
     <message>
-      <location filename="../../src/tools/smudge_tool.py" line="31"/>
-      <source>Smudge</source>
-      <translation/>
+        <location filename="../../src/tools/smudge_tool.py"/>
+        <source>Smudge</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/smudge_tool.py" line="32"/>
-      <source>Smudge image content</source>
-      <translation/>
+        <location filename="../../src/tools/smudge_tool.py"/>
+        <source>Smudge image content</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/smudge_tool.py" line="33"/>
-      <source>{left_mouse_icon}: smudge</source>
-      <translation/>
+        <location filename="../../src/tools/smudge_tool.py"/>
+        <source>{left_mouse_icon}: smudge</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>tools.text_tool</name>
     <message>
-      <location filename="../../src/tools/text_tool.py" line="40"/>
-      <source>Text</source>
-      <translation/>
+        <location filename="../../src/tools/text_tool.py"/>
+        <source>Text</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/text_tool.py" line="41"/>
-      <source>Add text to a text layer</source>
-      <translation/>
+        <location filename="../../src/tools/text_tool.py"/>
+        <source>Add text to a text layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/tools/text_tool.py" line="42"/>
-      <source>{left_mouse_icon}: select text layer&lt;br/&gt;{left_mouse_icon}, drag: create new layer or move active</source>
-      <translation/>
+        <location filename="../../src/tools/text_tool.py"/>
+        <source>{left_mouse_icon}: select text layer&lt;br/&gt;{left_mouse_icon}, drag: create new layer or move active</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.generated_image_selector</name>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="53"/>
-      <source>Zoom to changes</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Zoom to changes</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="54"/>
-      <source>Show selection</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Show selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="55"/>
-      <source>Cancel</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Cancel</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="56"/>
-      <source>Close without choosing. These options stay available to re-open.</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Close without choosing. These options stay available to re-open.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="57"/>
-      <source>Previous</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Previous</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="58"/>
-      <source>Toggle zoom</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Toggle zoom</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="59"/>
-      <source>Next</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Next</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="61"/>
-      <source>Original image content</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Original image content</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="62"/>
-      <source>Option {index}</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Option {index}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="63"/>
-      <source>Loading...</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Loading...</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="65"/>
-      <source>Select this option</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Select this option</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="66"/>
-      <source>Save to new file</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Save to new file</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="67"/>
-      <source>Send to new layer</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Send to new layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="69"/>
-      <source>Saved image option to {image_path}</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Saved image option to {image_path}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="70"/>
-      <source>Created new layer "{layer_name}"</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Created new layer "{layer_name}"</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="71"/>
-      <source>Cancelled saving image option to file.</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Cancelled saving image option to file.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="73"/>
-      <source>Failed to insert into layer "{layer_name}"</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Failed to insert into layer "{layer_name}"</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="74"/>
-      <source>Changes were blocked because the layer is locked. </source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Changes were blocked because the layer is locked. </source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="75"/>
-      <source>Changes were blocked because the layer is hidden. </source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Changes were blocked because the layer is hidden. </source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="76"/>
-      <source>The active layer is not an image layer, image content cannot be inserted. </source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>The active layer is not an image layer, image content cannot be inserted. </source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="77"/>
-      <source>Image content was added as new layer "{new_layer_name}"</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Image content was added as new layer "{new_layer_name}"</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="79"/>
-      <source>Select from generated image options.</source>
-      <translation/>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Select from generated image options.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="85"/>
-      <source>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>
                            &lt;table&gt;
                              &lt;tr&gt;
                                &lt;td&gt;
@@ -6560,11 +5518,11 @@ Please remember to include the traceback from the Details expander.</source>
                               &lt;/tr&gt;
                             &lt;/table&gt;
                            </source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="107"/>
-      <source>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>
                            &lt;table&gt;
                              &lt;tr&gt;
                                &lt;td&gt;
@@ -6586,2897 +5544,3232 @@ Please remember to include the traceback from the Details expander.</source>
                               &lt;/tr&gt;
                             &lt;/table&gt;
                            </source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.input_fields.fill_style_combo_box</name>
     <message>
-      <location filename="../../src/ui/input_fields/fill_style_combo_box.py" line="20"/>
-      <source>Solid</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
+        <source>Solid</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/fill_style_combo_box.py" line="21"/>
-      <source>None</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
+        <source>None</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/fill_style_combo_box.py" line="22"/>
-      <source>Dithered, 94%</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
+        <source>Dithered, 94%</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/fill_style_combo_box.py" line="23"/>
-      <source>Dithered, 88%</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
+        <source>Dithered, 88%</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/fill_style_combo_box.py" line="24"/>
-      <source>Dithered, 62%</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
+        <source>Dithered, 62%</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/fill_style_combo_box.py" line="25"/>
-      <source>Dithered, 50%</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
+        <source>Dithered, 50%</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/fill_style_combo_box.py" line="26"/>
-      <source>Dithered, 38%</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
+        <source>Dithered, 38%</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/fill_style_combo_box.py" line="27"/>
-      <source>Dithered, 12%</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
+        <source>Dithered, 12%</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/fill_style_combo_box.py" line="28"/>
-      <source>Dithered, 6%</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
+        <source>Dithered, 6%</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/fill_style_combo_box.py" line="29"/>
-      <source>Horizontal lines</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
+        <source>Diagonal lines 1</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/fill_style_combo_box.py" line="30"/>
-      <source>Vertical lines</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
+        <source>Diagonal lines 2</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/fill_style_combo_box.py" line="31"/>
-      <source>Crossed lines</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
+        <source>Horizontal lines</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/fill_style_combo_box.py" line="32"/>
-      <source>Diagonal lines 1</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
+        <source>Vertical lines</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/fill_style_combo_box.py" line="33"/>
-      <source>Diagonal lines 2</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
+        <source>Crossed lines</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/fill_style_combo_box.py" line="34"/>
-      <source>Diagonal crossed lines</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>
+        <source>Diagonal crossed lines</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.input_fields.geometry_block</name>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="34"/>
-      <source>X</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>X</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="35"/>
-      <source>Y</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>Y</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="36"/>
-      <source>W</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>W</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="37"/>
-      <source>H</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>H</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="38"/>
-      <source>Scale X</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>Scale X</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="39"/>
-      <source>Scale Y</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>Scale Y</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="40"/>
-      <source>Angle</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>Angle</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="41"/>
-      <source>Horizontal position</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>Horizontal position</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="42"/>
-      <source>Vertical position</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>Vertical position</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="43"/>
-      <source>Width</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>Width</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="44"/>
-      <source>Height</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>Height</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="45"/>
-      <source>Horizontal scale</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>Horizontal scale</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="46"/>
-      <source>Vertical scale</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>Vertical scale</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="47"/>
-      <source>Rotation angle</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>Rotation angle</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="48"/>
-      <source>Lock the width:height ratio</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>Lock the width:height ratio</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="49"/>
-      <source>Lock the width:height ratio ({modifier} locks it temporarily)</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>Lock the width:height ratio ({modifier} locks it temporarily)</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="50"/>
-      <source>{description}
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>{description}
 Keys: {decrease} / {increase}</source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="51"/>
-      <source> px</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source> px</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="52"/>
-      <source> deg</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source> deg</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/geometry_block.py" line="53"/>
-      <source>x</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>x</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.input_fields.number_field</name>
     <message>
-      <location filename="../../src/ui/input_fields/number_field.py" line="34"/>
-      <source>Pen pressure changes this value</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/number_field.py"/>
+        <source>Pen pressure changes this value</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.input_fields.pen_join_style_combo_box</name>
     <message>
-      <location filename="../../src/ui/input_fields/pen_join_style_combo_box.py" line="20"/>
-      <source>Round</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/pen_join_style_combo_box.py"/>
+        <source>Round</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/pen_join_style_combo_box.py" line="21"/>
-      <source>Bevel</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/pen_join_style_combo_box.py"/>
+        <source>Bevel</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/pen_join_style_combo_box.py" line="22"/>
-      <source>Miter</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/pen_join_style_combo_box.py"/>
+        <source>Miter</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.input_fields.pen_style_combo_box</name>
     <message>
-      <location filename="../../src/ui/input_fields/pen_style_combo_box.py" line="23"/>
-      <source>Solid</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/pen_style_combo_box.py"/>
+        <source>Solid</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/pen_style_combo_box.py" line="24"/>
-      <source>Dash</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/pen_style_combo_box.py"/>
+        <source>Dash</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/pen_style_combo_box.py" line="25"/>
-      <source>Dotted</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/pen_style_combo_box.py"/>
+        <source>Dotted</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/pen_style_combo_box.py" line="26"/>
-      <source>Dash-dot</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/pen_style_combo_box.py"/>
+        <source>Dash-dot</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/pen_style_combo_box.py" line="27"/>
-      <source>Dash-dot-dot</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/pen_style_combo_box.py"/>
+        <source>Dash-dot-dot</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/pen_style_combo_box.py" line="28"/>
-      <source>Custom pattern</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/pen_style_combo_box.py"/>
+        <source>Custom pattern</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.input_fields.pressure_curve_input</name>
     <message>
-      <location filename="../../src/ui/input_fields/pressure_curve_input.py" line="21"/>
-      <source>Input: {input_fraction}, Output: {output_fraction}</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/pressure_curve_input.py"/>
+        <source>Input: {input_fraction}, Output: {output_fraction}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/pressure_curve_input.py" line="22"/>
-      <source>Reset</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/pressure_curve_input.py"/>
+        <source>Reset</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.input_fields.seed_value_spinbox</name>
     <message>
-      <location filename="../../src/ui/input_fields/seed_value_spinbox.py" line="21"/>
-      <source>Reuse last seed value</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/seed_value_spinbox.py"/>
+        <source>Reuse last seed value</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/seed_value_spinbox.py" line="22"/>
-      <source>Use a random seed</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/seed_value_spinbox.py"/>
+        <source>Use a random seed</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.input_fields.selection_mode_bar</name>
     <message>
-      <location filename="../../src/ui/input_fields/selection_mode_bar.py" line="26"/>
-      <source>Replace</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
+        <source>Replace</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/selection_mode_bar.py" line="27"/>
-      <source>Add</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
+        <source>Add</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/selection_mode_bar.py" line="28"/>
-      <source>Subtract</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
+        <source>Subtract</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/selection_mode_bar.py" line="29"/>
-      <source>Intersect</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
+        <source>Intersect</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/selection_mode_bar.py" line="38"/>
-      <source>Discard the selection, and select only new areas</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
+        <source>Discard the selection, and select only new areas</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/selection_mode_bar.py" line="39"/>
-      <source>Add new areas to the selection</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
+        <source>Add new areas to the selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/selection_mode_bar.py" line="40"/>
-      <source>Remove new areas from the selection</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
+        <source>Remove new areas from the selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/selection_mode_bar.py" line="41"/>
-      <source>Keep only the part of the selection inside new areas</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
+        <source>Keep only the part of the selection inside new areas</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/selection_mode_bar.py" line="43"/>
-      <source>{description} (hold {keys})</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/selection_mode_bar.py"/>
+        <source>{description} (hold {keys})</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.input_fields.size_field</name>
     <message>
-      <location filename="../../src/ui/input_fields/size_field.py" line="20"/>
-      <source>W:</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/size_field.py"/>
+        <source>W:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/input_fields/size_field.py" line="21"/>
-      <source>H:</source>
-      <translation/>
+        <location filename="../../src/ui/input_fields/size_field.py"/>
+        <source>H:</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.modal.color_dialog</name>
     <message>
-      <location filename="../../src/ui/modal/color_dialog.py" line="20"/>
-      <source>Select Color</source>
-      <translation/>
+        <location filename="../../src/ui/modal/color_dialog.py"/>
+        <source>Select Color</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.modal.image_filter_modal</name>
     <message>
-      <location filename="../../src/ui/modal/image_filter_modal.py" line="23"/>
-      <source>Change selected areas only</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_filter_modal.py"/>
+        <source>Change selected areas only</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_filter_modal.py" line="24"/>
-      <source>Change active layer only</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_filter_modal.py"/>
+        <source>Change active layer only</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_filter_modal.py" line="25"/>
-      <source>Cancel</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_filter_modal.py"/>
+        <source>Cancel</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_filter_modal.py" line="26"/>
-      <source>Apply</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_filter_modal.py"/>
+        <source>Apply</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.modal.image_scale_modal</name>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="54"/>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="35"/>
-      <source>Scale image</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>Scale image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="37"/>
-      <source>Image scaling mode:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>Image scaling mode:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="38"/>
-      <source>Basic image scaling</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>Basic image scaling</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="39"/>
-      <source>Image generator scaling modes</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>Image generator scaling modes</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="40"/>
-      <source>Advanced AI upscaling</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>Advanced AI upscaling</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="42"/>
-      <source>Scaling algorithm:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>Scaling algorithm:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="43"/>
-      <source>Upscale method:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>Upscale method:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="44"/>
-      <source>Assisting upscale method:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>Assisting upscale method:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="46"/>
-      <source>Width:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>Width:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="47"/>
-      <source>New image width in pixels</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>New image width in pixels</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="48"/>
-      <source>Height:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>Height:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="49"/>
-      <source>New image height in pixels</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>New image height in pixels</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="50"/>
-      <source>Width scale:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>Width scale:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="51"/>
-      <source>New image width (as multiplier)</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>New image width (as multiplier)</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="52"/>
-      <source>Height scale:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>Height scale:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="53"/>
-      <source>New image height (as multiplier)</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>New image height (as multiplier)</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="55"/>
-      <source>Cancel</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>Cancel</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="57"/>
-      <source>Tile ControlNet model:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>Tile ControlNet model:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="58"/>
-      <source>An optional ControlNet Tile model for stabilizing Stable Diffusion upscaling.</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>An optional ControlNet Tile model for stabilizing Stable Diffusion upscaling.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="59"/>
-      <source>Tile ControlNet Preprocessor:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>Tile ControlNet Preprocessor:</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.modal.login_modal</name>
     <message>
-      <location filename="../../src/ui/modal/login_modal.py" line="21"/>
-      <source>Enter image generation server credentials:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/login_modal.py"/>
+        <source>Enter image generation server credentials:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/login_modal.py" line="22"/>
-      <source>Username:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/login_modal.py"/>
+        <source>Username:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/login_modal.py" line="23"/>
-      <source>Password:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/login_modal.py"/>
+        <source>Password:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/login_modal.py" line="24"/>
-      <source>Log In</source>
-      <translation/>
+        <location filename="../../src/ui/modal/login_modal.py"/>
+        <source>Log In</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/login_modal.py" line="25"/>
-      <source>Cancel</source>
-      <translation/>
+        <location filename="../../src/ui/modal/login_modal.py"/>
+        <source>Cancel</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/login_modal.py" line="27"/>
-      <source>Username and password cannot be empty.</source>
-      <translation/>
+        <location filename="../../src/ui/modal/login_modal.py"/>
+        <source>Username and password cannot be empty.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/login_modal.py" line="28"/>
-      <source>Unknown error, try again.</source>
-      <translation/>
+        <location filename="../../src/ui/modal/login_modal.py"/>
+        <source>Unknown error, try again.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.modal.modal_utils</name>
     <message>
-      <location filename="../../src/ui/modal/modal_utils.py" line="31"/>
-      <source>Open Image</source>
-      <translation/>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>Open Image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/modal_utils.py" line="32"/>
-      <source>Open Images as Layers</source>
-      <translation/>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>Open Images as Layers</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/modal_utils.py" line="33"/>
-      <source>Save Image</source>
-      <translation/>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>Save Image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/modal_utils.py" line="34"/>
-      <source>Open failed</source>
-      <translation/>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>Open failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/modal_utils.py" line="36"/>
-      <source>Images and IntraPaint projects</source>
-      <translation/>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>Images and IntraPaint projects</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/modal_utils.py" line="37"/>
-      <source>Images</source>
-      <translation/>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>Images</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/modal_utils.py" line="39"/>
-      <source>Don't show this again</source>
-      <translation/>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>Don't show this again</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/modal_utils.py" line="40"/>
-      <source>Remember my choice</source>
-      <translation/>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>Remember my choice</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.modal.new_image_modal</name>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="24"/>
-      <source>Create new image</source>
-      <translation/>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>Create new image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="25"/>
-      <source>Width:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>Width:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="26"/>
-      <source>New image width in pixels</source>
-      <translation/>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>New image width in pixels</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="27"/>
-      <source>Height:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>Height:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="28"/>
-      <source>New image height in pixels</source>
-      <translation/>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>New image height in pixels</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="29"/>
-      <source>Create</source>
-      <translation/>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>Create</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="30"/>
-      <source>Cancel</source>
-      <translation/>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>Cancel</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="31"/>
-      <source>Background Color:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>Background Color:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="33"/>
-      <source>transparent</source>
-      <translation/>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>transparent</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="34"/>
-      <source>white</source>
-      <translation/>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>white</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="35"/>
-      <source>black</source>
-      <translation/>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>black</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="36"/>
-      <source>custom</source>
-      <translation/>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>custom</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="38"/>
-      <source>Select background color</source>
-      <translation/>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>Select background color</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.modal.resize_canvas_modal</name>
     <message>
-      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="38"/>
-      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="24"/>
-      <source>Resize image canvas</source>
-      <translation/>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>Resize image canvas</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="25"/>
-      <source>Width:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>Width:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="26"/>
-      <source>New image width in pixels</source>
-      <translation/>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>New image width in pixels</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="27"/>
-      <source>Height:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>Height:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="28"/>
-      <source>New image height in pixels</source>
-      <translation/>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>New image height in pixels</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="29"/>
-      <source>X Offset:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>X Offset:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="30"/>
-      <source>Distance in pixels from the left edge of the resized canvas to the left edge of the current image content</source>
-      <translation/>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>Distance in pixels from the left edge of the resized canvas to the left edge of the current image content</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="32"/>
-      <source>Y Offset:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>Y Offset:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="33"/>
-      <source>Distance in pixels from the top edge of the resized canvas to the top edge of the current image content</source>
-      <translation/>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>Distance in pixels from the top edge of the resized canvas to the top edge of the current image content</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="36"/>
-      <source>Center</source>
-      <translation/>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>Center</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="37"/>
-      <source>Cancel</source>
-      <translation/>
+        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
+        <source>Cancel</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.modal.settings_modal</name>
     <message>
-      <location filename="../../src/ui/modal/settings_modal.py" line="36"/>
-      <source>Settings</source>
-      <translation/>
+        <location filename="../../src/ui/modal/settings_modal.py"/>
+        <source>Settings</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/settings_modal.py" line="37"/>
-      <source>Settings file locations:</source>
-      <translation/>
+        <location filename="../../src/ui/modal/settings_modal.py"/>
+        <source>Settings file locations:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/settings_modal.py" line="38"/>
-      <source>IntraPaint saves its settings to these files. This section is only for reference, their locations cannot be changed here.</source>
-      <translation/>
+        <location filename="../../src/ui/modal/settings_modal.py"/>
+        <source>IntraPaint saves its settings to these files. This section is only for reference, their locations cannot be changed here.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/settings_modal.py" line="40"/>
-      <source>Cancel</source>
-      <translation/>
+        <location filename="../../src/ui/modal/settings_modal.py"/>
+        <source>Cancel</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/settings_modal.py" line="41"/>
-      <source>Save</source>
-      <translation/>
+        <location filename="../../src/ui/modal/settings_modal.py"/>
+        <source>Save</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.controlnet_panel</name>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="42"/>
-      <source>ControlNet Unit {unit_number}</source>
-      <translation/>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>ControlNet</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="43"/>
-      <source>Enable ControlNet Unit</source>
-      <translation/>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>WebUI</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="44"/>
-      <source>Low VRAM</source>
-      <translation/>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>ComfyUI</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="45"/>
-      <source>Pixel Perfect</source>
-      <translation/>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Reset this unit to its default settings</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="46"/>
-      <source>Control Image:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>{unit_number} {control_type}</source>
+        <comment>ControlNet unit tab title</comment>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="47"/>
-      <source>Set Control Image</source>
-      <translation/>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Unit {unit_number}: on</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="48"/>
-      <source>Preview Preprocessor</source>
-      <translation/>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Unit {unit_number}: off</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="49"/>
-      <source>Generation Area as Control</source>
-      <translation/>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Enabled</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="50"/>
-      <source>Control Type:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Apply this ControlNet unit when generating images</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="51"/>
-      <source>Preprocessor:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Edit settings</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="52"/>
-      <source>Control Model:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Hide settings</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="53"/>
-      <source>Control Weight:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Change the unit's settings without turning it on</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="54"/>
-      <source>Starting Control Step:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Unit</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="55"/>
-      <source>Ending Control Step:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Control image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="56"/>
-      <source>A multiplier that controls how strongly the ControlNet unit will affect image generation.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Preprocessor</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="58"/>
-      <source>The step in the image generation process where the ControlNet unit will be enabled, as a fraction of the total step count.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Strength</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="60"/>
-      <source>The step in the image generation process where the ControlNet unit will be disabled, as a fraction of the total step count.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Generation area</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Image file</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Use the generation area's content as the control image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Use an image file as the control image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Image file path</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>...</source>
+        <comment>Button that opens a file picker</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Choose a control image file</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Type</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Model</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Preview</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Show what the preprocessor makes of the control image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Low VRAM</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Pixel perfect</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Weight</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Start</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>End</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>generation area</source>
+        <comment>Control image section summary</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>no image</source>
+        <comment>Control image section summary</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>{preprocessor}, {model}</source>
+        <comment>Preprocessor section summary</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>weight {weight}, steps {start}-{end}</source>
+        <comment>Strength section summary</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>{control_type} · {preprocessor}</source>
+        <comment>First line of a disabled unit's summary</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Weight {weight}, steps {start}-{end}</source>
+        <comment>A disabled unit's summary</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Image file: {file_name}</source>
+        <comment>A disabled unit's summary</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Control image: generation area</source>
+        <comment>A disabled unit's summary</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Control Weight:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Starting Control Step:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Ending Control Step:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>A multiplier that controls how strongly the ControlNet unit will affect image generation.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>The step in the image generation process where the ControlNet unit will be enabled, as a fraction of the total step count.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>The step in the image generation process where the ControlNet unit will be disabled, as a fraction of the total step count.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.panel.generators.comfyui_advanced_controls</name>
     <message>
-      <location filename="../../src/ui/panel/generators/comfyui_advanced_controls.py" line="20"/>
-      <source>Tiled VAE encoding</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/comfyui_advanced_controls.py"/>
+        <source>Model loading</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/comfyui_advanced_controls.py" line="21"/>
-      <source>{config} config</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/comfyui_advanced_controls.py"/>
+        <source>Encoding</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/comfyui_advanced_controls.py" line="22"/>
-      <source>inpainting model</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/comfyui_advanced_controls.py"/>
+        <source>Tiled VAE encoding</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/comfyui_advanced_controls.py" line="23"/>
-      <source>tiled VAE {size}</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/comfyui_advanced_controls.py"/>
+        <source>{config} config</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+    <message>
+        <location filename="../../src/ui/panel/generators/comfyui_advanced_controls.py"/>
+        <source>inpainting model</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/comfyui_advanced_controls.py"/>
+        <source>tiled VAE {size}</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.panel.generators.glid_panel</name>
     <message>
-      <location filename="../../src/ui/panel/generators/glid_panel.py" line="22"/>
-      <source>Start inpainting</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/glid_panel.py"/>
+        <source>Start inpainting</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.generators.sd_webui_panel</name>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="53"/>
-      <source>Image generation</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Image generation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="54"/>
-      <source>WebUI</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>WebUI</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="55"/>
-      <source>ComfyUI</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>ComfyUI</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="57"/>
-      <source>Edit mode</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Prompt</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="58"/>
-      <source>Prompt</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Mask</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="59"/>
-      <source>Inpainting</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Sampling</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="60"/>
-      <source>Output</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Size and batch</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="61"/>
-      <source>Sampling</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Advanced</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="62"/>
-      <source>Advanced</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Inpainting and size</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="63"/>
-      <source>ControlNet</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Model</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="65"/>
-      <source>Negative prompt</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Guidance</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="66"/>
-      <source>Last seed</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Steps</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="67"/>
-      <source>Full resolution</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Negative prompt</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="69"/>
-      <source>LoRA</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Last seed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="70"/>
-      <source>Choose LoRA models to add to the prompt</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>off</source>
+        <comment>Inpaint padding while full resolution is off</comment>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="71"/>
-      <source>Styles</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Inpainting ignores full resolution while tiling is on.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="72"/>
-      <source>Add saved prompt styles to the prompt</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Tiling on</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="73"/>
-      <source>Interrogate</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Generated images tile, and inpainting ignores full resolution. Click to turn tiling off.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="74"/>
-      <source>Attempt to generate a prompt that describes the current image generation area</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>LoRA</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="76"/>
-      <source>Select image generator...</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Choose LoRA models to add to the prompt</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="77"/>
-      <source>Stable Diffusion settings...</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Styles</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="78"/>
-      <source>LCM mode</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Add saved prompt styles to the prompt</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="79"/>
-      <source>Clear GPU memory</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Interrogate</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="80"/>
-      <source>Remove cached models from GPU memory in ComfyUI.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Attempt to generate a prompt that describes the current image generation area</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="82"/>
-      <source>Text to image ignores the canvas, so denoising, masked content and padding do not apply.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Select image generator...</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="83"/>
-      <source>Setup...</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Stable Diffusion settings...</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="84"/>
-      <source>Open the ControlNet panel</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>LCM mode</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="85"/>
-      <source>all units off</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Clear GPU memory</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="86"/>
-      <source>unit {number} on: {preprocessor}</source>
-      <comment>ControlNet summary of an enabled unit</comment>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Remove cached models from GPU memory in ComfyUI.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="87"/>
-      <source>{count} units on</source>
-      <comment>ControlNet summary when several units are enabled</comment>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Image to image: ignores the mask</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="88"/>
-      <source>no preprocessor</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Text to image: ignores the canvas</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="90"/>
-      <source>{sampler}, {steps} steps, CFG {guidance}</source>
-      <comment>Sampling section summary</comment>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Setup...</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py" line="91"/>
-      <source>defaults</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>blur {blur}</source>
+        <comment>Mask section summary</comment>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+    <message>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>{sampler}, {steps} steps, CFG {guidance}</source>
+        <comment>Sampling section summary</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>seed {seed}, CFG {guidance}, {steps} steps</source>
+        <comment>Sampling section summary while the seed is fixed</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>{width} x {height}, count {count}</source>
+        <comment>Size and batch section summary</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>defaults</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.panel.generators.webui_advanced_controls</name>
     <message>
-      <location filename="../../src/ui/panel/generators/webui_advanced_controls.py" line="22"/>
-      <source>Last variation seed</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
+        <source>Seed variation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/webui_advanced_controls.py" line="23"/>
-      <source>Resize seed from</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
+        <source>Output</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/webui_advanced_controls.py" line="24"/>
-      <source>Off</source>
-      <comment>Variation strength is zero</comment>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
+        <source>Last variation seed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/webui_advanced_controls.py" line="25"/>
-      <source>variation {strength}</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
+        <source>Resize seed from</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/webui_advanced_controls.py" line="26"/>
-      <source>tiling</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
+        <source>Off</source>
+        <comment>Variation strength is zero</comment>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/webui_advanced_controls.py" line="27"/>
-      <source>restore faces</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
+        <source>variation {strength}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/generators/webui_advanced_controls.py" line="28"/>
-      <source>seed resize</source>
-      <translation/>
+        <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
+        <source>tiling</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+    <message>
+        <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
+        <source>restore faces</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/webui_advanced_controls.py"/>
+        <source>seed resize</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.panel.image_panel</name>
     <message>
-      <location filename="../../src/ui/panel/image_panel.py" line="24"/>
-      <source>Scale:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/image_panel.py"/>
+        <source>Scale:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/image_panel.py" line="25"/>
-      <source>Reset View</source>
-      <translation/>
+        <location filename="../../src/ui/panel/image_panel.py"/>
+        <source>Reset View</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/image_panel.py" line="26"/>
-      <source>Restore default image zoom and offset</source>
-      <translation/>
+        <location filename="../../src/ui/panel/image_panel.py"/>
+        <source>Restore default image zoom and offset</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/image_panel.py" line="27"/>
-      <source>Zoom in</source>
-      <translation/>
+        <location filename="../../src/ui/panel/image_panel.py"/>
+        <source>Zoom in</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/image_panel.py" line="28"/>
-      <source>Zoom in on the area selected for image generation</source>
-      <translation/>
+        <location filename="../../src/ui/panel/image_panel.py"/>
+        <source>Zoom in on the area selected for image generation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/image_panel.py" line="30"/>
-      <source>Show tool control hints</source>
-      <translation/>
+        <location filename="../../src/ui/panel/image_panel.py"/>
+        <source>Show tool control hints</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/image_panel.py" line="31"/>
-      <source>Hide tool control hints</source>
-      <translation/>
+        <location filename="../../src/ui/panel/image_panel.py"/>
+        <source>Hide tool control hints</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/image_panel.py" line="32"/>
-      <source>Hide rulers</source>
-      <translation/>
+        <location filename="../../src/ui/panel/image_panel.py"/>
+        <source>Hide rulers</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/image_panel.py" line="33"/>
-      <source>Highlight generation area and selection</source>
-      <translation/>
+        <location filename="../../src/ui/panel/image_panel.py"/>
+        <source>Highlight generation area and selection</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.layer.image_layer_widget</name>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="44"/>
-      <source>Move up</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Move up</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="45"/>
-      <source>Move down</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Move down</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="46"/>
-      <source>Copy</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Copy</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="47"/>
-      <source>Delete</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Delete</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="48"/>
-      <source>Merge down</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Merge down</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="49"/>
-      <source>Merge group</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Merge group</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="50"/>
-      <source>Merge all visible</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Merge all visible</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="51"/>
-      <source>Flatten</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Flatten</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="52"/>
-      <source>Rename</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Rename</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="53"/>
-      <source>Clear selected</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Clear selected</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="54"/>
-      <source>Copy selected to new layer</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Copy selected to new layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="55"/>
-      <source>Layer to image size</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Layer to image size</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="56"/>
-      <source>Crop layer to content</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Crop layer to content</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="57"/>
-      <source>Crop layer to selection</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Crop layer to selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="58"/>
-      <source>Mirror vertically</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Mirror vertically</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="59"/>
-      <source>Mirror horizontally</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Mirror horizontally</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="60"/>
-      <source>Select layer contents</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Select layer contents</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="61"/>
-      <source>{src_layer_name} copied content</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>{src_layer_name} copied content</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="64"/>
-      <source>Select all in active layer</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Select all in active layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="65"/>
-      <source>Invert selection</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Invert selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="66"/>
-      <source>Clear selection</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
+        <source>Clear selection</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.layer.layer_alpha_lock_button</name>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_alpha_lock_button.py" line="21"/>
-      <source>Toggle layer transparency lock</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_alpha_lock_button.py"/>
+        <source>Toggle layer transparency lock</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.layer.layer_isolate_button</name>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_isolate_button.py" line="21"/>
-      <source>Toggle layer group isolation</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_isolate_button.py"/>
+        <source>Toggle layer group isolation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_isolate_button.py" line="22"/>
-      <source>Layer groups below full opacity or outside Normal mode are always isolated</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_isolate_button.py"/>
+        <source>Layer groups below full opacity or outside Normal mode are always isolated</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.layer.layer_lock_button</name>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_lock_button.py" line="20"/>
-      <source>Toggle layer lock</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_lock_button.py"/>
+        <source>Toggle layer lock</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.layer.layer_visibility_button</name>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_visibility_button.py" line="21"/>
-      <source>Toggle layer visibility</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_visibility_button.py"/>
+        <source>Toggle layer visibility</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_visibility_button.py"/>
+        <source>Toggle layer visibility. The layer is visible, but the group "{group_name}" hides it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.panel.layer_ui.layer_panel</name>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="35"/>
-      <source>Image Layers</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Image Layers</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="36"/>
-      <source>Add layer</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Add layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="37"/>
-      <source>Create a new layer above the current active layer.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Create a new layer above the current active layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="38"/>
-      <source>Add layer group</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Add layer group</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="39"/>
-      <source>Create a new layer group above the current active layer.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Create a new layer group above the current active layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="40"/>
-      <source>Delete layer</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Delete layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="41"/>
-      <source>Delete the active layer.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Delete the active layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="42"/>
-      <source>Move layer up</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Move layer up</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="43"/>
-      <source>Move the active layer up.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Move the active layer up.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="44"/>
-      <source>Move layer down</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Move layer down</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="45"/>
-      <source>Move the active layer down.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Move the active layer down.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="46"/>
-      <source>Merge down</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Merge down</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="47"/>
-      <source>Merge the active layer with the one below it.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Merge the active layer with the one below it.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="48"/>
-      <source>Opacity:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Opacity:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_panel.py" line="49"/>
-      <source>Layer mode:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Layer mode:</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.mypaint_brush_dynamics</name>
     <message>
-      <location filename="../../src/ui/panel/mypaint_brush_dynamics.py" line="27"/>
-      <source>Setting</source>
-      <translation/>
+        <location filename="../../src/ui/panel/mypaint_brush_dynamics.py"/>
+        <source>Setting</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/mypaint_brush_dynamics.py" line="28"/>
-      <source>Base value</source>
-      <translation/>
+        <location filename="../../src/ui/panel/mypaint_brush_dynamics.py"/>
+        <source>Base value</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.mypaint_brush_panel</name>
     <message>
-      <location filename="../../src/ui/panel/mypaint_brush_panel.py" line="41"/>
-      <source>Favorites</source>
-      <translation/>
+        <location filename="../../src/ui/panel/mypaint_brush_panel.py"/>
+        <source>Favorites</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/mypaint_brush_panel.py" line="42"/>
-      <source>All</source>
-      <translation/>
+        <location filename="../../src/ui/panel/mypaint_brush_panel.py"/>
+        <source>All</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/mypaint_brush_panel.py" line="43"/>
-      <source>Add to Favorites</source>
-      <translation/>
+        <location filename="../../src/ui/panel/mypaint_brush_panel.py"/>
+        <source>Add to Favorites</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/mypaint_brush_panel.py" line="44"/>
-      <source>Remove from Favorites</source>
-      <translation/>
+        <location filename="../../src/ui/panel/mypaint_brush_panel.py"/>
+        <source>Remove from Favorites</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/mypaint_brush_panel.py" line="45"/>
-      <source>Toggle favorite</source>
-      <translation/>
+        <location filename="../../src/ui/panel/mypaint_brush_panel.py"/>
+        <source>Toggle favorite</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/mypaint_brush_panel.py" line="46"/>
-      <source>No brush</source>
-      <translation/>
+        <location filename="../../src/ui/panel/mypaint_brush_panel.py"/>
+        <source>No brush</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.tool_control_panel.generation_area_tool_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="25"/>
-      <source>Image generation area:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Image generation area:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="26"/>
-      <source>X:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>X:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="27"/>
-      <source>Y:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Y:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="28"/>
-      <source>W:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>W:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="29"/>
-      <source>H:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>H:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="30"/>
-      <source>Set the left edge position of the image generation area.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Set the left edge position of the image generation area.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="31"/>
-      <source>Set the top edge position of the image generation area.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Set the top edge position of the image generation area.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="32"/>
-      <source>Set the width of the image generation area.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Set the width of the image generation area.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="33"/>
-      <source>Set the height of the image generation area.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Set the height of the image generation area.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="34"/>
-      <source>Image generation resolution:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Image generation resolution:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="36"/>
-      <source>Area size:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Area size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="37"/>
-      <source>Full image</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Full image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="38"/>
-      <source>Square</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Square</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="39"/>
-      <source>Resize the generation area to cover the entire image.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Resize the generation area to cover the entire image.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="40"/>
-      <source>Resize the generation area to the largest square that fits in the image.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Resize the generation area to the largest square that fits in the image.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="41"/>
-      <source>Resize the generation area to a recently used size.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Resize the generation area to a recently used size.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="42"/>
-      <source>+ size</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>+ size</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py" line="43"/>
-      <source>Type a size like 768 or 640x480 and press Enter to resize the generation area.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Type a size like 768 or 640x480 and press Enter to resize the generation area.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.tool_control_panels.brush_selection_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py" line="27"/>
-      <source>Select</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py"/>
+        <source>Select</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py" line="28"/>
-      <source>Deselect</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py"/>
+        <source>Deselect</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py" line="29"/>
-      <source>Brush</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py"/>
+        <source>Brush</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py" line="30"/>
-      <source>Hold {subtract_keys} to subtract. {line_keys} draws a straight line.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py"/>
+        <source>Hold {subtract_keys} to subtract. {line_keys} draws a straight line.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py" line="31"/>
-      <source>Hold {subtract_keys} to subtract. {line_keys} draws a straight line. Right-click adds a context pin.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py"/>
+        <source>Hold {subtract_keys} to subtract. {line_keys} draws a straight line. Right-click adds a context pin.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.tool_control_panels.clone_stamp_tool_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/clone_stamp_tool_panel.py" line="22"/>
-      <source>Source</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/clone_stamp_tool_panel.py"/>
+        <source>Source</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/clone_stamp_tool_panel.py" line="23"/>
-      <source>Offset X</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/clone_stamp_tool_panel.py"/>
+        <source>Offset X</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/clone_stamp_tool_panel.py" line="24"/>
-      <source>Offset Y</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/clone_stamp_tool_panel.py"/>
+        <source>Offset Y</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/clone_stamp_tool_panel.py" line="25"/>
-      <source>Source X</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/clone_stamp_tool_panel.py"/>
+        <source>Source X</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/clone_stamp_tool_panel.py" line="26"/>
-      <source>Source Y</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/clone_stamp_tool_panel.py"/>
+        <source>Source Y</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.tool_control_panels.eraser_tool_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/eraser_tool_panel.py" line="20"/>
-      <source>Size</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/eraser_tool_panel.py"/>
+        <source>Size</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.tool_control_panels.fill_selection_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/fill_selection_panel.py" line="26"/>
-      <source>Fill area</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/fill_selection_panel.py"/>
+        <source>Fill area</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.tool_control_panels.fill_tool_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/fill_tool_panel.py" line="21"/>
-      <source>Paint</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/fill_tool_panel.py"/>
+        <source>Paint</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/fill_tool_panel.py" line="22"/>
-      <source>Region</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/fill_tool_panel.py"/>
+        <source>Region</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/fill_tool_panel.py" line="23"/>
-      <source>How closely a color must match the clicked color to be filled. 0 fills only exact matches. Shared with Selection fill.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/fill_tool_panel.py"/>
+        <source>How closely a color must match the clicked color to be filled. 0 fills only exact matches. Shared with Selection fill.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/fill_tool_panel.py" line="25"/>
-      <source>Fill based on the whole image instead of just the active layer. Shared with Selection fill.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/fill_tool_panel.py"/>
+        <source>Fill based on the whole image instead of just the active layer. Shared with Selection fill.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.tool_control_panels.filter_tool_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/filter_tool_panel.py" line="28"/>
-      <location filename="../../src/ui/panel/tool_control_panels/filter_tool_panel.py" line="27"/>
-      <source>Filter</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/filter_tool_panel.py"/>
+        <source>Filter</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/filter_tool_panel.py" line="29"/>
-      <source>Strength</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/filter_tool_panel.py"/>
+        <source>Strength</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/filter_tool_panel.py" line="30"/>
-      <source>How strongly the filter is applied where you paint</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/filter_tool_panel.py"/>
+        <source>How strongly the filter is applied where you paint</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.tool_control_panels.free_selection_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/free_selection_panel.py" line="20"/>
-      <source>Free selection</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/free_selection_panel.py"/>
+        <source>Free selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/free_selection_panel.py" line="21"/>
-      <source>Click adds a point. Enter closes the shape and applies it.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/free_selection_panel.py"/>
+        <source>Click adds a point. Enter closes the shape and applies it.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.tool_control_panels.layer_transform_tool_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="31"/>
-      <source>X:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py"/>
+        <source>Revert</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="32"/>
-      <source>Y:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py"/>
+        <source>Restore the transform this layer had when you selected it</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="33"/>
-      <source>X-Scale:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py"/>
+        <source>Clear transform</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="34"/>
-      <source>Y-Scale:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py"/>
+        <source>Remove all movement, scaling and rotation from this layer</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="35"/>
-      <source>W:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py"/>
+        <source>Image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="36"/>
-      <source>H:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py"/>
+        <source>Layer</source>
+        <translation type="unfinished"></translation>
     </message>
-    <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="37"/>
-      <source>Angle:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="38"/>
-      <source>Reset</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="39"/>
-      <source>Clear</source>
-      <translation/>
-    </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.tool_control_panels.mypaint_brush_tool_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/mypaint_brush_tool_panel.py" line="32"/>
-      <source>Size</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/mypaint_brush_tool_panel.py"/>
+        <source>Size</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/mypaint_brush_tool_panel.py" line="33"/>
-      <source>Brush</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/mypaint_brush_tool_panel.py"/>
+        <source>Brush</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/mypaint_brush_tool_panel.py" line="34"/>
-      <source>Brush dynamics</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/mypaint_brush_tool_panel.py"/>
+        <source>Brush dynamics</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/mypaint_brush_tool_panel.py" line="35"/>
-      <source>Opacity and hardness come from the brush file.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/mypaint_brush_tool_panel.py"/>
+        <source>Opacity and hardness come from the brush file.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/mypaint_brush_tool_panel.py" line="36"/>
-      <source>{brush}. {hint}</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/mypaint_brush_tool_panel.py"/>
+        <source>{brush}. {hint}</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.tool_control_panels.selection_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="41"/>
-      <source>Mode</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
+        <source>Mode</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="42"/>
-      <source>Mode: {mode}</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
+        <source>Mode: {mode}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="43"/>
-      <source>Selection</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
+        <source>Selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="44"/>
-      <source>Select all</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
+        <source>Select all</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="45"/>
-      <source>Clear</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
+        <source>Clear</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="46"/>
-      <source>Clear pins</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
+        <source>Clear pins</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="47"/>
-      <source>{description} ({shortcut})</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
+        <source>{description} ({shortcut})</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="48"/>
-      <source>Select the whole image</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
+        <source>Select the whole image</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="49"/>
-      <source>Clear the selection</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
+        <source>Clear the selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="50"/>
-      <source>Remove all context pins. Right-click in the image with any selection tool to add, move or remove pins.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
+        <source>Remove all context pins. Right-click in the image with any selection tool to add, move or remove pins.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="52"/>
-      <source>Hold {add_keys} to add, {subtract_keys} to subtract.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
+        <source>Hold {add_keys} to add, {subtract_keys} to subtract.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py" line="53"/>
-      <source>Hold {subtract_keys} to subtract.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
+        <source>Hold {subtract_keys} to subtract.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.tool_control_panels.shape_selection_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/shape_selection_panel.py" line="27"/>
-      <source>Shape</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_selection_panel.py"/>
+        <source>Shape</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/shape_selection_panel.py" line="28"/>
-      <source>Fixed 1:1 ratio</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_selection_panel.py"/>
+        <source>Fixed 1:1 ratio</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/shape_selection_panel.py" line="29"/>
-      <source>{description} Hold {keys} to fix the ratio for a single drag.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_selection_panel.py"/>
+        <source>{description} Hold {keys} to fix the ratio for a single drag.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.tool_control_panels.shape_tool_panel</name>
     <message>
-      <location filename="../../src/util/visual/shape_mode.py" line="18"/>
-      <source>Ellipse</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
+        <source>Shape</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/visual/shape_mode.py" line="19"/>
-      <source>Rectangle</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
+        <source>Outline</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/visual/shape_mode.py" line="20"/>
-      <source>Polygon</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
+        <source>Fill</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/visual/shape_mode.py" line="21"/>
-      <source>Star</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
+        <source>Vertices</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
+        <source>Inner radius</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
+        <source>Width</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
+        <source>Color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
+        <source>Dash</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
+        <source>Join</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
+        <source>none</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
+        <source> px</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
+        <source>Dash and gap lengths in px, in pairs</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
+        <source>{shape}, {count} points</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
+        <source>{shape}, {count} vertices</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/shape_tool_panel.py"/>
+        <source>{width} {style}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/shape_mode.py"/>
+        <source>Ellipse</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/shape_mode.py"/>
+        <source>Rectangle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/shape_mode.py"/>
+        <source>Polygon</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/util/visual/shape_mode.py"/>
+        <source>Star</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.panel.tool_control_panels.smudge_tool_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/smudge_tool_panel.py" line="18"/>
-      <source>Strength</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/smudge_tool_panel.py"/>
+        <source>Strength</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/smudge_tool_panel.py" line="19"/>
-      <source>How far the smudge carries color</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/smudge_tool_panel.py"/>
+        <source>How far the smudge carries color</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.tool_control_panels.stroke_block</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py" line="57"/>
-      <source>Only inside selection</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py"/>
+        <source>Only inside selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py" line="58"/>
-      <source>Stroke</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py"/>
+        <source>Stroke</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py" line="59"/>
-      <source>Color and options</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py"/>
+        <source>Color and options</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py" line="60"/>
-      <source>Options</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py"/>
+        <source>Options</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py" line="61"/>
-      <source> px</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py"/>
+        <source> px</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py" line="62"/>
-      <source>%</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py"/>
+        <source>%</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py" line="63"/>
-      <source>{description}
+        <location filename="../../src/ui/panel/tool_control_panels/stroke_block.py"/>
+        <source>{description}
 Keys: {decrease} / {increase}</source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.panel.tool_control_panels.text_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="38"/>
-      <source>Font:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Enter text</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="39"/>
-      <source>Font Size:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Font</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="40"/>
-      <source>Enter Text:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Style</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="41"/>
-      <source>Stretch:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Position and size</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="42"/>
-      <source>Text Color</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Advanced</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="43"/>
-      <source>Background Color</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Preview</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="45"/>
-      <source>Alignment:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Type to filter fonts</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="46"/>
-      <source>Left</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Font family</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="47"/>
-      <source>Center</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Size</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="48"/>
-      <source>Right</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Font size</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="50"/>
-      <source>Pixels</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>{description}
+Keys: {decrease} / {increase}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="51"/>
-      <source>Point</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>px</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="53"/>
-      <source>Text Style:</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>pt</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="54"/>
-      <source>Bold</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Font size in pixels</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="55"/>
-      <source>Italic</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Font size in points</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="56"/>
-      <source>Overline</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source> px</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="57"/>
-      <source>Strikeout</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source> pt</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="58"/>
-      <source>Underline</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>{family}, {size}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="59"/>
-      <source>Fixed Pitch</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Bold</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="60"/>
-      <source>Kerning</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Italic</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="61"/>
-      <source>Fill Background</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Underline</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="62"/>
-      <source>Resize Font to Bounds</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Strikethrough</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="63"/>
-      <source>Resize Bounds to Text</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Overline</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="65"/>
-      <source>Set text color</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Fixed pitch</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="66"/>
-      <source>Set text background color</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Kerning</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="67"/>
-      <source>Change font size to fit the text in the available space.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Align left</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="68"/>
-      <source>Resize the text layer to fit the text.</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Align center</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Align right</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Text</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Background</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Same as brush color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Text color. It is the same color the brush uses.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Background color, drawn behind the text while "Fill behind text" is on</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Fill behind text</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Fill the text box with the background color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Box fit</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Free</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Fit font</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Fit box</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Free: the font size and the box size are set separately</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Fit font: the font size changes to fit the text in the box</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Fit box: the box resizes to fit the text</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Overflows</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>The text is larger than its box, so part of it is cut off. Enlarge the box, or pick Fit font or Fit box.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Stretch</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Stretches the font horizontally, as a percentage of its normal width</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Stretch is unavailable for bitmap fonts, which cannot be stretched</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>auto</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>%</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Outline = text box.
+Turns red when the text does not fit.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>fits box</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>overflows</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.panel.tool_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_panel.py" line="50"/>
-      <source>Key bindings...</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_panel.py"/>
+        <source>Key bindings...</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_panel.py" line="51"/>
-      <source>Pressure curve...</source>
-      <translation/>
+        <location filename="../../src/ui/panel/tool_panel.py"/>
+        <source>Pressure curve...</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.widget.brush_color_button</name>
     <message>
-      <location filename="../../src/ui/widget/color_button.py" line="22"/>
-      <source>Color</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_button.py"/>
+        <source>Color</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_button.py" line="23"/>
-      <source>Select paint color</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_button.py"/>
+        <source>Select paint color</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.widget.color_pair_widget</name>
     <message>
-      <location filename="../../src/ui/widget/color_pair_widget.py" line="32"/>
-      <source>Foreground color: click to change, or drag a color here</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_pair_widget.py"/>
+        <source>Foreground color: click to change, or drag a color here</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_pair_widget.py" line="33"/>
-      <source>Background color: click to change, or drag a color here</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_pair_widget.py"/>
+        <source>Background color: click to change, or drag a color here</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_pair_widget.py" line="34"/>
-      <source>Swap foreground and background colors</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_pair_widget.py"/>
+        <source>Swap foreground and background colors</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_pair_widget.py" line="35"/>
-      <source>Reset to a black foreground and a white background</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_pair_widget.py"/>
+        <source>Reset to a black foreground and a white background</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.widget.color_picker</name>
     <message>
-      <location filename="../../src/ui/widget/color_picker/tabbed_color_picker.py" line="31"/>
-      <source>&amp;Wheel</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/tabbed_color_picker.py"/>
+        <source>&amp;Wheel</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/tabbed_color_picker.py" line="33"/>
-      <source>Sl&amp;iders</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/tabbed_color_picker.py"/>
+        <source>Sl&amp;iders</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/tabbed_color_picker.py" line="35"/>
-      <source>Pa&amp;lettes</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/tabbed_color_picker.py"/>
+        <source>Pa&amp;lettes</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/tabbed_color_picker.py" line="36"/>
-      <source>&amp;Alpha and hex</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/tabbed_color_picker.py"/>
+        <source>&amp;Alpha and hex</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.widget.color_picker.alpha_hex_row</name>
     <message>
-      <location filename="../../src/ui/widget/color_picker/alpha_hex_row.py" line="26"/>
-      <source>Alpha:</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/alpha_hex_row.py"/>
+        <source>Alpha:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/alpha_hex_row.py" line="27"/>
-      <source>Opacity, from 0 (transparent) to 255 (opaque)</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/alpha_hex_row.py"/>
+        <source>Opacity, from 0 (transparent) to 255 (opaque)</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/alpha_hex_row.py" line="28"/>
-      <source>Hex color: #RGB, #RRGGBB, or #AARRGGBB with alpha first</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/alpha_hex_row.py"/>
+        <source>Hex color: #RGB, #RRGGBB, or #AARRGGBB with alpha first</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.widget.color_picker.color_comparison</name>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_comparison.py" line="19"/>
-      <source>Left: the starting color, click to go back to it. Right: the new color.</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_comparison.py"/>
+        <source>Left: the starting color, click to go back to it. Right: the new color.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.widget.color_picker.color_picker_header</name>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_picker_header.py" line="24"/>
-      <source>Pick a color from anywhere on the screen</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_picker_header.py"/>
+        <source>Pick a color from anywhere on the screen</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_picker_header.py" line="25"/>
-      <source>Cursor at {x},{y}
+        <location filename="../../src/ui/widget/color_picker/color_picker_header.py"/>
+        <source>Cursor at {x},{y}
 Click to pick, or press Esc to cancel</source>
-      <translation/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_picker_header.py" line="26"/>
-      <source>Current color, as a hex code</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_picker_header.py"/>
+        <source>Current color, as a hex code</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.widget.color_picker.color_slider_block</name>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="38"/>
-      <source>Color model for the sliders</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>Color model for the sliders</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="39"/>
-      <source>Hatched parts of the track are colors sRGB cannot show.</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>Hatched parts of the track are colors sRGB cannot show.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="41"/>
-      <source>RGB</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>RGB</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="42"/>
-      <source>HSV</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>HSV</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="43"/>
-      <source>OKLCH</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>OKLCH</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="63"/>
-      <source>R</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>R</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="63"/>
-      <source>Red</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>Red</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="64"/>
-      <source>G</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>G</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="64"/>
-      <source>Green</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>Green</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="65"/>
-      <source>B</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>B</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="65"/>
-      <source>Blue</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>Blue</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="76"/>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="68"/>
-      <source>H</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>H</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="68"/>
-      <source>Hue, in degrees</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>Hue, in degrees</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="69"/>
-      <source>S</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>S</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="69"/>
-      <source>Saturation, in percent</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>Saturation, in percent</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="70"/>
-      <source>V</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>V</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="70"/>
-      <source>Value, in percent</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>Value, in percent</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="73"/>
-      <source>L</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>L</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="73"/>
-      <source>Perceptual lightness, in percent</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>Perceptual lightness, in percent</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="74"/>
-      <source>C</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>C</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="74"/>
-      <source>Chroma: 0 is gray, and the most saturated sRGB colors reach about 0.32</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>Chroma: 0 is gray, and the most saturated sRGB colors reach about 0.32</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/color_slider_block.py" line="76"/>
-      <source>Perceptual hue, in degrees</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/color_slider_block.py"/>
+        <source>Perceptual hue, in degrees</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.widget.color_picker.saved_colors_panel</name>
     <message>
-      <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py" line="35"/>
-      <source>Saved colors ({count}/{max_count}):</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
+        <source>Saved colors ({count}/{max_count}):</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py" line="36"/>
-      <source>Click a color to use it. Drag colors here to save them, or drag to reorder them. Right-click a color to remove it.</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
+        <source>Click a color to use it. Drag colors here to save them, or drag to reorder them. Right-click a color to remove it.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py" line="38"/>
-      <source>Sa&amp;ve</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
+        <source>Sa&amp;ve</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py" line="39"/>
-      <source>Add the current color to the saved colors</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
+        <source>Add the current color to the saved colors</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py" line="40"/>
-      <source>The saved colors are full. Remove one to save another.</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
+        <source>The saved colors are full. Remove one to save another.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py" line="41"/>
-      <source>Re&amp;move</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
+        <source>Re&amp;move</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py" line="42"/>
-      <source>Remove the current color from the saved colors</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
+        <source>Remove the current color from the saved colors</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py" line="43"/>
-      <source>Remove</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
+        <source>Remove</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py" line="44"/>
-      <source>Recent colors:</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
+        <source>Recent colors:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py" line="45"/>
-      <source>Colors you chose most recently, newest first. Click a color to use it again, or drag it to the saved colors.</source>
-      <translation/>
+        <location filename="../../src/ui/widget/color_picker/saved_colors_panel.py"/>
+        <source>Colors you chose most recently, newest first. Click a color to use it again, or drag it to the saved colors.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.widget.panel_header</name>
     <message>
-      <location filename="../../src/ui/widget/panel_header.py" line="32"/>
-      <source>Reset to defaults</source>
-      <translation/>
+        <location filename="../../src/ui/widget/panel_header.py"/>
+        <source>Reset to defaults</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/panel_header.py" line="33"/>
-      <source>More</source>
-      <translation/>
+        <location filename="../../src/ui/widget/panel_header.py"/>
+        <source>More</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.window.dock_menu</name>
     <message>
-      <location filename="../../src/ui/window/dock_menu.py" line="25"/>
-      <source>Tab with</source>
-      <translation/>
+        <location filename="../../src/ui/window/dock_menu.py"/>
+        <source>Tab with</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/dock_menu.py" line="26"/>
-      <source>Split beside</source>
-      <translation/>
+        <location filename="../../src/ui/window/dock_menu.py"/>
+        <source>Split beside</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/dock_menu.py" line="27"/>
-      <source>Move to edge</source>
-      <translation/>
+        <location filename="../../src/ui/window/dock_menu.py"/>
+        <source>Move to edge</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/dock_menu.py" line="28"/>
-      <source>Move all panels to edge</source>
-      <translation/>
+        <location filename="../../src/ui/window/dock_menu.py"/>
+        <source>Move all panels to edge</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/dock_menu.py" line="29"/>
-      <source>Float</source>
-      <translation/>
+        <location filename="../../src/ui/window/dock_menu.py"/>
+        <source>Float</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/dock_menu.py" line="30"/>
-      <source>Dock</source>
-      <translation/>
+        <location filename="../../src/ui/window/dock_menu.py"/>
+        <source>Dock</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/dock_menu.py" line="31"/>
-      <source>Hide panel</source>
-      <translation/>
+        <location filename="../../src/ui/window/dock_menu.py"/>
+        <source>Hide panel</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/dock_menu.py" line="33"/>
-      <source>{front_title} (+{count})</source>
-      <translation/>
+        <location filename="../../src/ui/window/dock_menu.py"/>
+        <source>{front_title} (+{count})</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/dock_menu.py" line="50"/>
-      <location filename="../../src/ui/window/dock_menu.py" line="37"/>
-      <source>Left</source>
-      <translation/>
+        <location filename="../../src/ui/window/dock_menu.py"/>
+        <source>Left</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/dock_menu.py" line="51"/>
-      <location filename="../../src/ui/window/dock_menu.py" line="38"/>
-      <source>Right</source>
-      <translation/>
+        <location filename="../../src/ui/window/dock_menu.py"/>
+        <source>Right</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/dock_menu.py" line="39"/>
-      <source>Top</source>
-      <translation/>
+        <location filename="../../src/ui/window/dock_menu.py"/>
+        <source>Top</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/dock_menu.py" line="40"/>
-      <source>Bottom</source>
-      <translation/>
+        <location filename="../../src/ui/window/dock_menu.py"/>
+        <source>Bottom</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/dock_menu.py" line="52"/>
-      <source>Above</source>
-      <translation/>
+        <location filename="../../src/ui/window/dock_menu.py"/>
+        <source>Above</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/dock_menu.py" line="53"/>
-      <source>Below</source>
-      <translation/>
+        <location filename="../../src/ui/window/dock_menu.py"/>
+        <source>Below</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.window.dock_notch</name>
     <message>
-      <location filename="../../src/ui/window/dock_notch.py" line="23"/>
-      <source>Drag to move panel</source>
-      <translation/>
+        <location filename="../../src/ui/window/dock_notch.py"/>
+        <source>Drag to move panel</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.window.dock_rail</name>
     <message>
-      <location filename="../../src/ui/window/dock_rail.py" line="46"/>
-      <source>Generate</source>
-      <translation/>
+        <location filename="../../src/ui/window/dock_rail.py"/>
+        <source>Generate</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/dock_rail.py" line="47"/>
-      <source>Start image generation</source>
-      <translation/>
+        <location filename="../../src/ui/window/dock_rail.py"/>
+        <source>Start image generation</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.window.extra_network_window</name>
     <message>
-      <location filename="../../src/ui/window/extra_network_window.py" line="25"/>
-      <source>LoRA Models</source>
-      <translation/>
+        <location filename="../../src/ui/window/extra_network_window.py"/>
+        <source>LoRA Models</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/extra_network_window.py" line="27"/>
-      <source>Add to prompt</source>
-      <translation/>
+        <location filename="../../src/ui/window/extra_network_window.py"/>
+        <source>Add to prompt</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/extra_network_window.py" line="28"/>
-      <source>Remove from prompt</source>
-      <translation/>
+        <location filename="../../src/ui/window/extra_network_window.py"/>
+        <source>Remove from prompt</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/extra_network_window.py" line="29"/>
-      <source>Close</source>
-      <translation/>
+        <location filename="../../src/ui/window/extra_network_window.py"/>
+        <source>Close</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/extra_network_window.py" line="30"/>
-      <source>LoRA</source>
-      <translation/>
+        <location filename="../../src/ui/window/extra_network_window.py"/>
+        <source>LoRA</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.window.floating_title_bar</name>
     <message>
-      <location filename="../../src/ui/window/floating_title_bar.py" line="25"/>
-      <source>Dock panel</source>
-      <translation/>
+        <location filename="../../src/ui/window/floating_title_bar.py"/>
+        <source>Dock panel</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/floating_title_bar.py" line="26"/>
-      <source>Hide panel</source>
-      <translation/>
+        <location filename="../../src/ui/window/floating_title_bar.py"/>
+        <source>Hide panel</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.window.generator_setup_window</name>
     <message>
-      <location filename="../../src/ui/window/generator_setup_window.py" line="25"/>
-      <source>Image Generator Selection</source>
-      <translation/>
+        <location filename="../../src/ui/window/generator_setup_window.py"/>
+        <source>Image Generator Selection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/generator_setup_window.py" line="26"/>
-      <source>Activate</source>
-      <translation/>
+        <location filename="../../src/ui/window/generator_setup_window.py"/>
+        <source>Activate</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/generator_setup_window.py" line="27"/>
-      <source>&lt;h1&gt;Image generator status:&lt;/h1&gt;</source>
-      <translation/>
+        <location filename="../../src/ui/window/generator_setup_window.py"/>
+        <source>&lt;h1&gt;Image generator status:&lt;/h1&gt;</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/generator_setup_window.py" line="28"/>
-      <source>This image generator is active.</source>
-      <translation/>
+        <location filename="../../src/ui/window/generator_setup_window.py"/>
+        <source>This image generator is active.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/generator_setup_window.py" line="29"/>
-      <source>This image generator is available, click "Activate" to attempt to use it.</source>
-      <translation/>
+        <location filename="../../src/ui/window/generator_setup_window.py"/>
+        <source>This image generator is available, click "Activate" to attempt to use it.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/generator_setup_window.py" line="30"/>
-      <source>This image generator is not available: {error_reason}</source>
-      <translation/>
+        <location filename="../../src/ui/window/generator_setup_window.py"/>
+        <source>This image generator is not available: {error_reason}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/generator_setup_window.py" line="31"/>
-      <source>Unknown error encountered, please report this on the &lt;a href="https://github.com/centuryglass/IntraPaint/issues"&gt;GitHub issues page&lt;/a&gt;.</source>
-      <translation/>
+        <location filename="../../src/ui/window/generator_setup_window.py"/>
+        <source>Unknown error encountered, please report this on the &lt;a href="https://github.com/centuryglass/IntraPaint/issues"&gt;GitHub issues page&lt;/a&gt;.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/generator_setup_window.py" line="33"/>
-      <source>&lt;h1&gt;Generator Options:&lt;/h1&gt;</source>
-      <translation/>
+        <location filename="../../src/ui/window/generator_setup_window.py"/>
+        <source>&lt;h1&gt;Generator Options:&lt;/h1&gt;</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/generator_setup_window.py" line="34"/>
-      <source>&lt;u&gt;Preview: {generator_name}&lt;/u&gt;</source>
-      <translation/>
+        <location filename="../../src/ui/window/generator_setup_window.py"/>
+        <source>&lt;u&gt;Preview: {generator_name}&lt;/u&gt;</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/generator_setup_window.py" line="36"/>
-      <source>Description</source>
-      <translation/>
+        <location filename="../../src/ui/window/generator_setup_window.py"/>
+        <source>Description</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/generator_setup_window.py" line="37"/>
-      <source>Setup Guide</source>
-      <translation/>
+        <location filename="../../src/ui/window/generator_setup_window.py"/>
+        <source>Setup Guide</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.window.main_window</name>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="63"/>
-      <source>Tools</source>
-      <translation/>
+        <location filename="../../src/ui/window/main_window.py"/>
+        <source>Tools</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="64"/>
-      <source>Image Generation</source>
-      <translation/>
+        <location filename="../../src/ui/window/main_window.py"/>
+        <source>Image Generation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="65"/>
-      <source>ControlNet</source>
-      <translation/>
+        <location filename="../../src/ui/window/main_window.py"/>
+        <source>ControlNet</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="66"/>
-      <source>Layers</source>
-      <translation/>
+        <location filename="../../src/ui/window/main_window.py"/>
+        <source>Layers</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="67"/>
-      <source>Color</source>
-      <translation/>
+        <location filename="../../src/ui/window/main_window.py"/>
+        <source>Color</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="68"/>
-      <source>Navigation</source>
-      <translation/>
+        <location filename="../../src/ui/window/main_window.py"/>
+        <source>Navigation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="70"/>
-      <source>Loading...</source>
-      <translation/>
+        <location filename="../../src/ui/window/main_window.py"/>
+        <source>Loading...</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>ui.window.navigation_window</name>
     <message>
-      <location filename="../../src/ui/window/navigation_window.py" line="30"/>
-      <source>Navigate</source>
-      <translation/>
+        <location filename="../../src/ui/window/navigation_window.py"/>
+        <source>Navigate</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/navigation_window.py" line="31"/>
-      <source>Move view</source>
-      <translation/>
+        <location filename="../../src/ui/window/navigation_window.py"/>
+        <source>Move view</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/navigation_window.py" line="32"/>
-      <source>Left-click to pan, Shift + left-click to draw viewport, right-click to add, move or remove context pins</source>
-      <translation/>
+        <location filename="../../src/ui/window/navigation_window.py"/>
+        <source>Left-click to pan, Shift + left-click to draw viewport, right-click to add, move or remove context pins</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/navigation_window.py" line="34"/>
-      <source>Move gen. area</source>
-      <translation/>
+        <location filename="../../src/ui/window/navigation_window.py"/>
+        <source>Move gen. area</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/navigation_window.py" line="35"/>
-      <source>Reset view</source>
-      <translation/>
+        <location filename="../../src/ui/window/navigation_window.py"/>
+        <source>View</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+    <message>
+        <location filename="../../src/ui/window/navigation_window.py"/>
+        <source>Gen. area</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/navigation_window.py"/>
+        <source>Reset view</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/navigation_window.py"/>
+        <source>Zoom {percent}%</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/navigation_window.py"/>
+        <source>Drag: pan</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/navigation_window.py"/>
+        <source>Shift+drag: draw new view</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/navigation_window.py"/>
+        <source>Right-click: add, move or remove context pins</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/navigation_window.py"/>
+        <source>Drag: move area</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/navigation_window.py"/>
+        <source>Right-drag: resize area</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/navigation_window.py"/>
+        <source>, </source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.window.prompt_style_window</name>
     <message>
-      <location filename="../../src/ui/window/prompt_style_window.py" line="27"/>
-      <source>Saved Prompt Styles</source>
-      <translation/>
+        <location filename="../../src/ui/window/prompt_style_window.py"/>
+        <source>Saved Prompt Styles</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/prompt_style_window.py" line="28"/>
-      <source>Name:</source>
-      <translation/>
+        <location filename="../../src/ui/window/prompt_style_window.py"/>
+        <source>Name:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/prompt_style_window.py" line="29"/>
-      <source>Prompt:</source>
-      <translation/>
+        <location filename="../../src/ui/window/prompt_style_window.py"/>
+        <source>Prompt:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/prompt_style_window.py" line="30"/>
-      <source>Negative:</source>
-      <translation/>
+        <location filename="../../src/ui/window/prompt_style_window.py"/>
+        <source>Negative:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/prompt_style_window.py" line="31"/>
-      <source>Add to prompt</source>
-      <translation/>
+        <location filename="../../src/ui/window/prompt_style_window.py"/>
+        <source>Add to prompt</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/prompt_style_window.py" line="32"/>
-      <source>Replace prompt</source>
-      <translation/>
+        <location filename="../../src/ui/window/prompt_style_window.py"/>
+        <source>Replace prompt</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/prompt_style_window.py" line="33"/>
-      <source>Save changes</source>
-      <translation/>
+        <location filename="../../src/ui/window/prompt_style_window.py"/>
+        <source>Save changes</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/prompt_style_window.py" line="34"/>
-      <source>Close</source>
-      <translation/>
+        <location filename="../../src/ui/window/prompt_style_window.py"/>
+        <source>Close</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+</context>
+<context>
     <name>util.shared_constants</name>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="50"/>
-      <source>Generate</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Generate</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="51"/>
-      <source>Start AI image generation or modification</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Start AI image generation or modification</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="52"/>
-      <source>W:</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>W:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="53"/>
-      <source>H:</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>H:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="54"/>
-      <source>X:</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>X:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="55"/>
-      <source>Y:</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Y:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="57"/>
-      <source>Width:</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Width:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="58"/>
-      <source>Height:</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Height:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="59"/>
-      <source>Color:</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Color:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="60"/>
-      <source>Size:</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Size:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="61"/>
-      <source>Scale:</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Scale:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="62"/>
-      <source>Padding:</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Padding:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="63"/>
-      <source>Zoom In</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Zoom In</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="64"/>
-      <source>Reset Zoom</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Reset Zoom</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="65"/>
-      <source>Keep aspect ratio</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Keep aspect ratio</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="68"/>
-      <source>Editing failed</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Editing failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="69"/>
-      <source>The selected layer is locked, unlock it or select a different layer.</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>The selected layer is locked, unlock it or select a different layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="70"/>
-      <source>The selected layer is in a locked group, unlock it or select a different layer.</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>The selected layer is in a locked group, unlock it or select a different layer.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="72"/>
-      <source>The selected layer is hidden, un-hide it before trying to edit it.</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>The selected layer is hidden, un-hide it before trying to edit it.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="73"/>
-      <source>The selected layer is not an image layer, select an image layer first.</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>The selected layer is in the hidden group "{group_name}", un-hide the group before trying to edit it.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="74"/>
-      <source>Changes are restricted to selected content only, but nothing is selected in this layer. Select layer content or enable changes in unselected areas.</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>The selected layer is not an image layer, select an image layer first.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="81"/>
-      <source>Not authenticated</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Changes are restricted to selected content only, but nothing is selected in this layer. Select layer content or enable changes in unselected areas.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="82"/>
-      <source>Image generator connection</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Not authenticated</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="83"/>
-      <source>Enter server URL:</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Image generator connection</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="84"/>
-      <source>Request timed out</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Enter server URL:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="85"/>
-      <source>Server connection failed, enter a new URL or click "OK" to retry</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Request timed out</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="86"/>
-      <source>The AI image generator is busy creating other images, try again later.</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Server connection failed, enter a new URL or click "OK" to retry</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="87"/>
-      <source>Failed to connect to image generator at "{url}": Login cancelled.</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>The AI image generator is busy creating other images, try again later.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="88"/>
-      <source>Failed to connect to image generator at "{url}".  Click "Activate" to try again or choose a different address. &lt;br/&gt; Full error text: &lt;br/&gt;&lt;blockquote&gt;{error_text}&lt;/blockquote&gt;</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Failed to connect to image generator at "{url}": Login cancelled.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="92"/>
-      <source>Interrogate failure</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Failed to connect to image generator at "{url}".  Click "Activate" to try again or choose a different address. &lt;br/&gt; Full error text: &lt;br/&gt;&lt;blockquote&gt;{error_text}&lt;/blockquote&gt;</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="93"/>
-      <source>Open or create an image first.</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Interrogate failure</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="94"/>
-      <source>Running CLIP interrogate</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Open or create an image first.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="97"/>
-      <source>Image generation failed</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Running CLIP interrogate</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="98"/>
-      <source>Nothing was selected in the image generation area. Either use the selection tool to mark part of the image generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Image generation failed</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="104"/>
-      <source>Upscale failure</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Nothing was selected in the image generation area. Either use the selection tool to mark part of the image generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="105"/>
-      <source>Upscaled image content</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Upscale failure</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="106"/>
-      <source>None</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Upscaled image content</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="115"/>
-      <source>Bilinear</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>None</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="116"/>
-      <source>Nearest</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Bilinear</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="117"/>
-      <source>Hamming</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Nearest</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="118"/>
-      <source>Bicubic</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Hamming</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="119"/>
-      <source>Lanczos</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Bicubic</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="120"/>
-      <source>Box</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Lanczos</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="122"/>
-      <source>{modifier_or_modifiers}: pick color</source>
-      <translation/>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>Box</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
+    <message>
+        <location filename="../../src/util/shared_constants.py"/>
+        <source>{modifier_or_modifiers}: pick color</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>util.visual.selection_fill_area</name>
     <message>
-      <location filename="../../src/util/visual/selection_fill_area.py" line="36"/>
-      <source>Connected</source>
-      <translation/>
+        <location filename="../../src/util/visual/selection_fill_area.py"/>
+        <source>Connected</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/visual/selection_fill_area.py" line="37"/>
-      <source>By color</source>
-      <translation/>
+        <location filename="../../src/util/visual/selection_fill_area.py"/>
+        <source>By color</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/visual/selection_fill_area.py" line="38"/>
-      <source>Holes</source>
-      <translation/>
+        <location filename="../../src/util/visual/selection_fill_area.py"/>
+        <source>Holes</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/visual/selection_fill_area.py" line="41"/>
-      <source>Select the connected area around the click that matches its color.</source>
-      <translation/>
+        <location filename="../../src/util/visual/selection_fill_area.py"/>
+        <source>Select the connected area around the click that matches its color.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/visual/selection_fill_area.py" line="42"/>
-      <source>Select every pixel in the image that matches the clicked color, connected or not.</source>
-      <translation/>
+        <location filename="../../src/util/visual/selection_fill_area.py"/>
+        <source>Select every pixel in the image that matches the clicked color, connected or not.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-      <location filename="../../src/util/visual/selection_fill_area.py" line="43"/>
-      <source>Select the gaps enclosed by the current selection, ignoring image content.</source>
-      <translation/>
+        <location filename="../../src/util/visual/selection_fill_area.py"/>
+        <source>Select the gaps enclosed by the current selection, ignoring image content.</source>
+        <translation type="unfinished"></translation>
     </message>
-  </context>
-  <context>
-    <name>config.a1111_config</name>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="3"/>
-      <source>Stable Diffusion Model:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="6"/>
-      <source>Active image generation model</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="3"/>
-      <source>Stable Diffusion</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="5"/>
-      <source>Stable Diffusion WebUI image generator</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="11"/>
-      <source>Only keep one model on GPU/TPU</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="14"/>
-      <source>If selected, checkpoints after the first are cached in RAM instead</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="5"/>
-      <source>Stable Diffusion WebUI image generator</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="18"/>
-      <source>Max checkpoints loaded:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="21"/>
-      <source>Number of image generation models to keep in memory.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="5"/>
-      <source>Stable Diffusion WebUI image generator</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="30"/>
-      <source>Stable Diffusion VAE model:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="33"/>
-      <source>VAE model used for final image data creation.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="5"/>
-      <source>Stable Diffusion WebUI image generator</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="38"/>
-      <source>Stable Diffusion VAE models cached:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="41"/>
-      <source>Number of VAE models to keep in memory.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="5"/>
-      <source>Stable Diffusion WebUI image generator</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="50"/>
-      <source>CLIP skip:</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="53"/>
-      <source>Number of final image generation steps taken without prompt guidance.</source>
-      <translation/>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="5"/>
-      <source>Stable Diffusion WebUI image generator</source>
-      <translation/>
-    </message>
-  </context>
+</context>
 </TS>

@@ -32,7 +32,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 DEFAULT_GLID_URL = 'http://localhost:5555'
-GLID_CONFIG_CATEGORY = QApplication.translate('application_config', 'GLID-3-XL')
+GLID_CONFIG_CATEGORY = QApplication.translate('config.application_config', 'GLID-3-XL')
 GLID_WEB_GENERATOR_NAME = _tr('GLID-3-XL image generation server')
 
 GLID_WEB_SETUP_HEADER = _tr('<h2>GLID-3-XL server setup</h2>')
@@ -42,13 +42,13 @@ GLID_WEB_CONDA_SETUP = _tr("""
     <li>
         If you are running the pre-packaged version of IntraPaint, or if you want to manage the GLID-3-XL server
         separately, run the following to get the required code and set up a new anaconda virtual environment:
-        """ + rich_text_code_block('git clone https://github.com/centuryglass/IntraPaint.git\n'
-                                   'conda create -n intrapaint-server\n'
-                                   'conda activate intrapaint-server\n'
-                                   'conda install pip\n'
-                                   'pip install -r requirements.txt') + """
+        {commands}
     </li>
-""")
+""").format(commands=rich_text_code_block('git clone https://github.com/centuryglass/IntraPaint.git\n'
+                                          'conda create -n intrapaint-server\n'
+                                          'conda activate intrapaint-server\n'
+                                          'conda install pip\n'
+                                          'pip install -r requirements.txt'))
 GLID_WEB_SERVER_STARTUP = _tr("""
     <li>
         Start the server by running "<code>python IntraPaint_server.py</code>". If you are using a model other than the

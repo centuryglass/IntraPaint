@@ -21,6 +21,7 @@ from PySide6.QtGui import QKeySequence, QColor
 from PySide6.QtWidgets import QApplication
 
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
+from src.config.definition_tr_contexts import DEFINITION_TR_CONTEXTS
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.combo_box import ComboBox
 from src.util.main_thread import assert_main_thread
@@ -52,18 +53,9 @@ DUPLICATE_KEY_ERROR = _tr('Tried to add duplicate config entry for key "{key}"')
 SAVE_DELAY_MS = 10
 
 
-# Keep in step with the file/context pairs in `scripts/build_translations.py`.
-_DEFINITION_TR_CONTEXTS = {
-    'a1111_setting_definitions.json': 'config.a1111_config',
-    'application_config_definitions.json': 'config.application_config',
-    'cache_value_definitions.json': 'config.cache',
-    'key_config_definitions.json': 'config.key_config',
-}
-
-
 def _definition_tr_context(definition_path: str) -> str:
-    """Returns the translation context `scripts/build_translations.py` writes a definition file's strings to."""
-    return _DEFINITION_TR_CONTEXTS.get(os.path.basename(definition_path), '')
+    """Returns the translation context of a definition file's strings (`DEFINITION_TR_CONTEXTS`)."""
+    return DEFINITION_TR_CONTEXTS.get(os.path.basename(definition_path), '')
 
 
 class Config:

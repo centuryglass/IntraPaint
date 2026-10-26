@@ -1,8 +1,9 @@
 name: ci
 
-# Runs the test suite, the lint check, the markdown check and the packaged-build launch test on every push and pull
-# request, so every commit's state is known before it's merged anywhere. The `changes` job skips the test, lint and
-# bundle jobs for markdown/doc-image-only changes; the markdown check always runs. workflow_dispatch also allows running it by hand from the Actions tab.
+# Runs the test suite, the lint and translation catalog checks, the markdown check and the packaged-build launch test
+# on every push and pull request, so every commit's state is known before it's merged anywhere. The `changes` job skips
+# the test, lint and bundle jobs for markdown/doc-image-only changes; the markdown check always runs. workflow_dispatch
+# also allows running it by hand from the Actions tab.
 on:
   push:
   pull_request:
@@ -242,6 +243,11 @@ jobs:
 
       - name: pylint (no new messages)
         run: python scripts/pylint_check.py
+
+      # Fails when a source change leaves resources/translations/ out of date, or a translation drops a placeholder.
+      - name: Translation catalog
+        if: ${{ !cancelled() }}
+        run: python scripts/build_translations.py --check
 
   # Lints the tracked Markdown files. It runs for every change, since its inputs are the documents a docs-only change
   # edits, and it needs only PyMarkdown, so it installs that instead of requirements-dev.txt.

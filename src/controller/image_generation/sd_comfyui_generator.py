@@ -16,7 +16,8 @@ from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qimage, qimage_to_pil
 from src.controller.image_generation.sd_adapters.params_adapter import build_comfy_params, build_upscale_params
 from src.controller.image_generation.sd_generator import SDGenerator, SD_BASE_DESCRIPTION, \
-    STABLE_DIFFUSION_CONFIG_CATEGORY, GETTING_SD_MODELS, INSTALLATION_STABILITY_MATRIX, MENU_STABLE_DIFFUSION
+    STABLE_DIFFUSION_CONFIG_CATEGORY, GETTING_SD_MODELS, INSTALLATION_STABILITY_MATRIX, MENU_STABLE_DIFFUSION, \
+    STABILITY_MATRIX_ICONS
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.generators.comfyui_advanced_controls import ComfyUIAdvancedControls
@@ -66,7 +67,7 @@ SD_COMFYUI_GENERATOR_SETUP_OPTIONS = _tr("""
 <p>
     To use the Stable Diffusion ComfyUI generator, you will to download at least one Stable Diffusion model file, 
     install ComfyUI, and start it.  This guide will explain each of those steps.
-</p>""" + GETTING_SD_MODELS + """
+</p>""") + GETTING_SD_MODELS + _tr("""
 <hr/>
 <h2>Installing ComfyUI: Available options</h2>
 <p>
@@ -84,7 +85,8 @@ SD_COMFYUI_GENERATOR_SETUP_OPTIONS = _tr("""
 SD_COMFYUI_GENERATOR_STABILITY_MATRIX_PACKAGE = 'ComfyUI'
 SD_COMFYUI_GENERATOR_SETUP_STABILITY_MATRIX = INSTALLATION_STABILITY_MATRIX.format(
     generator_package=SD_COMFYUI_GENERATOR_STABILITY_MATRIX_PACKAGE,
-    post_install_generator_setup=''
+    post_install_generator_setup='',
+    **STABILITY_MATRIX_ICONS
 )
 SD_COMFYUI_GENERATOR_SETUP_ALTERNATIVES = _tr("""
 <hr/>
