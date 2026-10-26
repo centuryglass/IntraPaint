@@ -1,6 +1,5 @@
 """Tests the ImageStack module"""
 import sys
-from unittest.mock import MagicMock
 
 from typing import cast
 
@@ -39,18 +38,12 @@ class ImageStackTest(IntraPaintTestCase):
         super().setUp()
         self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
 
-        self.generation_area_bounds_changed_mock = MagicMock()
-        self.content_changed_mock = MagicMock()
-        self.size_changed_mock = MagicMock()
-        self.layer_added_mock = MagicMock()
-        self.layer_removed_mock = MagicMock()
-        self.active_layer_changed_mock = MagicMock()
-        self.image_stack.generation_area_bounds_changed.connect(self.generation_area_bounds_changed_mock)
-        self.image_stack.content_changed.connect(self.content_changed_mock)
-        self.image_stack.size_changed.connect(self.size_changed_mock)
-        self.image_stack.layer_added.connect(self.layer_added_mock)
-        self.image_stack.layer_removed.connect(self.layer_removed_mock)
-        self.image_stack.active_layer_changed.connect(self.active_layer_changed_mock)
+        self.generation_area_bounds_changed_mock = self.connect_mock(self.image_stack.generation_area_bounds_changed)
+        self.content_changed_mock = self.connect_mock(self.image_stack.content_changed)
+        self.size_changed_mock = self.connect_mock(self.image_stack.size_changed)
+        self.layer_added_mock = self.connect_mock(self.image_stack.layer_added)
+        self.layer_removed_mock = self.connect_mock(self.image_stack.layer_removed)
+        self.active_layer_changed_mock = self.connect_mock(self.image_stack.active_layer_changed)
 
     def assert_no_signals(self) -> None:
         self.generation_area_bounds_changed_mock.assert_not_called()
@@ -132,8 +125,7 @@ class ImageStackTest(IntraPaintTestCase):
 
     def test_load_image_replaces_document(self) -> None:
         """Loading an image clears the undo history and emits `document_changed`, even at the same size."""
-        document_changed = MagicMock()
-        self.image_stack.document_changed.connect(document_changed)
+        document_changed = self.connect_mock(self.image_stack.document_changed)
         image = QImage(INIT_IMAGE)
         self.image_stack.load_image(image)
         self.image_stack.create_layer()
@@ -156,8 +148,7 @@ class ImageStackTest(IntraPaintTestCase):
         """Loading a layer stack clears the undo history and emits `document_changed`."""
         self.image_stack.load_image(QImage(INIT_IMAGE))
         self.image_stack.create_layer()
-        document_changed = MagicMock()
-        self.image_stack.document_changed.connect(document_changed)
+        document_changed = self.connect_mock(self.image_stack.document_changed)
         new_stack = LayerGroup('loaded')
         new_stack.insert_layer(ImageLayer(QImage(INIT_IMAGE), 'loaded layer'), 0)
         self.image_stack.load_layer_stack(new_stack, QImage(INIT_IMAGE).size())

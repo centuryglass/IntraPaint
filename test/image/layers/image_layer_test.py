@@ -1,6 +1,5 @@
 """Tests the ImageLayer class"""
 import sys
-from unittest.mock import MagicMock
 
 from PySide6.QtCore import QSize, QRect, QPoint, QRectF
 from PySide6.QtGui import QImage, QPainter, QTransform, Qt, QPainterPath, QPolygonF
@@ -26,24 +25,15 @@ class ImageLayerTest(IntraPaintTestCase):
         super().setUp()
         self.image_layer = ImageLayer(IMG_SIZE, LAYER_NAME)
 
-        self.name_changed_mock = MagicMock()
-        self.visibility_changed_mock = MagicMock()
-        self.content_changed_mock = MagicMock()
-        self.opacity_changed_mock = MagicMock()
-        self.size_changed_mock = MagicMock()
-        self.composition_changed_mock = MagicMock()
-        self.z_value_changed_mock = MagicMock()
-        self.lock_changed_mock = MagicMock()
-        self.alpha_lock_changed_mock = MagicMock()
-        self.image_layer.name_changed.connect(self.name_changed_mock)
-        self.image_layer.visibility_changed.connect(self.visibility_changed_mock)
-        self.image_layer.content_changed.connect(self.content_changed_mock)
-        self.image_layer.opacity_changed.connect(self.opacity_changed_mock)
-        self.image_layer.size_changed.connect(self.size_changed_mock)
-        self.image_layer.composition_mode_changed.connect(self.composition_changed_mock)
-        self.image_layer.z_value_changed.connect(self.z_value_changed_mock)
-        self.image_layer.lock_changed.connect(self.lock_changed_mock)
-        self.image_layer.alpha_lock_changed.connect(self.alpha_lock_changed_mock)
+        self.name_changed_mock = self.connect_mock(self.image_layer.name_changed)
+        self.visibility_changed_mock = self.connect_mock(self.image_layer.visibility_changed)
+        self.content_changed_mock = self.connect_mock(self.image_layer.content_changed)
+        self.opacity_changed_mock = self.connect_mock(self.image_layer.opacity_changed)
+        self.size_changed_mock = self.connect_mock(self.image_layer.size_changed)
+        self.composition_changed_mock = self.connect_mock(self.image_layer.composition_mode_changed)
+        self.z_value_changed_mock = self.connect_mock(self.image_layer.z_value_changed)
+        self.lock_changed_mock = self.connect_mock(self.image_layer.lock_changed)
+        self.alpha_lock_changed_mock = self.connect_mock(self.image_layer.alpha_lock_changed)
 
     def assert_no_signals(self) -> None:
         self.name_changed_mock.assert_not_called()

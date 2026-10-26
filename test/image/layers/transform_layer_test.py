@@ -5,7 +5,6 @@ helpers can't move the expectation along with the result.
 """
 import sys
 import unittest
-from unittest.mock import MagicMock
 
 import pytest
 from PySide6.QtCore import QSize, QRect, QPoint, QPointF
@@ -254,10 +253,8 @@ class TransformLayerTest(IntraPaintTestCase):
 
     def test_set_transform_signals(self) -> None:
         """set_transform emits transform_changed, and content_changed only while the layer is visible."""
-        transform_changed = MagicMock()
-        content_changed = MagicMock()
-        self.layer.transform_changed.connect(transform_changed)
-        self.layer.content_changed.connect(content_changed)
+        transform_changed = self.connect_mock(self.layer.transform_changed)
+        content_changed = self.connect_mock(self.layer.content_changed)
         transform = QTransform.fromTranslate(4, 2)
         self.layer.set_transform(transform)
         transform_changed.assert_called_once_with(self.layer, transform)
