@@ -241,6 +241,7 @@ class DockPanel(QWidget):
         self._layout_model = PanelLayout()
         self._extra_items: list[tuple[FitItem, Callable[[Optional[int]], None]]] = []
         self._planner: Optional[FitPlanner] = None
+        self._fresh_sizes: Optional[dict[QWidget, QSize]] = None
         self._header_collapsed = False
         self._scrolls = False
         self._overflow: list[QWidget] = []
@@ -536,6 +537,13 @@ class DockPanel(QWidget):
     def measure_content(self) -> QSize:
         """Returns the content's minimum size as currently arranged: the header, if shown above the scroll area, over
         the pinned, scrolled and trailing columns, over the footer if it is still below them."""
+        self._fresh_sizes = {}
+        try:
+            return self._measure_content()
+        finally:
+            self._fresh_sizes = None
+
+    def _measure_content(self) -> QSize:
         if self._packed:
             self._pack_sections()
         content = fresh_minimum_size(self._body)
@@ -543,15 +551,27 @@ class DockPanel(QWidget):
         if self._pinned.shown or (self._trailing is not None and self._trailing.shown):
             content = self._measure_with_pinned_columns(content)
         if not self._header.isHidden() and self._header.parentWidget() is self:
-            header = fresh_minimum_size(self._header)
+            header = self._fresh_size(self._header)
             content = QSize(max(content.width(), header.width()), content.height() + spacing + header.height())
         if self._footer is not None and not self._footer.isHidden() and self._footer.parentWidget() is self:
             assert self._footer_divider is not None
-            footer = fresh_minimum_size(self._footer)
+            footer = self._fresh_size(self._footer)
             divider_height = self._footer_divider.height() + spacing
             content = QSize(max(content.width(), footer.width()),
                             content.height() + spacing + divider_height + footer.height())
         return content
+
+    def _fresh_size(self, widget: QWidget) -> QSize:
+        """Returns `fresh_minimum_size` of a header, footer or column content, measured once per `measure_content`.
+
+        Packing sections and sizing columns never change those widgets' sizes, so the later measurements in one
+        `measure_content` repeat the first.
+        """
+        if self._fresh_sizes is None:
+            return fresh_minimum_size(widget)
+        if widget not in self._fresh_sizes:
+            self._fresh_sizes[widget] = fresh_minimum_size(widget)
+        return QSize(self._fresh_sizes[widget])
 
     def _measure_with_pinned_columns(self, body: QSize) -> QSize:
         """Returns the size of the shown pinned and trailing columns beside the scrolled body, and sets their scroll
@@ -565,10 +585,10 @@ class DockPanel(QWidget):
         row_spacing = max(self._scroll_row.spacing(), 0)
         header_height = 0
         if not self._header.isHidden() and self._header.parentWidget() is self:
-            header_height = fresh_minimum_size(self._header).height() + max(self.layout().spacing(), 0)
+            header_height = self._fresh_size(self._header).height() + max(self.layout().spacing(), 0)
         footer = QSize(0, 0)
         if self._footer is not None and not self._footer.isHidden():
-            footer = fresh_minimum_size(self._footer)
+            footer = self._fresh_size(self._footer)
             assert self._footer_divider is not None
             footer = QSize(footer.width(), footer.height() + self._footer_divider.height())
         columns = [column for column in (self._pinned, self._trailing) if column is not None and column.shown]
@@ -577,7 +597,7 @@ class DockPanel(QWidget):
         for column in columns:
             column_footer = footer if column is self._pinned else QSize(0, 0)
             column_spacing = (2 * max(column.column_layout.spacing(), 0)) if column_footer.height() > 0 else 0
-            content = fresh_minimum_size(column.content)
+            content = self._fresh_size(column.content)
             width = content.width() + column.scroll.frameWidth() * 2
             scrolls = column is not self._trailing or self._trailing_scrolls
             if available is not None and scrolls:
@@ -595,7 +615,7 @@ class DockPanel(QWidget):
             if available is not None:
                 others = sum(size.width() + row_spacing for other, size in zip(columns, sizes) if other is not column)
                 preferred = min(preferred, available.width() - row_spacing - STRIP_SECTION_MIN_WIDTH - others)
-            column.scroll.set_preferred_width(preferred + widths[index] - fresh_minimum_size(column.content).width())
+            column.scroll.set_preferred_width(preferred + widths[index] - self._fresh_size(column.content).width())
         columns_width = sum(size.width() + row_spacing for size in sizes)
         if self._pinned.shown:
             columns_width += self._pinned_divider.width() + row_spacing
@@ -799,10 +819,10 @@ class DockPanel(QWidget):
         budget = available.height() - self._pack_reserve - margins.top() - margins.bottom()
         spacing = max(self.layout().spacing(), 0)
         if not self._header.isHidden() and self._header.parentWidget() is self:
-            budget -= fresh_minimum_size(self._header).height() + spacing
+            budget -= self._fresh_size(self._header).height() + spacing
         if self._footer is not None and not self._footer.isHidden() and self._footer.parentWidget() is self:
             assert self._footer_divider is not None
-            budget -= fresh_minimum_size(self._footer).height() + self._footer_divider.height() + 2 * spacing
+            budget -= self._fresh_size(self._footer).height() + self._footer_divider.height() + 2 * spacing
         return budget
 
     def _pack_sections(self) -> None:
