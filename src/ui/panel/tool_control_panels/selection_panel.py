@@ -9,6 +9,7 @@ Selection buttons take a row, or a column when the row doesn't fit. The modifier
 for it moves it to `overflow_content`, which the Tools panel shows in its More popover.
 """
 from typing import Callable, Optional
+from weakref import ref
 
 from PySide6.QtCore import Qt, QSize, QPoint, QEvent
 from PySide6.QtGui import QIcon, QPixmap
@@ -85,7 +86,8 @@ class SelectionPanel(QWidget):
                  modifiers: SelectionModifiers = SelectionModifiers.ADD_AND_SUBTRACT) -> None:
         super().__init__()
         self._selection_layer = selection_layer
-        self._selection_tool = selection_tool
+        # Weak, since the tool owns the panel:
+        self._selection_tool = ref(selection_tool)
         self._layout = QBoxLayout(QBoxLayout.Direction.TopToBottom, self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._insert_index = 0
@@ -273,4 +275,5 @@ class SelectionPanel(QWidget):
     @property
     def selection_tool_is_active(self) -> bool:
         """Returns whether this panel's tool is the active tool."""
-        return self._selection_tool.is_active
+        selection_tool = self._selection_tool()
+        return selection_tool is not None and selection_tool.is_active

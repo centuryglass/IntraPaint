@@ -40,7 +40,8 @@ from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.panel.tool_control_panels.stroke_preview import StrokePreview
-from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement, fresh_minimum_size
+from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement, fresh_minimum_size, \
+    held_weakly
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.panel_section import PanelSection
@@ -488,12 +489,13 @@ class StrokeToolPanel(QWidget):
         """Adds a section after the block's, with `StrokeBlock.add_tool_section`.
 
         With an `item`, planning calls `apply` with the orientation and the form the item takes, or None for an
-        optional item left out. `apply` hides a left-out section, or moves its controls to `overflow_content`.
+        optional item left out. `apply` hides a left-out section, or moves its controls to `overflow_content`. A bound
+        method is held weakly, since the panel usually owns it.
         """
         self._block.add_tool_section(section, stretch)
         if item is not None:
             assert apply is not None
-            self._tool_items.append((item, apply))
+            self._tool_items.append((item, held_weakly(apply)))
             self._planner = self._build_planner()
 
     def overflow_content(self) -> QWidget:

@@ -1,9 +1,0 @@
-{
-  "ToolPanelTest::test_buttons_are_grouped_with_generation_area_last": 19,
-  "ToolPanelTest::test_header_icon_lines_up_with_first_button_column": 19,
-  "ToolPanelTest::test_plans_leave_no_layout_work_for_the_event_loop": 19,
-  "ToolPanelTest::test_short_strip_uses_one_dense_row": 19,
-  "ToolPanelTest::test_side_buttons_take_the_largest_form_that_fits_across": 19,
-  "ToolPanelTest::test_side_header_sits_under_buttons": 19,
-  "ToolPanelTest::test_tall_strip_uses_two_larger_columns": 19
-}

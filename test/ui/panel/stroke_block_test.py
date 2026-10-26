@@ -233,8 +233,12 @@ class StrokeBlockTest(IntraPaintTestCase):
         orientations = []
         original = self.panel.set_orientation
         self.panel.set_orientation = lambda o: (orientations.append(o), original(o))[1]  # type: ignore[method-assign]
-        self.panel.set_fit_space(STRIP, QSize(1400, 160))
-        self.panel.set_fit_space(STRIP, QSize(1300, 160))
+        try:
+            self.panel.set_fit_space(STRIP, QSize(1400, 160))
+            self.panel.set_fit_space(STRIP, QSize(1300, 160))
+        finally:
+            # The override holds the panel through `original`:
+            del self.panel.set_orientation
         self.assertEqual(len(orientations), 1, orientations)
         self.assertEqual(self.block.arrangement.orientation, STRIP)
 
