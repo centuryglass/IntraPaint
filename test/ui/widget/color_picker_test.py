@@ -1,7 +1,7 @@
 """Tests TabbedColorPicker's shared color, its layouts, ColorControlPanel's layout choice, and ColorDialog."""
 from PySide6.QtCore import QPoint, QPointF, QSize, Qt
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QDockWidget, QLabel, QMainWindow, QScrollArea
+from PySide6.QtWidgets import QDockWidget, QLabel, QMainWindow, QScrollArea, QWidget
 from PySide6 import QtTest
 
 from src.config.application_config import AppConfig
@@ -196,6 +196,31 @@ class ColorPickerLayoutTest(IntraPaintTestCase):
                          _titles(PALETTES_TAB_TITLE)[0])
         self.assertEqual(self.picker.selected_color(), QColor('#80cc3366'))
         self.assertEqual(self.picker.ring_square.color(), QColor('#80cc3366'))
+
+    def test_switching_back_to_a_layout_builds_no_widgets(self) -> None:
+        """A layout is built on first use, and later switches only move the parts."""
+        layouts = list(ColorPickerLayout)
+        for picker_layout in layouts:
+            self.picker.set_picker_layout(picker_layout)
+        widget_count = len(self.picker.findChildren(QWidget))
+        for picker_layout in layouts * 3:
+            self.picker.set_picker_layout(picker_layout)
+            self.picker.set_picker_layout(ColorPickerLayout.SIDE_TALL)
+        self.assertEqual(len(self.picker.findChildren(QWidget)), widget_count)
+
+    def test_parts_are_back_in_place_after_visiting_other_layouts(self) -> None:
+        """Returning to a layout shows the same parts, tabs and part order as its first visit."""
+        self.picker.set_picker_layout(ColorPickerLayout.SIDE)
+        shown = self._shown_parts()
+        tabs = self._tab_tooltips()
+        for picker_layout in (ColorPickerLayout.BOTTOM_WIDE, ColorPickerLayout.DIALOG, ColorPickerLayout.SIDE_TALL):
+            self.picker.set_picker_layout(picker_layout)
+        self.picker.set_picker_layout(ColorPickerLayout.SIDE)
+        self.assertEqual(self._shown_parts(), shown)
+        self.assertEqual(self._tab_tooltips(), tabs)
+        wheel_page_parts = self.picker.tab_widget.widget(0).findChildren(QWidget)
+        self.assertIn(self.picker.ring_square, wheel_page_parts)
+        self.assertIs(self.picker.ring_square.parentWidget(), self.picker.tab_widget.widget(0))
 
     def test_row_layout_ring_follows_height(self) -> None:
         """In bottom layouts the ring is as wide as the picker is tall, up to a share of its width."""

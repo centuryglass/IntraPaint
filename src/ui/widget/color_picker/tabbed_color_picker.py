@@ -5,11 +5,12 @@ on every change, and `color_committed` only on a finished choice: a mouse releas
 screen pick. Callers record committed colors as recent colors (see `src.controller.color_controller`).
 """
 from enum import Enum
+from dataclasses import dataclass, field
 from typing import Optional
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QIcon
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QApplication
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QBoxLayout, QTabWidget, QApplication
 
 from src.ui.widget.color_picker import tab_icons
 from src.ui.widget.color_picker.alpha_hex_row import AlphaHexRow
@@ -67,10 +68,22 @@ class ColorPickerLayout(Enum):
 ROW_LAYOUTS = (ColorPickerLayout.BOTTOM_WIDE, ColorPickerLayout.BOTTOM_MEDIUM, ColorPickerLayout.BOTTOM_SHORT)
 
 
+@dataclass
+class _LayoutEntry:
+    """A layout's container, built once and kept hidden while another layout is active."""
+    container: QWidget
+    tabs: Optional[QTabWidget] = None
+    # (box layout, index, part, stretch) for every part, so `TabbedColorPicker._activate_layout` can put the parts back.
+    slots: list[tuple[QBoxLayout, int, QWidget, int]] = field(default_factory=list)
+
+
 class TabbedColorPicker(ScreenColorWidget):
     """The color picker: a header, an OKHSV ring + square, gradient sliders, saved and recent colors, and alpha + hex.
 
     `swatch_widget` goes at the start of the header: the panel passes its color pair, the dialog its color comparison.
+
+    Each layout's container is built the first time it's used and kept, so a layout switch moves the shared parts
+    between existing containers and creates no widgets.
     """
 
     color_committed = Signal(QColor)
@@ -82,6 +95,8 @@ class TabbedColorPicker(ScreenColorWidget):
         self._outer_layout = QVBoxLayout(self)
         self._outer_layout.setContentsMargins(1, 1, 1, 1)
         self._layout_container: Optional[QWidget] = None
+        self._entries: dict[ColorPickerLayout, _LayoutEntry] = {}
+        self._building: Optional[_LayoutEntry] = None
         self._tabs: Optional[QTabWidget] = None
         self._current_tab_title: Optional[str] = None
         self._picker_layout: Optional[ColorPickerLayout] = None
@@ -198,8 +213,33 @@ class TabbedColorPicker(ScreenColorWidget):
         self._picker_layout = picker_layout
         if self._tabs is not None:
             self._current_tab_title = self._tabs.tabToolTip(self._tabs.currentIndex())
-        self._clear_layout()
+        if self._layout_container is not None:
+            self._layout_container.hide()
+        entry = self._entries.get(picker_layout)
+        if entry is None:
+            entry = self._build_entry(picker_layout)
+        self._layout_container = entry.container
+        self._tabs = entry.tabs
+        if self._tabs is not None:
+            for index in range(self._tabs.count()):
+                if self._tabs.tabToolTip(index) == self._current_tab_title:
+                    self._tabs.setCurrentIndex(index)
+        self._header.set_vertical(picker_layout in (ColorPickerLayout.BOTTOM_MEDIUM, ColorPickerLayout.BOTTOM_SHORT))
+        placed = self._activate_layout(entry)
+        # The ring keeps the previous layout's fixed size until refitted. Showing first would report that stale size as
+        # the minimum, and a dock that grows to fit it resizes the panel again mid-switch.
+        self._fit_ring()
+        for part in self._parts():
+            if part not in placed:
+                part.hide()
+        for part in placed:
+            part.show()
+        entry.container.show()
+
+    def _build_entry(self, picker_layout: ColorPickerLayout) -> _LayoutEntry:
         container = QWidget(self)
+        container.hide()
+        entry = _LayoutEntry(container)
         builders = {
             ColorPickerLayout.SIDE: self._build_side_layout,
             ColorPickerLayout.SIDE_COMPACT: lambda c: self._build_side_layout(c, compact=True),
@@ -209,15 +249,32 @@ class TabbedColorPicker(ScreenColorWidget):
             ColorPickerLayout.BOTTOM_SHORT: self._build_bottom_short_layout,
             ColorPickerLayout.DIALOG: self._build_dialog_layout,
         }
-        placed = builders[picker_layout](container)
+        self._building = entry
+        try:
+            builders[picker_layout](container)
+        finally:
+            self._building = None
         self._outer_layout.addWidget(container)
-        self._layout_container = container
-        # The ring keeps the previous layout's fixed size until refitted. Showing first would report that stale size as
-        # the minimum, and a dock that grows to fit it resizes the panel again mid-switch.
-        self._fit_ring()
-        for part in placed:
-            part.show()
-        container.show()
+        self._entries[picker_layout] = entry
+        return entry
+
+    @staticmethod
+    def _activate_layout(entry: _LayoutEntry) -> list[QWidget]:
+        """Puts back the parts that another layout took, and returns the parts the layout shows.
+
+        Adding a widget to a layout removes it from the layout it was in, so a part sits in one layout at a time.
+        Slots are in creation order, so each reinsertion lands at its original index.
+        """
+        for layout, index, part, stretch in entry.slots:
+            if layout.indexOf(part) < 0:
+                layout.insertWidget(index, part, stretch)
+        return [part for _, _, part, _ in entry.slots]
+
+    def _add(self, layout: QBoxLayout, part: QWidget, stretch: int = 0) -> None:
+        """Adds a part to a layout of the layout being built, and records the slot for `_activate_layout`."""
+        assert self._building is not None
+        self._building.slots.append((layout, layout.count(), part, stretch))
+        layout.addWidget(part, stretch)
 
     def resizeEvent(self, event) -> None:
         """Sizes the ring to the new picker size."""
@@ -259,137 +316,104 @@ class TabbedColorPicker(ScreenColorWidget):
         if changed and self._layout_container is not None and self._layout_container.layout() is not None:
             self._layout_container.layout().activate()
 
-    def _clear_layout(self) -> None:
-        for part in self._parts():
-            part.hide()
-            part.setParent(self)
-        self._tabs = None
-        if self._layout_container is not None:
-            self._outer_layout.removeWidget(self._layout_container)
-            self._layout_container.hide()
-            self._layout_container.deleteLater()
-            self._layout_container = None
-
     def _parts(self) -> tuple[QWidget, ...]:
         return (self._header, self._ring_square, self._slider_block, self._secondary_slider_block,
                 self._alpha_hex_row, self._saved_panel, self._recent_row)
 
     def _new_tabs(self, parent: QWidget, pages: list[tuple[str, QIcon, QWidget]], icon_only: bool) -> QTabWidget:
-        """Creates the layout's tab widget, selecting the tab that was open in the last layout if it has one."""
+        """Creates the layout's tab widget."""
         tabs = QTabWidget(parent)
         for title, icon, page in pages:
             plain_title = title.replace('&', '')
             index = tabs.addTab(page, icon, '' if icon_only else title)
             tabs.setTabToolTip(index, plain_title)
-            if plain_title == self._current_tab_title:
-                tabs.setCurrentIndex(index)
-        self._tabs = tabs
+        assert self._building is not None
+        self._building.tabs = tabs
         return tabs
 
-    @staticmethod
-    def _page(parent: QWidget, *widgets: QWidget, stretch: bool = True) -> QWidget:
+    def _page(self, parent: QWidget, *widgets: QWidget, stretch: bool = True) -> QWidget:
         """Wraps widgets in a tab page, stacked at the top."""
         page = QWidget(parent)
         layout = QVBoxLayout(page)
         layout.setContentsMargins(SPACING, SPACING, SPACING, SPACING)
         for widget in widgets:
-            layout.addWidget(widget)
+            self._add(layout, widget)
         if stretch:
             layout.addStretch(1)
         return page
 
-    @staticmethod
-    def _column(*widgets: QWidget, stretch: bool = True) -> QVBoxLayout:
+    def _column(self, *widgets: QWidget, stretch: bool = True) -> QVBoxLayout:
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         for widget in widgets:
-            layout.addWidget(widget)
+            self._add(layout, widget)
         if stretch:
             layout.addStretch(1)
         return layout
 
-    def _build_side_layout(self, container: QWidget, compact: bool = False) -> list[QWidget]:
+    def _build_side_layout(self, container: QWidget, compact: bool = False) -> None:
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
-        self._header.set_vertical(False)
-        layout.addWidget(self._header)
+        self._add(layout, self._header)
         tabs = self._new_tabs(container, [
             (WHEEL_TAB_TITLE, tab_icons.wheel_icon(), self._page(container, self._ring_square, stretch=False)),
             (SLIDERS_TAB_TITLE, tab_icons.sliders_icon(), self._page(container, self._slider_block)),
             (PALETTES_TAB_TITLE, tab_icons.palettes_icon(), self._page(container, self._saved_panel))
         ], icon_only=compact)
         layout.addWidget(tabs, stretch=1)
-        layout.addWidget(self._alpha_hex_row)
-        placed: list[QWidget] = [self._header, self._ring_square, self._slider_block, self._saved_panel,
-                                 self._alpha_hex_row]
+        self._add(layout, self._alpha_hex_row)
         if not compact:
-            layout.addWidget(self._recent_row)
-            placed.append(self._recent_row)
-        return placed
+            self._add(layout, self._recent_row)
 
-    def _build_side_tall_layout(self, container: QWidget) -> list[QWidget]:
-        self._header.set_vertical(False)
-        parts = (self._header, self._ring_square, self._alpha_hex_row, self._slider_block, self._saved_panel,
-                 self._recent_row)
-        container.setLayout(self._column(*parts))
-        return list(parts)
+    def _build_side_tall_layout(self, container: QWidget) -> None:
+        container.setLayout(self._column(self._header, self._ring_square, self._alpha_hex_row, self._slider_block,
+                                         self._saved_panel, self._recent_row))
 
-    def _build_bottom_wide_layout(self, container: QWidget) -> list[QWidget]:
-        self._header.set_vertical(False)
+    def _build_bottom_wide_layout(self, container: QWidget) -> None:
         layout = QHBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addLayout(self._column(self._header, self._alpha_hex_row, self._recent_row), stretch=1)
-        layout.addWidget(self._ring_square)
+        self._add(layout, self._ring_square)
         layout.addLayout(self._column(self._slider_block, self._secondary_slider_block), stretch=2)
         layout.addLayout(self._column(self._saved_panel), stretch=1)
-        return [self._header, self._alpha_hex_row, self._recent_row, self._ring_square, self._slider_block,
-                self._secondary_slider_block, self._saved_panel]
 
-    def _build_bottom_medium_layout(self, container: QWidget) -> list[QWidget]:
-        self._header.set_vertical(True)
+    def _build_bottom_medium_layout(self, container: QWidget) -> None:
         layout = QHBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addLayout(self._column(self._header, self._recent_row))
-        layout.addWidget(self._ring_square)
+        self._add(layout, self._ring_square)
         tabs = self._new_tabs(container, [
             (SLIDERS_TAB_TITLE, tab_icons.sliders_icon(), self._page(container, self._slider_block)),
             (PALETTES_TAB_TITLE, tab_icons.palettes_icon(), self._page(container, self._saved_panel))
         ], icon_only=False)
         right_column = QVBoxLayout()
         right_column.addWidget(tabs, stretch=1)
-        right_column.addWidget(self._alpha_hex_row)
+        self._add(right_column, self._alpha_hex_row)
         layout.addLayout(right_column, stretch=1)
-        return [self._header, self._recent_row, self._ring_square, self._slider_block, self._saved_panel,
-                self._alpha_hex_row]
 
-    def _build_bottom_short_layout(self, container: QWidget) -> list[QWidget]:
-        self._header.set_vertical(True)
+    def _build_bottom_short_layout(self, container: QWidget) -> None:
         layout = QHBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addLayout(self._column(self._header))
-        layout.addWidget(self._ring_square)
+        self._add(layout, self._ring_square)
         tabs = self._new_tabs(container, [
             (SLIDERS_TAB_TITLE, tab_icons.sliders_icon(), self._page(container, self._slider_block)),
             (PALETTES_TAB_TITLE, tab_icons.palettes_icon(), self._page(container, self._saved_panel)),
             (ALPHA_TAB_TITLE, tab_icons.alpha_icon(), self._page(container, self._alpha_hex_row))
         ], icon_only=True)
         layout.addWidget(tabs, stretch=1)
-        return [self._header, self._ring_square, self._slider_block, self._saved_panel, self._alpha_hex_row]
 
-    def _build_dialog_layout(self, container: QWidget) -> list[QWidget]:
-        self._header.set_vertical(False)
+    def _build_dialog_layout(self, container: QWidget) -> None:
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self._header)
+        self._add(layout, self._header)
         row = QHBoxLayout()
-        row.addWidget(self._ring_square, stretch=1)
+        self._add(row, self._ring_square, stretch=1)
         tabs = self._new_tabs(container, [
             (SLIDERS_TAB_TITLE, tab_icons.sliders_icon(), self._page(container, self._slider_block)),
             (PALETTES_TAB_TITLE, tab_icons.palettes_icon(), self._page(container, self._saved_panel))
         ], icon_only=False)
         row.addWidget(tabs, stretch=1)
         layout.addLayout(row, stretch=1)
-        layout.addWidget(self._alpha_hex_row)
-        layout.addWidget(self._recent_row)
-        return [self._header, self._ring_square, self._slider_block, self._saved_panel, self._alpha_hex_row,
-                self._recent_row]
+        self._add(layout, self._alpha_hex_row)
+        self._add(layout, self._recent_row)
