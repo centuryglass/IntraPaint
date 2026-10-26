@@ -62,6 +62,7 @@ _tally = _Tally()
 _baseline: Optional[dict[str, int]] = None
 _updated: dict[str, int] = {}
 _report: dict[str, dict] = {}
+_module_path: Optional[str] = None
 
 
 def _describe_function(obj: object) -> Optional[str]:
@@ -78,15 +79,22 @@ def _describe_function(obj: object) -> Optional[str]:
     return None
 
 
-def start_test() -> None:
+def start_test(module_path: str) -> None:
     """Frees garbage from before the test uncounted, then saves the garbage that collections find during it.
 
     Everything alive at the start is frozen (`gc.freeze`), so collections during the test only walk objects it
-    created. A cycle that includes an object from before the test isn't counted, and is freed when the next test
-    starts.
+    created. A cycle that includes an object from before the test isn't counted.
+
+    Only the first test of each module unfreezes and collects the whole heap, which grows over the run. Other tests
+    collect only what was created since the last freeze. A cycle that includes a frozen object is freed at the next
+    module's first test. Collecting the whole heap less often leaves that garbage alive across more tests, where it
+    can break them.
     """
+    global _module_path  # pylint: disable=global-statement
     gc.set_debug(0)
-    gc.unfreeze()
+    if module_path != _module_path:
+        _module_path = module_path
+        gc.unfreeze()
     gc.collect()
     gc.garbage.clear()
     gc.freeze()

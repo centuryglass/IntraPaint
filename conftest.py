@@ -210,7 +210,7 @@ def _fail_on_swallowed_modal(request: pytest.FixtureRequest):
 def pytest_runtest_setup(item: pytest.Item):
     """Start counting the PySide wrappers in reference cycles once the test's fixtures are set up (test/qt_cycles.py)."""
     result = yield
-    qt_cycles.start_test()
+    qt_cycles.start_test(str(item.path))
     return result
 
 
