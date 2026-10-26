@@ -33,7 +33,7 @@ from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_S
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, PROJECT_DIR, \
-    AUTH_ERROR, AUTH_ERROR_MESSAGE, INTERROGATE_ERROR_TITLE, INTERROGATE_ERROR_MESSAGE_NO_IMAGE, \
+    AUTH_ERROR, AUTH_ERROR_MESSAGE, DESCRIBE_ERROR_TITLE, DESCRIBE_ERROR_MESSAGE_NO_IMAGE, \
     ERROR_MESSAGE_TIMEOUT, GENERATE_ERROR_MESSAGE_EMPTY_MASK, GENERATE_ERROR_TITLE, MISC_CONNECTION_ERROR
 
 logger = logging.getLogger(__name__)
@@ -529,8 +529,8 @@ class SDWebUIGenerator(SDGenerator):
         for category in a1111_config.get_categories():
             settings_modal.remove_category(a1111_config, category)
 
-    def interrogate(self) -> None:
-        """ Calls the "interrogate" endpoint to automatically generate image prompts.
+    def describe(self) -> None:
+        """ Automatically generates an image prompt, using the WebUI's interrogate endpoint.
 
         Sends the image generation area content to the Stable Diffusion WebUI API, where an image captioning model
         automatically generates an appropriate prompt. Once returned, that prompt is copied to the appropriate field
@@ -538,18 +538,18 @@ class SDWebUIGenerator(SDGenerator):
         """
         assert self._webservice is not None
         if not self._image_stack.has_image:
-            show_error_dialog(None, INTERROGATE_ERROR_TITLE, INTERROGATE_ERROR_MESSAGE_NO_IMAGE)
+            show_error_dialog(None, DESCRIBE_ERROR_TITLE, DESCRIBE_ERROR_MESSAGE_NO_IMAGE)
             return
         image = self._image_stack.qimage_generation_area_content()
 
-        class _InterrogateTask(AsyncTask):
+        class _DescribeTask(AsyncTask):
             prompt_ready = Signal(str)
             error_signal = Signal(Exception)
 
             def signals(self) -> list[SignalInstance]:
                 return [self.prompt_ready, self.error_signal]
 
-        def _interrogate(prompt_ready: SignalInstance, error_signal: SignalInstance) -> None:
+        def _describe(prompt_ready: SignalInstance, error_signal: SignalInstance) -> None:
             try:
                 assert self._webservice is not None
                 prompt_ready.emit(self._webservice.interrogate(qimage_to_pil(image)))
@@ -559,10 +559,10 @@ class SDWebUIGenerator(SDGenerator):
                 logger.error(f'err:{err}')
                 error_signal.emit(err)
 
-        task = _InterrogateTask(_interrogate, True)
+        task = _DescribeTask(_describe, True)
 
         def set_prompt(prompt_text: str) -> None:
-            """Update the image prompt in config with the interrogate results."""
+            """Update the image prompt in config with the description."""
             last_prompt = Cache().get(Cache.PROMPT)
 
             def _update_prompt(text=prompt_text) -> None:
@@ -571,16 +571,16 @@ class SDWebUIGenerator(SDGenerator):
             def _restore_prompt(text=last_prompt) -> None:
                 Cache().set(Cache.PROMPT, text)
 
-            UndoStack().commit_action(_update_prompt, _restore_prompt, 'SDWebUIGenerator._interrogate')
+            UndoStack().commit_action(_update_prompt, _restore_prompt, 'SDWebUIGenerator._describe')
             AppStateTracker().set_app_state(APP_STATE_EDITING)
 
         task.prompt_ready.connect(set_prompt)
 
         def handle_error(err: BaseException) -> None:
-            """Show an error popup if interrogate fails."""
+            """Show an error popup if describing fails."""
             assert self._window is not None
             AppStateTracker().set_app_state(APP_STATE_EDITING)
-            show_error_dialog(self._window, INTERROGATE_ERROR_TITLE, err)
+            show_error_dialog(self._window, DESCRIBE_ERROR_TITLE, err)
 
         task.error_signal.connect(handle_error)
         task.start()
@@ -589,7 +589,7 @@ class SDWebUIGenerator(SDGenerator):
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
             self._control_panel = self._create_control_panel(StableDiffusionPanel(True), WebUIAdvancedControls())
-            self._control_panel.interrogate_signal.connect(self.interrogate)
+            self._control_panel.describe_signal.connect(self.describe)
             self._control_panel.styles_requested.connect(self.show_style_window)
         return self._control_panel
 

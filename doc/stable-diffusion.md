@@ -57,7 +57,7 @@ This panel is the main place where you'll control image generation.
     - **18a. "Reuse last seed" button**:  Replaces the seed with the one in the "Last seed" box.
     - **18b. "Randomize seed" button**: Sets the seed value to -1, so that a random value will be used for each image generation.
 19. **Last seed value**: Shows the seed used the last time the generate button was pressed.
-20. **Interrogate button** (WebUI generator ornly): Use AI image analysis to automatically generate a description of the section of the image in the image generation area.  The new description will replace the current prompt.
+20. **Describe** (More menu, WebUI generator only): Use AI image analysis to automatically generate a description of the section of the image in the image generation area.  The new description will replace the current prompt.
 21. **Generate button**: Click to trigger AI image generation, creating or altering image content to insert into the [image generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](./controls.md#generated-image-selection-view).
 
 ---
@@ -142,7 +142,7 @@ When a Stable Diffusion image generator is active, extra options will be availab
    - 2e. **Stable Diffusion VAE models cached**: Number of VAE models to keep loaded in RAM at one time.
    - 2f. **CLIP skip**: Sets how many final image generation steps are taken without the guidance of the CLIP image recognition module.  In most cases this is best left at 1, but some models recommend setting it to 2.
 3. **"Stable Diffusion" section**:  Settings in this section are handled directly by IntraPaint, and don't need to be sent back to the connected generator.
-   - 3a. **Image interrogation model** (affects the WebUI generator only): Enter the image recognition model that the Stable Diffusion WebUI will use when the "Interrogate" button is pressed.  Any option other than "clip" will probably need to be configured separately within the WebUI. As the ComfyUI generator does not support image interrogation, this option won't do anything under that generator.
+   - 3a. **Describe model** (affects the WebUI generator only): Enter the image recognition model that the Stable Diffusion WebUI will use when "Describe" is run.  Any option other than "clip" will probably need to be configured separately within the WebUI. As the ComfyUI generator does not support Describe, this option won't do anything under that generator.
    - 3b. **ControlNet tiled upscaling model**: Enter the ControlNet model that should be used for [AI tiled upscaling](#ai-upscaling-with-intrapaint). These models need to be downloaded and added manually. See the [Stable Diffusion]
 4. **Save button**: Once clicked, settings will be sent back to the WebUI or saved to an IntraPaint config file depending on which section was changed.
 5. **Cancel button**: Discards all changes and closes the settings window.

@@ -199,9 +199,9 @@ class SDComfyUIGenerator(SDGenerator):
         self._webservice = ComfyUiWebservice(url)
         return self._webservice
 
-    def interrogate(self) -> None:
+    def describe(self) -> None:
         """Update the prompt to match image content using an AI image description model."""
-        raise RuntimeError('ComfyUI lacks interrogate support')
+        raise RuntimeError('ComfyUI lacks describe support')
 
     def get_controlnet_preprocessors(self) -> list[ControlNetPreprocessor]:
         """Return the list of available Controlnet preprocessors."""

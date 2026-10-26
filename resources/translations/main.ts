@@ -540,12 +540,12 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Image interrogation model (WebUI only):</source>
+        <source>Describe model (WebUI only):</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.</source>
+        <source>Model used when auto-generating appropriate prompts using the Describe action. Supported values will vary based on what extensions you've installed into the Stable Diffusion WebUI, but 'clip' should always be accepted.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6643,12 +6643,12 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
-        <source>Interrogate</source>
+        <source>Describe</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
-        <source>Attempt to generate a prompt that describes the current image generation area</source>
+        <source>Replace the prompt with a description of the generation area</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -8665,7 +8665,7 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/util/shared_constants.py"/>
-        <source>Interrogate failure</source>
+        <source>Describe failed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -8675,7 +8675,7 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/util/shared_constants.py"/>
-        <source>Running CLIP interrogate</source>
+        <source>Describing image</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

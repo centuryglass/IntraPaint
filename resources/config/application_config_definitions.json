@@ -378,9 +378,9 @@
         "saved": true
     },
     "interrogate_model": {
-        "label": "Image interrogation model (WebUI only):",
+        "label": "Describe model (WebUI only):",
         "category": "Stable Diffusion",
-        "description": "Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.",
+        "description": "Model used when auto-generating appropriate prompts using the Describe action. Supported values will vary based on what extensions you've installed into the Stable Diffusion WebUI, but 'clip' should always be accepted.",
         "type": "string",
         "default": "clip",
         "saved": true

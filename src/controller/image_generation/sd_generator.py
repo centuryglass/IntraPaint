@@ -280,7 +280,7 @@ class SDGenerator(ImageGenerator, ABC):
            exists but the url doesn't match, a new webservice should replace the existing one, using the new url."""
 
     @abstractmethod
-    def interrogate(self) -> None:
+    def describe(self) -> None:
         """Update the prompt to match image content using an AI image description model."""
 
     @abstractmethod

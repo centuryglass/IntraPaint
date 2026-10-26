@@ -14,7 +14,7 @@ pins Prompt in a column at the left (`DockPanel.pinned_layout`) and packs the re
   selector takes the caution color and a note above Generate names the mode.
 - The edit mode selector sits in the header. A strip puts the header at the top of the prompt column, so the columns
   beside it get the strip's full height. The prompt column scrolls on its own, so the header never collapses.
-- The header's More menu holds Interrogate and the commands that open other windows. The panel emits signals for them
+- The header's More menu holds Describe and the commands that open other windows. The panel emits signals for them
   and the generator acts on them.
 - The panel stays unaware of the backend connection. The generator shows `DisabledBanner` through
   `set_disconnected`.
@@ -83,8 +83,8 @@ BUTTON_TOOLTIP_LORA = _tr('Choose LoRA models to add to the prompt')
 BUTTON_TEXT_STYLES = _tr('Styles')
 BUTTON_TOOLTIP_STYLES = _tr('Add saved prompt styles to the prompt')
 
-MENU_TEXT_INTERROGATE = _tr('Interrogate')
-TOOLTIP_INTERROGATE = _tr('Attempt to generate a prompt that describes the current image generation area')
+MENU_TEXT_DESCRIBE = _tr('Describe')
+TOOLTIP_DESCRIBE = _tr('Replace the prompt with a description of the generation area')
 MENU_TEXT_SETUP = _tr('Select image generator...')
 MENU_TEXT_SETTINGS = _tr('Stable Diffusion settings...')
 MENU_TEXT_LCM_MODE = _tr('LCM mode')
@@ -396,7 +396,7 @@ class StableDiffusionPanel(DockPanel):
     """A control panel for the Stable Diffusion WebUI and ComfyUI image generators."""
 
     generate_signal = Signal()
-    interrogate_signal = Signal()
+    describe_signal = Signal()
     lora_requested = Signal()
     styles_requested = Signal()
     lcm_mode_requested = Signal()
@@ -758,10 +758,10 @@ class StableDiffusionPanel(DockPanel):
         self._more_content = QWidget()
         more_layout = QVBoxLayout(self._more_content)
         more_layout.setContentsMargins(0, 0, 0, 0)
-        self._interrogate_menu_button = self._add_more_button(MENU_TEXT_INTERROGATE, more_layout,
-                                                              self.interrogate_signal)
-        self._interrogate_menu_button.setToolTip(TOOLTIP_INTERROGATE)
-        self._interrogate_menu_button.setVisible(self._webui)
+        self._describe_menu_button = self._add_more_button(MENU_TEXT_DESCRIBE, more_layout,
+                                                              self.describe_signal)
+        self._describe_menu_button.setToolTip(TOOLTIP_DESCRIBE)
+        self._describe_menu_button.setVisible(self._webui)
         self._setup_menu_button = self._add_more_button(MENU_TEXT_SETUP, more_layout, self.setup_requested)
         self._settings_menu_button = self._add_more_button(MENU_TEXT_SETTINGS, more_layout, self.settings_requested)
         self._lcm_menu_button = self._add_more_button(MENU_TEXT_LCM_MODE, more_layout, self.lcm_mode_requested)
@@ -960,6 +960,6 @@ class StableDiffusionPanel(DockPanel):
 
     @property
     def more_menu_buttons(self) -> list[QPushButton]:
-        """The More menu's buttons, in display order: Interrogate, setup, settings, LCM mode and Clear GPU memory."""
-        return [self._interrogate_menu_button, self._setup_menu_button, self._settings_menu_button,
+        """The More menu's buttons, in display order: Describe, setup, settings, LCM mode and Clear GPU memory."""
+        return [self._describe_menu_button, self._setup_menu_button, self._settings_menu_button,
                 self._lcm_menu_button, self._clear_memory_menu_button]

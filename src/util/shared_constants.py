@@ -90,10 +90,10 @@ AUTH_ERROR = _tr('Failed to connect to image generator at "{url}": Login cancell
 MISC_CONNECTION_ERROR = _tr('Failed to connect to image generator at "{url}".  Click "Activate" to try again or choose'
                             ' a different address. <br/> Full error text: <br/><blockquote>{error_text}</blockquote>')
 
-# "Interrogate" feature:
-INTERROGATE_ERROR_TITLE = _tr('Interrogate failure')
-INTERROGATE_ERROR_MESSAGE_NO_IMAGE = _tr('Open or create an image first.')
-INTERROGATE_LOADING_TEXT = _tr('Running CLIP interrogate')
+# "Describe" feature:
+DESCRIBE_ERROR_TITLE = _tr('Describe failed')
+DESCRIBE_ERROR_MESSAGE_NO_IMAGE = _tr('Open or create an image first.')
+DESCRIBE_LOADING_TEXT = _tr('Describing image')
 
 # Image generation:
 GENERATE_ERROR_TITLE = _tr('Image generation failed')
