@@ -66,7 +66,7 @@ A brief comparison of the three WebUI options:
 
 ### IntraPaint features exclusive to the WebUI generator
 
-- The "Interrogate" button on the [Image generation panel](./stable-diffusion.md#image-generation-panel) that automatically generates a prompt by using AI image analysis is exclusive to the WebUI.
+- The "Describe" action on the [Image generation panel](./stable-diffusion.md#image-generation-panel) that automatically generates a prompt by using AI image analysis is exclusive to the WebUI.
 - The [Saved Prompt Style](./menu_options.md#view-saved-prompt-styles-ctrlalt1) window can only be accessed when using the WebUI generator.
 - The [LoRA option window](./menu_options.md#view-lora-models-ctrlalt2) is only capable of loading image previews when used with the WebUI generator.
 - The [ControlNet Panel](./stable-diffusion.md#controlnet-panel) provides extra controls for image resizing and VRAM management when used with the WebUI generator.

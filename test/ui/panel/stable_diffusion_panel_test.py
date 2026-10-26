@@ -195,11 +195,11 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         self.assertFalse(self._visible(panel.tiling_button))
 
     def test_moved_controls_are_reachable_in_their_new_places(self) -> None:
-        """Model is in the Prompt section, Interrogate in the More menu, and full resolution in the padding field."""
+        """Model is in the Prompt section, Describe in the More menu, and full resolution in the padding field."""
         self.assertTrue(self._section(SECTION_TITLE_PROMPT).isAncestorOf(self.panel.model_combobox))
-        interrogate = self.panel.more_menu_buttons[0]
-        self.assertTrue(self.panel.more_content().isAncestorOf(interrogate))
-        self.assertTrue(self._visible(interrogate))
+        describe = self.panel.more_menu_buttons[0]
+        self.assertTrue(self.panel.more_content().isAncestorOf(describe))
+        self.assertTrue(self._visible(describe))
         self.assertTrue(self.panel.padding_field.pressure_link_available())
         self.assertTrue(self.panel.action_block.isAncestorOf(self.panel.padding_field))
 
@@ -236,11 +236,11 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         self.assertTrue(self._visible(styles))
 
     def test_comfyui_panel_has_only_the_lora_tool(self) -> None:
-        """ComfyUI has no styles or interrogate, and offers Clear GPU memory in the More menu."""
+        """ComfyUI has no styles or describe, and offers Clear GPU memory in the More menu."""
         panel = StableDiffusionPanel(False)
         self.assertEqual(len(panel.prompt_tool_buttons), 1)
-        interrogate, _, _, _, clear = panel.more_menu_buttons
-        self.assertTrue(interrogate.isHidden())
+        describe, _, _, _, clear = panel.more_menu_buttons
+        self.assertTrue(describe.isHidden())
         self.assertFalse(clear.isHidden())
         self.assertTrue(self.panel.more_menu_buttons[4].isHidden())
 
@@ -249,16 +249,16 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         panel = self.panel
         received: list[str] = []
         signals = {'lora': panel.lora_requested, 'styles': panel.styles_requested,
-                   'interrogate': panel.interrogate_signal, 'setup': panel.setup_requested,
+                   'describe': panel.describe_signal, 'setup': panel.setup_requested,
                    'settings': panel.settings_requested, 'lcm': panel.lcm_mode_requested,
                    'clear': panel.clear_memory_requested, 'generate': panel.generate_signal}
         for name, signal in signals.items():
             signal.connect(lambda name=name: received.append(name))
         lora, styles = panel.prompt_tool_buttons
-        interrogate, setup, settings, lcm, clear = panel.more_menu_buttons
-        for button in (lora, styles, interrogate, setup, settings, lcm, clear, panel.generate_button):
+        describe, setup, settings, lcm, clear = panel.more_menu_buttons
+        for button in (lora, styles, describe, setup, settings, lcm, clear, panel.generate_button):
             button.click()
-        self.assertEqual(received, ['lora', 'styles', 'interrogate', 'setup', 'settings', 'lcm', 'clear', 'generate'])
+        self.assertEqual(received, ['lora', 'styles', 'describe', 'setup', 'settings', 'lcm', 'clear', 'generate'])
 
     def test_lcm_mode_shows_in_more_only_when_available(self) -> None:
         """The LCM entry follows the generator's availability check each time More opens."""

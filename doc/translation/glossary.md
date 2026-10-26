@@ -79,7 +79,7 @@ kept in English or transliterated; per-language glossaries check community local
 | ControlNet unit | One ControlNet slot, with its own model, image and settings. Up to three run at once. | ControlNet panel | "ControlNet Unit {unit_number}", "Enable ControlNet Unit", "ControlNet: {count} units on" |
 | Preprocessor | The step that turns a control image into ControlNet's input, such as an edge map. | ControlNet panel | "Preprocessor:", "Preview Preprocessor", "ControlNet preview failed" |
 | Control weight, control step | How strongly a ControlNet unit applies, and the fraction of the steps it applies during. | ControlNet panel | "Control Weight:", "Starting Control Step:", "Ending Control Step:" |
-| Interrogate | Ask the backend to write a prompt describing the generation area's content. | Image Generation panel's More menu | "Interrogate", "Running CLIP interrogate", "Image interrogation model (WebUI only):" |
+| Describe | Ask the backend to write a prompt describing the generation area's content. Uses the WebUI's interrogate endpoint, where available. | Image Generation panel's More menu | "Describe", "Describing image", "Describe failed", "Describe model (WebUI only):" |
 | CLIP skip | How many of the text encoder's final layers to skip. | Stable Diffusion settings | "CLIP skip:" |
 | Upscale | Enlarge an image. Stable Diffusion upscaling regenerates detail while enlarging, optionally with a tile ControlNet. | Scale image window | "Advanced AI upscaling", "Upscale method:", "Tile ControlNet model:", "Upscale failure" |
 | Inpaint full resolution, padding | Inpaint the masked area at full resolution, with this many pixels of surrounding context. | Image Generation panel | "Inpaint Full Resolution", "Padding:" |
