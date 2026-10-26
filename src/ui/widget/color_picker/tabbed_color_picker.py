@@ -8,10 +8,11 @@ from enum import Enum
 from dataclasses import dataclass, field
 from typing import Optional
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QEvent, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QIcon
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QBoxLayout, QTabWidget, QApplication
 
+from src.ui.layout.panel_fit import fresh_minimum_size
 from src.ui.widget.color_picker import tab_icons
 from src.ui.widget.color_picker.alpha_hex_row import AlphaHexRow
 from src.ui.widget.color_picker.color_picker_header import ColorPickerHeader
@@ -84,6 +85,9 @@ class TabbedColorPicker(ScreenColorWidget):
 
     Each layout's container is built the first time it's used and kept, so a layout switch moves the shared parts
     between existing containers and creates no widgets.
+
+    A layout's minimum size (`layout_minimum`) is measured once, with the ring at its smallest, so it doesn't depend on
+    the picker's size or on which layout was showing. The cache is cleared when the style, font or language changes.
     """
 
     color_committed = Signal(QColor)
@@ -100,6 +104,8 @@ class TabbedColorPicker(ScreenColorWidget):
         self._tabs: Optional[QTabWidget] = None
         self._current_tab_title: Optional[str] = None
         self._picker_layout: Optional[ColorPickerLayout] = None
+        self._layout_minimums: dict[ColorPickerLayout, QSize] = {}
+        self._measuring = False
 
         self._header = ColorPickerHeader(swatch_widget, self)
         self._header.pick_button.clicked.connect(self._start_screen_picking)
@@ -206,6 +212,51 @@ class TabbedColorPicker(ScreenColorWidget):
         """Returns the current arrangement."""
         return self._picker_layout
 
+    @property
+    def measuring(self) -> bool:
+        """Whether the picker is measuring a layout. Resizes while it is don't reflect a change the picker's host
+        asked for."""
+        return self._measuring
+
+    def layout_minimum(self, picker_layout: ColorPickerLayout) -> QSize:
+        """Returns the smallest size a layout fits in, with the ring at its smallest.
+
+        The size is measured the first time the layout shows, which builds it if needed. Measuring a layout that isn't
+        showing switches to it and back.
+        """
+        known = self._layout_minimums.get(picker_layout)
+        if known is not None:
+            return QSize(known)
+        previous = self._picker_layout
+        if picker_layout == previous:
+            self._measure_layout()
+        else:
+            self.set_picker_layout(picker_layout)
+            if previous is not None:
+                self.set_picker_layout(previous)
+        return QSize(self._layout_minimums[picker_layout])
+
+    def changeEvent(self, event: Optional[QEvent]) -> None:  # pylint: disable=invalid-name
+        """Forgets the measured layout sizes when a change to the style, font or language would change them."""
+        if event is not None and event.type() in (QEvent.Type.StyleChange, QEvent.Type.FontChange,
+                                                  QEvent.Type.LanguageChange):
+            self._layout_minimums.clear()
+        super().changeEvent(event)
+
+    def _measure_layout(self) -> None:
+        """Measures the showing layout's minimum size, and leaves the ring fitted to the picker's size."""
+        assert self._picker_layout is not None and self._layout_container is not None
+        self._measuring = True
+        try:
+            self._fit_ring(QSize())
+            size = fresh_minimum_size(self._layout_container)
+            margins = self._outer_layout.contentsMargins()
+            self._layout_minimums[self._picker_layout] = QSize(size.width() + margins.left() + margins.right(),
+                                                              size.height() + margins.top() + margins.bottom())
+        finally:
+            self._measuring = False
+        self._fit_ring()
+
     def set_picker_layout(self, picker_layout: ColorPickerLayout) -> None:
         """Rearranges the parts, keeping the selected tab if the new layout has it."""
         if picker_layout == self._picker_layout:
@@ -228,13 +279,16 @@ class TabbedColorPicker(ScreenColorWidget):
         placed = self._activate_layout(entry)
         # The ring keeps the previous layout's fixed size until refitted. Showing first would report that stale size as
         # the minimum, and a dock that grows to fit it resizes the panel again mid-switch.
-        self._fit_ring()
+        measure = picker_layout not in self._layout_minimums
+        self._fit_ring(QSize() if measure else None)
         for part in self._parts():
             if part not in placed:
                 part.hide()
         for part in placed:
             part.show()
         entry.container.show()
+        if measure:
+            self._measure_layout()
 
     def _build_entry(self, picker_layout: ColorPickerLayout) -> _LayoutEntry:
         container = QWidget(self)
@@ -281,23 +335,30 @@ class TabbedColorPicker(ScreenColorWidget):
         super().resizeEvent(event)
         self._fit_ring()
 
-    def _fit_ring(self) -> None:
+    def _fit_ring(self, available: Optional[QSize] = None) -> None:
         """Sizes the ring from the picker's size where the layout doesn't: its width in rows, its height in a column.
 
-        Neither size depends on the ring's own position in the layout, so a scroll area can't grow the picker through
-        it.
+        `available` stands in for the picker's size, and an empty one gives the ring its smallest size. The ring never
+        takes the room the rest of the layout needs for its own minimum size, once that is measured. Neither size
+        depends on the ring's own position in the layout, so a scroll area can't grow the picker through it.
         """
         ring = self._ring_square
         margins = self._outer_layout.contentsMargins()
-        available_width = self.width() - margins.left() - margins.right()
-        available_height = self.height() - margins.top() - margins.bottom()
+        if available is None:
+            available = QSize(self.width() - margins.left() - margins.right(),
+                              self.height() - margins.top() - margins.bottom())
         min_side = ring.minimumSizeHint().height()
+        known = None if self._picker_layout is None else self._layout_minimums.get(self._picker_layout)
+        rest_width = 0 if known is None else known.width() - margins.left() - margins.right() - min_side
+        rest_height = 0 if known is None else known.height() - margins.top() - margins.bottom() - min_side
         width = None
         height = None
         if self._picker_layout in ROW_LAYOUTS:
-            width = max(min(available_height, int(available_width * ROW_RING_MAX_WIDTH_FRACTION)), min_side)
+            width = max(min(available.height(), int(available.width() * ROW_RING_MAX_WIDTH_FRACTION),
+                            available.width() - rest_width), min_side)
         elif self._picker_layout == ColorPickerLayout.SIDE_TALL:
-            height = max(min(available_width, int(available_height * TALL_RING_MAX_HEIGHT_FRACTION)), min_side)
+            height = max(min(available.width(), int(available.height() * TALL_RING_MAX_HEIGHT_FRACTION),
+                             available.height() - rest_height), min_side)
         changed = False
         if width is not None:
             changed = ring.minimumWidth() != width or ring.maximumWidth() != width

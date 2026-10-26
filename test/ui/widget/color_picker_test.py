@@ -7,6 +7,7 @@ from PySide6 import QtTest
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.modal.color_dialog import ColorDialog
+from src.ui.layout.panel_fit import FitContent, Orientation
 from src.ui.panel.color_panel import ColorControlPanel, choose_layout
 from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.color_picker.color_comparison import ColorComparison
@@ -232,6 +233,19 @@ class ColorPickerLayoutTest(IntraPaintTestCase):
         self.picker.set_picker_layout(ColorPickerLayout.SIDE)
         self.assertEqual(self.picker.ring_square.minimumWidth(), 0)
 
+    def test_row_layout_ring_leaves_the_rest_its_minimum(self) -> None:
+        """Near a row layout's minimum width the ring shrinks, so the rest of the layout keeps its own minimum."""
+        self.picker.set_picker_layout(ColorPickerLayout.BOTTOM_SHORT)
+        minimum = self.picker.layout_minimum(ColorPickerLayout.BOTTOM_SHORT)
+        # A window grows to its layout's minimum size, so size the picker as a child:
+        host = QWidget()
+        self.picker.setParent(host)
+        host.show()
+        self.picker.show()
+        self.picker.setGeometry(0, 0, minimum.width() + 10, 600)
+        ring_minimum = self.picker.ring_square.minimumSizeHint().height()
+        self.assertEqual(self.picker.ring_square.minimumWidth(), ring_minimum + 10)
+
 
 class ChooseLayoutTest(IntraPaintTestCase):
     """Tests ColorControlPanel's layout choice."""
@@ -323,33 +337,131 @@ class ColorControlPanelTest(IntraPaintTestCase):
         self.panel.set_orientation(Qt.Orientation.Horizontal)
         self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.BOTTOM_MEDIUM)
 
-    def test_minimum_size_allows_shrinking_from_any_layout(self) -> None:
-        """The panel's minimum size stays the compact one, so a wide layout never stops its dock from shrinking."""
+    def test_minimum_size_is_the_last_resort_layouts(self) -> None:
+        """The minimum size is the last-resort layout's for the orientation, whichever layout shows and whatever
+        sizes the panel had before."""
+        sizes = (QSize(1400, 300), QSize(300, 1000), QSize(300, 600), QSize(240, 300), QSize(700, 200), QSize(1400, 1000))
+        expected = {Qt.Orientation.Vertical: self.panel.layout_minimum(ColorPickerLayout.SIDE_COMPACT),
+                    Qt.Orientation.Horizontal: self.panel.layout_minimum(ColorPickerLayout.BOTTOM_SHORT)}
+        for orientation, minimum in expected.items():
+            for size in sizes:
+                with self.subTest(orientation=orientation, size=size):
+                    self.panel.resize(size)
+                    self.panel.set_orientation(orientation)
+                    self.assertEqual(self.panel.minimumSizeHint(), minimum)
+        self.assertLess(expected[Qt.Orientation.Horizontal].height(), expected[Qt.Orientation.Vertical].height())
+
+    def test_layout_minimum_does_not_depend_on_size(self) -> None:
+        """A layout's minimum size is the same however large the picker was when it was measured."""
+        small = TabbedColorPicker()
+        small.resize(200, 200)
+        large = TabbedColorPicker()
+        large.resize(1600, 1000)
+        for picker_layout in ColorPickerLayout:
+            with self.subTest(picker_layout=picker_layout):
+                self.assertEqual(large.layout_minimum(picker_layout), small.layout_minimum(picker_layout))
+
+    def test_layout_minimum_follows_the_font(self) -> None:
+        """Changing the font measures every layout again."""
+        picker = TabbedColorPicker()
+        before = picker.layout_minimum(ColorPickerLayout.SIDE_COMPACT)
+        font = picker.font()
+        font.setPointSize(font.pointSize() * 2)
+        picker.setFont(font)
+        after = picker.layout_minimum(ColorPickerLayout.SIDE_COMPACT)
+        self.assertGreater(after.width(), before.width())
+
+    def test_chosen_layout_fits_every_size_at_or_above_the_minimum(self) -> None:
+        """At any size the panel's minimum allows, the layout it picks has room for its own minimum size."""
+        for orientation in (Qt.Orientation.Vertical, Qt.Orientation.Horizontal):
+            self.panel.set_orientation(orientation)
+            minimum = self.panel.minimumSizeHint()
+            for width in (minimum.width(), 300, 420, 700, 1100, 1400):
+                for height in (minimum.height(), 200, 260, 400, 700, 1000):
+                    size = QSize(max(width, minimum.width()), max(height, minimum.height()))
+                    with self.subTest(orientation=orientation, size=size):
+                        self.panel.resize(size)
+                        self.panel.set_orientation(orientation)
+                        picked = self.panel.layout_minimum(self.panel.picker_layout())
+                        self.assertLessEqual(picked.width(), size.width())
+                        self.assertLessEqual(picked.height(), size.height())
+
+    def test_fit_base_size_is_the_last_resort_minimum(self) -> None:
+        """A `FitContent` host measures the panel at the last-resort layout for its orientation, which then shows."""
+        self.assertEqual(self.panel.fit_base_size(Orientation.SIDE), self.panel.layout_minimum(
+            ColorPickerLayout.SIDE_COMPACT))
+        self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.SIDE_COMPACT)
+        self.assertEqual(self.panel.fit_base_size(Orientation.STRIP), self.panel.layout_minimum(
+            ColorPickerLayout.BOTTOM_SHORT))
+        self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.BOTTOM_SHORT)
+
+    def test_fit_space_chooses_the_layout(self) -> None:
+        """The layout follows the space a `FitContent` host gives the panel, not the panel's own size."""
+        self.panel.resize(200, 200)
+        self.panel.set_fit_space(Orientation.SIDE, QSize(300, 1000))
+        self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.SIDE_TALL)
+        self.panel.set_fit_space(Orientation.STRIP, QSize(1400, 300))
+        self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.BOTTOM_WIDE)
+        self.panel.set_fit_space(Orientation.STRIP, QSize(600, 200))
+        self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.BOTTOM_SHORT)
+        self.panel.resize(1400, 1000)
+        self.panel.set_orientation(Qt.Orientation.Horizontal)
+        self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.BOTTOM_SHORT)
+
+    def test_fit_space_no_layout_fits_gets_the_last_resort(self) -> None:
+        """Where the host's space is smaller than any layout's minimum, the panel shows its last-resort layout, which
+        the host scrolls."""
+        self.panel.set_fit_space(Orientation.STRIP, QSize(0, 49))
+        self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.BOTTOM_SHORT)
+        self.panel.set_fit_space(Orientation.SIDE, QSize(0, 49))
+        self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.SIDE_COMPACT)
+
+    def test_new_parent_forgets_the_fit_space(self) -> None:
+        """A panel moved out of its host plans for its own size again."""
+        self.panel.set_fit_space(Orientation.SIDE, QSize(300, 1000))
+        self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.SIDE_TALL)
+        host = QWidget()
+        self.panel.setParent(host)
         self.panel.resize(300, 600)
         self.panel.set_orientation(Qt.Orientation.Vertical)
-        compact_minimum = self.panel.minimumSizeHint()
-        self.panel.resize(1400, 300)
-        self.panel.set_orientation(Qt.Orientation.Horizontal)
-        self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.BOTTOM_WIDE)
-        self.assertEqual(self.panel.minimumSizeHint().width(), compact_minimum.width())
-        self.assertLessEqual(self.panel.minimumSizeHint().height(), compact_minimum.height())
+        self.assertEqual(self.panel.picker_layout(), ColorPickerLayout.SIDE)
+
+    def test_overflow_content_is_empty(self) -> None:
+        """No control is optional, so the More popover never gets any from the panel."""
+        overflow = self.panel.overflow_content()
+        self.assertEqual(overflow.findChildren(QWidget), [])
+        self.assertIsInstance(self.panel, FitContent)
 
     def test_scroll_area_uses_visible_size(self) -> None:
         """In a scroll area the panel fills the visible area and picks the layout for it, without scrolling."""
         cases = ((Qt.Orientation.Vertical, QSize(680, 420), ColorPickerLayout.SIDE_COMPACT),
-                 (Qt.Orientation.Horizontal, QSize(300, 360), ColorPickerLayout.SIDE_COMPACT),
                  (Qt.Orientation.Horizontal, QSize(700, 200), ColorPickerLayout.BOTTOM_SHORT))
+        for orientation, size, expected in cases:
+            with self.subTest(orientation=orientation, size=size):
+                panel = ColorControlPanel()
+                area = QScrollArea()
+                area.setWidgetResizable(True)
+                area.setWidget(panel)
+                area.show()
+                try:
+                    panel.set_orientation(orientation)
+                    area.resize(size)
+                    self.assertEqual(panel.picker_layout(), expected)
+                    self.assertEqual(panel.size(), area.viewport().size())
+                finally:
+                    area.hide()
+
+    def test_strip_below_its_minimum_scrolls(self) -> None:
+        """A strip too narrow for the short layout scrolls sideways instead of squeezing the layout."""
         area = QScrollArea()
         area.setWidgetResizable(True)
         area.setWidget(self.panel)
         area.show()
         try:
-            for orientation, size, expected in cases:
-                with self.subTest(orientation=orientation, size=size):
-                    self.panel.set_orientation(orientation)
-                    area.resize(size)
-                    self.assertEqual(self.panel.picker_layout(), expected)
-                    self.assertEqual(self.panel.size(), area.viewport().size())
+            self.panel.set_orientation(Qt.Orientation.Horizontal)
+            area.resize(300, 360)
+            self.assertEqual(self.panel.width(), self.panel.minimumSizeHint().width())
+            self.assertGreater(area.horizontalScrollBar().maximum(), 0)
         finally:
             area.hide()
 

@@ -1,12 +1,14 @@
 """The color picker as a panel that edits a config color, choosing its layout from its size and dock orientation."""
 from typing import Optional
 
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QEvent, QSize
 from PySide6.QtGui import QColor, QResizeEvent
+from PySide6.QtWidgets import QWidget
 
 from src.config.cache import Cache
 from src.config.config_from_key import get_config_from_key
 from src.controller import color_controller
+from src.ui.layout.panel_fit import Orientation
 from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.color_picker.tabbed_color_picker import TabbedColorPicker, ColorPickerLayout
 
@@ -23,7 +25,8 @@ BOTTOM_SHORT_MAX_HEIGHT = 240
 # The most times one resize re-chooses the layout because switching layouts changed the panel's size.
 MAX_LAYOUT_PASSES = 3
 
-# The next layout to try when a layout's minimum size doesn't fit the panel. SIDE_COMPACT is the last resort.
+# The next layout to try when a layout's minimum size doesn't fit the panel. A size no layout fits gets the last-resort
+# layout for the panel's orientation (`ColorControlPanel._last_resort_layout`).
 FALLBACK_LAYOUTS = {
     ColorPickerLayout.BOTTOM_WIDE: ColorPickerLayout.BOTTOM_MEDIUM,
     ColorPickerLayout.BOTTOM_MEDIUM: ColorPickerLayout.BOTTOM_SHORT,
@@ -53,12 +56,22 @@ def choose_layout(size: QSize, orientation: Optional[Qt.Orientation]) -> ColorPi
     return ColorPickerLayout.SIDE
 
 
+def _qt_orientation(orientation: Orientation) -> Qt.Orientation:
+    """Returns the dock orientation a `FitContent` orientation corresponds to: vertical for a side panel."""
+    return Qt.Orientation.Vertical if orientation == Orientation.SIDE else Qt.Orientation.Horizontal
+
+
 class ColorControlPanel(TabbedColorPicker):
     """The color picker as a panel that edits a config color, choosing its layout from its size and dock orientation.
 
-    The panel reports the smallest minimum size of any layout it could fall back to, whatever its current layout, so a
-    dock or scroll area can always shrink it, and the resize then picks a layout that fits. That is the compact
-    layout's size, with the short layout's height in a top or bottom dock.
+    The panel reports the minimum size of its last-resort layout for its orientation: `SIDE_COMPACT` in a side dock,
+    `BOTTOM_SHORT` in a top or bottom dock. Every size at or above that has a layout that fits, and the minimum is the
+    same whichever layout is showing. A dock or scroll area that honors it never squeezes the picker.
+
+    The panel is a `src.ui.layout.panel_fit.FitContent`. A dock reports its orientation through `set_orientation` and
+    the panel plans for its own size. The Tools panel reports an orientation and the space it gives the panel through
+    `set_fit_space`. The panel plans for that space. Where no layout fits it, the panel shows its last-resort layout
+    and the Tools panel scrolls.
 
     Committed colors go to `color_controller.commit_color`. A panel editing the foreground color shows the
     foreground/background color pair in its header.
@@ -68,12 +81,16 @@ class ColorControlPanel(TabbedColorPicker):
         swatch_widget = ColorPairWidget() if config_key == Cache.LAST_BRUSH_COLOR else None
         super().__init__(swatch_widget)
         self._orientation: Optional[Qt.Orientation] = None
+        # The space a `FitContent` host gave the panel, or None while the panel plans for its own size:
+        self._space: Optional[QSize] = None
         self._updating_layout = False
         self._config_key = config_key
-        self.set_picker_layout(ColorPickerLayout.BOTTOM_SHORT)
-        self._short_minimum = super().minimumSizeHint()
-        self.set_picker_layout(ColorPickerLayout.SIDE_COMPACT)
-        self._compact_minimum = super().minimumSizeHint()
+        # No control is optional, so nothing ever goes in the host's More popover:
+        self._overflow = QWidget()
+        # Measured now so `minimumSizeHint` never has to switch layouts during a host's layout pass:
+        self.layout_minimum(ColorPickerLayout.BOTTOM_SHORT)
+        self.layout_minimum(ColorPickerLayout.SIDE_COMPACT)
+        self.set_picker_layout(self._last_resort_layout())
 
         if config_key is not None:
             config = get_config_from_key(config_key)
@@ -89,18 +106,30 @@ class ColorControlPanel(TabbedColorPicker):
     def set_orientation(self, orientation: Optional[Qt.Orientation]) -> None:
         """Sets the dock orientation, and updates the layout to match."""
         self._orientation = orientation
+        self.updateGeometry()
         self._update_layout()
 
+    def fit_base_size(self, orientation: Orientation) -> QSize:
+        """Returns the minimum size of the last-resort layout for the orientation, and shows that layout until the next
+        `set_fit_space`."""
+        self._orientation = _qt_orientation(orientation)
+        self.set_picker_layout(self._last_resort_layout())
+        return self.minimumSizeHint()
+
+    def set_fit_space(self, orientation: Orientation, size: QSize) -> None:
+        """Chooses the layout for the space the host gives the panel."""
+        self._orientation = _qt_orientation(orientation)
+        self._space = QSize(size)
+        self.updateGeometry()
+        self._update_layout()
+
+    def overflow_content(self) -> QWidget:
+        """Returns the widget for controls the panel leaves out, which is always empty."""
+        return self._overflow
+
     def minimumSizeHint(self) -> QSize:
-        """Returns the smallest minimum size of the layouts the panel can fall back to."""
-        if self.picker_layout() == ColorPickerLayout.SIDE_COMPACT:
-            self._compact_minimum = super().minimumSizeHint()
-        elif self.picker_layout() == ColorPickerLayout.BOTTOM_SHORT:
-            self._short_minimum = super().minimumSizeHint()
-        if self._orientation == Qt.Orientation.Horizontal:
-            return QSize(self._compact_minimum.width(),
-                         min(self._compact_minimum.height(), self._short_minimum.height()))
-        return QSize(self._compact_minimum)
+        """Returns the minimum size of the last-resort layout for the panel's orientation."""
+        return self.layout_minimum(self._last_resort_layout())
 
     def hasHeightForWidth(self) -> bool:
         """The panel picks a layout for the height it gets, so it doesn't ask for one through its swatch grids."""
@@ -115,27 +144,42 @@ class ColorControlPanel(TabbedColorPicker):
         self._update_layout()
         super().resizeEvent(event)
 
+    def event(self, event: Optional[QEvent]) -> bool:
+        """Goes back to planning for its own size when the panel moves to a new parent, since the old host's space no
+        longer applies."""
+        if event is not None and event.type() == QEvent.Type.ParentChange:
+            self._space = None
+        return super().event(event)
+
+    def _last_resort_layout(self) -> ColorPickerLayout:
+        """Returns the layout that fits the smallest size the panel can be given."""
+        return ColorPickerLayout.BOTTOM_SHORT if self._orientation == Qt.Orientation.Horizontal \
+            else ColorPickerLayout.SIDE_COMPACT
+
     def _update_layout(self) -> None:
         """Uses the preferred layout for the panel's size, or the first fallback whose minimum size fits.
 
-        Switching layouts can resize the panel through its dock. A resize during a switch is ignored, and the layout is
-        chosen again afterwards for the size the panel ended up with.
+        A size that no layout fits gets the last-resort layout. Switching layouts can resize the panel through its dock.
+        A resize during a switch is ignored, and the layout is chosen again afterwards for the size the panel ended up
+        with.
         """
-        if self._updating_layout:
+        if self._updating_layout or self.measuring:
             return
         self._updating_layout = True
         try:
             for _ in range(MAX_LAYOUT_PASSES):
-                size = self.size()
+                size = self.size() if self._space is None else self._space
                 picker_layout = choose_layout(size, self._orientation)
                 while True:
-                    self.set_picker_layout(picker_layout)
-                    minimum = super().minimumSizeHint()
-                    fits = minimum.width() <= size.width() and minimum.height() <= size.height()
-                    if fits or picker_layout not in FALLBACK_LAYOUTS:
+                    minimum = self.layout_minimum(picker_layout)
+                    if minimum.width() <= size.width() and minimum.height() <= size.height():
+                        break
+                    if picker_layout not in FALLBACK_LAYOUTS:
+                        picker_layout = self._last_resort_layout()
                         break
                     picker_layout = FALLBACK_LAYOUTS[picker_layout]
-                if self.size() == size:
+                self.set_picker_layout(picker_layout)
+                if self._space is not None or self.size() == size:
                     break
         finally:
             self._updating_layout = False
