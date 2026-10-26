@@ -1,9 +1,9 @@
 """Tests GeometryBlock: the ratio lock, the temporary lock, value display, scrub ranges and step keys. Events are
 synthesized, and nothing waits on the event loop."""
 import sys
-from unittest.mock import MagicMock
+from typing import Callable
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QObject, QSize, Qt, Signal
 from PySide6.QtWidgets import QApplication
 
 from src.config.key_config import KeyConfig
@@ -12,6 +12,21 @@ from src.ui.input_fields.geometry_block import (ANGLE, GeometryBlock, HEIGHT, SC
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
+
+
+class _FakeHotkeyFilter(QObject):
+    """Records the step-key actions `bind_step_keys` registers, by key. Unlike a MagicMock, it forms no reference
+    cycle that would keep the block's closures alive."""
+
+    modifiers_changed = Signal(Qt.KeyboardModifier)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.registered: dict[str, Callable[[int], bool]] = {}
+
+    def register_speed_modified_keybinding(self, _id: str, action: Callable[[int], bool], key: str) -> None:
+        """Records the action for a key."""
+        self.registered.setdefault(key, action)
 
 
 class GeometryBlockTest(IntraPaintTestCase):
@@ -137,10 +152,8 @@ class GeometryBlockTest(IntraPaintTestCase):
         the step."""
         block = GeometryBlock(show_angle=True, integer=False)
         block.set_values(x=10, y=10, w=100, h=100, angle=0)
-        registered: dict[str, object] = {}
-        hotkey_filter = MagicMock()
-        hotkey_filter.register_speed_modified_keybinding.side_effect = (
-            lambda _id, action, key: registered.setdefault(key, action))
+        hotkey_filter = _FakeHotkeyFilter()
+        registered = hotkey_filter.registered
         KeyConfig()
         bind_step_keys(block, hotkey_filter, KeyConfig, lambda: True)
         expectations = [(KeyConfig.MOVE_LEFT, X, -1), (KeyConfig.MOVE_RIGHT, X, 1), (KeyConfig.MOVE_UP, Y, -1),
@@ -150,7 +163,7 @@ class GeometryBlockTest(IntraPaintTestCase):
         for key, name, sign in expectations:
             with self.subTest(key=key):
                 before = {other: block.value(other) for other in (X, Y, WIDTH, HEIGHT, ANGLE)}
-                self.assertTrue(registered[key](3))  # type: ignore[operator]
+                self.assertTrue(registered[key](3))
                 for other, old in before.items():
                     expected = old + sign * 3 * block.key_step(name) if other == name else old
                     self.assertAlmostEqual(block.value(other), expected)
@@ -158,13 +171,11 @@ class GeometryBlockTest(IntraPaintTestCase):
     def test_step_keys_respect_predicate_and_list_in_tooltips(self) -> None:
         """Keys do nothing while the predicate is false, and each field's tooltip names its keys."""
         block = GeometryBlock()
-        registered: dict[str, object] = {}
-        hotkey_filter = MagicMock()
-        hotkey_filter.register_speed_modified_keybinding.side_effect = (
-            lambda _id, action, key: registered.setdefault(key, action))
+        hotkey_filter = _FakeHotkeyFilter()
+        registered = hotkey_filter.registered
         KeyConfig()
         bind_step_keys(block, hotkey_filter, KeyConfig, lambda: False)
-        self.assertFalse(registered[KeyConfig.MOVE_RIGHT](1))  # type: ignore[operator]
+        self.assertFalse(registered[KeyConfig.MOVE_RIGHT](1))
         self.assertEqual(block.value(X), 0)
         self.assertIn(KeyConfig().get(KeyConfig.MOVE_RIGHT), block.field(X).toolTip())
 
