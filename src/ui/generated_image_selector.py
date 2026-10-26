@@ -17,7 +17,8 @@ from PySide6.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel,
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.controller.image_generation.apply_option import apply_generated_image, ApplyResult
+from src.controller.image_generation.apply_option import ApplyOutcome, ApplyResult
+from src.controller.image_generation.generated_image_batch import edit_size_image, full_size_image
 from src.controller.image_generation.generation_session import GenerationSession
 from src.ui.ink_style import set_signal
 from src.image.layers.image_stack import ImageStack
@@ -28,12 +29,11 @@ from src.ui.graphics_items.toast_message import ToastMessageItem
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.modal.modal_utils import open_image_file, SAVE_IMAGE_MODE, show_warning_dialog
 from src.ui.widget.image_graphics_view import ImageGraphicsView
-from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
+from src.util.application_state import AppStateTracker, APP_STATE_LOADING
 from src.util.math_utils import clamp
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, EDIT_MODE_INPAINT
 from src.util.validation import assert_valid_index
 from src.util.visual.geometry_utils import get_scaled_placement
-from src.util.visual.image_format_utils import save_image
 from src.util.visual.image_utils import get_standard_qt_icon, get_transparency_tile_pixmap
 from src.util.visual.pil_image_utils import pil_image_scaling
 from src.util.visual.text_drawing_utils import max_font_size, get_key_display_string, left_button_hint_text, \
@@ -470,20 +470,18 @@ class GeneratedImageSelector(QWidget):
         _add_action(MENU_ACTION_SELECT, lambda: self._select_option_and_close(idx))
 
         def _save_to_file() -> None:
-            image = self._option_items[idx].full_image
             self.setUpdatesEnabled(False)
             save_path = open_image_file(self, SAVE_IMAGE_MODE)
             self.setUpdatesEnabled(True)
             if save_path is not None:
-                save_image(image, save_path)
+                self._session.save_to_file(idx, save_path)
                 self._toast_message = ToastMessageItem(TOAST_MESSAGE_SAVED.format(image_path=save_path), self._view)
             else:
                 self._toast_message = ToastMessageItem(TOAST_MESSAGE_SAVE_CANCELED, self._view)
         _add_action(MENU_ACTION_SAVE_TO_FILE, _save_to_file)
 
         def _send_to_new_layer() -> None:
-            new_layer = self._image_stack.create_layer(layer_name=menu.title())
-            self._insert_option_into_layer(idx, new_layer)
+            new_layer = self._session.send_to_new_layer(idx, self._option_items[idx].text)
             self._toast_message = ToastMessageItem(TOAST_MESSAGE_LAYER_CREATED.format(layer_name=new_layer.name),
                                                    self._view)
         _add_action(MENU_ACTION_SEND_TO_NEW_LAYER, _send_to_new_layer)
@@ -570,30 +568,24 @@ class GeneratedImageSelector(QWidget):
         self._option_pos_offset = QPointF(0.0, 0.0)
         self._option_scale_ratio = 1.0
 
-    def _insert_option_into_layer(self, option_index: int, layer: Layer, clear_context_pins: bool = False) -> Layer:
-        """Applies an option to `layer` with the batch's own context, warning if it went to a new layer instead.
-
-        Returns the layer that received the content.
-        """
-        new_layer_name = self._option_items[option_index].text
-        outcome = apply_generated_image(self._image_stack, self._option_items[option_index].image, layer,
-                                        self._session.current.generation_area, self._session.current.edit_mode,
-                                        self._session.current.mask_image, new_layer_name, clear_context_pins)
-        if outcome.result is not ApplyResult.APPLIED:
-            warning_message = {ApplyResult.BLOCKED_NOT_IMAGE_LAYER: WARNING_MESSAGE_1_NOT_IMAGE,
-                               ApplyResult.BLOCKED_LOCKED: WARNING_MESSAGE_1_LAYER_LOCKED,
-                               ApplyResult.BLOCKED_HIDDEN: WARNING_MESSAGE_1_LAYER_HIDDEN}[outcome.result]
-            warning_message += WARNING_MESSAGE_2_CREATED_NEW.format(new_layer_name=new_layer_name)
-            show_warning_dialog(None, WARNING_TITLE_INSERT_FAILED.format(layer_name=layer.name), warning_message,
-                                AppConfig.WARN_WHEN_LOCK_FORCES_LAYER_CREATE)
-        return outcome.layer
+    def _warn_if_blocked(self, outcome: ApplyOutcome, requested_layer: Layer, new_layer_name: str) -> None:
+        """Warns that an option went to a new layer because `requested_layer` couldn't take it."""
+        if outcome.result is ApplyResult.APPLIED:
+            return
+        warning_message = {ApplyResult.BLOCKED_NOT_IMAGE_LAYER: WARNING_MESSAGE_1_NOT_IMAGE,
+                           ApplyResult.BLOCKED_LOCKED: WARNING_MESSAGE_1_LAYER_LOCKED,
+                           ApplyResult.BLOCKED_HIDDEN: WARNING_MESSAGE_1_LAYER_HIDDEN}[outcome.result]
+        warning_message += WARNING_MESSAGE_2_CREATED_NEW.format(new_layer_name=new_layer_name)
+        show_warning_dialog(None, WARNING_TITLE_INSERT_FAILED.format(layer_name=requested_layer.name),
+                            warning_message, AppConfig.WARN_WHEN_LOCK_FORCES_LAYER_CREATE)
 
     def _select_option_and_close(self, option_index: int) -> None:
         """Insert the selection and close this selector."""
-        if option_index != 0:
-            layer = self._image_stack.active_layer
-            self._insert_option_into_layer(option_index, layer, True)
-        AppStateTracker.set_app_state(APP_STATE_EDITING)
+        requested_layer = self._image_stack.active_layer
+        new_layer_name = self._option_items[option_index].text
+        outcome = self._session.choose(option_index, new_layer_name)
+        if outcome is not None:
+            self._warn_if_blocked(outcome, requested_layer, new_layer_name)
         self._close_and_archive()
 
     def _scroll_debounce_finished(self) -> bool:
@@ -737,9 +729,8 @@ class _ImageOption(QGraphicsPixmapItem):
 
     def __init__(self, image: QImage, label_text: str) -> None:
         super().__init__()
-        # None until `full_image` first needs it, when `_scaled_image` is upscaled to `_full_size`:
+        # None until `full_image` first needs it, when `_scaled_image` is upscaled:
         self._full_image: Optional[QImage] = None
-        self._full_size = image.size()
         self._scaled_image = image
         self._label_text = label_text
         self._transparency_pixmap = get_transparency_tile_pixmap(image.size())
@@ -757,14 +748,9 @@ class _ImageOption(QGraphicsPixmapItem):
 
     @image.setter
     def image(self, new_image: QImage) -> None:
-        self._full_size = Cache().get(Cache.GENERATION_SIZE)
         final_size = Cache().get(Cache.EDIT_SIZE)
-        if new_image.size() == final_size:
-            self._scaled_image = new_image
-            self._full_image = None
-        else:
-            self._full_image = new_image
-            self._scaled_image = pil_image_scaling(new_image, final_size)
+        self._scaled_image = edit_size_image(new_image)
+        self._full_image = None if new_image.size() == final_size else new_image
         self.setPixmap(QPixmap.fromImage(self.full_image if AppConfig().get(AppConfig.SHOW_OPTIONS_FULL_RESOLUTION)
                                          else self._scaled_image))
         self.update()
@@ -773,7 +759,7 @@ class _ImageOption(QGraphicsPixmapItem):
     def full_image(self) -> QImage:
         """Return the largest available version of this option's image."""
         if self._full_image is None:
-            self._full_image = pil_image_scaling(self._scaled_image, self._full_size)
+            self._full_image = full_size_image(self._scaled_image)
         return self._full_image
 
     @property
