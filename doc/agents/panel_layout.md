@@ -21,6 +21,9 @@ These hold at every size, whatever the design shows.
 - **Nothing is cut off while there is room for it.** No control is clipped, squeezed below its minimum size, overlapped,
   scrolled out of view, or moved to the More popover while the panel has room to show it. Scrolling and More are for
   content that doesn't fit at all.
+- **A dock stops shrinking a panel where its content would escape.** Once the planned content overflows a panel across
+  its scroll axis, `DockPanel.minimumSizeHint` raises that axis to the extent the content needs, for as long as the
+  orientation and scroll-axis size stay the same.
 - **Nothing is removed.** Content that doesn't fit moves to More. Decorative content, such as a preview, hides. A
   collapsible section collapses to its summary, and its header opens the body in a popover.
 - **Re-planning keeps widgets.** Widget objects, their state and keyboard focus survive any re-arrangement.

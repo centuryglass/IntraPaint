@@ -321,6 +321,27 @@ class DockPanelTest(IntraPaintTestCase):
         finally:
             host.release()
 
+    def test_minimum_size_stops_where_content_would_escape(self) -> None:
+        """A panel the content overflows across raises its minimum size to the extent that content needs."""
+        panel = OversizedPanel()
+        host = PanelHost(panel)
+        try:
+            size = QSize(150, 600)
+            tell_orientation(panel, SIDE, size)
+            host.capture(size)
+            floor = panel.minimumSizeHint().width()
+            self.assertGreater(floor, size.width())
+            size = QSize(floor + 40, 600)
+            tell_orientation(panel, SIDE, size)
+            host.capture(size)
+            self.assertEqual(floor, panel.minimumSizeHint().width())
+            # A taller strip has a different scroll-axis size, so the floor is learned again:
+            tell_orientation(panel, STRIP, QSize(900, 90))
+            host.capture(QSize(900, 90))
+            self.assertGreater(panel.minimumSizeHint().height(), 90)
+        finally:
+            host.release()
+
     def test_layout_snapshots(self) -> None:
         """The orientation each sample size lays out in, where each control sits, which sections show, their geometry
         and any layout problems."""

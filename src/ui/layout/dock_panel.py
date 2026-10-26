@@ -45,7 +45,8 @@ from PySide6.QtWidgets import (QApplication, QBoxLayout, QFrame, QHBoxLayout, QL
 from src.ui.ink_style import InkStyle
 from src.ui.layout.bordered_widget import DEFAULT_LINE_WIDTH
 from src.ui.layout.panel_fit import (REQUIRED, STRIP_SECTION_MAX_WIDTH, STRIP_SECTION_MIN_WIDTH, FitItem, FitPlanner,
-                                     Orientation, Placement, fresh_minimum_size, held_weakly, scroll_extent)
+                                     Orientation, Placement, cross_extent, fresh_minimum_size,
+                                     held_weakly, scroll_extent)
 from src.ui.widget.panel_header import PanelHeader, PanelPopover
 from src.ui.widget.panel_section import PanelSection
 
@@ -238,6 +239,11 @@ class DockPanel(QWidget):
         # The orientation the panel is arranged in:
         self._orientation = Orientation.SIDE
         self._arranged_orientation: Optional[Orientation] = None
+        # The orientation, scroll-axis size and cross extent (with the inset) the content last overflowed to, if it
+        # still applies:
+        self._cross_floor: Optional[tuple[Orientation, int, int]] = None
+        # The inputs of the latest plan that checked for overflow, so repeated ones don't measure again:
+        self._floor_inputs: Optional[tuple[Optional[Orientation], QSize]] = None
         self._layout_model = PanelLayout()
         self._extra_items: list[tuple[FitItem, Callable[[Optional[int]], None]]] = []
         self._planner: Optional[FitPlanner] = None
@@ -455,7 +461,7 @@ class DockPanel(QWidget):
     def set_host_facts(self, size: QSize) -> None:
         """Called by the host when the size the panel fills changes. Plans again if it changed, picking the
         orientation with `src.ui.layout.panel_fit.plan_orientation`."""
-        self._fit_planner().update(None, self._inside_inset(size))
+        self._update_plan(None, self._inside_inset(size))
 
     def _inside_inset(self, size: QSize) -> QSize:
         """Returns the size left for planning once the inset around the panel's content is removed."""
@@ -464,19 +470,53 @@ class DockPanel(QWidget):
     def plan_in(self, orientation: Orientation, size: QSize) -> None:
         """Plans for `size` in `orientation` alone. Later plans treat it as the arrangement in use, so it holds while
         it fits as well as the other orientation and `size` is within `HYSTERESIS` of a square."""
-        self._fit_planner().update(orientation, self._inside_inset(size))
+        self._update_plan(orientation, self._inside_inset(size))
 
     def refit(self) -> None:
         """Plans again for the latest size, after the content's own size changed."""
         planner = self._fit_planner()
         available = planner.available
-        planner.update(None, available if available is not None else self._inside_inset(self.size()),
-                       force=True)
+        self._update_plan(None, available if available is not None else self._inside_inset(self.size()), force=True)
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
         """Plans for the new size."""
         super().resizeEvent(event)
-        self._fit_planner().update(None, self._inside_inset(self.size()))
+        self._update_plan(None, self._inside_inset(self.size()))
+
+    def _update_plan(self, orientation: Optional[Orientation], available: QSize, force: bool = False) -> None:
+        """Plans for an available size, then records the cross extent the content overflows to, if it overflows."""
+        planner = self._fit_planner()
+        planner.update(orientation, available, force)
+        if not force and self._floor_inputs == (orientation, available):
+            return
+        self._floor_inputs = (orientation, QSize(available))
+        plan_orientation = self._orientation
+        scroll = scroll_extent(available, plan_orientation)
+        need = cross_extent(self.measure(), plan_orientation)
+        if need > cross_extent(available, plan_orientation):
+            floor = (plan_orientation, scroll, need + 2 * self._inset)
+        elif self._cross_floor is not None and self._cross_floor[:2] == (plan_orientation, scroll):
+            floor = self._cross_floor
+        else:
+            floor = None
+        if floor != self._cross_floor:
+            self._cross_floor = floor
+            self.updateGeometry()
+
+    def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the layout's minimum size, with the cross axis raised to the extent the content overflowed to, so a
+        dock stops shrinking the panel where its content would escape the panel.
+
+        The floor is learned when the content overflows and applies while the orientation and the scroll-axis size stay
+        the same, since the smallest placement's cross extent depends on both.
+        """
+        hint = super().minimumSizeHint()
+        if self._cross_floor is None:
+            return hint
+        orientation, _, floor = self._cross_floor
+        if orientation == Orientation.SIDE:
+            return QSize(max(hint.width(), floor), hint.height())
+        return QSize(hint.width(), max(hint.height(), floor))
 
     def arrange(self, orientation: Orientation) -> None:
         """Lays out structure that depends only on the orientation. Called when it changes, before any placement.
