@@ -1,6 +1,7 @@
 """Connects a libmypaint tiled surface to an ImageLayer."""
 import logging
 import math
+import weakref
 from ctypes import sizeof, pointer, byref, c_float, c_double, c_int
 from typing import Any, Optional
 
@@ -64,7 +65,11 @@ class MyPaintLayerSurface(QObject):
         self._rectangle_buf.rectangles = self._rectangles
         self._rectangle_buf.num_rectangles = RECTANGLE_BUF_SIZE
 
-        # Initialize surface data, starting with empty functions:
+        # Initialize surface data, starting with empty functions. The libmypaint callbacks hold the surface weakly: the
+        # surface owns them through _surface_data, _on_start and _on_end, so a strong reference is a reference cycle.
+        # They can't outlive the surface, because the C struct that calls them is the surface's own member.
+        surface_ref = weakref.ref(self)
+
         def empty_update_function(_unused, _unused2) -> None:
             """No action, to be replaced on tiled_surface_init."""
 
@@ -77,31 +82,14 @@ class MyPaintLayerSurface(QObject):
 
         # libmypaint calls these once per tile per dab for brushes that sample color, so they stay minimal.
         def on_tile_request_start(_, request: Any) -> None:
-            """Pass libmypaint the requested tile's buffer, creating the tile if needed."""
-            tile_request = request.contents
-            tx = tile_request.tx
-            ty = tile_request.ty
-            if 0 <= tx < self._tiles_width and 0 <= ty < self._tiles_height:
-                tile = self._tiles.get(tx + ty * self._tiles_width)
-                if tile is None:
-                    tile = self.get_tile_from_idx(tx, ty)
-                tile_request.buffer = tile.buffer_pointer
-            else:
-                tile_request.buffer = self._null_tile.buffer_pointer
+            surface = surface_ref()
+            if surface is not None:
+                surface.handle_tile_request_start(request)
 
         def on_tile_request_end(_, request: Any) -> None:
-            """Mark a tile that libmypaint may have changed, to be written back to the layer."""
-            tile_request = request.contents
-            if tile_request.readonly:
-                return
-            tx = tile_request.tx
-            ty = tile_request.ty
-            if 0 <= tx < self._tiles_width and 0 <= ty < self._tiles_height:
-                tile = self._tiles[tx + ty * self._tiles_width]
-                self._pending_changed_tiles.add(tile)
-                self._stroke_tiles.add(tile)
-                if not self._pending_tile_timer.isActive():
-                    self._pending_tile_timer.start()
+            surface = surface_ref()
+            if surface is not None:
+                surface.handle_tile_request_end(request)
 
         self._on_start = MyPaintTileRequestStartFunction(on_tile_request_start)
         self._on_end = MyPaintTileRequestEndFunction(on_tile_request_end)
@@ -109,6 +97,33 @@ class MyPaintLayerSurface(QObject):
         libmypaint.mypaint_tiled_surface_init(byref(self._surface_data), self._on_start, self._on_end)
         if layer is not None:
             self.layer = layer
+
+    def handle_tile_request_start(self, request: Any) -> None:
+        """Pass libmypaint the requested tile's buffer, creating the tile if needed."""
+        tile_request = request.contents
+        tx = tile_request.tx
+        ty = tile_request.ty
+        if 0 <= tx < self._tiles_width and 0 <= ty < self._tiles_height:
+            tile = self._tiles.get(tx + ty * self._tiles_width)
+            if tile is None:
+                tile = self.get_tile_from_idx(tx, ty)
+            tile_request.buffer = tile.buffer_pointer
+        else:
+            tile_request.buffer = self._null_tile.buffer_pointer
+
+    def handle_tile_request_end(self, request: Any) -> None:
+        """Mark a tile that libmypaint may have changed, to be written back to the layer."""
+        tile_request = request.contents
+        if tile_request.readonly:
+            return
+        tx = tile_request.tx
+        ty = tile_request.ty
+        if 0 <= tx < self._tiles_width and 0 <= ty < self._tiles_height:
+            tile = self._tiles[tx + ty * self._tiles_width]
+            self._pending_changed_tiles.add(tile)
+            self._stroke_tiles.add(tile)
+            if not self._pending_tile_timer.isActive():
+                self._pending_tile_timer.start()
 
     def apply_pending_tile_updates(self) -> None:
         """Write all pending tile updates back to the connected layer."""
