@@ -1,6 +1,7 @@
 """Interface for any entity that can exist within an image layer stack."""
 from __future__ import annotations
 import datetime
+from weakref import ref
 from abc import abstractmethod, ABCMeta
 from contextlib import contextmanager
 from typing import Any, Callable, Optional, Generator
@@ -54,7 +55,7 @@ class Layer(QObject, metaclass=_LayerMeta):
         self._mode = CompositeMode.NORMAL
         self._pixmap = CachedData(None)
         self._id = Layer._next_layer_id
-        self._parent: Optional[LayerParent] = None
+        self._parent: Optional[ref[LayerParent]] = None
         self._locked = False
         self._z_value = 0
         self._content_change_timestamp = 0.0
@@ -76,22 +77,24 @@ class Layer(QObject, metaclass=_LayerMeta):
 
     @property
     def layer_parent(self) -> Optional[LayerParent]:
-        """Gets the layer this layer is contained within, if any."""
-        return self._parent
+        """Gets the layer this layer is contained within, if any. The link is weak, since the parent's layer list
+           already holds this layer."""
+        return None if self._parent is None else self._parent()
 
     @layer_parent.setter
     def layer_parent(self, new_parent: Optional[LayerParent]) -> None:
         """Sets or clears this layer's parent layer."""
-        if new_parent is None and self._parent is not None:
-            assert not self._parent.contains(self), (f'Layer {self.name}:{self.id} not removed from '
-                                                     f'parent {self._parent.name}:{self._parent.id} before clearing'
-                                                     ' parent property.')
+        old_parent = self.layer_parent
+        if new_parent is None and old_parent is not None:
+            assert not old_parent.contains(self), (f'Layer {self.name}:{self.id} not removed from '
+                                                   f'parent {old_parent.name}:{old_parent.id} before clearing'
+                                                   ' parent property.')
         if new_parent is not None:
             assert new_parent != self
             assert new_parent.contains(self), (f'Layer {self.name}:{self.id} parent set'
                                                f' to {new_parent.name}:{new_parent.id}), but that layer does not '
                                                'contain this one.')
-        self._parent = new_parent
+        self._parent = None if new_parent is None else ref(new_parent)
 
     @property
     def locked(self) -> bool:
