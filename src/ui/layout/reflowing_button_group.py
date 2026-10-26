@@ -5,18 +5,21 @@ from PySide6.QtCore import QEvent, QObject, QSize
 from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QWidget, QBoxLayout, QAbstractButton, QLayout, QSizePolicy
 
+from src.ui.layout.panel_fit import held_weakly
+
 ROW_SPACING = 10
 
 
 class _HeightForWidthBoxLayout(QBoxLayout):
     """A box layout whose height for a width comes from a function.
 
-    Qt asks a widget's layout for its height for a width, not the widget, whenever the widget has a layout.
+    Qt asks a widget's layout for its height for a width, not the widget, whenever the widget has a layout. A bound
+    method of the layout's own widget is held weakly, so the widget and layout don't form a reference cycle.
     """
 
     def __init__(self, height_for_width: Callable[[int], int], parent: QWidget) -> None:
         super().__init__(QBoxLayout.Direction.LeftToRight, parent)
-        self._height_for_width = height_for_width
+        self._height_for_width = held_weakly(height_for_width)
 
     def hasHeightForWidth(self) -> bool:
         """Returns true, so parent layouts ask for the height at each width."""
