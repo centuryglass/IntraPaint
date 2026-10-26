@@ -13,7 +13,7 @@
       ],
       "inpaint_full_res": true,
       "inpaint_full_res_padding": 32,
-      "inpainting_fill": 0,
+      "inpainting_fill": 1,
       "inpainting_mask_invert": 0,
       "mask": "<image 512x512 Format_Grayscale8 2b6439ed4342ec3f>",
       "mask_blur": 4,
