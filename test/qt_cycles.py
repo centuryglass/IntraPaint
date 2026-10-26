@@ -11,10 +11,12 @@ Only wrappers of objects that C++ can point to count (`TRACKED_TYPES`). Value ty
 pass `isinstance` checks for a Qt class, are safe to free at any time.
 
 `BASELINE_PATH` lists the tests that already leave such cycles, with the most wrappers each has left. A test fails
-when it leaves more than its entry, or none at all, so the entry of a test whose cycles are fixed gets removed. A test
-can leave a few fewer wrappers than its entry depending on which tests ran before it, so a count under the entry
-passes. Lower entries after a fix by running the full suite with `UPDATE_ENV_VAR=1`, which rewrites the entries of the
-tests that ran and passed instead of failing them.
+when it leaves more than its entry, or none at all, so the entry of a test whose cycles are fixed gets removed. A count
+under the entry passes.
+
+Update entries by running only the affected tests with `UPDATE_ENV_VAR=1`. That rewrites the entries of the tests that
+ran and passed instead of failing them, and keeps every other entry. A test's count doesn't depend on which tests ran
+before it, so the full suite isn't needed. CI's full run on `BASELINE_PYTHON` checks the result.
 
 Counts differ between Python versions, since each version leaves different garbage, so they are compared and
 recorded only on `BASELINE_PYTHON`. Every version still frees cycles at the fixed points.
@@ -150,7 +152,7 @@ def finish_test(test_id: str, test_failed: bool) -> Optional[str]:
     expected = _load_baseline().get(test_id, 0)
     if count == 0 and expected > 0:
         return (f'This test left no PySide wrappers in reference cycles, but has an entry in '
-                f'{os.path.relpath(BASELINE_PATH, _PROJECT_ROOT)}. Remove the entry, or rerun the full suite with '
+                f'{os.path.relpath(BASELINE_PATH, _PROJECT_ROOT)}. Remove the entry, or rerun this test with '
                 f'{UPDATE_ENV_VAR}=1.')
     if count <= expected:
         return None
