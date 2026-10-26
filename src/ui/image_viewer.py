@@ -20,6 +20,7 @@ from src.ui.graphics_items.context_pin_item import ContextPinItem, marker_size_f
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.selection_outline import SelectionOutline
+from src.ui.graphics_items.viewport_highlight import ViewportHighlight
 from src.ui.ink_style import ink_colors
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.visual.graphics_scene_utils import get_view_bounds_of_scene_item_rect
@@ -124,6 +125,7 @@ class ImageViewer(ImageGraphicsView):
         self._generation_area_border.color = QColor(GENERATION_AREA_BORDER_COLOR)
         self._generation_area_border.setOpacity(GENERATION_AREA_BORDER_OPACITY)
         self._generation_area_border.setVisible(False)
+        self._viewport_highlight: Optional[ViewportHighlight] = None
 
         # Connect image stack event handlers:
         image_stack.content_changed.connect(self._update_drawn_borders)
@@ -364,6 +366,34 @@ class ImageViewer(ImageGraphicsView):
                         self._active_layer_outline, self._generation_area_border):
             assert isinstance(outline, (Outline, Border))
             outline.setZValue(max(self._generation_area_outline.zValue(), new_layer.z_value + 1))
+        self._update_viewport_highlight_z()
+
+    def set_viewport_highlight(self, region: Optional[QRectF]) -> None:
+        """Dims everything outside a scene region and outlines it in the accent color, or removes the highlight with
+        None. The highlight draws above layers and below the generation area outline and context pins."""
+        if region is None:
+            if self._viewport_highlight is not None:
+                self._viewport_highlight.setVisible(False)
+            return
+        if self._viewport_highlight is None:
+            scene = self.scene()
+            assert scene is not None
+            self._viewport_highlight = ViewportHighlight(scene, self)
+            self._update_viewport_highlight_z()
+        self._viewport_highlight.region = region
+        self._viewport_highlight.setVisible(True)
+
+    @property
+    def viewport_highlight(self) -> Optional[QRectF]:
+        """Returns the region `set_viewport_highlight` highlights, or None if there is no highlight."""
+        if self._viewport_highlight is None or not self._viewport_highlight.isVisible():
+            return None
+        return self._viewport_highlight.region
+
+    def _update_viewport_highlight_z(self) -> None:
+        # Outlines sit at least one above every layer, so half a step below them is still above every layer:
+        if self._viewport_highlight is not None:
+            self._viewport_highlight.setZValue(self._generation_area_outline.zValue() - 0.5)
 
     def _layer_removed_slot(self, removed_layer: Layer) -> None:
         """Removes an image layer from the view."""

@@ -218,6 +218,21 @@ class SegmentedControl(QWidget):
         segment = self._segments[index]
         self._segments[index] = Segment(segment.value, segment.label, segment.icon, tooltip)
 
+    def set_segment_label(self, value: str, label: str) -> None:
+        """Replaces the label of the segment with an option string, such as a shorter label that fits a panel's
+        space."""
+        index = self._index_of(value)
+        segment = self._segments[index]
+        if segment.label == label:
+            return
+        self._segments[index] = Segment(segment.value, label, segment.icon, segment.tooltip)
+        if self._combo is not None:
+            self._combo.setItemText(index, label)
+        self._update_accessibility()
+        self.updateGeometry()
+        self._update_fallback()
+        self.update()
+
     def set_segment_icon(self, value: str, icon: Optional[QIcon | str]) -> None:
         """Replaces the icon of the segment with an option string, such as a preview redrawn in new colors."""
         index = self._index_of(value)
