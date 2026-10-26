@@ -22,7 +22,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-WEB_CONFIG_TYPE_ERROR = _tr(TR_ID, 'key "{key}" had unexpected type {value_type}, value {value}')
+WEB_CONFIG_TYPE_ERROR = _tr('key "{key}" had unexpected type {value_type}, value {value}')
 
 
 class A1111Config(Config, metaclass=Singleton):
