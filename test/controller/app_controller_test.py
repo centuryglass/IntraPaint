@@ -113,27 +113,41 @@ class TestAppController(IntraPaintTestCase):
     @patch('src.ui.theme.qt_material')
     def test_fix_styles_qdarktheme(self, MockQtMaterial, MockQDarkTheme):
         AppConfig()._reset()
+        initial_theme = AppConfig().get('theme')
+        initial_font_size = AppConfig().get('font_point_size')
         AppConfig().add_option('theme', 'qdarktheme_dark')
         AppConfig().set('theme', 'qdarktheme_dark')
         AppConfig().set('font_point_size', QApplication.instance().font().pointSize() + 10)
         self.assertNotEqual(AppConfig().get('font_point_size'), QApplication.instance().font().pointSize())
-        self.controller = AppController(self.args)
-        self.assertTrue(MockQDarkTheme.setup_theme.called)
-        self.assertFalse(MockQtMaterial.apply_stylesheet.called)
-        self.assertEqual(AppConfig().get('font_point_size'), QApplication.instance().font().pointSize())
+        try:
+            self.controller = AppController(self.args)
+            self.assertTrue(MockQDarkTheme.setup_theme.called)
+            self.assertFalse(MockQtMaterial.apply_stylesheet.called)
+            self.assertEqual(AppConfig().get('font_point_size'), QApplication.instance().font().pointSize())
+        finally:
+            # The controller applies config changes to the application, so this restores its theme and font.
+            AppConfig().set('theme', initial_theme)
+            AppConfig().set('font_point_size', initial_font_size)
 
     @patch('src.ui.theme.qdarktheme')
     @patch('src.ui.theme.qt_material')
     def test_fix_styles_qt_material(self, MockQtMaterial, MockQDarkTheme):
         AppConfig()._reset()
+        initial_theme = AppConfig().get('theme')
+        initial_font_size = AppConfig().get('font_point_size')
         AppConfig().add_option('theme', 'qt_material_dark')
         AppConfig().set('theme', 'qt_material_dark')
         AppConfig().set('font_point_size', QApplication.instance().font().pointSize() + 10)
         self.assertNotEqual(AppConfig().get('font_point_size'), QApplication.instance().font().pointSize())
-        self.controller = AppController(self.args)
-        self.assertFalse(MockQDarkTheme.setup_theme.called)
-        self.assertTrue(MockQtMaterial.apply_stylesheet.called)
-        self.assertEqual(AppConfig().get('font_point_size'), QApplication.instance().font().pointSize())
+        try:
+            self.controller = AppController(self.args)
+            self.assertFalse(MockQDarkTheme.setup_theme.called)
+            self.assertTrue(MockQtMaterial.apply_stylesheet.called)
+            self.assertEqual(AppConfig().get('font_point_size'), QApplication.instance().font().pointSize())
+        finally:
+            # The controller applies config changes to the application, so this restores its theme and font.
+            AppConfig().set('theme', initial_theme)
+            AppConfig().set('font_point_size', initial_font_size)
 
     def test_style_change_pauses_garbage_collection(self):
         """QApplication.setStyle runs after a collection, with collection paused (see gc_paused)."""

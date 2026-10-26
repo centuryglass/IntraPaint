@@ -5,6 +5,10 @@
 # `pytest` runs the whole suite headlessly (see pytest.ini and conftest.py).
 pytest==9.1.1
 
+# `pytest --random-order` shuffles the test order, to find tests that depend on what ran before them. The
+# random-order workflow runs the suite this way.
+pytest-random-order==1.2.0
+
 # `python scripts/pylint_check.py` is the CI lint gate; `scripts/pylint.sh` shows the full report.
 pylint==4.0.9
 
