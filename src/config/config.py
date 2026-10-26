@@ -21,6 +21,7 @@ from PySide6.QtGui import QKeySequence, QColor
 from PySide6.QtWidgets import QApplication
 
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
+from src.config.definition_tr_contexts import DEFINITION_TR_CONTEXTS
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.combo_box import ComboBox
 from src.util.main_thread import assert_main_thread
@@ -50,16 +51,6 @@ INVALID_KEYCODE_ERROR = _tr('Tried to get key code "{key}", found "{code_string}
 DUPLICATE_KEY_ERROR = _tr('Tried to add duplicate config entry for key "{key}"')
 
 SAVE_DELAY_MS = 10
-
-
-# The translation context of each definition file's labels, descriptions, categories and options.
-# `scripts/build_translations.py` extracts them to these contexts.
-DEFINITION_TR_CONTEXTS = {
-    'a1111_setting_definitions.json': 'config.a1111_config',
-    'application_config_definitions.json': 'config.application_config',
-    'cache_value_definitions.json': 'config.cache',
-    'key_config_definitions.json': 'config.key_config',
-}
 
 
 def _definition_tr_context(definition_path: str) -> str:

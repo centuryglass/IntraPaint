@@ -1,6 +1,8 @@
 """Tests scripts/build_translations.py against small projects built in a temporary directory."""
 import importlib.util
 import os
+import subprocess
+import sys
 import tempfile
 import textwrap
 
@@ -72,6 +74,14 @@ class BuildTranslationsTest(IntraPaintTestCase):
         catalog, problems = build_translations.build_catalog(self.project)
         self.assertEqual([], problems)
         return {message.key for message in catalog.all_messages()}
+
+    def test_imports_no_qt(self) -> None:
+        """The script runs where Qt's system libraries are missing, like CI's lint job, so it doesn't import PySide6."""
+        script = os.path.join(PROJECT_ROOT, 'scripts', 'build_translations.py')
+        check = (f'import runpy, sys; runpy.run_path({script!r}); '
+                 'print(sorted(name for name in sys.modules if name.startswith("PySide6")))')
+        result = subprocess.run([sys.executable, '-c', check], capture_output=True, text=True, check=True)
+        self.assertEqual('[]', result.stdout.strip())
 
     def test_extracts_source_and_definition_strings(self) -> None:
         """Literal `_tr` and `translate` calls, and visible definition text, reach the catalog."""

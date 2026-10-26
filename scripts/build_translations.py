@@ -45,7 +45,7 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_DIR)
 
 # pylint: disable=wrong-import-position
-from src.config.config import DEFINITION_TR_CONTEXTS  # noqa: E402
+from src.config.definition_tr_contexts import DEFINITION_TR_CONTEXTS  # noqa: E402
 
 TRANSLATION_DIR = 'resources/translations'
 CATALOG_NAME = 'main.ts'
