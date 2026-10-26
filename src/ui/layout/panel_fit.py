@@ -379,12 +379,18 @@ class FitPlanner:
         self._available = QSize(available)
         prepared: list[Orientation] = []
 
+        measured: dict[tuple[Orientation, Placement], QSize] = {}
+
         def _measure(planned_orientation: Orientation, placement: Placement) -> QSize:
+            key = (planned_orientation, placement)
+            if key in measured:
+                return QSize(measured[key])
             if self._prepare is not None and prepared[-1:] != [planned_orientation]:
                 self._prepare(planned_orientation)
                 prepared.append(planned_orientation)
             self._apply(planned_orientation, placement)
-            return self._measure()
+            measured[key] = self._measure()
+            return QSize(measured[key])
 
         in_use = None if self._placement is None or self._orientation is None else (self._orientation,
                                                                                      self._placement)
