@@ -21,7 +21,7 @@ jobs:
   test:
     name: test (shuffled)
     runs-on: ubuntu-latest
-    # The suite in its usual order takes up to 20 minutes in CI, and a shuffled order can run slower.
+    # The suite in its usual order takes about 10 minutes in CI including the sweep, and a shuffled order can run slower.
     timeout-minutes: 40
     env:
       QT_QPA_PLATFORM: offscreen

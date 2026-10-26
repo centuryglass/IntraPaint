@@ -239,7 +239,7 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
 - CI (`.github/workflows/ci.yml`) runs on every push and pull request: the suite on Python 3.11-3.14, the lint check
   below, and the `bundle` job (see "Packaging"). Its `ci` job is the single check to require for merging.
 - Test coverage is sparse and unmeasured: treat the suite as a partial safety net, not an authoritative gate. A full
-  run takes 15-20 minutes in CI.
+  run takes about 10 minutes in CI.
 
 ## Type checking
 

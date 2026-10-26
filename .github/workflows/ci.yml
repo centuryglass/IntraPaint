@@ -77,8 +77,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
-    # The suite takes a few minutes. Anything much longer is a hang, like a modal dialog conftest.py failed to catch.
-    timeout-minutes: 20
+    # A job takes 5-9 minutes including setup. Anything much longer is a hang, like a modal dialog conftest.py failed to
+    # catch.
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -178,7 +179,8 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # A shard takes 2-3 minutes including setup.
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
