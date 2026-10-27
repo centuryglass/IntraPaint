@@ -280,6 +280,41 @@ class DockMenuTest(IntraPaintTestCase):
         self._trigger(window.navigation_dock, MENU_DOCK)
         self.assertFalse(window.navigation_dock.isFloating())
 
+    def test_moving_the_open_dock_out_of_its_group_opens_the_next_dock_in_its_place(self) -> None:
+        """Each move that takes the open dock out of its group leaves the group open at the same size, with its next
+        dock in front."""
+        window = self.window
+        window.setAnimated(False)
+        upper_label = group_label([window.tools_dock, window.generation_dock])
+        moves = {
+            'tab with': (MENU_TAB_WITH, upper_label),
+            'split beside': (MENU_SPLIT_BESIDE, upper_label, side_title(SplitSide.LEFT)),
+            'move to edge': (MENU_MOVE_TO_EDGE, edge_title(DockEdge.LEFT)),
+            'float': (MENU_FLOAT,)
+        }
+        for name, path in moves.items():
+            with self.subTest(move=name):
+                window.reset_dock_layout()
+                self._activate()
+                layers, color, navigation = window.lower_docks
+                layers_geometry = layers.geometry()
+                self._trigger(layers, *path)
+                self.assertNotIn(layers, self._group(color))
+                self.assertTrue(color.is_showing)
+                self.assertTrue(navigation.isHidden())
+                self.assertEqual(color.geometry(), layers_geometry)
+                self.assertEqual(self._shown_tab_bars(), [])
+
+    def test_moving_a_closed_dock_out_of_its_group_leaves_the_open_dock(self) -> None:
+        """Floating a closed dock leaves its group's open dock open, at the same size."""
+        window = self.window
+        window.setAnimated(False)
+        layers_geometry = window.layers_dock.geometry()
+        self._trigger(window.color_dock, MENU_FLOAT)
+        self.assertTrue(window.color_dock.isFloating())
+        self.assertTrue(window.layers_dock.is_showing)
+        self.assertEqual(window.layers_dock.geometry(), layers_geometry)
+
     def test_moving_a_floating_dock_closes_nothing(self) -> None:
         """Moving a floating dock to an edge leaves the open dock of the group it floated from open."""
         window = self.window

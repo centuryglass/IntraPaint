@@ -159,15 +159,32 @@ class MainWindowDockTest(IntraPaintTestCase):
                 self.assertEqual(self._open_docks(window), {tools.objectName(), window.layers_dock.objectName()})
 
     def test_docking_a_floating_dock_into_its_group_closes_the_rest(self) -> None:
-        """A floating dock that docks back into its tab group, as after a mouse drop, is the group's open dock."""
+        """A floating dock that docks back into its tab group, as after a mouse drop, is the group's open dock, and
+        moves to the front of the group's order once Qt has placed it."""
         window = self.window
         window.generation_dock.toggle_from_key()
         window.generation_dock.setFloating(True)
         window.tools_dock.toggle_from_key()
         self.assertFalse(window.tools_dock.isHidden())
-        window.generation_dock.setFloating(False)
+        deferred = []
+        with patch('src.ui.window.panel_dock.QTimer.singleShot',
+                   new=lambda _msec, _context, call: deferred.append(call)):
+            window.generation_dock.setFloating(False)
         self.assertTrue(window.tools_dock.isHidden())
         self.assertFalse(window.generation_dock.isHidden())
+        self.assertEqual(len(deferred), 1)
+        deferred[0]()
+        self.assertEqual(window.generation_dock.group()[:2], [window.generation_dock, window.tools_dock])
+
+    def test_opening_a_dock_moves_it_to_the_front_of_its_group(self) -> None:
+        """Opening a closed dock puts it first in its group's order, and leaves the other docks in their order."""
+        window = self.window
+        window.navigation_dock.toggle_from_key()
+        self.assertEqual(window.navigation_dock.group(),
+                         [window.navigation_dock, window.layers_dock, window.color_dock])
+        window.layers_dock.set_open(True)
+        self.assertEqual(window.layers_dock.group(),
+                         [window.layers_dock, window.navigation_dock, window.color_dock])
 
     def test_closed_dock_stays_closed_across_content_changes(self) -> None:
         """Losing and regaining content keeps a closed dock closed, and an open dock open."""

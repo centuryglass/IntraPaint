@@ -2,7 +2,9 @@
 
 - A press on a rail button becomes a drag once it moves `DRAG_DISTANCE` px. A shorter press stays a click.
 - Within the rail, a marker shows the drop. Over another group's buttons, the drop tabs the dock into that group
-  (`tab_with`). Between groups, it splits the dock beside the nearer group, on that side (`split_beside`).
+  (`tab_with`). Between groups, it splits the dock beside the nearer group, on that side (`split_beside`). Over its
+  own group's buttons, it moves the dock to that point in the group's order, and the group's new first dock opens
+  (`reorder_in_group`).
 - Leaving the rail hands the drag to Qt (`start_qt_dock_drag`), which floats the dock and follows the mouse as for any
   title bar drag.
 - A floating dock dragged over a rail, whether handed off from a rail or dragged by its own title bar, shows the same
@@ -17,8 +19,8 @@ from PySide6.QtCore import QEvent, QObject, QPoint, QRect, Qt
 from PySide6.QtGui import QCursor, QMouseEvent, QPainter, QPaintEvent, QPalette, QPen
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
 
-from src.ui.window.dock_placement import SplitSide, split_beside, tab_with
-from src.ui.window.dock_rail import DockRail, DockRails, RailButton
+from src.ui.window.dock_placement import SplitSide, reorder_in_group, split_beside, tab_with
+from src.ui.window.dock_rail import RAIL_SPACING, DockRail, DockRails, RailButton
 from src.ui.window.panel_dock import PanelDock
 from src.ui.window.qt_dock_drag import start_qt_dock_drag
 
@@ -36,8 +38,16 @@ class RailDrop:
     marker: QRect
 
 
+@dataclass(frozen=True)
+class RailReorder:
+    """Where a rail button drag within its own group would move its dock: just before `before` in the group's order,
+    or to the group's end when `before` is None."""
+    before: Optional[PanelDock]
+    marker: QRect
+
+
 class _DropMarker(QWidget):
-    """Outlines a tab drop's group, or fills a split drop's line."""
+    """Outlines a tab drop's group, or fills a split or reorder drop's line."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -78,7 +88,7 @@ class RailDrag(QObject):
         self._button: Optional[RailButton] = None
         self._press_pos = QPoint()
         self._dragging = False
-        self._floating_drop: Optional[RailDrop] = None
+        self._floating_drop: Optional[RailDrop | RailReorder] = None
 
     @property
     def marker(self) -> QWidget:
@@ -139,22 +149,22 @@ class RailDrag(QObject):
             return
         self._show_marker(rail, self.drop_at(button, global_pos))
 
-    def _show_marker(self, rail: DockRail, drop: Optional[RailDrop]) -> None:
+    def _show_marker(self, rail: DockRail, drop: Optional[RailDrop | RailReorder]) -> None:
         if drop is None:
             self._marker.hide()
             return
         self._marker.setParent(rail.content)
-        self._marker.tab = drop.side is None
+        self._marker.tab = isinstance(drop, RailDrop) and drop.side is None
         self._marker.setGeometry(drop.marker)
         self._marker.show()
         self._marker.raise_()
         self._marker.update()
 
-    def drop_at(self, button: RailButton, global_pos: QPoint) -> Optional[RailDrop]:
+    def drop_at(self, button: RailButton, global_pos: QPoint) -> Optional[RailDrop | RailReorder]:
         """Returns where dropping a dragged button at a screen position puts its dock, or None for nowhere."""
         return self.drop_in(self._rail(button), button.dock, global_pos)
 
-    def drop_in(self, rail: DockRail, dock: PanelDock, global_pos: QPoint) -> Optional[RailDrop]:
+    def drop_in(self, rail: DockRail, dock: PanelDock, global_pos: QPoint) -> Optional[RailDrop | RailReorder]:
         """Returns where dropping a dock on a rail at a screen position puts it, or None for nowhere."""
         side_rail = rail.is_side
         content = rail.content
@@ -166,7 +176,7 @@ class RailDrag(QObject):
         for group, (start, end) in zip(groups, spans):
             if start <= along <= end:
                 if any(member.dock is dock for member in group):
-                    return None
+                    return self._reorder_at(content, side_rail, group, dock, along)
                 return RailDrop(group[0].dock, None, self._span_rect(content, side_rail, start, end))
         before = [idx for idx, (start, _end) in enumerate(spans) if start > along]
         after = [idx for idx, (_start, end) in enumerate(spans) if end < along]
@@ -186,6 +196,24 @@ class RailDrag(QObject):
             side = SplitSide.RIGHT if is_after else SplitSide.LEFT
         edge = spans[idx][1] + MARKER_WIDTH if is_after else spans[idx][0] - 2 * MARKER_WIDTH
         return RailDrop(others[0], side, self._span_rect(content, side_rail, edge, edge + MARKER_WIDTH - 1))
+
+    def _reorder_at(self, content: QWidget, side_rail: bool, group: list[RailButton], dock: PanelDock,
+                    along: int) -> Optional[RailReorder]:
+        """Returns where a drop at `along` within the dock's own group moves it: before the first other button whose
+        middle is past `along`, or to the end. Returns None if that leaves the order as it is."""
+        others = [member for member in group if member.dock is not dock]
+        idx = sum(1 for member in others
+                  if (self._start(member, side_rail) + self._end_of(member, side_rail)) / 2 < along)
+        order = [member.dock for member in others]
+        order.insert(idx, dock)
+        if order == [member.dock for member in group]:
+            return None
+        if idx < len(others):
+            edge = self._start(others[idx], side_rail) - (MARKER_WIDTH + 1) // 2
+        else:
+            edge = self._end_of(others[-1], side_rail) + 1 + (RAIL_SPACING - MARKER_WIDTH) // 2
+        marker = self._span_rect(content, side_rail, edge, edge + MARKER_WIDTH - 1)
+        return RailReorder(others[idx].dock if idx < len(others) else None, marker)
 
     @staticmethod
     def _start(button: RailButton, side_rail: bool) -> int:
@@ -240,8 +268,10 @@ class RailDrag(QObject):
         else:
             self._show_marker(rail, self._floating_drop)
 
-    def _apply(self, dock: PanelDock, drop: RailDrop) -> None:
-        if drop.side is None:
+    def _apply(self, dock: PanelDock, drop: RailDrop | RailReorder) -> None:
+        if isinstance(drop, RailReorder):
+            reorder_in_group(dock, drop.before)
+        elif drop.side is None:
             tab_with(self._window, dock, drop.target)
         else:
             split_beside(self._window, dock, drop.target, drop.side)

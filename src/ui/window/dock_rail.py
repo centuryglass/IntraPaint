@@ -5,8 +5,9 @@
   (`FloatingTitleBar`), and returns to the rail of its last area when the dock closes.
 - Side rails (left and right) are `SIDE_RAIL_WIDTH` wide, with an icon and keycap per button. Strip rails (top and
   bottom) show icon, name and keycap.
-- The buttons act as the docks' tabs. Clicking a button opens its dock in place of the open dock of its tab group, or
-  closes it if it is showing (`PanelDock.toggle_from_key`). A dock with no content has no button.
+- The buttons act as the docks' tabs, in tab order. Clicking a button opens its dock in place of the open dock of its
+  tab group, at the front of the group, or closes it if it is showing (`PanelDock.toggle_from_key`). A dock with no
+  content has no button.
 - A rail groups its buttons by tab group and lines each group up with its docks (see `DockRail`).
 - The recent tools sit after the Tools dock's group, and Generate at the end of the Image Generation dock's rail. The
   recent tools fill only the space the other buttons leave, so they never raise the window's minimum size. Their
@@ -788,6 +789,7 @@ class DockRails(QObject):
         dock.dockLocationChanged.connect(held_weakly(partial(self._dock_moved, dock)))
         dock.toggleViewAction().changed.connect(self.sync)
         dock.topLevelChanged.connect(self.sync)
+        dock.tab_order_changed.connect(self.sync)
         dock.installEventFilter(self)
         self.sync()
         return button

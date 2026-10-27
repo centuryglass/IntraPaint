@@ -4,8 +4,11 @@
   its own orientation. Other content with a `set_orientation` method gets its orientation from the dock's area
   (`src.ui.layout.panel_fit.orientation_for_dock`), until it migrates to `DockPanel`.
 - A tab group shows one dock at a time, and the edge rails act as its tabs. Opening a dock with `open_in_group`, its
-  key, its toggle action or a mouse drop into a group closes the group's other docks. A dock in the background of a
-  group is closed. `show` opens a dock without closing the others, so code opens docks with `open_in_group`.
+  key, its toggle action or a mouse drop into a group closes the group's other docks and moves the dock to the front
+  of the group's tab order. A dock in the background of a group is closed. `show` opens a dock without closing the
+  others, so code opens docks with `open_in_group`.
+- Code that moves an open dock out of its group calls `open_next_in_group` first, so the group stays open at its
+  size with its next dock in front.
 - A docked dock has no title bar; its rail button names it and moves it, and the notch in its upper-left corner
   (`DockNotch`) drags it. A floating dock shows the title bar set with
   `set_floating_title_bar`, or Qt's without one, and is dragged by it. `show_title_bar_for_drag` shows Qt's title bar
@@ -21,7 +24,7 @@ from contextlib import contextmanager
 from typing import Iterator, Optional
 from weakref import ref
 
-from PySide6.QtCore import QPoint, QSize, Qt, Signal
+from PySide6.QtCore import QByteArray, QPoint, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QIcon, QResizeEvent
 from PySide6.QtWidgets import QDockWidget, QMainWindow, QWidget
 
@@ -29,7 +32,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.ui.layout.dock_panel import DockPanel
 from src.ui.layout.panel_fit import Orientation, orientation_for_dock
 from src.ui.window.dock_notch import DockNotch
-from src.ui.window.dock_state import read_dock_groups
+from src.ui.window.dock_state import SavedGroup, move_dock_in_tab_group, read_dock_groups
 from src.ui.window.qt_dock_drag import start_qt_dock_drag
 
 
@@ -60,6 +63,8 @@ class PanelDock(QDockWidget):
     _drop_rule_pauses = 0
 
     badge_changed = Signal()
+    # Emitted after the dock moves within its tab group's order, which Qt reports with no signal of its own:
+    tab_order_changed = Signal()
 
     @property
     def _window(self) -> QMainWindow:
@@ -186,27 +191,72 @@ class PanelDock(QDockWidget):
                 self.show()
         self._update_host_facts()
 
+    def _saved_group(self) -> Optional[SavedGroup]:
+        """Returns this dock's tab group in the current layout, or None if it isn't in the layout."""
+        groups = read_dock_groups(self._window.saveState().data())
+        name = self.objectName()
+        return next((group for group in groups or [] if any(dock.name == name for dock in group.docks)), None)
+
+    def group(self) -> list['PanelDock']:
+        """Returns the docks in this dock's tab group, this one included, open or closed, in tab order. A floating
+        dock's group is itself alone, and floating docks are left out of other groups."""
+        if self.isFloating():
+            return [self]
+        group = self._saved_group()
+        if group is None:
+            return [self]
+        docks = {dock.objectName(): dock for dock in
+                 self._window.findChildren(PanelDock, options=Qt.FindChildOption.FindDirectChildrenOnly)}
+        members = [docks.get(saved.name) for saved in group.docks]
+        return [dock for dock in members if dock is self or (dock is not None and not dock.isFloating())]
+
     def group_mates(self) -> list['PanelDock']:
         """Returns the other docks in this dock's tab group, open or closed, in tab order. A floating dock has none, and
         floating docks are left out."""
-        if self.isFloating():
-            return []
-        groups = read_dock_groups(self._window.saveState().data())
-        name = self.objectName()
-        group = next((group for group in groups or [] if any(dock.name == name for dock in group.docks)), None)
-        if group is None:
-            return []
-        docks = {dock.objectName(): dock for dock in
-                 self._window.findChildren(PanelDock, options=Qt.FindChildOption.FindDirectChildrenOnly)}
-        mates = [docks.get(saved.name) for saved in group.docks if saved.name != name]
-        return [mate for mate in mates if mate is not None and not mate.isFloating()]
+        return [dock for dock in self.group() if dock is not self]
 
     def open_in_group(self) -> None:
-        """Opens the dock in front of its tab group, and closes the group's other docks."""
+        """Opens the dock in front of its tab group, closes the group's other docks, and moves the dock to the front
+        of the group's tab order."""
         self.show()
         self.raise_()
         for mate in self.group_mates():
             mate.set_open(False)
+        self._move_to_group_front()
+
+    def open_next_in_group(self) -> Optional['PanelDock']:
+        """Opens the first other dock with content in this dock's tab group, behind this one, if this dock is open and
+        docked, and returns it. Call before moving an open dock out of its group, so the group keeps its place and
+        size."""
+        if self.isHidden() or self.isFloating():
+            return None
+        successor = next((mate for mate in self.group_mates() if mate.is_available), None)
+        if successor is not None and successor.isHidden():
+            successor.show()
+            return successor
+        return None
+
+    def move_in_group(self, before: Optional['PanelDock']) -> bool:
+        """Moves the dock within its tab group's order, just before another dock of the group, or to the group's end
+        with None. Returns whether the order changed."""
+        return self._move_before(None if before is None else before.objectName())
+
+    def _move_before(self, before: Optional[str]) -> bool:
+        state = self._window.saveState().data()
+        moved = move_dock_in_tab_group(state, self.objectName(), before)
+        if moved is None or moved == state:
+            return False
+        with PanelDock.placing_docks():
+            self._window.restoreState(QByteArray(moved))
+        self.tab_order_changed.emit()
+        return True
+
+    def _move_to_group_front(self) -> None:
+        if self.isFloating():
+            return
+        group = self._saved_group()
+        if group is not None and len(group.docks) > 1 and group.docks[0].name != self.objectName():
+            self._move_before(group.docks[0].name)
 
     def sync_availability(self) -> None:
         """Hides the dock if it has no content, remembering whether it was open. Call after `restoreState`, which can
@@ -279,10 +329,19 @@ class PanelDock(QDockWidget):
             self.open_in_group()
 
     def _top_level_changed(self, floating: bool) -> None:
-        """Brings a dock dropped into a tab group to the front, as `open_in_group` does."""
+        """Brings a dock dropped into a tab group to the front, as `open_in_group` does.
+
+        Qt is still placing the dock when it reports the change, so the tab order changes once control returns to
+        the event loop.
+        """
         if not floating and PanelDock._drop_rule_pauses == 0 and not self.isHidden():
             for mate in self.group_mates():
                 mate.set_open(False)
+            QTimer.singleShot(0, self, self._move_dropped_dock_to_front)
+
+    def _move_dropped_dock_to_front(self) -> None:
+        if not self.isHidden():
+            self._move_to_group_front()
 
     def _visibility_changed(self, visible: bool) -> None:
         self._showing = visible

@@ -5,6 +5,9 @@ The dock opens with its title bar, and gets a synthetic press near the bar's lef
 dragged. Qt floats the dock with that point under the pointer and follows the mouse from there. This relies on Qt
 starting a dock drag from mouse events sent to the title area, which `QDockWidget` doesn't document; if Qt doesn't start
 one, the dock stays where it was.
+
+The dock's tab group keeps showing a dock: a closed dock opens behind the group's open dock, and an open dock opens the
+group's next dock behind it (`PanelDock.open_next_in_group`).
 """
 from typing import TYPE_CHECKING
 
@@ -31,7 +34,9 @@ def _send_mouse(widget: QWidget, event_type: QEvent.Type, global_pos: QPoint, bu
 def start_qt_dock_drag(window: QMainWindow, dock: 'PanelDock', global_pos: QPoint) -> None:
     """Starts Qt's dock drag of a dock from its title bar, with the pointer at a screen position."""
     if dock.isHidden():
-        dock.open_in_group()
+        dock.show()
+    else:
+        dock.open_next_in_group()
     dock.show_title_bar_for_drag()
     layout = window.layout()
     if layout is not None:

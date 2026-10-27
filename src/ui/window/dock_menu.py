@@ -115,7 +115,10 @@ def build_dock_menu(window: QMainWindow, dock: PanelDock, docks: list[PanelDock]
         menu.addAction(MENU_DOCK).triggered.connect(lambda _checked=False: dock.setFloating(False))
     else:
         def _float() -> None:
-            dock.show()
+            if dock.isHidden():
+                dock.show()
+            else:
+                dock.open_next_in_group()
             dock.setFloating(True)
         menu.addAction(MENU_FLOAT).triggered.connect(lambda _checked=False: _float())
     if not dock.isHidden():
