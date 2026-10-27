@@ -13,15 +13,15 @@ from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool, ToolGroup
 from src.tools.context_pin_dragger import ContextPinDragger
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.fill_selection_panel import FillSelectionPanel
+from src.ui.panel.tool_control_panels.magic_wand_panel import MagicWandPanel
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.image_fill import flood_fill, color_fill
-from src.util.visual.selection_fill_area import FillArea
+from src.util.visual.magic_wand_area import FillArea
 from src.util.visual.selection_mode import selection_mode_for_gesture, compose_selection_image
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
-TR_ID = 'tools.selection_fill_tool'
+TR_ID = 'tools.magic_wand_tool'
 
 
 def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
@@ -29,13 +29,13 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-ICON_PATH_SELECTION_FILL_TOOL = f'{PROJECT_DIR}/resources/icons/tools/selection_fill_icon.svg'
-CURSOR_PATH_SELECTION_FILL_TOOL = f'{PROJECT_DIR}/resources/cursors/selection_fill_cursor.svg'
+ICON_PATH_MAGIC_WAND_TOOL = f'{PROJECT_DIR}/resources/icons/tools/magic_wand_icon.svg'
+CURSOR_PATH_MAGIC_WAND_TOOL = f'{PROJECT_DIR}/resources/cursors/magic_wand_cursor.svg'
 CURSOR_SIZE = 25
 
-SELECTION_FILL_LABEL = _tr('Selection fill')
-SELECTION_FILL_TOOLTIP = _tr('Select areas with solid colors')
-SELECTION_FILL_CONTROL_HINT = _tr('{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin')
+MAGIC_WAND_LABEL = _tr('Magic wand')
+MAGIC_WAND_TOOLTIP = _tr('Select areas of similar color')
+MAGIC_WAND_CONTROL_HINT = _tr('{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin')
 
 
 def _only_selection_modifiers(held_modifiers: Qt.KeyboardModifier) -> bool:
@@ -48,16 +48,16 @@ def _only_selection_modifiers(held_modifiers: Qt.KeyboardModifier) -> bool:
     return remaining == Qt.KeyboardModifier.NoModifier
 
 
-class SelectionFillTool(BaseTool):
+class MagicWandTool(BaseTool):
     """Lets the user select image areas with solid colors."""
 
     TOOL_GROUP = ToolGroup.SELECTION
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        super().__init__(KeyConfig.SELECTION_FILL_TOOL_KEY, SELECTION_FILL_LABEL, SELECTION_FILL_TOOLTIP,
-                         QIcon(ICON_PATH_SELECTION_FILL_TOOL))
+        super().__init__(KeyConfig.SELECTION_FILL_TOOL_KEY, MAGIC_WAND_LABEL, MAGIC_WAND_TOOLTIP,
+                         QIcon(ICON_PATH_MAGIC_WAND_TOOL))
         self._image_stack = image_stack
-        self._control_panel = FillSelectionPanel(image_stack.selection_layer, self)
+        self._control_panel = MagicWandPanel(image_stack.selection_layer, self)
         self._pin_dragger = ContextPinDragger(image_stack, image_viewer)
         self._color = QColor()
 
@@ -68,14 +68,14 @@ class SelectionFillTool(BaseTool):
             self._color.setAlphaF(1.0)
         _update_color(AppConfig().get(AppConfig.SELECTION_COLOR))
         AppConfig().connect(self, AppConfig.SELECTION_COLOR, _update_color)
-        cursor_icon = self.load_cursor_icon(CURSOR_PATH_SELECTION_FILL_TOOL)
+        cursor_icon = self.load_cursor_icon(CURSOR_PATH_MAGIC_WAND_TOOL)
         self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE))
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        selection_fill_hint = SELECTION_FILL_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
+        magic_wand_hint = MAGIC_WAND_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
                                                                 right_mouse_icon=right_button_hint_text())
-        return f'{selection_fill_hint}<br/>{super().get_input_hint()}'
+        return f'{magic_wand_hint}<br/>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""

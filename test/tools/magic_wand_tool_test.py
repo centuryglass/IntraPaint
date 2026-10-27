@@ -1,4 +1,4 @@
-"""Tests SelectionFillTool: a click selects the area matching the clicked color, by flood fill or by color, from the
+"""Tests MagicWandTool: a click selects the area matching the clicked color, by flood fill or by color, from the
    active layer, the merged image or the selection itself, as one undo step."""
 from unittest import mock
 
@@ -8,9 +8,9 @@ from PySide6.QtGui import QImage, QTransform
 from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
-from src.tools.selection_fill_tool import SelectionFillTool
+from src.tools.magic_wand_tool import MagicWandTool
 from src.undo_stack import UndoStack
-from src.util.visual.selection_fill_area import FillArea
+from src.util.visual.magic_wand_area import FillArea
 from src.util.visual.selection_mode import SelectionMode
 from src.util.visual.image_utils import image_data_as_numpy_8bit
 from test.tools.context_pin_gesture_tests import ContextPinGestureTests
@@ -45,8 +45,8 @@ def _pattern_image(width: int, height: int) -> QImage:
     return image
 
 
-class SelectionFillToolTest(ContextPinGestureTests, SelectionToolTestCase):
-    """Drives SelectionFillTool with synthetic clicks at 1:1 scale, on a layer holding the pattern image."""
+class MagicWandToolTest(ContextPinGestureTests, SelectionToolTestCase):
+    """Drives MagicWandTool with synthetic clicks at 1:1 scale, on a layer holding the pattern image."""
 
     def setUp(self) -> None:
         super().setUp()
@@ -54,7 +54,7 @@ class SelectionFillToolTest(ContextPinGestureTests, SelectionToolTestCase):
         Cache().set(Cache.FILL_THRESHOLD, 0.0)
         Cache().set(Cache.SAMPLE_MERGED, False)
         Cache().set(Cache.SELECTION_FILL_AREA, FillArea.CONNECTED.value)
-        self.tool = self.activate_tool(SelectionFillTool(self.image_stack, self.image_viewer))
+        self.tool = self.activate_tool(MagicWandTool(self.image_stack, self.image_viewer))
         self.empty = np.zeros((self.IMAGE_SIZE.height(), self.IMAGE_SIZE.width()), dtype=bool)
         UndoStack().clear()
 
@@ -116,7 +116,7 @@ class SelectionFillToolTest(ContextPinGestureTests, SelectionToolTestCase):
         self.mouse_drag([QPoint(4, 4)])
         self.assert_selection(self._mask(QRect(0, 0, 16, 20)))
 
-    def test_fill_selection_holes(self) -> None:
+    def test_magic_wand_holes(self) -> None:
         """With the Holes fill area, a click in an unselected hole selects the hole, ignoring the image."""
         ring = self._mask(QRect(4, 4, 40, 30)) & ~self._mask(QRect(10, 10, 20, 16))
         self.set_selection_outside_history(ring)

@@ -180,7 +180,7 @@
         "label": "Fill area",
         "category": "Cache",
         "subcategory": "Selection",
-        "description": "Which area Selection fill selects: 'Connected' selects the connected region matching the clicked color, 'By color' selects every pixel within the color threshold of the clicked color, and 'Holes' selects the enclosed gaps in the current selection.",
+        "description": "Which area the magic wand selects: 'Connected' selects the connected region matching the clicked color, 'By color' selects every pixel within the color threshold of the clicked color, and 'Holes' selects the enclosed gaps in the current selection.",
         "type": "string",
         "default": "Connected",
         "options": [

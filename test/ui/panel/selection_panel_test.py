@@ -10,13 +10,13 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.ui.layout.panel_fit import Orientation
 from src.ui.panel.tool_control_panels.brush_selection_panel import BrushSelectionPanel
-from src.ui.panel.tool_control_panels.fill_selection_panel import FillSelectionPanel
+from src.ui.panel.tool_control_panels.magic_wand_panel import MagicWandPanel
 from src.ui.panel.tool_control_panels.free_selection_panel import FreeSelectionPanel
 from src.ui.panel.tool_control_panels.selection_panel import SelectionPanel
 from src.ui.panel.tool_control_panels.shape_selection_panel import ShapeSelectionPanel
 from src.ui.widget.panel_section import PanelSection
 from src.util.layout import layout_contents
-from src.util.visual.selection_fill_area import FillArea
+from src.util.visual.magic_wand_area import FillArea
 from src.util.visual.selection_mode import SelectionMode
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG
 from test.base_test_case import IntraPaintTestCase, press_key
@@ -99,7 +99,7 @@ class SelectionPanelsTest(IntraPaintTestCase):
         self.tools['shape'].get_activation_config_key.return_value = KeyConfig.SHAPE_SELECTION_TOOL_KEY
         self.panels = {
             'brush': BrushSelectionPanel(self.layer, self.tools['brush']),
-            'fill': FillSelectionPanel(self.layer, self.tools['fill']),
+            'fill': MagicWandPanel(self.layer, self.tools['fill']),
             'free': FreeSelectionPanel(self.layer, self.tools['free']),
             'shape': ShapeSelectionPanel(self.layer, self.tools['shape'])
         }
@@ -140,7 +140,7 @@ class SelectionPanelsTest(IntraPaintTestCase):
     def test_fill_area_persists_and_gates_fields(self) -> None:
         """The Fill area control stores its choice, and Holes disables the threshold and Sample merged."""
         panel = self.panels['fill']
-        assert isinstance(panel, FillSelectionPanel)
+        assert isinstance(panel, MagicWandPanel)
         self.assertEqual(panel.area_control.value(), FillArea.CONNECTED.value)
         panel.area_control.set_value(FillArea.HOLES.value)
         self.assertEqual(Cache().get(Cache.SELECTION_FILL_AREA), FillArea.HOLES.value)

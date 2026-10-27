@@ -12,7 +12,7 @@ a = Analysis(
     pathex=[],
     binaries=[(f'{LIBMYPAINT_DIR}/*', LIBMYPAINT_DIR)],
     datas=[('resources', 'resources')],
-    hiddenimports=['src.tools.mypaint_brush_tool', 'src.tools.fill_tool', 'src.tools.selection_fill_tool',
+    hiddenimports=['src.tools.mypaint_brush_tool', 'src.tools.fill_tool', 'src.tools.magic_wand_tool',
                    'sd_backend_client'],
     hookspath=[],
     hooksconfig={},

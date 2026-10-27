@@ -23,7 +23,7 @@ This guide covers the editing tools found within the "Tools" panel. and the extr
    - [Free selection tool](#-free-selection-tool-l)
    - [Selection brush tool](#-selection-brush-tool-s)
    - [Rectangle/Ellipse selection tool](#-rectangleellipse-selection-r)
-   - [Selection fill tool](#-selection-fill-tool-a)
+   - [Magic wand tool](#-magic-wand-tool-a)
 4. [Image generation area tool](#-image-generation-area-tool-g)
 
 ---
@@ -426,7 +426,7 @@ Holding a modifier key when a selection starts overrides the toggle for that one
 - **Hold Shift+Alt**: Intersect.
 - **Hold Ctrl+Shift**: Replace.
 
-The rectangle/ellipse and free selection tools and the selection fill tool use all four. The selection brush uses only Alt to subtract, because Shift already draws lines there; use the toggle or the "Q" key for the other modes. The modifiers can be changed in the Settings (F9) under the "Keybindings" tab.
+The rectangle/ellipse and free selection tools and the magic wand tool use all four. The selection brush uses only Alt to subtract, because Shift already draws lines there; use the toggle or the "Q" key for the other modes. The modifiers can be changed in the Settings (F9) under the "Keybindings" tab.
 
 **On Linux, Alt+drag may move the window instead.** Many window managers (including XFCE, Cinnamon, MATE and KDE Plasma 5) use Alt+drag to move windows, and IntraPaint never sees the press. Either change the window manager's window-move key to Super, or bind IntraPaint's **Selection Subtract Modifier** to a different key such as Meta. The same applies to the other Alt shortcuts, such as the fixed-angle drawing modifier.
 
@@ -519,7 +519,7 @@ Select or deselect rectangular or elliptical regions in the image.
 
 ---
 
-### ![Selection Fill tool icon](./tool_icons/selection_fill_icon.png) Selection fill tool (A)
+### ![Magic wand tool icon](./tool_icons/magic_wand_icon.png) Magic wand tool (A)
 
 Select content based on connected regions and color similarity.
 
@@ -530,13 +530,13 @@ Select content based on connected regions and color similarity.
 
 #### User interface
 
-<img src="./labeled_screenshots/tools/fill_select.png" alt="Screenshot of the fill selection tool controls, with specific elements numbered."/>
+<img src="./labeled_screenshots/tools/fill_select.png" alt="Screenshot of the magic wand tool controls, with specific elements numbered."/>
 
 0. **Selection mode toggle**: Choose the [selection mode](#selection-modes).
 1. **Color threshold slider**: Controls how closely colors must match when filling connected areas.  At 0.0, only connected areas with the exact same color will be selected.  The accepted color range expands as the threshold value increases.
-2. **"Sample merged" checkbox**:  When checked, the fill selection tool will use all image layers to determine where to select.  When unchecked, content outside the active layer will be ignored.
-3. **"Select all by color" checkbox**:  When checked, color boundaries will be ignored, and the fill selection tool will instead select every point in the image where the color matches the clicked point.  Enabling this will un-check "Fill selection holes".
-4. **"Fill selection holes" checkbox**: When checked, the fill selection tool will ignore image content entirely, and select/deselect based on existing selection content only. Useful for selecting a hole within an existing selection, or deselecting a connected block of image content.  Enabling this will un-check "Select all by color".
+2. **"Sample merged" checkbox**:  When checked, the magic wand tool will use all image layers to determine where to select.  When unchecked, content outside the active layer will be ignored.
+3. **"Select all by color" checkbox**:  When checked, color boundaries will be ignored, and the magic wand tool will instead select every point in the image where the color matches the clicked point.  Enabling this will un-check "Fill selection holes".
+4. **"Fill selection holes" checkbox**: When checked, the magic wand tool will ignore image content entirely, and select/deselect based on existing selection content only. Useful for selecting a hole within an existing selection, or deselecting a connected block of image content.  Enabling this will un-check "Select all by color".
 5. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
 6. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
 7. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.

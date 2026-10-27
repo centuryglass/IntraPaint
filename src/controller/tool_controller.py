@@ -37,7 +37,7 @@ MyPaintBrushTool = optional_import('src.tools.mypaint_brush_tool', attr_name='My
 # Both fill tools import the compiled `src.util.visual.image_fill` module, which is missing when the Cython build
 # failed. They are None in that case, and every use in ToolController must handle that.
 FillTool = optional_import('src.tools.fill_tool', attr_name='FillTool')
-SelectionFillTool = optional_import('src.tools.selection_fill_tool', attr_name='SelectionFillTool')
+MagicWandTool = optional_import('src.tools.magic_wand_tool', attr_name='MagicWandTool')
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ BRUSH_LOAD_ERROR_MESSAGE = _tr('The brush tool will not be available unless this
 WHEEL_NOTCH_DELTA = 120
 
 FILL_TOOLS_UNAVAILABLE_LOG = (
-    'The fill and selection fill tools are unavailable because the compiled image_fill module could not be loaded. '
+    'The fill and magic wand tools are unavailable because the compiled image_fill module could not be loaded. '
     'Install a C compiler, then run `python setup.py build_ext --inplace` from the IntraPaint directory and restart '
     'IntraPaint.')
 
@@ -115,9 +115,9 @@ class ToolController(QObject):
         self.add_tool(FreeSelectionTool(image_stack, image_viewer))
         self.add_tool(SelectionBrushTool(image_stack, image_viewer))
         self.add_tool(ShapeSelectionTool(image_stack, image_viewer))
-        if SelectionFillTool is not None:
-            self.add_tool(SelectionFillTool(image_stack, image_viewer))
-        if FillTool is None or SelectionFillTool is None:
+        if MagicWandTool is not None:
+            self.add_tool(MagicWandTool(image_stack, image_viewer))
+        if FillTool is None or MagicWandTool is None:
             logger.warning(FILL_TOOLS_UNAVAILABLE_LOG)
 
         eyedropper_modifier = KeyConfig().get_modifier(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER)

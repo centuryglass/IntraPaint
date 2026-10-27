@@ -21,13 +21,13 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 PAINT_SECTION_TITLE = _tr('Paint')
 REGION_SECTION_TITLE = _tr('Region')
 THRESHOLD_TOOLTIP = _tr('How closely a color must match the clicked color to be filled. 0 fills only exact matches. '
-                        'Shared with Selection fill.')
-SAMPLE_MERGED_TOOLTIP = _tr('Fill based on the whole image instead of just the active layer. Shared with Selection '
-                            'fill.')
+                        'Shared with the magic wand.')
+SAMPLE_MERGED_TOOLTIP = _tr('Fill based on the whole image instead of just the active layer. Shared with the '
+                            'magic wand.')
 
 
 def build_threshold_field(parent: Optional[QWidget] = None) -> SliderField:
-    """Returns the Color threshold field that the Fill and Selection fill panels share, bound to
+    """Returns the Color threshold field that the Fill and Magic wand panels share, bound to
     `Cache.FILL_THRESHOLD`."""
     cache = Cache()
     minimum, maximum, step = cache.get_range(Cache.FILL_THRESHOLD)
@@ -48,7 +48,7 @@ def build_threshold_field(parent: Optional[QWidget] = None) -> SliderField:
 
 
 def build_sample_merged_checkbox() -> QCheckBox:
-    """Returns the Sample merged checkbox that the Fill and Selection fill panels share."""
+    """Returns the Sample merged checkbox that the Fill and Magic wand panels share."""
     checkbox = Cache().get_control_widget(Cache.SAMPLE_MERGED)
     assert isinstance(checkbox, QCheckBox)
     checkbox.setToolTip(SAMPLE_MERGED_TOOLTIP)

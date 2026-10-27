@@ -30,7 +30,7 @@ if not is_pyinstaller_bundle():
                                       cwd=os.path.dirname(os.path.abspath(__file__)), check=False)
         if build_result.returncode != 0:
             # Startup continues: only the fill tools need the compiled module (see ToolController).
-            print('WARNING: Building the image_fill module failed, so the fill and selection fill tools will be '
+            print('WARNING: Building the image_fill module failed, so the fill and magic wand tools will be '
                   'unavailable. Install a C compiler, then run `python setup.py build_ext --inplace` in the '
                   'IntraPaint directory to enable them. All other tools will work normally.', file=sys.stderr)
 

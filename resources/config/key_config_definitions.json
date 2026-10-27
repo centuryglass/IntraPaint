@@ -288,10 +288,10 @@
         "saved": true
     },
     "selection_fill_tool_key": {
-        "label": "Switch to the area selection tool:",
+        "label": "Switch to the magic wand tool:",
         "category": "Keybindings",
         "subcategory": "Tool Selection",
-        "description": "Activate the area selection tool to mark areas for editing.",
+        "description": "Activate the magic wand tool to select areas of similar color.",
         "type": "string",
         "default": "A",
         "saved": true
@@ -453,7 +453,7 @@
         "label": "Toggle sample merged",
         "category": "Keybindings",
         "subcategory": "Tool Shortcuts",
-        "description": "Toggles the Sample merged option while the selection fill tool is active. Unbound by default.",
+        "description": "Toggles the Sample merged option while the magic wand tool is active. Unbound by default.",
         "type": "string",
         "default": "",
         "saved": true
