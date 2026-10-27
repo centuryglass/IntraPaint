@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QAbstractSp
                                QDockWidget, QFrame, QGroupBox, QLabel, QLayout, QMainWindow, QSizePolicy, QTabBar,
                                QWidget)
 
+from src.image.composite_mode import CompositeMode
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.segmented_control import SegmentedControl
 from src.ui.layout.dock_panel import DockPanel
@@ -719,6 +720,25 @@ def controlnet_panel(webui: bool, set_up_units: bool = False) -> DockPanel:
     return panel
 
 
+def _layer_panel(controller: 'AppController') -> Optional[QWidget]:
+    """Returns the Layers panel, after giving the controller's image a group, nested layers and a layer with a meta
+    line, so captures show the row anatomy. The layers are added once per controller."""
+    # pylint: disable=protected-access
+    image_stack = controller._image_stack
+    root = image_stack.layer_stack
+    if root.count <= 1:
+        group = image_stack.create_layer_group('Inpaint passes', layer_parent=root, layer_index=0)
+        image_stack.create_layer('Background', layer_parent=root, layer_index=root.count)
+        image_stack.create_layer('Sky inpaint 2', layer_parent=group, layer_index=0)
+        shading = image_stack.create_layer('Shading', layer_parent=group, layer_index=1)
+        shading.opacity = 0.6
+        shading.composition_mode = CompositeMode.MULTIPLY
+        nested = image_stack.create_layer_group('Face', layer_parent=group, layer_index=0)
+        image_stack.create_layer('Eyes fix', layer_parent=nested, layer_index=0).locked = True
+        image_stack.active_layer = shading
+    return controller._window.layers_dock.content
+
+
 def panel_scenes(controller: 'AppController') -> list[PanelScene]:
     """Returns every panel scene for a mock-mode AppController, in capture order.
 
@@ -730,7 +750,7 @@ def panel_scenes(controller: 'AppController') -> list[PanelScene]:
     return [
         PanelScene('main_window', lambda c: c._window, WINDOW_SIZES, _large_screen),
         PanelScene('tool_panel', lambda c: c._tool_panel),
-        PanelScene('layer_panel', lambda c: c._window.layers_dock.content),
+        PanelScene('layer_panel', _layer_panel),
         PanelScene('color_panel', lambda c: c._tool_panel_color_picker),
         PanelScene('navigation_panel', lambda c: c._tool_panel_navigation_panel),
         PanelScene('sd_webui_panel', lambda _c: stable_diffusion_panel(True)),

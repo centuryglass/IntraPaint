@@ -21,7 +21,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
-from src.ui.panel.layer_ui.layer_widget import LayerWidget
+from src.ui.panel.layer_ui.layer_row import LayerThumbnail
 from src.util.visual.image_utils import create_transparent_image, crop_to_content
 from test.image.layers.layer_group_render_test import CANVAS_SIZE, HSL_MODES, QT_MODES, \
     GroupRenderTestCase, _composite
@@ -51,15 +51,17 @@ class LayerPanelGroupPreviewTest(GroupRenderTestCase):
         self.image_stack.flush_render()
         self.panel = LayerPanel(self.image_stack)
 
-    def widget_for(self, layer: Layer) -> LayerWidget:
-        """Returns the one LayerWidget showing a layer."""
+    def widget_for(self, layer: Layer) -> LayerThumbnail:
+        """Returns the row thumbnail showing a layer, or for the root, which has no row, the selected-layer header's
+        thumbnail with the root selected."""
         assert self.panel is not None
-        widgets = [widget for widget in self.panel.findChildren(LayerWidget) if widget.layer is layer]
-        self.assertEqual(len(widgets), 1, f'widgets for {layer.name}')
-        return widgets[0]
+        if layer is self.image_stack.layer_stack:
+            self.image_stack.active_layer = layer
+            return self.panel.properties.thumbnail
+        return self.panel.layer_list.row_for(layer).thumbnail
 
     @staticmethod
-    def flush_preview(widget: LayerWidget) -> None:
+    def flush_preview(widget: LayerThumbnail) -> None:
         """Runs the widget's scheduled preview update now, if one is pending."""
         # pylint: disable=protected-access
         if widget._preview_render_timer.isActive():
