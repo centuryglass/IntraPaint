@@ -16,8 +16,8 @@
   "minimum": {
     "problems": [],
     "size": [
-      634,
-      356
+      580,
+      368
     ]
   },
   "portrait": {
@@ -35,10 +35,7 @@
     ]
   },
   "ultrawide": {
-    "problems": [
-      "squeezed: layers_dock/LayerPanel/QScrollArea/QWidget[0]/LayerGroupWidget/BorderedWidget/LayerWidget is 172x50, minimum 140x80",
-      "squeezed: layers_dock/LayerPanel/QScrollArea/QWidget[0]/LayerGroupWidget/LayerWidget is 201x50, minimum 201x80"
-    ],
+    "problems": [],
     "size": [
       3440,
       1440

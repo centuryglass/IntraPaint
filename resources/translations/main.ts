@@ -6767,143 +6767,6 @@ Keys: {decrease} / {increase}</source>
     </message>
 </context>
 <context>
-    <name>ui.panel.layer.image_layer_widget</name>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Move up</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Move down</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Copy</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Delete</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Merge down</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Merge group</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Merge all visible</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Flatten</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Rename</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Clear selected</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Copy selected to new layer</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Layer to image size</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Crop layer to content</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Crop layer to selection</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Mirror vertically</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Mirror horizontally</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Select layer contents</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>{src_layer_name} copied content</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Select all in active layer</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Invert selection</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_widget.py"/>
-        <source>Clear selection</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>ui.panel.layer.layer_alpha_lock_button</name>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_alpha_lock_button.py"/>
-        <source>Toggle layer transparency lock</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>ui.panel.layer.layer_isolate_button</name>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_isolate_button.py"/>
-        <source>Toggle layer group isolation</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_isolate_button.py"/>
-        <source>Layer groups below full opacity or outside Normal mode are always isolated</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>ui.panel.layer.layer_lock_button</name>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_lock_button.py"/>
-        <source>Toggle layer lock</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>ui.panel.layer.layer_visibility_button</name>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_visibility_button.py"/>
@@ -6917,10 +6780,187 @@ Keys: {decrease} / {increase}</source>
     </message>
 </context>
 <context>
+    <name>ui.panel.layer_ui.blend_mode_combo_box</name>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/blend_mode_combo_box.py"/>
+        <source>Compositing (alpha only)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/blend_mode_combo_box.py"/>
+        <source>Layer blend mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.panel.layer_ui.layer_flags</name>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_flags.py"/>
+        <source>Lock</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_flags.py"/>
+        <source>Toggle layer lock</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_flags.py"/>
+        <source>Alpha lock</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_flags.py"/>
+        <source>Toggle layer transparency lock</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_flags.py"/>
+        <source>Isolate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_flags.py"/>
+        <source>Toggle layer group isolation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_flags.py"/>
+        <source>Layer groups below full opacity or outside Normal mode are always isolated</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.panel.layer_ui.layer_list</name>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_list.py"/>
+        <source>{width} x {height}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_list.py"/>
+        <source>Image commands</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_list.py"/>
+        <source>The whole image. Click to select it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.panel.layer_ui.layer_menu</name>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Move up</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Move down</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Copy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Delete</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Merge down</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Merge group</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Merge all visible</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Flatten</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Rename</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Clear selected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Copy selected to new layer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Layer to image size</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Crop layer to content</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Crop layer to selection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Mirror vertically</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Mirror horizontally</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Select layer contents</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>{src_layer_name} copied content</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.panel.layer_ui.layer_panel</name>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
         <source>Image Layers</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Layers</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>1 layer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>{count} layers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6983,14 +7023,62 @@ Keys: {decrease} / {increase}</source>
         <source>Merge the active layer with the one below it.</source>
         <translation type="unfinished"></translation>
     </message>
+</context>
+<context>
+    <name>ui.panel.layer_ui.layer_properties</name>
     <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
-        <source>Opacity:</source>
+        <location filename="../../src/ui/panel/layer_ui/layer_properties.py"/>
+        <source>Opacity</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
-        <source>Layer mode:</source>
+        <location filename="../../src/ui/panel/layer_ui/layer_properties.py"/>
+        <source>Layer opacity</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_properties.py"/>
+        <source>"{layer_name}" is locked</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_properties.py"/>
+        <source>Unlock</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.panel.layer_ui.layer_row</name>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_row.py"/>
+        <source> · </source>
+        <comment>separates the parts of a layer row's meta line</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_row.py"/>
+        <source>{percent}%</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_row.py"/>
+        <source>1 layer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_row.py"/>
+        <source>{count} layers</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_row.py"/>
+        <source>Aa</source>
+        <comment>marks text layer thumbnails</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_row.py"/>
+        <source>Show or hide the layers in this group</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

@@ -1,25 +1,34 @@
-"""Shows image layers, and allows the user to manipulate them."""
-import logging
-from typing import Optional, Callable, Any
+"""The Layers panel: the selected-layer header (`LayerProperties`), the layer list (`LayerList`) and the action bar.
 
-from PySide6.QtCore import Qt, QSize, QPointF, QTimer
+It is a `DockPanel`, so it shows as much as fits the space its dock reports:
+
+- A side panel stacks the header over the list, and the list takes the spare height. A strip puts the header beside
+  the list, so the list stays vertical in its own column. The action bar stays below as the footer.
+- Required: the panel header, the eye, thumbnail and name of each row, the selection, opacity, mode and the lock
+  toggles. Mode and opacity share a row when it fits across, and stack otherwise.
+- Optional, placed first: the rows' meta line (`META_PRIORITY`). Then the large form (`LARGE_PRIORITY`): text labels
+  on the toggles and large thumbnails.
+- The panel header counts the layers under the root.
+
+All layer changes go through `ImageStack`.
+"""
+from typing import Any, Callable, Optional
+
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QToolButton, QSlider, \
-    QDoubleSpinBox, QComboBox, QApplication, QSizePolicy
+from PySide6.QtWidgets import QApplication, QGridLayout, QHBoxLayout, QSizePolicy, QToolButton, QWidget
 
-from src.undo_stack import UndoStack
 from src.config.cache import Cache
-from src.image.composite_mode import CompositeMode
-from src.image.layers.image_stack import ImageStack
-from src.image.layers.layer import Layer, LayerParent
-from src.image.layers.layer_group import LayerGroup
 from src.config.key_config import KeyConfig
-from src.ui.panel.layer_ui.layer_group_widget import LayerGroupWidget
+from src.image.layers.image_stack import ImageStack
+from src.image.layers.layer import Layer
+from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel
+from src.ui.layout.panel_fit import REQUIRED, STRIP_SECTION_MAX_WIDTH, FitItem, Orientation
+from src.ui.panel.layer_ui.layer_list import LayerList
+from src.ui.panel.layer_ui.layer_properties import LayerProperties
 from src.ui.widget.shortcut_tooltip import set_shortcut_tooltip
-from src.util.shared_constants import PROJECT_DIR, APP_ICON_PATH, SMALL_ICON_SIZE
+from src.util.shared_constants import APP_ICON_PATH, PROJECT_DIR, SMALL_ICON_SIZE
 from src.util.visual.palette_icon import palette_icon
-
-logger = logging.getLogger(__name__)
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.layer_ui.layer_panel'
@@ -30,9 +39,10 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-LIST_SPACING = 4
-
 WINDOW_TITLE = _tr('Image Layers')
+PANEL_TITLE = _tr('Layers')
+ONE_LAYER_DESCRIPTION = _tr('1 layer')
+LAYER_COUNT_DESCRIPTION = _tr('{count} layers')
 ADD_BUTTON_TITLE = _tr('Add layer')
 ADD_BUTTON_TOOLTIP = _tr('Create a new layer above the current active layer.')
 ADD_GROUP_BUTTON_TITLE = _tr('Add layer group')
@@ -45,9 +55,8 @@ LAYER_DOWN_BUTTON_TITLE = _tr('Move layer down')
 LAYER_DOWN_BUTTON_TOOLTIP = _tr('Move the active layer down.')
 MERGE_DOWN_BUTTON_TITLE = _tr('Merge down')
 MERGE_DOWN_BUTTON_TOOLTIP = _tr('Merge the active layer with the one below it.')
-OPACITY_LABEL_TEXT = _tr('Opacity:')
-MODE_LABEL_TEXT = _tr('Layer mode:')
 
+ICON_PATH_PANEL = f'{PROJECT_DIR}/resources/icons/tabs/layers.svg'
 ICON_PATH_ADD_BUTTON = f'{PROJECT_DIR}/resources/icons/layer/plus_icon.svg'
 ICON_PATH_ADD_GROUP_BUTTON = f'{PROJECT_DIR}/resources/icons/layer/plus_group_icon.svg'
 ICON_PATH_DELETE_BUTTON = f'{PROJECT_DIR}/resources/icons/layer/minus_icon.svg'
@@ -55,312 +64,162 @@ ICON_PATH_LAYER_UP_BUTTON = f'{PROJECT_DIR}/resources/icons/layer/up_icon.svg'
 ICON_PATH_LAYER_DOWN_BUTTON = f'{PROJECT_DIR}/resources/icons/layer/down_icon.svg'
 ICON_PATH_MERGE_BUTTON = f'{PROJECT_DIR}/resources/icons/layer/merge_down_icon.svg'
 
-SCROLL_TIMER_INTERVAL_MS = 50
-SCROLL_HEIGHT_THRESHOLD = 1/8
-MIN_SCROLL_SPEED = 2
-MAX_SCROLL_SPEED = 10
+# Optional items, in fill order:
+META_PRIORITY = 1
+LARGE_PRIORITY = 2
+# Forms of the mode and opacity row:
+CONTROLS_ONE_ROW = 0
+CONTROLS_STACKED = 1
 
 
-class LayerPanel(QWidget):
-    """
-    Shows image layers, and allows the user to manipulate them.
-
-    Layers are displayed in a vertical scrolling list. Through context menus, buttons, and drag and drop, the user
-    can do the following:
-    - Select the active layer
-    - Show/hide layers
-    - Add new layers
-    - Copy existing layers
-    - Delete existing layers
-    - Change layer order
-    - Merge layers
-
-    All actual functionality is provided by ImageStack.
-    """
+class LayerPanel(DockPanel):
+    """Shows the image's layers, and edits the active layer. See the module docstring."""
 
     def __init__(self, image_stack: ImageStack, parent: Optional[QWidget] = None) -> None:
-        """Connect to the ImageStack and build control layout."""
-        super().__init__(parent)
+        """Connects to the ImageStack and builds the panel."""
+        self._image_stack = image_stack
+        super().__init__(PANEL_TITLE, QIcon(ICON_PATH_PANEL), parent=parent)
         self.setWindowTitle(WINDOW_TITLE)
         self.setWindowIcon(QIcon(APP_ICON_PATH))
-        if self.isWindow():
-            self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self._layout = QVBoxLayout(self)
-        self._image_stack = image_stack
-        self._active_layer: Optional[Layer] = None
-        self._parent_group_item = LayerGroupWidget(self._image_stack.layer_stack, self._image_stack)
-        self._parent_group_item.dragging.connect(self._layer_drag_slot)
-        self._parent_group_item.drag_ended.connect(self._layer_drag_end_slot)
+        self.header.reset_button.hide()
 
-        # Layer opacity slider:
-        self._opacity_layout = QHBoxLayout()
-        self._opacity_layout.setSpacing(0)
-        self._opacity_layout.setContentsMargins(0, 0, 0, 0)
-        self._opacity_layout.addWidget(QLabel(OPACITY_LABEL_TEXT))
-        self._opacity_slider = QSlider(Qt.Orientation.Horizontal)
-        self._opacity_layout.addWidget(self._opacity_slider)
-        self._opacity_spinbox = QDoubleSpinBox()
-        self._opacity_layout.addWidget(self._opacity_spinbox)
-        self._layout.addLayout(self._opacity_layout)
-        self._opacity_slider.setRange(0, 100)
-        self._opacity_spinbox.setRange(0.0, 1.0)
-        self._opacity_spinbox.setSingleStep(0.01)
-        active_layer = image_stack.active_layer
-        self._opacity_slider.setValue(int(active_layer.opacity * 100))
-        self._opacity_spinbox.setValue(active_layer.opacity)
+        self._properties = LayerProperties(image_stack)
+        self._layer_list = LayerList(image_stack)
+        self._content = QWidget()
+        self._content_layout = QGridLayout(self._content)
+        self._content_layout.setContentsMargins(0, 0, 0, 0)
+        self._body_layout.insertWidget(0, self._content, stretch=1)
 
-        self._opacity_slider.sliderPressed.connect(lambda: UndoStack().begin_gesture('LayerPanel.opacity'))
-        self._opacity_slider.sliderReleased.connect(UndoStack().end_gesture)
-        self._opacity_slider.valueChanged.connect(self._update_opacity_slot)
-        self._opacity_spinbox.valueChanged.connect(self._update_opacity_slot)
-
-        self._mode_layout = QHBoxLayout()
-        self._mode_layout.setSpacing(0)
-        self._mode_layout.setContentsMargins(0, 0, 0, 0)
-        self._layout.addLayout(self._mode_layout)
-        self._mode_layout.addWidget((QLabel(MODE_LABEL_TEXT)))
-        self._mode_box = QComboBox()
-        self._mode_layout.addWidget(self._mode_box)
-        for mode_name in CompositeMode:
-            mode = CompositeMode(mode_name)
-            qt_mode = mode.qt_composite_mode()
-            self._mode_box.addItem(mode_name, qt_mode)
-        self._mode_box.currentIndexChanged.connect(self._mode_change_slot)
-
-        # Scrolling layer list:
-        self._scroll_area = QScrollArea(self)
-        self._scroll_area.setWidgetResizable(True)
-        self._scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
-        horizontal_scroll_bar = self._scroll_area.horizontalScrollBar()
-        assert horizontal_scroll_bar is not None
-        horizontal_scroll_bar.rangeChanged.connect(self._update_scroll_area_minimum)
-        horizontal_scroll_bar.setMinimum(0)
-        horizontal_scroll_bar.setMaximum(0)
-        self._scroll_area.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
-        self._scroll_area.setWidget(self._parent_group_item)
-        self._layout.addWidget(self._scroll_area, stretch=10)
-        self._scroll_timer = QTimer()
-        self._scroll_timer.timeout.connect(self._scroll_timer_slot)
-        self._scroll_offset = 0
-
-        # BUTTON BAR:
-        self._button_bar = QWidget(self)
-        self._layout.addWidget(self._button_bar)
+        self._button_bar = QWidget()
         self._button_bar_layout = QHBoxLayout(self._button_bar)
         self._button_bar_layout.setSpacing(0)
         self._button_bar_layout.setContentsMargins(0, 0, 0, 0)
+        self._add_button = self._create_button(ICON_PATH_ADD_BUTTON, ADD_BUTTON_TITLE, ADD_BUTTON_TOOLTIP,
+                                               image_stack.create_layer, KeyConfig.NEW_LAYER_SHORTCUT, stretch=1)
+        self._add_group_button = self._create_button(ICON_PATH_ADD_GROUP_BUTTON, ADD_GROUP_BUTTON_TITLE,
+                                                     ADD_GROUP_BUTTON_TOOLTIP, image_stack.create_layer_group,
+                                                     KeyConfig.NEW_LAYER_GROUP_SHORTCUT, stretch=1)
+        self._move_up_button = self._create_button(ICON_PATH_LAYER_UP_BUTTON, LAYER_UP_BUTTON_TITLE,
+                                                   LAYER_UP_BUTTON_TOOLTIP, self._move_up,
+                                                   KeyConfig.MOVE_LAYER_UP_SHORTCUT, stretch=1)
+        self._move_down_button = self._create_button(ICON_PATH_LAYER_DOWN_BUTTON, LAYER_DOWN_BUTTON_TITLE,
+                                                     LAYER_DOWN_BUTTON_TOOLTIP, self._move_down,
+                                                     KeyConfig.MOVE_LAYER_DOWN_SHORTCUT, stretch=1)
+        self._merge_down_button = self._create_button(ICON_PATH_MERGE_BUTTON, MERGE_DOWN_BUTTON_TITLE,
+                                                      MERGE_DOWN_BUTTON_TOOLTIP, image_stack.merge_layer_down,
+                                                      KeyConfig.MERGE_LAYER_DOWN_SHORTCUT, stretch=10)
+        self._delete_button = self._create_button(ICON_PATH_DELETE_BUTTON, DELETE_BUTTON_TITLE, DELETE_BUTTON_TOOLTIP,
+                                                  image_stack.remove_layer, KeyConfig.DELETE_LAYER_SHORTCUT,
+                                                  signal=True)
+        self.set_footer(self._button_bar)
 
-        def _create_button(icon_path: str, title: str, tooltip: str, action: Callable[..., Any],
-                           shortcut_key: Optional[str] = None, signal: bool = False, stretch=None) -> QToolButton:
-            button = QToolButton()
-            set_shortcut_tooltip(button, title, shortcut_key, description=tooltip)
-            button.setContentsMargins(2, 2, 2, 2)
-            button.setIcon(palette_icon(icon_path, signal=signal))
-            button.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
-            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        self.add_fit_item(FitItem(REQUIRED, 2), self._apply_controls_form)
+        self.add_fit_item(FitItem(META_PRIORITY), self._apply_meta_form)
+        self.add_fit_item(FitItem(LARGE_PRIORITY), self._apply_large_form)
 
-            # We need to suppress parameters that button.clicked would pass to the callback, hence the lambda
-            #pylint: disable=unnecessary-lambda
-            button.clicked.connect(lambda: action())
-            self._button_bar_layout.addWidget(button)
-            if stretch is not None:
-                self._button_bar_layout.addStretch(stretch)
-            return button
+        self._active_layer: Optional[Layer] = None
+        image_stack.active_layer_changed.connect(self._active_layer_change_slot)
+        image_stack.layer_added.connect(self._layer_count_change_slot)
+        image_stack.layer_removed.connect(self._layer_count_change_slot)
+        self._active_layer_change_slot(image_stack.active_layer)
+        self._layer_count_change_slot()
+        self.arrange(Orientation.SIDE)
 
-        self._add_button = _create_button(ICON_PATH_ADD_BUTTON, ADD_BUTTON_TITLE, ADD_BUTTON_TOOLTIP,
-                                          self._image_stack.create_layer, KeyConfig.NEW_LAYER_SHORTCUT,
-                                          stretch=1)
-        self._add_group_button = _create_button(ICON_PATH_ADD_GROUP_BUTTON, ADD_GROUP_BUTTON_TITLE,
-                                                ADD_GROUP_BUTTON_TOOLTIP,
-                                                self._image_stack.create_layer_group,
-                                                KeyConfig.NEW_LAYER_GROUP_SHORTCUT, stretch=1)
-        self._move_up_button = _create_button(ICON_PATH_LAYER_UP_BUTTON, LAYER_UP_BUTTON_TITLE,
-                                              LAYER_UP_BUTTON_TOOLTIP,
-                                              lambda: self._image_stack.move_layer_by_offset(-1),
-                                              KeyConfig.MOVE_LAYER_UP_SHORTCUT, stretch=1)
-        self._move_down_button = _create_button(ICON_PATH_LAYER_DOWN_BUTTON, LAYER_DOWN_BUTTON_TITLE,
-                                                LAYER_DOWN_BUTTON_TOOLTIP,
-                                                lambda: self._image_stack.move_layer_by_offset(1),
-                                                KeyConfig.MOVE_LAYER_DOWN_SHORTCUT, stretch=1)
+    def _create_button(self, icon_path: str, title: str, tooltip: str, action: Callable[..., Any],
+                       shortcut_key: str, signal: bool = False, stretch: Optional[int] = None) -> QToolButton:
+        button = QToolButton()
+        set_shortcut_tooltip(button, title, shortcut_key, description=tooltip)
+        button.setContentsMargins(2, 2, 2, 2)
+        button.setIcon(palette_icon(icon_path, signal=signal))
+        button.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
+        button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        # The lambda drops the checked argument that `clicked` passes:
+        button.clicked.connect(lambda: action())  # pylint: disable=unnecessary-lambda
+        self._button_bar_layout.addWidget(button)
+        if stretch is not None:
+            self._button_bar_layout.addStretch(stretch)
+        return button
 
-        self._merge_down_button = _create_button(ICON_PATH_MERGE_BUTTON, MERGE_DOWN_BUTTON_TITLE,
-                                                 MERGE_DOWN_BUTTON_TOOLTIP,
-                                                 self._image_stack.merge_layer_down,
-                                                 KeyConfig.MERGE_LAYER_DOWN_SHORTCUT, stretch=10)
-        self._delete_button = _create_button(ICON_PATH_DELETE_BUTTON, DELETE_BUTTON_TITLE, DELETE_BUTTON_TOOLTIP,
-                                             self._image_stack.remove_layer, KeyConfig.DELETE_LAYER_SHORTCUT,
-                                             signal=True)
+    def _move_up(self) -> None:
+        self._image_stack.move_layer_by_offset(-1)
 
-        self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
-        self._image_stack.layer_added.connect(self._layer_added_slot)
-        self._active_layer_change_slot(self._image_stack.active_layer)
-        self._image_stack.layer_order_changed.connect(self._update_order_slot)
-        self._update_scroll_area_minimum()
+    def _move_down(self) -> None:
+        self._image_stack.move_layer_by_offset(1)
 
-    def _scroll_timer_slot(self) -> None:
-        if self._scroll_offset == 0:
-            self._scroll_timer.stop()
-            return
-        scroll_bar = self._scroll_area.verticalScrollBar()
-        assert scroll_bar is not None
-        if self._scroll_offset < 0:
-            if scroll_bar.value() > scroll_bar.minimum():
-                scroll_bar.setValue(max(scroll_bar.value() + self._scroll_offset, scroll_bar.minimum()))
-            else:
-                self._scroll_offset = 0
-                self._scroll_timer.stop()
+    @property
+    def properties(self) -> LayerProperties:
+        """The selected-layer header."""
+        return self._properties
+
+    @property
+    def layer_list(self) -> LayerList:
+        """The image strip and layer rows."""
+        return self._layer_list
+
+    # Layout:
+
+    def arrange(self, orientation: Orientation) -> None:
+        """Puts the selected-layer header over the list in a side panel, and beside it in a strip."""
+        super().arrange(orientation)
+        layout = self._content_layout
+        for widget in (self._properties, self._layer_list):
+            layout.removeWidget(widget)
+        for index in range(2):
+            layout.setRowStretch(index, 0)
+            layout.setColumnStretch(index, 0)
+        if orientation == Orientation.SIDE:
+            layout.addWidget(self._properties, 0, 0)
+            layout.addWidget(self._layer_list, 1, 0)
+            layout.setRowStretch(1, 1)
+            self._properties.setMaximumWidth(QWIDGETSIZE_MAX)
+            self._layer_list.setMaximumWidth(QWIDGETSIZE_MAX)
+            layout.setAlignment(self._properties, Qt.AlignmentFlag(0))
         else:
-            if scroll_bar.value() < scroll_bar.maximum():
-                scroll_bar.setValue(min(scroll_bar.value() + self._scroll_offset, scroll_bar.maximum()))
-            else:
-                self._scroll_offset = 0
-                self._scroll_timer.stop()
+            layout.addWidget(self._properties, 0, 0)
+            layout.addWidget(self._layer_list, 0, 1)
+            layout.setColumnStretch(1, 1)
+            layout.setRowStretch(0, 1)
+            self._properties.setMaximumWidth(STRIP_SECTION_MAX_WIDTH)
+            self._layer_list.setMaximumWidth(STRIP_SECTION_MAX_WIDTH)
+            layout.setAlignment(self._properties, Qt.AlignmentFlag.AlignTop)
+        self._properties.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
 
-    def _layer_drag_slot(self, position: QPointF) -> None:
-        local_pos = self.mapFromGlobal(self._parent_group_item.mapToGlobal(position))
-        threshold_size = round(self._scroll_area.height() * SCROLL_HEIGHT_THRESHOLD)
-        top_threshold = self._scroll_area.y() + threshold_size
-        bottom_threshold = self._scroll_area.y() + self._scroll_area.height() - threshold_size
-        scroll_bar = self._scroll_area.verticalScrollBar()
-        assert scroll_bar is not None
-        if scroll_bar.value() > scroll_bar.minimum() and local_pos.y() < top_threshold:
-            speed_fraction = (top_threshold - local_pos.y()) / threshold_size
-            self._scroll_offset = -(MIN_SCROLL_SPEED + round(1 + (MAX_SCROLL_SPEED - MIN_SCROLL_SPEED)
-                                                             * speed_fraction))
-        elif scroll_bar.value() < scroll_bar.maximum() and local_pos.y() > bottom_threshold:
-            speed_fraction = (local_pos.y() - bottom_threshold) / threshold_size
-            self._scroll_offset = MIN_SCROLL_SPEED + round(1 + (MAX_SCROLL_SPEED - MIN_SCROLL_SPEED) * speed_fraction)
-        else:
-            self._scroll_offset = 0
-            if self._scroll_timer.isActive():
-                self._scroll_timer.stop()
-        if self._scroll_offset != 0 and not self._scroll_timer.isActive():
-            self._scroll_timer.start(SCROLL_TIMER_INTERVAL_MS)
+    def _apply_controls_form(self, form: Optional[int]) -> None:
+        self._properties.set_stacked(form == CONTROLS_STACKED)
 
-    def _layer_drag_end_slot(self) -> None:
-        if self._scroll_timer.isActive():
-            self._scroll_timer.stop()
+    def _apply_meta_form(self, form: Optional[int]) -> None:
+        self._layer_list.set_meta_shown(form is not None)
 
-    def _update_scroll_area_minimum(self, *_) -> None:
-        """Keeps the scroll area tall enough for one layer, and wide enough that the layer list never scrolls sideways.
+    def _apply_large_form(self, form: Optional[int]) -> None:
+        large = form is not None
+        self._properties.set_labeled(large)
+        self._layer_list.set_large(large)
 
-        The panel's size hints come from its layout, so this minimum sets the panel's minimum size too.
-        """
-        min_scroll_height = self._parent_group_item.layer_item.sizeHint().height() + LIST_SPACING
-        self._scroll_area.setMinimumHeight(max(min_scroll_height, self._scroll_area.minimumSizeHint().height()))
-        min_scroll_width = self._parent_group_item.minimumSizeHint().width() + 2 * self._scroll_area.frameWidth()
-        vertical_scrollbar = self._scroll_area.verticalScrollBar()
-        if vertical_scrollbar is not None:
-            min_scroll_width += vertical_scrollbar.sizeHint().width()
-        horizontal_scrollbar = self._scroll_area.horizontalScrollBar()
-        if horizontal_scrollbar is not None:
-            horizontal_scrollbar.setRange(0, 0)
-        self._scroll_area.setMinimumWidth(min_scroll_width)
-
-    def resizeEvent(self, _event):
-        """Refreshes the scroll area minimum, and saves the panel's bounds when it's a separate window."""
-        self._update_scroll_area_minimum()
+    def resizeEvent(self, event) -> None:  # pylint: disable=invalid-name
+        """Plans for the new size, and saves the panel's bounds when it's a separate window."""
+        super().resizeEvent(event)
         if self.isVisible() and self.isWindow():
             Cache().save_bounds(Cache.SAVED_LAYER_WINDOW_POS, self)
 
-    def _update_order_slot(self) -> None:
-        self._parent_group_item.reorder_child_layers()
+    # Layer state:
 
-    def _update_opacity_slot(self, opacity: int | float) -> None:
-        if isinstance(opacity, int):
-            opacity_percent = opacity
-            opacity_fraction = opacity / 100
-        else:
-            opacity_percent = int(opacity * 100)
-            opacity_fraction = opacity
-        active_layer = self._image_stack.active_layer
-        if active_layer.opacity != opacity_fraction:
-            active_layer.opacity = opacity_fraction
-        for input_widget, value in ((self._opacity_slider, opacity_percent),
-                                    (self._opacity_spinbox, opacity_fraction)):
-            if input_widget.value() != value:
-                input_widget.valueChanged.disconnect(self._update_opacity_slot)
-                input_widget.setValue(value)
-                input_widget.valueChanged.connect(self._update_opacity_slot)
-
-    def _active_layer_opacity_change_slot(self, _, opacity: float) -> None:
-        self._update_opacity_slot(opacity)
-
-    def _show_composition_mode(self, mode: CompositeMode) -> None:
-        mode_index = self._mode_box.findText(mode)
-        if mode_index >= 0:
-            self._mode_box.setCurrentIndex(mode_index)
-
-    def _active_layer_mode_change_slot(self, _, mode: CompositeMode) -> None:
-        self._show_composition_mode(mode)
-
-    def _mode_change_slot(self, _) -> None:
-        mode_text = self._mode_box.currentText()
-        mode = CompositeMode(mode_text)
-        active_layer = self._image_stack.active_layer
-        if active_layer.composition_mode != mode:
-            active_layer.composition_mode = mode
-
-    def _find_layer_parent_widgets(self, layer: Layer) -> list[LayerGroupWidget]:
-        """Returns a list of all LayerGroupWidgets connected to layers that contain the given layer"""
-        parent_layers: list[LayerGroup] = []
-        # Iterate through parent/child pairs, starting with layer.layer_parent and layer, and continue up the tree
-        # until the topmost layer group is reached. For each pair, insert (parent, child_index) into parent_map
-        # at the start.
-        parent_iter: Optional[LayerParent] = layer.layer_parent
-        while parent_iter is not None:
-            assert isinstance(parent_iter, LayerGroup)
-            parent_layers.insert(0, parent_iter)
-            parent_iter = parent_iter.layer_parent
-        assert len(parent_layers) == 0 or parent_layers[0] == self._image_stack.layer_stack
-
-        # Follow the parent map in reverse through the layer widget tree, appending each parent layer widget to a list:
-        parent_widgets: list[LayerGroupWidget] = []
-        widget_iter: LayerGroupWidget = self._parent_group_item
-        assert isinstance(widget_iter, LayerGroupWidget)
-        for i, parent_layer in enumerate(parent_layers):
-            assert widget_iter.layer == parent_layer
-            assert isinstance(widget_iter, LayerGroupWidget)
-            parent_widgets.append(widget_iter)
-            if i < (len(parent_layers) - 1):
-                child_item = widget_iter.get_child_item(parent_layers[i + 1])
-                assert isinstance(child_item, LayerGroupWidget)
-                widget_iter = child_item
-        return parent_widgets
-
-    def _open_parent_groups(self, layer: Layer) -> None:
-        parent_widget_list = self._find_layer_parent_widgets(layer)
-        for parent in parent_widget_list:
-            if not parent.is_expanded():
-                parent.set_expanded(True)
+    def _layer_count_change_slot(self, *_args) -> None:
+        count = len(self._image_stack.layer_stack.recursive_child_layers)
+        self.header.set_description(ONE_LAYER_DESCRIPTION if count == 1
+                                    else LAYER_COUNT_DESCRIPTION.format(count=count))
 
     def _active_layer_change_slot(self, new_active_layer: Layer) -> None:
-        """Track the active layer's state in the panel controls. Each LayerWidget highlights itself when active."""
         if self._active_layer is not None:
             self._active_layer.lock_changed.disconnect(self._lock_change_slot)
-            self._active_layer.opacity_changed.disconnect(self._active_layer_opacity_change_slot)
-            self._active_layer.composition_mode_changed.disconnect(self._active_layer_mode_change_slot)
         self._active_layer = new_active_layer
-        self._open_parent_groups(new_active_layer)
         new_active_layer.lock_changed.connect(self._lock_change_slot)
-        new_active_layer.opacity_changed.connect(self._active_layer_opacity_change_slot)
-        new_active_layer.composition_mode_changed.connect(self._active_layer_mode_change_slot)
         for button in (self._move_up_button, self._move_down_button):
             button.setEnabled(new_active_layer != self._image_stack.layer_stack)
         self._lock_change_slot()
-        self._update_opacity_slot(new_active_layer.opacity)
-        self._show_composition_mode(new_active_layer.composition_mode)
 
-    def _layer_added_slot(self, new_layer: Layer) -> None:
-        self._open_parent_groups(new_layer)
-
-    def _lock_change_slot(self, *_) -> None:
+    def _lock_change_slot(self, *_args) -> None:
         # The signal's arguments may describe a parent group's lock, so read the lock state from the layer instead.
         active_layer = self._image_stack.active_layer
         editable = not active_layer.locked and not active_layer.parent_locked
-        for widget in (self._opacity_spinbox,
-                       self._opacity_slider):
-            widget.setEnabled(editable)
-        for widget in (self._mode_box, self._merge_down_button, self._delete_button):
+        for widget in (self._merge_down_button, self._delete_button):
             widget.setEnabled(editable and active_layer != self._image_stack.layer_stack)
