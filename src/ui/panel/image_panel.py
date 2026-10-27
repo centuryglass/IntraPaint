@@ -1,15 +1,14 @@
-"""Displays the image panel with zoom controls and input hints."""
+"""Displays the image panel with rulers, zoom controls and input hints."""
 from typing import Optional
 
-from PySide6.QtCore import Qt, SignalInstance
-from PySide6.QtGui import QResizeEvent, QAction, QPalette
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QSlider, QPushButton, \
-    QSizePolicy, QApplication, QGridLayout
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QAction, QPalette
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QSizePolicy, QApplication, QGridLayout
 
 from src.config.application_config import AppConfig
 from src.image.layers.image_stack import ImageStack
 from src.ui.image_viewer import ImageViewer
-from src.ui.widget.image_graphics_view import MIN_IMAGE_ZOOM, MAX_IMAGE_ZOOM
+from src.ui.widget.canvas_bar import CanvasBar
 from src.ui.widget.ruler import Ruler, RulerHighlight
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -21,14 +20,6 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-SCALE_SLIDER_LABEL = _tr('Scale:')
-SCALE_RESET_BUTTON_LABEL = _tr('Reset View')
-SCALE_RESET_BUTTON_TOOLTIP = _tr('Restore default image zoom and offset')
-SCALE_ZOOM_BUTTON_LABEL = _tr('Zoom in')
-SCALE_ZOOM_BUTTON_TOOLTIP = _tr('Zoom in on the area selected for image generation')
-
-MENU_ACTION_SHOW_HINTS = _tr('Show tool control hints')
-MENU_ACTION_HIDE_HINTS = _tr('Hide tool control hints')
 MENU_ACTION_HIDE_RULERS = _tr('Hide rulers')
 MENU_ACTION_RULER_HIGHLIGHTS = _tr('Highlight generation area and selection')
 
@@ -37,15 +28,18 @@ GENERATION_AREA_RULER_LANE = 0
 SELECTION_RULER_LANE = 1
 RULER_HIGHLIGHT_LANES = 2
 
-MIN_WIDTH_SHOWING_SCALE_SLIDER = 600
-MIN_WIDTH_SHOWING_HINT_TEXT = 900
-
 
 class ImagePanel(QWidget):
-    """Displays the image panel with zoom controls and input hints."""
+    """Displays the image panel with rulers, zoom controls and input hints.
+
+    `navigation_window_requested` fires when the bar's navigation window button is clicked, which only shows with
+    `include_navigation_button`.
+    """
+
+    navigation_window_requested = Signal()
 
     def __init__(self, image_stack: ImageStack, include_zoom_controls: bool = True, use_keybindings=True,
-                 include_rulers: bool = False) -> None:
+                 include_rulers: bool = False, include_navigation_button: bool = False) -> None:
         super().__init__()
         self._image_stack = image_stack
         self._showing_image_gen_controls = True
@@ -55,127 +49,20 @@ class ImagePanel(QWidget):
         self._horizontal_ruler: Optional[Ruler] = None
         self._vertical_ruler: Optional[Ruler] = None
         self._ruler_corner: Optional[QWidget] = None
+        self._ruler_highlight_action: Optional[QAction] = None
         if include_rulers:
             self._layout.addWidget(self._build_ruler_grid(), stretch=255)
         else:
             self._layout.addWidget(self._image_viewer, stretch=255)
-        self._control_bar = QWidget(self)
-        self._control_bar.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
 
-        # Show/hide control hints:
-        def _show_hints() -> None:
-            AppConfig().set(AppConfig.SHOW_TOOL_CONTROL_HINTS, True)
-        self._show_hint_action = QAction()
-        self._show_hint_action.setText(MENU_ACTION_SHOW_HINTS)
-        self._show_hint_action.triggered.connect(_show_hints)
-
-        def _hide_hints() -> None:
-            AppConfig().set(AppConfig.SHOW_TOOL_CONTROL_HINTS, False)
-        self._hide_hint_action = QAction()
-        self._hide_hint_action.setText(MENU_ACTION_HIDE_HINTS)
-        self._hide_hint_action.triggered.connect(_hide_hints)
-
-        AppConfig().connect(self, AppConfig.SHOW_TOOL_CONTROL_HINTS, self._show_control_hint_config_slot)
-        self._control_bar.addAction(self._hide_hint_action if AppConfig().get(AppConfig.SHOW_TOOL_CONTROL_HINTS)
-                                    else self._show_hint_action)
-
+        self._control_bar: Optional[CanvasBar] = None
         if include_zoom_controls:
-            self._layout.addWidget(self._control_bar, stretch=1)
-            self._control_layout: Optional[QHBoxLayout] = QHBoxLayout(self._control_bar)
-            self._control_hint_label: Optional[QLabel] = QLabel('')
-            assert self._control_layout is not None
-            assert self._control_hint_label is not None
-            self._control_layout.addWidget(self._control_hint_label)
-            self._control_layout.addSpacing(25)
-            self._scale_reset_button: Optional[QPushButton] = QPushButton()
-
-            def toggle_scale():
-                """Toggle between default zoom and zooming in on the image generation area."""
-                assert self._scale_reset_button is not None
-                if self._image_viewer.is_at_default_view and not self._image_viewer.follow_generation_area:
-                    self._image_viewer.follow_generation_area = True
-                    self._scale_reset_button.setVisible(True)
-                    self._scale_reset_button.setText(SCALE_RESET_BUTTON_LABEL)
-                    self._scale_reset_button.setToolTip(SCALE_RESET_BUTTON_TOOLTIP)
-                else:
-                    self._scale_reset_button.setVisible(self._showing_image_gen_controls)
-                    self._image_viewer.follow_generation_area = False
-                    self._image_viewer.reset_scale()
-                    self._scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
-                    self._scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
-
-            self._scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
-            self._scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
-            assert isinstance(self._scale_reset_button.clicked, SignalInstance)
-            self._scale_reset_button.clicked.connect(toggle_scale)
-            # Zoom slider:
-            self._control_layout.addWidget(QLabel(SCALE_SLIDER_LABEL))
-            image_scale_slider: Optional[QSlider] = QSlider(Qt.Orientation.Horizontal)
-            assert image_scale_slider is not None
-            self._image_scale_slider = image_scale_slider
-            self._control_layout.addWidget(image_scale_slider)
-            image_scale_slider.setRange(round(MIN_IMAGE_ZOOM * 100), round(MAX_IMAGE_ZOOM * 100))
-            image_scale_slider.setSingleStep(10)
-            image_scale_slider.setValue(int(self._image_viewer.scene_scale * 100))
-            image_scale_box = QDoubleSpinBox()
-            self._control_layout.addWidget(image_scale_box)
-            image_scale_box.setRange(MIN_IMAGE_ZOOM, MAX_IMAGE_ZOOM)
-            image_scale_box.setSingleStep(0.1)
-            image_scale_box.setValue(self._image_viewer.scene_scale)
-            self._control_layout.addWidget(self._scale_reset_button)
-
-            self._image_scale_box = image_scale_box
-            self._scale_signals = [
-                self._image_viewer.scale_changed,
-                image_scale_slider.valueChanged,
-                image_scale_box.valueChanged
-            ]
-            for signal in self._scale_signals:
-                signal.connect(self._on_scale_change)
-        else:
-            self._control_layout = None
-            self._control_hint_label = None
-            self._control_bar.hide()
-            self._control_bar.deleteLater()
-            self._control_bar = None
-            self._image_scale_slider = None
-            self._image_scale_box = None
-            self._scale_signals = []
-            self._scale_reset_button = None
+            ruler_actions = [] if self._ruler_highlight_action is None else [self._ruler_highlight_action]
+            self._control_bar = CanvasBar(self._image_viewer, include_rulers, include_navigation_button,
+                                          ruler_actions, self)
+            self._control_bar.navigation_requested.connect(self.navigation_window_requested)
+            self._layout.addWidget(self._control_bar)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-
-    def _on_scale_change(self, new_scale: float | int) -> None:
-        """Synchronize slider, spin box, panel scale, and zoom button text.
-
-        A method rather than a closure, so the panel and its widgets' connections don't form a reference cycle.
-        """
-        assert self._scale_reset_button is not None
-        assert self._image_scale_slider is not None
-        assert self._image_scale_box is not None
-        if isinstance(new_scale, int):
-            float_scale = new_scale / 100
-            int_scale = new_scale
-        else:
-            float_scale = new_scale
-            int_scale = int(float_scale * 100)
-        for scale_signal in self._scale_signals:
-            scale_signal.disconnect(self._on_scale_change)
-        if self._image_scale_box.value() != float_scale:
-            self._image_scale_box.setValue(float_scale)
-        if self._image_scale_slider.value() != int_scale:
-            self._image_scale_slider.setValue(int_scale)
-        if self._image_viewer.scene_scale != float_scale:
-            self._image_viewer.scene_scale = float_scale
-        for scale_signal in self._scale_signals:
-            scale_signal.connect(self._on_scale_change)
-        if self._image_viewer.is_at_default_view and not self._image_viewer.follow_generation_area:
-            self._scale_reset_button.setVisible(self._showing_image_gen_controls)
-            self._scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
-            self._scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
-        else:
-            self._scale_reset_button.setVisible(True)
-            self._scale_reset_button.setText(SCALE_RESET_BUTTON_LABEL)
-            self._scale_reset_button.setToolTip(SCALE_RESET_BUTTON_TOOLTIP)
 
     def _build_ruler_grid(self) -> QWidget:
         """Returns a widget holding the image viewer, with rulers above it and to its left."""
@@ -204,6 +91,7 @@ class ImagePanel(QWidget):
         hide_action = QAction(MENU_ACTION_HIDE_RULERS, grid_widget)
         hide_action.triggered.connect(_hide_rulers)
         highlight_action = QAction(MENU_ACTION_RULER_HIGHLIGHTS, grid_widget)
+        self._ruler_highlight_action = highlight_action
         highlight_action.setCheckable(True)
         highlight_action.setChecked(AppConfig().get(AppConfig.SHOW_RULER_HIGHLIGHTS))
 
@@ -272,8 +160,6 @@ class ImagePanel(QWidget):
         if visible == self._showing_image_gen_controls:
             return
         self._showing_image_gen_controls = visible
-        if self._scale_reset_button is not None:
-            self._scale_reset_button.setVisible(visible or not self._image_viewer.is_at_default_view)
         self._image_viewer.set_generation_area_visible(visible)
         self._update_ruler_highlights()
 
@@ -293,29 +179,12 @@ class ImagePanel(QWidget):
         """Returns the wrapped ImageViewer widget."""
         return self._image_viewer
 
+    @property
+    def control_bar(self) -> Optional[CanvasBar]:
+        """Returns the bar under the viewer, or None if the panel has no zoom controls."""
+        return self._control_bar
+
     def set_control_hint(self, hint_text: str) -> None:
-        """Add a message below the image viewer hinting at controls."""
-        if isinstance(self._control_hint_label, QLabel):
-            self._control_hint_label.setText(hint_text)
-
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:  # pylint: disable=invalid-name
-        """Hide non-essential UI elements if there's not enough space."""
-        super().resizeEvent(event)
-        self._update_widget_visibility()
-
-    def _show_control_hint_config_slot(self, show_hints: bool):
+        """Shows the active tool's control hints in the bar below the image viewer."""
         if self._control_bar is not None:
-            if show_hints:
-                self._control_bar.removeAction(self._show_hint_action)
-                self._control_bar.addAction(self._hide_hint_action)
-            else:
-                self._control_bar.removeAction(self._hide_hint_action)
-                self._control_bar.addAction(self._show_hint_action)
-            self._update_widget_visibility()
-
-    def _update_widget_visibility(self) -> None:
-        if self._control_hint_label is not None:
-            self._control_hint_label.setVisible(AppConfig().get(AppConfig.SHOW_TOOL_CONTROL_HINTS)
-                                                and self.width() > MIN_WIDTH_SHOWING_HINT_TEXT)
-        if self._image_scale_slider is not None:
-            self._image_scale_slider.setVisible(self.width() > MIN_WIDTH_SHOWING_SCALE_SLIDER)
+            self._control_bar.set_hint_text(hint_text)

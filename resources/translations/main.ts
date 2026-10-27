@@ -6774,41 +6774,6 @@ Keys: {decrease} / {increase}</source>
     <name>ui.panel.image_panel</name>
     <message>
         <location filename="../../src/ui/panel/image_panel.py"/>
-        <source>Scale:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/image_panel.py"/>
-        <source>Reset View</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/image_panel.py"/>
-        <source>Restore default image zoom and offset</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/image_panel.py"/>
-        <source>Zoom in</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/image_panel.py"/>
-        <source>Zoom in on the area selected for image generation</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/image_panel.py"/>
-        <source>Show tool control hints</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/image_panel.py"/>
-        <source>Hide tool control hints</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/image_panel.py"/>
         <source>Hide rulers</source>
         <translation type="unfinished"></translation>
     </message>
@@ -7891,6 +7856,84 @@ Turns red when the text does not fit.</source>
     <message>
         <location filename="../../src/ui/widget/color_button.py"/>
         <source>Select paint color</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.widget.canvas_bar</name>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Zoom</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Zoom in</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Zoom out</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Reset view</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Restore default image zoom and offset</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Rulers</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Show rulers</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Right-click for ruler highlight options</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Navigation window</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Controls for this tool</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>More view options</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Highlight generation area and selection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Tool control hints</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Show tool control hints</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Hide tool control hints</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
