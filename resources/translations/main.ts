@@ -6682,13 +6682,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
-        <source>{sampler}, {steps} steps, CFG {guidance}</source>
-        <comment>Sampling section summary</comment>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
-        <source>seed {seed}, CFG {guidance}, {steps} steps</source>
+        <source>seed {seed}, {sampler}</source>
         <comment>Sampling section summary while the seed is fixed</comment>
         <translation type="unfinished"></translation>
     </message>

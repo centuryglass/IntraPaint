@@ -1,11 +1,11 @@
 """The Stable Diffusion generation panel, for the WebUI and ComfyUI backends.
 
 It is a `DockPanel` that places controls by how often they're used. The action block holds the ones used after every
-generation: denoising strength, batch size, padding and Generate, with Generate last. It is a side panel's footer
-(`DockPanel.set_footer`) and a strip's trailing column (`DockPanel.trailing_layout`), so Generate stays in the
-bottom-right corner and never scrolls. The sections run Prompt, Mask, Sampling, Size and batch, then Advanced. A strip
-pins Prompt in a column at the left (`DockPanel.pinned_layout`) and packs the rest into columns between the two
-(`DockPanel.set_column_packing`).
+generation: denoising strength, guidance, steps, batch size, padding and Generate, with Generate last. It is a side
+panel's footer (`DockPanel.set_footer`) and a strip's trailing column (`DockPanel.trailing_layout`), so Generate stays
+in the bottom-right corner and never scrolls. The sections run Prompt, Mask, Sampling, Size and batch, then Advanced.
+A strip pins Prompt in a column at the left (`DockPanel.pinned_layout`) and packs the rest into columns between the
+two (`DockPanel.set_column_packing`).
 
 - Every control is bound to its config value and has one owner here. Backend-specific controls arrive as constructor
   arguments (`webui`) and `set_advanced_content`.
@@ -37,8 +37,7 @@ from src.ui.input_fields.size_field import SizeField
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel, PanelDivider, PanelLayout
 from src.ui.layout.label_column_layout import LabelColumnLayout, normalize_row_label
-from src.ui.layout.panel_fit import (FIELD_MAX_WIDTH, REQUIRED, STRIP_SECTION_MIN_WIDTH, FitItem, Orientation,
-                                     held_weakly)
+from src.ui.layout.panel_fit import FIELD_MAX_WIDTH, REQUIRED, FitItem, Orientation, held_weakly
 from src.ui.widget.disabled_banner import DisabledBanner
 from src.ui.widget.panel_section import PanelSection
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
@@ -96,9 +95,7 @@ NOTE_TXT2IMG = _tr('Text to image: ignores the canvas')
 BANNER_FIX_TEXT = _tr('Setup...')
 
 SUMMARY_MASK = _tr('blur {blur}', 'Mask section summary')
-SUMMARY_SAMPLING = _tr('{sampler}, {steps} steps, CFG {guidance}', 'Sampling section summary')
-SUMMARY_SAMPLING_FIXED_SEED = _tr('seed {seed}, CFG {guidance}, {steps} steps',
-                                  'Sampling section summary while the seed is fixed')
+SUMMARY_SAMPLING_FIXED_SEED = _tr('seed {seed}, {sampler}', 'Sampling section summary while the seed is fixed')
 SUMMARY_SIZE = _tr('{width} x {height}, count {count}', 'Size and batch section summary')
 SUMMARY_ADVANCED_DEFAULT = _tr('defaults')
 
@@ -128,7 +125,7 @@ SAMPLING_PRIORITY = 2
 SIZE_PRIORITY = 3
 ADVANCED_PRIORITY = 4
 
-# The action block's batch size and padding pair, in its two forms:
+# The action block's field pairs, in their two forms:
 PAIR_FORM_SIDE_BY_SIDE = 0
 PAIR_FORM_STACKED = 1
 
@@ -565,17 +562,11 @@ class StableDiffusionPanel(DockPanel):
         cache.connect(self._last_seed_label, Cache.LAST_SEED, _last_seed_update)
         _last_seed_update(cache.get(Cache.LAST_SEED))
         section.add(self._last_seed_label, REQUIRED)
-
-        self._guidance_field = config_slider_field(cache, Cache.GUIDANCE_SCALE, label=LABEL_GUIDANCE)
-        self._steps_field = config_slider_field(cache, Cache.SAMPLING_STEPS, label=LABEL_STEPS)
-        sampling_pair = FieldPair(self._guidance_field, self._steps_field)
-        section.add(sampling_pair, REQUIRED, sampling_pair.forms(self._strip_column_width))
         self._sampler_combobox = option_combo_box(cache, Cache.SAMPLING_METHOD)
         section.add(LabeledRows([(normalize_row_label(cache.get_label(Cache.SAMPLING_METHOD)),
                                   self._sampler_combobox)]), REQUIRED)
 
-        section.widget.bind_summary(self._sampling_summary, self._steps_field.valueChanged,
-                                    self._guidance_field.valueChanged, self._sampler_combobox.valueChanged,
+        section.widget.bind_summary(self._sampling_summary, self._sampler_combobox.valueChanged,
                                     self._seed_input.valueChanged)
 
     @staticmethod
@@ -583,10 +574,8 @@ class StableDiffusionPanel(DockPanel):
         cache = Cache()
         seed = int(cache.get(Cache.SEED))
         if seed != RANDOM_SEED:
-            return SUMMARY_SAMPLING_FIXED_SEED.format(seed=seed, steps=cache.get(Cache.SAMPLING_STEPS),
-                                                      guidance=cache.get(Cache.GUIDANCE_SCALE))
-        return SUMMARY_SAMPLING.format(sampler=cache.get(Cache.SAMPLING_METHOD), steps=cache.get(Cache.SAMPLING_STEPS),
-                                       guidance=cache.get(Cache.GUIDANCE_SCALE))
+            return SUMMARY_SAMPLING_FIXED_SEED.format(seed=seed, sampler=cache.get(Cache.SAMPLING_METHOD))
+        return cache.get(Cache.SAMPLING_METHOD)
 
     def _build_size_section(self, ui: PanelLayout, cache: Cache) -> None:
         section = ui.section(SECTION_TITLE_SIZE, collapsible=True, priority=SIZE_PRIORITY)
@@ -652,6 +641,9 @@ class StableDiffusionPanel(DockPanel):
         cache = Cache()
         self._denoising_field = config_slider_field(cache, Cache.DENOISING_STRENGTH)
         self._denoising_field.setFixedHeight(DENOISING_FIELD_HEIGHT)
+        self._guidance_field = config_slider_field(cache, Cache.GUIDANCE_SCALE, label=LABEL_GUIDANCE)
+        self._steps_field = config_slider_field(cache, Cache.SAMPLING_STEPS, label=LABEL_STEPS)
+        self._sampling_pair = FieldPair(self._guidance_field, self._steps_field)
         self._batch_size_field = config_slider_field(cache, Cache.BATCH_SIZE)
         padding_field = config_slider_field(cache, Cache.INPAINT_FULL_RES_PADDING, field_class=ToggledSliderField,
                                             off_text=PADDING_OFF)
@@ -676,7 +668,7 @@ class StableDiffusionPanel(DockPanel):
             cache.connect(padding_field, full_res_key, _sync_full_res_toggle)
         _sync_full_res_toggle()
         self._action_pair = FieldPair(self._batch_size_field, padding_field)
-        # Batch size sits at the left edge, under denoising strength, while padding is hidden:
+        # Batch size sits at the left edge, under guidance, while padding is hidden:
         for field in (self._batch_size_field, padding_field):
             self._action_pair.layout().setAlignment(field, Qt.AlignmentFlag.AlignLeft)
         self.add_fit_item(FitItem(REQUIRED, 2), self._apply_pair_form)
@@ -703,6 +695,7 @@ class StableDiffusionPanel(DockPanel):
         block_layout = QVBoxLayout(self._action_block)
         block_layout.setContentsMargins(0, 0, 0, 0)
         block_layout.addWidget(self._denoising_field)
+        block_layout.addWidget(self._sampling_pair)
         block_layout.addWidget(self._action_pair)
         # Keeps Generate at the bottom of a strip's trailing column. `arrange` closes it in a side panel, where spare
         # height collects above the footer:
@@ -720,7 +713,8 @@ class StableDiffusionPanel(DockPanel):
         self.set_trailing_scrolls(False)
 
     def _apply_pair_form(self, form: Optional[int]) -> None:
-        self._action_pair.set_stacked(form == PAIR_FORM_STACKED)
+        for pair in (self._sampling_pair, self._action_pair):
+            pair.set_stacked(form == PAIR_FORM_STACKED)
 
     def _update_tiling_button(self, *_) -> None:
         self._tiling_button.setVisible(self._webui and Cache().tiling_in_effect())
@@ -900,9 +894,6 @@ class StableDiffusionPanel(DockPanel):
             return min(available.width(), PROMPT_COLUMN_MAX_WIDTH)
         return available.width()
 
-    def _strip_column_width(self) -> Optional[int]:
-        return STRIP_SECTION_MIN_WIDTH if self.orientation == Orientation.STRIP else None
-
     def finish_placement(self) -> None:
         """Hides the Mask section outside Inpaint mode."""
         super().finish_placement()
@@ -929,8 +920,9 @@ class StableDiffusionPanel(DockPanel):
 
     @property
     def action_fields(self) -> list[NumberField]:
-        """The action block's number fields: denoising strength, batch size and padding."""
-        return [self._denoising_field, self._batch_size_field, self._padding_field]
+        """The action block's number fields: denoising strength, guidance, steps, batch size and padding."""
+        return [self._denoising_field, self._guidance_field, self._steps_field, self._batch_size_field,
+                self._padding_field]
 
     @property
     def padding_field(self) -> ToggledSliderField:
