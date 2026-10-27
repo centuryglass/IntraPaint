@@ -3918,29 +3918,6 @@ Choose "No" to open only the first frame.</source>
     </message>
 </context>
 <context>
-    <name>controller.image_generation.image_generator</name>
-    <message>
-        <location filename="../../src/controller/image_generation/image_generator.py"/>
-        <source>Inpainting failure</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/image_generation/image_generator.py"/>
-        <source>Save failed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/image_generation/image_generator.py"/>
-        <source>Failed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/image_generation/image_generator.py"/>
-        <source>Existing image generation operation not yet finished, wait a little longer.</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>controller.image_generation.null_generator</name>
     <message>
         <location filename="../../src/controller/image_generation/null_generator.py"/>
@@ -8441,6 +8418,11 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/ui/window/main_window.py"/>
         <source>Loading...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/main_window.py"/>
+        <source>Inpainting failure</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

@@ -13,7 +13,8 @@ from src.config.cache import Cache
 from src.controller.image_generation.generation_session import GenerationSession
 from src.image.layers.image_stack import ImageStack
 from src.controller.image_generation.apply_option import ApplyResult
-from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_SELECTION
+from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING, APP_STATE_SELECTION
+from src.util.async_task import AsyncTask
 from src.util.shared_constants import EDIT_MODE_TXT2IMG
 from test.base_test_case import IntraPaintTestCase
 
@@ -144,3 +145,74 @@ class GenerationSessionTest(IntraPaintTestCase):
         with patch('src.controller.image_generation.generation_session.save_image') as save:
             self.session.save_to_file(1, str(Path(tempfile.gettempdir()) / 'option.png'))
         self.assertEqual(save.call_args.args[0].pixelColor(5, 5), QColor(0, 255, 0))
+
+
+class GenerationSessionGenerateTest(IntraPaintTestCase):
+    """Tests running a backend action as a task and reporting what it produces."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        cache = Cache()
+        cache.set(Cache.BATCH_COUNT, 1)
+        cache.set(Cache.BATCH_SIZE, 2)
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE)
+        self.image_stack.load_image(_solid(QColor(200, 10, 10)))
+        self.session = GenerationSession(self.image_stack)
+        self.events: list[str] = []
+        self.session.generation_started.connect(lambda _mask: self.events.append('started'))
+        self.session.generation_finished.connect(lambda: self.events.append('finished'))
+        self.session.generation_failed.connect(lambda _err: self.events.append('failed'))
+        self.session.image_ready.connect(lambda _image, idx: self.events.append(f'image {idx}'))
+        start_patch = patch.object(AsyncTask, 'start', AsyncTask.run)
+        start_patch.start()
+        self.addCleanup(start_patch.stop)
+
+    def _run(self, action) -> bool:
+        return self.session.generate(action, _solid(QColor(1, 2, 3)), None, None)
+
+    def test_results_arrive_after_the_task_finishes_and_surplus_images_are_dropped(self) -> None:
+        """Only non-null images within BATCH_COUNT * BATCH_SIZE are delivered, after `generation_finished`."""
+        def _action(_status, _image, _mask) -> None:
+            for idx in (0, 2, 1):
+                self.session.store_result(_solid(QColor(0, 255, 0)) if idx != 1 else QImage(), idx)
+        self.assertTrue(self._run(_action))
+        self.assertEqual(self.events, ['started', 'finished', 'image 0'])
+        self.assertFalse(self.session.generating)
+        self.assertEqual(AppStateTracker.app_state(), APP_STATE_LOADING)
+
+    def test_failure_is_reported_and_allows_a_new_run(self) -> None:
+        """An exception from the action emits `generation_failed`, and the next request starts."""
+        def _raises(_status, _image, _mask) -> None:
+            raise ValueError('bad')
+        self._run(_raises)
+        self.assertEqual(self.events, ['started', 'failed', 'finished'])
+        self.assertTrue(self._run(lambda _status, _image, _mask: None))
+
+    def test_duplicate_request_is_ignored(self) -> None:
+        """A request made while a task is running starts nothing."""
+        def _nested(_status, _image, _mask) -> None:
+            self.assertTrue(self.session.generating)
+            self.assertFalse(self._run(lambda *_args: None))
+        self._run(_nested)
+        self.assertEqual(self.events, ['started', 'finished'])
+
+    def test_status_updates_record_seeds_and_forward_progress(self) -> None:
+        """Seed and subseed reach the cache, and progress text is emitted."""
+        progress: list[str] = []
+        self.session.progress_changed.connect(progress.append)
+        def _action(status, _image, _mask) -> None:
+            status.emit({'seed': '12', 'subseed': '3', 'progress': 'step 1'})
+        self._run(_action)
+        self.assertEqual(Cache().get(Cache.LAST_SEED), '12')
+        self.assertEqual(Cache().get(Cache.WEBUI_LAST_SUBSEED), '3')
+        self.assertEqual(progress, ['step 1'])
+
+    def test_inpaint_previews_restore_source_pixels_outside_the_paste_mask(self) -> None:
+        """With a mask, delivered images show the source where the paste mask is transparent."""
+        source = _solid(QColor(1, 2, 3))
+        paste_mask = _solid(QColor(0, 0, 0, 0))
+        delivered: list[QImage] = []
+        self.session.image_ready.connect(lambda image, _idx: delivered.append(image))
+        self.session.generate(lambda *_args: self.session.store_result(_solid(QColor(9, 9, 9)), 0),
+                              source, _solid(QColor(0, 0, 0)), paste_mask)
+        self.assertEqual(delivered[0].pixelColor(5, 5), QColor(1, 2, 3))

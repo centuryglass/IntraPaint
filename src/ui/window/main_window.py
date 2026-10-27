@@ -32,6 +32,7 @@ from src.image.layers.image_stack import ImageStack
 from src.controller.image_generation.generation_session import GenerationSession
 from src.ui.generated_image_selector import GeneratedImageSelector
 from src.ui.layout.panel_fit import held_weakly
+from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 
@@ -71,6 +72,7 @@ COLOR_DOCK_TITLE = _tr('Color')
 NAVIGATION_DOCK_TITLE = _tr('Navigation')
 
 DEFAULT_LOADING_MESSAGE = _tr('Loading...')
+GENERATE_ERROR_TITLE_UNEXPECTED = _tr('Inpainting failure')
 
 CLAMP_DELAY_MS = 50
 
@@ -144,6 +146,11 @@ class MainWindow(QMainWindow):
         # Initialize UI/editing data model:
         self._image_stack = image_stack
         self._generation_session = GenerationSession(image_stack)
+        self._generation_session.generation_started.connect(self.show_generated_options)
+        self._generation_session.image_ready.connect(self.load_sample_preview)
+        self._generation_session.progress_changed.connect(self.set_loading_message)
+        self._generation_session.generation_finished.connect(self._on_generation_finished)
+        self._generation_session.generation_failed.connect(self._on_generation_failed)
         self._image_selector: Optional[GeneratedImageSelector] = None
         self._previous_options_available = False
 
@@ -426,6 +433,20 @@ class MainWindow(QMainWindow):
             Cache().load_bounds(Cache.SAVED_NAVIGATION_WINDOW_POS, self._navigation_window)
             self._navigation_window.show()
             self._navigation_window.raise_()
+
+    @property
+    def generation_session(self) -> GenerationSession:
+        """The session that owns the generated image batches and runs generation."""
+        return self._generation_session
+
+    def _on_generation_finished(self) -> None:
+        self.set_is_loading(False)
+
+    def _on_generation_failed(self, err: BaseException) -> None:
+        """Closes the selection screen and shows the error."""
+        self.set_image_selector_visible(False)
+        self.set_is_loading(False)
+        show_error_dialog(self, GENERATE_ERROR_TITLE_UNEXPECTED, err)
 
     def is_image_selector_visible(self) -> bool:
         """Returns whether the generated image selection screen is showing."""

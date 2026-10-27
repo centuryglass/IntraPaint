@@ -1,5 +1,5 @@
-"""Tests the generation orchestration in `ImageGenerator`: running `generate` as a task, collecting results, and
-applying a chosen sample. Backends are replaced by a scripted subclass, and the main window by a mock."""
+"""Tests how `ImageGenerator` feeds a `GenerationSession`: the inputs it passes to `generate`, the paste mask, and
+result hand-off. Backends are replaced by a scripted subclass, and the main window by a mock holding a real session."""
 from typing import Optional, Any
 from unittest import mock
 from unittest.mock import MagicMock
@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.controller.image_generation.generation_session import GenerationSession
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.controller.image_generation.test_generator import TestGenerator
 from src.image.layers.image_stack import ImageStack
@@ -53,7 +54,6 @@ class _ScriptedGenerator(TestGenerator):
         for update in self.status_updates:
             status_signal.emit(update)  # type: ignore
         for index, image in enumerate(self.results):
-            self._generated_images.append(image)
             self._cache_generated_image(image, index)
 
 
@@ -77,21 +77,27 @@ class ImageGeneratorTest(IntraPaintTestCase):
         cache.set(Cache.BATCH_SIZE, BATCH_SIZE)
         cache.set(Cache.EDIT_MODE, EDIT_MODE_TXT2IMG)
         self.generator = _ScriptedGenerator(self.window, self.image_stack)
-        # Results reach the window through a main-thread timer, which these tests bypass:
-        self.generator._cache_generated_image = MagicMock()  # type: ignore # pylint: disable=protected-access
+        self.session = GenerationSession(self.image_stack)
+        self.window.generation_session = self.session
+        self.started: list[Optional[QImage]] = []
+        self.failures: list[BaseException] = []
+        self.finished = 0
+        self.progress: list[str] = []
+        self.previews: dict[int, QImage] = {}
+        self.session.generation_started.connect(self.started.append)
+        self.session.generation_failed.connect(self.failures.append)
+        self.session.generation_finished.connect(lambda: setattr(self, 'finished', self.finished + 1))
+        self.session.progress_changed.connect(self.progress.append)
+        self.session.image_ready.connect(lambda image, index: self.previews.__setitem__(index, image))
+        # Results reach the session's consumers through a main-thread timer, which these tests bypass:
+        self.generator._cache_generated_image = self.session.store_result  # type: ignore # pylint: disable=protected-access
 
         start_patch = mock.patch.object(AsyncTask, 'start', AsyncTask.run)
         start_patch.start()
         self.addCleanup(start_patch.stop)
-        error_patch = mock.patch('src.controller.image_generation.image_generator.show_error_dialog')
-        self.show_error_dialog = error_patch.start()
-        self.addCleanup(error_patch.stop)
 
     def _generated_images(self, count: int = BATCH_COUNT * BATCH_SIZE) -> list[QImage]:
         return [_solid(GENERATION_AREA.size(), GENERATED_COLOR) for _ in range(count)]
-
-    def _loaded_previews(self) -> dict[int, QImage]:
-        return {call.args[1]: call.args[0] for call in self.window.load_sample_preview.call_args_list}
 
     def test_generate_runs_with_generation_inputs(self) -> None:
         """The task passes the generation area content to `generate`, with no mask outside of inpainting."""
@@ -101,16 +107,16 @@ class ImageGeneratorTest(IntraPaintTestCase):
         self.assertEqual(image.size(), GENERATION_AREA.size())
         self.assertEqual(image.pixelColor(10, 10), SOURCE_COLOR)
         self.assertIsNone(mask)
-        self.window.show_generated_options.assert_called_once()
+        self.assertEqual(len(self.started), 1)
 
     def test_finished_task_resets_state_and_loads_previews(self) -> None:
         """After the task finishes, loading ends, a new request is accepted, and each image reaches the window."""
         images = self._generated_images()
         self.generator.results = images
         self.generator.start_and_manage_image_generation()
-        self.window.set_is_loading.assert_called_with(False)
-        self.assertEqual(self.generator._generating, False)  # pylint: disable=protected-access
-        previews = self._loaded_previews()
+        self.assertEqual(self.finished, 1)
+        self.assertFalse(self.session.generating)
+        previews = self.previews
         self.assertEqual(sorted(previews), list(range(BATCH_COUNT * BATCH_SIZE)))
         self.assertEqual(previews[0].pixelColor(5, 5), GENERATED_COLOR)
 
@@ -124,29 +130,25 @@ class ImageGeneratorTest(IntraPaintTestCase):
         images[1] = QImage()
         self.generator.results = images
         self.generator.start_and_manage_image_generation()
-        self.assertEqual(sorted(self._loaded_previews()), [0, 2, 3])
+        self.assertEqual(sorted(self.previews), [0, 2, 3])
 
     def test_duplicate_request_is_ignored_while_generating(self) -> None:
         """A request that arrives mid-generation does not start a second task."""
-        self.generator._generating = True  # pylint: disable=protected-access
+        self.session._generating = True  # pylint: disable=protected-access
         self.generator.start_and_manage_image_generation()
         self.assertEqual(self.generator.generate_calls, [])
-        self.window.show_generated_options.assert_not_called()
+        self.assertEqual(self.started, [])
 
-    def test_generate_error_closes_selector_and_shows_dialog(self) -> None:
-        """Errors from `generate`, expected or not, close the selector, end loading and show an error dialog."""
+    def test_generate_error_is_reported_through_the_session(self) -> None:
+        """Errors from `generate`, expected or not, end the run, are reported, and leave the generator reusable."""
         for error in (ValueError('bad input'), IOError('no server'), KeyError('surprise')):
             with self.subTest(error=type(error).__name__):
-                self.window.reset_mock()
-                self.show_error_dialog.reset_mock()
+                self.failures.clear()
                 self.generator.error = error
                 self.generator.start_and_manage_image_generation()
-                self.window.set_image_selector_visible.assert_called_with(False)
-                self.window.set_is_loading.assert_called_with(False)
-                self.show_error_dialog.assert_called_once()
-                self.assertIs(self.show_error_dialog.call_args.args[2], error)
-                self.assertEqual(self.generator._generating, False)  # pylint: disable=protected-access
-                self.window.load_sample_preview.assert_not_called()
+                self.assertEqual(self.failures, [error])
+                self.assertFalse(self.session.generating)
+                self.assertEqual(self.previews, {})
 
     def test_inpaint_passes_mask_and_restores_unmasked_pixels(self) -> None:
         """In inpainting mode `generate` gets the mask, and the original image is restored outside it."""
@@ -157,7 +159,7 @@ class ImageGeneratorTest(IntraPaintTestCase):
         self.assertIsNotNone(mask)
         assert mask is not None
         self.assertEqual(mask.size(), GENERATION_AREA.size())
-        preview = self._loaded_previews()[0]
+        preview = self.previews[0]
         self.assertEqual(preview.pixelColor(2, 2), SOURCE_COLOR)
         center = SELECTION_BOUNDS.center() - GENERATION_AREA.topLeft()
         self.assertEqual(preview.pixelColor(center), GENERATED_COLOR)
@@ -169,10 +171,10 @@ class ImageGeneratorTest(IntraPaintTestCase):
         self.generator.get_paste_mask = MagicMock(return_value=paste_mask)  # type: ignore
         self.generator.results = self._generated_images()
         self.generator.start_and_manage_image_generation()
-        self.window.show_generated_options.assert_called_once_with(paste_mask)
+        self.assertEqual(self.started, [paste_mask])
         center = SELECTION_BOUNDS.center() - GENERATION_AREA.topLeft()
         # An empty paste mask keeps every source pixel, even inside the selection:
-        self.assertEqual(self._loaded_previews()[0].pixelColor(center), SOURCE_COLOR)
+        self.assertEqual(self.previews[0].pixelColor(center), SOURCE_COLOR)
 
     def test_status_update_sets_seeds_and_progress(self) -> None:
         """Seed, subseed and progress entries update the cache and the loading message."""
@@ -180,13 +182,13 @@ class ImageGeneratorTest(IntraPaintTestCase):
         self.generator.start_and_manage_image_generation()
         self.assertEqual(Cache().get(Cache.LAST_SEED), '1234')
         self.assertEqual(Cache().get(Cache.WEBUI_LAST_SUBSEED), '56')
-        self.window.set_loading_message.assert_called_once_with('step 3')
+        self.assertEqual(self.progress, ['step 3'])
 
     def test_status_update_ignores_missing_keys(self) -> None:
         """An update without progress leaves the loading message alone."""
-        self.generator._apply_status_update({'seed': '7'})  # pylint: disable=protected-access
+        self.session._apply_status_update({'seed': '7'})  # pylint: disable=protected-access
         self.assertEqual(Cache().get(Cache.LAST_SEED), '7')
-        self.window.set_loading_message.assert_not_called()
+        self.assertEqual(self.progress, [])
 
     def test_cache_generated_image_keeps_order_and_replaces(self) -> None:
         """Images are stored at their index, padding skipped slots with null images, and replaced on repeat."""
@@ -196,7 +198,7 @@ class ImageGeneratorTest(IntraPaintTestCase):
         with mock.patch('src.controller.image_generation.image_generator.QTimer.singleShot') as single_shot:
             generator._cache_generated_image(first, 0)  # pylint: disable=protected-access
             generator._cache_generated_image(second, 2)  # pylint: disable=protected-access
-            stored = generator._generated_images  # pylint: disable=protected-access
+            stored = self.session._results  # pylint: disable=protected-access
             self.assertEqual(len(stored), 3)
             self.assertTrue(stored[1].isNull())
             generator._cache_generated_image(replacement, 0)  # pylint: disable=protected-access
@@ -205,13 +207,13 @@ class ImageGeneratorTest(IntraPaintTestCase):
             self.assertEqual(single_shot.call_count, 3)
 
     def test_load_generated_image_skips_null(self) -> None:
-        """Only non-null cached images are sent to the window's sample preview."""
+        """Only non-null cached images are delivered."""
         generator = TestGenerator(self.window, self.image_stack)
-        generator._generated_images = [QImage(), _solid(QSize(4, 4), QColor(Qt.GlobalColor.red))]  # pylint: disable=protected-access
+        self.session._results = [QImage(), _solid(QSize(4, 4), QColor(Qt.GlobalColor.red))]  # pylint: disable=protected-access
         generator._load_generated_image_for_selection(0)  # pylint: disable=protected-access
-        self.window.load_sample_preview.assert_not_called()
+        self.assertEqual(self.previews, {})
         generator._load_generated_image_for_selection(1)  # pylint: disable=protected-access
-        self.window.load_sample_preview.assert_called_once()
+        self.assertEqual(list(self.previews), [1])
 
     def test_default_upscale_resizes_all_layers(self) -> None:
         """The base class upscales by scaling every layer, and reports that it did."""

@@ -1,21 +1,27 @@
-"""Owns the current and previous batch of generated image options for the open document, and the edits that
-write an option out of a batch.
+"""Owns the current and previous batch of generated image options for the open document, the edits that
+write an option out of a batch, and the background task that produces a batch.
 
 The selection screen shows whichever batch the session holds. The session lives on the main thread and opens no
-dialogs: `apply` and `choose` return an outcome for the caller to report.
+dialogs: `apply` and `choose` return an outcome for the caller to report, and generation reports through signals.
 """
 import logging
-from typing import Optional
+from typing import Callable, Optional
 
-from PySide6.QtCore import QObject, QSize, Signal
-from PySide6.QtGui import QImage
+from PySide6.QtCore import QObject, QPoint, QRect, QSize, Signal, SignalInstance
+from PySide6.QtGui import QImage, QPainter
+
+from src.config.cache import Cache
 
 from src.controller.image_generation.apply_option import apply_generated_image, ApplyOutcome
 from src.controller.image_generation.generated_image_batch import GeneratedImageBatch
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
-from src.util.application_state import AppStateTracker, APP_STATE_EDITING
+from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
+from src.util.async_task import AsyncTask
 from src.util.visual.image_format_utils import save_image
+
+GenerateAction = Callable[[SignalInstance, QImage, Optional[QImage]], None]
+"""The backend's `ImageGenerator.generate`: takes a status signal, the source image and the inpainting mask."""
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +35,21 @@ class GenerationSession(QObject):
     previous_options_available = Signal(bool)
     """Emitted when `can_restore_previous` changes."""
 
+    generation_started = Signal(object)
+    """Emitted when `generate` starts a task, with the paste mask (QImage or None) options are applied with."""
+
+    image_ready = Signal(QImage, int)
+    """Emitted on the main thread with a generated image and its index (zero is the first generated image)."""
+
+    progress_changed = Signal(str)
+    """Emitted with the backend's progress text."""
+
+    generation_finished = Signal()
+    """Emitted when the task ends, before `image_ready` delivers the images that arrived."""
+
+    generation_failed = Signal(object)
+    """Emitted with the exception when the backend raises, before `generation_finished`."""
+
     def __init__(self, image_stack: ImageStack) -> None:
         super().__init__()
         self._image_stack = image_stack
@@ -39,6 +60,8 @@ class GenerationSession(QObject):
         self._current_archived = False
         # False while a re-opened batch is current, which has no placeholders left to fill:
         self._accepting_results = False
+        self._generating = False
+        self._results: list[QImage] = []
         image_stack.size_changed.connect(self._on_image_stack_resized)
         image_stack.document_changed.connect(self._on_document_changed)
 
@@ -58,6 +81,108 @@ class GenerationSession(QObject):
     def accepting_results(self) -> bool:
         """Whether the current batch still has placeholders for new images to fill."""
         return self._accepting_results
+
+    @property
+    def generating(self) -> bool:
+        """Whether a task started by `generate` has not finished."""
+        return self._generating
+
+    def generate(self, action: GenerateAction, image: QImage, mask: Optional[QImage],
+                 paste_mask: Optional[QImage]) -> bool:
+        """Runs `action(status_signal, image, mask)` in a background task and reports through the session's signals.
+
+        `action` passes each image it produces to `store_result` from the worker thread, then `deliver_result` on the
+        main thread. In inpainting mode, `paste_mask` clips the previews shown and the options applied. Returns False
+        without starting anything if a task is already running.
+        """
+        if self._generating:
+            logger.error('Caught and ignored duplicate image generation request.')
+            return False
+        self._results.clear()
+        self._generating = True
+
+        # Previews show the unscaled source outside the mask that clips them when applied, so they match the result.
+        composite_base: Optional[QImage] = None
+        if mask is not None and paste_mask is not None:
+            composite_base = image.copy()
+            base_painter = QPainter(composite_base)
+            base_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
+            base_painter.drawImage(QRect(QPoint(), composite_base.size()), paste_mask)
+            base_painter.end()
+
+        class _AsyncInpaintTask(AsyncTask):
+            status_signal = Signal(dict)
+            error_signal = Signal(Exception)
+
+            def signals(self) -> list[SignalInstance]:
+                return [self.status_signal, self.error_signal]
+
+        def _do_inpaint(status_signal: SignalInstance, error_signal: SignalInstance) -> None:
+            try:
+                action(status_signal, image, mask)
+            except (IOError, ValueError, RuntimeError) as err:
+                error_signal.emit(err)
+            except Exception as unexpected_err:
+                logger.error(f'Unexpected error: {unexpected_err}')
+                error_signal.emit(unexpected_err)
+
+        inpaint_task = _AsyncInpaintTask(_do_inpaint)
+
+        def _handle_error(err: BaseException) -> None:
+            self._generating = False
+            self.generation_failed.emit(err)
+
+        def _finished() -> None:
+            self._generating = False
+            self.generation_finished.emit()
+            # Disconnecting by slot would make this closure refer to itself, a cycle that holds the task:
+            for signal in (inpaint_task.error_signal, inpaint_task.status_signal, inpaint_task.finish_signal):
+                signal.disconnect()
+            expected_count = Cache().get(Cache.BATCH_COUNT) * Cache().get(Cache.BATCH_SIZE)
+            for idx, result in enumerate(self._results):
+                if result.isNull() or idx >= expected_count:
+                    continue
+                if composite_base is not None and composite_base.size() == result.size():
+                    painter = QPainter(result)
+                    painter.drawImage(QPoint(), composite_base)
+                    painter.end()
+                self.image_ready.emit(result, idx)
+
+        inpaint_task.error_signal.connect(_handle_error)
+        inpaint_task.status_signal.connect(self._apply_status_update)
+        inpaint_task.finish_signal.connect(_finished)
+
+        self.generation_started.emit(paste_mask)
+        AppStateTracker.set_app_state(APP_STATE_LOADING)
+        inpaint_task.start()
+        return True
+
+    def store_result(self, image: QImage, index: int) -> None:
+        """Stores a generated image at `index`, padding skipped indices with null images. Safe on any thread."""
+        while len(self._results) < index:
+            self._results.append(QImage())
+        if len(self._results) > index:
+            self._results.pop(index)
+        self._results.insert(index, image)
+
+    def result(self, index: int) -> QImage:
+        """Returns the image stored at `index` by `store_result`. Raises IndexError if there is none."""
+        return self._results[index]
+
+    def deliver_result(self, index: int) -> None:
+        """Emits `image_ready` for a stored image, unless it is null."""
+        image = self._results[index]
+        if not image.isNull():
+            self.image_ready.emit(image, index)
+
+    def _apply_status_update(self, status_dict: dict[str, str]) -> None:
+        """Records the seeds a backend reports and forwards its progress text."""
+        if 'seed' in status_dict:
+            Cache().set(Cache.LAST_SEED, str(status_dict['seed']))
+        if 'subseed' in status_dict:
+            Cache().set(Cache.WEBUI_LAST_SUBSEED, str(status_dict['subseed']))
+        if 'progress' in status_dict:
+            self.progress_changed.emit(status_dict['progress'])
 
     def begin(self, loading_text: str, paste_mask: Optional[QImage] = None) -> GeneratedImageBatch:
         """Starts a batch from the current image content, with placeholders for the images to come.

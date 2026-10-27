@@ -873,7 +873,7 @@ class SDGenerator(ImageGenerator, ABC):
                     break
         if control_index >= 0:
             assert self._controlnet_panel is not None
-            self._controlnet_panel.set_preview(self._generated_images[index], control_index)
+            self._controlnet_panel.set_preview(self._session.result(index), control_index)
 
     def load_remote_settings(self) -> Dict[str, Any]:
         """If relevant, loads a dict holding backend image generator settings."""
