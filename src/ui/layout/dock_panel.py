@@ -337,8 +337,9 @@ class DockPanel(QWidget):
         """The layout of a column left of the scrolled content, which stays in place while the content scrolls
         sideways. Subclasses fill it in `arrange`, and show it with `set_pinned_visible`.
 
-        The column takes its content's minimum width, and grows toward the content's maximum width while that leaves
-        room for one strip column beside it.
+        The column takes its content's minimum width, and grows toward the content's preferred width, capped by its
+        maximum width, while that leaves room for the scrolled content's minimum width beside it. Scrolled content that
+        doesn't fit beside the column's minimum scrolls anyway, and the column then leaves room for one strip column.
         """
         return self._pinned.layout
 
@@ -649,12 +650,16 @@ class DockPanel(QWidget):
             column.scroll.setMinimumHeight(0 if scrolls else content.height() + column.scroll.frameWidth() * 2)
             height = column.scroll.minimumSizeHint().height() if scrolls else column.scroll.minimumHeight()
             sizes.append(QSize(max(width, column_footer.width()), height + column_spacing + column_footer.height()))
-        # Each prefers its content's maximum width, less room for one strip column beside the minimums of the rest:
+        # Each prefers its content's preferred width, up to its maximum width, less room for the body beside the
+        # minimums of the rest. A body too wide for that room scrolls anyway, so the column leaves room for one strip
+        # column:
         for index, column in enumerate(columns):
-            preferred = column.content.maximumWidth()
+            preferred = min(column.content.sizeHint().width(), column.content.maximumWidth())
             if available is not None:
                 others = sum(size.width() + row_spacing for other, size in zip(columns, sizes) if other is not column)
-                preferred = min(preferred, available.width() - row_spacing - STRIP_SECTION_MIN_WIDTH - others)
+                room = available.width() - row_spacing - others
+                body_room = body.width() if body.width() <= room - widths[index] else STRIP_SECTION_MIN_WIDTH
+                preferred = min(preferred, room - body_room)
             column.scroll.set_preferred_width(preferred + widths[index] - self._fresh_size(column.content).width())
         columns_width = sum(size.width() + row_spacing for size in sizes)
         if self._pinned.shown:

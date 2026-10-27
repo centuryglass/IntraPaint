@@ -1,50 +1,50 @@
 {
   "minimum": {
     "problems": [
-      "squeezed: QWidget is 132x59, minimum 143x59",
-      "clipped: QWidget/_PinnedScrollArea shows 132x59 of 143x59"
+      "squeezed: QWidget is 73x59, minimum 84x59",
+      "clipped: QWidget/_PinnedScrollArea shows 73x59 of 84x59"
     ],
     "size": [
-      226,
+      167,
       81
     ]
   },
   "narrow": {
     "problems": [],
     "size": [
-      113,
+      83,
       385
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      593,
+      508,
       385
     ]
   },
   "short": {
     "problems": [
-      "squeezed: QWidget is 251x18, minimum 143x59",
-      "squeezed: QWidget/_PinnedScrollArea is 251x18, minimum 59x59",
+      "squeezed: QWidget is 166x18, minimum 84x59",
+      "squeezed: QWidget/_PinnedScrollArea is 166x18, minimum 59x59",
       "squeezed: QScrollArea is 307x18, minimum 59x59"
     ],
     "size": [
-      593,
+      508,
       40
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      593,
+      508,
       1200
     ]
   },
   "wide": {
     "problems": [],
     "size": [
-      1779,
+      1600,
       385
     ]
   }

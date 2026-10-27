@@ -1,6 +1,7 @@
 """Tests the ControlNet panel's use of the library's ControlNet types and the saved unit format."""
 from typing import Any
 
+from PySide6.QtCore import QPoint, QSize
 from PySide6.QtGui import QImage
 from sd_backend_client import CONTROLNET_MODEL_NONE, PREPROCESSOR_NONE, PREPROCESSOR_RES_PARAM_KEY, \
     ControlNetPreprocessor, ParameterDef, PreprocessorParams
@@ -9,15 +10,19 @@ from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTROLNET_REUSE_IMAGE_CODE, \
     SavedControlNetUnit, to_request_unit
 from src.ui.input_fields.slider_field import SliderField
+from src.ui.layout.panel_fit import Orientation
 from src.ui.panel.controlnet_panel import ControlNetPanel, SOURCE_GENERATION_AREA_VALUE, SOURCE_IMAGE_FILE_VALUE
 from src.ui.widget.parameter_def_widget import create_parameter_field, create_parameter_widget, parameter_label, \
     parameter_tooltip
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
+from test.ui.panel_capture import PanelHost
 
 CANNY = 'canny'
 CANNY_MODEL = 'control_canny'
 DEPTH = 'depth'
 DEPTH_MODEL = 'control_depth'
+# A strip with room for the preview's column, the size the strip layout issue showed:
+STRIP_SIZE = QSize(1021, 314)
 CACHE_KEYS = [Cache.CONTROLNET_ARGS_0_COMFYUI, Cache.CONTROLNET_ARGS_1_COMFYUI, Cache.CONTROLNET_ARGS_2_COMFYUI]
 CACHE_KEY = CACHE_KEYS[0]
 
@@ -198,17 +203,74 @@ class ControlNetPanelTest(IntraPaintTestCase):
         self.assertIsNone(panel._control_unit.preprocessor)
         self.assertFalse(panel._preview_button.isEnabled())
 
-    def test_preview_image_shows_for_its_unit(self) -> None:
-        """A preview shows under the preprocessor combo box for the unit it belongs to, and returns with its tab."""
-        panel = self._panel()
+    @staticmethod
+    def _preview_image() -> QImage:
         preview = QImage(64, 64, QImage.Format.Format_ARGB32_Premultiplied)
         preview.fill(0xff336699)
-        panel.set_preview(preview, 1)
-        self.assertTrue(panel._preview_image_widget.isHidden())
+        return preview
+
+    def test_preview_image_shows_for_its_unit(self) -> None:
+        """A preview shows for the unit it belongs to, and returns with its tab."""
+        panel = self._panel()
+        panel.set_preview(self._preview_image(), 1)
+        preview = panel.preview_image_widget
+        self.assertFalse(preview.isVisibleTo(panel))
         panel.tab_bar.setCurrentIndex(1)
-        self.assertFalse(panel._preview_image_widget.isHidden())
+        self.assertTrue(preview.isVisibleTo(panel))
         panel.tab_bar.setCurrentIndex(0)
-        self.assertTrue(panel._preview_image_widget.isHidden())
+        self.assertFalse(preview.isVisibleTo(panel))
+
+    def test_strip_lists_units_in_place_of_tabs(self) -> None:
+        """A strip shows a unit list with the tabs' titles in place of the tabs, and choosing a row loads its unit."""
+        self._save_off_depth_unit(1)
+        panel = self._panel()
+        panel._enabled_checkbox.setChecked(True)
+        host = PanelHost(panel)
+        host.capture(STRIP_SIZE, Orientation.STRIP)
+        unit_list = panel.unit_list
+        self.assertTrue(unit_list.isVisible())
+        self.assertFalse(panel.tab_bar.isVisible())
+        self.assertEqual([unit_list.item(i).text() for i in range(3)], ['1 Canny', '2 Depth', '3'])
+        self.assertEqual([unit_list.item(i).toolTip() for i in range(3)], ['Unit 1: on', 'Unit 2: off', 'Unit 3: off'])
+        # Every title fits without eliding:
+        for row in range(unit_list.count()):
+            title_width = unit_list.fontMetrics().horizontalAdvance(unit_list.item(row).text())
+            self.assertGreaterEqual(unit_list.visualItemRect(unit_list.item(row)).width(), title_width)
+        unit_list.setCurrentRow(1)
+        self.assertEqual(panel.unit_index, 1)
+        self.assertEqual(panel.tab_bar.currentIndex(), 1)
+        self.assertEqual(panel._preprocessor_combobox.currentText(), DEPTH)
+        panel.tab_bar.setCurrentIndex(0)
+        self.assertEqual(unit_list.currentRow(), 0)
+        host.capture(QSize(STRIP_SIZE.height(), STRIP_SIZE.width()), Orientation.SIDE)
+        self.assertTrue(panel.tab_bar.isVisible())
+        self.assertFalse(unit_list.isVisible())
+        host.release()
+
+    def test_strip_preview_has_its_own_column(self) -> None:
+        """A strip shows the preview right of the preprocessor controls, and a side panel puts it back under them."""
+        panel = self._panel()
+        panel._enabled_checkbox.setChecked(True)
+        panel.set_preview(self._preview_image())
+        host = PanelHost(panel)
+        host.capture(STRIP_SIZE, Orientation.STRIP)
+        preview = panel.preview_image_widget
+        preprocessor = panel._preprocessor_section.widget
+        self.assertTrue(preview.isVisible())
+        self.assertFalse(preprocessor.isAncestorOf(preview))
+        self.assertGreaterEqual(preview.mapTo(panel, QPoint()).x(),
+                                preprocessor.mapTo(panel, QPoint(preprocessor.width(), 0)).x())
+        self.assertLessEqual(preview.mapTo(panel, QPoint(0, preview.height())).y(), STRIP_SIZE.height())
+
+        preprocessor.set_expanded(False)
+        self.assertFalse(preview.isVisible())
+        preprocessor.set_expanded(True)
+        self.assertTrue(preview.isVisible())
+
+        host.capture(QSize(STRIP_SIZE.height(), STRIP_SIZE.width()), Orientation.SIDE)
+        self.assertTrue(preview.isVisible())
+        self.assertTrue(preprocessor.isAncestorOf(preview))
+        host.release()
 
     def test_tabs_show_unit_state(self) -> None:
         """A tab shows its unit's number, its control type once set up or on, and whether it is on."""
