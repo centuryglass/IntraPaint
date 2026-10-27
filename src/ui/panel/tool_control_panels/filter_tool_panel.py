@@ -11,7 +11,8 @@ from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.segmented_control import DisplayMode, MAX_SEGMENTS, Segment, SegmentedControl
 from src.ui.input_fields.slider_field import number_field_for_parameter
 from src.ui.layout.label_column_layout import normalize_row_label
-from src.ui.panel.tool_control_panels.stroke_block import StrokeBlock, StrokeToolPanel, tool_section
+from src.ui.panel.tool_control_panels.stroke_block import (FIELD_COLUMN_MAX_WIDTH, StrokeBlock, StrokeToolPanel,
+                                                                tool_section)
 from src.ui.panel.tool_control_panels.stroke_preview import FilterStrokePreview
 from src.util.parameter import Parameter, ParamType, TYPE_FLOAT, TYPE_INT, TYPE_STR
 from src.util.shared_constants import ICON_SIZE
@@ -76,7 +77,9 @@ class FilterToolPanel(StrokeToolPanel):
         Cache().connect(self, Cache.FILTER_TOOL_CACHED_PARAMETERS, self._update_filter_param_slot)
         # The section goes in after the first parameters, so no layout caches a size hint without them:
         self._section = tool_section(SECTION_TITLE, self._filter_row(), self._parameter_container)
-        self._layout.addWidget(self._section)
+        self._column_width = max(FIELD_COLUMN_MAX_WIDTH, self._section.minimumSizeHint().width())
+        self._section.setMaximumWidth(self._column_width)
+        self.add_tool_section(self._section)
 
     def _filter_row(self) -> QWidget:
         row = QWidget(self)
@@ -93,6 +96,8 @@ class FilterToolPanel(StrokeToolPanel):
         strip = orientation == Qt.Orientation.Horizontal
         if strip != self._strip:
             self._strip = strip
+            # Wrapped parameters get a column width each:
+            self._section.setMaximumWidth(self._column_width * (STRIP_PARAMETER_COLUMNS if strip else 1))
             self._arrange_parameters()
 
     def _arrange_parameters(self) -> None:

@@ -9,7 +9,8 @@ from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.panel.tool_control_panels.clone_stamp_preview import (CloneStampStrokePreview, SOURCE_MODE_DYNAMIC_OFFSET,
                                                                   SOURCE_MODE_FIXED_OFFSET, SOURCE_MODE_STATIC)
-from src.ui.panel.tool_control_panels.stroke_block import StrokeBlock, StrokeToolPanel, tool_section
+from src.ui.panel.tool_control_panels.stroke_block import (FIELD_COLUMN_MAX_WIDTH, StrokeBlock, StrokeToolPanel,
+                                                                tool_section)
 from src.util.shared_constants import INT_MAX, INT_MIN
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -69,7 +70,9 @@ class CloneStampToolPanel(StrokeToolPanel):
         fields_layout.addWidget(self._y_field, 1, 0)
         self._fields_layout = fields_layout
         self._section = tool_section(SOURCE_SECTION_TITLE, self._source_mode_control, fields)
-        self._layout.addWidget(self._section)
+        self._column_width = max(FIELD_COLUMN_MAX_WIDTH, self._section.minimumSizeHint().width())
+        self._section.setMaximumWidth(self._column_width)
+        self.add_tool_section(self._section)
 
         def _source_mode_update(source_mode: str) -> None:
             self._source_mode_control.set_value(source_mode)
