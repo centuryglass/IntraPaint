@@ -148,7 +148,7 @@ class MainWindow(QMainWindow):
         self._previous_options_available = False
 
         # The central widget shows the canvas, or the generated image selector in its place:
-        self._image_panel = ImagePanel(image_stack, include_rulers=True)
+        self._image_panel = ImagePanel(image_stack, include_rulers=True, include_navigation_button=True)
         self._image_panel.setContentsMargins(1, 1, 1, 1)
         self._main_widget = self._image_panel
         self._central_widget = QStackedWidget(self)
@@ -221,6 +221,7 @@ class MainWindow(QMainWindow):
         # Optional extra windows:
         self._layer_panel: Optional[LayerPanel] = None
         self._navigation_window = NavigationWindow(image_stack, self._image_panel.image_viewer)
+        self._image_panel.navigation_window_requested.connect(self.show_navigation_window)
 
         AppStateTracker.set_enabled_states(self._image_panel, [APP_STATE_EDITING])
         self.resizeEvent(None)

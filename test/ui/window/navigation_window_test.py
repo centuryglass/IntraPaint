@@ -12,7 +12,6 @@ from src.tools.generation_area_tool import GenerationAreaTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.segmented_control import DisplayMode
 from src.ui.layout.panel_fit import Orientation
-from src.ui.panel.image_panel import MIN_WIDTH_SHOWING_SCALE_SLIDER
 from src.ui.window.navigation_window import (ZoomTool, NavigationWindow, ZOOM_LABEL, IMAGE_GEN_LABEL,
                                              IMAGE_GEN_LABEL_SHORT, VIEW_HINT_LINES, GEN_AREA_HINT_LINES,
                                              CONTEXT_PIN_HINT)
@@ -173,20 +172,23 @@ class NavigationPanelTest(IntraPaintTestCase):
 class NavigationWindowResizeTest(IntraPaintTestCase):
     """Resizes the floating navigation window, which has the image panel's zoom controls."""
 
-    def test_resize_hides_scale_slider_that_does_not_fit(self) -> None:
-        """Resizing the window runs the image panel's visibility checks, so the scale slider hides when narrow."""
+    def test_resize_plans_the_canvas_bar(self) -> None:
+        """Resizing the window plans its canvas bar: Reset view shows its label when wide and its glyph when
+        narrow."""
         image_stack = ImageStack(QSize(128, 96), QSize(128, 96), QSize(8, 8), QSize(2048, 2048))
         main_viewer = ImageViewer(None, image_stack, use_keybindings=False)
         window = NavigationWindow(image_stack, main_viewer)
         window.show()
         try:
-            # pylint: disable-next=protected-access
-            slider = window._image_scale_slider
-            assert slider is not None
-            window.resize(MIN_WIDTH_SHOWING_SCALE_SLIDER + 100, 400)
-            self.assertTrue(slider.isVisibleTo(window))
-            window.resize(MIN_WIDTH_SHOWING_SCALE_SLIDER - 100, 400)
-            self.assertFalse(slider.isVisibleTo(window))
+            bar = window.control_bar
+            assert bar is not None
+            labeled, glyph = bar.reset_buttons
+            window.resize(800, 400)
+            self.assertTrue(labeled.isVisibleTo(window))
+            self.assertFalse(glyph.isVisibleTo(window))
+            window.resize(bar.minimumSizeHint().width(), 400)
+            self.assertFalse(labeled.isVisibleTo(window))
+            self.assertTrue(glyph.isVisibleTo(window))
         finally:
             window.close()
             window.deleteLater()
