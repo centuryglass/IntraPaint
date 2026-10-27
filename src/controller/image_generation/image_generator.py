@@ -3,35 +3,19 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Optional, Any
 
-from PySide6.QtCore import QPoint, QRect, QSize, Signal, QTimer, QObject, SignalInstance
-from PySide6.QtGui import QImage, QPainter
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtCore import QSize, Signal, QTimer, QObject, SignalInstance
+from PySide6.QtGui import QImage
+from PySide6.QtWidgets import QWidget
 
 from src.config.cache import Cache
+from src.controller.image_generation.generation_session import GenerationSession
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
-from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
-from src.util.application_state import AppStateTracker, APP_STATE_LOADING
-from src.util.async_task import AsyncTask
 from src.util.menu_builder import MenuBuilder
 from src.util.shared_constants import EDIT_MODE_INPAINT, PIL_SCALING_MODES
 from src.util.visual.pil_image_utils import pil_image_scaling
-
-# The QCoreApplication.translate context for strings in this file
-TR_ID = 'controller.image_generation.image_generator'
-
-
-def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
-    """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, key, disambiguation, n)
-
-
-GENERATE_ERROR_TITLE_UNEXPECTED = _tr('Inpainting failure')
-GENERATE_ERROR_TITLE_NO_IMAGE = _tr('Save failed')
-GENERATE_ERROR_TITLE_EXISTING_OP = _tr('Failed')
-GENERATE_ERROR_MESSAGE_EXISTING_OP = _tr('Existing image generation operation not yet finished, wait a little longer.')
 
 logger = logging.getLogger(__name__)
 
@@ -45,12 +29,14 @@ class ImageGenerator(MenuBuilder, ABC):
         super().__init__()
         self._window = window
         self._image_stack = image_stack
-        self._generated_images: list[QImage] = []
-        self._generating = False
 
         class _SignalObject(QObject):
             status_signal = Signal(str)
         self._signal_object = _SignalObject()
+
+    @property
+    def _session(self) -> GenerationSession:
+        return self._window.generation_session
 
     @property
     def status_signal(self) -> SignalInstance:
@@ -160,80 +146,12 @@ class ImageGenerator(MenuBuilder, ABC):
 
     def start_and_manage_image_generation(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
-        if self._generating:
+        if self._session.generating:
             logger.error('Caught and ignored duplicate image generation request.')
             return
-        assert self._window is not None
-        cache = Cache()
-        self._generated_images.clear()
-        self._generating = True
-
-        inpaint_image, inpaint_mask = self.get_generation_inputs()
-        # Previews show the unscaled source outside the mask that clips them when applied, so they match the result.
-        paste_mask = self.get_paste_mask() if inpaint_mask is not None else None
-        if paste_mask is not None:
-            composite_base = inpaint_image.copy()
-            base_painter = QPainter(composite_base)
-            base_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
-            base_painter.drawImage(QRect(QPoint(), composite_base.size()), paste_mask)
-            base_painter.end()
-        else:
-            composite_base = None
-
-        class _AsyncInpaintTask(AsyncTask):
-            status_signal = Signal(dict)
-            error_signal = Signal(Exception)
-
-            def signals(self) -> list[SignalInstance]:
-                return [self.status_signal, self.error_signal]
-
-        def _do_inpaint(status_signal: SignalInstance, error_signal: SignalInstance,
-                        image=inpaint_image,
-                        mask=inpaint_mask) -> None:
-            try:
-                self.generate(status_signal, image, mask)
-            except (IOError, ValueError, RuntimeError) as err:
-                error_signal.emit(err)
-            except Exception as unexpected_err:
-                logger.error(f'Unexpected error: {unexpected_err}')
-                error_signal.emit(unexpected_err)
-
-        inpaint_task = _AsyncInpaintTask(_do_inpaint)
-
-        def handle_error(err: BaseException) -> None:
-            """Close sample selector and show an error popup if anything goes wrong."""
-            assert self._window is not None
-            self._window.set_image_selector_visible(False)
-            self._window.set_is_loading(False)
-            self._generating = False
-            show_error_dialog(self._window, GENERATE_ERROR_TITLE_UNEXPECTED, err)
-
-        def _finished():
-            assert self._window is not None
-            self._window.set_is_loading(False)
-            self._generating = False
-            # Disconnecting by slot would make this closure refer to itself, a cycle that holds the task:
-            for signal in (inpaint_task.error_signal, inpaint_task.status_signal, inpaint_task.finish_signal):
-                signal.disconnect()
-            expected_count = Cache().get(Cache.BATCH_COUNT) * Cache().get(Cache.BATCH_SIZE)
-            for idx, image in enumerate(self._generated_images):
-                if image.isNull() or idx >= expected_count:
-                    continue
-                if cache.get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT:
-                    assert composite_base is not None
-                    if composite_base.size() == image.size():
-                        painter = QPainter(image)
-                        painter.drawImage(QPoint(), composite_base)
-                        painter.end()
-                self._window.load_sample_preview(image, idx)
-
-        inpaint_task.error_signal.connect(handle_error)
-        inpaint_task.status_signal.connect(self._apply_status_update)
-        inpaint_task.finish_signal.connect(_finished)
-
-        self._window.show_generated_options(paste_mask)
-        AppStateTracker.set_app_state(APP_STATE_LOADING)
-        inpaint_task.start()
+        image, mask = self.get_generation_inputs()
+        paste_mask = self.get_paste_mask() if mask is not None else None
+        self._session.generate(self.generate, image, mask, paste_mask)
 
     def get_paste_mask(self) -> QImage:
         """Returns the generation-area mask whose alpha clips a generated image when it is applied.
@@ -243,26 +161,10 @@ class ImageGenerator(MenuBuilder, ABC):
         return self._image_stack.selection_layer.mask_image
 
     def _load_generated_image_for_selection(self, index: int) -> None:
-        assert len(self._generated_images) > index
-        image = self._generated_images[index]
-        if not image.isNull():
-            self._window.load_sample_preview(image, index)
+        """Shows the generated image at `index` once it arrives. Backends route extra results here by index."""
+        self._session.deliver_result(index)
 
     def _cache_generated_image(self, image: QImage, index: int) -> None:
-        while len(self._generated_images) < index:
-            self._generated_images.append(QImage())
-        if len(self._generated_images) > index:
-            self._generated_images.pop(index)
-        self._generated_images.insert(index, image)
+        self._session.store_result(image, index)
         # Load in main thread:
-        QTimer.singleShot(0, self._window, lambda: self._load_generated_image_for_selection(index))
-
-    def _apply_status_update(self, status_dict: dict[str, str]) -> None:
-        """Show status updates in the UI."""
-        assert self._window is not None
-        if 'seed' in status_dict:
-            Cache().set(Cache.LAST_SEED, str(status_dict['seed']))
-        if 'subseed' in status_dict:
-            Cache().set(Cache.WEBUI_LAST_SUBSEED, str(status_dict['subseed']))
-        if 'progress' in status_dict:
-            self._window.set_loading_message(status_dict['progress'])
+        QTimer.singleShot(0, self._session, lambda: self._load_generated_image_for_selection(index))

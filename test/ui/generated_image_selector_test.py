@@ -1,7 +1,7 @@
 """Tests for GeneratedImageSelector: batch snapshots, the manual view carry-over between options, and re-opening the
 previous generation batch."""
 import sys
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 from PySide6.QtCore import QPoint, QPointF, QRect, QSize
 from PySide6.QtGui import QColor, QImage
@@ -470,16 +470,10 @@ class GeneratedImageSelectorGenerationTest(IntraPaintTestCase):
         self.window = MainWindow(self.image_stack)
         self.generator = TestGenerator(self.window, self.image_stack)
         # Results reach the window through a main-thread timer, which these tests bypass:
-        self.generator._cache_generated_image = self._store_result
+        self.generator._cache_generated_image = self.window.generation_session.store_result  # type: ignore
         start_patch = patch.object(AsyncTask, 'start', AsyncTask.run)
         start_patch.start()
         self.addCleanup(start_patch.stop)
-
-    def _store_result(self, image: QImage, index: int) -> None:
-        """Keeps a generated image for the finish handler to deliver, without scheduling anything."""
-        while len(self.generator._generated_images) <= index:
-            self.generator._generated_images.append(QImage())
-        self.generator._generated_images[index] = image
 
     def _generate(self) -> GeneratedImageSelector:
         """Runs one generation to completion and returns the selection screen it produced."""
@@ -495,6 +489,18 @@ class GeneratedImageSelectorGenerationTest(IntraPaintTestCase):
         self.assertTrue(self.window.is_image_selector_visible())
         self.assertEqual(len(selector._option_items), OPTION_COUNT + 1)
         self.assertNotIn(selector._session.current.loading_image, selector._session.current.option_images)
+
+    def test_a_failed_generation_closes_the_selection_screen_and_shows_the_error(self) -> None:
+        """An error from the backend hides the selection screen, ends loading and opens the error dialog."""
+        error = ValueError('bad input')
+        self.generator.generate = MagicMock(side_effect=error)  # type: ignore
+        with patch('src.ui.window.main_window.show_error_dialog') as show_error_dialog:
+            select_rect(self.image_stack, QRect(QPoint(0, 0), QSize(16, 16)))
+            self.generator.start_and_manage_image_generation()
+        self.assertFalse(self.window.is_image_selector_visible())
+        self.assertFalse(self.window._is_loading)
+        show_error_dialog.assert_called_once()
+        self.assertIs(show_error_dialog.call_args.args[2], error)
 
     def test_reopening_after_a_real_generation_shows_the_generated_images(self) -> None:
         """The headline regression: closing and re-opening shows the run's images, not a fresh placeholder batch."""

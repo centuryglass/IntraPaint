@@ -1,6 +1,6 @@
 """Converts the library's `GenerationProgress` snapshots into IntraPaint's generation status updates.
 
-`progress_status_update` returns the dict `ImageGenerator._apply_status_update` reads. The library calls a
+`progress_status_update` returns the dict `GenerationSession._apply_status_update` reads. The library calls a
 `handle.wait(on_progress=...)` callback on the worker thread, so the callback only emits the result through the task's
 status signal.
 """
@@ -28,7 +28,7 @@ STATUS_BATCH_NUMBER = _tr('Batch {batch_num} of {num_batches}:')
 STATUS_ETA_MINUTES = _tr('ETA: {minutes}:{seconds}')
 STATUS_ETA_SECONDS = _tr('ETA: {seconds}s')
 
-# Key `ImageGenerator._apply_status_update` reads status text from.
+# Key `GenerationSession._apply_status_update` reads status text from.
 PROGRESS_KEY = 'progress'
 
 
@@ -84,7 +84,9 @@ def progress_status_text(progress: GenerationProgress, batch_index: int = 0, num
 
 
 def progress_status_update(progress: GenerationProgress, batch_index: int = 0, num_batches: int = 1) -> dict[str, str]:
-    """Returns a status update for `ImageGenerator._apply_status_update`. See `progress_percentage` for the parameters.
+    """Returns a status update for `GenerationSession._apply_status_update`.
+
+    See `progress_percentage` for the parameters.
     """
     return {PROGRESS_KEY: progress_status_text(progress, batch_index, num_batches)}
 
