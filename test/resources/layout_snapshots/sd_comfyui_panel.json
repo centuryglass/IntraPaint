@@ -1,55 +1,55 @@
 {
   "minimum": {
     "problems": [
-      "squeezed: QWidget[1] is 215x94, minimum 226x94",
-      "clipped: QWidget[1]/_PinnedScrollArea shows 215x94 of 226x94",
-      "clipped: QWidget[1]/_PinnedScrollArea/QWidget[0] shows 215x94 of 226x94"
+      "squeezed: QWidget[1] is 215x124, minimum 226x124",
+      "clipped: QWidget[1]/_PinnedScrollArea shows 215x124 of 226x124",
+      "clipped: QWidget[1]/_PinnedScrollArea/QWidget[0] shows 215x124 of 226x124"
     ],
     "size": [
       525,
-      116
+      146
     ]
   },
   "narrow": {
     "problems": [],
     "size": [
       262,
-      343
+      334
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      872,
-      343
+      752,
+      334
     ]
   },
   "short": {
     "problems": [
-      "squeezed: QWidget[0] is 311x36, minimum 203x59",
-      "squeezed: QWidget[0]/_PinnedScrollArea is 311x36, minimum 59x59",
-      "squeezed: QScrollArea is 273x36, minimum 59x59",
-      "squeezed: QWidget[1] is 240x36, minimum 226x94",
-      "clipped: QWidget[1]/_PinnedScrollArea shows 240x36 of 240x94",
-      "clipped: QWidget[1]/_PinnedScrollArea/QWidget[0] shows 240x36 of 240x94"
+      "squeezed: QWidget[0] is 263x51, minimum 203x59",
+      "squeezed: QWidget[0]/_PinnedScrollArea is 263x51, minimum 59x59",
+      "squeezed: QScrollArea is 201x51, minimum 59x59",
+      "squeezed: QWidget[1] is 240x51, minimum 226x124",
+      "clipped: QWidget[1]/_PinnedScrollArea shows 240x51 of 240x124",
+      "clipped: QWidget[1]/_PinnedScrollArea/QWidget[0] shows 240x51 of 240x124"
     ],
     "size": [
-      872,
-      58
+      752,
+      73
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      872,
+      752,
       1200
     ]
   },
   "wide": {
     "problems": [],
     "size": [
-      2616,
-      343
+      2256,
+      334
     ]
   }
 }
