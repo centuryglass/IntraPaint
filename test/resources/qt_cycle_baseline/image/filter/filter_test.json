@@ -1,9 +1,0 @@
-{
-  "FilterSelectionOnlyTest::test_filter_changes_every_selected_region": 1,
-  "MenuFilterTest::test_contrast_inside_selection_matches_whole_layer": 1,
-  "MenuFilterTest::test_inside_selection": 7,
-  "MenuFilterTest::test_layer_group": 7,
-  "MenuFilterTest::test_selection_outside_layer_changes_nothing": 8,
-  "MenuFilterTest::test_transformed_layer_inside_selection": 7,
-  "MenuFilterTest::test_whole_layer": 7
-}
