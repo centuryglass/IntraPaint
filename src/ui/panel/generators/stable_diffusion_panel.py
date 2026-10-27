@@ -283,10 +283,12 @@ class ToggledSliderField(SliderField):
 
 
 class FieldPair(QWidget):
-    """Two fields side by side, or stacked when they don't fit that way. Used as a control with two forms."""
+    """Two fields side by side, or stacked when they don't fit that way. Used as a control with two forms. The pair is
+    capped at `FIELD_MAX_WIDTH`, so its right edge lines up with the other fields' in a wide side panel."""
 
     def __init__(self, first: QWidget, second: QWidget, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
+        self.setMaximumWidth(FIELD_MAX_WIDTH)
         self._layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self)
         self._layout.setContentsMargins(0, 0, 0, 0)
         self._layout.addWidget(first)
@@ -351,10 +353,12 @@ class HonestSizeHints(QWidget):
 
 
 class LabeledRows(QWidget):
-    """Rows of a label and a field that share one label column."""
+    """Rows of a label and a field that share one label column. The rows are capped at `FIELD_MAX_WIDTH`, label
+    included, so every row's right edge lines up with the other fields' in a wide side panel."""
 
     def __init__(self, rows: Sequence[tuple[str, QWidget]], parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
+        self.setMaximumWidth(FIELD_MAX_WIDTH)
         layout = LabelColumnLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         self._form = layout
