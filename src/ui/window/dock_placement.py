@@ -3,11 +3,14 @@
 - The dock menu and dragging a rail button both place docks through these functions.
 - A placed dock opens in front of its group. Moves run inside `PanelDock.placing_docks`, so docking a floating dock
   along the way closes nothing.
+- A dock moved out of its group while open leaves the group open at its size, with the group's next dock in front
+  (`PanelDock.open_next_in_group`).
 - `QMainWindow.splitDockWidget` tabs the new dock into the first dock's group when that dock is tabbed, and only
   places after. Splitting beside a group edits the saved layout instead (`split_dock_beside`).
 """
 import logging
 from enum import Enum
+from typing import Optional
 
 from PySide6.QtCore import QByteArray, Qt
 from PySide6.QtWidgets import QMainWindow
@@ -35,6 +38,7 @@ class SplitSide(Enum):
 
 
 def _show_for_placement(dock: PanelDock) -> None:
+    dock.open_next_in_group()
     dock.setFloating(False)
     dock.show()
 
@@ -45,6 +49,15 @@ def tab_with(window: QMainWindow, dock: PanelDock, target: PanelDock) -> None:
         _show_for_placement(dock)
         window.tabifyDockWidget(target, dock)
     dock.open_in_group()
+
+
+def reorder_in_group(dock: PanelDock, before: Optional[PanelDock]) -> None:
+    """Moves a dock within its tab group's order, just before another dock of the group, or to the group's end with
+    None. The group's first dock with content then opens in front."""
+    dock.move_in_group(before)
+    leader = next((member for member in dock.group() if member.is_available), None)
+    if leader is not None:
+        leader.open_in_group()
 
 
 def move_to_edge(window: QMainWindow, dock: PanelDock, edge: DockEdge) -> None:
@@ -84,22 +97,21 @@ def split_beside(window: QMainWindow, dock: PanelDock, target: PanelDock, side: 
     """Moves a dock into a group of its own on one side of the target's tab group, open, and gives the two equal
     shares of the group's old size. Returns whether it moved.
 
-    The target's group keeps its other docks and its open dock. A dock split from its own group while open leaves the
-    target open in its place, so the group doesn't collapse.
+    The target's group keeps its other docks and its open dock.
     """
     orientation, after = side.value
-    leaves_own_group_empty = not dock.isHidden() and target in dock.group_mates()
+    successor = dock.open_next_in_group()
     with PanelDock.placing_docks():
         dock.setFloating(False)
         state = split_dock_beside(window.saveState().data(), dock.objectName(), target.objectName(), orientation,
                                   after)
         if state is None:
             logger.warning(f'Could not split {dock.objectName()} beside {target.objectName()}')
+            if successor is not None:
+                successor.hide()
             return False
         window.restoreState(QByteArray(state))
     dock.open_in_group()
-    if leaves_own_group_empty:
-        target.open_in_group()
     layout = window.layout()
     if layout is not None:
         layout.activate()

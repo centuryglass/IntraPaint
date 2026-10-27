@@ -1,12 +1,12 @@
-"""Tests reading and editing saved dock layouts: tab groups, moving a dock to the start of its area, and refusing
-layouts of another shape."""
+"""Tests reading and editing saved dock layouts: tab groups, moving a dock to the start of its area or within its tab
+group, and refusing layouts of another shape."""
 import sys
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QDockWidget, QLabel, QMainWindow
 
-from src.ui.window.dock_state import SavedDock, SavedGroup, move_dock_to_area_start, read_dock_groups, \
-    split_dock_beside
+from src.ui.window.dock_state import SavedDock, SavedGroup, move_dock_in_tab_group, move_dock_to_area_start, \
+    read_dock_groups, split_dock_beside
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -134,3 +134,57 @@ class DockStateTest(IntraPaintTestCase):
         self.assertIsNone(split_dock_beside(state, 'first', 'missing', HORIZONTAL, True))
         self.assertIsNone(split_dock_beside(state, 'missing', 'first', HORIZONTAL, True))
         self.assertIsNone(split_dock_beside(state[:40], 'first', 'second', HORIZONTAL, True))
+
+    def _tab_all(self) -> None:
+        self.window.tabifyDockWidget(self.docks['first'], self.docks['second'])
+        self.window.tabifyDockWidget(self.docks['first'], self.docks['moved'])
+        self.docks['second'].raise_()
+        self._activate()
+
+    def _tab_order(self) -> tuple[list[str], int]:
+        groups = read_dock_groups(self.window.saveState().data())
+        assert groups is not None
+        group = next(group for group in groups if len(group.docks) > 1)
+        return [dock.name for dock in group.docks], group.current
+
+    def test_moves_a_dock_within_its_tab_group(self) -> None:
+        """A dock moves before another dock of its group, or to the end, and the dock in front stays in front."""
+        self._tab_all()
+        self.assertEqual(self._tab_order(), (['first', 'second', 'moved'], 1))
+        state = move_dock_in_tab_group(self.window.saveState().data(), 'moved', 'first')
+        assert state is not None
+        self.assertTrue(self.window.restoreState(state))
+        self.assertEqual(self._tab_order(), (['moved', 'first', 'second'], 2))
+        state = move_dock_in_tab_group(self.window.saveState().data(), 'moved', None)
+        assert state is not None
+        self.assertTrue(self.window.restoreState(state))
+        self.assertEqual(self._tab_order(), (['first', 'second', 'moved'], 1))
+        self.assertFalse(self.docks['second'].isHidden())
+
+    def test_move_within_tab_group_refuses_bad_targets(self) -> None:
+        """A dock outside a tab group, a target outside its group, the dock itself, or broken bytes give None."""
+        state = self.window.saveState().data()
+        self.assertIsNone(move_dock_in_tab_group(state, 'first', None))
+        self._tab_all()
+        state = self.window.saveState().data()
+        self.assertIsNone(move_dock_in_tab_group(state, 'first', 'first'))
+        self.assertIsNone(move_dock_in_tab_group(state, 'first', 'missing'))
+        self.assertIsNone(move_dock_in_tab_group(state, 'missing', None))
+        self.assertIsNone(move_dock_in_tab_group(state[:40], 'first', None))
+
+    def test_split_from_the_front_of_a_tab_group_puts_its_open_dock_in_front(self) -> None:
+        """Splitting the front dock out of a tab group puts the group's remaining open dock in front."""
+        self._tab_all()
+        self.docks['first'].show()
+        self.docks['moved'].hide()
+        self._activate()
+        state = split_dock_beside(self.window.saveState().data(), 'second', 'first', HORIZONTAL, True)
+        assert state is not None
+        self.assertTrue(self.window.restoreState(state))
+        self._activate()
+        groups = read_dock_groups(self.window.saveState().data())
+        assert groups is not None
+        tabbed = next(group for group in groups if len(group.docks) > 1)
+        self.assertEqual([dock.name for dock in tabbed.docks], ['first', 'moved'])
+        self.assertEqual(tabbed.current, 0)
+        self.assertTrue(self.docks['first'].isVisible())

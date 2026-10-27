@@ -184,16 +184,61 @@ class RailDragTest(IntraPaintTestCase):
         self.assertLess(window.navigation_dock.geometry().bottom(), window.layers_dock.geometry().top())
         self.assertEqual(self._group(window.navigation_dock), {window.navigation_dock})
 
-    def test_drop_on_its_own_group_does_nothing(self) -> None:
-        """Dropping a button on its own group's buttons changes nothing, and shows no marker on the way."""
+    def _rail_order(self, group_index: int) -> list[PanelDock]:
+        return [button.dock for button in self.rail.groups[group_index] if not button.isHidden()]
+
+    def test_drop_in_its_own_place_does_nothing(self) -> None:
+        """Dropping a button where it already is in its group changes nothing, and shows no marker on the way."""
         window = self.window
         color_button = self._button(window.color_dock)
-        layers_point = self._center(self._button(window.layers_dock))
-        self._press_and_move(color_button, layers_point + QPoint(0, DRAG_DISTANCE), layers_point)
+        start = self._center(color_button)
+        self._press_and_move(color_button, start + QPoint(0, DRAG_DISTANCE), start + QPoint(0, -DRAG_DISTANCE))
         self.assertFalse(window.rail_drag.marker.isVisible())
-        _send(color_button, QEvent.Type.MouseButtonRelease, layers_point, LEFT, NO_BUTTON)
+        _send(color_button, QEvent.Type.MouseButtonRelease, start, LEFT, NO_BUTTON)
         self.assertTrue(window.color_dock.isHidden())
-        self.assertIn(window.color_dock, self._group(window.layers_dock))
+        self.assertEqual(self._rail_order(1), window.lower_docks)
+
+    def test_drag_within_its_group_reorders_it_and_opens_the_new_first_dock(self) -> None:
+        """Dragging the open first dock's button just past the second one's middle swaps them, and the second dock
+        opens in its place, at its size."""
+        window = self.window
+        layers, color, navigation = window.lower_docks
+        layers_geometry = layers.geometry()
+        layers_button = self._button(layers)
+        past_color = self._center(self._button(color)) + QPoint(0, 2)
+        self._press_and_move(layers_button, self._center(layers_button) + QPoint(0, DRAG_DISTANCE), past_color)
+        marker = window.rail_drag.marker
+        self.assertTrue(marker.isVisible())
+        self.assertGreater(marker.geometry().top(), self._button(color).geometry().center().y())
+        _send(layers_button, QEvent.Type.MouseButtonRelease, past_color, LEFT, NO_BUTTON)
+        self._activate()
+        self.assertEqual(self._rail_order(1), [color, layers, navigation])
+        self.assertTrue(color.is_showing)
+        self.assertTrue(layers.isHidden())
+        self.assertEqual(color.geometry(), layers_geometry)
+        self.assertFalse(marker.isVisible())
+
+    def test_drag_to_the_front_of_its_group_opens_the_dock(self) -> None:
+        """A closed dock's button dragged before its group's first button moves to the front and opens."""
+        window = self.window
+        layers, color, navigation = window.lower_docks
+        navigation_button = self._button(navigation)
+        before_layers = self._button(layers).mapToGlobal(QPoint(self._button(layers).width() // 2, 1))
+        self._drag(navigation_button, self._center(navigation_button) + QPoint(0, -DRAG_DISTANCE), before_layers)
+        self.assertEqual(self._rail_order(1), [navigation, layers, color])
+        self.assertTrue(navigation.is_showing)
+        self.assertTrue(layers.isHidden())
+
+    def test_clicking_a_closed_dock_moves_its_button_to_the_front_of_its_group(self) -> None:
+        """Opening a closed dock from its button puts the button first in its group, ahead of the closed dock."""
+        window = self.window
+        layers, color, navigation = window.lower_docks
+        self._button(navigation).click()
+        self._activate()
+        self.assertEqual(self._rail_order(1), [navigation, layers, color])
+        self.assertTrue(navigation.is_showing)
+        self._button(color).click()
+        self.assertEqual(self._rail_order(1), [color, navigation, layers])
 
     def test_marker_outlines_the_target_group(self) -> None:
         """While over another group, the marker covers that group's buttons."""
@@ -223,6 +268,41 @@ class RailDragTest(IntraPaintTestCase):
     def _hand_off(self, dock: PanelDock, outside: QPoint) -> None:
         button = self._button(dock)
         self._press_and_move(button, self._center(button) + QPoint(0, DRAG_DISTANCE), outside)
+
+    def test_handing_off_the_open_dock_opens_the_next_dock_in_its_place(self) -> None:
+        """Dragging the open dock's button out of the rail leaves its group open at the same size, with the next dock
+        in front."""
+        window = self.window
+        # Qt animates docks into place on the event loop, which tests don't run:
+        window.setAnimated(False)
+        layers, color, navigation = window.lower_docks
+        layers_geometry = layers.geometry()
+        outside = window.mapToGlobal(QPoint(300, 300))
+        self._hand_off(layers, outside)
+        _send(layers, QEvent.Type.MouseButtonRelease, outside, LEFT, NO_BUTTON)
+        self._activate()
+        self.assertTrue(layers.isFloating())
+        self.assertTrue(color.is_showing)
+        self.assertEqual(color.geometry(), layers_geometry)
+        self.assertTrue(navigation.isHidden())
+        self.assertEqual(self._rail_order(1), [color, navigation])
+
+    def test_handing_off_a_closed_dock_leaves_its_group_as_it_was(self) -> None:
+        """Dragging a closed dock's button out of the rail floats it, and its group's open dock stays open in place."""
+        window = self.window
+        # Qt animates docks into place on the event loop, which tests don't run:
+        window.setAnimated(False)
+        layers, color, _navigation = window.lower_docks
+        layers_geometry = layers.geometry()
+        outside = window.mapToGlobal(QPoint(300, 300))
+        self._hand_off(color, outside)
+        self.assertTrue(color.isFloating())
+        self.assertTrue(layers.is_showing)
+        _send(color, QEvent.Type.MouseButtonRelease, outside, LEFT, NO_BUTTON)
+        self._activate()
+        self.assertTrue(color.isFloating())
+        self.assertTrue(layers.is_showing)
+        self.assertEqual(layers.geometry(), layers_geometry)
 
     def test_hand_off_holds_the_dock_by_its_upper_left(self) -> None:
         """The handed-off dock floats with the pointer near its upper-left corner, give or take Qt's frame offset."""

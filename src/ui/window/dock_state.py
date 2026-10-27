@@ -310,7 +310,10 @@ def _find_path(group: _GroupNode, name: str) -> Optional[list[tuple[_GroupNode, 
 
 
 def _take_dock(tree: _LayoutTree, name: str) -> _WidgetNode:
-    """Removes a dock's item, then every group the removal leaves empty. Raises ValueError if the dock isn't there."""
+    """Removes a dock's item, then every group the removal leaves empty. Raises ValueError if the dock isn't there.
+
+    A tab group that loses its front dock puts its first open docked dock in front.
+    """
     for area in tree.areas:
         path = _find_path(area.root, name)
         if path is None:
@@ -318,8 +321,11 @@ def _take_dock(tree: _LayoutTree, name: str) -> _WidgetNode:
         group, idx = path[-1]
         node = group.items.pop(idx)
         assert isinstance(node, _WidgetNode)
-        if group.tabbed and group.current >= idx:
-            group.current = -1 if group.current == idx else group.current - 1
+        if group.tabbed and group.current > idx:
+            group.current -= 1
+        elif group.tabbed and group.current == idx:
+            group.current = next((pos for pos, item in enumerate(group.items) if isinstance(item, _WidgetNode)
+                                  and item.flags & _STATE_FLAG_VISIBLE and not item.flags & _STATE_FLAG_FLOATING), -1)
         for parent, parent_idx in reversed(path[:-1]):
             child = parent.items[parent_idx]
             if isinstance(child, _NestedNode) and len(child.group.items) == 0:
@@ -328,6 +334,43 @@ def _take_dock(tree: _LayoutTree, name: str) -> _WidgetNode:
             tree.areas.remove(area)
         return node
     raise ValueError(f'{name} is not in the saved dock layout')
+
+
+def move_dock_in_tab_group(state: bytes, name: str, before: Optional[str]) -> Optional[bytes]:
+    """Returns saved layout bytes with a dock moved within its tab group's order, just before another dock of the
+    group, or to the group's end when `before` is None.
+
+    The dock in front stays in front. Returns None if the dock isn't in a tab group, `before` isn't in the same group
+    or is the dock itself, or the layout doesn't parse.
+    """
+    if name == before:
+        return None
+    try:
+        tree = _parse_tree(state)
+        path = None
+        for area in tree.areas:
+            path = _find_path(area.root, name)
+            if path is not None:
+                break
+        if path is None:
+            return None
+        group, idx = path[-1]
+        if not group.tabbed:
+            return None
+        names = [item.name if isinstance(item, _WidgetNode) else None for item in group.items]
+        if before is not None and before not in names:
+            return None
+        front = group.items[group.current] if 0 <= group.current < len(group.items) else None
+        moved = group.items.pop(idx)
+        target = len(group.items) if before is None \
+            else next(pos for pos, item in enumerate(group.items)
+                      if isinstance(item, _WidgetNode) and item.name == before)
+        group.items.insert(target, moved)
+        if front is not None:
+            group.current = next(pos for pos, item in enumerate(group.items) if item is front)
+        return _write_tree(tree)
+    except (ValueError, struct.error, UnicodeDecodeError):
+        return None
 
 
 def split_dock_beside(state: bytes, name: str, target_name: str, orientation: Qt.Orientation,
