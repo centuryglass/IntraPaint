@@ -6329,6 +6329,12 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Preview</source>
+        <comment>Preprocessor preview section title</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Generation area</source>
         <translation type="unfinished"></translation>
     </message>

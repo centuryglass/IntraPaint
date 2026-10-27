@@ -22,7 +22,7 @@ from unittest.mock import patch
 
 from PySide6.QtCore import QEvent, QLine, QPoint, QRect, QSize, Qt
 from PySide6 import QtGui
-from PySide6.QtGui import QImage, QTextDocumentFragment
+from PySide6.QtGui import QColor, QImage, QTextDocumentFragment
 from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QAbstractSpinBox, QApplication, QComboBox,
                                QDockWidget, QFrame, QGroupBox, QLabel, QLayout, QMainWindow, QSizePolicy, QTabBar,
                                QWidget)
@@ -674,10 +674,14 @@ def stable_diffusion_panel(webui: bool) -> DockPanel:
     return panel
 
 
-def controlnet_panel(webui: bool) -> DockPanel:
+def controlnet_panel(webui: bool, set_up_units: bool = False) -> DockPanel:
     """Returns a ControlNet panel with sample preprocessors, models and control types, as its generator creates it for
-    a backend."""
-    # pylint: disable=import-outside-toplevel
+    a backend.
+
+    With `set_up_units`, unit 1 is on with a preprocessor preview and unit 2 is off with Depth settings, so unit titles
+    and the preview show. Otherwise every unit has its defaults.
+    """
+    # pylint: disable=import-outside-toplevel,protected-access
     from sd_backend_client import CONTROLNET_MODEL_NONE, PREPROCESSOR_NONE, PREPROCESSOR_RES_PARAM_KEY, \
         ControlNetPreprocessor, ParameterDef
     from src.config.cache import Cache
@@ -702,8 +706,17 @@ def controlnet_panel(webui: bool) -> DockPanel:
                   'default_option': 'depth_midas', 'default_model': models[2]}}
     keys = [Cache.CONTROLNET_ARGS_0_WEBUI, Cache.CONTROLNET_ARGS_1_WEBUI, Cache.CONTROLNET_ARGS_2_WEBUI] if webui \
         else [Cache.CONTROLNET_ARGS_0_COMFYUI, Cache.CONTROLNET_ARGS_1_COMFYUI, Cache.CONTROLNET_ARGS_2_COMFYUI]
-    return ControlNetPanel([ControlNetPreprocessor(name=PREPROCESSOR_NONE), canny, depth], models, control_types,
-                           keys, webui)
+    panel = ControlNetPanel([ControlNetPreprocessor(name=PREPROCESSOR_NONE), canny, depth], models, control_types,
+                            keys, webui)
+    if set_up_units:
+        panel.tab_bar.setCurrentIndex(1)
+        panel._control_type_combobox.setCurrentText('Depth')
+        panel.tab_bar.setCurrentIndex(0)
+        panel._enabled_checkbox.setChecked(True)
+        preview = QImage(512, 512, QImage.Format.Format_ARGB32_Premultiplied)
+        preview.fill(QColor('#808080'))
+        panel.set_preview(preview)
+    return panel
 
 
 def panel_scenes(controller: 'AppController') -> list[PanelScene]:
@@ -722,7 +735,7 @@ def panel_scenes(controller: 'AppController') -> list[PanelScene]:
         PanelScene('navigation_panel', lambda c: c._tool_panel_navigation_panel),
         PanelScene('sd_webui_panel', lambda _c: stable_diffusion_panel(True)),
         PanelScene('sd_comfyui_panel', lambda _c: stable_diffusion_panel(False)),
-        PanelScene('controlnet_webui_panel', lambda _c: controlnet_panel(True)),
+        PanelScene('controlnet_webui_panel', lambda _c: controlnet_panel(True, set_up_units=True)),
         PanelScene('controlnet_comfyui_panel', lambda _c: controlnet_panel(False)),
         *_tool_control_scenes(controller),
     ]

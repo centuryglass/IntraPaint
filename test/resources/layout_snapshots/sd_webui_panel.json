@@ -20,7 +20,7 @@
   "preferred": {
     "problems": [],
     "size": [
-      890,
+      872,
       343
     ]
   },
@@ -28,27 +28,27 @@
     "problems": [
       "squeezed: QWidget[0] is 311x36, minimum 203x59",
       "squeezed: QWidget[0]/_PinnedScrollArea is 311x36, minimum 59x59",
-      "squeezed: QScrollArea is 291x36, minimum 59x59",
+      "squeezed: QScrollArea is 273x36, minimum 59x59",
       "squeezed: QWidget[1] is 240x36, minimum 226x94",
       "clipped: QWidget[1]/_PinnedScrollArea shows 240x36 of 240x94",
       "clipped: QWidget[1]/_PinnedScrollArea/QWidget[0] shows 240x36 of 240x94"
     ],
     "size": [
-      890,
+      872,
       58
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      890,
+      872,
       1200
     ]
   },
   "wide": {
     "problems": [],
     "size": [
-      2670,
+      2616,
       343
     ]
   }

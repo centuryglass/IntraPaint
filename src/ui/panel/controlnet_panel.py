@@ -6,14 +6,19 @@ saved values are edited.
 
 - Choosing a tab saves any pending edit, then loads that unit into the controls. The control type and the preview image
   are kept per unit for the session, and aren't saved.
-- Each tab shows the unit's number, its control type and a dot that fills while the unit is on.
+- Each tab shows the unit's number, its control type and a dot that fills while the unit is on. A strip has no room
+  for a row of tabs, so it shows the same titles in a vertical unit list (`UnitList`) instead.
 - A unit that is off and has settings other than the defaults shows a summary of them in place of its sections.
   "Edit settings" opens the sections with live controls, and editing them doesn't turn the unit on.
 - The control image is the generation area or an image file. The two map to `CONTROLNET_REUSE_IMAGE_CODE` and the
   file's path in `SavedControlNetUnit.image_string`.
-- The sections run Control image, Preprocessor, then Strength. A strip pins the header, tabs and Enabled in a column
-  at the left.
+- The sections run Control image, Preprocessor, then Strength. A strip pins the header, unit list and Enabled in a
+  column at the left.
+- The preprocessor preview sits under the preprocessor's type, preprocessor and model in a side panel. A strip moves it
+  into a section of its own after Preprocessor, so it gets a column beside the preprocessor controls.
 """
+# pylint: disable=too-many-lines
+# One panel class: every control edits the selected unit through its load, save and summary methods.
 import logging
 from dataclasses import dataclass, field
 from functools import partial
@@ -35,11 +40,11 @@ from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel, PanelLayout
-from src.ui.layout.panel_fit import FIELD_MAX_WIDTH, REQUIRED, STRIP_SECTION_MIN_WIDTH, Orientation
+from src.ui.layout.panel_fit import FIELD_MAX_WIDTH, REQUIRED, STRIP_SECTION_MIN_WIDTH, FitItem, Orientation
 from src.ui.modal.modal_utils import open_image_file
+from src.ui.panel.controlnet_widgets import DOT_SIZE, PREVIEW_IMAGE_SIZE, PreviewImage, UnitList
 from src.ui.panel.generators.stable_diffusion_panel import FieldPair, LabeledRows
 from src.ui.widget.elided_label import ElidedLabel
-from src.ui.widget.image_widget import ImageWidget
 from src.ui.widget.parameter_def_widget import create_parameter_field, create_parameter_widget, \
     is_numeric_field_parameter
 from src.util.parameter_def_labels import parameter_label, parameter_tooltip
@@ -74,6 +79,7 @@ SECTION_TITLE_UNIT = _tr('Unit')
 SECTION_TITLE_CONTROL_IMAGE = _tr('Control image')
 SECTION_TITLE_PREPROCESSOR = _tr('Preprocessor')
 SECTION_TITLE_STRENGTH = _tr('Strength')
+SECTION_TITLE_PREVIEW = _tr('Preview', 'Preprocessor preview section title')
 
 SOURCE_GENERATION_AREA = _tr('Generation area')
 SOURCE_IMAGE_FILE = _tr('Image file')
@@ -130,7 +136,6 @@ CONTROL_END_FIELD = 'control_end'
 DEFAULT_CONTROL_TYPE = 'All'
 
 CACHE_SAVE_TIMER_INTERVAL = 100
-PREVIEW_IMAGE_SIZE = 300
 STRENGTH_DECIMALS = 2
 
 # If a preprocessor name ends with "Preprocessor", we can just remove that part of the name for conciseness.
@@ -140,7 +145,8 @@ PREPROCESSOR_SUFFIX = 'Preprocessor'
 SOURCE_GENERATION_AREA_VALUE = 'generation_area'
 SOURCE_IMAGE_FILE_VALUE = 'image_file'
 
-# Planning collapses sections to their summaries, and hides the preview, from the highest priority number down:
+# Planning collapses sections to their summaries, and hides the preview, from the highest priority number down. The
+# preview is a panel fit item (`DockPanel.add_fit_item`), since it moves between sections with the orientation:
 STRENGTH_PRIORITY = 1
 CONTROL_IMAGE_PRIORITY = 2
 PREPROCESSOR_PRIORITY = 3
@@ -148,8 +154,6 @@ PREVIEW_PRIORITY = 4
 
 # The widest the pinned unit column of a strip grows:
 UNIT_COLUMN_MAX_WIDTH = 240
-# The diameter of a tab's on/off dot:
-DOT_SIZE = 8
 COMBO_MIN_CHARACTERS = 8
 
 
@@ -238,6 +242,7 @@ def _row(*widgets: QWidget, stretch_first: bool = True) -> QWidget:
 
 
 def _column(*widgets: QWidget) -> tuple[QWidget, QVBoxLayout]:
+    """Returns a widget holding `widgets` in a column with no margins, and its layout."""
     column = QWidget()
     layout = QVBoxLayout(column)
     layout.setContentsMargins(0, 0, 0, 0)
@@ -285,6 +290,8 @@ class ControlNetPanel(DockPanel):
         self._control_unit = self._saved.unit
         # Whether an off unit's sections are open for editing:
         self._editing_off_unit = False
+        # Whether planning left room for the preprocessor preview:
+        self._preview_placed = True
         self._dynamic_controls: list[QWidget] = []
         self._resolution_field: Optional[QWidget] = None
         super().__init__(PANEL_TITLE)
@@ -315,7 +322,9 @@ class ControlNetPanel(DockPanel):
         self._build_unit_section(ui)
         self._build_control_image_section(ui)
         self._build_preprocessor_section(ui)
+        self._build_preview_section(ui)
         self._build_strength_section(ui)
+        self.add_fit_item(FitItem(PREVIEW_PRIORITY), self._place_preview)
 
     def _build_unit_section(self, ui: PanelLayout) -> None:
         section = ui.section(SECTION_TITLE_UNIT)
@@ -329,6 +338,8 @@ class ControlNetPanel(DockPanel):
         self._tab_bar.setIconSize(QSize(DOT_SIZE, DOT_SIZE))
         for _ in self._units:
             self._tab_bar.addTab('')
+        self._unit_list = UnitList(len(self._units))
+        self._unit_list.hide()
         self._enabled_checkbox = CheckBox()
         self._enabled_checkbox.setText(ENABLED_CHECKBOX_LABEL)
         self._enabled_checkbox.setToolTip(ENABLED_CHECKBOX_TOOLTIP)
@@ -347,7 +358,7 @@ class ControlNetPanel(DockPanel):
         self._edit_settings_row = _row(self._edit_settings_button, stretch_first=False)
         self._edit_settings_row.layout().addStretch()
 
-        self._unit_block, _ = _column(self._tab_bar, self._enabled_checkbox, self._off_summary,
+        self._unit_block, _ = _column(self._tab_bar, self._unit_list, self._enabled_checkbox, self._off_summary,
                                       self._edit_settings_row)
         section.add(self._unit_block, REQUIRED)
 
@@ -390,9 +401,11 @@ class ControlNetPanel(DockPanel):
                                        (LABEL_MODEL, self._model_combobox)])
         section.add(self._mode_rows, REQUIRED)
 
-        self._preview_image_widget = ImageWidget(QImage())
+        # `arrange` moves the preview between this slot and the strip's preview section:
+        self._preview_image_widget = PreviewImage(QImage())
         self._preview_image_widget.setMaximumSize(QSize(PREVIEW_IMAGE_SIZE, PREVIEW_IMAGE_SIZE))
-        section.add(self._preview_image_widget, PREVIEW_PRIORITY, decorative=True)
+        self._side_preview_slot, self._side_preview_layout = _column(self._preview_image_widget)
+        section.add(self._side_preview_slot, REQUIRED)
 
         # Rebuilt for each preprocessor, by `_handle_preprocessor_change`:
         self._parameter_block, self._parameter_layout = _column()
@@ -412,6 +425,14 @@ class ControlNetPanel(DockPanel):
             section.add(webui_pair, REQUIRED, webui_pair.forms(self._strip_column_width))
         section.widget.bind_summary(self._preprocessor_summary, self._preprocessor_combobox.currentIndexChanged,
                                     self._model_combobox.currentIndexChanged)
+
+    def _build_preview_section(self, ui: PanelLayout) -> None:
+        """Declares the strip's preview column. `finish_placement` hides it outside a strip."""
+        section = ui.section(SECTION_TITLE_PREVIEW)
+        self._preview_section = section
+        section.widget.set_header_visible(False)
+        self._strip_preview_slot, self._strip_preview_layout = _column()
+        section.add(self._strip_preview_slot, REQUIRED)
 
     def _build_strength_section(self, ui: PanelLayout) -> None:
         section = ui.section(SECTION_TITLE_STRENGTH, collapsible=True, priority=STRENGTH_PRIORITY)
@@ -439,6 +460,7 @@ class ControlNetPanel(DockPanel):
 
     def _connect_controls(self) -> None:
         self._tab_bar.currentChanged.connect(self._select_unit)
+        self._unit_list.currentRowChanged.connect(self._select_unit)
         self._enabled_checkbox.valueChanged.connect(self._set_enabled)
         self._edit_settings_button.clicked.connect(self._toggle_off_unit_editing)
         self._image_source.valueChanged.connect(self._image_source_changed)
@@ -484,6 +506,8 @@ class ControlNetPanel(DockPanel):
         preview = state.preview
         with signals_blocked(self._tab_bar):
             self._tab_bar.setCurrentIndex(index)
+        with signals_blocked(self._unit_list):
+            self._unit_list.setCurrentRow(index)
         with signals_blocked(self._enabled_checkbox):
             self._enabled_checkbox.setChecked(self._saved.enabled)
         if self._vram_checkbox is not None:
@@ -611,16 +635,18 @@ class ControlNetPanel(DockPanel):
             label.set_full_text(text)
 
     def _update_tab(self, index: int) -> None:
-        """Sets a unit's tab title, tooltip and on/off dot."""
+        """Sets a unit's title, tooltip and on/off dot, on its tab and its unit list row."""
         state = self._units[index]
         control_type = unit_control_type(state.saved.unit, self._control_types)
         number = str(index + 1)
         named = control_type != '' and (state.saved.enabled or not self._is_default(state))
         title = TAB_TITLE.format(unit_number=number, control_type=control_type) if named else number
+        tooltip = (TAB_TOOLTIP_ON if state.saved.enabled else TAB_TOOLTIP_OFF).format(unit_number=number)
+        icon = self._dot_icon(state.saved.enabled)
         self._tab_bar.setTabText(index, title)
-        self._tab_bar.setTabToolTip(index, (TAB_TOOLTIP_ON if state.saved.enabled else TAB_TOOLTIP_OFF).format(
-            unit_number=number))
-        self._tab_bar.setTabIcon(index, self._dot_icon(state.saved.enabled))
+        self._tab_bar.setTabToolTip(index, tooltip)
+        self._tab_bar.setTabIcon(index, icon)
+        self._unit_list.set_row(index, title, tooltip, icon)
 
     def _dot_icon(self, on: bool) -> QIcon:
         """Returns a tab's dot: filled with the highlight color while the unit is on, and an outline while it's off."""
@@ -910,9 +936,16 @@ class ControlNetPanel(DockPanel):
     # ---------------------------------------------------------------------------------------------------------------
 
     def arrange(self, orientation: Orientation) -> None:
-        """Pins the header and the unit section in a column at the left of a strip."""
+        """Pins the header and the unit section in a column at the left of a strip, with the unit list in place of the
+        tabs, and moves the preview into its own section."""
         super().arrange(orientation)
         strip = orientation == Orientation.STRIP
+        self._tab_bar.setVisible(not strip)
+        self._unit_list.setVisible(strip)
+        preview_layout = self._strip_preview_layout if strip else self._side_preview_layout
+        preview_layout.addWidget(self._preview_image_widget)
+        # Reparenting hides a widget. Its slot's visibility decides whether it shows:
+        self._preview_image_widget.show()
         unit = self._unit_section.widget
         outer = self.layout()
         assert isinstance(outer, QVBoxLayout)
@@ -922,6 +955,7 @@ class ControlNetPanel(DockPanel):
             self.pinned_layout.insertWidget(1, unit)
             unit.setMinimumWidth(0)
             unit.setMaximumWidth(QWIDGETSIZE_MAX)
+            unit.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
             self.pinned_layout.parentWidget().setMaximumWidth(UNIT_COLUMN_MAX_WIDTH)
         else:
             outer.insertWidget(0, self.header)
@@ -937,19 +971,40 @@ class ControlNetPanel(DockPanel):
             return min(available.width(), UNIT_COLUMN_MAX_WIDTH)
         return available.width()
 
+    def prepare_fit(self, orientation: Orientation) -> None:
+        """Limits a strip's preview to a column's narrowest width and its height, less room for the horizontal scroll
+        bar."""
+        super().prepare_fit(orientation)
+        available = self.available_size
+        limit: Optional[QSize] = None
+        if orientation == Orientation.STRIP and available is not None:
+            margins = self.content_margins()
+            limit = QSize(STRIP_SECTION_MIN_WIDTH,
+                          available.height() - margins.top() - margins.bottom() - self.scroll_bar_extent())
+        self._preview_image_widget.set_size_limit(limit)
+
     def _strip_column_width(self) -> Optional[int]:
         return STRIP_SECTION_MIN_WIDTH if self.orientation == Orientation.STRIP else None
 
+    def _place_preview(self, form: Optional[int]) -> None:
+        self._preview_placed = form is not None
+
     def finish_placement(self) -> None:
-        """Hides the sections while an off unit shows its summary, and the preview while there is none."""
+        """Hides the sections while an off unit shows its summary, and the preview while there is none, planning left
+        no room for it, or a strip's Preprocessor section is collapsed."""
         super().finish_placement()
         sections_shown = self._shows_sections()
-        for section in (self._control_image_section, self._preprocessor_section, self._strength_section):
+        for section in (self._control_image_section, self._preprocessor_section, self._preview_section,
+                        self._strength_section):
             if not sections_shown:
                 section.widget.setVisible(False)
         image = self._preview_image_widget.image
-        if image is None or (isinstance(image, QImage) and image.isNull()):
-            self._preview_image_widget.setVisible(False)
+        has_image = image is not None and not (isinstance(image, QImage) and image.isNull())
+        preview_shown = has_image and self._preview_placed
+        strip = self.orientation == Orientation.STRIP
+        self._side_preview_slot.setVisible(preview_shown and not strip)
+        if not preview_shown or not strip or self._preprocessor_section.widget.is_collapsed():
+            self._preview_section.widget.setVisible(False)
 
     # ---------------------------------------------------------------------------------------------------------------
     # Accessors for tests and the generators
@@ -957,8 +1012,18 @@ class ControlNetPanel(DockPanel):
 
     @property
     def tab_bar(self) -> QTabBar:
-        """The unit tabs."""
+        """The unit tabs, shown in a side panel."""
         return self._tab_bar
+
+    @property
+    def unit_list(self) -> UnitList:
+        """The unit list, shown in a strip in place of the tabs."""
+        return self._unit_list
+
+    @property
+    def preview_image_widget(self) -> PreviewImage:
+        """The preprocessor preview."""
+        return self._preview_image_widget
 
     @property
     def strength_fields(self) -> list[NumberField]:
