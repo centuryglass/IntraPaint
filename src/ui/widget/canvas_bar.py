@@ -168,7 +168,7 @@ class CanvasBar(QWidget):
             self._rulers_button.toggled.connect(partial(_set_app_config, AppConfig.SHOW_RULERS))
             self._rulers_button.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
             self._rulers_button.addActions(ruler_actions if ruler_actions is not None else [])
-            AppConfig().connect(self, AppConfig.SHOW_RULERS, self._rulers_button.setChecked)
+            AppConfig().connect(self, AppConfig.SHOW_RULERS, self._rulers_shown_changed)
             row_layout.addWidget(self._rulers_button)
 
         self._navigation_button: Optional[QToolButton] = None
@@ -266,6 +266,10 @@ class CanvasBar(QWidget):
         for label, pair in zip(self._hint_labels, self._hint_pairs):
             label.setText(pair)
         self._content_changed()
+
+    def _rulers_shown_changed(self, shown: bool) -> None:
+        if self._rulers_button is not None:
+            self._rulers_button.setChecked(shown)
 
     def _hints_shown_changed(self, shown: bool) -> None:
         self.removeAction(self._show_hint_action if shown else self._hide_hint_action)

@@ -486,7 +486,9 @@ class Config:
         key: str
             A key tracked by this config file.
         on_change_fn: function(new_value), function(new_value, inner_key)
-            The function to run when the value changes.
+            The function to run when the value changes. It must be a Python function or method: `inspect.signature`
+            reads its argument count, and before Python 3.13 it raises ValueError for Qt's built-in methods, such as
+            `QAbstractButton.setChecked`.
         inner_key: str, optional
             If not None, assume the value at `key` is a dict and ensure on_change_fn only runs when `inner_key`
             changes within the value.
