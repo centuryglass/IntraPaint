@@ -973,7 +973,7 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Which area Selection fill selects: 'Connected' selects the connected region matching the clicked color, 'By color' selects every pixel within the color threshold of the clicked color, and 'Holes' selects the enclosed gaps in the current selection.</source>
+        <source>Which area the magic wand selects: 'Connected' selects the connected region matching the clicked color, 'By color' selects every pixel within the color threshold of the clicked color, and 'Holes' selects the enclosed gaps in the current selection.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2398,12 +2398,12 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Switch to the area selection tool:</source>
+        <source>Switch to the magic wand tool:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Activate the area selection tool to mark areas for editing.</source>
+        <source>Activate the magic wand tool to select areas of similar color.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2588,7 +2588,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Toggles the Sample merged option while the selection fill tool is active. Unbound by default.</source>
+        <source>Toggles the Sample merged option while the magic wand tool is active. Unbound by default.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5275,19 +5275,19 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
 </context>
 <context>
-    <name>tools.selection_fill_tool</name>
+    <name>tools.magic_wand_tool</name>
     <message>
-        <location filename="../../src/tools/selection_fill_tool.py"/>
-        <source>Selection fill</source>
+        <location filename="../../src/tools/magic_wand_tool.py"/>
+        <source>Magic wand</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/tools/selection_fill_tool.py"/>
-        <source>Select areas with solid colors</source>
+        <location filename="../../src/tools/magic_wand_tool.py"/>
+        <source>Select areas of similar color</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/tools/selection_fill_tool.py"/>
+        <location filename="../../src/tools/magic_wand_tool.py"/>
         <source>{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin</source>
         <translation type="unfinished"></translation>
     </message>
@@ -7250,14 +7250,6 @@ Keys: {decrease} / {increase}</source>
     </message>
 </context>
 <context>
-    <name>ui.panel.tool_control_panels.fill_selection_panel</name>
-    <message>
-        <location filename="../../src/ui/panel/tool_control_panels/fill_selection_panel.py"/>
-        <source>Fill area</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>ui.panel.tool_control_panels.fill_tool_panel</name>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/fill_tool_panel.py"/>
@@ -7271,12 +7263,12 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/fill_tool_panel.py"/>
-        <source>How closely a color must match the clicked color to be filled. 0 fills only exact matches. Shared with Selection fill.</source>
+        <source>How closely a color must match the clicked color to be filled. 0 fills only exact matches. Shared with the magic wand.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/fill_tool_panel.py"/>
-        <source>Fill based on the whole image instead of just the active layer. Shared with Selection fill.</source>
+        <source>Fill based on the whole image instead of just the active layer. Shared with the magic wand.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -7341,6 +7333,14 @@ Keys: {decrease} / {increase}</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py"/>
         <source>Layer</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.panel.tool_control_panels.magic_wand_panel</name>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/magic_wand_panel.py"/>
+        <source>Fill area</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -8740,34 +8740,34 @@ Click to pick, or press Esc to cancel</source>
     </message>
 </context>
 <context>
-    <name>util.visual.selection_fill_area</name>
+    <name>util.visual.magic_wand_area</name>
     <message>
-        <location filename="../../src/util/visual/selection_fill_area.py"/>
+        <location filename="../../src/util/visual/magic_wand_area.py"/>
         <source>Connected</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/visual/selection_fill_area.py"/>
+        <location filename="../../src/util/visual/magic_wand_area.py"/>
         <source>By color</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/visual/selection_fill_area.py"/>
+        <location filename="../../src/util/visual/magic_wand_area.py"/>
         <source>Holes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/visual/selection_fill_area.py"/>
+        <location filename="../../src/util/visual/magic_wand_area.py"/>
         <source>Select the connected area around the click that matches its color.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/visual/selection_fill_area.py"/>
+        <location filename="../../src/util/visual/magic_wand_area.py"/>
         <source>Select every pixel in the image that matches the clicked color, connected or not.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/visual/selection_fill_area.py"/>
+        <location filename="../../src/util/visual/magic_wand_area.py"/>
         <source>Select the gaps enclosed by the current selection, ignoring image content.</source>
         <translation type="unfinished"></translation>
     </message>

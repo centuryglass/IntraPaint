@@ -37,8 +37,8 @@ General vocabulary shared with Photoshop, GIMP and Krita. Per-language glossarie
 | Foreground / background color | The two current colors. Brushes paint with the foreground color. | Color panel | "Foreground color: click to change, or drag a color here", "Swap foreground and background colors" |
 | Color picker | The tool that samples a color from the image or screen. Also called the eyedropper in config keys only. | Tools panel | "Color Picker", "Switch to the color picker tool:", "Pick a color from anywhere on the screen" |
 | Fill | Paint a contiguous area with a color or pattern. Also a noun: the fill of a shape. | Fill tool, shape tool | "Color fill", "Fill areas with solid colors", "Fill Color" |
-| Threshold | How closely colors must match the clicked color to be filled or selected. | Fill and selection fill tools | "Color threshold:" |
-| Sample merged | Fill or select based on all visible layers combined, not just the active layer. | Fill and selection fill tools | "Sample Merged", "Toggle sample merged" |
+| Threshold | How closely colors must match the clicked color to be filled or selected. | Fill and Magic wand tools | "Color threshold:" |
+| Sample merged | Fill or select based on all visible layers combined, not just the active layer. | Fill and Magic wand tools | "Sample Merged", "Toggle sample merged" |
 | Smudge | Drag existing image color along a stroke. | Smudge tool | "Smudge", "How far the smudge carries color" |
 | Clone stamp, source | Paint a copy of one image area (the source) into another. | Clone stamp tool | "Clone Stamp", "Source mode:", "{right_mouse_icon}: set source - {left_mouse_icon}: draw" |
 | Filter | An image effect such as blur or sharpen, applied to a layer or painted with the filter brush. | Filters menu, filter brush | "Apply image filter", "Filter Brush", "Draw to apply an image filter" |
@@ -102,7 +102,8 @@ chooses a rendering and records its reasoning.
 | Panel, rail, dock, float | Panels are the dockable windows (Tools, Layers, Image Generation). The rail is the strip of panel tabs at the window's edge. A panel docks into the main window or floats as its own window. | View menu, panel menus | "Panels", "Dock", "Float", "Drag to move panel", "Tab font size:" |
 | Tool control hints | The line under the image that lists the active tool's mouse and key controls. | View menu, Settings > Interface | "Show tool control hints", "Hide tool control hints", "{left_mouse_icon}: draw" |
 | Speed modifier | A held key that makes keyboard and mouse wheel changes, such as moving, panning and zooming, go faster. | Settings > Keybindings | "Key Speed Modifier:", "{key_binding_name} (with speed modifier)" |
-| Selection brush, selection fill | Tools that paint a selection or select a contiguous area of similar color. | Tools panel | "Selection Brush", "Selection fill", "Switch to the area selection tool:" |
+| Selection brush | Tool that paints a selection. | Tools panel | "Selection Brush" |
+| Magic wand | Tool that selects connected or similar-colored areas. Photoshop and Paint.NET use this name; GIMP calls it Fuzzy Select. | Tools panel | "Magic wand", "Select areas of similar color", "Switch to the magic wand tool:" |
 | Fit box, fit font | Text tool sizing: the box resizes to fit the text, or the font size changes to fit the box. | Text tool | "Fit box", "Fit font", "Fit box: the box resizes to fit the text" |
 | Saved colors | The user's stored color swatches. | Color panel | "Saved colors ({count}/{max_count}):", "Add the current color to the saved colors" |
 

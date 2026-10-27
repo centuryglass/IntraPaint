@@ -74,7 +74,7 @@ SWEEP_SCENE_NAMES = (
     'tools_panel_free_selection_tool',
     'tools_panel_selection_brush_tool',
     'tools_panel_shape_selection_tool',
-    'tools_panel_selection_fill_tool',
+    'tools_panel_magic_wand_tool',
     'tools_panel_generation_area_tool',
 )
 

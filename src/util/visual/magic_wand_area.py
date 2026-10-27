@@ -1,4 +1,4 @@
-"""Which area the selection fill tool selects around a click. The persisted choice is `Cache.SELECTION_FILL_AREA`."""
+"""Which area the magic wand tool selects around a click. The persisted choice is `Cache.SELECTION_FILL_AREA`."""
 from enum import Enum
 from typing import Optional
 
@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QApplication
 from src.config.cache import Cache
 
 # The `QCoreApplication.translate` context for strings in this file
-TR_ID = 'util.visual.selection_fill_area'
+TR_ID = 'util.visual.magic_wand_area'
 
 
 def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:

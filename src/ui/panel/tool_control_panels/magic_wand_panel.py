@@ -1,4 +1,4 @@
-"""Selection panel for the SelectionFillTool class."""
+"""Selection panel for the MagicWandTool class."""
 from typing import Optional
 
 from PySide6.QtWidgets import QApplication
@@ -12,10 +12,10 @@ from src.ui.input_fields.slider_field import SliderField
 from src.ui.panel.tool_control_panels.fill_tool_panel import build_sample_merged_checkbox, build_threshold_field
 from src.ui.panel.tool_control_panels.selection_panel import SelectionPanel
 from src.ui.panel.tool_control_panels.stroke_block import tool_section
-from src.util.visual.selection_fill_area import FillArea, stored_fill_area
+from src.util.visual.magic_wand_area import FillArea, stored_fill_area
 
 # The `QCoreApplication.translate` context for strings in this file
-TR_ID = 'ui.panel.tool_control_panels.fill_selection_panel'
+TR_ID = 'ui.panel.tool_control_panels.magic_wand_panel'
 
 
 def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
@@ -26,8 +26,8 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 FILL_AREA_SECTION_TITLE = _tr('Fill area')
 
 
-class FillSelectionPanel(SelectionPanel):
-    """Selection panel for the SelectionFillTool class: Mode, a Fill area section, then Selection.
+class MagicWandPanel(SelectionPanel):
+    """Selection panel for the MagicWandTool class: Mode, a Fill area section, then Selection.
 
     The Fill area control is bound to `Cache.SELECTION_FILL_AREA`. Color threshold and Sample merged are the controls
     the Fill tool shows, and have no effect in Holes mode, so the panel disables them there.

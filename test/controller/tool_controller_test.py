@@ -19,12 +19,12 @@ from src.tools.draw_tool import DrawTool
 from src.tools.eraser_tool import EraserTool
 from src.tools.eyedropper_tool import EyedropperTool
 from src.tools.fill_tool import FillTool
-from src.tools.selection_fill_tool import SelectionFillTool
+from src.tools.magic_wand_tool import MagicWandTool
 from src.tools.shape_selection_tool import ShapeSelectionTool
 from test.tools.tool_test_case import ToolTestCase
 
 IMAGE_FILL_MODULE = 'src.util.visual.image_fill'
-FILL_TOOL_MODULES = ('src.tools.fill_tool', 'src.tools.selection_fill_tool')
+FILL_TOOL_MODULES = ('src.tools.fill_tool', 'src.tools.magic_wand_tool')
 
 
 class ToolControllerTest(ToolTestCase):
@@ -39,7 +39,7 @@ class ToolControllerTest(ToolTestCase):
         """With image_fill available, both fill tools are loaded."""
         controller = self._load_all_tools()
         self.assertIsNotNone(controller.find_tool_by_class(FillTool))
-        self.assertIsNotNone(controller.find_tool_by_class(SelectionFillTool))
+        self.assertIsNotNone(controller.find_tool_by_class(MagicWandTool))
 
     def test_starts_without_image_fill(self) -> None:
         """Without image_fill, ToolController starts with every tool except the two fill tools."""
@@ -52,13 +52,13 @@ class ToolControllerTest(ToolTestCase):
             sys.modules[IMAGE_FILL_MODULE] = None  # type: ignore[assignment]
             importlib.reload(tool_controller)
             self.assertIsNone(tool_controller.FillTool)
-            self.assertIsNone(tool_controller.SelectionFillTool)
+            self.assertIsNone(tool_controller.MagicWandTool)
             with self.assertLogs(tool_controller.__name__, level='WARNING') as construction_logs:
                 controller = self._load_all_tools()
         self.assertTrue(any(tool_controller.FILL_TOOLS_UNAVAILABLE_LOG in message
                             for message in construction_logs.output), construction_logs.output)
         self.assertIsNone(controller.find_tool_by_class(FillTool))
-        self.assertIsNone(controller.find_tool_by_class(SelectionFillTool))
+        self.assertIsNone(controller.find_tool_by_class(MagicWandTool))
         for tool_class in (DrawTool, EraserTool, ShapeSelectionTool):
             self.assertIsNotNone(controller.find_tool_by_class(tool_class))
         self.assertIsInstance(controller.active_tool, DrawTool)
