@@ -282,9 +282,9 @@ class ImageFilter:
 
         task = AsyncTask(_filter_images, True)
 
+        # _finish must not reference task: the task's connection holds _finish, so that would leave a reference cycle.
         def _finish() -> None:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
-            task.finish_signal.disconnect(_finish)
             if len(updated_layer_images) == 0:
                 return
             source_images: dict[int, QImage] = {}
