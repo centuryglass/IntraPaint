@@ -18,7 +18,7 @@ class MainThreadTest(IntraPaintTestCase):
             try:
                 fn()
             except BaseException as err:  # pylint: disable=broad-exception-caught
-                errors.append(err)
+                errors.append(err.with_traceback(None))  # The traceback's frames would hold `fn`'s objects in a cycle.
 
         worker = threading.Thread(target=run, daemon=True)
         worker.start()
