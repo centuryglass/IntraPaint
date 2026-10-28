@@ -69,8 +69,6 @@ class HotkeyFilter(QObject):
         self._bindings: dict[Qt.Key | int, list[HotkeyFilter.KeyBinding]] = {}
         app = QApplication.instance()
         assert isinstance(app, QGuiApplication), 'No QApplication initialized'
-        app.focusWindowChanged.connect(self.watch_window)
-        self.watch_window(QGuiApplication.focusWindow())
         self._default_focus: Optional[QWidget] = None
         self._last_modifier_state = QApplication.keyboardModifiers()
         self._config_bindings: dict[str, Qt.Key | int] = {}
@@ -78,6 +76,8 @@ class HotkeyFilter(QObject):
         self._hotkey_timer.setInterval(MODIFIER_TIMER_INTERVAL_MS)
         self._hotkey_timer.timeout.connect(self._check_modifiers)
         self._hotkey_timer.start()
+        app.focusWindowChanged.connect(self.watch_window)
+        self.watch_window(QGuiApplication.focusWindow())
         self._stale_source_types: set[str] = set()
 
     def _reset(self) -> None:
@@ -95,10 +95,15 @@ class HotkeyFilter(QObject):
     def watch_window(self, window: Optional[QWindow]) -> None:
         """Handles key presses sent to a window, ahead of the window's other event filters.
 
-        Watching a window twice doesn't install the filter twice.
+        Watching a window twice doesn't install the filter twice. Stops modifier polling while
+        no window of the app has focus, and re-syncs the last-seen state before resuming.
         """
         if window is not None:
             window.installEventFilter(self)
+            self._last_modifier_state = QApplication.queryKeyboardModifiers()
+            self._hotkey_timer.start()
+        else:
+            self._hotkey_timer.stop()
 
     def default_focus(self) -> Optional[QWidget]:
         """Returns the widget set as the default input focus, if any."""
