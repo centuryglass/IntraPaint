@@ -46,7 +46,11 @@ def _show_for_placement(dock: PanelDock) -> None:
 def tab_with(window: QMainWindow, dock: PanelDock, target: PanelDock) -> None:
     """Moves a dock into a docked target's tab group, open in front."""
     with PanelDock.placing_docks():
-        _show_for_placement(dock)
+        dock.open_next_in_group()
+        dock.setFloating(False)
+        # Qt 6.12 won't tabify a dock out of a group that holds another visible dock, so hide it first; the trailing
+        # `open_in_group` shows it again in the target group.
+        dock.hide()
         window.tabifyDockWidget(target, dock)
     dock.open_in_group()
 
