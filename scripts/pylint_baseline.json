@@ -1,6 +1,6 @@
 {
   "(repository)": {
-    "duplicate-code": 42
+    "duplicate-code": 41
   },
   "src/controller/app_controller.py": {
     "fixme": 2,

@@ -3,12 +3,18 @@ import sys
 from typing import Optional
 from weakref import ref
 
-from PySide6.QtCore import Qt, QPropertyAnimation, QRectF, QRect, Property
+from PySide6.QtCore import Qt, QRectF, QRect, QTimer
 from PySide6.QtGui import QPainter, QPen, QPainterPath, QColor, QShowEvent, QHideEvent
 from PySide6.QtWidgets import QWidget, QGraphicsItem, QGraphicsView, QGraphicsScene, QStyleOptionGraphicsItem, \
     QGraphicsObject
 
+from src.ui.graphics_items.animated_dash_item import sync_animation_timer
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
+
+# ~15 frames per second, a few dash units per step. A QPropertyAnimation would tick every frame while the outline is
+# visible, repainting it at the full frame rate even when nothing else changed.
+DASH_ANIMATION_INTERVAL_MS = 66
+DASH_ANIMATION_STEP = 5
 
 
 class Outline(QGraphicsObject):
@@ -42,26 +48,18 @@ class Outline(QGraphicsObject):
         self._view_ref = ref(view)
         self._animated = False
         self._dash_pattern = [2, 2, 4, 2, 2, 2]
+        self._dash_loop = sum(self._dash_pattern) * 10
         self._dash_offset = 0
         self._cosmetic = cosmetic_line_draw
-        # noinspection PyTypeChecker
-        self._anim = QPropertyAnimation(self, b"dash_offset")
-        self._anim.setLoopCount(-1)
-        self._anim.setStartValue(0)
-        self._anim.setEndValue(140)
-        self._anim.setDuration(1000)
+        self._animation_timer = QTimer(self)
+        self._animation_timer.setInterval(DASH_ANIMATION_INTERVAL_MS)
+        self._animation_timer.timeout.connect(self._advance_dash_offset)
         scene.addItem(self)
 
-    def dash_offset_getter(self) -> int:
-        """Animate dash offset to make the image generation area more visible."""
-        return self._dash_offset
-
-    def dash_offset_setter(self, offset: int) -> None:
-        """Update the animated dash offset."""
-        self._dash_offset = offset
-
-    # noinspection PyTypeChecker
-    dash_offset = Property(int, dash_offset_getter, dash_offset_setter)
+    def _advance_dash_offset(self) -> None:
+        """Moves the dashed border one step, repainting only the outline's own bounds."""
+        self._dash_offset = (self._dash_offset + DASH_ANIMATION_STEP) % self._dash_loop
+        self.update()
 
     @property
     def dash_pattern(self) -> list[int]:
@@ -72,17 +70,17 @@ class Outline(QGraphicsObject):
     def dash_pattern(self, dash_pattern: list[int]) -> None:
         """Updates the dash pattern used by the outline."""
         self._dash_pattern = dash_pattern
-        pattern_length = 0
-        for length in dash_pattern:
-            pattern_length += length
-        self._anim.setEndValue(pattern_length * 10)
+        self._dash_loop = sum(dash_pattern) * 10
         self.update()
+
+    def _update_animation_state(self) -> None:
+        """Runs the animation only while the outline is visible and animation is enabled."""
+        sync_animation_timer(self._animation_timer, self._animated, self.isVisible())
 
     def setVisible(self, visible: bool) -> None:
         """Ensure animation starts and stops appropriately as visibility changes."""
         super().setVisible(visible)
-        if visible and self._animated:
-            self._anim.start()
+        self._update_animation_state()
 
     @property
     def animated(self) -> bool:
@@ -95,19 +93,15 @@ class Outline(QGraphicsObject):
         if TIMELAPSE_MODE_FLAG in sys.argv:
             return
         self._animated = should_animate
-        if self._animated and self.isVisible():
-            self._anim.start()
-        else:
-            self._anim.stop()
+        self._update_animation_state()
 
     def showEvent(self, _: Optional[QShowEvent]) -> None:
         """Starts the animation when the outline is shown."""
-        if self._animated:
-            self._anim.start()
+        self._update_animation_state()
 
     def hideEvent(self, _: Optional[QHideEvent]) -> None:
         """Stops the animation when the outline is hidden."""
-        self._anim.stop()
+        self._update_animation_state()
 
     def get_outline_width(self) -> float:
         """Gets the outline width based on the current scale of the scene within its QGraphicsView."""
