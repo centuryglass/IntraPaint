@@ -84,9 +84,9 @@ class MainWindowDockTest(IntraPaintTestCase):
 
     @staticmethod
     def _shown_tab_bars(window: MainWindow) -> list[QTabBar]:
-        """Returns the window's dock tab bars that aren't hidden."""
+        """Returns the window's dock tab bars that take up space."""
         return [tab_bar for tab_bar in window.findChildren(QTabBar, options=Qt.FindChildOption.FindDirectChildrenOnly)
-                if not tab_bar.isHidden()]
+                if not tab_bar.isHidden() and not tab_bar.size().isNull()]
 
     @staticmethod
     def _open_docks(window: MainWindow) -> set[str]:

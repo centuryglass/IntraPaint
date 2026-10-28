@@ -1,7 +1,8 @@
 """Main window dock tab groups, which show one dock at a time with the edge rails as their tabs.
 
-- Qt's own dock tab bars are never drawn (`hide_dock_tab_bars`). Qt shows each group's bar again after every layout
-  pass, so a filter hides it each time.
+- Qt's own dock tab bars are never drawn (`hide_dock_tab_bars`). QMainWindow shows each group's bar again after every
+  layout pass, so each bar is kept visible at zero size: showing it changes no geometry, and the window's layout
+  settles instead of relaying out forever.
 - Qt reserves room for a group's tab bar while two of its docks are open, so a group keeps one dock open
   (`PanelDock.open_in_group`). A restored layout can have more, so restores end with `close_background_docks`.
 - `QMainWindow.tabifiedDockWidgets` leaves out closed docks, so groups are read from the saved layout.
@@ -9,36 +10,39 @@
 from typing import Optional
 
 from PySide6.QtCore import QChildEvent, QEvent, QObject, Qt
-from PySide6.QtWidgets import QMainWindow, QTabBar
+from PySide6.QtWidgets import QMainWindow, QSizePolicy, QTabBar
 
 from src.ui.window.dock_state import read_dock_groups
 from src.ui.window.panel_dock import PanelDock
 
 
-class _TabBarHider(QObject):
-    """Hides each dock tab bar of the main window it filters, whenever Qt shows it."""
+class _TabBarZeroer(QObject):
+    """Keeps each dock tab bar of the main window it filters out of the layout.
+
+    Hiding a tab bar makes `QMainWindowLayout` lay the window out again, and the layout shows the bar again, so the
+    window never settles. A bar kept visible at zero size and an ignored size policy takes no space, and showing it
+    changes no geometry.
+    """
 
     def watch(self, tab_bar: QTabBar) -> None:
-        """Hides a tab bar now and whenever it is shown."""
-        tab_bar.installEventFilter(self)
-        tab_bar.hide()
+        """Sizes a tab bar out of the window, so it takes no space now and whenever Qt shows it again."""
+        tab_bar.setMaximumSize(0, 0)
+        tab_bar.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
 
-    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # pylint: disable=invalid-name
-        """Watches each tab bar the window gains, and hides watched tab bars as they show."""
+    def eventFilter(self, _watched: QObject, event: QEvent) -> bool:  # pylint: disable=invalid-name
+        """Sizes out each tab bar the window gains."""
         child = event.child() if isinstance(event, QChildEvent) else None
         if event.type() == QEvent.Type.ChildPolished and isinstance(child, QTabBar):
             self.watch(child)
-        elif event.type() == QEvent.Type.Show and isinstance(watched, QTabBar):
-            watched.hide()
         return False
 
 
 def hide_dock_tab_bars(window: QMainWindow) -> None:
-    """Keeps every dock tab bar of a main window hidden, including bars Qt creates later."""
-    hider = _TabBarHider(window)
+    """Keeps every dock tab bar of a main window out of the layout, including bars Qt creates later."""
+    zeroer = _TabBarZeroer(window)
     for tab_bar in window.findChildren(QTabBar, options=Qt.FindChildOption.FindDirectChildrenOnly):
-        hider.watch(tab_bar)
-    window.installEventFilter(hider)
+        zeroer.watch(tab_bar)
+    window.installEventFilter(zeroer)
 
 
 def _by_name(docks: list[PanelDock]) -> dict[str, PanelDock]:
