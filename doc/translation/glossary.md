@@ -9,6 +9,8 @@ this file is in [`doc/machine_translation.md`](../machine_translation.md).
 - **UI strings** quotes the English source strings that use the term. When a term appears in several spellings, all of
   them are listed, and every one of them takes the term's single rendering.
 - Common UI words that models already translate well (Open, Save, Undo, Copy) are left out.
+- English labels use sentence case (capitalized first word and proper nouns only) and window, dialog and panel titles
+  use title case. Quoted strings follow this. Translators match each language's own convention for labels and titles.
 
 New terms are added here before their strings are translated into any language.
 
@@ -35,13 +37,13 @@ General vocabulary shared with Photoshop, GIMP and Krita. Per-language glossarie
 | Antialiasing | Smoothing of stroke and shape edges. | Brush and shape tools | "Antialiasing" |
 | Blend mode | How a layer combines with the layers below it. The values are the standard Photoshop/GIMP names and Qt's Porter-Duff composition names. | Layers panel | "Layer mode:", "Multiply", "Screen", "Color Dodge", "Source Atop", "Destination Out" |
 | Foreground / background color | The two current colors. Brushes paint with the foreground color. | Color panel | "Foreground color: click to change, or drag a color here", "Swap foreground and background colors" |
-| Color picker | The tool that samples a color from the image or screen. Also called the eyedropper in config keys only. | Tools panel | "Color Picker", "Switch to the color picker tool:", "Pick a color from anywhere on the screen" |
-| Fill | Paint a contiguous area with a color or pattern. Also a noun: the fill of a shape. | Fill tool, shape tool | "Color fill", "Fill areas with solid colors", "Fill Color" |
+| Color picker | The tool that samples a color from the image or screen. Also called the eyedropper in config keys only. | Tools panel | "Color picker", "Switch to the color picker tool:", "Pick a color from anywhere on the screen" |
+| Fill | Paint a contiguous area with a color or pattern. Also a noun: the fill of a shape. | Fill tool, shape tool | "Color fill", "Fill areas with solid colors", "Fill color" |
 | Threshold | How closely colors must match the clicked color to be filled or selected. | Fill and Magic wand tools | "Color threshold:" |
-| Sample merged | Fill or select based on all visible layers combined, not just the active layer. | Fill and Magic wand tools | "Sample Merged", "Toggle sample merged" |
+| Sample merged | Fill or select based on all visible layers combined, not just the active layer. | Fill and Magic wand tools | "Sample merged", "Toggle sample merged" |
 | Smudge | Drag existing image color along a stroke. | Smudge tool | "Smudge", "How far the smudge carries color" |
-| Clone stamp, source | Paint a copy of one image area (the source) into another. | Clone stamp tool | "Clone Stamp", "Source mode:", "{right_mouse_icon}: set source - {left_mouse_icon}: draw" |
-| Filter | An image effect such as blur or sharpen, applied to a layer or painted with the filter brush. | Filters menu, filter brush | "Apply image filter", "Filter Brush", "Draw to apply an image filter" |
+| Clone stamp, source | Paint a copy of one image area (the source) into another. | Clone stamp tool | "Clone stamp", "Source mode:", "{right_mouse_icon}: set source - {left_mouse_icon}: draw" |
+| Filter | An image effect such as blur or sharpen, applied to a layer or painted with the filter brush. | Filters menu, filter brush | "Apply image filter", "Filter brush", "Draw to apply an image filter" |
 | Posterize | Reduce the number of colors by lowering the bits per channel. | Filters menu | "Posterize", "Reduce color range by reducing image color bit count." |
 | Scaling algorithms | Resampling methods named after their algorithms. | Scale image window, Settings > Editing | "Nearest", "Bilinear", "Bicubic", "Lanczos", "Hamming", "Box" |
 | Line join | How the corners of a shape outline are drawn. | Shape tool | "Join", "Miter", "Bevel", "Round" |
@@ -71,17 +73,17 @@ kept in English or transliterated; per-language glossaries check community local
 | Variation seed, variation strength | A second seed mixed into the first, for small variations of one image (WebUI only). | Image Generation panel | "Variation seed:", "Seed variation", "variation {strength}" |
 | Denoising strength | How much image to image and inpainting change the existing content, from 0 (no change) to 1 (all new). | Image Generation panel | "Denoising strength:", "Strength" |
 | Batch size, batch count | Batch size is images generated at once. Batch count is how many batches run one after another. | Image Generation panel | "Size and batch", "Batch size:", "Batch count:", "Batch {batch_num} of {num_batches}:" |
-| Model, checkpoint | The Stable Diffusion model file that generates images. | Image Generation panel, Stable Diffusion settings | "Model", "Stable Diffusion Model:", "Max checkpoints loaded:", "Model loading" |
+| Model, checkpoint | The Stable Diffusion model file that generates images. | Image Generation panel, Stable Diffusion settings | "Model", "Stable Diffusion model:", "Max checkpoints loaded:", "Model loading" |
 | VAE, tiled VAE | The model that converts between images and latent data. Tiled VAE processes it in blocks to save GPU memory. | Image Generation panel, Stable Diffusion settings | "Tiled VAE encoding", "VAE tile size:", "tiled VAE {size}" |
 | LoRA | A small add-on model that adjusts a base model, added to the prompt by name. | Image Generation panel, Stable Diffusion menu | "LoRA", "LoRA Models", "Choose LoRA models to add to the prompt" |
 | LCM mode | A menu action that sets up fast generation with an LCM LoRA: it adds the LoRA and sets sampler, steps and guidance. | Image Generation panel's More menu | "LCM mode" |
 | ControlNet | An add-on that guides generation with a control image, such as edges or a pose. | ControlNet panel | "ControlNet", "Control Model:", "Control Type:", "Control Image:" |
 | ControlNet unit | One ControlNet slot, with its own model, image and settings. Up to three run at once. | ControlNet panel | "ControlNet Unit {unit_number}", "Enable ControlNet Unit", "ControlNet: {count} units on" |
 | Preprocessor | The step that turns a control image into ControlNet's input, such as an edge map. | ControlNet panel | "Preprocessor:", "Preview Preprocessor", "ControlNet preview failed" |
-| Control weight, control step | How strongly a ControlNet unit applies, and the fraction of the steps it applies during. | ControlNet panel | "Control Weight:", "Starting Control Step:", "Ending Control Step:" |
+| Control weight, control step | How strongly a ControlNet unit applies, and the fraction of the steps it applies during. | ControlNet panel | "Control weight:", "Starting control step:", "Ending control step:" |
 | Describe | Ask the backend to write a prompt describing the generation area's content. Uses the WebUI's interrogate endpoint, where available. | Image Generation panel's More menu | "Describe", "Describing image", "Describe failed", "Describe model (WebUI only):" |
 | CLIP skip | How many of the text encoder's final layers to skip. | Stable Diffusion settings | "CLIP skip:" |
-| Upscale | Enlarge an image. Stable Diffusion upscaling regenerates detail while enlarging, optionally with a tile ControlNet. | Scale image window | "Advanced AI upscaling", "Upscale method:", "Tile ControlNet model:", "Upscale failure" |
+| Upscale | Enlarge an image. Stable Diffusion upscaling regenerates detail while enlarging, optionally with a tile ControlNet. | Scale image window | "Advanced AI upscaling", "Upscale method:", "Tile ControlNet model:", "Tile ControlNet preprocessor:", "Upscale failure" |
 | Inpaint full resolution, padding | Inpaint the masked area at full resolution, with this many pixels of surrounding context. | Image Generation panel | "Inpaint Full Resolution", "Padding:" |
 | GPU memory, VRAM | Graphics card memory that models occupy. | Image Generation panel's More menu, ControlNet panel | "Clear GPU memory", "Remove cached models from GPU memory in ComfyUI.", "Low VRAM" |
 | Restore faces, tiling | WebUI generation options. Restore faces runs a face-repair model afterwards. Tiling makes the image repeat seamlessly. | Image Generation panel's Advanced section (WebUI only) | "Restore faces", "Tiling", and "restore faces", "tiling" in the section summary |
@@ -101,8 +103,8 @@ chooses a rendering and records its reasoning.
 | Image generator | The backend connection that generates images: Stable Diffusion via WebUI or ComfyUI, GLID-3-XL, or none. | Stable Diffusion menu, generator selection window | "Select image generator...", "Image Generator Selection", "This image generator is not available: {error_reason}" |
 | Panel, rail, dock, float | Panels are the dockable windows (Tools, Layers, Image Generation). The rail is the strip of panel tabs at the window's edge. A panel docks into the main window or floats as its own window. | View menu, panel menus | "Panels", "Dock", "Float", "Drag to move panel", "Tab font size:" |
 | Tool control hints | The line under the image that lists the active tool's mouse and key controls. | View menu, Settings > Interface | "Show tool control hints", "Hide tool control hints", "{left_mouse_icon}: draw" |
-| Speed modifier | A held key that makes keyboard and mouse wheel changes, such as moving, panning and zooming, go faster. | Settings > Keybindings | "Key Speed Modifier:", "{key_binding_name} (with speed modifier)" |
-| Selection brush | Tool that paints a selection. | Tools panel | "Selection Brush" |
+| Speed modifier | A held key that makes keyboard and mouse wheel changes, such as moving, panning and zooming, go faster. | Settings > Keybindings | "Key speed modifier:", "{key_binding_name} (with speed modifier)" |
+| Selection brush | Tool that paints a selection. | Tools panel | "Selection brush" |
 | Magic wand | Tool that selects connected or similar-colored areas. Photoshop and Paint.NET use this name; GIMP calls it Fuzzy Select. | Tools panel | "Magic wand", "Select areas of similar color", "Switch to the magic wand tool:" |
 | Fit box, fit font | Text tool sizing: the box resizes to fit the text, or the font size changes to fit the box. | Text tool | "Fit box", "Fit font", "Fit box: the box resizes to fit the text" |
 | Saved colors | The user's stored color swatches. | Color panel | "Saved colors ({count}/{max_count}):", "Add the current color to the saved colors" |

@@ -30,7 +30,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-LABEL_TEXT_SELECTION_TOOL = _tr('Selection Brush')
+LABEL_TEXT_SELECTION_TOOL = _tr('Selection brush')
 TOOLTIP_SELECTION_TOOL = _tr('Draw to select areas for editing or inpainting.')
 CONTROL_HINT_SELECTION_TOOL = _tr('{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin')
 

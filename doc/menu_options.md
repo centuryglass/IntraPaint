@@ -247,7 +247,7 @@ When **"Move gen. area"** is active, mouse controls match the [image generation 
 <img src="./labeled_screenshots/navigation.png" alt="Screenshot of the navigation window, with specific elements numbered."/>
 
 1. **Image scale slider**: Set the scale the image is drawn within the navigation window.
-2. **"Reset View" button**: Resets the navigation window to the default view, centering image content.
+2. **"Reset view" button**: Resets the navigation window to the default view, centering image content.
 3. **Mode toggle: "Move gen. area"**: Switches to generation area tool mode, where clicking within the navigation window adjusts the image generation area.
 4. **Mode toggle: "Move view"**: Switches to move view mode, where clicking within the navigation window adjusts the main window image viewport.
 5. **Main window viewport outline**: The solid rectangle outlines the portion of the image currently visible within the main window.

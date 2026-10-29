@@ -28,7 +28,7 @@ HEIGHT_LABEL = _tr('Height:')
 HEIGHT_TOOLTIP = _tr('New image height in pixels')
 CREATE_BUTTON_TEXT = _tr('Create')
 CANCEL_BUTTON_TEXT = _tr('Cancel')
-LABEL_TEXT_BACKGROUND_COLOR = _tr('Background Color:')
+LABEL_TEXT_BACKGROUND_COLOR = _tr('Background color:')
 
 BACKGROUND_COLOR_OPTION_TRANSPARENT = _tr('transparent')
 BACKGROUND_COLOR_OPTION_WHITE = _tr('white')
