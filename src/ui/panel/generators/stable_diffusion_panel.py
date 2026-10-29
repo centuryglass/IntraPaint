@@ -1,7 +1,7 @@
 """The Stable Diffusion generation panel, for the WebUI and ComfyUI backends.
 
 It is a `DockPanel` that places controls by how often they're used. The action block holds the ones used after every
-generation: denoising strength, guidance, steps, batch size, padding and Generate, with Generate last. It is a side
+generation: denoising strength, CFG scale, steps, batch size, padding and Generate, with Generate last. It is a side
 panel's footer (`DockPanel.set_footer`) and a strip's trailing column (`DockPanel.trailing_layout`), so Generate stays
 in the bottom-right corner and never scrolls. The sections run Prompt, Mask, Sampling, Size and batch, then Advanced.
 A strip pins Prompt in a column at the left (`DockPanel.pinned_layout`) and packs the rest into columns between the
@@ -67,7 +67,7 @@ GROUP_TITLE_INPAINT_AND_SIZE = _tr('Inpainting and size')
 GROUP_TITLE_MODEL = _tr('Model')
 
 LABEL_MODEL = _tr('Model')
-LABEL_GUIDANCE = _tr('Guidance')
+LABEL_CFG_SCALE = _tr('CFG scale')
 LABEL_STEPS = _tr('Steps')
 LABEL_NEGATIVE_PROMPT = _tr('Negative prompt')
 LABEL_LAST_SEED = _tr('Last seed')
@@ -641,9 +641,9 @@ class StableDiffusionPanel(DockPanel):
         cache = Cache()
         self._denoising_field = config_slider_field(cache, Cache.DENOISING_STRENGTH)
         self._denoising_field.setFixedHeight(DENOISING_FIELD_HEIGHT)
-        self._guidance_field = config_slider_field(cache, Cache.GUIDANCE_SCALE, label=LABEL_GUIDANCE)
+        self._cfg_scale_field = config_slider_field(cache, Cache.GUIDANCE_SCALE, label=LABEL_CFG_SCALE)
         self._steps_field = config_slider_field(cache, Cache.SAMPLING_STEPS, label=LABEL_STEPS)
-        self._sampling_pair = FieldPair(self._guidance_field, self._steps_field)
+        self._sampling_pair = FieldPair(self._cfg_scale_field, self._steps_field)
         self._batch_size_field = config_slider_field(cache, Cache.BATCH_SIZE)
         padding_field = config_slider_field(cache, Cache.INPAINT_FULL_RES_PADDING, field_class=ToggledSliderField,
                                             off_text=PADDING_OFF)
@@ -668,7 +668,7 @@ class StableDiffusionPanel(DockPanel):
             cache.connect(padding_field, full_res_key, _sync_full_res_toggle)
         _sync_full_res_toggle()
         self._action_pair = FieldPair(self._batch_size_field, padding_field)
-        # Batch size sits at the left edge, under guidance, while padding is hidden:
+        # Batch size sits at the left edge, under CFG scale, while padding is hidden:
         for field in (self._batch_size_field, padding_field):
             self._action_pair.layout().setAlignment(field, Qt.AlignmentFlag.AlignLeft)
         self.add_fit_item(FitItem(REQUIRED, 2), self._apply_pair_form)
@@ -920,8 +920,8 @@ class StableDiffusionPanel(DockPanel):
 
     @property
     def action_fields(self) -> list[NumberField]:
-        """The action block's number fields: denoising strength, guidance, steps, batch size and padding."""
-        return [self._denoising_field, self._guidance_field, self._steps_field, self._batch_size_field,
+        """The action block's number fields: denoising strength, CFG scale, steps, batch size and padding."""
+        return [self._denoising_field, self._cfg_scale_field, self._steps_field, self._batch_size_field,
                 self._padding_field]
 
     @property

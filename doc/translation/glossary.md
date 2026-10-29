@@ -65,7 +65,7 @@ kept in English or transliterated; per-language glossaries check community local
 | Prompt | The text describing what to generate. | Image Generation panel | "Prompt", "Add to prompt", "Replace prompt" |
 | Negative prompt | Text describing what to avoid. | Image Generation panel | "Negative prompt", "Negative:" |
 | Prompt style | A saved prompt fragment, loaded from the WebUI, that can be added to the prompt. | Image Generation panel, Stable Diffusion menu | "Styles", "Saved Prompt Styles", "Add saved prompt styles to the prompt" |
-| Guidance scale (CFG) | How strongly the prompt and negative prompt steer generation. | Image Generation panel | "Guidance", "Guidance scale:", "{sampler}, {steps} steps, CFG {guidance}" |
+| CFG scale | How strongly the prompt and negative prompt steer generation. Short form: "CFG". | Image Generation panel | "CFG scale", "CFG scale:" |
 | Steps | The number of denoising steps per image. | Image Generation panel | "Steps", "Sampling steps:", "Step count:", "{steps} steps" |
 | Sampler, sampling method | The algorithm that runs the steps. Sampler names such as "Euler a" come from the backend and are not translated. | Image Generation panel | "Sampling", "Sampling method:" |
 | Scheduler | How the noise level is spread across the steps. | Image Generation panel | "Scheduler:" |
@@ -76,7 +76,7 @@ kept in English or transliterated; per-language glossaries check community local
 | Model, checkpoint | The Stable Diffusion model file that generates images. | Image Generation panel, Stable Diffusion settings | "Model", "Stable Diffusion model:", "Max checkpoints loaded:", "Model loading" |
 | VAE, tiled VAE | The model that converts between images and latent data. Tiled VAE processes it in blocks to save GPU memory. | Image Generation panel, Stable Diffusion settings | "Tiled VAE encoding", "VAE tile size:", "tiled VAE {size}" |
 | LoRA | A small add-on model that adjusts a base model, added to the prompt by name. | Image Generation panel, Stable Diffusion menu | "LoRA", "LoRA Models", "Choose LoRA models to add to the prompt" |
-| LCM mode | A menu action that sets up fast generation with an LCM LoRA: it adds the LoRA and sets sampler, steps and guidance. | Image Generation panel's More menu | "LCM mode" |
+| LCM mode | A menu action that sets up fast generation with an LCM LoRA: it adds the LoRA and sets sampler, steps and CFG scale. | Image Generation panel's More menu | "LCM mode" |
 | ControlNet | An add-on that guides generation with a control image, such as edges or a pose. | ControlNet panel | "ControlNet", "Control Model:", "Control Type:", "Control Image:" |
 | ControlNet unit | One ControlNet slot, with its own model, image and settings. Up to three run at once. | ControlNet panel | "ControlNet Unit {unit_number}", "Enable ControlNet Unit", "ControlNet: {count} units on" |
 | Preprocessor | The step that turns a control image into ControlNet's input, such as an edge map. | ControlNet panel | "Preprocessor:", "Preview Preprocessor", "ControlNet preview failed" |

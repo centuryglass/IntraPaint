@@ -111,7 +111,7 @@ Each of those images were generated at 640x640 with the exact same parameters:
 - **Prompt**: Cinematic, photoshoot, Legendary hacker outlaw, 90's fashion, pastel colors, creative anachronism, weird tattoos, balding, realistic hologram, Soviet art, tapestry, sitting at retro computer, many CRTs
 - **Negative prompt**: poor quality, worst quality
 - **Sampling steps**: 30
-- **Guidance scale**: 8.0
+- **CFG scale**: 8.0
 - **Sampling method**: Euler a
 - **Seed**: 3915102715
 

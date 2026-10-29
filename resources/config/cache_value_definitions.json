@@ -864,10 +864,10 @@
         "saved": false
     },
     "guidance_scale": {
-        "label": "Guidance scale:",
+        "label": "CFG scale:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Controls how strongly the prompt and negative prompt are applied.",
+        "description": "Controls how strongly the prompt and negative prompt are applied, through classifier-free guidance (CFG).",
         "type": "float",
         "default": 9.0,
         "saved": true,

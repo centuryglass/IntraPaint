@@ -1473,12 +1473,12 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Guidance scale:</source>
+        <source>CFG scale:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Controls how strongly the prompt and negative prompt are applied.</source>
+        <source>Controls how strongly the prompt and negative prompt are applied, through classifier-free guidance (CFG).</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6699,7 +6699,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
-        <source>Guidance</source>
+        <source>CFG scale</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
