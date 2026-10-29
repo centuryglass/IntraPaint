@@ -240,7 +240,7 @@ When **"Move gen. area"** is active, mouse controls match the [generation area t
 - **Left-click and drag inside the area**: Move the generation area, keeping the spot you grabbed under the pointer.
 - **Left-click and drag outside the area**: Center the generation area on the clicked spot, then keep moving it while you drag.
 - **Right-click**: Resize the generation area, without changing its position.
-- **Shift + scroll wheel**: Change the "Inpaint Full Resolution" padding.
+- **Shift + scroll wheel**: Change the inpaint context.
 
 #### Navigation window
 
@@ -252,7 +252,7 @@ When **"Move gen. area"** is active, mouse controls match the [generation area t
 4. **Mode toggle: "Move view"**: Switches to move view mode, where clicking within the navigation window adjusts the main window image viewport.
 5. **Main window viewport outline**: The solid rectangle outlines the portion of the image currently visible within the main window.
 6. **Generation area outline**: The dotted rectangle shows the area within the image selected for AI image generation.  This won't be shown if AI image generation is inactive.
-7. **"Inpaint full resolution" outline**: This inner rectangle shows the reduced area within the generation area that will be used for inpainting if "inpaint full resolution" is selected.  This won't be visible if nothing is selected, if "inpaint full resolution" is unchecked, or if AI image generation is unavailable.
+7. **Context outline**: This inner rectangle shows the reduced area within the generation area that will be used for inpainting if "Limit context to the selection" is checked.  This won't be visible if nothing is selected, if "Limit context to the selection" is unchecked, or if AI image generation is unavailable.
 8. **Selected image content**: All selected areas are also visible within the navigation window.
 
 ## Image menu
@@ -395,7 +395,7 @@ Shrinks all selected areas by one pixel.
 
 ### Clear context pins (Ctrl+Alt+P)
 
-Removes every context pin. Context pins are added and removed by right-clicking with the [selection brush](./tool_guide.md#-selection-brush-tool-s), and stretch the "Inpaint Full Resolution" crop without being inpainted. Clearing the selection leaves them in place. To remove pins automatically whenever you apply a generated image, enable **"Clear context pins after generating"** in [settings](#settings-f9) under the **"Stable Diffusion"** category.
+Removes every context pin. Context pins are added and removed by right-clicking with the [selection brush](./tool_guide.md#-selection-brush-tool-s), and stretch the inpaint context crop without being inpainted. Clearing the selection leaves them in place. To remove pins automatically whenever you apply a generated image, enable **"Clear context pins after generating"** in [settings](#settings-f9) under the **"Stable Diffusion"** category.
 
 ---
 

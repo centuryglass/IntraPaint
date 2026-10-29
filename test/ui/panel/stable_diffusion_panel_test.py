@@ -10,7 +10,7 @@ from src.ui.ink_style import PRIMARY_BUTTON_PROPERTY, caution_color
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.panel_fit import Orientation
 from src.ui.panel.generators.comfyui_advanced_controls import ComfyUIAdvancedControls
-from src.ui.panel.generators.stable_diffusion_panel import (NOTE_IMG2IMG, NOTE_TXT2IMG, PADDING_OFF,
+from src.ui.panel.generators.stable_diffusion_panel import (NOTE_IMG2IMG, NOTE_TXT2IMG, CONTEXT_OFF,
                                                             SECTION_TITLE_ADVANCED, SECTION_TITLE_MASK,
                                                             SECTION_TITLE_PROMPT, SECTION_TITLE_SAMPLING,
                                                             SECTION_TITLE_SIZE, FieldPair, StableDiffusionPanel)
@@ -75,10 +75,10 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         self.assertEqual(control.currentData(), EDIT_MODE_IMG2IMG)
 
     def test_action_block_and_mask_section_follow_the_edit_mode(self) -> None:
-        """Denoising shows in Inpaint and Image to image, padding and the Mask section in Inpaint only, and a note
+        """Denoising shows in Inpaint and Image to image, context and the Mask section in Inpaint only, and a note
         above Generate names any other mode. CFG scale, steps and batch size show in every mode."""
         cache = Cache()
-        denoising, cfg_scale, steps, batch_size, padding = self.panel.action_fields
+        denoising, cfg_scale, steps, batch_size, context = self.panel.action_fields
         mask = self._section(SECTION_TITLE_MASK)
         expected = {
             EDIT_MODE_INPAINT: (True, True, None),
@@ -92,7 +92,7 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
                 self.assertEqual(self._visible(denoising), denoise_shown)
                 for field in (cfg_scale, steps, batch_size):
                     self.assertTrue(self._visible(field))
-                self.assertEqual(self._visible(padding), inpaint_only_shown)
+                self.assertEqual(self._visible(context), inpaint_only_shown)
                 self.assertEqual(self._visible(mask), inpaint_only_shown)
                 self.assertEqual(self._visible(self.panel.mode_note), note is not None)
                 if note is not None:
@@ -115,12 +115,12 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         """Slider fields write their config values, and follow changes to them."""
         cache = Cache()
         cache.set(Cache.INPAINT_FULL_RES, True)
-        denoising, cfg_scale, steps, batch_size, padding = self.panel.action_fields
+        denoising, cfg_scale, steps, batch_size, context = self.panel.action_fields
         fields = [(denoising, cache, Cache.DENOISING_STRENGTH, 0.4),
                   (cfg_scale, cache, Cache.GUIDANCE_SCALE, 6),
                   (steps, cache, Cache.SAMPLING_STEPS, 12),
                   (batch_size, cache, Cache.BATCH_SIZE, 2),
-                  (padding, cache, Cache.INPAINT_FULL_RES_PADDING, 48),
+                  (context, cache, Cache.INPAINT_FULL_RES_PADDING, 48),
                   (self.panel._batch_count_field, cache, Cache.BATCH_COUNT, 3),
                   (self.panel._mask_blur_field, AppConfig(), AppConfig.MASK_BLUR, 9)]
         for field, config, key, value in fields:
@@ -130,45 +130,45 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
                 config.set(key, value + field.step())
                 self.assertAlmostEqual(field.value(), value + field.step())
 
-    def test_padding_toggle_turns_full_resolution_on_and_off(self) -> None:
-        """The toggle in the padding field sets full resolution. While it is off, the field reads off and ignores the
+    def test_context_toggle_limits_context_on_and_off(self) -> None:
+        """The toggle in the context field limits context. While it is off, the field reads whole area and ignores the
         wheel, so the wheel scrolls the panel."""
         cache = Cache()
-        padding = self.panel.padding_field
+        context = self.panel.context_field
         cache.set(Cache.INPAINT_FULL_RES, True)
-        self.assertFalse(padding.is_off())
-        padding.set_pressure_link_enabled(False)
+        self.assertFalse(context.is_off())
+        context.set_pressure_link_enabled(False)
         self.assertFalse(cache.get(Cache.INPAINT_FULL_RES))
-        self.assertTrue(padding.is_off())
-        self.assertEqual(padding.value_text(), PADDING_OFF)
-        value = padding.value()
+        self.assertTrue(context.is_off())
+        self.assertEqual(context.value_text(), CONTEXT_OFF)
+        value = context.value()
         wheel = QWheelEvent(QPointF(5, 5), QPointF(5, 5), QPoint(0, 0), QPoint(0, 120), Qt.MouseButton.NoButton,
                             Qt.KeyboardModifier.NoModifier, Qt.ScrollPhase.NoScrollPhase, False)
-        QApplication.sendEvent(padding, wheel)
+        QApplication.sendEvent(context, wheel)
         self.assertFalse(wheel.isAccepted())
-        self.assertEqual(padding.value(), value)
+        self.assertEqual(context.value(), value)
         cache.set(Cache.INPAINT_FULL_RES, True)
-        self.assertFalse(padding.is_off())
-        self.assertNotEqual(padding.value_text(), PADDING_OFF)
+        self.assertFalse(context.is_off())
+        self.assertNotEqual(context.value_text(), CONTEXT_OFF)
 
-    def test_tiling_locks_full_resolution_off_and_keeps_the_setting(self) -> None:
-        """While tiling is on, the padding field reads off and its toggle ignores clicks and Space. Full resolution
+    def test_tiling_locks_context_limit_off_and_keeps_the_setting(self) -> None:
+        """While tiling is on, the context field reads whole area and its toggle ignores clicks and Space. The context limit
         stays set, so it comes back when tiling ends."""
         cache = Cache()
-        padding = self.panel.padding_field
+        context = self.panel.context_field
         cache.set(Cache.INPAINT_FULL_RES, True)
         cache.set(Cache.WEBUI_TILING_AVAILABLE, True)
         cache.set(Cache.WEBUI_TILING, True)
-        self.assertTrue(padding.is_off())
-        self.assertTrue(padding.toggle_locked())
+        self.assertTrue(context.is_off())
+        self.assertTrue(context.toggle_locked())
         self.assertTrue(cache.get(Cache.INPAINT_FULL_RES))
         space = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Space, Qt.KeyboardModifier.NoModifier, ' ')
-        QApplication.sendEvent(padding, space)
-        self.assertTrue(padding.is_off())
+        QApplication.sendEvent(context, space)
+        self.assertTrue(context.is_off())
         self.assertTrue(cache.get(Cache.INPAINT_FULL_RES))
         cache.set(Cache.WEBUI_TILING, False)
-        self.assertFalse(padding.is_off())
-        self.assertFalse(padding.toggle_locked())
+        self.assertFalse(context.is_off())
+        self.assertFalse(context.toggle_locked())
 
     def test_tiling_button_shows_while_tiling_and_turns_it_off(self) -> None:
         """The action block's tiling button shows in the caution color while tiling is on, and clicking it turns
@@ -197,13 +197,13 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         self.assertFalse(self._visible(panel.tiling_button))
 
     def test_moved_controls_are_reachable_in_their_new_places(self) -> None:
-        """Model is in the Prompt section, Describe in the More menu, and full resolution in the padding field."""
+        """Model is in the Prompt section, Describe in the More menu, and the context limit in the context field."""
         self.assertTrue(self._section(SECTION_TITLE_PROMPT).isAncestorOf(self.panel.model_combobox))
         describe = self.panel.more_menu_buttons[0]
         self.assertTrue(self.panel.more_content().isAncestorOf(describe))
         self.assertTrue(self._visible(describe))
-        self.assertTrue(self.panel.padding_field.pressure_link_available())
-        self.assertTrue(self.panel.action_block.isAncestorOf(self.panel.padding_field))
+        self.assertTrue(self.panel.context_field.pressure_link_available())
+        self.assertTrue(self.panel.action_block.isAncestorOf(self.panel.context_field))
 
     def test_negative_prompt_folds_to_a_line_showing_its_text(self) -> None:
         """The negative prompt starts folded, with its text as the fold's summary on one line."""

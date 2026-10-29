@@ -445,7 +445,7 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>In inpainting mode, how the generation area moves after the selection or context pins change. 'Minimal move' moves it only as far as needed to contain the selection, its context pins and padding. 'Center on selection' centers it on them. 'Off' leaves it in place. The area is never resized, and undo and redo never move it.</source>
+        <source>In inpainting mode, how the generation area moves after the selection or context pins change. 'Minimal move' moves it only as far as needed to contain the selection, its context pins and inpaint context. 'Center on selection' centers it on them. 'Off' leaves it in place. The area is never resized, and undo and redo never move it.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1663,22 +1663,22 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Inpaint Full Resolution</source>
+        <source>Limit context to the selection</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</source>
+        <source>On: generate only the selection and the context around it, at the full generation resolution, for finer detail. Off: generate the whole generation area.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Padding:</source>
+        <source>Context:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</source>
+        <source>How far past the selection, in pixels, the generator sees while context is limited. Less context gives finer detail, and more gives better awareness of the surrounding image. Context pins stretch it further.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1778,7 +1778,7 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Generate tiling images that can be seamlessly repeated. Inpainting ignores Inpaint Full Resolution while tiling is on.</source>
+        <source>Generate tiling images that can be seamlessly repeated. Inpainting ignores the context limit while tiling is on.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2168,12 +2168,12 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Padding Scroll Modifier:</source>
+        <source>Context scroll modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>When held, the scroll wheel changes Inpaint Full Resolution padding over the image or the navigation panel, with any tool.</source>
+        <source>When held, the scroll wheel changes inpaint context over the image or the navigation panel, with any tool.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6719,13 +6719,13 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
-        <source>off</source>
-        <comment>Inpaint padding while full resolution is off</comment>
+        <source>whole area</source>
+        <comment>Inpaint context while it covers the whole generation area</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
-        <source>Inpainting ignores full resolution while tiling is on.</source>
+        <source>Inpainting ignores the context limit while tiling is on.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6735,7 +6735,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
-        <source>Generated images tile, and inpainting ignores full resolution. Click to turn tiling off.</source>
+        <source>Generated images tile, and inpainting ignores the context limit. Click to turn tiling off.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -8843,11 +8843,6 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_constants.py"/>
         <source>Scale:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/util/shared_constants.py"/>
-        <source>Padding:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

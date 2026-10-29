@@ -90,10 +90,10 @@
         "saved": true
     },
     "padding_scroll_modifier": {
-        "label": "Padding Scroll Modifier:",
+        "label": "Context scroll modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
-        "description": "When held, the scroll wheel changes Inpaint Full Resolution padding over the image or the navigation panel, with any tool.",
+        "description": "When held, the scroll wheel changes inpaint context over the image or the navigation panel, with any tool.",
         "type": "string",
         "default": "Shift",
         "saved": true

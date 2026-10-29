@@ -79,8 +79,8 @@ class SelectionPanelTest(IntraPaintTestCase):
         panel.set_fit_space(Orientation.SIDE, roomy)
         self.assertEqual(buttons.direction(), buttons.Direction.LeftToRight)
 
-    def test_no_full_res_controls(self) -> None:
-        """The panel holds no checkbox or label for the inpaint full resolution and padding settings."""
+    def test_no_context_controls(self) -> None:
+        """The panel holds no checkbox or label for the inpaint context settings."""
         cache = Cache()
         names = {cache.get_label(Cache.INPAINT_FULL_RES), cache.get_label(Cache.INPAINT_FULL_RES_PADDING)}
         texts = {widget.text() for widget in self.panel.findChildren(QCheckBox) + self.panel.findChildren(QLabel)}

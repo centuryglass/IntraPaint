@@ -161,8 +161,8 @@ class FollowSelectionTest(IntraPaintTestCase):
         self._settle()
         self.assertEqual(self.image_stack.generation_area, QRect(220, 100, 200, 200))
 
-    def test_center_mode_and_padding(self) -> None:
-        """The center mode centers on the selection plus padding, and padding counts in the minimal mode."""
+    def test_center_mode_and_context(self) -> None:
+        """The center mode centers on the selection plus context, and context counts in the minimal mode."""
         Cache().set(Cache.INPAINT_FULL_RES_PADDING, 10)
         self._select(QRect(400, 150, 20, 20))
         self._settle()
@@ -172,8 +172,8 @@ class FollowSelectionTest(IntraPaintTestCase):
         self._settle()
         self.assertEqual(self.image_stack.generation_area, QRect(355, 85, 200, 200))
 
-    def test_padding_ignored_without_full_res(self) -> None:
-        """Padding only extends the target while Inpaint Full Resolution is on."""
+    def test_context_ignored_without_limit(self) -> None:
+        """Context only extends the target while context is limited to the selection."""
         cache = Cache()
         cache.set(Cache.INPAINT_FULL_RES_PADDING, 10)
         cache.set(Cache.INPAINT_FULL_RES, False)
@@ -199,8 +199,8 @@ class FollowSelectionTest(IntraPaintTestCase):
         apply_generation_area_frame(self.image_stack, QSize(256, 256))
         self.assertEqual(self.image_stack.generation_area, QRect(72, 72, 256, 256))
 
-    def test_frame_keeps_selection_inside_with_padding(self) -> None:
-        """Applied frames count the full resolution padding, like follow_selection does."""
+    def test_frame_keeps_selection_inside_with_context(self) -> None:
+        """Applied frames count the context, like follow_selection does."""
         Cache().set(Cache.INPAINT_FULL_RES_PADDING, 10)
         self._select(QRect(900, 700, 20, 20))
         self._settle()
@@ -246,7 +246,7 @@ class FollowSelectionTest(IntraPaintTestCase):
         self.assertEqual(self.selection_layer.get_selection_bounds(), QRect(400, 150, 20, 20))
 
     def test_manual_move_is_kept(self) -> None:
-        """Moving the area by hand, even after a padding change, doesn't make it follow again."""
+        """Moving the area by hand, even after a context change, doesn't make it follow again."""
         self._select(QRect(400, 150, 20, 20))
         self._settle()
         Cache().set(Cache.INPAINT_FULL_RES_PADDING, 50)

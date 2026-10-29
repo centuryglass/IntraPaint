@@ -13,8 +13,8 @@ the [Stable Diffusion guide](./stable-diffusion.md) first.
 1. [Key Terms](#key-terms)
    - [Generation Area](#generation-area)
    - [Generation resolution](#generation-resolution)
-   - [Inpaint Full Resolution checkbox](#inpaint-full-resolution-checkbox)
-   - [Inpaint Full Res. Padding](#inpaint-full-res-padding)
+   - [Limit context to the selection checkbox](#limit-context-to-the-selection-checkbox)
+   - [Context slider](#context-slider)
 2. [AI Model selection](#ai-model-selection)
    - [Base model selection](#base-model-selection)
    - [Other notable base models](#other-notable-base-models)
@@ -44,7 +44,7 @@ The way the generation area is used varies depending on the image editing mode:
 
 - Text-to-Image: The original content in the generation area is erased and replaced.
 - Image-to-Image: The AI modifies the generation area while ignoring areas outside of it, which can cause visible seams.
-- Inpainting: Only selected content within the generation area is modified, but the AI can still “see” the entire generation area (unless "inpaint full resolution" is enabled).
+- Inpainting: Only selected content within the generation area is modified, but the AI can still “see” the entire generation area (unless "Limit context to the selection" is enabled).
 
 ### Generation resolution
 
@@ -58,22 +58,23 @@ areas with a shorter side under 512 pixels are scaled up by a whole number (a 25
 "Resolution rule" dropdown in the Generation Area tool panel changes this, and editing the resolution by hand switches
 the rule to "Manual" so your value isn't overwritten.
 
-### Inpaint Full Resolution checkbox
+### Limit context to the selection checkbox
 
 When enabled, the image generator uses a reduced portion of the generation area, focusing only on the selected
 inpainting areas. This gives higher detail at the cost of overall image awareness. This option is only valid when
 inpainting.  It can be found in the Image Generation tab, and in the tool panel for each selection tool.
 
-### Inpaint Full Res. Padding
+### Context slider
 
-When "Inpaint Full Resolution" is checked, padding is added around the inpaint selection to prevent seams. You can
-control the padding size with this option, though it will be cropped if it exceeds the generation area. Controls for
-this option are located beneath the "Inpaint Full Resolution" checkbox.  When active, the padding rectangle will be
-drawn within the generation area around selected content.
+When "Limit context to the selection" is checked, the "Context:" slider sets how far past the selection the image
+generator sees, which helps prevent seams. Less context gives finer detail, and more gives better awareness of the
+surrounding image. The context is cropped if it exceeds the generation area, and context pins stretch it further. The
+slider is located beside the "Limit context to the selection" checkbox, and reads "whole area" while the checkbox is
+unchecked.  When active, the context rectangle will be drawn within the generation area around selected content.
 
-To change padding without opening the selection tool controls, hold Shift and use the scroll wheel over the image or
-the navigation window. This works with any tool, and raising the padding above zero turns "Inpaint Full Resolution" on.
-Hold Alt as well to change it faster. The modifier key is the "Padding Scroll Modifier" option in the
+To change context without opening the selection tool controls, hold Shift and use the scroll wheel over the image or
+the navigation window. This works with any tool, and raising the context above zero turns on "Limit context to the selection".
+Hold Alt as well to change it faster. The modifier key is the "Context scroll modifier" option in the
 [settings](./menu_options.md#settings-f9) "Keybindings" tab.
 
 ---
@@ -129,7 +130,7 @@ In each case the only difference is the AI model chosen. All models used are var
 |:--------------------------------------------------------------------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
 | Base Stable Diffusion 1.5, original size 1200x512. Although possible, pushing resolution beyond normal levels creates worse images with far more errors. | Stable Diffusion XL, generated at 512x512 directly on the left, downscaled from 1024x1024 on the right, all other settings unchanged. Reducing image resolution too much also creates worse images, it's often better to generate larger than you need and downscale. | [CyberRealistic model](https://civitai.com/models/15003/cyberrealistic) (SD 1.5-based) at 512x512, 640x480, and 512x768, all other settings unchanged. If not too extreme, going slightly outside of normal bounds can still produce decent results. |
 
-**Use Downscaling for Detail Work**: Set your generation resolution higher than your generation area size to allow for error correction during downscaling.  This provides the same effect as the "inpaint full resolution" option.
+**Use Downscaling for Detail Work**: Set your generation resolution higher than your generation area size to allow for error correction during downscaling.  This provides the same effect as the "Limit context to the selection" option.
 
 | ![Downscaling example, before changes](../examples/downscaling_example_1.png) |         ![Downscaling example, at full resolution](../examples/downscaling_example_2.png)         | ![Downscaling example, generating at 2x resolution](../examples/downscaling_example_3.png) |
 |:-----------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------:|
@@ -141,19 +142,19 @@ In each case the only difference is the AI model chosen. All models used are var
 
 Balancing fine detail with scene awareness is key.
 
-- *Fine Detail*: For maximum focus and accuracy, select small areas and enable "inpaint full resolution" with low padding.
-- *Scene Awareness*: To help the image generator recognize patterns or maintain composition, increase padding or generation area size. To stretch the inpainting crop in one direction only, right-click with the selection brush to drop a context pin. The crop grows to include every pin, but nothing under a pin is inpainted. Pins only count while something is selected, and stay in place for repeated inpainting until you right-click them again or use **Selection > Clear context pins**. They are not saved with the image.
+- *Fine Detail*: For maximum focus and accuracy, select small areas and enable "Limit context to the selection" with low context.
+- *Scene Awareness*: To help the image generator recognize patterns or maintain composition, increase context or generation area size. To stretch the inpainting crop in one direction only, right-click with the selection brush to drop a context pin. The crop grows to include every pin, but nothing under a pin is inpainted. Pins only count while something is selected, and stay in place for repeated inpainting until you right-click them again or use **Selection > Clear context pins**. They are not saved with the image.
 
-|                             Original, before inpainting                              | Full resolution inpainting disabled                                                              | Full resolution inpainting enabled, padding set to 2px                            | Full resolution inpainting enabled, padding set to 70px                            |
+|                             Original, before inpainting                              | Limit context disabled                                                              | Limit context enabled, context set to 2px                               | Limit context enabled, context set to 70px                               |
 |:------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------|
-| ![Original image, one cloud selected for changes](../examples/padding_example_1.png) | ![The same image, with one changed, slightly more detailed](../examples/padding_example_2.png)   | ![Inpaint full resolution disabled](../examples/padding_example_3.png)            | ![Inpaint full resolution disabled](../examples/padding_example_4.png)             |
-|             The full image, where I've selected a cloud for inpainting.              | Without full resolution inpainting there's some improvement in the results, but we can do better | Results are much more detailed, but they look out of place within the full image. | Getting the padding just right provides a compromise between detail and awareness. |
+| ![Original image, one cloud selected for changes](../examples/padding_example_1.png) | ![The same image, with one changed, slightly more detailed](../examples/padding_example_2.png)   | ![Limit context enabled, context set to 2px](../examples/padding_example_3.png)            | ![Limit context enabled, context set to 70px](../examples/padding_example_4.png)             |
+|             The full image, where I've selected a cloud for inpainting.              | Without limited context there's some improvement in the results, but we can do better | Results are much more detailed, but they look out of place within the full image. | Getting the context just right provides a compromise between detail and awareness. |
 
 ---
 
 ## Selecting areas for inpainting
 
-Small changes are good: The less that the AI has to do in a single operation, the less likely it'll be to get something critically wrong, and small changes generate faster.  Padding and denoising strength can be adjusted at every step as necessary for maximum control.
+Small changes are good: The less that the AI has to do in a single operation, the less likely it'll be to get something critically wrong, and small changes generate faster.  Context and denoising strength can be adjusted at every step as necessary for maximum control.
 
 | ![Original image](../examples/inpainting_in_steps_1.png) |                   ![One large change](../examples/inpainting_in_steps_2.png)                   |     ![Many small changes in-progress](../examples/inpainting_in_steps_3.webp)      | ![Original image](../examples/inpainting_in_steps_4.png) |
 |:--------------------------------------------------------:|:----------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------:|:--------------------------------------------------------:|

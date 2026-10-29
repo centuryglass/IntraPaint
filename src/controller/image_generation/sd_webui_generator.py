@@ -619,8 +619,8 @@ class SDWebUIGenerator(SDGenerator):
         elif self._image_stack.selection_layer.generation_area_is_empty():
             raise RuntimeError(GENERATE_ERROR_MESSAGE_EMPTY_MASK)
 
-        # The WebUI computes its own inpaint full-res crop from the mask alone, so it can't see context pins. When pins
-        # change the crop, crop on the client and send the crop with inpaint_full_res off.
+        # The WebUI computes its own "inpaint full res" crop from the mask alone, so it can't see context pins. When
+        # pins change the crop, crop on the client and send the crop with inpaint_full_res off.
         original_source_image: Optional[QImage] = None
         crop_bounds: Optional[QRect] = None
         if edit_mode == EDIT_MODE_INPAINT and source_image is not None and mask_image is not None \

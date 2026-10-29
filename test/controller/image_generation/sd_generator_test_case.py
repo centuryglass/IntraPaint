@@ -40,7 +40,7 @@ FAKE_SERVER_URL = 'http://sd.invalid:7860'
 GENERATION_AREA = QRect(150, 50, 300, 300)
 GENERATION_SIZE = QSize(512, 512)
 SELECTION_BOUNDS = QRect(250, 150, 80, 60)
-# Below and right of the selection, inside the generation area, so it stretches the inpaint full-res crop:
+# Below and right of the selection, inside the generation area, so it stretches the inpaint context crop:
 CONTEXT_PIN = QPoint(420, 320)
 UPSCALE_SIZE = QSize(1200, 800)
 
