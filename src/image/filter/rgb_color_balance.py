@@ -21,7 +21,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-COLOR_BALANCE_TITLE = _tr('RGBA Color Balance')
+COLOR_BALANCE_TITLE = _tr('RGBA color balance')
 COLOR_BALANCE_DESCRIPTION = _tr('Adjust color balance')
 
 RED_LABEL = _tr('Red')

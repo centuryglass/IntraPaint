@@ -10,7 +10,7 @@
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
-        <source>Stable Diffusion Model:</source>
+        <source>Stable Diffusion model:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -958,7 +958,7 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Sample Merged</source>
+        <source>Sample merged</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1313,7 +1313,7 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Shape Type:</source>
+        <source>Shape type:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1403,7 +1403,7 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Fill Color</source>
+        <source>Fill color</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2058,7 +2058,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Key Speed Modifier:</source>
+        <source>Key speed modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2078,7 +2078,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Line Drawing Modifier:</source>
+        <source>Line drawing modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2088,7 +2088,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Fixed Angle Modifier:</source>
+        <source>Fixed angle modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2098,7 +2098,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Pan View Modifier:</source>
+        <source>Pan view modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2108,7 +2108,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Selection Add Modifier:</source>
+        <source>Selection add modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2118,7 +2118,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Selection Subtract Modifier:</source>
+        <source>Selection subtract modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2128,7 +2128,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Selection Replace Modifier:</source>
+        <source>Selection replace modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2138,7 +2138,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Fixed Aspect Ratio Modifier:</source>
+        <source>Fixed aspect ratio modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2148,7 +2148,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Color Picker Override Modifier:</source>
+        <source>Color picker override modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4445,12 +4445,12 @@ Choose "No" to open only the first frame.</source>
     </message>
     <message>
         <location filename="../../src/util/qtexcepthook.py"/>
-        <source>Report Bug...</source>
+        <source>Report bug...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/util/qtexcepthook.py"/>
-        <source>Copy Traceback...</source>
+        <source>Copy traceback...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4654,7 +4654,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>image.filter.brightness_contrast</name>
     <message>
         <location filename="../../src/image/filter/brightness_contrast.py"/>
-        <source>Brightness/Contrast</source>
+        <source>Brightness/contrast</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4708,7 +4708,7 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/image/filter/posterize.py"/>
-        <source>Bit Count:</source>
+        <source>Bit count:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4721,7 +4721,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>image.filter.rgb_color_balance</name>
     <message>
         <location filename="../../src/image/filter/rgb_color_balance.py"/>
-        <source>RGBA Color Balance</source>
+        <source>RGBA color balance</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5068,7 +5068,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>tools.clone_stamp_tool</name>
     <message>
         <location filename="../../src/tools/clone_stamp_tool.py"/>
-        <source>Clone Stamp</source>
+        <source>Clone stamp</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5137,7 +5137,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>tools.eyedropper_tool</name>
     <message>
         <location filename="../../src/tools/eyedropper_tool.py"/>
-        <source>Color Picker</source>
+        <source>Color picker</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5173,7 +5173,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>tools.filter_tool</name>
     <message>
         <location filename="../../src/tools/filter_tool.py"/>
-        <source>Filter Brush</source>
+        <source>Filter brush</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5237,7 +5237,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>tools.layer_transform_tool</name>
     <message>
         <location filename="../../src/tools/layer_transform_tool.py"/>
-        <source>Transform Layers</source>
+        <source>Transform layers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5273,7 +5273,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>tools.selection_tool</name>
     <message>
         <location filename="../../src/tools/selection_brush_tool.py"/>
-        <source>Selection Brush</source>
+        <source>Selection brush</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5309,7 +5309,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>tools.shape_tool</name>
     <message>
         <location filename="../../src/tools/shape_tool.py"/>
-        <source>Draw Shapes</source>
+        <source>Draw shapes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5982,7 +5982,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/image_scale_modal.py"/>
-        <source>Tile ControlNet Preprocessor:</source>
+        <source>Tile ControlNet preprocessor:</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -6005,7 +6005,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/login_modal.py"/>
-        <source>Log In</source>
+        <source>Log in</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6106,7 +6106,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/new_image_modal.py"/>
-        <source>Background Color:</source>
+        <source>Background color:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6164,7 +6164,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>X Offset:</source>
+        <source>X offset:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6174,7 +6174,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>Y Offset:</source>
+        <source>Y offset:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6441,17 +6441,17 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
-        <source>Control Weight:</source>
+        <source>Control weight:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
-        <source>Starting Control Step:</source>
+        <source>Starting control step:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
-        <source>Ending Control Step:</source>
+        <source>Ending control step:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -8688,12 +8688,12 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/util/shared_constants.py"/>
-        <source>Zoom In</source>
+        <source>Zoom in</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/util/shared_constants.py"/>
-        <source>Reset Zoom</source>
+        <source>Reset zoom</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

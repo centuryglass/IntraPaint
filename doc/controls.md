@@ -26,7 +26,7 @@
 7. **Panel rails**: A narrow rail of icon buttons runs along each window edge that has a panel, with one button per panel and its key under the icon. Hover over a button to see the panel's name. Click a button to show a panel in place of the one showing in its group, or to hide it if it is already showing. A panel's button follows it when you move it to another edge. Buttons are grouped like the panels, and each group's buttons start beside the panels they belong to, with a line marking where one group ends and the next begins. The rail also holds the most recently used tools after the Tools panel's group, as many as fit, and a **Generate** button that shows while the Image Generation panel is hidden. The "Maximum recent tool icons" setting limits how many tools it shows.
 8. **Tool control hints**:  Lists controls for the current active tool. Right-clicking this spot opens a menu where you can show or hide these tips.
 9. **Image zoom controls**: Directly sets how zoomed-in the image viewport is.  At 1.0, the image is shown at actual size.
-10. **Image zoom toggle button**:  Click to reset the image to its default position and scale, centering and showing the entire image. If the image generator is configured and the view is already at the default, button text will change to "Zoom In", and clicking it will center the image generation area.
+10. **Image zoom toggle button**:  Click to reset the image to its default position and scale, centering and showing the entire image. If the image generator is configured and the view is already at the default, button text will change to "Zoom in", and clicking it will center the image generation area.
 
 ---
 

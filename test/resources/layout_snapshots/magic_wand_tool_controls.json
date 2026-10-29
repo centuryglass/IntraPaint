@@ -19,7 +19,7 @@
       "squeezed: PanelSection[2]/QWidget is 109x82, minimum 237x82",
       "squeezed: PanelSection[2]/QWidget/SegmentedControl is 109x24, minimum 237x24",
       "clipped: PanelSection[2]/QWidget/SliderField shows 109x24 of 110x24",
-      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample Merged' is 109x22, minimum 116x22"
+      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample merged' is 109x22, minimum 117x22"
     ],
     "size": [
       127,
@@ -35,7 +35,7 @@
   },
   "short": {
     "problems": [
-      "overlap: PanelSection[2]/QWidget/SliderField and PanelSection[2]/QWidget/CheckBox 'Sample Merged' share 237x1",
+      "overlap: PanelSection[2]/QWidget/SliderField and PanelSection[2]/QWidget/CheckBox 'Sample merged' share 237x1",
       "squeezed: PanelSection[0] is 237x35, minimum 128x50",
       "squeezed: PanelSection[0]/_HeaderButton 'Mode: Add' is 213x18, minimum 16x26",
       "squeezed: PanelSection[0]/QWidget is 237x17, minimum 128x24",
@@ -51,7 +51,7 @@
       "squeezed: PanelSection[2]/QWidget is 237x17, minimum 237x82",
       "squeezed: PanelSection[2]/QWidget/SegmentedControl is 237x2, minimum 237x24",
       "clipped: PanelSection[2]/QWidget/SliderField shows 237x9 of 237x24",
-      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample Merged' is 237x1, minimum 116x22"
+      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample merged' is 237x1, minimum 117x22"
     ],
     "size": [
       255,
@@ -71,7 +71,7 @@
       "squeezed: PanelSection[2]/QWidget is 75x82, minimum 237x82",
       "squeezed: PanelSection[2]/QWidget/SegmentedControl is 75x24, minimum 237x24",
       "clipped: PanelSection[2]/QWidget/SliderField shows 75x24 of 110x24",
-      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample Merged' is 75x22, minimum 116x22"
+      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample merged' is 75x22, minimum 117x22"
     ],
     "size": [
       255,
@@ -92,7 +92,7 @@
       "squeezed: PanelSection[2]/QWidget is 32x82, minimum 237x82",
       "squeezed: PanelSection[2]/QWidget/SegmentedControl is 32x24, minimum 237x24",
       "clipped: PanelSection[2]/QWidget/SliderField shows 32x24 of 110x24",
-      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample Merged' is 32x22, minimum 116x22"
+      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample merged' is 32x22, minimum 117x22"
     ],
     "size": [
       127,
@@ -112,7 +112,7 @@
       "squeezed: PanelSection[2]/QWidget is 75x82, minimum 237x82",
       "squeezed: PanelSection[2]/QWidget/SegmentedControl is 75x24, minimum 237x24",
       "clipped: PanelSection[2]/QWidget/SliderField shows 75x24 of 110x24",
-      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample Merged' is 75x22, minimum 116x22"
+      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample merged' is 75x22, minimum 117x22"
     ],
     "size": [
       255,
@@ -132,7 +132,7 @@
       "squeezed: PanelSection[2]/QWidget is 75x82, minimum 237x82",
       "squeezed: PanelSection[2]/QWidget/SegmentedControl is 75x24, minimum 237x24",
       "clipped: PanelSection[2]/QWidget/SliderField shows 75x24 of 110x24",
-      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample Merged' is 75x22, minimum 116x22"
+      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample merged' is 75x22, minimum 117x22"
     ],
     "size": [
       255,
@@ -152,7 +152,7 @@
       "squeezed: PanelSection[2]/QWidget is 75x82, minimum 237x82",
       "squeezed: PanelSection[2]/QWidget/SegmentedControl is 75x24, minimum 237x24",
       "clipped: PanelSection[2]/QWidget/SliderField shows 75x24 of 110x24",
-      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample Merged' is 75x22, minimum 116x22"
+      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample merged' is 75x22, minimum 117x22"
     ],
     "size": [
       255,

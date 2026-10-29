@@ -163,7 +163,7 @@ Fill connected image areas with solid colors or basic patterns.
 
 ---
 
-### ![Filter brush tool icon](./tool_icons/filter_icon.png) Filter Brush tool (I)
+### ![Filter brush tool icon](./tool_icons/filter_icon.png) Filter brush tool (I)
 
 Apply any image filter to the image using brush strokes.
 
@@ -265,7 +265,7 @@ Copy image content from one area to another using a brush.
 
 ---
 
-### ![Color Picker tool icon](./tool_icons/eyedropper_icon.png) Color Picker tool (C)
+### ![Color picker tool icon](./tool_icons/eyedropper_icon.png) Color picker tool (C)
 
 Selects the color used by the brush, draw, and fill tools.  **Left-click** any spot within the image to copy the color at that spot.
 
@@ -350,7 +350,7 @@ Draws geometric shapes within the image.
 
 <img src="./labeled_screenshots/tools/shape.png"  alt="Screenshot of the shape tool controls, with specific elements numbered.">
 
-1. **Shape Type dropdown**: Selects the type of shape to draw. Options are ellipse, rectangle, polygon, and star.
+1. **Shape type dropdown**: Selects the type of shape to draw. Options are ellipse, rectangle, polygon, and star.
 2. **Vertex count slider**: Sets the number of outer points that new shapes will have. This is only visible when the shape type is polygon or star.
 3. **Inner radius fraction**: Sets how far inner points extend outwards from the shape's center, as a fraction of the outer point radius.  This is only visible when the shape type is star.
 4. **Fill color button**: Click to open a color dialog to set the fill color used when drawing new shapes.
@@ -365,7 +365,7 @@ Draws geometric shapes within the image.
 
 ---
 
-### ![Transform Layer tool icon](./tool_icons/layer_transform_icon.png) Transform layer tool (T)
+### ![Transform layer tool icon](./tool_icons/layer_transform_icon.png) Transform layer tool (T)
 
 Move, scale, or rotate image layers or layer groups. Transformations are lossless when editing, or when saving in the .ora file format.
 
@@ -458,7 +458,7 @@ Select areas by outlining them.
 
 ---
 
-### ![Selection Brush tool icon](./tool_icons/selection_icon.png) Selection brush tool (S)
+### ![Selection brush tool icon](./tool_icons/selection_icon.png) Selection brush tool (S)
 
 Select content by drawing over it in the image, similar to the brush tool.  If using a pressure sensitive drawing tablet, the brush size will scale down with pen pressure.
 

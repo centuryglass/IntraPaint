@@ -27,7 +27,7 @@ ICON_PATH_EYEDROPPER_TOOL = f'{PROJECT_DIR}/resources/icons/tools/eyedropper_ico
 CURSOR_PATH_EYEDROPPER_TOOL = f'{PROJECT_DIR}/resources/cursors/eyedropper_cursor.svg'
 CURSOR_SIZE = 50
 
-EYEDROPPER_LABEL = _tr('Color Picker')
+EYEDROPPER_LABEL = _tr('Color picker')
 EYEDROPPER_TOOLTIP = _tr('Select a brush color')
 EYEDROPPER_CONTROL_HINT = _tr('{left_mouse_icon}: pick color - ')
 
