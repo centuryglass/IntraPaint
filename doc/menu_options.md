@@ -332,7 +332,7 @@ IntraPaint can read and write the following AI image generation parameters in im
 
 - Prompt
 - Negative prompt
-- Generation size
+- Generation resolution
 - Sampling method
 - Sampling steps
 - Guidance scale

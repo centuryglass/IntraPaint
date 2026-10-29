@@ -2,7 +2,7 @@
 
 Both Stable Diffusion backends blur the mask at generation resolution and treat `AppConfig.MASK_BLUR` as a Gaussian
 standard deviation. The band's real extent is about 2.5 standard deviations, and in image pixels it scales with the
-area the backend blurred: `extent * blurred_size / generation_size`, per axis. Inpaint crop growth and the paste clip
+area the backend blurred: `extent * blurred_size / generation_resolution`, per axis. Inpaint crop growth and the paste clip
 take their widths from here, so they cannot disagree.
 """
 import math
@@ -29,12 +29,12 @@ def _axis_scale(crop_length: int, generation_length: int) -> float:
     return crop_length / generation_length if generation_length > 0 else 1.0
 
 
-def blur_extent_in_image(mask_blur: float, crop_size: QSize, generation_size: QSize) -> tuple[int, int]:
+def blur_extent_in_image(mask_blur: float, crop_size: QSize, generation_resolution: QSize) -> tuple[int, int]:
     """Returns the band's (horizontal, vertical) reach in image pixels when the backend blurs an area of crop_size
-    scaled to generation_size."""
+    scaled to generation_resolution."""
     extent = blur_extent(mask_blur)
-    return (math.ceil(extent * _axis_scale(crop_size.width(), generation_size.width())),
-            math.ceil(extent * _axis_scale(crop_size.height(), generation_size.height())))
+    return (math.ceil(extent * _axis_scale(crop_size.width(), generation_resolution.width())),
+            math.ceil(extent * _axis_scale(crop_size.height(), generation_resolution.height())))
 
 
 def grow_mask(mask: QImage, reach_x: int, reach_y: int) -> QImage:

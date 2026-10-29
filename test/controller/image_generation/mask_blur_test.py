@@ -25,7 +25,7 @@ class MaskBlurTest(IntraPaintTestCase):
         self.assertEqual(blur_extent(3), 8)
 
     def test_extent_scales_per_axis_with_the_crop(self) -> None:
-        """A crop smaller than the generation size narrows the band in image pixels, per axis."""
+        """A crop smaller than the generation resolution narrows the band in image pixels, per axis."""
         self.assertEqual(blur_extent_in_image(4, QSize(256, 128), QSize(512, 512)), (5, 3))
         self.assertEqual(blur_extent_in_image(4, QSize(1024, 512), QSize(512, 512)), (20, 10))
 

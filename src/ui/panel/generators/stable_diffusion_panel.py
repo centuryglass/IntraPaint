@@ -580,24 +580,24 @@ class StableDiffusionPanel(DockPanel):
     def _build_size_section(self, ui: PanelLayout, cache: Cache) -> None:
         section = ui.section(SECTION_TITLE_SIZE, collapsible=True, priority=SIZE_PRIORITY)
         self._size_section = section
-        self._gen_size_input = cache.get_control_widget(Cache.GENERATION_SIZE)
+        self._gen_resolution_input = cache.get_control_widget(Cache.GENERATION_SIZE)
         # The boxes' width follows their maximum, which is unbounded by default. The maximum image size bounds it, and
         # never below the current value, so no saved value is clamped:
-        if isinstance(self._gen_size_input, SizeField):
-            self._gen_size_input.maximum = AppConfig().get(AppConfig.MAX_IMAGE_SIZE).expandedTo(
-                self._gen_size_input.value())
+        if isinstance(self._gen_resolution_input, SizeField):
+            self._gen_resolution_input.maximum = AppConfig().get(AppConfig.MAX_IMAGE_SIZE).expandedTo(
+                self._gen_resolution_input.value())
         # The width and height boxes sit side by side, or stacked when the section is too narrow for that:
-        self._gen_size_holder = HonestSizeHints(self._gen_size_input)
+        self._gen_resolution_holder = HonestSizeHints(self._gen_resolution_input)
         # Both boxes together are as wide as one field, with each label beside its box:
-        self._gen_size_holder.setMaximumWidth(FIELD_MAX_WIDTH)
+        self._gen_resolution_holder.setMaximumWidth(FIELD_MAX_WIDTH)
         size_rows = LabeledRows([(normalize_row_label(cache.get_label(Cache.GENERATION_SIZE)),
-                                  self._gen_size_holder)])
+                                  self._gen_resolution_holder)])
         section.add(size_rows, REQUIRED, (partial(self._set_size_orientation, Qt.Orientation.Horizontal),
                                           partial(self._set_size_orientation, Qt.Orientation.Vertical)))
         self._batch_count_field = config_slider_field(cache, Cache.BATCH_COUNT)
         section.add(self._batch_count_field, REQUIRED)
 
-        section.widget.bind_summary(self._size_summary, self._gen_size_input.valueChanged,
+        section.widget.bind_summary(self._size_summary, self._gen_resolution_input.valueChanged,
                                     self._batch_count_field.valueChanged)
         section.widget.set_expanded(False)
 
@@ -611,8 +611,8 @@ class StableDiffusionPanel(DockPanel):
         # Strip columns are wide enough for the boxes side by side, and stacking them only takes more height there:
         if self.orientation == Orientation.STRIP:
             orientation = Qt.Orientation.Horizontal
-        self._gen_size_input.orientation = orientation
-        self._gen_size_holder.updateGeometry()
+        self._gen_resolution_input.orientation = orientation
+        self._gen_resolution_holder.updateGeometry()
 
     def _build_advanced_section(self, ui: PanelLayout, cache: Cache) -> None:
         section = ui.section(SECTION_TITLE_ADVANCED, collapsible=True, priority=ADVANCED_PRIORITY)

@@ -8,9 +8,9 @@
         "saved": true
     },
     "generation_size": {
-        "label": "Generation size:",
+        "label": "Generation resolution:",
         "category": "Cache",
-        "description": "Current/initial size in pixels used for AI image generation",
+        "description": "Current/initial generation resolution: the size in pixels the AI image generator works at",
         "type": "Size",
         "default": "512x512",
         "saved": true
@@ -1404,7 +1404,7 @@
         "label": "Resize from resolution:",
         "category": "Cache",
         "subcategory": "WebUI",
-        "description": "Generated images using the same seed will match images created at this resolution, regardless of generation size.",
+        "description": "Generated images using the same seed will match images created at this resolution, regardless of generation resolution.",
         "type": "Size",
         "default": "512x512",
         "saved": true
