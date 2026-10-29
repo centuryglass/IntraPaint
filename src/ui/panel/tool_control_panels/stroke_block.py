@@ -20,9 +20,10 @@ Layout is planned by fit (`src.ui.layout.panel_fit`) in the space the Tools pane
   instead of stretching the columns apart.
 - The color pair and Pattern, and the checkboxes, are required items. In a side panel each row stacks into a column
   when it doesn't fit across. In a strip the rows stay inline, because stacking would make them taller.
-- A tool with a `StrokePreview` shows it beside the fields or below them in the Stroke section, whichever fits, or
-  hides it. The preview is decorative, so it never moves to the More popover. Beside the fields, they keep at least
-  `BESIDE_FIELD_MIN_WIDTH`.
+- A tool with a `StrokePreview` shows it beside the fields or below them in the Stroke section, or hides it. A side
+  panel prefers below, where the preview can take the column's width, and goes beside only when below doesn't fit. A
+  strip prefers beside, since height is what it lacks. The preview is decorative, so it never moves to the More
+  popover. Beside the fields, they keep at least `BESIDE_FIELD_MIN_WIDTH`.
 - Headers are required in a side panel and optional in a strip, where they cost height.
 """
 from dataclasses import dataclass
@@ -81,6 +82,8 @@ INLINE = 0
 STACKED = 1
 BESIDE = 0
 BELOW = 1
+# The preview's planner forms are tried in order, so each orientation lists the layout it prefers first:
+_PREVIEW_FORMS = {Orientation.SIDE: (BELOW, BESIDE), Orientation.STRIP: (BESIDE, BELOW)}
 HEADERS_PRIORITY = 1
 PREVIEW_PRIORITY = 2
 _FIT_ITEMS = {
@@ -319,6 +322,9 @@ class StrokeBlock(QWidget):
     def apply_fit(self, orientation: Orientation, placement: Placement) -> None:
         """Arranges the block for the forms its `fit_items` take in a placement."""
         forms = dict(zip(self._fit_keys, placement))
+        preview_form = forms.get(PREVIEW_ITEM)
+        if preview_form is not None:
+            forms[PREVIEW_ITEM] = _PREVIEW_FORMS[orientation][preview_form]
         # Stacking a row makes it taller, which only saves room in a side panel:
         side = orientation == Orientation.SIDE
         self._arrange(StrokeArrangement(orientation, paint_stacked=side and forms.get(PAINT_ITEM) == STACKED,

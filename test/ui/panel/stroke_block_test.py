@@ -95,11 +95,13 @@ class StrokeBlockTest(IntraPaintTestCase):
         self.assertIn(ONLY_INSIDE_SELECTION_LABEL, texts)
 
     def test_preview_takes_whichever_room_the_panel_has(self) -> None:
-        """The preview goes beside the fields where the panel is wide enough, below them where it is tall enough, and
-        hides where it is neither."""
+        """A side panel puts the preview below the fields where it is tall enough, even if it is wide enough to go
+        beside them. It goes beside them only where below doesn't fit, and hides where neither fits. A strip puts it
+        beside them."""
         cases = {
             'side_tall_narrow': (SIDE, QSize(260, 900), BELOW),
-            'side_wide': (SIDE, QSize(420, 900), BESIDE),
+            'side_tall_wide': (SIDE, QSize(420, 900), BELOW),
+            'side_short_wide': (SIDE, QSize(420, 240), BESIDE),
             'side_short': (SIDE, QSize(260, 200), None),
             'strip_wide': (STRIP, QSize(1400, 160), BESIDE),
         }
@@ -118,7 +120,7 @@ class StrokeBlockTest(IntraPaintTestCase):
         panel = EraserToolPanel()
         preview_widget = panel.stroke_block._preview  # pylint: disable=protected-access
         assert preview_widget is not None
-        for size, preview in ((QSize(260, 900), BELOW), (QSize(420, 900), BESIDE), (QSize(260, 200), None)):
+        for size, preview in ((QSize(260, 900), BELOW), (QSize(420, 900), BELOW), (QSize(420, 240), BESIDE), (QSize(260, 200), None)):
             with self.subTest(size=size):
                 panel.set_fit_space(SIDE, size)
                 self.assertEqual(panel.stroke_block.arrangement.preview, preview)
@@ -129,7 +131,7 @@ class StrokeBlockTest(IntraPaintTestCase):
         panel = SmudgeToolPanel()
         preview_widget = panel.stroke_block._preview  # pylint: disable=protected-access
         assert preview_widget is not None
-        for size, preview in ((QSize(260, 900), BELOW), (QSize(420, 900), BESIDE), (QSize(260, 200), None)):
+        for size, preview in ((QSize(260, 900), BELOW), (QSize(420, 900), BELOW), (QSize(420, 240), BESIDE), (QSize(260, 200), None)):
             with self.subTest(size=size):
                 panel.set_fit_space(SIDE, size)
                 self.assertEqual(panel.stroke_block.arrangement.preview, preview)
@@ -138,7 +140,7 @@ class StrokeBlockTest(IntraPaintTestCase):
     def test_preview_beside_keeps_the_fields_usable(self) -> None:
         """Beside the preview, the fields are at least BESIDE_FIELD_MIN_WIDTH and at most FIELD_COLUMN_MAX_WIDTH
         wide."""
-        self.panel.set_fit_space(SIDE, QSize(1000, 900))
+        self.panel.set_fit_space(SIDE, QSize(1000, 240))
         self.assertEqual(self.block.arrangement.preview, BESIDE)
         fields = self.block._fields_widget  # pylint: disable=protected-access
         section = self.block._stroke_section  # pylint: disable=protected-access
@@ -287,7 +289,7 @@ class ToolPanelsOnStrokeBlockTest(ToolTestCase):
         panel = self._filter_panel()
         preview_widget = panel.stroke_block._preview  # pylint: disable=protected-access
         assert preview_widget is not None
-        for size, preview in ((QSize(260, 900), BELOW), (QSize(420, 900), BESIDE), (QSize(260, 200), None)):
+        for size, preview in ((QSize(260, 900), BELOW), (QSize(420, 900), BELOW), (QSize(420, 240), BESIDE), (QSize(260, 200), None)):
             with self.subTest(size=size):
                 panel.set_fit_space(SIDE, size)
                 self.assertEqual(panel.stroke_block.arrangement.preview, preview)
@@ -302,7 +304,7 @@ class ToolPanelsOnStrokeBlockTest(ToolTestCase):
         assert isinstance(preview_widget, CloneStampStrokePreview)
         for mode in ('Fixed offset', 'Dynamic offset', 'Fixed position'):
             Cache().set(Cache.CLONE_STAMP_TOOL_SOURCE_MODE, mode)
-            for size, preview in ((QSize(260, 900), BELOW), (QSize(420, 900), BESIDE), (QSize(260, 200), None)):
+            for size, preview in ((QSize(260, 900), BELOW), (QSize(420, 900), BELOW), (QSize(420, 240), BESIDE), (QSize(260, 200), None)):
                 with self.subTest(mode=mode, size=size):
                     panel.set_fit_space(SIDE, size)
                     self.assertEqual(panel.stroke_block.arrangement.preview, preview)
