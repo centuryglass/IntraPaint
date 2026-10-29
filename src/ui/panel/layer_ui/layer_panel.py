@@ -8,7 +8,10 @@ It is a `DockPanel`, so it shows as much as fits the space its dock reports:
   toggles. Mode and opacity share a row when it fits across, and stack otherwise.
 - Optional, placed first: the rows' meta line (`META_PRIORITY`). Then the large form (`LARGE_PRIORITY`): text labels
   on the toggles and large thumbnails.
-- The panel header counts the layers under the root.
+- A strip needs room to read the start of a layer name beside the header (`LayerList.set_readable_names`), and its
+  columns stay at the left edge.
+- The panel header counts the layers under the root. While the panel floats, its title bar names the panel, so the
+  header shows only the count (`host_floating_changed`).
 
 All layer changes go through `ImageStack`.
 """
@@ -118,6 +121,7 @@ class LayerPanel(DockPanel):
         self.add_fit_item(FitItem(LARGE_PRIORITY), self._apply_large_form)
 
         self._active_layer: Optional[Layer] = None
+        self._header_title_hidden = False
         image_stack.active_layer_changed.connect(self._active_layer_change_slot)
         image_stack.layer_added.connect(self._layer_count_change_slot)
         image_stack.layer_removed.connect(self._layer_count_change_slot)
@@ -173,6 +177,8 @@ class LayerPanel(DockPanel):
             layout.setRowStretch(1, 1)
             self._properties.setMaximumWidth(QWIDGETSIZE_MAX)
             self._layer_list.setMaximumWidth(QWIDGETSIZE_MAX)
+            self._content.setMaximumWidth(QWIDGETSIZE_MAX)
+            self._layer_list.set_readable_names(False)
             layout.setAlignment(self._properties, Qt.AlignmentFlag(0))
         else:
             layout.addWidget(self._properties, 0, 0)
@@ -181,8 +187,18 @@ class LayerPanel(DockPanel):
             layout.setRowStretch(0, 1)
             self._properties.setMaximumWidth(STRIP_SECTION_MAX_WIDTH)
             self._layer_list.setMaximumWidth(STRIP_SECTION_MAX_WIDTH)
+            # The columns end where their widgets' widths do, and the body's layout keeps them at its left edge:
+            self._content.setMaximumWidth(2 * STRIP_SECTION_MAX_WIDTH + max(layout.horizontalSpacing(), 0))
+            self._layer_list.set_readable_names(True)
             layout.setAlignment(self._properties, Qt.AlignmentFlag.AlignTop)
         self._properties.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+
+    def host_floating_changed(self, floating: bool) -> None:
+        """Hides the header's icon and name while the panel floats, since its title bar shows them."""
+        if floating != self._header_title_hidden:
+            self._header_title_hidden = floating
+            self.header.set_title_shown(not floating)
+            self.refit()
 
     def _apply_controls_form(self, form: Optional[int]) -> None:
         self._properties.set_stacked(form == CONTROLS_STACKED)

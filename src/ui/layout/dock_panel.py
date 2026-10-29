@@ -31,6 +31,7 @@ their state survives.
 - Subclasses add their own items with `add_fit_item`, extend `arrange` for structure that depends on the orientation,
   and override `measure_content` if they move the header. `prepare_fit` and `fit_finished` bracket each plan, for nested
   content that plans itself (`src.ui.layout.panel_fit.FitContent`).
+- The host calls `host_floating_changed` when the panel's dock starts or stops floating.
 - Call `refit` after a change to the content's size that no resize reports, such as a control appearing.
 """
 from dataclasses import dataclass, field
@@ -458,6 +459,10 @@ class DockPanel(QWidget):
         """
         self._extra_items.append((item, held_weakly(apply)))
         self._planner = None
+
+    def host_floating_changed(self, floating: bool) -> None:
+        """Called by the host when the panel starts or stops floating in its own window. Subclasses override it, for
+        example to drop header content that the floating window's title bar repeats."""
 
     def set_host_facts(self, size: QSize) -> None:
         """Called by the host when the size the panel fills changes. Plans again if it changed, picking the

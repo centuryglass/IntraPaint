@@ -48,6 +48,9 @@ LAYER_LOCKED_MESSAGE = _tr('"{layer_name}" is locked')
 UNLOCK_BUTTON_TEXT = _tr('Unlock')
 
 OPACITY_UNDO_GESTURE = 'LayerProperties.opacity'
+# The blend mode box's minimum width in characters, enough to read a short mode name. Mode and opacity share a row only
+# while the box keeps it:
+MODE_BOX_MIN_CHARS = 8
 BLOCK_MARGIN = 4
 
 
@@ -101,7 +104,7 @@ class LayerProperties(QWidget):
 
         self._mode_box = BlendModeComboBox()
         self._mode_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self._mode_box.setMinimumContentsLength(1)
+        self._mode_box.setMinimumContentsLength(MODE_BOX_MIN_CHARS)
         self._mode_box.currentIndexChanged.connect(self._mode_change_slot)
         self._mode_box.preview_requested.connect(self._preview_mode_slot)
         self._mode_box.preview_ended.connect(self._end_preview_slot)
