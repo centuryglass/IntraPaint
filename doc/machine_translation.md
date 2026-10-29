@@ -68,6 +68,10 @@ A short style section follows the table: formality (for example, polite or plain
 capitalization and punctuation conventions. An "open questions" list closes the file, as the first thing a future
 native-speaking reviewer should check.
 
+All descriptive text in a per-language glossary - the Notes column, the style section and the open questions list -
+appears twice: first in the target language, then an English translation of it. A monolingual maintainer reads the
+English text; native-speaking reviewers read the target-language text.
+
 Per-language glossaries live beside the English glossary as `doc/translation/<language code>.md`.
 
 ### 3. Glossary review
