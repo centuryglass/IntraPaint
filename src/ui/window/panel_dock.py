@@ -33,6 +33,7 @@ from src.ui.layout.dock_panel import DockPanel
 from src.ui.layout.panel_fit import Orientation, orientation_for_dock
 from src.ui.window.dock_notch import DockNotch
 from src.ui.window.dock_state import SavedGroup, move_dock_in_tab_group, read_dock_groups
+from src.ui.window.floating_edge import FloatingEdge
 from src.ui.window.qt_dock_drag import start_qt_dock_drag
 
 
@@ -97,6 +98,8 @@ class PanelDock(QDockWidget):
         self._notch = DockNotch(self, self._start_notch_drag)
         self._notch.move(0, 0)
         self._notch.raise_()
+        self._floating_edge = FloatingEdge(self)
+        self._floating_edge.hide()
         self.toggleViewAction().setVisible(False)
         self.toggleViewAction().setIcon(self.windowIcon())
         self.visibilityChanged.connect(self._visibility_changed)
@@ -183,6 +186,7 @@ class PanelDock(QDockWidget):
         self.setWidget(content)
         content.show()
         self._notch.raise_()
+        self._floating_edge.fit_parent()
         self.toggleViewAction().setVisible(True)
         if self._open_when_available:
             if any(not mate.isHidden() for mate in self.group_mates()):
@@ -291,6 +295,7 @@ class PanelDock(QDockWidget):
         """Updates the content's orientation and size."""
         super().resizeEvent(event)
         self._notch.raise_()
+        self._floating_edge.fit_parent()
         self._update_host_facts()
 
     def _start_notch_drag(self, global_pos: QPoint) -> None:
@@ -322,6 +327,8 @@ class PanelDock(QDockWidget):
             self.setTitleBarWidget(wanted)
         self._notch.setVisible(not floating)
         self._notch.raise_()
+        self._floating_edge.setVisible(floating)
+        self._floating_edge.fit_parent()
 
     def _toggle_action_triggered(self, checked: bool) -> None:
         """Closes the group's other docks when the toggle action opens this one."""
