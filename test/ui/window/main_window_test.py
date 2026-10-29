@@ -35,6 +35,21 @@ class MainWindowTest(IntraPaintTestCase):
         self.assertFalse(self.window.geometry().isEmpty())
         # TODO: rewrite once tabbed layout design is stable
 
+    def test_clamp_fits_frame_to_screen_and_settles(self) -> None:
+        """Clamping fits the window's frame to the screen, so the resize it makes doesn't schedule another resize."""
+        screen = QSize(700, 500)
+        window = self.window
+        window.resize(900, 700)
+        frame_margins = window.frameGeometry().size() - window.size()
+        with patch('src.ui.window.main_window.get_screen_size', return_value=screen):
+            window._clamp_to_screen()  # pylint: disable=protected-access
+            self.assertLessEqual(window.frameGeometry().width(), screen.width())
+            self.assertLessEqual(window.frameGeometry().height(), screen.height())
+            self.assertEqual(window.size(), screen - frame_margins)
+            with patch.object(window, 'resize') as resize:
+                window._clamp_to_screen()  # pylint: disable=protected-access
+            resize.assert_not_called()
+
     @patch('src.ui.window.main_window.QApplication.exit')
     def test_close_without_confirmation_handler_exits(self, mock_exit) -> None:
         """A window with no `confirm_close` handler closes and exits the application."""

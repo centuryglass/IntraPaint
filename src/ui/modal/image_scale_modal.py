@@ -56,7 +56,7 @@ CANCEL_BUTTON_LABEL = _tr('Cancel')
 
 CONTROLNET_TILE_MODEL_LABEL = _tr('Tile ControlNet model:')
 CONTROLNET_TILE_MODEL_TOOLTIP = _tr('An optional ControlNet Tile model for stabilizing Stable Diffusion upscaling.')
-CONTROLNET_TILE_PREPROCESSOR_LABEL = _tr('Tile ControlNet Preprocessor:')
+CONTROLNET_TILE_PREPROCESSOR_LABEL = _tr('Tile ControlNet preprocessor:')
 
 MIN_PX_VALUE = 8
 CONTROLNET_CACHE_TIMER_MS = 100

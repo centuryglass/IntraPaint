@@ -110,9 +110,9 @@ SUMMARY_OFF_IMAGE_FILE = _tr('Image file: {file_name}', 'A disabled unit\'s summ
 SUMMARY_OFF_GENERATION_AREA = _tr('Control image: generation area', 'A disabled unit\'s summary')
 
 # The image upscaling window builds its tile ControlNet unit inputs from these:
-CONTROL_WEIGHT_TITLE = _tr('Control Weight:')
-CONTROL_START_STEP_TITLE = _tr('Starting Control Step:')
-CONTROL_END_STEP_TITLE = _tr('Ending Control Step:')
+CONTROL_WEIGHT_TITLE = _tr('Control weight:')
+CONTROL_START_STEP_TITLE = _tr('Starting control step:')
+CONTROL_END_STEP_TITLE = _tr('Ending control step:')
 CONTROL_WEIGHT_TOOLTIP = _tr('A multiplier that controls how strongly the ControlNet unit will affect image'
                              ' generation.')
 CONTROL_START_STEP_TOOLTIP = _tr('The step in the image generation process where the ControlNet unit will be enabled,'

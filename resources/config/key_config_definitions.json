@@ -1,6 +1,6 @@
 {
     "speed_modifier": {
-        "label": "Key Speed Modifier:",
+        "label": "Key speed modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "If this key is held, movement/zoom/pan/scroll/etc. operations will go faster. (avoid changing, Shift and Ctrl are the only other working options and those cause various conflicts.)",
@@ -9,7 +9,7 @@
         "saved": true
     },
     "line_modifier": {
-        "label": "Line Drawing Modifier:",
+        "label": "Line drawing modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "When held, drawing tools will draw a line from the last point.",
@@ -18,7 +18,7 @@
         "saved": true
     },
     "fixed_angle_modifier": {
-        "label": "Fixed Angle Modifier:",
+        "label": "Fixed angle modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "When held, drawing tools will be constrained to a fixed angle.",
@@ -27,7 +27,7 @@
         "saved": true
     },
     "pan_view_modifier": {
-        "label": "Pan View Modifier:",
+        "label": "Pan view modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "When held, click and drag to pan the image view",
@@ -36,7 +36,7 @@
         "saved": true
     },
     "selection_add_modifier": {
-        "label": "Selection Add Modifier:",
+        "label": "Selection add modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "When held as a selection gesture starts, the gesture adds to the selection whatever the selection mode is. Held together with the subtract modifier, the gesture intersects with the selection.",
@@ -45,7 +45,7 @@
         "saved": true
     },
     "selection_subtract_modifier": {
-        "label": "Selection Subtract Modifier:",
+        "label": "Selection subtract modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "When held as a selection gesture starts, the gesture subtracts from the selection whatever the selection mode is. On Linux, many window managers (XFCE, Cinnamon, MATE, KDE Plasma 5) use Alt+drag to move windows, and the press never reaches IntraPaint. Either change the window manager's window-move modifier to Super, or bind this to another modifier such as Meta.",
@@ -54,7 +54,7 @@
         "saved": true
     },
     "selection_replace_modifier": {
-        "label": "Selection Replace Modifier:",
+        "label": "Selection replace modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "When held as a selection gesture starts, the gesture replaces the selection whatever the selection mode is. It takes priority over the add and subtract modifiers.",
@@ -63,7 +63,7 @@
         "saved": true
     },
     "fixed_aspect_modifier": {
-        "label": "Fixed Aspect Ratio Modifier:",
+        "label": "Fixed aspect ratio modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "When held, shape and transform tools will keep a fixed aspect ratio.",
@@ -72,7 +72,7 @@
         "saved": true
     },
     "eyedropper_override_modifier": {
-        "label" : "Color Picker Override Modifier:",
+        "label" : "Color picker override modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "When held, temporarily switch from the brush or fill tool to the color picker.",

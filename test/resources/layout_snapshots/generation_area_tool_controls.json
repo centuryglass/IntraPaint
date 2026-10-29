@@ -1,199 +1,205 @@
 {
   "minimum": {
-    "problems": [
-      "squeezed: SizeField/QSpinBox[0] is 92x26, minimum 106x26",
-      "squeezed: SizeField/QSpinBox[1] is 92x26, minimum 106x26"
-    ],
+    "problems": [],
     "size": [
-      231,
-      371
+      297,
+      228
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: QLabel 'Image generation area:' is 97x17, minimum 136x17",
-      "squeezed: QSpinBox[0] is 14x26, minimum 50x26",
-      "squeezed: QSpinBox[1] is 14x26, minimum 50x26",
-      "squeezed: QLabel 'W:' is 15x26, minimum 16x17",
-      "squeezed: QSpinBox[2] is 14x26, minimum 58x26",
-      "squeezed: QSpinBox[3] is 14x26, minimum 58x26",
-      "squeezed: QWidget is 97x52, minimum 207x52",
-      "squeezed: QWidget/QPushButton 'Full image' is 48x25, minimum 80x25",
-      "squeezed: QWidget/QPushButton 'Square' is 47x25, minimum 80x25",
-      "squeezed: ComboBox is 97x25, minimum 213x25",
-      "squeezed: QLabel 'Image generation resolut' is 97x17, minimum 169x17",
-      "squeezed: SizeField is 97x26, minimum 120x26",
-      "squeezed: SizeField/QSpinBox[0] is 34x26, minimum 106x26",
-      "squeezed: SizeField/QSpinBox[1] is 34x26, minimum 106x26"
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[0] and PanelSection[0]/GeometryBlock/QWidget share 24x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[0] and PanelSection[0]/GeometryBlock/_GeometryField[1] share 18x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[2] and PanelSection[0]/GeometryBlock/RatioLockButton share 24x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[2] and PanelSection[0]/GeometryBlock/_GeometryField[3] share 18x24",
+      "squeezed: PanelSection[0] is 148x80, minimum 256x80",
+      "squeezed: PanelSection[0]/GeometryBlock is 148x54, minimum 256x54",
+      "clipped: PanelSection[0]/GeometryBlock/_GeometryField[1] shows 56x24 of 110x24",
+      "clipped: PanelSection[0]/GeometryBlock/_GeometryField[3] shows 56x24 of 110x24",
+      "squeezed: PanelSection[1] is 148x101, minimum 164x101",
+      "squeezed: PanelSection[1]/QWidget is 148x75, minimum 164x75",
+      "squeezed: PanelSection[1]/QWidget/QWidget is 148x54, minimum 164x54",
+      "squeezed: PanelSection[1]/QWidget/QWidget/QPushButton 'Full image' is 72x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget/QPushButton 'Square' is 72x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget/QPushButton 'Previous' is 72x25, minimum 80x25"
     ],
     "size": [
-      115,
-      371
+      148,
+      228
     ]
   },
   "preferred": {
-    "problems": [
-      "squeezed: SizeField/QSpinBox[0] is 92x26, minimum 106x26",
-      "squeezed: SizeField/QSpinBox[1] is 92x26, minimum 106x26"
-    ],
+    "problems": [],
     "size": [
-      231,
-      371
+      300,
+      228
     ]
   },
   "short": {
     "problems": [
-      "squeezed: QLabel 'Image generation area:' is 213x7, minimum 136x17",
-      "squeezed: QLabel 'X:' is 29x7, minimum 12x17",
-      "squeezed: QSlider[0] is 114x7, minimum 12x18",
-      "squeezed: QSpinBox[0] is 58x7, minimum 50x26",
-      "squeezed: QLabel 'Y:' is 29x7, minimum 11x17",
-      "squeezed: QSlider[1] is 114x7, minimum 12x18",
-      "squeezed: QSpinBox[1] is 58x7, minimum 50x26",
-      "squeezed: QLabel 'W:' is 29x7, minimum 16x17",
-      "squeezed: QSlider[2] is 114x7, minimum 12x18",
-      "squeezed: QSpinBox[2] is 58x7, minimum 58x26",
-      "squeezed: QLabel 'H:' is 29x7, minimum 13x17",
-      "squeezed: QSlider[3] is 114x7, minimum 12x18",
-      "squeezed: QSpinBox[3] is 58x7, minimum 58x26",
-      "squeezed: QLabel 'Area size:' is 213x7, minimum 57x17",
-      "squeezed: QWidget is 213x7, minimum 207x52",
-      "squeezed: QWidget/QPushButton 'Full image' is 125x3, minimum 80x25",
-      "squeezed: QWidget/QPushButton 'Square' is 86x3, minimum 80x25",
-      "clipped: QWidget/QLineEdit shows 125x2 of 125x3",
-      "squeezed: QWidget/QLineEdit is 125x3, minimum 23x25",
-      "squeezed: QLabel 'Resolution rule:' is 213x7, minimum 92x17",
-      "squeezed: ComboBox is 213x7, minimum 213x25",
-      "squeezed: QLabel 'Image generation resolut' is 213x6, minimum 169x17",
-      "squeezed: SizeField is 213x20, minimum 120x26",
-      "squeezed: SizeField/QSpinBox[0] is 92x20, minimum 106x26",
-      "squeezed: SizeField/QSpinBox[1] is 92x20, minimum 106x26"
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[0] and PanelSection[0]/GeometryBlock/_GeometryField[2] share 132x8",
+      "overlap: PanelSection[0]/GeometryBlock/QWidget and PanelSection[0]/GeometryBlock/RatioLockButton share 24x8",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[1] and PanelSection[0]/GeometryBlock/_GeometryField[3] share 132x8",
+      "squeezed: PanelSection[0] is 300x52, minimum 256x80",
+      "squeezed: PanelSection[0]/GeometryBlock is 300x26, minimum 256x54",
+      "clipped: PanelSection[0]/GeometryBlock/RatioLockButton shows 24x10 of 24x24",
+      "clipped: PanelSection[0]/GeometryBlock/_GeometryField[2] shows 132x10 of 132x24",
+      "clipped: PanelSection[0]/GeometryBlock/_GeometryField[3] shows 132x10 of 132x24",
+      "squeezed: PanelSection[1] is 300x52, minimum 164x101",
+      "squeezed: PanelSection[1]/QWidget is 300x26, minimum 164x75",
+      "squeezed: PanelSection[1]/QWidget/QLabel 'Fit' is 300x11, minimum 16x17",
+      "squeezed: PanelSection[1]/QWidget/QWidget is 300x11, minimum 164x54",
+      "squeezed: PanelSection[1]/QWidget/QWidget/QPushButton 'Full image' is 148x4, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget/QPushButton 'Square' is 148x4, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget/QPushButton 'Previous' is 148x3, minimum 80x25"
     ],
     "size": [
-      231,
-      185
+      300,
+      114
     ]
   },
   "strip_minimum": {
     "problems": [
-      "squeezed: QSpinBox[0] is 19x26, minimum 50x26",
-      "squeezed: QSpinBox[1] is 19x26, minimum 50x26",
-      "squeezed: QSpinBox[2] is 19x26, minimum 58x26",
-      "squeezed: QSpinBox[3] is 19x26, minimum 58x26",
-      "squeezed: QWidget is 214x25, minimum 289x25",
-      "squeezed: QWidget/QPushButton 'Full image' is 70x25, minimum 80x25",
-      "squeezed: QWidget/QPushButton 'Square' is 70x25, minimum 80x25",
-      "squeezed: QLabel 'Resolution rule:' is 69x25, minimum 92x17",
-      "squeezed: ComboBox is 139x25, minimum 213x25",
-      "squeezed: SizeField/QSpinBox[0] is 93x26, minimum 106x26",
-      "clipped: SizeField/QSpinBox[1] shows 92x26 of 93x26",
-      "squeezed: SizeField/QSpinBox[1] is 93x26, minimum 106x26"
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[0] and PanelSection[0]/GeometryBlock/QWidget share 24x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[0] and PanelSection[0]/GeometryBlock/_GeometryField[1] share 20x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[2] and PanelSection[0]/GeometryBlock/RatioLockButton share 24x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[2] and PanelSection[0]/GeometryBlock/_GeometryField[3] share 20x24",
+      "squeezed: PanelSection[0] is 144x80, minimum 256x80",
+      "squeezed: PanelSection[0]/GeometryBlock is 144x54, minimum 256x54",
+      "clipped: PanelSection[0]/GeometryBlock/_GeometryField[1] shows 54x24 of 110x24",
+      "clipped: PanelSection[0]/GeometryBlock/_GeometryField[3] shows 54x24 of 110x24",
+      "squeezed: PanelSection[1] is 143x138, minimum 297x138",
+      "squeezed: PanelSection[1]/QWidget is 143x112, minimum 297x112",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0] is 94x25, minimum 248x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0]/QPushButton 'Full image' is 29x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0]/QPushButton 'Square' is 29x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0]/QPushButton 'Previous' is 28x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1] is 143x83, minimum 213x83",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget is 94x54, minimum 164x54",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[0] is 45x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[1] is 45x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[2] is 45x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[3] is 45x25, minimum 80x25"
     ],
     "size": [
-      231,
-      371
+      297,
+      228
     ]
   },
   "strip_narrow": {
     "problems": [
-      "squeezed: QLabel 'Image generation area:' is 98x17, minimum 136x17",
-      "squeezed: QLabel 'X:' is 4x26, minimum 12x17",
-      "squeezed: QSpinBox[0] is 4x26, minimum 50x26",
-      "squeezed: QLabel 'Y:' is 4x26, minimum 11x17",
-      "squeezed: QSpinBox[1] is 4x26, minimum 50x26",
-      "squeezed: QLabel 'W:' is 4x26, minimum 16x17",
-      "squeezed: QSpinBox[2] is 4x26, minimum 58x26",
-      "squeezed: QLabel 'H:' is 4x26, minimum 13x17",
-      "squeezed: QSpinBox[3] is 4x26, minimum 58x26",
-      "squeezed: QWidget is 98x25, minimum 289x25",
-      "squeezed: QWidget/QPushButton 'Full image' is 32x25, minimum 80x25",
-      "squeezed: QWidget/QPushButton 'Square' is 31x25, minimum 80x25",
-      "clipped: QWidget/QLineEdit shows 31x25 of 32x25",
-      "squeezed: QLabel 'Resolution rule:' is 24x25, minimum 92x17",
-      "squeezed: ComboBox is 68x25, minimum 213x25",
-      "squeezed: QLabel 'Image generation resolut' is 98x17, minimum 169x17",
-      "squeezed: SizeField is 98x26, minimum 120x26",
-      "squeezed: SizeField/QSpinBox[0] is 35x26, minimum 106x26",
-      "clipped: SizeField/QSpinBox[1] shows 34x26 of 35x26",
-      "squeezed: SizeField/QSpinBox[1] is 35x26, minimum 106x26"
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[0] and PanelSection[0]/GeometryBlock/QWidget share 24x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[0] and PanelSection[0]/GeometryBlock/_GeometryField[1] share 60x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[2] and PanelSection[0]/GeometryBlock/RatioLockButton share 24x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[2] and PanelSection[0]/GeometryBlock/_GeometryField[3] share 60x24",
+      "overlap: PanelSection[1]/QWidget/QLabel 'Fit' and PanelSection[1]/QWidget/QWidget[0] share 8x25",
+      "overlap: PanelSection[1]/QWidget/QWidget[1]/QLabel 'Recent' and PanelSection[1]/QWidget/QWidget[1]/QWidget share 8x54",
+      "overlap: PanelSection[1]/QWidget/QWidget[1]/QLabel 'Custom' and PanelSection[1]/QWidget/QWidget[1]/QLineEdit share 8x25",
+      "squeezed: PanelSection[0] is 69x80, minimum 256x80",
+      "squeezed: PanelSection[0]/GeometryBlock is 69x54, minimum 256x54",
+      "clipped: PanelSection[0]/GeometryBlock/_GeometryField[0] shows 69x24 of 110x24",
+      "clipped: PanelSection[0]/GeometryBlock/_GeometryField[1] shows 19x24 of 110x24",
+      "clipped: PanelSection[0]/GeometryBlock/_GeometryField[2] shows 69x24 of 110x24",
+      "clipped: PanelSection[0]/GeometryBlock/_GeometryField[3] shows 19x24 of 110x24",
+      "squeezed: PanelSection[1] is 69x138, minimum 297x138",
+      "squeezed: PanelSection[1]/QWidget is 69x112, minimum 297x112",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0] is 32x25, minimum 248x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0]/QPushButton 'Full image' is 8x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0]/QPushButton 'Square' is 8x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0]/QPushButton 'Previous' is 8x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1] is 69x83, minimum 213x83",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget is 32x54, minimum 164x54",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[0] is 14x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[1] is 14x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[2] is 14x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[3] is 14x25, minimum 80x25"
     ],
     "size": [
-      115,
-      371
+      148,
+      228
     ]
   },
   "strip_preferred": {
     "problems": [
-      "squeezed: QSpinBox[0] is 19x26, minimum 50x26",
-      "squeezed: QSpinBox[1] is 19x26, minimum 50x26",
-      "squeezed: QSpinBox[2] is 19x26, minimum 58x26",
-      "squeezed: QSpinBox[3] is 19x26, minimum 58x26",
-      "squeezed: QWidget is 214x25, minimum 289x25",
-      "squeezed: QWidget/QPushButton 'Full image' is 70x25, minimum 80x25",
-      "squeezed: QWidget/QPushButton 'Square' is 70x25, minimum 80x25",
-      "squeezed: QLabel 'Resolution rule:' is 69x25, minimum 92x17",
-      "squeezed: ComboBox is 139x25, minimum 213x25",
-      "squeezed: SizeField/QSpinBox[0] is 93x26, minimum 106x26",
-      "clipped: SizeField/QSpinBox[1] shows 92x26 of 93x26",
-      "squeezed: SizeField/QSpinBox[1] is 93x26, minimum 106x26"
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[0] and PanelSection[0]/GeometryBlock/QWidget share 24x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[0] and PanelSection[0]/GeometryBlock/_GeometryField[1] share 19x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[2] and PanelSection[0]/GeometryBlock/RatioLockButton share 24x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[2] and PanelSection[0]/GeometryBlock/_GeometryField[3] share 19x24",
+      "squeezed: PanelSection[0] is 145x80, minimum 256x80",
+      "squeezed: PanelSection[0]/GeometryBlock is 145x54, minimum 256x54",
+      "clipped: PanelSection[0]/GeometryBlock/_GeometryField[1] shows 54x24 of 110x24",
+      "clipped: PanelSection[0]/GeometryBlock/_GeometryField[3] shows 54x24 of 110x24",
+      "squeezed: PanelSection[1] is 145x138, minimum 297x138",
+      "squeezed: PanelSection[1]/QWidget is 145x112, minimum 297x112",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0] is 96x25, minimum 248x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0]/QPushButton 'Full image' is 30x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0]/QPushButton 'Square' is 29x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0]/QPushButton 'Previous' is 29x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1] is 145x83, minimum 213x83",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget is 96x54, minimum 164x54",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[0] is 46x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[1] is 46x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[2] is 46x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[3] is 46x25, minimum 80x25"
     ],
     "size": [
-      231,
-      371
+      300,
+      228
     ]
   },
   "strip_short": {
     "problems": [
-      "squeezed: QLabel 'Image generation area:' is 214x16, minimum 136x17",
-      "squeezed: QLabel 'X:' is 19x15, minimum 12x17",
-      "squeezed: QSlider[0] is 74x15, minimum 12x18",
-      "squeezed: QSpinBox[0] is 19x15, minimum 50x26",
-      "squeezed: QLabel 'Y:' is 19x16, minimum 11x17",
-      "squeezed: QSlider[1] is 74x16, minimum 12x18",
-      "squeezed: QSpinBox[1] is 19x16, minimum 50x26",
-      "squeezed: QLabel 'W:' is 16x15, minimum 16x17",
-      "squeezed: QSlider[2] is 37x15, minimum 12x18",
-      "squeezed: QSpinBox[2] is 19x15, minimum 58x26",
-      "squeezed: QLabel 'H:' is 16x16, minimum 13x17",
-      "squeezed: QSlider[3] is 37x16, minimum 12x18",
-      "squeezed: QSpinBox[3] is 19x16, minimum 58x26",
-      "squeezed: QLabel 'Area size:' is 214x16, minimum 57x17",
-      "squeezed: QWidget is 214x15, minimum 289x25",
-      "squeezed: QWidget/QPushButton 'Full image' is 70x15, minimum 80x25",
-      "squeezed: QWidget/QPushButton 'Square' is 70x15, minimum 80x25",
-      "squeezed: QWidget/QLineEdit is 70x15, minimum 23x25",
-      "squeezed: QLabel 'Resolution rule:' is 69x15, minimum 92x17",
-      "squeezed: ComboBox is 139x15, minimum 213x25",
-      "squeezed: QLabel 'Image generation resolut' is 214x16, minimum 169x17",
-      "squeezed: SizeField is 214x16, minimum 120x26",
-      "squeezed: SizeField/QSpinBox[0] is 93x16, minimum 106x26",
-      "clipped: SizeField/QSpinBox[1] shows 92x16 of 93x16",
-      "squeezed: SizeField/QSpinBox[1] is 93x16, minimum 106x26",
-      "squeezed: SizeField/QLabel 'W:' is 16x16, minimum 16x17",
-      "squeezed: SizeField/QLabel 'H:' is 13x16, minimum 13x17"
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[0] and PanelSection[0]/GeometryBlock/QWidget share 24x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[0] and PanelSection[0]/GeometryBlock/_GeometryField[1] share 19x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[2] and PanelSection[0]/GeometryBlock/RatioLockButton share 24x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[2] and PanelSection[0]/GeometryBlock/_GeometryField[3] share 19x24",
+      "squeezed: PanelSection[0] is 145x54, minimum 256x54",
+      "squeezed: PanelSection[0]/GeometryBlock is 145x54, minimum 256x54",
+      "clipped: PanelSection[0]/GeometryBlock/_GeometryField[1] shows 54x24 of 110x24",
+      "clipped: PanelSection[0]/GeometryBlock/_GeometryField[3] shows 54x24 of 110x24",
+      "squeezed: PanelSection[1] is 145x112, minimum 297x112",
+      "squeezed: PanelSection[1]/QWidget is 145x112, minimum 297x112",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0] is 96x25, minimum 248x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0]/QPushButton 'Full image' is 30x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0]/QPushButton 'Square' is 29x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0]/QPushButton 'Previous' is 29x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1] is 145x83, minimum 213x83",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget is 96x54, minimum 164x54",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[0] is 46x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[1] is 46x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[2] is 46x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[3] is 46x25, minimum 80x25"
     ],
     "size": [
-      231,
-      185
+      300,
+      114
     ]
   },
   "strip_tall": {
     "problems": [
-      "squeezed: QSpinBox[0] is 19x26, minimum 50x26",
-      "squeezed: QSpinBox[1] is 19x26, minimum 50x26",
-      "squeezed: QSpinBox[2] is 19x26, minimum 58x26",
-      "squeezed: QSpinBox[3] is 19x26, minimum 58x26",
-      "squeezed: QWidget is 214x25, minimum 289x25",
-      "squeezed: QWidget/QPushButton 'Full image' is 70x25, minimum 80x25",
-      "squeezed: QWidget/QPushButton 'Square' is 70x25, minimum 80x25",
-      "squeezed: QLabel 'Resolution rule:' is 69x25, minimum 92x17",
-      "squeezed: ComboBox is 139x25, minimum 213x25",
-      "squeezed: SizeField/QSpinBox[0] is 93x26, minimum 106x26",
-      "clipped: SizeField/QSpinBox[1] shows 92x26 of 93x26",
-      "squeezed: SizeField/QSpinBox[1] is 93x26, minimum 106x26"
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[0] and PanelSection[0]/GeometryBlock/QWidget share 24x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[0] and PanelSection[0]/GeometryBlock/_GeometryField[1] share 19x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[2] and PanelSection[0]/GeometryBlock/RatioLockButton share 24x24",
+      "overlap: PanelSection[0]/GeometryBlock/_GeometryField[2] and PanelSection[0]/GeometryBlock/_GeometryField[3] share 19x24",
+      "squeezed: PanelSection[0] is 145x80, minimum 256x80",
+      "squeezed: PanelSection[0]/GeometryBlock is 145x54, minimum 256x54",
+      "clipped: PanelSection[0]/GeometryBlock/_GeometryField[1] shows 54x24 of 110x24",
+      "clipped: PanelSection[0]/GeometryBlock/_GeometryField[3] shows 54x24 of 110x24",
+      "squeezed: PanelSection[1] is 145x138, minimum 297x138",
+      "squeezed: PanelSection[1]/QWidget is 145x112, minimum 297x112",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0] is 96x25, minimum 248x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0]/QPushButton 'Full image' is 30x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0]/QPushButton 'Square' is 29x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[0]/QPushButton 'Previous' is 29x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1] is 145x83, minimum 213x83",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget is 96x54, minimum 164x54",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[0] is 46x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[1] is 46x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[2] is 46x25, minimum 80x25",
+      "squeezed: PanelSection[1]/QWidget/QWidget[1]/QWidget/QPushButton '-'[3] is 46x25, minimum 80x25"
     ],
     "size": [
-      231,
+      300,
       1200
     ]
   },
@@ -201,16 +207,13 @@
     "problems": [],
     "size": [
       1600,
-      371
+      228
     ]
   },
   "tall": {
-    "problems": [
-      "squeezed: SizeField/QSpinBox[0] is 92x26, minimum 106x26",
-      "squeezed: SizeField/QSpinBox[1] is 92x26, minimum 106x26"
-    ],
+    "problems": [],
     "size": [
-      231,
+      300,
       1200
     ]
   },
@@ -218,7 +221,7 @@
     "problems": [],
     "size": [
       1600,
-      371
+      228
     ]
   }
 }

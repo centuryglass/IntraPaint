@@ -1,6 +1,6 @@
 {
   "(repository)": {
-    "duplicate-code": 42
+    "duplicate-code": 41
   },
   "src/controller/app_controller.py": {
     "fixme": 2,
@@ -36,10 +36,6 @@
   "src/tools/qt_paint_brush_tool.py": {
     "assignment-from-none": 3,
     "unused-import": 1
-  },
-  "src/ui/panel/tool_control_panels/generation_area_tool_panel.py": {
-    "no-member": 1,
-    "unbalanced-tuple-unpacking": 1
   },
   "src/util/application_state.py": {
     "protected-access": 10

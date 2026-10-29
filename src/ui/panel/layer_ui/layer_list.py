@@ -20,8 +20,8 @@ from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.ui.ink_style import ROW_HOVER
 from src.ui.panel.layer_ui.layer_menu import build_layer_menu
-from src.ui.panel.layer_ui.layer_row import (INDENT, ROW_PADDING, ROW_SPACING, SELECTION_STRIPE_WIDTH, LayerNameLabel,
-                                             LayerRow, selection_fill_color, selection_stripe_color)
+from src.ui.panel.layer_ui.layer_row import (INDENT, MIN_NAME_TEXT, ROW_PADDING, ROW_SPACING, SELECTION_STRIPE_WIDTH,
+                                             LayerNameLabel, LayerRow, selection_fill_color, selection_stripe_color)
 from src.ui.panel.layer_ui.layer_visibility_button import LayerVisibilityButton
 from src.ui.widget.panel_header import GlyphButton
 
@@ -40,6 +40,8 @@ IMAGE_STRIP_TOOLTIP = _tr('The whole image. Click to select it.')
 
 # Rows the list keeps room for, under the image strip:
 MIN_VISIBLE_ROWS = 2
+# Text whose width `LayerList.set_readable_names` keeps room for in a row's name:
+READABLE_NAME_TEXT = 'Background'
 INSERT_MARKER_HEIGHT = 2
 SCROLL_TIMER_INTERVAL_MS = 50
 SCROLL_HEIGHT_THRESHOLD = 1 / 8
@@ -183,6 +185,7 @@ class LayerList(QScrollArea):
         self._order: list[Layer] = []
         self._large = False
         self._meta_shown = True
+        self._readable_names = False
         self.setWidgetResizable(True)
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -237,6 +240,13 @@ class LayerList(QScrollArea):
             row.set_large(large)
         self.updateGeometry()
 
+    def set_readable_names(self, readable: bool) -> None:
+        """Sets whether the list's minimum width leaves room to read the start of a layer name, instead of only its
+        first letters and an ellipsis."""
+        if readable != self._readable_names:
+            self._readable_names = readable
+            self.updateGeometry()
+
     def set_meta_shown(self, shown: bool) -> None:
         """Shows or hides every row's meta line."""
         self._meta_shown = shown
@@ -265,12 +275,15 @@ class LayerList(QScrollArea):
 
     def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
         """Returns room for the strip and `MIN_VISIBLE_ROWS` rows, as wide as the widest row needs plus the scroll
-        bar."""
+        bar, and the room `set_readable_names` asks for."""
         width = self._strip.minimumSizeHint().width()
         for row in self._rows.values():
             width = max(width, row.minimumSizeHint().width())
         scroll_bar = self.verticalScrollBar()
         width += scroll_bar.sizeHint().width() + 2 * self.frameWidth()
+        if self._readable_names:
+            metrics = self.fontMetrics()
+            width += metrics.horizontalAdvance(READABLE_NAME_TEXT) - metrics.horizontalAdvance(MIN_NAME_TEXT)
         height = self._strip.sizeHint().height() + MIN_VISIBLE_ROWS * self.row_height() + 2 * self.frameWidth()
         return QSize(width, height)
 

@@ -1,5 +1,5 @@
-"""Tests a floating dock's title bar: its rail button, which leaves the rails while the dock floats open, its dock and
-close buttons, its menu, and dragging the dock by it."""
+"""Tests a floating dock's title bar: its rail button, which leaves the rails while the dock floats open, its title
+note, its dock and close buttons, its menu, and dragging the dock by it."""
 import sys
 from unittest.mock import patch
 
@@ -8,6 +8,7 @@ from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
 
 from src.image.layers.image_stack import ImageStack
+from src.ui.layout.dock_panel import DockPanel
 from src.ui.window.floating_title_bar import FloatingTitleBar
 from src.ui.window.main_window import MainWindow
 from src.ui.window.panel_dock import PanelDock
@@ -75,6 +76,26 @@ class FloatingTitleBarTest(IntraPaintTestCase):
         assert self.dock.content is not None
         self.assertGreaterEqual(self.dock.content.geometry().top(), title_bar.geometry().bottom())
         self.assertNotIn(self.dock, self._rail_docks())
+
+    def test_title_bar_shows_the_panel_title_note(self) -> None:
+        """The title bar shows the panel's title note right of the rail button, follows changes to it, and hides it for
+        content with no note."""
+        title_bar = self._title_bar()
+        self.assertTrue(title_bar.note_label.isHidden())
+        panel = DockPanel('Layers')
+        panel.set_title_note('3 layers')
+        self.dock.set_content(panel)
+        self._activate()
+        self.assertEqual(title_bar.note_label.text(), '3 layers')
+        self.assertFalse(title_bar.note_label.isHidden())
+        self.assertGreaterEqual(title_bar.note_label.geometry().left(), title_bar.rail_button.geometry().right())
+        self.assertTrue(title_bar.note_label.testAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents))
+        panel.set_title_note('4 layers')
+        self.assertEqual(title_bar.note_label.text(), '4 layers')
+        self.dock.set_content(QLabel())
+        self.assertTrue(title_bar.note_label.isHidden())
+        panel.set_title_note('5 layers')
+        self.assertTrue(title_bar.note_label.isHidden())
 
     def test_closed_floating_dock_returns_to_its_rail(self) -> None:
         """Closing a floating dock puts its button back in the rail of the area it was docked in, and clicking it there

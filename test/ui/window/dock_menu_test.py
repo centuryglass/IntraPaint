@@ -75,7 +75,7 @@ class DockMenuTest(IntraPaintTestCase):
 
     def _shown_tab_bars(self) -> list[QTabBar]:
         return [bar for bar in self.window.findChildren(QTabBar, options=Qt.FindChildOption.FindDirectChildrenOnly)
-                if not bar.isHidden()]
+                if not bar.isHidden() and not bar.size().isNull()]
 
     def test_menu_entries(self) -> None:
         """An open docked dock's menu has every entry in order, with one edge per Move to edge entry."""

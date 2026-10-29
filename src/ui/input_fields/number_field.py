@@ -9,7 +9,8 @@ label + slider + spin box rows.
 - The stored value and its display are separate: `display_scale`, `suffix` and `zero_text` change what is shown and
   typed, never what `value()` returns.
 - The widget holds no config or undo state. The owner connects `valueChanged`, calls `set_value` when the bound value
-  changes, and brackets one drag as one undo step with `dragStarted` and `dragFinished`.
+  changes, and brackets one drag as one undo step with `dragStarted` and `dragFinished`. `entryCommitted` marks the
+  end of a typed edit, as `dragFinished` marks the end of a drag.
 - Colors and fonts are cached and rebuilt on palette and font changes.
 """
 import math
@@ -119,6 +120,7 @@ class NumberField(QWidget):
     valueChanged = Signal(object)
     dragStarted = Signal()
     dragFinished = Signal()
+    entryCommitted = Signal()
     pressureLinkToggled = Signal(bool)
 
     def __init__(self, label: str, value: int | float = 0, minimum: Optional[int | float] = None,
@@ -603,6 +605,7 @@ class NumberField(QWidget):
             typed = self.parse_text(text)
             if typed is not None:
                 self.set_value(typed)
+                self.entryCommitted.emit()
         self.update()
 
     def parse_text(self, text: str) -> Optional[int | float]:

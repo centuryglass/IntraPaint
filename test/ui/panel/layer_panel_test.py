@@ -834,6 +834,53 @@ class LayerPanelTest(IntraPaintTestCase):
         self.assertEqual(button.toolButtonStyle(), Qt.ToolButtonStyle.ToolButtonIconOnly)
         self.assertLess(self.row(self.bottom).thumbnail.width(), large)
 
+    def test_strip_columns_stay_at_the_left(self) -> None:
+        """In a wide strip the header and the list sit side by side at the left edge, not spread across the width."""
+        self.panel.resize(QSize(1600, 300))
+        self.panel.plan_in(Orientation.STRIP, QSize(1600, 300))
+        flush_layouts()
+        properties, layer_list = self.panel.properties, self.panel.layer_list
+        self.assertLess(properties.geometry().right(), layer_list.x())
+        gap = layer_list.x() - properties.geometry().right()
+        self.assertLessEqual(gap, 2 * self.panel.inset + 2)
+        self.assertLess(layer_list.geometry().right(), self.panel.width() // 2)
+
+    def test_mode_and_opacity_stack_before_the_mode_box_shrinks(self) -> None:
+        """Mode and opacity share a row only while the mode box keeps room to read its name, and stack otherwise."""
+        self.panel.plan_in(Orientation.SIDE, QSize(600, 900))
+        flush_layouts()
+        mode_box, opacity = self.panel.properties.mode_box, self.panel.properties.opacity_field
+        self.assertEqual(mode_box.y(), opacity.y(), 'one row')
+        min_width = mode_box.minimumSizeHint().width()
+        for width in range(400, 150, -10):
+            self.panel.plan_in(Orientation.SIDE, QSize(width, 900))
+            flush_layouts()
+            self.assertGreaterEqual(mode_box.width(), min_width, f'width {width}')
+
+    def test_strip_leaves_room_to_read_layer_names(self) -> None:
+        """A strip is only as narrow as the header and a list wide enough to read the start of a name, and a side
+        panel's list has no such minimum."""
+        layer_list = self.panel.layer_list
+        self.panel.plan_in(Orientation.SIDE, QSize(600, 900))
+        side_minimum = layer_list.minimumSizeHint().width()
+        self.panel.plan_in(Orientation.STRIP, QSize(900, 300))
+        self.assertGreater(layer_list.minimumSizeHint().width(), side_minimum)
+
+    def test_floating_panel_leaves_its_header_to_the_title_bar(self) -> None:
+        """A floating panel hides its header, whose name and layer count its title bar shows, and the title note
+        follows the count."""
+        header = self.panel.header
+        self.assertEqual(self.panel.title_note, '6 layers')
+        self.panel.host_floating_changed(True)
+        flush_layouts()
+        self.assertTrue(header.isHidden())
+        self.image_stack.create_layer()
+        self.assertEqual(self.panel.title_note, '7 layers')
+        self.panel.host_floating_changed(False)
+        flush_layouts()
+        self.assertFalse(header.isHidden())
+        self.assertEqual(header.description(), '7 layers')
+
     # Drag and drop:
 
     def _drop(self, moved_layer: Layer, target_layer: Layer, below: bool) -> None:
