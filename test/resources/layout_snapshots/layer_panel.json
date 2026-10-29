@@ -3,7 +3,7 @@
     "problems": [],
     "size": [
       266,
-      142
+      149
     ]
   },
   "narrow": {
@@ -19,30 +19,35 @@
     ],
     "size": [
       133,
-      292
+      261
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
       373,
-      292
+      261
     ]
   },
   "short": {
     "problems": [
-      "squeezed: QScrollArea is 351x18, minimum 59x59",
-      "squeezed: QWidget[1] is 351x18, minimum 192x31",
-      "squeezed: QWidget[1]/QToolButton[0] is 32x18, minimum 32x31",
-      "squeezed: QWidget[1]/QToolButton[1] is 32x18, minimum 32x31",
-      "squeezed: QWidget[1]/QToolButton[2] is 32x18, minimum 32x31",
-      "squeezed: QWidget[1]/QToolButton[3] is 32x18, minimum 32x31",
-      "squeezed: QWidget[1]/QToolButton[4] is 32x18, minimum 32x31",
-      "squeezed: QWidget[1]/QToolButton[5] is 32x18, minimum 32x31"
+      "squeezed: PanelHeader is 351x11, minimum 32x18",
+      "clipped: PanelHeader/_IconLabel shows 18x11 of 18x18",
+      "squeezed: PanelHeader/ElidedLabel 'Layers' is 40x11, minimum 1x17",
+      "squeezed: PanelHeader/QWidget is 281x11, minimum 1x17",
+      "squeezed: PanelHeader/QWidget/QLabel '7 layers' is 281x11, minimum 46x17",
+      "squeezed: QScrollArea is 351x11, minimum 59x59",
+      "squeezed: QWidget[1] is 351x11, minimum 192x31",
+      "squeezed: QWidget[1]/QToolButton[0] is 32x11, minimum 32x31",
+      "squeezed: QWidget[1]/QToolButton[1] is 32x11, minimum 32x31",
+      "squeezed: QWidget[1]/QToolButton[2] is 32x11, minimum 32x31",
+      "squeezed: QWidget[1]/QToolButton[3] is 32x11, minimum 32x31",
+      "squeezed: QWidget[1]/QToolButton[4] is 32x11, minimum 32x31",
+      "squeezed: QWidget[1]/QToolButton[5] is 32x11, minimum 32x31"
     ],
     "size": [
       373,
-      71
+      74
     ]
   },
   "tall": {
@@ -56,7 +61,7 @@
     "problems": [],
     "size": [
       1600,
-      292
+      261
     ]
   }
 }

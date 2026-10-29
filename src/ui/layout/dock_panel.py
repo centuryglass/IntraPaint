@@ -251,6 +251,7 @@ class DockPanel(QWidget):
         self._layout_model = PanelLayout()
         self._extra_items: list[tuple[FitItem, Callable[[Optional[int]], None]]] = []
         self._planner: Optional[FitPlanner] = None
+        self._strip_scroll_limit: Optional[float] = None
         self._fresh_sizes: Optional[dict[QWidget, QSize]] = None
         self._header_collapsed = False
         self._title_note = ''
@@ -323,18 +324,19 @@ class DockPanel(QWidget):
             raise RuntimeError('Tried to set a footer twice')
         self._footer = footer
         self._footer_divider = PanelDivider(Qt.Orientation.Horizontal)
-        self._footer_divider.hide()
         self.layout().addWidget(self._footer_divider)
         self.layout().addWidget(footer)
+        self._footer_divider.setHidden(footer.isHidden())
         footer.installEventFilter(self)
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # pylint: disable=invalid-name
-        """Keeps the footer's divider shown exactly while the footer itself is shown, however its visibility changes."""
-        if watched is self._footer and self._footer_divider is not None:
-            if event.type() == QEvent.Type.Show:
-                self._footer_divider.show()
-            elif event.type() == QEvent.Type.Hide:
-                self._footer_divider.hide()
+        """Keeps the footer's divider hidden exactly while the footer itself is hidden, however that changes.
+
+        It follows `isHidden`, not visibility, so the divider counts toward the minimum size before the panel is first
+        shown and while it is out of view."""
+        if watched is self._footer and self._footer_divider is not None \
+                and event.type() in (QEvent.Type.Show, QEvent.Type.Hide):
+            self._footer_divider.setHidden(self._footer.isHidden())
         return super().eventFilter(watched, event)
 
     @property
@@ -407,6 +409,14 @@ class DockPanel(QWidget):
         Sections a subclass moves out of `section_layout`, such as into the pinned column, stay where it put them.
         """
         self._packs_columns = enabled
+
+    def set_strip_scroll_limit(self, limit: Optional[float]) -> None:
+        """Sets the largest share of the panel's content a strip may hide sideways before a side panel wins over it,
+        or None for no limit (`src.ui.layout.panel_fit.plan_orientation`). Call it once, from `build` or the
+        constructor."""
+        self._strip_scroll_limit = limit
+        if self._planner is not None:
+            self._planner.strip_scroll_limit = limit
 
     @property
     def section_layout(self) -> QBoxLayout:
@@ -765,6 +775,7 @@ class DockPanel(QWidget):
                      *(control.item for control in self._controls())]
             self._planner = FitPlanner(items, self._apply_placement, self.measure, self.prepare_fit,
                                        self._plan_finished)
+            self._planner.strip_scroll_limit = self._strip_scroll_limit
         return self._planner
 
     def _plan_finished(self, orientation: Orientation) -> None:

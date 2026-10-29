@@ -866,6 +866,32 @@ class LayerPanelTest(IntraPaintTestCase):
         self.panel.plan_in(Orientation.STRIP, QSize(900, 300))
         self.assertGreater(layer_list.minimumSizeHint().width(), side_minimum)
 
+    def test_smallest_panel_is_a_side_panel(self) -> None:
+        """Shrunk to its minimum size, the panel is a side panel that scrolls down, not a strip scrolled past its layer
+        list."""
+        size = QSize(1, 1)
+        for _ in range(4):
+            self.panel.resize(size)
+            flush_layouts()
+            size = self.panel.minimumSizeHint().expandedTo(QSize(1, 1))
+        self.assertEqual(self.panel.orientation, Orientation.SIDE)
+
+    def test_list_minimum_covers_only_its_rows(self) -> None:
+        """The list's minimum height leaves room for MIN_VISIBLE_ROWS rows, or every row if it has fewer, so a panel
+        with one layer doesn't scroll while that layer fits."""
+        layer_list = self.panel.layer_list
+        self.assertLess(layer_list.minimumSizeHint().height(), layer_list.sizeHint().height())
+        image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE, IMAGE_SIZE)
+        image_stack.create_layer()
+        panel = LayerPanel(image_stack)
+        panel.resize(QSize(270, 270))
+        panel.show()
+        flush_layouts()
+        self.assertEqual(panel.layer_list.minimumSizeHint().height(), panel.layer_list.sizeHint().height())
+        self.assertEqual(panel.orientation, Orientation.SIDE)
+        self.assertFalse(panel.content_scrolls)
+        panel.close()
+
     def test_floating_panel_leaves_its_header_to_the_title_bar(self) -> None:
         """A floating panel hides its header, whose name and layer count its title bar shows, and the title note
         follows the count."""
