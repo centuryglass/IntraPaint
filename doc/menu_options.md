@@ -335,7 +335,7 @@ IntraPaint can read and write the following AI image generation parameters in im
 - Generation resolution
 - Sampling method
 - Sampling steps
-- Guidance scale
+- CFG scale
 - Seed
 
 It does this in a format compatible with the Stable Diffusion WebUI, so IntraPaint can load those values directly into the image generation panel when the image is opened in IntraPaint.  When saving, IntraPaint will ask you if you want to save this metadata to the file, and you have the option to make it always save metadata automatically, or never save automatically or ask again.  If automatic metadata updates are disabled, choosing "update metadata" will manually prepare the metadata update, so it'll be written to the image file on the next save.
@@ -640,7 +640,7 @@ This option is only visible when using Stable Diffusion, when the LCM LoRA model
 
 - The image sampling mode is set to LCM
 - The activation text for the LCM LoRA is inserted into the prompt, if not already there.
-- The prompt guidance scale is set to 1.5 (1.5 - 2.0 is the recommended range for LCM).
+- The CFG scale is set to 1.5 (1.5 - 2.0 is the recommended range for LCM).
 - The number of image generation steps is set to 8 (5 - 10 is the recommended range for LCM).
 
 ---
