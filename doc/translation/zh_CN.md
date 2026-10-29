@@ -19,8 +19,8 @@ General vocabulary shared with Photoshop, GIMP and Krita; per-language glossarie
 | Layer | 图层 | 翻译 translate | [kk-layers] | 高 high | 所有中文图形软件通用 / standard in every Chinese graphics program. |
 | Layer group | 图层组 | 翻译 translate | [kk-layers] | 高 high | — |
 | Active layer | 当前图层 | 翻译 translate | [kk-sel] | 中 medium | 来源页即用「当前图层」；GIMP 中文界面混用「激活图层」和「活动图层」/ the source page uses 当前图层; GIMP's zh UI mixes 激活图层 and 活动图层. |
-| Isolation (layer group) | 隔离 | 翻译 translate | — | 低 low | Photoshop 同类概念叫「隔离混合」/ PS calls the related concept 隔离混合; 需母语者确认 / needs a native check. |
-| Lock, transparency lock | 锁定, 透明像素锁定 | 翻译 translate | — | 低 low | 「透明像素锁定」是 Photoshop 用词，未找到可链接的来源；GIMP 中文界面作「锁定透明通道」/ 透明像素锁定 is the Photoshop term, with no linkable source found; GIMP's zh UI uses 锁定透明通道 ([gimp-po]). |
+| Isolation (layer group) | 隔离 | 翻译 translate | — | 低 low | Photoshop 同类概念叫「隔离混合」；Krita 中文手册把相反的设置称为图层组的「穿透模式」([kk-layers])；需母语者确认 / PS calls the related concept 隔离混合; the Krita zh manual calls the opposite group setting 穿透模式 (pass-through mode) ([kk-layers]); needs a native check. |
+| Lock, transparency lock | 锁定, 锁定透明区域 | 翻译 translate | [ps-blend] | 中 medium | Photoshop 中文帮助作「锁定透明区域」，GIMP 中文界面作「锁定透明通道」([gimp-po]) / the Photoshop zh help uses 锁定透明区域 and GIMP's zh UI uses 锁定透明通道 ([gimp-po]). |
 | Merge, flatten | 合并, 拼合 | 翻译 translate | [gimp-po] | 中 medium | GIMP 中文界面有「向下合并」「合并可见图层」，但 Flatten Image 作「平整图像」；「拼合图像」是 Photoshop 用词，在 Photoshop 中指合并全部图层，与 IntraPaint 的「Flatten layer」含义不同；见待解决问题 / GIMP's zh UI has 向下合并 and 合并可见图层 but renders Flatten Image as 平整图像; 拼合图像 is the Photoshop term, where it merges all layers, unlike IntraPaint's "Flatten layer"; see open questions. |
 | Canvas | 画布 | 翻译 translate | [kk-images] | 高 high | — |
 | Scale (verb) | 缩放 | 翻译 translate | [kk-images] | 高 high | — |
@@ -29,16 +29,16 @@ General vocabulary shared with Photoshop, GIMP and Krita; per-language glossarie
 | Add, Subtract, Replace, Intersect | 添加, 减去, 替换, 相交 | 翻译 translate | [kk-sel] | 高 high | Krita 中文手册列出这四种模式 / Krita zh lists exactly these four. |
 | Opacity | 不透明度 | 翻译 translate | [kk-images] | 高 high | GIMP 和 dtlnor 汉化包同样作「不透明度」；diffus-me 汉化包简作「透明度」/ GIMP and the dtlnor pack also use 不透明度; the diffus-me pack shortens it to 透明度. |
 | Hardness | 硬度 | 翻译 translate | [comfy-zh] | 高 high | — |
-| Pen pressure | 笔压 | 翻译 translate | — | 低 low | Photoshop 用「钢笔压力」，GIMP 中文界面作「压力」；未找到「笔压」的可链接来源 / PS uses 钢笔压力 and GIMP's zh UI uses 压力; no linkable source found for 笔压. |
+| Pen pressure | 笔压 | 翻译 translate | — | 低 low | 未找到使用「笔压」的可链接来源；Photoshop 中文帮助作「钢笔压力」([ps-pressure])，GIMP 中文界面作「压力」/ no linkable source found for 笔压; the Photoshop zh help uses 钢笔压力 ([ps-pressure]) and GIMP's zh UI uses 压力. |
 | Antialiasing | 抗锯齿 | 翻译 translate | [a1-diffus] | 高 high | 汉化包中已验证 / confirmed in the A1111 zh pack. |
-| Blend mode | 混合模式 | 翻译 translate | [kk-layers] | 高 high | 模式名按 Photoshop 中文：Multiply 正片叠底、Screen 滤色、Color Dodge 颜色减淡；Qt 合成名 Source Atop、Destination Out 保留英文 / named modes follow PS zh; Qt composition names stay English. |
+| Blend mode | 混合模式 | 翻译 translate | [kk-layers] | 高 high | 模式名按 Photoshop 中文帮助 ([ps-blend])：Multiply 正片叠底、Screen 滤色、Color Dodge 颜色减淡；Qt 合成名 Source Atop、Destination Out 保留英文 / named modes follow the Photoshop zh help ([ps-blend]); Qt composition names stay English. |
 | Foreground / background color | 前景色 / 背景色 | 翻译 translate | [kk-sel] | 高 high | 来源页有「填充前景色」/ 填充前景色 appears in the source page. |
-| Color picker | 取色器 | 翻译 translate | [comfy-zh] | 中 medium | Photoshop 的工具叫「吸管」，GIMP 中文界面作「颜色拾取」；「取色器」更通用 / PS calls the tool 吸管 and GIMP's zh UI uses 颜色拾取; 取色器 is the generic label. |
+| Color picker | 取色器 | 翻译 translate | [comfy-zh] | 中 medium | Photoshop 的工具叫「吸管」([ps-eyedropper])，GIMP 中文界面作「颜色拾取」；「取色器」更通用 / PS calls the tool 吸管 ([ps-eyedropper]) and GIMP's zh UI uses 颜色拾取; 取色器 is the generic label. |
 | Fill | 填充 | 翻译 translate | [kk-sel] | 高 high | GIMP 中文作「油漆桶填充」/ same concept in GIMP zh. |
 | Threshold | 阈值 | 翻译 translate | [gimp-fuzzy] | 高 high | — |
-| Sample merged | 合并采样 | 翻译 translate | [gimp-clone] | 中 medium | GIMP 中文旧译「位样合并」，Photoshop 作「对所有图层取样」/ GIMP zh's old term is 位样合并; PS uses 对所有图层取样. |
+| Sample merged | 合并采样 | 翻译 translate | — | 低 low | 未找到使用「合并采样」的来源；GIMP 中文作「位样合并」([gimp-clone])，Photoshop 的取样选项作「所有图层」([ps-clone]) / no source found that uses 合并采样; GIMP zh uses 位样合并 ([gimp-clone]) and Photoshop's sample option is 所有图层 ([ps-clone]). |
 | Smudge | 涂抹 | 翻译 translate | [gimp-po] | 高 high | GIMP 中文工具名为「涂抹」/ the GIMP zh tool name is 涂抹. |
-| Clone stamp, source | 仿制图章, 仿制源 | 翻译 translate | [gimp-clone] | 中 medium | GIMP 中文作「克隆」与「源」；Photoshop 称「仿制图章」/ GIMP zh uses 克隆 and 源; PS calls it 仿制图章. |
+| Clone stamp, source | 仿制图章, 源 | 翻译 translate | [ps-clone] | 中 medium | Photoshop 中文帮助作「仿制图章工具」和「克隆源」面板；GIMP 中文作「克隆」与「源」([gimp-clone]) / the Photoshop zh help uses 仿制图章工具 and the 克隆源 panel; GIMP zh uses 克隆 and 源 ([gimp-clone]). |
 | Filter | 滤镜 | 翻译 translate | [kk-layers] | 高 high | — |
 | Posterize | 色调分离 | 翻译 translate | — | 低 low | Photoshop 中文用词，未找到可链接的来源；GIMP 中文界面作「色相分离」，字面上指色相，含义不准 / the PS zh term, with no linkable source found; GIMP's zh UI uses 色相分离, which literally names hue and misdescribes the filter. |
 | Scaling algorithms | Nearest 最邻近, Bilinear 双线性, Bicubic 双三次 | 翻译 translate | [a1-dtlnor] | 中 medium | dtlnor 汉化包作「最邻近」「双线性」「双立方」；「双三次」是数学文献中更常见的叫法，需母语者确认；Lanczos、Hamming、Box 是专名，保留拉丁字母 / the dtlnor pack uses 最邻近, 双线性 and 双立方; 双三次 is the more common term in technical writing and needs a native check; Lanczos, Hamming and Box are names and stay Latin. |
@@ -164,6 +164,10 @@ These are the first things a native-speaking reviewer should check.
 [gimp-po]: https://github.com/GNOME/gimp/blob/master/po/zh_CN.po
 [gimp-clone]: https://docs.gimp.org/2.10/zh_CN/gimp-tool-clone.html
 [gimp-fuzzy]: https://docs.gimp.org/2.10/zh_CN/gimp-tool-fuzzy-select.html
+[ps-blend]: https://helpx.adobe.com/cn/photoshop/using/blending-modes.html
+[ps-clone]: https://helpx.adobe.com/cn/photoshop/using/retouching-repairing-images.html
+[ps-eyedropper]: https://helpx.adobe.com/cn/photoshop/using/choosing-colors.html
+[ps-pressure]: https://helpx.adobe.com/cn/photoshop/using/painting-tools.html
 [a1-dtlnor]: https://github.com/dtlnor/stable-diffusion-webui-localization-zh_CN/blob/Anne/localizations/zh_CN.json
 [a1-diffus]: https://github.com/diffus-me/stable-diffusion-webui-localization/blob/main/zh_CN.json
 [a1-terms]: https://github.com/dtlnor/stable-diffusion-webui-localization-zh_CN/blob/Anne/Terminology.md
