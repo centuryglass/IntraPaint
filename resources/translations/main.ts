@@ -2158,6 +2158,16 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
+        <source>Compare With Original Modifier:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>While held in the generated image selector's single view, the original image content shows in place of the focused option.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
         <source>Padding Scroll Modifier:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -5363,37 +5373,27 @@ Please remember to include the traceback from the Details expander.</source>
     <name>ui.generated_image_selector</name>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Zoom to changes</source>
+        <source>{mode}, {width} x {height}, {count} options</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Show selection</source>
+        <source>{ready} of {total} ready</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Cancel</source>
+        <source>{ready} of {total} ready - {progress}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Close without choosing. These options stay available to re-open.</source>
+        <source>Only inpainted options have a selection.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Previous</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Toggle zoom</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Next</source>
+        <source>Zoom to changes needs a selection smaller than the generation area.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5404,11 +5404,6 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Option {index}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Loading...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5466,61 +5461,200 @@ Please remember to include the traceback from the Details expander.</source>
         <source>Image content was added as new layer "{new_layer_name}"</source>
         <translation type="unfinished"></translation>
     </message>
+</context>
+<context>
+    <name>ui.generated_option_view</name>
     <message>
-        <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Select from generated image options.</source>
+        <location filename="../../src/ui/generated_option_view.py"/>
+        <source>Original</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>
-                           &lt;table&gt;
-                             &lt;tr&gt;
-                               &lt;td&gt;
-                                 {modifier_or_modifiers}+{left_mouse_icon} or {middle_mouse_icon} and drag: pan view
-                               &lt;/td&gt;
-                               &lt;td&gt;&lt;pre&gt;    &lt;/pre&gt;&lt;/td&gt;
-                               &lt;td&gt;
-                                 {v_scroll_icon} or {zoom_in_hint}/{zoom_out_hint}: zoom
-                               &lt;/td&gt;
-                             &lt;/tr&gt;
-                             &lt;tr&gt;
-                               &lt;td&gt;
-                                 {up_key_hint}: zoom to first option
-                               &lt;/td&gt;
-                               &lt;td&gt;&lt;pre&gt;    &lt;/pre&gt;&lt;/td&gt;
-                               &lt;td&gt;
-                                 {escape_key_hint}: close, options stay re-openable
-                               &lt;/td&gt;
-                              &lt;/tr&gt;
-                            &lt;/table&gt;
-                           </source>
+        <location filename="../../src/ui/generated_option_view.py"/>
+        <source>{label} of {count}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>
-                           &lt;table&gt;
-                             &lt;tr&gt;
-                               &lt;td&gt;
-                                 {modifier_or_modifiers}+{left_mouse_icon} or {middle_mouse_icon} and drag: pan view
-                               &lt;/td&gt;
-                               &lt;td&gt;&lt;pre&gt;    &lt;/pre&gt;&lt;/td&gt;
-                               &lt;td&gt;
-                                 {v_scroll_icon} or {zoom_in_hint}/{zoom_out_hint}: zoom
-                               &lt;/td&gt;
-                             &lt;/tr&gt;
-                             &lt;tr&gt;
-                               &lt;td&gt;
-                                 {enter_key_hint}: select option
-                               &lt;/td&gt;
-                               &lt;td&gt;&lt;pre&gt;    &lt;/pre&gt;&lt;/td&gt;
-                               &lt;td&gt;
-                                 {escape_key_hint}/{down_key_hint}: return to full view
-                               &lt;/td&gt;
-                              &lt;/tr&gt;
-                            &lt;/table&gt;
-                           </source>
+        <location filename="../../src/ui/generated_option_view.py"/>
+        <source>Hold {key} to compare</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_option_view.py"/>
+        <source>Click to use</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_option_view.py"/>
+        <source>Generating</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_option_view.py"/>
+        <source>Waiting</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.generated_selector_bars</name>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Choose a result</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Grid</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Single</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Show every option</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Show the focused option up close</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>View</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Show selection, zoom to changes and full resolution</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Zoom to changes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Show selection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Full resolution</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Cancel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Stop generating and return to the editor.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Close</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Close without choosing. These options stay available to re-open.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Stop</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Stop generating and keep the finished options.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Stopping...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>‹ Previous</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Next ›</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Previous option ({key})</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Next option ({key})</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Send to new layer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Save to file...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>More</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Use option {index}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Keep original</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Apply the focused option and return to the editor.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>This option is still generating.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Controls</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Enter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>{left_key}{right_key} browse &amp;nbsp; {first_key}-{last_key} open option &amp;nbsp; {up_key} single view &amp;nbsp; {pan_modifier}+{left_mouse_icon} or {middle_mouse_icon} pan &amp;nbsp; {zoom_in_key}{zoom_out_key} zoom</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>{compare_key} hold: original &amp;nbsp; {left_key}{right_key} browse &amp;nbsp; {down_key} back to grid &amp;nbsp; {pan_modifier}+{left_mouse_icon} or {middle_mouse_icon} pan &amp;nbsp; {v_scroll_icon} zoom</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -8505,6 +8639,16 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/ui/window/main_window.py"/>
         <source>Inpainting failure</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/main_window.py"/>
+        <source>Generation stopped before any images were ready.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/main_window.py"/>
+        <source>Generation finished without any images.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
