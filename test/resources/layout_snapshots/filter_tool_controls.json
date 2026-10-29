@@ -52,7 +52,7 @@
       "overlap: StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[1] and StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[2] share 255x21",
       "overlap: StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[1] and StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[3] share 255x17",
       "overlap: StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[2] and StrokeBlock/PanelSection[2]/QWidget/QWidget[1]/SliderField[3] share 255x20",
-      "squeezed: StrokeBlock is 255x164, minimum 217x374",
+      "squeezed: StrokeBlock is 255x164, minimum 215x374",
       "squeezed: StrokeBlock/PanelSection[0] is 243x51, minimum 110x106",
       "squeezed: StrokeBlock/PanelSection[0]/QWidget is 243x25, minimum 110x80",
       "squeezed: StrokeBlock/PanelSection[0]/QWidget/QWidget is 243x25, minimum 110x80",
