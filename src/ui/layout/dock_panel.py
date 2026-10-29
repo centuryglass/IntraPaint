@@ -32,13 +32,14 @@ their state survives.
   and override `measure_content` if they move the header. `prepare_fit` and `fit_finished` bracket each plan, for nested
   content that plans itself (`src.ui.layout.panel_fit.FitContent`).
 - The host calls `host_floating_changed` when the panel's dock starts or stops floating.
+- A title note (`set_title_note`) is short text a floating dock's title bar shows beside the dock's name.
 - Call `refit` after a change to the content's size that no resize reports, such as a control appearing.
 """
 from dataclasses import dataclass, field
 from functools import partial
 from typing import Callable, Optional, Sequence
 
-from PySide6.QtCore import QEvent, QMargins, QObject, QPointF, QSize, Qt
+from PySide6.QtCore import QEvent, QMargins, QObject, QPointF, QSize, Qt, Signal
 from PySide6.QtGui import QIcon, QPaintEvent, QPainter, QPalette, QPen, QResizeEvent
 from PySide6.QtWidgets import (QApplication, QBoxLayout, QFrame, QHBoxLayout, QLabel, QScrollArea, QSizePolicy, QStyle,
                                QVBoxLayout, QWidget)
@@ -234,6 +235,8 @@ class PanelLayout:
 class DockPanel(QWidget):
     """A panel that shows as much of its content as fits its dock's size, in the orientation that fits it best."""
 
+    title_note_changed = Signal()
+
     def __init__(self, name: str = '', icon: Optional[QIcon] = None, key_text: str = '',
                  parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -250,6 +253,7 @@ class DockPanel(QWidget):
         self._planner: Optional[FitPlanner] = None
         self._fresh_sizes: Optional[dict[QWidget, QSize]] = None
         self._header_collapsed = False
+        self._title_note = ''
         self._scrolls = False
         self._overflow: list[QWidget] = []
         self._footer: Optional[QWidget] = None
@@ -463,6 +467,17 @@ class DockPanel(QWidget):
     def host_floating_changed(self, floating: bool) -> None:
         """Called by the host when the panel starts or stops floating in its own window. Subclasses override it, for
         example to drop header content that the floating window's title bar repeats."""
+
+    @property
+    def title_note(self) -> str:
+        """Short text a floating dock's title bar shows beside the dock's name, or '' for none."""
+        return self._title_note
+
+    def set_title_note(self, note: str) -> None:
+        """Sets the title note, and emits `title_note_changed` if it changed."""
+        if note != self._title_note:
+            self._title_note = note
+            self.title_note_changed.emit()
 
     def set_host_facts(self, size: QSize) -> None:
         """Called by the host when the size the panel fills changes. Plans again if it changed, picking the

@@ -10,8 +10,8 @@ It is a `DockPanel`, so it shows as much as fits the space its dock reports:
   on the toggles and large thumbnails.
 - A strip needs room to read the start of a layer name beside the header (`LayerList.set_readable_names`), and its
   columns stay at the left edge.
-- The panel header counts the layers under the root. While the panel floats, its title bar names the panel, so the
-  header shows only the count (`host_floating_changed`).
+- The panel header counts the layers under the root. While the panel floats, its title bar shows the name and the
+  count (the title note), so the header hides (`apply_header_form`).
 
 All layer changes go through `ImageStack`.
 """
@@ -81,6 +81,8 @@ class LayerPanel(DockPanel):
     def __init__(self, image_stack: ImageStack, parent: Optional[QWidget] = None) -> None:
         """Connects to the ImageStack and builds the panel."""
         self._image_stack = image_stack
+        # Whether the panel's dock floats, which hides the header:
+        self._floating = False
         super().__init__(PANEL_TITLE, QIcon(ICON_PATH_PANEL), parent=parent)
         self.setWindowTitle(WINDOW_TITLE)
         self.setWindowIcon(QIcon(APP_ICON_PATH))
@@ -121,7 +123,6 @@ class LayerPanel(DockPanel):
         self.add_fit_item(FitItem(LARGE_PRIORITY), self._apply_large_form)
 
         self._active_layer: Optional[Layer] = None
-        self._header_title_hidden = False
         image_stack.active_layer_changed.connect(self._active_layer_change_slot)
         image_stack.layer_added.connect(self._layer_count_change_slot)
         image_stack.layer_removed.connect(self._layer_count_change_slot)
@@ -194,11 +195,14 @@ class LayerPanel(DockPanel):
         self._properties.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
 
     def host_floating_changed(self, floating: bool) -> None:
-        """Hides the header's icon and name while the panel floats, since its title bar shows them."""
-        if floating != self._header_title_hidden:
-            self._header_title_hidden = floating
-            self.header.set_title_shown(not floating)
+        """Hides the header while the panel floats, since its title bar shows the name and the layer count."""
+        if floating != self._floating:
+            self._floating = floating
             self.refit()
+
+    def apply_header_form(self, collapsed: bool) -> None:
+        """Hides the header while the panel floats, and otherwise wherever `DockPanel` collapses it."""
+        super().apply_header_form(collapsed or self._floating)
 
     def _apply_controls_form(self, form: Optional[int]) -> None:
         self._properties.set_stacked(form == CONTROLS_STACKED)
@@ -221,8 +225,9 @@ class LayerPanel(DockPanel):
 
     def _layer_count_change_slot(self, *_args) -> None:
         count = len(self._image_stack.layer_stack.recursive_child_layers)
-        self.header.set_description(ONE_LAYER_DESCRIPTION if count == 1
-                                    else LAYER_COUNT_DESCRIPTION.format(count=count))
+        description = ONE_LAYER_DESCRIPTION if count == 1 else LAYER_COUNT_DESCRIPTION.format(count=count)
+        self.header.set_description(description)
+        self.set_title_note(description)
 
     def _active_layer_change_slot(self, new_active_layer: Layer) -> None:
         if self._active_layer is not None:
