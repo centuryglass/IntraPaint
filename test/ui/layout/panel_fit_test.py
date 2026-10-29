@@ -208,6 +208,17 @@ class PlanOrientationTest(IntraPaintTestCase):
         strip = StackedContent(STRIP, [(100, 400)])
         self.assertEqual(plan_orientation(items, QSize(300, 400), self._measure(side, strip))[0], STRIP)
 
+    def test_strip_scroll_limit(self) -> None:
+        """A strip that hides more than strip_scroll_limit of its content sideways loses to a side panel that scrolls
+        more of its own out of view, and one within the limit is compared as usual."""
+        # 100 x 1200 as a side panel, showing 1/3 of it at 300 x 400, and 400 x 100 as a strip, showing 3/4:
+        side = StackedContent(SIDE, [(100, 1200)])
+        strip = StackedContent(STRIP, [(100, 400)])
+        items = [FitItem(REQUIRED)]
+        measure = self._measure(side, strip)
+        self.assertEqual(plan_orientation(items, QSize(300, 400), measure, strip_scroll_limit=0.1)[0], SIDE)
+        self.assertEqual(plan_orientation(items, QSize(300, 400), measure, strip_scroll_limit=0.5)[0], STRIP)
+
     def test_optional_items_do_not_decide_between_overflowing_orientations(self) -> None:
         """When neither orientation fits, the suggested one wins even if the other leaves fewer optional items out."""
         side = StackedContent(SIDE, [(100, 500)], [(100, 100)])

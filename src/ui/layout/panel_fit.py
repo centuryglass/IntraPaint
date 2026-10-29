@@ -251,15 +251,26 @@ def _scrolled_share(need: QSize, available: QSize, orientation: Orientation) -> 
     return 1.0 - max(scroll_extent(available, orientation), 0) / scroll_extent(need, orientation)
 
 
+def _sideways_share(need: QSize, available: QSize) -> float:
+    """Returns the share of content with size need that is hidden off the side of available."""
+    if need.width() <= available.width():
+        return 0.0
+    return 1.0 - max(available.width(), 0) / need.width()
+
+
 @dataclass(frozen=True)
 class _OrientationScore:
     """How well one orientation's plan suits the available size, for `plan_orientation`."""
     rank: tuple
     scrolled_share: Optional[float]
+    # Whether a strip hides more of its content sideways than the panel allows:
+    scrolls_too_far: bool = False
 
     def beats(self, other: '_OrientationScore') -> bool:
-        """Returns whether this plan is better than other's: by the share of content that scrolls out of view when
-        both only scroll along their scroll axis, then by rank."""
+        """Returns whether this plan is better than other's: by whether it scrolls too far sideways, then by the share
+        of content that scrolls out of view when both only scroll along their scroll axis, then by rank."""
+        if self.scrolls_too_far != other.scrolls_too_far:
+            return other.scrolls_too_far
         if self.scrolled_share is not None and other.scrolled_share is not None \
                 and self.scrolled_share != other.scrolled_share:
             return self.scrolled_share < other.scrolled_share
@@ -268,7 +279,8 @@ class _OrientationScore:
 
 def plan_orientation(items: Sequence[FitItem], available: QSize,
                      measure: Callable[[Orientation, Placement], QSize],
-                     current: Optional[tuple[Orientation, Placement]] = None) -> tuple[Orientation, Placement]:
+                     current: Optional[tuple[Orientation, Placement]] = None,
+                     strip_scroll_limit: Optional[float] = None) -> tuple[Orientation, Placement]:
     """Returns the orientation and placement for content in an available size, planning each orientation with
     `plan_fit`.
 
@@ -277,6 +289,8 @@ def plan_orientation(items: Sequence[FitItem], available: QSize,
       shows more optional items, in fill order, wins next. Then comes the one the size's shape suggests, then the one
       with larger forms. Form sizes come last because forms differ between orientations, so a strip's larger buttons
       say nothing about which orientation suits the space.
+    - With a `strip_scroll_limit`, a strip that hides a larger share of its content sideways loses to a side plan,
+      however much that one scrolls. It is for a panel whose strip is no use once part of it is out of view.
     - Content that overflows across is clipped, not scrolled, so when either orientation's content does, the scrolled
       share is skipped.
     - The shape suggestion comes from `orientation_for_size` with the current orientation as its hysteresis anchor, so
@@ -295,7 +309,9 @@ def plan_orientation(items: Sequence[FitItem], available: QSize,
         # space:
         rank = (overflows, () if overflows else _left_out(items, placement), orientation != guess,
                 _rank(items, placement))
-        return _OrientationScore(rank, _scrolled_share(need, size, orientation)), placement
+        scrolls_too_far = orientation == Orientation.STRIP and strip_scroll_limit is not None \
+            and _sideways_share(need, size) > strip_scroll_limit
+        return _OrientationScore(rank, _scrolled_share(need, size, orientation), scrolls_too_far), placement
 
     plans = {guess: _plan(guess, available)}
     overflows, left_out = plans[guess][0].rank[:2]
@@ -363,6 +379,7 @@ class FitPlanner:
       result is applied. `finish(orientation)` runs after the result is applied. Neither runs when `update` skips
       planning.
     - Keyboard focus survives planning, though trials may hide or move the focused widget.
+    - `strip_scroll_limit` is passed to `plan_orientation`.
     """
 
     def __init__(self, items: Sequence[FitItem], apply: Callable[[Orientation, Placement], None],
@@ -379,6 +396,7 @@ class FitPlanner:
         self._requested: Optional[Orientation] = None
         self._available: Optional[QSize] = None
         self._applied = False
+        self.strip_scroll_limit: Optional[float] = None
 
     @property
     def items(self) -> tuple[FitItem, ...]:
@@ -425,7 +443,8 @@ class FitPlanner:
         in_use = None if self._placement is None or self._orientation is None else (self._orientation,
                                                                                      self._placement)
         if orientation is None:
-            orientation, placement = plan_orientation(self._items, available, _measure, in_use)
+            orientation, placement = plan_orientation(self._items, available, _measure, in_use,
+                                                     self.strip_scroll_limit)
         else:
             fixed = orientation
             current = self._placement if orientation == self._orientation else None

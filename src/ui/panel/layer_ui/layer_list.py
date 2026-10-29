@@ -274,8 +274,8 @@ class LayerList(QScrollArea):
         return self._strip.sizeHint().height()
 
     def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
-        """Returns room for the strip and `MIN_VISIBLE_ROWS` rows, as wide as the widest row needs plus the scroll
-        bar, and the room `set_readable_names` asks for."""
+        """Returns room for the strip and `MIN_VISIBLE_ROWS` rows, or every shown row if there are fewer, as wide as the
+        widest row needs plus the scroll bar, and the room `set_readable_names` asks for."""
         width = self._strip.minimumSizeHint().width()
         for row in self._rows.values():
             width = max(width, row.minimumSizeHint().width())
@@ -285,14 +285,17 @@ class LayerList(QScrollArea):
             metrics = self.fontMetrics()
             width += metrics.horizontalAdvance(READABLE_NAME_TEXT) - metrics.horizontalAdvance(MIN_NAME_TEXT)
         height = self._strip.sizeHint().height() + MIN_VISIBLE_ROWS * self.row_height() + 2 * self.frameWidth()
-        return QSize(width, height)
+        return QSize(width, min(height, self._full_height()))
 
     def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
         """Returns room for every row."""
-        minimum = self.minimumSizeHint()
+        return QSize(self.minimumSizeHint().width(), self._full_height())
+
+    def _full_height(self) -> int:
+        """Returns the height that shows the strip and every shown row."""
         rows_height = sum(self._rows[layer].sizeHint().height() for layer in self._order
                           if not self._rows[layer].isHidden())
-        return QSize(minimum.width(), self._strip.sizeHint().height() + rows_height + 2 * self.frameWidth())
+        return self._strip.sizeHint().height() + rows_height + 2 * self.frameWidth()
 
     # Rows:
 

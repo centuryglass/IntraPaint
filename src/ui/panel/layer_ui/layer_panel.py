@@ -9,7 +9,8 @@ It is a `DockPanel`, so it shows as much as fits the space its dock reports:
 - Optional, placed first: the rows' meta line (`META_PRIORITY`). Then the large form (`LARGE_PRIORITY`): text labels
   on the toggles and large thumbnails.
 - A strip needs room to read the start of a layer name beside the header (`LayerList.set_readable_names`), and its
-  columns stay at the left edge.
+  columns stay at the left edge. A strip that would scroll more than a sliver sideways gives way to a side panel
+  (`STRIP_SCROLL_LIMIT`).
 - The panel header counts the layers under the root. While the panel floats, its title bar shows the name and the
   count (the title note), so the header hides (`apply_header_form`).
 
@@ -70,6 +71,9 @@ ICON_PATH_MERGE_BUTTON = f'{PROJECT_DIR}/resources/icons/layer/merge_down_icon.s
 # Optional items, in fill order:
 META_PRIORITY = 1
 LARGE_PRIORITY = 2
+# The largest share of a strip that may be out of view sideways, since a strip scrolled past the layer list shows only
+# the header:
+STRIP_SCROLL_LIMIT = 0.1
 # Forms of the mode and opacity row:
 CONTROLS_ONE_ROW = 0
 CONTROLS_STACKED = 1
@@ -121,6 +125,7 @@ class LayerPanel(DockPanel):
         self.add_fit_item(FitItem(REQUIRED, 2), self._apply_controls_form)
         self.add_fit_item(FitItem(META_PRIORITY), self._apply_meta_form)
         self.add_fit_item(FitItem(LARGE_PRIORITY), self._apply_large_form)
+        self.set_strip_scroll_limit(STRIP_SCROLL_LIMIT)
 
         self._active_layer: Optional[Layer] = None
         image_stack.active_layer_changed.connect(self._active_layer_change_slot)
@@ -228,6 +233,9 @@ class LayerPanel(DockPanel):
         description = ONE_LAYER_DESCRIPTION if count == 1 else LAYER_COUNT_DESCRIPTION.format(count=count)
         self.header.set_description(description)
         self.set_title_note(description)
+        # The list's minimum height follows its row count (`LayerList.minimumSizeHint`):
+        if self.available_size is not None:
+            self.refit()
 
     def _active_layer_change_slot(self, new_active_layer: Layer) -> None:
         if self._active_layer is not None:
