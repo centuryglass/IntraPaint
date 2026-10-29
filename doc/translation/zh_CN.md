@@ -21,7 +21,7 @@ General vocabulary shared with Photoshop, GIMP and Krita; per-language glossarie
 | Active layer | 当前图层 | 翻译 translate | [kk-sel] | 中 medium | 来源页即用「当前图层」；GIMP 中文界面混用「激活图层」和「活动图层」/ the source page uses 当前图层; GIMP's zh UI mixes 激活图层 and 活动图层. |
 | Isolation (layer group) | 隔离 | 翻译 translate | — | 低 low | Photoshop 同类概念叫「隔离混合」；Krita 中文手册把相反的设置称为图层组的「穿透模式」([kk-layers])；需母语者确认 / PS calls the related concept 隔离混合; the Krita zh manual calls the opposite group setting 穿透模式 (pass-through mode) ([kk-layers]); needs a native check. |
 | Lock, transparency lock | 锁定, 锁定透明区域 | 翻译 translate | [ps-blend] | 中 medium | Photoshop 中文帮助作「锁定透明区域」，GIMP 中文界面作「锁定透明通道」([gimp-po]) / the Photoshop zh help uses 锁定透明区域 and GIMP's zh UI uses 锁定透明通道 ([gimp-po]). |
-| Merge, flatten | 合并, 拼合 | 翻译 translate | [gimp-po] | 中 medium | GIMP 中文界面有「向下合并」「合并可见图层」，但 Flatten Image 作「平整图像」；「拼合图像」是 Photoshop 用词，在 Photoshop 中指合并全部图层，与 IntraPaint 的「Flatten layer」含义不同；见待解决问题 / GIMP's zh UI has 向下合并 and 合并可见图层 but renders Flatten Image as 平整图像; 拼合图像 is the Photoshop term, where it merges all layers, unlike IntraPaint's "Flatten layer"; see open questions. |
+| Merge, flatten | 合并, 拼合 | 翻译 translate | [gimp-po] | 中 medium | GIMP 中文界面有「向下合并」「合并可见图层」，Flatten Image 作「平整图像」；IntraPaint 的「Flatten layer」把单个图层的活状态折叠为静态像素：组先折叠子图层再合并为一个图像图层，文字栅格化，混合模式与不透明度归位并相应调整像素，旋转缩放应用到像素。「拼合」跟随 Photoshop 的「拼合图像」；IntraPaint 没有全图拼合操作，「拼合图层」不会混淆；「栅格化」只覆盖文字一步 / GIMP's zh UI has 向下合并 and 合并可见图层, and renders Flatten Image as 平整图像; IntraPaint's "Flatten layer" collapses one layer's live state into static pixels: a group's children are each collapsed and then merged into one image layer, text rasterizes, blend mode and opacity reset with the pixels adjusted, and rotation and scale apply at the pixel level. 拼合 follows Photoshop's 拼合图像; IntraPaint has no whole-image flatten for 拼合图层 to be confused with, and 栅格化 (rasterize) would cover only the text step. |
 | Canvas | 画布 | 翻译 translate | [kk-images] | 高 high | — |
 | Scale (verb) | 缩放 | 翻译 translate | [kk-images] | 高 high | — |
 | Crop | 裁剪 | 翻译 translate | [kk-images] | 高 high | 其他软件亦作「裁切」「剪裁」/ other apps also use 裁切 and 剪裁. |
@@ -57,11 +57,11 @@ Vocabulary from the Stable Diffusion community and the A1111 WebUI and ComfyUI i
 | Image generation, generate | 图像生成, 生成 | 翻译 translate | [a1-dtlnor] | 高 high | 「Generate」按钮作「生成」/ the Generate button is 生成. |
 | Inpainting, inpaint | 局部重绘 | 翻译 translate | [a1-terms] | 高 high | dtlnor 术语表明确将 inpaint 定为「局部重绘」/ fixed in the dtlnor terminology sheet. |
 | Image to image, text to image | 图生图, 文生图 | 翻译 translate | [a1-terms] | 高 high | 两个汉化包一致 / both zh packs agree. |
-| Mask | 蒙版 | 翻译 translate | [a1-dtlnor] | 高 high | 两个 A1111 汉化包都用「蒙版」；ComfyUI 中文界面的编辑器也叫「蒙版编辑器」，只有 MASK 数据类型作「遮罩」/ both A1111 packs use 蒙版; ComfyUI's zh UI also calls its editor 蒙版编辑器 and uses 遮罩 only for the MASK data type. |
+| Mask | 蒙版 | 翻译 translate | [a1-dtlnor] | 高 high | 两个 A1111 汉化包、Photoshop 和 Krita 都用「蒙版」；ComfyUI 中文界面以「遮罩」为主（编辑器标题作「遮罩编辑器」），也混用「蒙版编辑器」/ both A1111 packs, Photoshop and Krita use 蒙版; ComfyUI's zh UI is predominantly 遮罩 (its editor is titled 遮罩编辑器), mixing in 蒙版编辑器 strings. |
 | Masked content | 蒙版内容 | 翻译 translate | — | 低 low | 由 diffus-me 的「蒙版蒙住的内容」缩短而来，两个汉化包都没有「蒙版内容」；dtlnor 作「重绘参考内容」/ shortened from diffus-me's 蒙版蒙住的内容, so neither pack uses 蒙版内容 itself; dtlnor uses 重绘参考内容. |
 | Masked content option values: fill, original, latent noise, latent nothing | 填充, 原图, 潜空间噪声, 空白潜空间 | 翻译 translate | [a1-diffus], [a1-dtlnor] | 中 medium | 「填充」「原图」取自 diffus-me，「潜空间噪声」「空白潜空间」取自 dtlnor；是配置文件存储值，#297 修复前暂不翻译 / 填充 and 原图 come from diffus-me, 潜空间噪声 and 空白潜空间 from dtlnor; these are stored config values, untranslated until #297 is fixed. |
 | Prompt | 提示词 | 翻译 translate | [a1-dtlnor] | 高 high | — |
-| Negative prompt | 反向提示词 | 翻译 translate | [a1-diffus] | 高 high | dtlnor 作「负面提示词」/ dtlnor uses 负面提示词. |
+| Negative prompt | 负面提示词 | 翻译 translate | [a1-dtlnor], [kad-zh] | 高 high | dtlnor 汉化包和 krita-ai-diffusion 中文界面都作「负面提示词」，教程与术语站多用同词；diffus-me 作「反向提示词」/ the dtlnor pack and krita-ai-diffusion's zh UI both use 负面提示词, as do most tutorials and glossaries; diffus-me uses 反向提示词. |
 | Prompt style | 风格模板 | 翻译 translate | [a1-dtlnor] | 中 medium | dtlnor 汉化包作「风格模版」，diffus-me 作「模板风格」；「模板」是规范写法 / the dtlnor pack writes 风格模版 and diffus-me 模板风格; 模板 is the standard spelling of the 模版 variant. |
 | CFG scale | CFG Scale | 保留 keep | [a1-dtlnor] | 高 high | 社区常见译法「提示词相关性(CFG Scale)」；紧凑标签保留英文 / community renders it 提示词相关性(CFG Scale); keep the acronym in the compact label. |
 | Steps | 采样步数 | 翻译 translate | [a1-dtlnor] | 中 medium | 汉化包作「采样迭代步数(Steps)」/ packs use 采样迭代步数(Steps). |
@@ -70,7 +70,7 @@ Vocabulary from the Stable Diffusion community and the A1111 WebUI and ComfyUI i
 | Seed | 随机种子 | 翻译 translate | [a1-dtlnor] | 高 high | 「Use a random seed」作「使用随机种子」/ "Use a random seed" = 使用随机种子. |
 | Variation seed, variation strength | 差异种子, 差异强度 | 翻译 translate | [a1-dtlnor] | 中 medium | 汉化包作「差异随机种子」/ pack uses 差异随机种子. |
 | Denoising strength | 重绘幅度 | 翻译 translate | [a1-dtlnor] | 高 high | 两个包一致；字面「去噪强度」较少见 / both packs agree; literal 去噪强度 is uncommon. |
-| Batch size, batch count | 每批数量, 生成批次 | 翻译 translate | [a1-dtlnor] | 中 medium | 「生成批次」与「每批数量」语义接近，社区亦用「批次数」；见待解决问题 / 生成批次 sits close to batch size; see open questions. |
+| Batch size, batch count | 每批数量, 生成批次 | 翻译 translate | [a1-dtlnor], [a1-diffus] | 高 high | 两个汉化包一致，正是 WebUI 中文用户现在读到的搭配；ComfyUI 中文作「批次数量」，教程亦见「批次数」/ both packs agree, which is the pairing WebUI zh users read today; ComfyUI zh uses 批次数量 and tutorials also write 批次数. |
 | Model, checkpoint | 模型 | 翻译 translate | [a1-dtlnor] | 高 high | dtlnor 作「主模型」；字面「检查点」会误导 / dtlnor: 主模型; avoid literal 检查点. |
 | VAE, tiled VAE | VAE, 分块 VAE | 翻译 translate | [a1-dtlnor] | 高 high | — |
 | LoRA | LoRA | 保留 keep | [a1-terms] | 高 high | — |
@@ -80,7 +80,7 @@ Vocabulary from the Stable Diffusion community and the A1111 WebUI and ComfyUI i
 | Preprocessor | 预处理器 | 翻译 translate | [a1-dtlnor] | 高 high | — |
 | Control weight | 控制强度 | 翻译 translate | [a1-dtlnor] | 中 medium | 亦作「权重」「控制权重」/ also 权重 or 控制权重. |
 | Control step | 控制介入时机, 控制结束时机 | 翻译 translate | [a1-dtlnor] | 中 medium | 汉化包用词；该值是步数的比例而非步数，「时机」比「步数」更贴切 / the pack's terms; the value is a fraction of the steps, not a step count, so 时机 (timing) fits better than 步数. |
-| Describe | 反推提示词 | 翻译 translate | [a1-diffus] | 中 medium | diffus-me 作「反推提示词」，dtlnor 作「提示词反推」；见待解决问题 / diffus-me uses 反推提示词 and dtlnor 提示词反推; see open questions. |
+| Describe | 反推提示词 | 翻译 translate | [a1-diffus] | 中 medium | diffus-me 作「反推提示词」，dtlnor 作「提示词反推」；「Describe」这个改名只针对英文，中文沿用社区熟悉的「反推」/ diffus-me uses 反推提示词 and dtlnor 提示词反推; the "Describe" rename is English-specific, so Chinese keeps the community's familiar 反推 term. |
 | CLIP skip | CLIP 跳过层 | 翻译 translate | [a1-diffus] | 高 high | — |
 | Upscale | 放大 | 翻译 translate | [a1-diffus] | 高 high | Upscaler 作「放大算法」，方法标签作「放大方法」/ upscaler = 放大算法; method = 放大方法. |
 | GPU memory, VRAM | 显存 | 翻译 translate | [a1-diffus] | 中 medium | 「Clear GPU memory」作「清理显存」/ "Clear GPU memory" = 清理显存. |
@@ -97,11 +97,11 @@ Words IntraPaint gives its own meaning. No other program's localization covers t
 | Generation area | 生成区域 | 翻译 translate | — | 低 low | IntraPaint 专有；备选「生成范围」/ IntraPaint-specific; alternative 生成范围. |
 | Generation resolution | 生成分辨率 | 翻译 translate | — | 低 low | — |
 | Resolution rule | 分辨率规则 | 翻译 translate | — | 低 low | 选项「Match area 匹配区域、Match area, upscale small areas 匹配区域并放大小区域、Manual 手动」为存储值，暂不翻译 / option strings are stored values. |
-| Context | 上下文 | 翻译 translate | — | 低 low | 指局部重绘时纳入周边图像的范围；对应 WebUI 的「Only masked padding」，两个汉化包都作「预留像素」；备选「周边范围」；见待解决问题 / the surrounding image inpainting sees; it corresponds to the WebUI's "Only masked padding", which both packs render 预留像素; alternative 周边范围; see open questions. |
-| Context pin | 上下文固定点 | 翻译 translate | — | 低 low | 备选「锚点」；见待解决问题 / alternative 锚点; see open questions. |
+| Context | 周边范围 | 翻译 translate | — | 低 low | 局部重绘时生成器看到的选区周边图像，滑块以「whole area」收尾；「上下文」偏文字语境，也与本文件「需要上下文才能翻译的字符串」撞词；WebUI「Only masked padding」的汉化「预留像素」（两个汉化包一致）只指边距，盖不住整档 / the image around the selection that the generator sees while inpainting, with the slider ending at "whole area"; 上下文 reads as textual context and collides with this file's own "strings that need context" wording, and the WebUI packs' 预留像素 for "Only masked padding" names only the pixel margin, not the whole range. |
+| Context pin | 周边范围锚点 | 翻译 translate | — | 低 low | 「锚点」是图形软件常见词（如 Photoshop 的锚点工具），「固定点」少见 / 锚点 (anchor point) is a common graphics term (Photoshop's anchor-point tools, for example); 固定点 is not. |
 | Generated image options | 生成图像选项 | 翻译 translate | — | 低 low | — |
 | Image generator | 图像生成器 | 翻译 translate | — | 低 low | — |
-| Panel, rail, dock, float | 面板, 面板栏, 停靠, 浮动 | 翻译 translate | — | 低 low | Qt 中文用「停靠」「浮动」；rail 无通用译法；见待解决问题 / rail has no standard term; see open questions. |
+| Panel, rail, dock, float | 面板, 面板栏, 停靠, 浮动 | 翻译 translate | — | 低 low | Qt 中文用「停靠」「浮动」；rail 无通用译法，「面板栏」沿用「菜单栏」「工具栏」「状态栏」的构词，与 VS Code 中文给边缘条起的「活动栏」同类 / Qt zh uses 停靠 and 浮动; rail has no standard term, and 面板栏 follows the 菜单栏/工具栏/状态栏 word family, like VS Code zh's 活动栏 for its edge strip. |
 | Tool control hints | 工具控制提示 | 翻译 translate | — | 低 low | — |
 | Speed modifier | 加速修饰键 | 翻译 translate | — | 低 low | 指按住后使调整更快的修饰键 / a held key that speeds up adjustments. |
 | Selection brush | 选区画笔 | 翻译 translate | — | 低 low | — |
@@ -146,16 +146,9 @@ These product, format, model and color-model names stay in Latin script.
 
 ## 待解决问题 / Open questions
 
-以下是未来以中文为母语的审校者应最先核对的项目。
+目前没有待解决问题；先前的问题都已在各自词条中决定。母语审校者请先复核低置信度词条，以及标注「需母语者确认」的说明（如 Isolation「隔离」、Bicubic「双三次」）。
 
-These are the first things a native-speaking reviewer should check.
-
-- 拼合 vs 栅格化：IntraPaint 的「Flatten layer」把单个图层的变换和不透明度应用到像素上，而 Photoshop 的「拼合图像」合并所有图层。「拼合图层」会不会让用户误以为要合并图层？/ Flatten: IntraPaint's "Flatten layer" applies one layer's transform and opacity to its pixels, while Photoshop's 拼合图像 merges every layer. Would 拼合图层 mislead users into expecting a merge?
-- 反向提示词 vs 负面提示词：两个 A1111 汉化包各用一个。/ Negative prompt: 反向提示词 (diffus-me) vs 负面提示词 (dtlnor). Which?
-- 生成批次 vs 批次数：汉化包用「生成批次」，社区教程常用「批次数」，与「每批数量」并列时哪个更清晰？/ Batch count: 生成批次 (both packs) vs 批次数 (common in tutorials). Which reads clearest next to 每批数量?
-- Describe 描述 vs 反推提示词：IntraPaint 为与后端解耦而改名 Describe，但社区熟知的 WebUI 功能叫「提示词反推」。/ The WebUI feature is known to the community as 反推提示词, but IntraPaint renamed it "Describe".
-- Context：译为「上下文」「周边范围」，还是沿用 WebUI 汉化包的「预留像素」？「预留像素」只描述了边距，不包括「whole area」选项。Context pin 用「固定点」还是「锚点」？/ Context: 上下文, 周边范围, or the WebUI packs' 预留像素? 预留像素 describes only the padding, not the "whole area" option. Pin: 固定点 vs 锚点?
-- Rail（面板栏）：View 菜单里标签面板条没有通用中文名，是否需要新造词？/ Rail: no standard Chinese term for the edge strip of panel tabs; invent one?
+No questions are open; the earlier ones are decided in their rows. A native-speaking reviewer should first re-check the low-confidence rows and the notes marked "needs a native check" (such as Isolation 隔离 and Bicubic 双三次).
 
 [kk-layers]: https://docs.krita.org/zh_CN/user_manual/layers_and_masks.html
 [kk-sel]: https://docs.krita.org/zh_CN/user_manual/selections.html
@@ -172,3 +165,4 @@ These are the first things a native-speaking reviewer should check.
 [a1-diffus]: https://github.com/diffus-me/stable-diffusion-webui-localization/blob/main/zh_CN.json
 [a1-terms]: https://github.com/dtlnor/stable-diffusion-webui-localization-zh_CN/blob/Anne/Terminology.md
 [comfy-zh]: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/locales/zh/main.json
+[kad-zh]: https://github.com/Acly/krita-ai-diffusion/blob/main/ai_diffusion/language/zh-cn.json
