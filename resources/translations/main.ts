@@ -7126,57 +7126,32 @@ Keys: {decrease} / {increase}</source>
     <name>ui.panel.tool_control_panel.generation_area_tool_panel</name>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>Image generation area:</source>
+        <source>Position and size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>X:</source>
+        <source>Size presets</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>Y:</source>
+        <source>Sent to generator</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>W:</source>
+        <source>Fit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>H:</source>
+        <source>Recent</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>Set the left edge position of the image generation area.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>Set the top edge position of the image generation area.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>Set the width of the image generation area.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>Set the height of the image generation area.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>Image generation resolution:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>Area size:</source>
+        <source>Custom</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -7191,6 +7166,11 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Previous</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Resize the generation area to cover the entire image.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -7201,17 +7181,57 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Resize the generation area to the last size it had ({key}).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Resize the generation area to a recently used size.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>+ size</source>
+        <source>Sizes you use appear here.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>-</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>768 or 640x480</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Type a size like 768 or 640x480 and press Enter to resize the generation area.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Not a size: try 768 or 640x480</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Generates at {width} x {height}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>{resolution}, {rule}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Edit</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Change the resolution and resolution rule in the Image generation panel.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
