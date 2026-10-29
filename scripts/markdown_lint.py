@@ -1,14 +1,16 @@
 """CI markdown gate: lint the repository's Markdown files with PyMarkdown, using the rules in .pymarkdown.yaml.
 
 Every tracked .md file is checked except the ones in EXCLUDED. Line length (MD013) is checked everywhere except
-LONG_LINE_DOCS, the user-facing guides written with one paragraph or list item per line. A guide leaves that list
-when its lines are wrapped to the configured length.
+LONG_LINE_DOCS, the user-facing guides written with one paragraph or list item per line, and the per-language
+translation glossaries matched by TRANSLATION_GLOSSARY, whose bilingual table cells cannot wrap. A guide leaves
+LONG_LINE_DOCS when its lines are wrapped to the configured length.
 
 Usage: python scripts/markdown_lint.py [--fix]
   --fix applies the fixes PyMarkdown can make itself and then reports what is left.
 """
 import argparse
 import os
+import re
 import subprocess
 import sys
 
@@ -26,6 +28,11 @@ LONG_LINE_DOCS = {
     'doc/stable_diffusion_setup.md',
     'doc/tool_guide.md',
 }
+
+# Per-language translation glossaries (doc/translation/<language code>.md) also skip MD013: their notes are written
+# twice (target language, then English, see doc/machine_translation.md), and a table cell cannot wrap. The English
+# glossary.md does not match, so it keeps the limit.
+TRANSLATION_GLOSSARY = re.compile(r'doc/translation/[a-z]{2,3}(_[A-Z]{2})?\.md')
 
 
 def tracked_markdown() -> list[str]:
@@ -51,8 +58,8 @@ def main() -> None:
     args = parser.parse_args()
 
     paths = tracked_markdown()
-    long_line_paths = [path for path in paths if path in LONG_LINE_DOCS]
-    strict_paths = [path for path in paths if path not in LONG_LINE_DOCS]
+    long_line_paths = [path for path in paths if path in LONG_LINE_DOCS or TRANSLATION_GLOSSARY.fullmatch(path)]
+    strict_paths = [path for path in paths if path not in long_line_paths]
     if args.fix:
         run_pymarkdown('fix', strict_paths)
         run_pymarkdown('fix', long_line_paths, disabled_rules='md013')

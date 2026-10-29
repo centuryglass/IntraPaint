@@ -270,9 +270,10 @@ valid for the version it was generated with.
 
 `python scripts/markdown_lint.py` is CI's Markdown gate (PyMarkdown, configured by `.pymarkdown.yaml`). It checks every
 tracked `.md` file except the generated `doc/CHANGELOG.md` and the vendored GLID-3-XL doc. Lines are limited to 120
-characters, except in the user-facing guides listed in `LONG_LINE_DOCS` in the script; wrapping a guide's lines is a
-reason to remove it from that list. `python scripts/markdown_lint.py --fix` applies the fixes PyMarkdown can make
-itself. It runs on every change, including Markdown-only ones.
+characters, except in the user-facing guides listed in `LONG_LINE_DOCS` in the script and the per-language
+translation glossaries (`doc/translation/<language code>.md`, whose bilingual table cells cannot wrap); wrapping a
+guide's lines is a reason to remove it from `LONG_LINE_DOCS`. `python scripts/markdown_lint.py --fix` applies the fixes
+PyMarkdown can make itself. It runs on every change, including Markdown-only ones.
 
 ## Git & releases
 
