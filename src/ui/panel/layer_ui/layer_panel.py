@@ -8,7 +8,10 @@ It is a `DockPanel`, so it shows as much as fits the space its dock reports:
   toggles. Mode and opacity share a row when it fits across, and stack otherwise.
 - Optional, placed first: the rows' meta line (`META_PRIORITY`). Then the large form (`LARGE_PRIORITY`): text labels
   on the toggles and large thumbnails.
-- The panel header counts the layers under the root.
+- A strip needs room to read the start of a layer name beside the header (`LayerList.set_readable_names`), and its
+  columns stay at the left edge.
+- The panel header counts the layers under the root. While the panel floats, its title bar shows the name and the
+  count (the title note), so the header hides (`apply_header_form`).
 
 All layer changes go through `ImageStack`.
 """
@@ -78,6 +81,8 @@ class LayerPanel(DockPanel):
     def __init__(self, image_stack: ImageStack, parent: Optional[QWidget] = None) -> None:
         """Connects to the ImageStack and builds the panel."""
         self._image_stack = image_stack
+        # Whether the panel's dock floats, which hides the header:
+        self._floating = False
         super().__init__(PANEL_TITLE, QIcon(ICON_PATH_PANEL), parent=parent)
         self.setWindowTitle(WINDOW_TITLE)
         self.setWindowIcon(QIcon(APP_ICON_PATH))
@@ -173,6 +178,8 @@ class LayerPanel(DockPanel):
             layout.setRowStretch(1, 1)
             self._properties.setMaximumWidth(QWIDGETSIZE_MAX)
             self._layer_list.setMaximumWidth(QWIDGETSIZE_MAX)
+            self._content.setMaximumWidth(QWIDGETSIZE_MAX)
+            self._layer_list.set_readable_names(False)
             layout.setAlignment(self._properties, Qt.AlignmentFlag(0))
         else:
             layout.addWidget(self._properties, 0, 0)
@@ -181,8 +188,21 @@ class LayerPanel(DockPanel):
             layout.setRowStretch(0, 1)
             self._properties.setMaximumWidth(STRIP_SECTION_MAX_WIDTH)
             self._layer_list.setMaximumWidth(STRIP_SECTION_MAX_WIDTH)
+            # The columns end where their widgets' widths do, and the body's layout keeps them at its left edge:
+            self._content.setMaximumWidth(2 * STRIP_SECTION_MAX_WIDTH + max(layout.horizontalSpacing(), 0))
+            self._layer_list.set_readable_names(True)
             layout.setAlignment(self._properties, Qt.AlignmentFlag.AlignTop)
         self._properties.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+
+    def host_floating_changed(self, floating: bool) -> None:
+        """Hides the header while the panel floats, since its title bar shows the name and the layer count."""
+        if floating != self._floating:
+            self._floating = floating
+            self.refit()
+
+    def apply_header_form(self, collapsed: bool) -> None:
+        """Hides the header while the panel floats, and otherwise wherever `DockPanel` collapses it."""
+        super().apply_header_form(collapsed or self._floating)
 
     def _apply_controls_form(self, form: Optional[int]) -> None:
         self._properties.set_stacked(form == CONTROLS_STACKED)
@@ -205,8 +225,9 @@ class LayerPanel(DockPanel):
 
     def _layer_count_change_slot(self, *_args) -> None:
         count = len(self._image_stack.layer_stack.recursive_child_layers)
-        self.header.set_description(ONE_LAYER_DESCRIPTION if count == 1
-                                    else LAYER_COUNT_DESCRIPTION.format(count=count))
+        description = ONE_LAYER_DESCRIPTION if count == 1 else LAYER_COUNT_DESCRIPTION.format(count=count)
+        self.header.set_description(description)
+        self.set_title_note(description)
 
     def _active_layer_change_slot(self, new_active_layer: Layer) -> None:
         if self._active_layer is not None:

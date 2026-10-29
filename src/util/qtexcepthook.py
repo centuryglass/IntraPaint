@@ -121,7 +121,7 @@ class ResizableMessageBox(QMessageBox):  # pylint: disable=R0903
 class QtExceptHook():
     """GUI exception hook for PyQt 5.x applications
 
-    :param reporting_cb: If provided, a :guilabel:`Report Bug...` button will
+    :param reporting_cb: If provided, a :guilabel:`Report bug...` button will
         be added which will call ``reporting_cb`` when clicked.
     """
 
@@ -144,11 +144,11 @@ class QtExceptHook():
                         'reported to the developers nonetheless.')
 
         if self._reporting_cb is not None:
-            btn_report = self._dialog.addButton(_tr('Report Bug...'), QMessageBox.ButtonRole.ActionRole)
+            btn_report = self._dialog.addButton(_tr('Report bug...'), QMessageBox.ButtonRole.ActionRole)
             btn_report.clicked.disconnect()
             btn_report.clicked.connect(self._cb_report_bug)
         else:
-            btn_copy = self._dialog.addButton(_tr('Copy Traceback...'),
+            btn_copy = self._dialog.addButton(_tr('Copy traceback...'),
                                               QMessageBox.ButtonRole.ActionRole)
             btn_copy.clicked.disconnect()
             btn_copy.clicked.connect(self._cb_copy_to_clipboard)
@@ -167,7 +167,7 @@ class QtExceptHook():
 
 
     def _cb_copy_to_clipboard(self):
-        """Qt slot for the :guilabel:`Copy Traceback...` button."""
+        """Qt slot for the :guilabel:`Copy traceback...` button."""
         QApplication.instance().clipboard().setText(
             self._dialog.detailedText())
 
@@ -178,7 +178,7 @@ class QtExceptHook():
 
     @Slot()
     def _cb_report_bug(self):
-        """Qt slot for the :guilabel:`Report Bug...` button. """
+        """Qt slot for the :guilabel:`Report bug...` button. """
         self._reporting_cb(self._dialog.detailedText())
 
     def _excepthook(self, exc_type, exc_value, exc_traceback):

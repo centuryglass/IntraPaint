@@ -10,7 +10,7 @@
     </message>
     <message>
         <location filename="../config/a1111_setting_definitions.json"/>
-        <source>Stable Diffusion Model:</source>
+        <source>Stable Diffusion model:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -245,7 +245,7 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Mark the image generation area and the selection's bounds with bars along the rulers.</source>
+        <source>Mark the generation area and the selection's bounds with bars along the rulers.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -255,7 +255,7 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Color of the image generation area's bar on the rulers. Leave empty to use the theme's accent color. The selection's bar uses the selection overlay color. Both are drawn opaque, lightened or darkened as needed to stand out against the ruler.</source>
+        <source>Color of the generation area's bar on the rulers. Leave empty to use the theme's accent color. The selection's bar uses the selection overlay color. Both are drawn opaque, lightened or darkened as needed to stand out against the ruler.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -285,7 +285,7 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Enable or disable animation on the image generation area outline, selected content area outline, and line previews.</source>
+        <source>Enable or disable animation on the generation area outline, selected content area outline, and line previews.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -390,12 +390,12 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Maximum editing size:</source>
+        <source>Maximum generation area size:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Maximum size in pixels of the area selected for editing</source>
+        <source>Maximum size in pixels of the generation area</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -405,17 +405,17 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Minimum size in pixels of the AI image generation area</source>
+        <source>Minimum size in pixels of the generation area</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Maximum generation area size:</source>
+        <source>Maximum generation resolution:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Maximum size in pixels of the AI image generation area</source>
+        <source>The largest generation resolution, in pixels, that the "Match area, upscale small areas" rule scales a small generation area up to. Areas larger than this keep their own size.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -510,7 +510,7 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
+        <source>Upscaling mode used when the inpainting resolution doesn't match the generation area size.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -520,7 +520,7 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
+        <source>Downscaling mode used when the inpainting resolution doesn't match the generation area size.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -555,7 +555,7 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>How much to blur the inpainting mask, in pixels at the generation size, so generated content blends smoothly into the original image.</source>
+        <source>How much to blur the inpainting mask, in pixels at the generation resolution, so generated content blends smoothly into the original image.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -803,12 +803,12 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Editing size:</source>
+        <source>Generation area size:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Current/initial size in pixels of the area selected for editing</source>
+        <source>Current size in pixels of the generation area</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -818,12 +818,12 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Generation size:</source>
+        <source>Generation resolution:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Current/initial size in pixels used for AI image generation</source>
+        <source>Current/initial generation resolution: the size in pixels the AI image generator works at</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -958,7 +958,7 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Sample Merged</source>
+        <source>Sample merged</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1313,7 +1313,7 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Shape Type:</source>
+        <source>Shape type:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1403,7 +1403,7 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Fill Color</source>
+        <source>Fill color</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1473,12 +1473,12 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Guidance scale:</source>
+        <source>CFG scale:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Controls how strongly the prompt and negative prompt are applied.</source>
+        <source>Controls how strongly the prompt and negative prompt are applied, through classifier-free guidance (CFG).</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1843,7 +1843,7 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Generated images using the same seed will match images created at this resolution, regardless of generation size.</source>
+        <source>Generated images using the same seed will match images created at this resolution, regardless of generation resolution.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2053,7 +2053,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Key Speed Modifier:</source>
+        <source>Key speed modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2073,7 +2073,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Line Drawing Modifier:</source>
+        <source>Line drawing modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2083,7 +2083,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Fixed Angle Modifier:</source>
+        <source>Fixed angle modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2093,7 +2093,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Pan View Modifier:</source>
+        <source>Pan view modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2103,7 +2103,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Selection Add Modifier:</source>
+        <source>Selection add modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2113,7 +2113,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Selection Subtract Modifier:</source>
+        <source>Selection subtract modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2123,7 +2123,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Selection Replace Modifier:</source>
+        <source>Selection replace modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2133,7 +2133,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Fixed Aspect Ratio Modifier:</source>
+        <source>Fixed aspect ratio modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2143,12 +2143,22 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Color Picker Override Modifier:</source>
+        <source>Color picker override modifier:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
         <source>When held, temporarily switch from the brush or fill tool to the color picker.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Compare With Original Modifier:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>While held in the generated image selector's single view, the original image content shows in place of the focused option.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2243,7 +2253,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Move the image generation area left, move active layer left, or view previous generated image option</source>
+        <source>Move the generation area left, move active layer left, or view previous generated image option</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2253,7 +2263,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Move the image generation area right, move active layer right, or view next generated image option</source>
+        <source>Move the generation area right, move active layer right, or view next generated image option</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2263,7 +2273,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Move the image generation area up, move active layer up, or zoom in on first generated image option</source>
+        <source>Move the generation area up, move active layer up, or zoom in on first generated image option</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2273,7 +2283,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Move the image generation area down, move active layer down, or zoom to show all generated image options</source>
+        <source>Move the generation area down, move active layer down, or zoom to show all generated image options</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2453,7 +2463,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Switch to the image generation area selection tool:</source>
+        <source>Switch to the generation area tool:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2813,7 +2823,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Center the view on the image generation area and zoom to fit it.</source>
+        <source>Center the view on the generation area and zoom to fit it.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2898,7 +2908,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Crop the image to fit image generation area.</source>
+        <source>Crop the image to fit the generation area.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4440,12 +4450,12 @@ Choose "No" to open only the first frame.</source>
     </message>
     <message>
         <location filename="../../src/util/qtexcepthook.py"/>
-        <source>Report Bug...</source>
+        <source>Report bug...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/util/qtexcepthook.py"/>
-        <source>Copy Traceback...</source>
+        <source>Copy traceback...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4649,7 +4659,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>image.filter.brightness_contrast</name>
     <message>
         <location filename="../../src/image/filter/brightness_contrast.py"/>
-        <source>Brightness/Contrast</source>
+        <source>Brightness/contrast</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4703,7 +4713,7 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/image/filter/posterize.py"/>
-        <source>Bit Count:</source>
+        <source>Bit count:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4716,7 +4726,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>image.filter.rgb_color_balance</name>
     <message>
         <location filename="../../src/image/filter/rgb_color_balance.py"/>
-        <source>RGBA Color Balance</source>
+        <source>RGBA color balance</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5063,7 +5073,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>tools.clone_stamp_tool</name>
     <message>
         <location filename="../../src/tools/clone_stamp_tool.py"/>
-        <source>Clone Stamp</source>
+        <source>Clone stamp</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5132,7 +5142,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>tools.eyedropper_tool</name>
     <message>
         <location filename="../../src/tools/eyedropper_tool.py"/>
-        <source>Color Picker</source>
+        <source>Color picker</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5168,7 +5178,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>tools.filter_tool</name>
     <message>
         <location filename="../../src/tools/filter_tool.py"/>
-        <source>Filter Brush</source>
+        <source>Filter brush</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5186,7 +5196,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>tools.generation_area_tool</name>
     <message>
         <location filename="../../src/tools/generation_area_tool.py"/>
-        <source>Set Image Generation Area</source>
+        <source>Generation area</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5232,7 +5242,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>tools.layer_transform_tool</name>
     <message>
         <location filename="../../src/tools/layer_transform_tool.py"/>
-        <source>Transform Layers</source>
+        <source>Transform layers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5268,7 +5278,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>tools.selection_tool</name>
     <message>
         <location filename="../../src/tools/selection_brush_tool.py"/>
-        <source>Selection Brush</source>
+        <source>Selection brush</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5304,7 +5314,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>tools.shape_tool</name>
     <message>
         <location filename="../../src/tools/shape_tool.py"/>
-        <source>Draw Shapes</source>
+        <source>Draw shapes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5358,37 +5368,27 @@ Please remember to include the traceback from the Details expander.</source>
     <name>ui.generated_image_selector</name>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Zoom to changes</source>
+        <source>{mode}, {width} x {height}, {count} options</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Show selection</source>
+        <source>{ready} of {total} ready</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Cancel</source>
+        <source>{ready} of {total} ready - {progress}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Close without choosing. These options stay available to re-open.</source>
+        <source>Only inpainted options have a selection.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Previous</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Toggle zoom</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Next</source>
+        <source>Zoom to changes needs a selection smaller than the generation area.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5399,11 +5399,6 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Option {index}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Loading...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5461,61 +5456,200 @@ Please remember to include the traceback from the Details expander.</source>
         <source>Image content was added as new layer "{new_layer_name}"</source>
         <translation type="unfinished"></translation>
     </message>
+</context>
+<context>
+    <name>ui.generated_option_view</name>
     <message>
-        <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Select from generated image options.</source>
+        <location filename="../../src/ui/generated_option_view.py"/>
+        <source>Original</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>
-                           &lt;table&gt;
-                             &lt;tr&gt;
-                               &lt;td&gt;
-                                 {modifier_or_modifiers}+{left_mouse_icon} or {middle_mouse_icon} and drag: pan view
-                               &lt;/td&gt;
-                               &lt;td&gt;&lt;pre&gt;    &lt;/pre&gt;&lt;/td&gt;
-                               &lt;td&gt;
-                                 {v_scroll_icon} or {zoom_in_hint}/{zoom_out_hint}: zoom
-                               &lt;/td&gt;
-                             &lt;/tr&gt;
-                             &lt;tr&gt;
-                               &lt;td&gt;
-                                 {up_key_hint}: zoom to first option
-                               &lt;/td&gt;
-                               &lt;td&gt;&lt;pre&gt;    &lt;/pre&gt;&lt;/td&gt;
-                               &lt;td&gt;
-                                 {escape_key_hint}: close, options stay re-openable
-                               &lt;/td&gt;
-                              &lt;/tr&gt;
-                            &lt;/table&gt;
-                           </source>
+        <location filename="../../src/ui/generated_option_view.py"/>
+        <source>{label} of {count}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>
-                           &lt;table&gt;
-                             &lt;tr&gt;
-                               &lt;td&gt;
-                                 {modifier_or_modifiers}+{left_mouse_icon} or {middle_mouse_icon} and drag: pan view
-                               &lt;/td&gt;
-                               &lt;td&gt;&lt;pre&gt;    &lt;/pre&gt;&lt;/td&gt;
-                               &lt;td&gt;
-                                 {v_scroll_icon} or {zoom_in_hint}/{zoom_out_hint}: zoom
-                               &lt;/td&gt;
-                             &lt;/tr&gt;
-                             &lt;tr&gt;
-                               &lt;td&gt;
-                                 {enter_key_hint}: select option
-                               &lt;/td&gt;
-                               &lt;td&gt;&lt;pre&gt;    &lt;/pre&gt;&lt;/td&gt;
-                               &lt;td&gt;
-                                 {escape_key_hint}/{down_key_hint}: return to full view
-                               &lt;/td&gt;
-                              &lt;/tr&gt;
-                            &lt;/table&gt;
-                           </source>
+        <location filename="../../src/ui/generated_option_view.py"/>
+        <source>Hold {key} to compare</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_option_view.py"/>
+        <source>Click to use</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_option_view.py"/>
+        <source>Generating</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_option_view.py"/>
+        <source>Waiting</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.generated_selector_bars</name>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Choose a result</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Grid</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Single</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Show every option</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Show the focused option up close</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>View</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Show selection, zoom to changes and full resolution</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Zoom to changes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Show selection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Full resolution</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Cancel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Stop generating and return to the editor.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Close</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Close without choosing. These options stay available to re-open.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Stop</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Stop generating and keep the finished options.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Stopping...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>‹ Previous</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Next ›</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Previous option ({key})</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Next option ({key})</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Send to new layer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Save to file...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>More</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Use option {index}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Keep original</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Apply the focused option and return to the editor.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>This option is still generating.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Controls</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Enter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>{left_key}{right_key} browse &amp;nbsp; {first_key}-{last_key} open option &amp;nbsp; {up_key} single view &amp;nbsp; {pan_modifier}+{left_mouse_icon} or {middle_mouse_icon} pan &amp;nbsp; {zoom_in_key}{zoom_out_key} zoom</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>{compare_key} hold: original &amp;nbsp; {left_key}{right_key} browse &amp;nbsp; {down_key} back to grid &amp;nbsp; {pan_modifier}+{left_mouse_icon} or {middle_mouse_icon} pan &amp;nbsp; {v_scroll_icon} zoom</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -5977,7 +6111,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/image_scale_modal.py"/>
-        <source>Tile ControlNet Preprocessor:</source>
+        <source>Tile ControlNet preprocessor:</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -6000,7 +6134,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/login_modal.py"/>
-        <source>Log In</source>
+        <source>Log in</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6101,7 +6235,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/new_image_modal.py"/>
-        <source>Background Color:</source>
+        <source>Background color:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6159,7 +6293,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>X Offset:</source>
+        <source>X offset:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6169,7 +6303,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>Y Offset:</source>
+        <source>Y offset:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6436,17 +6570,17 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
-        <source>Control Weight:</source>
+        <source>Control weight:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
-        <source>Starting Control Step:</source>
+        <source>Starting control step:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
-        <source>Ending Control Step:</source>
+        <source>Ending control step:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6560,7 +6694,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
-        <source>Guidance</source>
+        <source>CFG scale</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -7121,57 +7255,32 @@ Keys: {decrease} / {increase}</source>
     <name>ui.panel.tool_control_panel.generation_area_tool_panel</name>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>Image generation area:</source>
+        <source>Position and size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>X:</source>
+        <source>Size presets</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>Y:</source>
+        <source>Sent to generator</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>W:</source>
+        <source>Fit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>H:</source>
+        <source>Recent</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>Set the left edge position of the image generation area.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>Set the top edge position of the image generation area.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>Set the width of the image generation area.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>Set the height of the image generation area.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>Image generation resolution:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>Area size:</source>
+        <source>Custom</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -7186,6 +7295,11 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Previous</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Resize the generation area to cover the entire image.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -7196,17 +7310,57 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Resize the generation area to the last size it had ({key}).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Resize the generation area to a recently used size.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
-        <source>+ size</source>
+        <source>Sizes you use appear here.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>-</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>768 or 640x480</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
         <source>Type a size like 768 or 640x480 and press Enter to resize the generation area.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Not a size: try 768 or 640x480</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Generates at {width} x {height}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>{resolution}, {rule}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Edit</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/generation_area_tool_panel.py"/>
+        <source>Change the resolution and resolution rule in the Image generation panel.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -8502,6 +8656,16 @@ Click to pick, or press Esc to cancel</source>
         <source>Inpainting failure</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../src/ui/window/main_window.py"/>
+        <source>Generation stopped before any images were ready.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/main_window.py"/>
+        <source>Generation finished without any images.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ui.window.navigation_window</name>
@@ -8683,12 +8847,12 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/util/shared_constants.py"/>
-        <source>Zoom In</source>
+        <source>Zoom in</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/util/shared_constants.py"/>
-        <source>Reset Zoom</source>
+        <source>Reset zoom</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -8793,7 +8957,7 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/util/shared_constants.py"/>
-        <source>Nothing was selected in the image generation area. Either use the selection tool to mark part of the image generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</source>
+        <source>Nothing was selected in the generation area. Either use the selection tool to mark part of the generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

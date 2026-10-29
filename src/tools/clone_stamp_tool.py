@@ -30,7 +30,7 @@ ICON_PATH_CLONE_STAMP_TOOL = f'{PROJECT_DIR}/resources/icons/tools/stamp_icon.sv
 CURSOR_PATH_CLONE_STAMP_TOOL = f'{PROJECT_DIR}/resources/cursors/stamp_cursor.svg'
 IMAGE_PATH_CLONE_SAMPLE_POINT = f'{PROJECT_DIR}/resources/cursors/stamp_cursor_source.svg'
 
-CLONE_STAMP_LABEL = _tr('Clone Stamp')
+CLONE_STAMP_LABEL = _tr('Clone stamp')
 CLONE_STAMP_TOOLTIP = _tr('Copy image content from one area to another')
 CLONE_STAMP_CONTROL_HINT = _tr('{right_mouse_icon}: set source - {left_mouse_icon}: draw')
 

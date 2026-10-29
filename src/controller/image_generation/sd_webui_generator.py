@@ -532,7 +532,7 @@ class SDWebUIGenerator(SDGenerator):
     def describe(self) -> None:
         """ Automatically generates an image prompt, using the WebUI's interrogate endpoint.
 
-        Sends the image generation area content to the Stable Diffusion WebUI API, where an image captioning model
+        Sends the generation area content to the Stable Diffusion WebUI API, where an image captioning model
         automatically generates an appropriate prompt. Once returned, that prompt is copied to the appropriate field
         in the UI. Displays an error dialog instead if no image is loaded or another API operation is in-progress.
         """
@@ -605,7 +605,7 @@ class SDWebUIGenerator(SDGenerator):
             Signal to emit when status updates are available.
         source_image : QImage
             Image to potentially use as a basis for the created or edited image.  This will be ignored if the editing
-            mode is text-to-image and there are no ControlNet units using the image generation area.
+            mode is text-to-image and there are no ControlNet units using the generation area.
         mask_image : QImage, optional
             Mask marking the edited image region.
         """

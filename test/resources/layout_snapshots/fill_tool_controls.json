@@ -15,10 +15,10 @@
       "squeezed: PanelSection[0]/QWidget/QWidget/QLabel 'Pattern' is 27x48, minimum 43x17",
       "squeezed: PanelSection[0]/QWidget/QWidget/FillStyleComboBox is 27x32, minimum 103x32",
       "squeezed: PanelSection[0]/QWidget/CheckBox 'Only inside selection' is 94x22, minimum 146x22",
-      "squeezed: PanelSection[1] is 94x78, minimum 116x78",
-      "squeezed: PanelSection[1]/QWidget is 94x52, minimum 116x52",
+      "squeezed: PanelSection[1] is 94x78, minimum 117x78",
+      "squeezed: PanelSection[1]/QWidget is 94x52, minimum 117x52",
       "clipped: PanelSection[1]/QWidget/SliderField shows 94x24 of 110x24",
-      "squeezed: PanelSection[1]/QWidget/CheckBox 'Sample Merged' is 94x22, minimum 116x22"
+      "squeezed: PanelSection[1]/QWidget/CheckBox 'Sample merged' is 94x22, minimum 117x22"
     ],
     "size": [
       112,
@@ -34,7 +34,7 @@
   },
   "short": {
     "problems": [
-      "overlap: PanelSection[1]/QWidget/SliderField and PanelSection[1]/QWidget/CheckBox 'Sample Merged' share 206x6",
+      "overlap: PanelSection[1]/QWidget/SliderField and PanelSection[1]/QWidget/CheckBox 'Sample merged' share 206x6",
       "squeezed: PanelSection[0] is 206x39, minimum 206x102",
       "squeezed: PanelSection[0]/_HeaderButton 'Paint' is 202x20, minimum 16x26",
       "squeezed: PanelSection[0]/QWidget is 206x19, minimum 206x76",
@@ -43,11 +43,11 @@
       "squeezed: PanelSection[0]/QWidget/QWidget/QLabel 'Pattern' is 43x7, minimum 43x17",
       "squeezed: PanelSection[0]/QWidget/QWidget/FillStyleComboBox is 103x7, minimum 103x32",
       "squeezed: PanelSection[0]/QWidget/CheckBox 'Only inside selection' is 206x6, minimum 146x22",
-      "squeezed: PanelSection[1] is 206x39, minimum 116x78",
+      "squeezed: PanelSection[1] is 206x39, minimum 117x78",
       "squeezed: PanelSection[1]/_HeaderButton 'Region' is 202x20, minimum 16x26",
-      "squeezed: PanelSection[1]/QWidget is 206x19, minimum 116x52",
+      "squeezed: PanelSection[1]/QWidget is 206x19, minimum 117x52",
       "clipped: PanelSection[1]/QWidget/SliderField shows 206x19 of 206x24",
-      "squeezed: PanelSection[1]/QWidget/CheckBox 'Sample Merged' is 206x6, minimum 116x22"
+      "squeezed: PanelSection[1]/QWidget/CheckBox 'Sample merged' is 206x6, minimum 117x22"
     ],
     "size": [
       224,

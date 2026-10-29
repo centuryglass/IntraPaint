@@ -35,6 +35,21 @@ class MainWindowTest(IntraPaintTestCase):
         self.assertFalse(self.window.geometry().isEmpty())
         # TODO: rewrite once tabbed layout design is stable
 
+    def test_clamp_fits_frame_to_screen_and_settles(self) -> None:
+        """Clamping fits the window's frame to the screen, so the resize it makes doesn't schedule another resize."""
+        screen = QSize(700, 500)
+        window = self.window
+        window.resize(900, 700)
+        frame_margins = window.frameGeometry().size() - window.size()
+        with patch('src.ui.window.main_window.get_screen_size', return_value=screen):
+            window._clamp_to_screen()  # pylint: disable=protected-access
+            self.assertLessEqual(window.frameGeometry().width(), screen.width())
+            self.assertLessEqual(window.frameGeometry().height(), screen.height())
+            self.assertEqual(window.size(), screen - frame_margins)
+            with patch.object(window, 'resize') as resize:
+                window._clamp_to_screen()  # pylint: disable=protected-access
+            resize.assert_not_called()
+
     @patch('src.ui.window.main_window.QApplication.exit')
     def test_close_without_confirmation_handler_exits(self, mock_exit) -> None:
         """A window with no `confirm_close` handler closes and exits the application."""
@@ -73,9 +88,18 @@ class MainWindowTest(IntraPaintTestCase):
         mock_exit.assert_called_once()
         self.assertIs(self.window.confirm_close, confirm)
 
-    def test_loading_widget_is_above_selection_screen(self) -> None:
-        """The loading indicator is the topmost child while a generation runs, not hidden behind the screen."""
+    def test_loading_widget_stays_hidden_over_selection_screen(self) -> None:
+        """While the selection screen shows, its unfilled options show the loading state, so the full-window indicator
+        stays hidden and the progress text goes to the screen."""
         self.window.show_generated_options(None)
+        self.window.set_is_loading(True)
+        self.window.set_loading_message('step 3/20')
+        self.assertFalse(self.window._loading_widget.isVisible())  # pylint: disable=protected-access
+        selector = self.window._image_selector  # pylint: disable=protected-access
+        self.assertEqual(selector._progress_text, 'step 3/20')  # pylint: disable=protected-access
+
+    def test_loading_widget_is_topmost_over_the_canvas(self) -> None:
+        """Outside the selection screen, the loading indicator is the topmost child while a task runs."""
         self.window.set_is_loading(True)
         loading_widget = self.window._loading_widget  # pylint: disable=protected-access
         self.assertTrue(loading_widget.isVisible())

@@ -60,8 +60,8 @@ LABEL_TEXT_COLOR = _tr('Color:')
 LABEL_TEXT_SIZE = _tr('Size:')
 LABEL_TEXT_SCALE = _tr('Scale:')
 LABEL_TEXT_IMAGE_PADDING = _tr('Padding:')
-BUTTON_TEXT_ZOOM_IN = _tr('Zoom In')
-BUTTON_TEXT_RESET_ZOOM = _tr('Reset Zoom')
+BUTTON_TEXT_ZOOM_IN = _tr('Zoom in')
+BUTTON_TEXT_RESET_ZOOM = _tr('Reset zoom')
 ASPECT_RATIO_CHECK_LABEL = _tr('Keep aspect ratio')
 
 # Layer change failure errors:
@@ -97,8 +97,8 @@ DESCRIBE_LOADING_TEXT = _tr('Describing image')
 
 # Image generation:
 GENERATE_ERROR_TITLE = _tr('Image generation failed')
-GENERATE_ERROR_MESSAGE_EMPTY_MASK = _tr('Nothing was selected in the image generation area. Either use the selection'
-                                        ' tool to mark part of the image generation area for inpainting, move the image'
+GENERATE_ERROR_MESSAGE_EMPTY_MASK = _tr('Nothing was selected in the generation area. Either use the selection'
+                                        ' tool to mark part of the generation area for inpainting, move the image'
                                         ' generation area to cover selected content, or switch to another image'
                                         ' generation mode.')
 

@@ -24,6 +24,11 @@ class TempDashedLineItem(AnimatedDashItem):
         self.prepareGeometryChange()
         self._line = QLineF(line)
         self.update()
+        self.sync_animation()
+
+    def has_dashes(self) -> bool:
+        """Returns whether the item has a line to draw."""
+        return not self._line.isNull()
 
     def _line_polygon(self) -> QPolygonF:
         p1 = self._line.p1()

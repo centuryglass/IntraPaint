@@ -1,10 +1,10 @@
 """QGraphicsObject parent for classes that draw animated dash patterns."""
 import sys
-from typing import Optional
+from typing import Any
 
 from PySide6.QtCore import QTimer
-from PySide6.QtGui import QPen, QColor, Qt, QShowEvent, QHideEvent
-from PySide6.QtWidgets import QGraphicsObject
+from PySide6.QtGui import QPen, QColor, Qt
+from PySide6.QtWidgets import QGraphicsObject, QGraphicsItem
 
 from src.config.application_config import AppConfig
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
@@ -25,8 +25,20 @@ def sync_animation_timer(timer: QTimer, animated: bool, visible: bool) -> None:
         timer.stop()
 
 
+def is_shown_in_scene(item: QGraphicsItem) -> bool:
+    """Returns whether a graphics item is visible and in a scene.
+
+    Graphics items never receive `showEvent` or `hideEvent`, so animated items track this through `itemChange`.
+    """
+    return item.isVisible() and item.scene() is not None
+
+
 class AnimatedDashItem(QGraphicsObject):
-    """QGraphicsObject parent for classes that draw animated dash patterns."""
+    """QGraphicsObject parent for classes that draw animated dash patterns.
+
+    The dashes animate only while the item is shown in a scene and `has_dashes` is true. A subclass whose content
+    changes calls `sync_animation` afterwards.
+    """
 
     def __init__(self) -> None:
         super().__init__()
@@ -83,12 +95,19 @@ class AnimatedDashItem(QGraphicsObject):
         if TIMELAPSE_MODE_FLAG in sys.argv:
             return
         self._animated = should_animate
-        sync_animation_timer(self._animation_timer, self._animated, self.isVisible())
+        self.sync_animation()
 
-    def showEvent(self, _: Optional[QShowEvent]) -> None:
-        """Starts the animation when the item is shown."""
-        sync_animation_timer(self._animation_timer, self._animated, self.isVisible())
+    def has_dashes(self) -> bool:
+        """Returns whether the item currently draws any dashes."""
+        return True
 
-    def hideEvent(self, _: Optional[QHideEvent]) -> None:
-        """Stops the animation when the item is hidden."""
-        sync_animation_timer(self._animation_timer, self._animated, self.isVisible())
+    def sync_animation(self) -> None:
+        """Runs the dash animation only while the item is animated, shown in a scene, and has dashes to draw."""
+        sync_animation_timer(self._animation_timer, self._animated, is_shown_in_scene(self) and self.has_dashes())
+
+    def itemChange(self, change: QGraphicsItem.GraphicsItemChange, value: Any) -> Any:  # pylint: disable=invalid-name
+        """Starts or stops the animation as the item is shown, hidden, added to a scene or removed from one."""
+        if change in (QGraphicsItem.GraphicsItemChange.ItemVisibleHasChanged,
+                      QGraphicsItem.GraphicsItemChange.ItemSceneHasChanged):
+            self.sync_animation()
+        return super().itemChange(change, value)

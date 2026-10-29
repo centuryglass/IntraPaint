@@ -24,7 +24,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 POSTERIZE_FILTER_TITLE = _tr('Posterize')
 POSTERIZE_FILTER_DESCRIPTION = _tr('Reduce color range by reducing image color bit count.')
-PARAM_LABEL = _tr('Bit Count:')
+PARAM_LABEL = _tr('Bit count:')
 PARAM_TEXT = _tr('Image color bits to preserve (1-8)')
 
 ICON_PATH_POSTERIZE_FILTER = f'{PROJECT_DIR}/resources/icons/filter/posterize.png'

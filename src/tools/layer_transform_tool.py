@@ -31,7 +31,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-TRANSFORM_LABEL = _tr('Transform Layers')
+TRANSFORM_LABEL = _tr('Transform layers')
 TRANSFORM_TOOLTIP = _tr('Move, scale, or rotate the active layer.')
 TRANSFORM_CONTROL_HINT = _tr('{left_mouse_icon}: select layer<br/>{left_mouse_icon}, drag: move layer')
 

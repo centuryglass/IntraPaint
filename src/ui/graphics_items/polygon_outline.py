@@ -1,14 +1,15 @@
 """Displays polygon outlines as animated dashes with subtle color changes."""
 import sys
 import weakref
-from typing import Optional
+from typing import Any, Optional
 
 from PySide6.QtCore import Qt, Property, QPropertyAnimation, QObject, QPointF, SignalInstance
-from PySide6.QtGui import QPen, QColor, QShowEvent, QHideEvent, QPolygonF, QTransform, QBrush, QPixmap, \
+from PySide6.QtGui import QPen, QColor, QPolygonF, QTransform, QBrush, QPixmap, \
     QPainterPath, QImage, QPainter
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsView, QGraphicsScene, \
     QGraphicsPathItem
 
+from src.ui.graphics_items.animated_dash_item import is_shown_in_scene
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR
 from src.util.visual.contrast_color import contrast_color
 from src.util.visual.image_utils import create_transparent_image
@@ -166,10 +167,7 @@ class PolygonOutline(QGraphicsPathItem):
         for polygon in polygons:
             path.addPolygon(polygon)
         self.setPath(path)
-        if (self._animated_outline or self._animated_fill) and not self.path().isEmpty():
-            self._animator.animation.start()
-        else:
-            self._animator.animation.stop()
+        self._start_or_stop_animation()
 
     @property
     def fill_color(self) -> QColor:
@@ -238,7 +236,8 @@ class PolygonOutline(QGraphicsPathItem):
         self._start_or_stop_animation()
 
     def _start_or_stop_animation(self):
-        if TIMELAPSE_MODE_FLAG in sys.argv or self.path().isEmpty():
+        """Runs the animation only while it is enabled and the outline is shown in a scene around a path."""
+        if TIMELAPSE_MODE_FLAG in sys.argv or self.path().isEmpty() or not is_shown_in_scene(self):
             self._animator.animation.stop()
             return
         if self._animated_outline or self._animated_fill:
@@ -261,13 +260,9 @@ class PolygonOutline(QGraphicsPathItem):
         self._start_or_stop_animation()
         self._update_pen_and_brush()
 
-    # noinspection PyPep8Naming
-    def showEvent(self, _: Optional[QShowEvent]) -> None:
-        """Starts the animation when the outline is shown."""
-        if self._animated_outline:
-            self._animator.animation.start()
-
-    # noinspection PyPep8Naming
-    def hideEvent(self, _: Optional[QHideEvent]) -> None:
-        """Stops the animation when the outline is hidden."""
-        self._animator.animation.stop()
+    def itemChange(self, change: QGraphicsItem.GraphicsItemChange, value: Any) -> Any:  # pylint: disable=invalid-name
+        """Starts or stops the animation as the outline is shown, hidden, added to a scene or removed from one."""
+        if change in (QGraphicsItem.GraphicsItemChange.ItemVisibleHasChanged,
+                      QGraphicsItem.GraphicsItemChange.ItemSceneHasChanged):
+            self._start_or_stop_animation()
+        return super().itemChange(change, value)

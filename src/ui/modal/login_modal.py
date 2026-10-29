@@ -21,7 +21,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 LOGIN_TITLE = _tr('Enter image generation server credentials:')
 USERNAME_LABEL = _tr('Username:')
 PASSWORD_LABEL = _tr('Password:')
-LOGIN_BUTTON_TEXT = _tr('Log In')
+LOGIN_BUTTON_TEXT = _tr('Log in')
 CANCEL_BUTTON_TEXT = _tr('Cancel')
 
 ERROR_MISSING_INFO = _tr('Username and password cannot be empty.')

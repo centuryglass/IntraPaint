@@ -350,12 +350,12 @@ class SDComfyUIGenerator(SDGenerator):
         return None  # ComfyUI doesn't provide LoRA thumbnails.
 
     def get_gen_area_image(self, init_image: Optional[QImage] = None) -> QImage:
-        """Gets the contents of the image generation area, handling any necessary preprocessing."""
+        """Gets the contents of the generation area, handling any necessary preprocessing."""
         image = init_image if init_image is not None else self._image_stack.qimage_generation_area_content()
         return self._scale_and_crop_gen_qimage(image)
 
     def get_gen_area_mask(self, init_mask: Optional[QImage] = None) -> QImage:
-        """Gets the unblurred inpainting mask for the image generation area, opaque where content changes.
+        """Gets the unblurred inpainting mask for the generation area, opaque where content changes.
 
         The library applies `AppConfig.MASK_BLUR` and converts the mask to ComfyUI's format when uploading it.
         """
@@ -431,7 +431,7 @@ class SDComfyUIGenerator(SDGenerator):
             Signal to emit when status updates are available.
         source_image : QImage
             Image to potentially use as a basis for the created or edited image.  This will be ignored if the editing
-            mode is text-to-image and there are no ControlNet units using the image generation area.
+            mode is text-to-image and there are no ControlNet units using the generation area.
         mask_image : QImage, optional
             Mask marking the edited image region.
         """

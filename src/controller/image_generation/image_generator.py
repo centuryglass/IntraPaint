@@ -122,7 +122,7 @@ class ImageGenerator(MenuBuilder, ABC):
             Signal to emit when status updates are available. Expected keys are 'seed' and 'progress'.
         source_image : QImage
             Image to potentially use as a basis for the created or edited image.  This will be ignored if the editing
-            mode is text-to-image and there are no ControlNet units using the image generation area.
+            mode is text-to-image and there are no ControlNet units using the generation area.
         mask_image : QImage, optional
             Mask marking the edited image region.
         """
@@ -130,18 +130,18 @@ class ImageGenerator(MenuBuilder, ABC):
     def get_generation_inputs(self) -> tuple[QImage, Optional[QImage]]:
         """Returns the image and inpainting mask that image generation passes to `generate`.
 
-        Both are taken from the generation area and scaled to the generation size. The mask is None outside of
+        Both are taken from the generation area and scaled to the generation resolution. The mask is None outside of
         inpainting mode.
         """
-        generation_size = Cache().get(Cache.GENERATION_SIZE)
+        generation_resolution = Cache().get(Cache.GENERATION_SIZE)
         image = self._image_stack.qimage_generation_area_content().copy()
-        if image.size() != generation_size:
-            image = pil_image_scaling(image, generation_size)
+        if image.size() != generation_resolution:
+            image = pil_image_scaling(image, generation_resolution)
         if Cache().get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT:
             return image, None
         mask = self._image_stack.selection_layer.mask_image
-        if mask.size() != generation_size:
-            mask = pil_image_scaling(mask, generation_size)
+        if mask.size() != generation_resolution:
+            mask = pil_image_scaling(mask, generation_resolution)
         return image, mask
 
     def start_and_manage_image_generation(self) -> None:

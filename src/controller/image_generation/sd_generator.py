@@ -392,27 +392,27 @@ class SDGenerator(ImageGenerator, ABC):
         """Upscales an image using cached upscaling settings."""
 
     def get_gen_area_image(self, init_image: Optional[QImage] = None) -> QImage:
-        """Gets the contents of the image generation area, handling any necessary preprocessing."""
+        """Gets the contents of the generation area, handling any necessary preprocessing."""
         if init_image is not None:
             return init_image
         return self._image_stack.qimage_generation_area_content()
 
     def get_gen_area_mask(self, init_mask: Optional[QImage] = None) -> QImage:
-        """Gets the inpainting mask for the image generation area, handling any necessary preprocessing."""
+        """Gets the inpainting mask for the generation area, handling any necessary preprocessing."""
         if init_mask is not None:
             return init_mask
         return self._image_stack.selection_layer.mask_image
 
-    def _inpaint_gen_area_crop_bounds(self, scale_to_generation_size=True) -> QRect:
+    def _inpaint_gen_area_crop_bounds(self, scale_to_generation_resolution=True) -> QRect:
         """Returns the inpaint full-res crop within the generation area, or the whole area when nothing is cropped.
 
         The crop is relative to the generation area's top left, scaled to Cache.GENERATION_SIZE when
-        scale_to_generation_size is true.
+        scale_to_generation_resolution is true.
         """
         cache = Cache()
         edit_mode = cache.get(Cache.EDIT_MODE)
         gen_area = self._image_stack.generation_area
-        if scale_to_generation_size:
+        if scale_to_generation_resolution:
             image_size = cache.get(Cache.GENERATION_SIZE)
         else:
             image_size = gen_area.size()
@@ -424,7 +424,7 @@ class SDGenerator(ImageGenerator, ABC):
         if selection_gen_area is None or selection_gen_area.size() == gen_area.size():
             return QRect(QPoint(), image_size)
         bounds = selection_gen_area.translated(-gen_area.topLeft())
-        if scale_to_generation_size and image_size != gen_area.size():
+        if scale_to_generation_resolution and image_size != gen_area.size():
             transform = QTransform.fromScale(image_size.width()/gen_area.width(), image_size.height()/gen_area.height())
             bounds = map_rect_precise(bounds, transform).toAlignedRect()
         return bounds
@@ -442,15 +442,15 @@ class SDGenerator(ImageGenerator, ABC):
         return grow_mask(super().get_paste_mask(), reach_x, reach_y)
 
     def _scale_and_crop_gen_qimage(self, image: QImage) -> QImage:
-        """Crops a generation area image (at area size or generation size) to the inpaint crop, then scales it to
+        """Crops a generation area image (at area size or generation resolution) to the inpaint crop, then scales it to
         Cache.GENERATION_SIZE."""
         gen_area = self._image_stack.generation_area
         crop_bounds = self._inpaint_gen_area_crop_bounds(gen_area.size() != image.size())
         if crop_bounds.size() != image.size():
             image = image.copy(crop_bounds)
-        gen_size = Cache().get(Cache.GENERATION_SIZE)
-        if image.size() != gen_size:
-            return pil_image_scaling(image, gen_size)
+        gen_resolution = Cache().get(Cache.GENERATION_SIZE)
+        if image.size() != gen_resolution:
+            return pil_image_scaling(image, gen_resolution)
         return image
 
     def _restore_cropped_inpainting_images(self, initial_image: QImage, crop_bounds: QRect,
