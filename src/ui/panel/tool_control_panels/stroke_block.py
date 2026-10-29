@@ -354,6 +354,13 @@ class StrokeBlock(QWidget):
         return ', '.join(f'{field.label()} {field.value_text()}' for field in self._fields.values())
 
     def _arrange(self, arrangement: StrokeArrangement) -> None:
+        # Adding the preview to a layout reparents it, which hides it until a queued call shows it again. Its
+        # visibility is set after it is placed, so a trial measurement counts it:
+        self._place(arrangement)
+        if self._preview is not None:
+            self._preview.setVisible(arrangement.preview is not None)
+
+    def _place(self, arrangement: StrokeArrangement) -> None:
         if arrangement == self._arrangement:
             return
         self._arrangement = arrangement
@@ -377,8 +384,6 @@ class StrokeBlock(QWidget):
             # The Pattern combo fills the row's width, but not extra height when stacked:
             for dropdown in self._paint_widget.findChildren(FillStyleComboBox):  # type: ignore[union-attr]
                 self._paint_layout.setStretchFactor(dropdown, 0 if arrangement.paint_stacked else 1)
-        if self._preview is not None:
-            self._preview.setVisible(arrangement.preview is not None)
         beside = arrangement.preview == BESIDE
         self._fields_widget.setMinimumWidth(BESIDE_FIELD_MIN_WIDTH if beside else 0)
         for widget in (self._stroke_section, self._options_section):
