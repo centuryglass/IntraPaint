@@ -7,14 +7,13 @@ from typing import Optional, Any
 
 from PySide6.QtCore import QSize, SignalInstance
 from PySide6.QtGui import QImage
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.glid_panel import GlidPanel
 from src.ui.window.main_window import MainWindow
 from src.util.optional_import import optional_import, check_import
@@ -311,7 +310,7 @@ class Glid3XLGenerator(ImageGenerator):
         """Unloads this generator's settings from the settings modal."""
         settings_modal.remove_category(AppConfig(), GLID_CONFIG_CATEGORY)
 
-    def get_control_panel(self) -> Optional[GeneratorPanel]:
+    def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
             self._control_panel = GlidPanel()

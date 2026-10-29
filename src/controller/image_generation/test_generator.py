@@ -3,7 +3,7 @@ from typing import Optional, Any
 
 from PySide6.QtCore import SignalInstance
 from PySide6.QtGui import QImage
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.cache import Cache
 from src.controller.image_generation.image_generator import ImageGenerator
@@ -14,7 +14,6 @@ from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
 from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.testing_panel import TestControlPanel
 from src.ui.window.main_window import MainWindow
 from src.util.shared_constants import PROJECT_DIR, EDIT_MODE_TXT2IMG
@@ -40,6 +39,7 @@ class TestGenerator(ImageGenerator):
 
     def __init__(self, window: MainWindow, image_stack: ImageStack) -> None:
         super().__init__(window, image_stack)
+        self._control_panel: Optional[TestControlPanel] = None
         self._test_image = QImage(f'{PROJECT_DIR}/resources/icons/app_icon.png').convertToFormat(
             QImage.Format.Format_ARGB32_Premultiplied)
 
@@ -68,9 +68,12 @@ class TestGenerator(ImageGenerator):
            connect to required external services, returning whether the process completed correctly."""
         return True
 
-    def get_control_panel(self) -> Optional[GeneratorPanel]:
+    def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
-        return TestControlPanel()
+        if self._control_panel is None:
+            self._control_panel = TestControlPanel()
+            self._control_panel.generate_signal.connect(self.start_and_manage_image_generation)
+        return self._control_panel
 
     def generate(self,
                  status_signal: SignalInstance,

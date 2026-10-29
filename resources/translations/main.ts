@@ -6641,7 +6641,32 @@ Keys: {decrease} / {increase}</source>
     <name>ui.panel.generators.glid_panel</name>
     <message>
         <location filename="../../src/ui/panel/generators/glid_panel.py"/>
-        <source>Start inpainting</source>
+        <source>Image generation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/glid_panel.py"/>
+        <source>GLID-3-XL</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/glid_panel.py"/>
+        <source>Prompt</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/glid_panel.py"/>
+        <source>Sampling</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/glid_panel.py"/>
+        <source>Scaling</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/glid_panel.py"/>
+        <source>Negative prompt</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -6829,6 +6854,34 @@ Keys: {decrease} / {increase}</source>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>defaults</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.panel.generators.testing_panel</name>
+    <message>
+        <location filename="../../src/ui/panel/generators/testing_panel.py"/>
+        <source>Test generator</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/testing_panel.py"/>
+        <source>--mode mock</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/testing_panel.py"/>
+        <source>Inpaint</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/testing_panel.py"/>
+        <source>Img2img</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/testing_panel.py"/>
+        <source>Txt2img</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
