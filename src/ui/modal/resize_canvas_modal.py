@@ -26,10 +26,10 @@ WIDTH_LABEL = _tr('Width:')
 WIDTH_TOOLTIP = _tr('New image width in pixels')
 HEIGHT_LABEL = _tr('Height:')
 HEIGHT_TOOLTIP = _tr('New image height in pixels')
-X_OFFSET_LABEL = _tr('X Offset:')
+X_OFFSET_LABEL = _tr('X offset:')
 X_OFFSET_TOOLTIP = _tr('Distance in pixels from the left edge of the resized canvas to the left edge of the current'
                        ' image content')
-Y_OFFSET_LABEL = _tr('Y Offset:')
+Y_OFFSET_LABEL = _tr('Y offset:')
 Y_OFFSET_TOOLTIP = _tr('Distance in pixels from the top edge of the resized canvas to the top edge of the current '
                        'image content')
 

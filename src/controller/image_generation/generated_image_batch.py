@@ -6,14 +6,14 @@ mode after generating doesn't change what an option inserts.
 from typing import Optional
 
 from PySide6.QtCore import Qt, QRect
-from PySide6.QtGui import QImage, QPainter
+from PySide6.QtGui import QImage
 
 from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
 from src.util.visual.pil_image_utils import pil_image_scaling
 
 
-def edit_size_image(image: QImage) -> QImage:
+def generation_area_size_image(image: QImage) -> QImage:
     """Returns `image` at `Cache.EDIT_SIZE`, the resolution generated content is applied at."""
     return pil_image_scaling(image, Cache().get(Cache.EDIT_SIZE))
 
@@ -35,7 +35,7 @@ class GeneratedImageBatch:
     None when the whole area changed.
     """
 
-    def __init__(self, image_stack: ImageStack, loading_text: str, paste_mask: Optional[QImage] = None) -> None:
+    def __init__(self, image_stack: ImageStack, paste_mask: Optional[QImage] = None) -> None:
         self.option_images: list[QImage] = [image_stack.qimage_generation_area_content()]
         self.generation_area = image_stack.generation_area
         self.selection_polys = image_stack.selection_layer.outline
@@ -49,19 +49,13 @@ class GeneratedImageBatch:
             # Relative to the generation area, the coordinate space of the option images:
             self.change_bounds = change_bounds.translated(-self.generation_area.x(), -self.generation_area.y())
 
-        self.loading_image = QImage(self.generation_area.size(),
-                                    QImage.Format.Format_ARGB32_Premultiplied)
+        # The selection screen draws the loading state over this blank stand-in:
+        self.loading_image = QImage(self.generation_area.size(), QImage.Format.Format_ARGB32_Premultiplied)
         self.loading_image.fill(Qt.GlobalColor.black)
-        painter = QPainter(self.loading_image)
-        painter.setPen(Qt.GlobalColor.white)
-        painter.drawText(QRect(0, 0, self.loading_image.width(), self.loading_image.height()),
-                         Qt.AlignmentFlag.AlignCenter,
-                         loading_text)
-        painter.end()
 
     def edit_image(self, option_index: int) -> QImage:
         """Returns option `option_index` at the resolution it is applied at."""
-        return edit_size_image(self.option_images[option_index])
+        return generation_area_size_image(self.option_images[option_index])
 
     def full_image(self, option_index: int) -> QImage:
         """Returns option `option_index` at the largest resolution available, as saved to a file."""

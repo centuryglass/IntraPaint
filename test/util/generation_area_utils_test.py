@@ -9,7 +9,7 @@ from src.util.generation_area_utils import resolution_for_area, RESOLUTION_RULE_
     HANDLE_BOTTOM_RIGHT, HANDLE_BOTTOM, HANDLE_BOTTOM_LEFT, HANDLE_LEFT
 from test.base_test_case import IntraPaintTestCase
 
-MAX_GEN_SIZE = QSize(2048, 2048)
+MAX_GEN_RESOLUTION = QSize(2048, 2048)
 MAX_AREA_SIZE = QSize(10240, 10240)
 IMAGE_SIZE = QSize(1024, 768)
 
@@ -19,39 +19,39 @@ class ResolutionForAreaTest(IntraPaintTestCase):
 
     def test_manual_returns_none(self) -> None:
         """The manual rule never picks a resolution."""
-        self.assertIsNone(resolution_for_area(QSize(300, 200), RESOLUTION_RULE_MANUAL, 512, MAX_GEN_SIZE))
+        self.assertIsNone(resolution_for_area(QSize(300, 200), RESOLUTION_RULE_MANUAL, 512, MAX_GEN_RESOLUTION))
 
     def test_match_area_returns_area_size(self) -> None:
         """Match area returns the area size, even when it's small or above the maximum."""
         for size in (QSize(300, 200), QSize(768, 768), QSize(4000, 3000)):
-            self.assertEqual(resolution_for_area(size, RESOLUTION_RULE_MATCH_AREA, 512, MAX_GEN_SIZE), size)
+            self.assertEqual(resolution_for_area(size, RESOLUTION_RULE_MATCH_AREA, 512, MAX_GEN_RESOLUTION), size)
 
     def test_upscaled_leaves_large_areas_alone(self) -> None:
         """Areas with a short side of at least min_side keep their size."""
         for size in (QSize(512, 512), QSize(1024, 768), QSize(4000, 3000)):
-            self.assertEqual(resolution_for_area(size, RESOLUTION_RULE_MATCH_AREA_UPSCALED, 512, MAX_GEN_SIZE), size)
+            self.assertEqual(resolution_for_area(size, RESOLUTION_RULE_MATCH_AREA_UPSCALED, 512, MAX_GEN_RESOLUTION), size)
 
     def test_upscaled_uses_smallest_whole_factor(self) -> None:
         """Small areas scale by the smallest whole number that brings the short side to min_side."""
-        self.assertEqual(resolution_for_area(QSize(256, 256), RESOLUTION_RULE_MATCH_AREA_UPSCALED, 512, MAX_GEN_SIZE),
+        self.assertEqual(resolution_for_area(QSize(256, 256), RESOLUTION_RULE_MATCH_AREA_UPSCALED, 512, MAX_GEN_RESOLUTION),
                          QSize(512, 512))
-        self.assertEqual(resolution_for_area(QSize(300, 200), RESOLUTION_RULE_MATCH_AREA_UPSCALED, 512, MAX_GEN_SIZE),
+        self.assertEqual(resolution_for_area(QSize(300, 200), RESOLUTION_RULE_MATCH_AREA_UPSCALED, 512, MAX_GEN_RESOLUTION),
                          QSize(900, 600))
-        self.assertEqual(resolution_for_area(QSize(511, 600), RESOLUTION_RULE_MATCH_AREA_UPSCALED, 512, MAX_GEN_SIZE),
+        self.assertEqual(resolution_for_area(QSize(511, 600), RESOLUTION_RULE_MATCH_AREA_UPSCALED, 512, MAX_GEN_RESOLUTION),
                          QSize(1022, 1200))
 
     def test_upscaled_factor_capped_by_max_size(self) -> None:
         """The factor drops until the result fits the maximum size, but never below one."""
         # Factor 6 would reach 512 on the short side, but 6 * 400 > 2048; 5 * 400 = 2000 fits.
-        self.assertEqual(resolution_for_area(QSize(400, 100), RESOLUTION_RULE_MATCH_AREA_UPSCALED, 512, MAX_GEN_SIZE),
+        self.assertEqual(resolution_for_area(QSize(400, 100), RESOLUTION_RULE_MATCH_AREA_UPSCALED, 512, MAX_GEN_RESOLUTION),
                          QSize(2000, 500))
-        self.assertEqual(resolution_for_area(QSize(3000, 100), RESOLUTION_RULE_MATCH_AREA_UPSCALED, 512, MAX_GEN_SIZE),
+        self.assertEqual(resolution_for_area(QSize(3000, 100), RESOLUTION_RULE_MATCH_AREA_UPSCALED, 512, MAX_GEN_RESOLUTION),
                          QSize(3000, 100))
 
     def test_unknown_rule_raises(self) -> None:
         """An unrecognized rule string is an error."""
         with self.assertRaises(ValueError):
-            resolution_for_area(QSize(300, 200), 'not a rule', 512, MAX_GEN_SIZE)
+            resolution_for_area(QSize(300, 200), 'not a rule', 512, MAX_GEN_RESOLUTION)
 
 
 class FrameHelperTest(IntraPaintTestCase):

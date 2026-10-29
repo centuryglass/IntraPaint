@@ -76,9 +76,9 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
 
     def test_action_block_and_mask_section_follow_the_edit_mode(self) -> None:
         """Denoising shows in Inpaint and Image to image, padding and the Mask section in Inpaint only, and a note
-        above Generate names any other mode. Guidance, steps and batch size show in every mode."""
+        above Generate names any other mode. CFG scale, steps and batch size show in every mode."""
         cache = Cache()
-        denoising, guidance, steps, batch_size, padding = self.panel.action_fields
+        denoising, cfg_scale, steps, batch_size, padding = self.panel.action_fields
         mask = self._section(SECTION_TITLE_MASK)
         expected = {
             EDIT_MODE_INPAINT: (True, True, None),
@@ -90,7 +90,7 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
                 cache.set(Cache.EDIT_MODE, mode)
                 _host(self.panel, SIDE, QSize(340, 900))
                 self.assertEqual(self._visible(denoising), denoise_shown)
-                for field in (guidance, steps, batch_size):
+                for field in (cfg_scale, steps, batch_size):
                     self.assertTrue(self._visible(field))
                 self.assertEqual(self._visible(padding), inpaint_only_shown)
                 self.assertEqual(self._visible(mask), inpaint_only_shown)
@@ -115,9 +115,9 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         """Slider fields write their config values, and follow changes to them."""
         cache = Cache()
         cache.set(Cache.INPAINT_FULL_RES, True)
-        denoising, guidance, steps, batch_size, padding = self.panel.action_fields
+        denoising, cfg_scale, steps, batch_size, padding = self.panel.action_fields
         fields = [(denoising, cache, Cache.DENOISING_STRENGTH, 0.4),
-                  (guidance, cache, Cache.GUIDANCE_SCALE, 6),
+                  (cfg_scale, cache, Cache.GUIDANCE_SCALE, 6),
                   (steps, cache, Cache.SAMPLING_STEPS, 12),
                   (batch_size, cache, Cache.BATCH_SIZE, 2),
                   (padding, cache, Cache.INPAINT_FULL_RES_PADDING, 48),

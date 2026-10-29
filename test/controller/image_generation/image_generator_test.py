@@ -205,6 +205,7 @@ class ImageGeneratorTest(IntraPaintTestCase):
             self.assertEqual(len(stored), 3)
             self.assertEqual(stored[0].pixelColor(0, 0), QColor(Qt.GlobalColor.blue))
             self.assertEqual(single_shot.call_count, 3)
+            single_shot.reset_mock()  # The recorded lambdas hold the generator; the mock's own cycles would keep it.
 
     def test_load_generated_image_skips_null(self) -> None:
         """Only non-null cached images are delivered."""

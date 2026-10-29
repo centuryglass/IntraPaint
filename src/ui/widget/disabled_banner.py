@@ -28,12 +28,13 @@ class DisabledBanner(QFrame):
         self._message.setMinimumWidth(1)
         self._fix_button = QPushButton(fix_text)
         self._fix_button.clicked.connect(self.fix_requested)
-        self._fix_button.setVisible(fix_text != '')
         layout = QHBoxLayout(self)
         layout.setContentsMargins(BANNER_MARGIN + STRIPE_WIDTH, BANNER_MARGIN // 2, BANNER_MARGIN, BANNER_MARGIN // 2)
         layout.setSpacing(BANNER_MARGIN)
         layout.addWidget(self._message, stretch=1)
         layout.addWidget(self._fix_button)
+        # Showing the button before the layout parents it would open it as a top-level window.
+        self._fix_button.setVisible(fix_text != '')
         self.setAccessibleName(message)
 
     @property

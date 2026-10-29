@@ -261,6 +261,7 @@ class DockPanelTest(IntraPaintTestCase):
         self.assertTrue(preview.isHidden())
         self.assertEqual(panel.overflow_widgets, [])
         self.assertTrue(panel.sections[0].widget.isAncestorOf(preview))
+        del preview  # Empties the cell that _Panel.build holds, which would otherwise stay in a cycle.
 
     def test_control_forms(self) -> None:
         """A control with several forms takes the largest that fits, and its callback runs for it."""
@@ -284,6 +285,7 @@ class DockPanelTest(IntraPaintTestCase):
         self.assertEqual(forms[-1], 'large')
         self._host(SIDE, QSize(200, 300), panel)
         self.assertEqual(forms[-1], 'small')
+        del button  # Empties the cell that _large, _small and _Panel.build share.
 
     def test_invalid_controls(self) -> None:
         """Negative priorities and decorative required controls raise ValueError."""

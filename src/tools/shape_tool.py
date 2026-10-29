@@ -33,7 +33,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 ICON_PATH_SHAPE_TOOL = f'{PROJECT_DIR}/resources/icons/tools/shape_icon.svg'
 
-SHAPE_TOOL_LABEL = _tr('Draw Shapes')
+SHAPE_TOOL_LABEL = _tr('Draw shapes')
 SHAPE_TOOL_TOOLTIP = _tr('Create rectangles, ellipses, and other polygons')
 SHAPE_TOOL_CONTROL_HINT = _tr('{left_mouse_icon}, drag: draw shape')
 PREVIEW_OPACITY = 0.7

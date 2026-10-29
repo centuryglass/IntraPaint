@@ -20,7 +20,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-BRIGHTNESS_CONTRAST_FILTER_TITLE = _tr('Brightness/Contrast')
+BRIGHTNESS_CONTRAST_FILTER_TITLE = _tr('Brightness/contrast')
 BRIGHTNESS_CONTRAST_FILTER_DESCRIPTION = _tr('Adjust image brightness and contrast.')
 
 BRIGHTNESS_LABEL = _tr('Brightness:')

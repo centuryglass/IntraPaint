@@ -203,7 +203,7 @@ Actions that change how the image is shown, without changing the image.
 
 - **Zoom in** and **Zoom out**: Change the zoom one step, with Ctrl+Shift+= and Ctrl+Shift+-. The Page Up and Page Down keys (configurable under Navigation) also zoom.
 - **Reset view** (Ctrl+Alt+0): Fit the whole image in the view and center it.
-- **Zoom to generation area** (Ctrl+Alt+Z): Center the view on the image generation area. Does nothing while the generation area is hidden.
+- **Zoom to generation area** (Ctrl+Alt+Z): Center the view on the generation area. Does nothing while the generation area is hidden.
 - **Show/hide tool control hints** (Ctrl+Alt+H): Show or hide the active tool's control hints below the image.
 - **Show/hide rulers** (Ctrl+Alt+Shift+R): Show or hide the rulers beside the image.
 
@@ -221,7 +221,7 @@ Stacks every panel in one group along the chosen window edge: Left, Right, Top, 
 
 ### Show navigation window (Ctrl+Alt+W)
 
-Opens another window with a view of the entire edited image. This can be used to adjust the image viewport within the main window, and to move the image generation area.  The Navigation tab on the tool panel behaves identically to this window.
+Opens another window with a view of the entire edited image. This can be used to adjust the image viewport within the main window, and to move the generation area.  The Navigation tab on the tool panel behaves identically to this window.
 
 ### Basic controls
 
@@ -235,11 +235,11 @@ Additional controls vary depending on which option is active: "Move gen. area" o
 - **Left-click**: Move the main window viewport so that its upper-left corner is at the clicked spot.
 - **Right-click and drag**: Draw a rectangle that covers where the main window viewport should be.  When the mouse button is released, the viewport will update to match the window.
 
-When **"Move gen. area"** is active, mouse controls match the [image generation area tool](./tool_guide.md#-image-generation-area-tool-g), without its resize handles:
+When **"Move gen. area"** is active, mouse controls match the [generation area tool](./tool_guide.md#-generation-area-tool-g), without its resize handles:
 
-- **Left-click and drag inside the area**: Move the image generation area, keeping the spot you grabbed under the pointer.
-- **Left-click and drag outside the area**: Center the image generation area on the clicked spot, then keep moving it while you drag.
-- **Right-click**: Resize the image generation area, without changing its position.
+- **Left-click and drag inside the area**: Move the generation area, keeping the spot you grabbed under the pointer.
+- **Left-click and drag outside the area**: Center the generation area on the clicked spot, then keep moving it while you drag.
+- **Right-click**: Resize the generation area, without changing its position.
 - **Shift + scroll wheel**: Change the "Inpaint Full Resolution" padding.
 
 #### Navigation window
@@ -247,12 +247,12 @@ When **"Move gen. area"** is active, mouse controls match the [image generation 
 <img src="./labeled_screenshots/navigation.png" alt="Screenshot of the navigation window, with specific elements numbered."/>
 
 1. **Image scale slider**: Set the scale the image is drawn within the navigation window.
-2. **"Reset View" button**: Resets the navigation window to the default view, centering image content.
-3. **Mode toggle: "Move gen. area"**: Switches to generation area tool mode, where clicking within the navigation window adjusts the image generation area.
+2. **"Reset view" button**: Resets the navigation window to the default view, centering image content.
+3. **Mode toggle: "Move gen. area"**: Switches to generation area tool mode, where clicking within the navigation window adjusts the generation area.
 4. **Mode toggle: "Move view"**: Switches to move view mode, where clicking within the navigation window adjusts the main window image viewport.
 5. **Main window viewport outline**: The solid rectangle outlines the portion of the image currently visible within the main window.
-6. **Image generation area outline**: The dotted rectangle shows the area within the image selected for AI image generation.  This won't be shown if AI image generation is inactive.
-7. **"Inpaint full resolution" outline**: This inner rectangle shows the reduced area within the image generation area that will be used for inpainting if "inpaint full resolution" is selected.  This won't be visible if nothing is selected, if "inpaint full resolution" is unchecked, or if AI image generation is unavailable.
+6. **Generation area outline**: The dotted rectangle shows the area within the image selected for AI image generation.  This won't be shown if AI image generation is inactive.
+7. **"Inpaint full resolution" outline**: This inner rectangle shows the reduced area within the generation area that will be used for inpainting if "inpaint full resolution" is selected.  This won't be visible if nothing is selected, if "inpaint full resolution" is unchecked, or if AI image generation is unavailable.
 8. **Selected image content**: All selected areas are also visible within the navigation window.
 
 ## Image menu
@@ -320,7 +320,7 @@ Crops the image to the largest rectangle that contains all [selected content](./
 
 ### Crop image to generation area (Ctrl+Alt+G)
 
-Crops the image to the [image generation area](./tool_guide.md#-image-generation-area-tool-g). Layer cropping, locked layers, and text layers are handled exactly as they are in "Crop image to selection".  Like all functionality related to the image generation area, this option is hidden when there's no AI image generator connected.
+Crops the image to the [generation area](./tool_guide.md#-generation-area-tool-g). Layer cropping, locked layers, and text layers are handled exactly as they are in "Crop image to selection".  Like all functionality related to the generation area, this option is hidden when there's no AI image generator connected.
 
 ### Resize image to content (Ctrl+Alt+R)
 
@@ -332,10 +332,10 @@ IntraPaint can read and write the following AI image generation parameters in im
 
 - Prompt
 - Negative prompt
-- Generation size
+- Generation resolution
 - Sampling method
 - Sampling steps
-- Guidance scale
+- CFG scale
 - Seed
 
 It does this in a format compatible with the Stable Diffusion WebUI, so IntraPaint can load those values directly into the image generation panel when the image is opened in IntraPaint.  When saving, IntraPaint will ask you if you want to save this metadata to the file, and you have the option to make it always save metadata automatically, or never save automatically or ask again.  If automatic metadata updates are disabled, choosing "update metadata" will manually prepare the metadata update, so it'll be written to the image file on the next save.
@@ -361,7 +361,7 @@ Opens a window where you can enable or disable AI image generation, or select al
 
 ### Generate (F4)
 
-Triggers AI image generation, creating or altering image content to insert into the [image generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](./controls.md#generated-image-selection-view). This has the same effect as the Generate button on the [Image Generation Panel](./stable-diffusion.md#image-generation-panel).  This option will only be available if [an image generator is configured and active](./stable_diffusion_setup.md).
+Triggers AI image generation, creating or altering image content to insert into the [generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](./controls.md#generated-image-selection-view). This has the same effect as the Generate button on the [Image Generation Panel](./stable-diffusion.md#image-generation-panel).  This option will only be available if [an image generator is configured and active](./stable_diffusion_setup.md).
 
 ---
 
@@ -640,7 +640,7 @@ This option is only visible when using Stable Diffusion, when the LCM LoRA model
 
 - The image sampling mode is set to LCM
 - The activation text for the LCM LoRA is inserted into the prompt, if not already there.
-- The prompt guidance scale is set to 1.5 (1.5 - 2.0 is the recommended range for LCM).
+- The CFG scale is set to 1.5 (1.5 - 2.0 is the recommended range for LCM).
 - The number of image generation steps is set to 8 (5 - 10 is the recommended range for LCM).
 
 ---

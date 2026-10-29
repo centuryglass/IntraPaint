@@ -1,16 +1,16 @@
 {
     "edit_size": {
-        "label": "Editing size:",
+        "label": "Generation area size:",
         "category": "Cache",
-        "description": "Current/initial size in pixels of the area selected for editing",
+        "description": "Current size in pixels of the generation area",
         "type": "Size",
         "default": "512x512",
         "saved": true
     },
     "generation_size": {
-        "label": "Generation size:",
+        "label": "Generation resolution:",
         "category": "Cache",
-        "description": "Current/initial size in pixels used for AI image generation",
+        "description": "Current/initial generation resolution: the size in pixels the AI image generator works at",
         "type": "Size",
         "default": "512x512",
         "saved": true
@@ -169,7 +169,7 @@
         "saved": true
     },
     "sample_merged": {
-        "label": "Sample Merged",
+        "label": "Sample merged",
         "category": "Cache",
         "description": "If checked, fill based on the entire image contents, not just the current layer",
         "type": "bool",
@@ -696,7 +696,7 @@
         "translate": false
     },
     "shape_tool_mode": {
-        "label": "Shape Type:",
+        "label": "Shape type:",
         "category": "Cache",
         "subcategory": "Shape Tool",
         "description": "Type of shape to draw.",
@@ -792,7 +792,7 @@
         "saved": true
     },
     "shape_tool_fill_color": {
-        "label": "Fill Color",
+        "label": "Fill color",
         "category": "Cache",
         "subcategory": "Shape Tool",
         "description": "Shape fill color.",
@@ -864,10 +864,10 @@
         "saved": false
     },
     "guidance_scale": {
-        "label": "Guidance scale:",
+        "label": "CFG scale:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Controls how strongly the prompt and negative prompt are applied.",
+        "description": "Controls how strongly the prompt and negative prompt are applied, through classifier-free guidance (CFG).",
         "type": "float",
         "default": 9.0,
         "saved": true,
@@ -1194,7 +1194,7 @@
         }
     },
     "controlnet_args_0_webui": {
-        "label": "ControlNet Settings (first layer, WebUI API)",
+        "label": "ControlNet settings (first layer, WebUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
         "description": "WebUI API first layer ControlNet extension settings.",
@@ -1204,7 +1204,7 @@
         "translate": false
     },
     "controlnet_args_1_webui": {
-        "label": "ControlNet Settings (second layer, WebUI API)",
+        "label": "ControlNet settings (second layer, WebUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
         "description": "WebUI API second layer ControlNet extension settings.",
@@ -1214,7 +1214,7 @@
         "translate": false
     },
     "controlnet_args_2_webui": {
-        "label": "ControlNet Settings (third layer, WebUI API)",
+        "label": "ControlNet settings (third layer, WebUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
         "description": "ComfyUI API third layer ControlNet extension settings.",
@@ -1224,7 +1224,7 @@
         "translate": false
     },
     "controlnet_args_0_comfyui": {
-        "label": "ControlNet Settings (first layer, ComfyUI API)",
+        "label": "ControlNet settings (first layer, ComfyUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
         "description": "ComfyUI API first layer ControlNet extension settings.",
@@ -1234,7 +1234,7 @@
         "translate": false
     },
     "controlnet_args_1_comfyui": {
-        "label": "ControlNet Settings (second layer, ComfyUI API)",
+        "label": "ControlNet settings (second layer, ComfyUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
         "description": "ComfyUI API second layer ControlNet extension settings.",
@@ -1244,7 +1244,7 @@
         "translate": false
     },
     "controlnet_args_2_comfyui": {
-        "label": "ControlNet Settings (third layer, ComfyUI API)",
+        "label": "ControlNet settings (third layer, ComfyUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
         "description": "ComfyUI API third layer ControlNet extension settings.",
@@ -1404,7 +1404,7 @@
         "label": "Resize from resolution:",
         "category": "Cache",
         "subcategory": "WebUI",
-        "description": "Generated images using the same seed will match images created at this resolution, regardless of generation size.",
+        "description": "Generated images using the same seed will match images created at this resolution, regardless of generation resolution.",
         "type": "Size",
         "default": "512x512",
         "saved": true

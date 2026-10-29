@@ -24,7 +24,7 @@ This guide covers the editing tools found within the "Tools" panel. and the extr
    - [Selection brush tool](#-selection-brush-tool-s)
    - [Rectangle/Ellipse selection tool](#-rectangleellipse-selection-r)
    - [Magic wand tool](#-magic-wand-tool-a)
-4. [Image generation area tool](#-image-generation-area-tool-g)
+4. [Generation area tool](#-generation-area-tool-g)
 
 ---
 
@@ -34,13 +34,13 @@ All tools share the same set of basic controls for adjusting the image viewport.
 
 - **Middle-click and drag, or Ctrl + left-click and drag**: Pan image content.
 - **Mouse scroll wheel, Page Up, or Page Down**: Zoom in or zoom out.
-- **Shift+Z**: Zoom in on the image generation area, or reset the zoom level.
+- **Shift+Z**: Zoom in on the generation area, or reset the zoom level.
 - **Hold Alt**: Speed up key or mouse wheel inputs.
 - **Escape, while any input has keyboard focus**: Return keyboard focus to the image.
 
 The following controls are shared by most tools, but certain tools will override them:
 
-- **Arrow keys**: Move the image generation area. This is ignored if Stable Diffusion AI image generation is inactive.
+- **Arrow keys**: Move the generation area. This is ignored if Stable Diffusion AI image generation is inactive.
 - **Ctrl + arrow keys**: Pan image content.
 
 Each tool also has a key assigned to it that will activate that tool, active whenever you're not entering text.  These keys are configurable in settings under "Keybindings", and are shown in the bottom right corner of each tool icon.
@@ -163,7 +163,7 @@ Fill connected image areas with solid colors or basic patterns.
 
 ---
 
-### ![Filter brush tool icon](./tool_icons/filter_icon.png) Filter Brush tool (I)
+### ![Filter brush tool icon](./tool_icons/filter_icon.png) Filter brush tool (I)
 
 Apply any image filter to the image using brush strokes.
 
@@ -265,7 +265,7 @@ Copy image content from one area to another using a brush.
 
 ---
 
-### ![Color Picker tool icon](./tool_icons/eyedropper_icon.png) Color Picker tool (C)
+### ![Color picker tool icon](./tool_icons/eyedropper_icon.png) Color picker tool (C)
 
 Selects the color used by the brush, draw, and fill tools.  **Left-click** any spot within the image to copy the color at that spot.
 
@@ -350,7 +350,7 @@ Draws geometric shapes within the image.
 
 <img src="./labeled_screenshots/tools/shape.png"  alt="Screenshot of the shape tool controls, with specific elements numbered.">
 
-1. **Shape Type dropdown**: Selects the type of shape to draw. Options are ellipse, rectangle, polygon, and star.
+1. **Shape type dropdown**: Selects the type of shape to draw. Options are ellipse, rectangle, polygon, and star.
 2. **Vertex count slider**: Sets the number of outer points that new shapes will have. This is only visible when the shape type is polygon or star.
 3. **Inner radius fraction**: Sets how far inner points extend outwards from the shape's center, as a fraction of the outer point radius.  This is only visible when the shape type is star.
 4. **Fill color button**: Click to open a color dialog to set the fill color used when drawing new shapes.
@@ -365,7 +365,7 @@ Draws geometric shapes within the image.
 
 ---
 
-### ![Transform Layer tool icon](./tool_icons/layer_transform_icon.png) Transform layer tool (T)
+### ![Transform layer tool icon](./tool_icons/layer_transform_icon.png) Transform layer tool (T)
 
 Move, scale, or rotate image layers or layer groups. Transformations are lossless when editing, or when saving in the .ora file format.
 
@@ -451,14 +451,14 @@ Select areas by outlining them.
 1. **Selection mode toggle**: Choose the [selection mode](#selection-modes).
 2. **Clear button**: Remove all selections.
 3. **Select All button**: Select all image content. In inpainting mode, a **Clear Context Pins** button follows it, removing every [context pin](#-selection-brush-tool-s).
-4. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
+4. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
 5. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
 6. An in-progress selection.
 7. Previously selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
 
 ---
 
-### ![Selection Brush tool icon](./tool_icons/selection_icon.png) Selection brush tool (S)
+### ![Selection brush tool icon](./tool_icons/selection_icon.png) Selection brush tool (S)
 
 Select content by drawing over it in the image, similar to the brush tool.  If using a pressure sensitive drawing tablet, the brush size will scale down with pen pressure.
 
@@ -488,7 +488,7 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 
 When the Stable Diffusion AI image generator is active, the panel also shows these controls:
 
-- **"Inpaint Full Resolution" checkbox**: When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
+- **"Inpaint Full Resolution" checkbox**: When checked, the generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
 - **"Inpaint Full Resolution padding" slider**: Only visible when "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
 
 ---
@@ -513,7 +513,7 @@ Select or deselect rectangular or elliptical regions in the image.
    - **"Fixed 1:1 aspect ratio" checkbox**: When checked, every new selection is a square or circle.
 3. **Clear button**: Remove all selections.
 4. **Select All button**: Select all image content. In inpainting mode, a **Clear Context Pins** button follows it, removing every [context pin](#-selection-brush-tool-s).
-5. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
+5. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
 6. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
 7. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
 
@@ -537,25 +537,25 @@ Select content based on connected regions and color similarity.
 2. **"Sample merged" checkbox**:  When checked, the magic wand tool will use all image layers to determine where to select.  When unchecked, content outside the active layer will be ignored.
 3. **"Select all by color" checkbox**:  When checked, color boundaries will be ignored, and the magic wand tool will instead select every point in the image where the color matches the clicked point.  Enabling this will un-check "Fill selection holes".
 4. **"Fill selection holes" checkbox**: When checked, the magic wand tool will ignore image content entirely, and select/deselect based on existing selection content only. Useful for selecting a hole within an existing selection, or deselecting a connected block of image content.  Enabling this will un-check "Select all by color".
-5. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the image generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
+5. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
 6. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
 7. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
 
 ---
 
-## ![Image Generation Area tool icon](./tool_icons/gen_area_icon.png) Image Generation Area tool (G)
+## ![Generation area tool icon](./tool_icons/gen_area_icon.png) Generation area tool (G)
 
 Controls the area of the image in use for AI image generation. AI generators are restricted to certain resolutions, but this tool lets you use them with images of any size.  When you click "Generate", the AI generator will only act on the area selected by this tool, and only content within this area will influence generated imagery.  See the [inpainting guide](./inpainting_guide.md) for more details.
 
 ### Basic controls
 
-- **Left-click and drag inside the area**: Move the image generation area, keeping the spot you grabbed under the pointer.
-- **Left-click and drag outside the area**: Center the image generation area on the clicked spot, then keep moving it while you drag.
-- **Left-click and drag a handle**: Resize the image generation area. While this tool is active, the area's outline has eight square handles. Corner handles keep the area's aspect ratio, and edge handles move one side.
+- **Left-click and drag inside the area**: Move the generation area, keeping the spot you grabbed under the pointer.
+- **Left-click and drag outside the area**: Center the generation area on the clicked spot, then keep moving it while you drag.
+- **Left-click and drag a handle**: Resize the generation area. While this tool is active, the area's outline has eight square handles. Corner handles keep the area's aspect ratio, and edge handles move one side.
 - **Hold Shift while dragging a corner handle**: Resize freely, without keeping the aspect ratio. This is the reverse of Shift's usual meaning, because keeping the aspect ratio is the safer default here.
-- **Right-click**: Resize the image generation area, without changing its position.  Hold Shift to keep the generation resolution's aspect ratio.
-- **Arrow keys**: Move the image generation area.
-- **Hold Alt**: Increase speed when moving the image generation area using keyboard keys.
+- **Right-click**: Resize the generation area, without changing its position.  Hold Shift to keep the generation resolution's aspect ratio.
+- **Arrow keys**: Move the generation area.
+- **Hold Alt**: Increase speed when moving the generation area using keyboard keys.
 - **Shift + scroll wheel**: Change the "Inpaint Full Resolution" padding. This works with any tool, over the image or the navigation window.
 
 Each drag is one undo step. Resizing applies the resolution rule as the size changes, and adds the finished size to the recent area sizes.
@@ -578,9 +578,9 @@ In inpainting mode, the generation area moves after you change the selection or 
    - **Recent sizes**: Up to four generation area sizes you've used recently, labeled with their size.
    - **Shift+G**: Switches back to the size used before the current one. Press it again to switch back.
 6. **"+ size" field**: Type a size such as `768` (a square) or `640x480`, then press Enter to resize the area.
-7. **"Resolution rule" dropdown**: Controls how the AI image generation resolution changes when the generation area is resized.
+7. **"Resolution rule" dropdown**: Controls how the generation resolution changes when the generation area is resized.
    - **"Match area"**: The resolution always equals the generation area size.
-   - **"Match area, upscale small areas"** (default): Like "Match area", but small areas are scaled up by a whole-number factor until their shorter side reaches the minimum set in the settings ("Minimum upscaled resolution side", 512 by default). The factor is reduced if the result would be larger than the maximum generation size.
+   - **"Match area, upscale small areas"** (default): Like "Match area", but small areas are scaled up by a whole-number factor until their shorter side reaches the minimum set in the settings ("Minimum upscaled resolution side", 512 by default). The factor is reduced if the result would be larger than the "Maximum generation resolution" set in the settings.
    - **"Manual"**: The resolution only changes when you edit it. Editing the resolution by hand selects this rule.
-8. **"Image generation resolution" inputs**: Sets the resolution used for AI image generation.
-9. **Image generation area**: The dotted outline shows the generation area. While this tool is active, drag the square handles on the outline to resize it. Corner handles keep the aspect ratio unless you hold Shift, and edge handles move one side.
+8. **"Generation resolution" inputs**: Sets the resolution used for AI image generation.
+9. **Generation area**: The dotted outline shows the generation area. While this tool is active, drag the square handles on the outline to resize it. Corner handles keep the aspect ratio unless you hold Shift, and edge handles move one side.

@@ -32,8 +32,8 @@ This panel is the main place where you'll control image generation.
 1. **Image generation tab**: Brings the image generation panel to the front. Drag the tab or the panel's title bar to move the panel to another edge of the window or float it, and press 2 to show or hide it.
 2. **Main/Extras inner tabs**: The WebUI and ComfyUI Stable Diffusion image generators each provide a few bonus features that the other lacks. Controls for these features are found within the "Extras" tab.
 3. **"Edit mode" dropdown**: Switch between the three main image generation modes:
-   - **Inpaint**: Only selected content in the image generation area is changed.
-   - **Image to Image**: The entire image generation area is changed, but previous image content affects the new image.
+   - **Inpaint**: Only selected content in the generation area is changed.
+   - **Image to Image**: The entire generation area is changed, but previous image content affects the new image.
    - **Text to Image**: Previous image content is ignored, a new image is generated using only prompt data and other settings.
 4. **"Stable Diffusion model" dropdown**: Selects which Stable Diffusion model file will be used for image generation.  If you're using the WebUI generator, changing this value will immediately load the new model, while ComfyUI will wait to load the model until the next time you start image generation.
 5. **"Sampling method" dropdown**: Selects between different mathematical approaches to dividing the image generation process into steps.  The differences between these can be subtle, see [sampling methods](#sampling-methods) below for more details.
@@ -45,11 +45,11 @@ This panel is the main place where you'll control image generation.
 7. **CLIP skip**: Sets how many final image generation steps are taken without the guidance of the CLIP image recognition module. Increasing this number can sometimes improve generated image aesthetics, but it will also reduce adherence to the prompt.  In most cases this is best left at 1, but some models recommend setting it to 2.
 8. **Prompt**: Describe in plain text exactly what kind of imagery the model should generate. Prompts can also use various control formats to affect image generation, see [prompt control formatting](#prompt-control-formatting) below for details.
 9. **Negative Prompt**: Describe in plain text exactly what kind of imagery the model should *not* generate. All prompt control formats also work on the negative prompt.
-10. **Generation size**: The resolution of generated images.  Most Stable Diffusion models can be somewhat flexible with this, but usually will perform best at specific resolutions. See also: [generation resolution tips](./inpainting_guide.md#generation-resolution)
+10. **Generation resolution**: The resolution of generated images.  Most Stable Diffusion models can be somewhat flexible with this, but usually will perform best at specific resolutions. See also: [generation resolution tips](./inpainting_guide.md#generation-resolution)
 11. **Batch size**:  The number of images to generate at once.  Generating multiple images at the same time can be faster, but requires more VRAM.
 12. **Batch count**: The number of image batches to generate in sequence before switching to the selection view. This doesn't increase VRAM usage like batch size does, but it provides no speed benefits compared to generating batches individually.
 13. **Sampling steps**: Controls how many steps the generator takes to create images. Increasing step count makes image generation take longer, but often provides better results.  Benefits of increasing step count are usually fairly low above 30 steps. Certain specialty models (e.g. LCM and Turbo) can produce good results at far fewer steps.
-14. **Guidance scale**: Controls how strongly the generator will follow the prompt. Low values produce more random imagery, while high values de-prioritize image composition to focus more on exactly matching the AI model's understanding of your prompt.  Values in the 6-12 range usually produce the best results.
+14. **CFG scale**: Controls how strongly the generator will follow the prompt. Low values produce more random imagery, while high values de-prioritize image composition to focus more on exactly matching the AI model's understanding of your prompt.  Values in the 6-12 range usually produce the best results.
 15. **Denoising strength**: In "Inpaint" and "Image to Image" modes, this controls exactly how much of the source image the AI generator will include in its output. See [denoising strength comparisons](#denoising-strength-comparisons) below for examples.
 16. **"Inpaint Full Resolution" checkbox**:  When inpainting, crop to selected content within the generated area, increasing detail quality at the cost of situational awareness. Refer to the [inpainting guide](./inpainting_guide.md) for more details about using this effectively.
 17. **"Inpaint Full Resolution" padding slider**:  When "inpaint full resolution" is checked, this controls how much extra padding space is left around selected content when cropping for inpainting. This allows you to finely balance the trade-offs between detail quality and situational awareness.
@@ -57,8 +57,8 @@ This panel is the main place where you'll control image generation.
     - **18a. "Reuse last seed" button**:  Replaces the seed with the one in the "Last seed" box.
     - **18b. "Randomize seed" button**: Sets the seed value to -1, so that a random value will be used for each image generation.
 19. **Last seed value**: Shows the seed used the last time the generate button was pressed.
-20. **Describe** (More menu, WebUI generator only): Use AI image analysis to automatically generate a description of the section of the image in the image generation area.  The new description will replace the current prompt.
-21. **Generate button**: Click to trigger AI image generation, creating or altering image content to insert into the [image generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](./controls.md#generated-image-selection-view).
+20. **Describe** (More menu, WebUI generator only): Use AI image analysis to automatically generate a description of the section of the image in the generation area.  The new description will replace the current prompt.
+21. **Generate button**: Click to trigger AI image generation, creating or altering image content to insert into the [generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](./controls.md#generated-image-selection-view).
 
 ---
 
@@ -73,8 +73,8 @@ These options, found under the "Extras" tab, will only be available if you're us
    - **18b. "Randomize seed" button**: Sets the variation seed value to -1, so that a random value will be used for each image generation.
 2. **Last variation seed value**: Shows the variation seed used the last time the generate button was pressed.
 3. **"Variation strength" slider**:  Controls how similar that images in the same batch should be.  The higher the value, the more significant that differences will be.  At 0.0, it's disabled, and variations between images will be completely random.
-4. **"Resize seed from alternate resolution" checkbox**: Even if prompt, seed, and all other settings are unchanged, altering the image generation resolution can completely change the results of image generation.  This option counters that effect, so that you can completely regenerate an image at a different resolution and still expect the final image to be very similar.
-5. **"Resize seed from alternate resolution" size setting**: Sets what resolution the "Resize seed from alternate resolution" setting should target.  If you're trying to recreate a generated image at a new size, you'll want to set this to the original image generation size.
+4. **"Resize seed from alternate resolution" checkbox**: Even if prompt, seed, and all other settings are unchanged, altering the generation resolution can completely change the results of image generation.  This option counters that effect, so that you can completely regenerate an image at a different resolution and still expect the final image to be very similar.
+5. **"Resize seed from alternate resolution" size setting**: Sets what resolution the "Resize seed from alternate resolution" setting should target.  If you're trying to recreate a generated image at a new size, you'll want to set this to the original generation resolution.
 6. **"Tiling" checkbox**: If checked, Stable Diffusion will attempt to generate images that can be seamlessly repeated in a grid. This is mostly useful for generating texture files and tiling wallpapers.
 7. **"Restore faces" checkbox**: If checked, apply an extra face restoration model to generated images. This option is rarely useful, most recent Stable Diffusion models already produce better results than dedicated face restoration models.
 8. **Generate button**: A copy of the image generation button from the "Main" tab, included for convenience. All generate buttons have identical behavior.
@@ -110,7 +110,7 @@ The wide variety of ControlNet preprocessors and models available can be challen
 3. **"Enable ControlNet Unit" checkbox**: Enable or disable the current ControlNet unit.
 4. **"Low VRAM" checkbox** (WebUI generator only): Systems with limited VRAM might fail to generate images with ControlNet active. Selecting this option will fix some of these issues, but may also slow down image generation.
 5. **"Pixel Perfect" checkbox** (WebUI generator only): Enables hidden automatic size adjustments to improve ControlNet results. In most cases, it's probably best to just keep this checked.
-6. **"Generation Area as Control" checkbox**: Most ControlNet modules need an initial image to function. If this box is checked, the contents of the image generation area will be used.
+6. **"Generation Area as Control" checkbox**: Most ControlNet modules need an initial image to function. If this box is checked, the contents of the generation area will be used.
 7. **"Set Control Image" button**: This button lets you select a separate image file to use as the control image.
 8. **Control image file path**: Shows the path of the selected control image, if any.
 9. **"Control Type" dropdown**:  An optional dropdown that lets you limit preprocessor and model dropdowns to a few useful presets.
@@ -211,7 +211,7 @@ For an overview of the basic image scaling interface, see the [menu option guide
 
 1. When using ControlNet tiled upscaling, the settings you enter into the image generation panel affect the results. Make sure to select appropriate values:
    - **Prompt**: Should accurately describe your entire image, ideally without being too focused on specific details.
-   - **Generation Size**: Set this to the resolution your model works best at, *not* the resolution of the final image.
+   - **Generation resolution**: Set this to the resolution your model works best at, *not* the resolution of the final image.
    - **Denoising Strength**: Keep this value relatively low, certainly no higher than 0.5. If you didn't install the ultimate upscale extension, you may need to reduce it even more.
 2. Select an initial upscaler from the "Upscale Method" dropdown that works well with the type of image you're adjusting, as this gets used as an initial step even when ControlNet upscaling is active.  I've found SwinIR_4x to be a good choice in most cases.
 3. Make sure the "ControlNet tiled upscaling" checkbox is both visible and checked. If it isn't, only the basic upscaling method will be used.

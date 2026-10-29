@@ -12,8 +12,8 @@ from src.tools.generation_area_tool import GenerationAreaTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.segmented_control import DisplayMode
 from src.ui.layout.panel_fit import Orientation
-from src.ui.window.navigation_window import (ZoomTool, NavigationWindow, ZOOM_LABEL, IMAGE_GEN_LABEL,
-                                             IMAGE_GEN_LABEL_SHORT, VIEW_HINT_LINES, GEN_AREA_HINT_LINES,
+from src.ui.window.navigation_window import (ZoomTool, NavigationWindow, ZOOM_LABEL, GENERATION_AREA_LABEL,
+                                             GENERATION_AREA_LABEL_SHORT, VIEW_HINT_LINES, GEN_AREA_HINT_LINES,
                                              CONTEXT_PIN_HINT)
 from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
@@ -103,11 +103,11 @@ class NavigationPanelTest(IntraPaintTestCase):
     def test_mode_toggle_round_trips_through_cache(self) -> None:
         """Choosing a mode activates its tool and stores its label, and a new panel restores it."""
         self.assertEqual(self.panel.tool_toggle.value(), ZOOM_LABEL)
-        self.panel.tool_toggle.set_value(IMAGE_GEN_LABEL)
-        self.assertEqual(Cache().get(Cache.LAST_NAV_PANEL_TOOL), IMAGE_GEN_LABEL)
+        self.panel.tool_toggle.set_value(GENERATION_AREA_LABEL)
+        self.assertEqual(Cache().get(Cache.LAST_NAV_PANEL_TOOL), GENERATION_AREA_LABEL)
         restored = self._new_panel()
         try:
-            self.assertEqual(restored.tool_toggle.value(), IMAGE_GEN_LABEL)
+            self.assertEqual(restored.tool_toggle.value(), GENERATION_AREA_LABEL)
             # pylint: disable-next=protected-access
             self.assertIsInstance(restored._tool_controller.active_tool, GenerationAreaTool)
         finally:
@@ -117,12 +117,12 @@ class NavigationPanelTest(IntraPaintTestCase):
     def test_hint_follows_mode(self) -> None:
         """The viewer's tooltip describes the controls of the active mode."""
         self.assertEqual(self.panel.image_viewer.toolTip(), '\n'.join((*VIEW_HINT_LINES, CONTEXT_PIN_HINT)))
-        self.panel.tool_toggle.set_value(IMAGE_GEN_LABEL)
+        self.panel.tool_toggle.set_value(GENERATION_AREA_LABEL)
         self.assertEqual(self.panel.image_viewer.toolTip(), '\n'.join(GEN_AREA_HINT_LINES))
 
     def test_toggle_hides_without_generator(self) -> None:
         """Hiding generation controls hides the toggle and switches back to moving the view."""
-        self.panel.tool_toggle.set_value(IMAGE_GEN_LABEL)
+        self.panel.tool_toggle.set_value(GENERATION_AREA_LABEL)
         self.panel.set_image_generation_controls_visible(False)
         self.assertFalse(self.panel.tool_toggle.isVisible())
         self.assertEqual(self.panel.tool_toggle.value(), ZOOM_LABEL)
@@ -157,12 +157,12 @@ class NavigationPanelTest(IntraPaintTestCase):
         self.assertEqual(toggle.display_mode, DisplayMode.ICON)
         self.panel.resize(400, 500)
         self.assertEqual(toggle.display_mode, DisplayMode.ICON_AND_LABEL)
-        self.assertEqual(toggle.segments[1].label, IMAGE_GEN_LABEL)
+        self.assertEqual(toggle.segments[1].label, GENERATION_AREA_LABEL)
         minimum_width = self.panel.minimumSizeHint().width()
         short_width = minimum_width + toggle.sizeHint().width()
         for width in range(minimum_width, 400):
             self.panel.resize(width, 500)
-            if toggle.display_mode == DisplayMode.ICON_AND_LABEL and toggle.segments[1].label == IMAGE_GEN_LABEL_SHORT:
+            if toggle.display_mode == DisplayMode.ICON_AND_LABEL and toggle.segments[1].label == GENERATION_AREA_LABEL_SHORT:
                 short_width = width
                 break
         self.assertLess(short_width, 400, 'No width showed the short labels')

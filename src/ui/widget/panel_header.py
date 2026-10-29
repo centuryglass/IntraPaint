@@ -202,6 +202,7 @@ class PanelHeader(QWidget):
         details_layout.addWidget(self._key_badge)
         details_layout.addWidget(self._description_label, stretch=1)
         self._wrapped = False
+        self._title_shown = True
         # `_one_line_width`'s inputs and result:
         self._one_line_key: Optional[tuple] = None
         self._one_line_cache = 0
@@ -272,6 +273,14 @@ class PanelHeader(QWidget):
             self._refresh_icon()
         self._fit_lines()
 
+    def set_title_shown(self, shown: bool) -> None:
+        """Shows or hides the icon and name, for a host whose title bar shows them. The key, description and buttons
+        stay."""
+        self._icon_label.setVisible(shown and not self._icon.isNull())
+        self._name_label.setVisible(shown)
+        self._title_shown = shown
+        self._fit_lines()
+
     def set_icon_width(self, width: int) -> None:
         """Centers the icon in a column `width` pixels wide, to line it up with a column of buttons below or above."""
         self._icon_label.setFixedWidth(max(width, ICON_SIZE))
@@ -331,8 +340,9 @@ class PanelHeader(QWidget):
         return QSize(self._one_line_width(), self._first_line_height())
 
     def _first_line_height(self) -> int:
-        widgets = [self._icon_label, self._name_label, self._key_badge, self._reset_button, self._more_button,
-                   *self._widgets]
+        widgets = [self._icon_label, self._key_badge, self._reset_button, self._more_button, *self._widgets]
+        if self._title_shown:
+            widgets.append(self._name_label)
         return max(widget.sizeHint().height() for widget in widgets)
 
     def _second_line_indent(self) -> int:
@@ -351,12 +361,14 @@ class PanelHeader(QWidget):
         widgets = [self._icon_label, self._key_badge, self._reset_button, self._more_button, *self._widgets]
         key = (tuple(widget.isHidden() for widget in widgets),
                tuple(widget.sizeHint().width() for widget in self._widgets), self._icon_label.minimumWidth(),
-               self._key_badge.text, self._name_label.full_text, self._description_label.isHidden(),
+               self._title_shown, self._key_badge.text, self._name_label.full_text, self._description_label.isHidden(),
                self._description_label.text())
         if key == self._one_line_key:
             return self._one_line_cache
         shown = [widget for widget in widgets if not widget.isHidden()]
-        width = sum(widget.sizeHint().width() for widget in shown) + self._name_label.full_text_width()
+        width = sum(widget.sizeHint().width() for widget in shown)
+        if self._title_shown:
+            width += self._name_label.full_text_width()
         if not self._description_label.isHidden():
             # A pixel to spare on each side for rounding, as `ElidedLabel.full_text_width` has:
             width += self._description_label.fontMetrics().horizontalAdvance(self._description_label.text()) + 2
@@ -392,7 +404,7 @@ class PanelHeader(QWidget):
     def _refresh_icon(self) -> None:
         if not self._icon.isNull():
             self._icon_label.setPixmap(self._icon.pixmap(QSize(ICON_SIZE, ICON_SIZE)))
-        self._icon_label.setVisible(not self._icon.isNull())
+        self._icon_label.setVisible(self._title_shown and not self._icon.isNull())
 
     def changeEvent(self, event: QEvent) -> None:  # pylint: disable=invalid-name
         """Rebuilds the icon pixmap when the palette changes, for icons that recolor themselves, and measures text again

@@ -1,14 +1,14 @@
 """Outlines a region in a variable QGraphicsView, adjusting line width based on view scale."""
 import sys
-from typing import Optional
+from typing import Any, Optional
 from weakref import ref
 
 from PySide6.QtCore import Qt, QRectF, QRect, QTimer
-from PySide6.QtGui import QPainter, QPen, QPainterPath, QColor, QShowEvent, QHideEvent
+from PySide6.QtGui import QPainter, QPen, QPainterPath, QColor
 from PySide6.QtWidgets import QWidget, QGraphicsItem, QGraphicsView, QGraphicsScene, QStyleOptionGraphicsItem, \
     QGraphicsObject
 
-from src.ui.graphics_items.animated_dash_item import sync_animation_timer
+from src.ui.graphics_items.animated_dash_item import is_shown_in_scene, sync_animation_timer
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 
 # ~15 frames per second, a few dash units per step. A QPropertyAnimation would tick every frame while the outline is
@@ -74,13 +74,16 @@ class Outline(QGraphicsObject):
         self.update()
 
     def _update_animation_state(self) -> None:
-        """Runs the animation only while the outline is visible and animation is enabled."""
-        sync_animation_timer(self._animation_timer, self._animated, self.isVisible())
+        """Runs the animation only while animation is enabled and the outline is shown in a scene around a region."""
+        sync_animation_timer(self._animation_timer, self._animated,
+                             is_shown_in_scene(self) and not self._rect.isEmpty())
 
-    def setVisible(self, visible: bool) -> None:
-        """Ensure animation starts and stops appropriately as visibility changes."""
-        super().setVisible(visible)
-        self._update_animation_state()
+    def itemChange(self, change: QGraphicsItem.GraphicsItemChange, value: Any) -> Any:  # pylint: disable=invalid-name
+        """Starts or stops the animation as the outline is shown, hidden, added to a scene or removed from one."""
+        if change in (QGraphicsItem.GraphicsItemChange.ItemVisibleHasChanged,
+                      QGraphicsItem.GraphicsItemChange.ItemSceneHasChanged):
+            self._update_animation_state()
+        return super().itemChange(change, value)
 
     @property
     def animated(self) -> bool:
@@ -93,14 +96,6 @@ class Outline(QGraphicsObject):
         if TIMELAPSE_MODE_FLAG in sys.argv:
             return
         self._animated = should_animate
-        self._update_animation_state()
-
-    def showEvent(self, _: Optional[QShowEvent]) -> None:
-        """Starts the animation when the outline is shown."""
-        self._update_animation_state()
-
-    def hideEvent(self, _: Optional[QHideEvent]) -> None:
-        """Stops the animation when the outline is hidden."""
         self._update_animation_state()
 
     def get_outline_width(self) -> float:
@@ -157,6 +152,7 @@ class Outline(QGraphicsObject):
         """Updates the outlined area in the scene."""
         self.prepareGeometryChange()
         self._rect = QRectF(new_region)
+        self._update_animation_state()
 
     def boundingRect(self) -> QRectF:
         """Returns the rectangle within the scene containing all pixels drawn by the outline."""

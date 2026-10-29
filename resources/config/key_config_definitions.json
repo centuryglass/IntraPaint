@@ -1,6 +1,6 @@
 {
     "speed_modifier": {
-        "label": "Key Speed Modifier:",
+        "label": "Key speed modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "If this key is held, movement/zoom/pan/scroll/etc. operations will go faster. (avoid changing, Shift and Ctrl are the only other working options and those cause various conflicts.)",
@@ -9,7 +9,7 @@
         "saved": true
     },
     "line_modifier": {
-        "label": "Line Drawing Modifier:",
+        "label": "Line drawing modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "When held, drawing tools will draw a line from the last point.",
@@ -18,7 +18,7 @@
         "saved": true
     },
     "fixed_angle_modifier": {
-        "label": "Fixed Angle Modifier:",
+        "label": "Fixed angle modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "When held, drawing tools will be constrained to a fixed angle.",
@@ -27,7 +27,7 @@
         "saved": true
     },
     "pan_view_modifier": {
-        "label": "Pan View Modifier:",
+        "label": "Pan view modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "When held, click and drag to pan the image view",
@@ -36,7 +36,7 @@
         "saved": true
     },
     "selection_add_modifier": {
-        "label": "Selection Add Modifier:",
+        "label": "Selection add modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "When held as a selection gesture starts, the gesture adds to the selection whatever the selection mode is. Held together with the subtract modifier, the gesture intersects with the selection.",
@@ -45,7 +45,7 @@
         "saved": true
     },
     "selection_subtract_modifier": {
-        "label": "Selection Subtract Modifier:",
+        "label": "Selection subtract modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "When held as a selection gesture starts, the gesture subtracts from the selection whatever the selection mode is. On Linux, many window managers (XFCE, Cinnamon, MATE, KDE Plasma 5) use Alt+drag to move windows, and the press never reaches IntraPaint. Either change the window manager's window-move modifier to Super, or bind this to another modifier such as Meta.",
@@ -54,7 +54,7 @@
         "saved": true
     },
     "selection_replace_modifier": {
-        "label": "Selection Replace Modifier:",
+        "label": "Selection replace modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "When held as a selection gesture starts, the gesture replaces the selection whatever the selection mode is. It takes priority over the add and subtract modifiers.",
@@ -63,7 +63,7 @@
         "saved": true
     },
     "fixed_aspect_modifier": {
-        "label": "Fixed Aspect Ratio Modifier:",
+        "label": "Fixed aspect ratio modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "When held, shape and transform tools will keep a fixed aspect ratio.",
@@ -72,12 +72,21 @@
         "saved": true
     },
     "eyedropper_override_modifier": {
-        "label" : "Color Picker Override Modifier:",
+        "label" : "Color picker override modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "When held, temporarily switch from the brush or fill tool to the color picker.",
         "type": "string",
         "default": "Ctrl",
+        "saved": true
+    },
+    "compare_original_modifier": {
+        "label": "Compare With Original Modifier:",
+        "category": "Keybindings",
+        "subcategory": "Modifiers",
+        "description": "While held in the generated image selector's single view, the original image content shows in place of the focused option.",
+        "type": "string",
+        "default": "Alt",
         "saved": true
     },
     "padding_scroll_modifier": {
@@ -156,7 +165,7 @@
         "label": "Move left:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Move the image generation area left, move active layer left, or view previous generated image option",
+        "description": "Move the generation area left, move active layer left, or view previous generated image option",
         "type": "string",
         "default": "Left",
         "saved": true
@@ -165,7 +174,7 @@
         "label": "Move right:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Move the image generation area right, move active layer right, or view next generated image option",
+        "description": "Move the generation area right, move active layer right, or view next generated image option",
         "type": "string",
         "default": "Right",
         "saved": true
@@ -174,7 +183,7 @@
         "label": "Move up:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Move the image generation area up, move active layer up, or zoom in on first generated image option",
+        "description": "Move the generation area up, move active layer up, or zoom in on first generated image option",
         "type": "string",
         "default": "Up",
         "saved": true
@@ -183,7 +192,7 @@
         "label": "Move down:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Move the image generation area down, move active layer down, or zoom to show all generated image options",
+        "description": "Move the generation area down, move active layer down, or zoom to show all generated image options",
         "type": "string",
         "default": "Down",
         "saved": true
@@ -342,7 +351,7 @@
         "saved": true
     },
     "generation_area_tool_key": {
-        "label": "Switch to the image generation area selection tool:",
+        "label": "Switch to the generation area tool:",
         "category": "Keybindings",
         "subcategory": "Tool Selection",
         "description": "Activate the generation area tool to pick an image area for AI image generation.",
@@ -642,7 +651,7 @@
         "label": "Zoom to generation area",
         "category": "Menu Shortcuts",
         "subcategory": "View Menu",
-        "description": "Center the view on the image generation area and zoom to fit it.",
+        "description": "Center the view on the generation area and zoom to fit it.",
         "type": "string",
         "default": "Ctrl+Alt+Z",
         "saved": true
@@ -714,7 +723,7 @@
         "label": "Crop image to generation area",
         "category": "Menu Shortcuts",
         "subcategory": "Image Menu",
-        "description": "Crop the image to fit image generation area.",
+        "description": "Crop the image to fit the generation area.",
         "type": "string",
         "default": "Ctrl+Alt+G",
         "saved": true

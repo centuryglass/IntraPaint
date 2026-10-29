@@ -14,6 +14,8 @@
   `set_floating_title_bar`, or Qt's without one, and is dragged by it. `show_title_bar_for_drag` shows Qt's title bar
   while docked, so a rail button or notch drag can hand off to Qt's own dock drag (see `src.ui.window.qt_dock_drag`).
 - The dock's owner can set a badge (`set_badge`), a short text its rail buttons draw while the dock is not showing.
+- A `DockPanel`'s title note (`DockPanel.set_title_note`) is the dock's `title_note`, which its floating title bar
+  shows. The dock re-emits the panel's `title_note_changed`, and emits it when its content changes.
 - The dock's key (`shortcut_config_key`) opens and focuses the dock, or closes it if it is already open.
 - A dock with no content is hidden and its toggle action is hidden too. It remembers whether it was open, and opens
   again when content arrives, unless another dock in its group is open by then.
@@ -33,6 +35,7 @@ from src.ui.layout.dock_panel import DockPanel
 from src.ui.layout.panel_fit import Orientation, orientation_for_dock
 from src.ui.window.dock_notch import DockNotch
 from src.ui.window.dock_state import SavedGroup, move_dock_in_tab_group, read_dock_groups
+from src.ui.window.floating_edge import FloatingEdge
 from src.ui.window.qt_dock_drag import start_qt_dock_drag
 
 
@@ -63,6 +66,7 @@ class PanelDock(QDockWidget):
     _drop_rule_pauses = 0
 
     badge_changed = Signal()
+    title_note_changed = Signal()
     # Emitted after the dock moves within its tab group's order, which Qt reports with no signal of its own:
     tab_order_changed = Signal()
 
@@ -97,6 +101,8 @@ class PanelDock(QDockWidget):
         self._notch = DockNotch(self, self._start_notch_drag)
         self._notch.move(0, 0)
         self._notch.raise_()
+        self._floating_edge = FloatingEdge(self)
+        self._floating_edge.hide()
         self.toggleViewAction().setVisible(False)
         self.toggleViewAction().setIcon(self.windowIcon())
         self.visibilityChanged.connect(self._visibility_changed)
@@ -161,6 +167,11 @@ class PanelDock(QDockWidget):
             self.badge_changed.emit()
 
     @property
+    def title_note(self) -> str:
+        """The content's title note (`DockPanel.title_note`), or '' for content that isn't a `DockPanel`."""
+        return self._content.title_note if isinstance(self._content, DockPanel) else ''
+
+    @property
     def open_when_available(self) -> bool:
         """Whether a dock with no content opens when content arrives."""
         return self._open_when_available
@@ -172,10 +183,15 @@ class PanelDock(QDockWidget):
             return
         if self._content is not None:
             self._open_when_available = not self.isHidden()
+            if isinstance(self._content, DockPanel):
+                self._content.title_note_changed.disconnect(self.title_note_changed)
             self._content.hide()
             self._content.setParent(None)
         self._content = content
         self._orientation = None
+        if isinstance(content, DockPanel):
+            content.title_note_changed.connect(self.title_note_changed)
+        self.title_note_changed.emit()
         if content is None:
             self.toggleViewAction().setVisible(False)
             self.hide()
@@ -183,6 +199,7 @@ class PanelDock(QDockWidget):
         self.setWidget(content)
         content.show()
         self._notch.raise_()
+        self._floating_edge.fit_parent()
         self.toggleViewAction().setVisible(True)
         if self._open_when_available:
             if any(not mate.isHidden() for mate in self.group_mates()):
@@ -291,6 +308,7 @@ class PanelDock(QDockWidget):
         """Updates the content's orientation and size."""
         super().resizeEvent(event)
         self._notch.raise_()
+        self._floating_edge.fit_parent()
         self._update_host_facts()
 
     def _start_notch_drag(self, global_pos: QPoint) -> None:
@@ -322,6 +340,8 @@ class PanelDock(QDockWidget):
             self.setTitleBarWidget(wanted)
         self._notch.setVisible(not floating)
         self._notch.raise_()
+        self._floating_edge.setVisible(floating)
+        self._floating_edge.fit_parent()
 
     def _toggle_action_triggered(self, checked: bool) -> None:
         """Closes the group's other docks when the toggle action opens this one."""
@@ -352,6 +372,7 @@ class PanelDock(QDockWidget):
         if self._content is None:
             return
         if isinstance(self._content, DockPanel):
+            self._content.host_floating_changed(self.isFloating())
             self._content.set_host_facts(self._content.size())
             return
         orientation = orientation_for_dock(self._window.dockWidgetArea(self), self.isFloating(), self.size(),

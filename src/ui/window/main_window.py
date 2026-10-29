@@ -31,6 +31,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.controller.image_generation.generation_session import GenerationSession
 from src.ui.generated_image_selector import GeneratedImageSelector
+from src.ui.graphics_items.toast_message import ToastMessageItem
 from src.ui.layout.panel_fit import held_weakly
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.panel.image_panel import ImagePanel
@@ -73,6 +74,8 @@ NAVIGATION_DOCK_TITLE = _tr('Navigation')
 
 DEFAULT_LOADING_MESSAGE = _tr('Loading...')
 GENERATE_ERROR_TITLE_UNEXPECTED = _tr('Inpainting failure')
+TOAST_GENERATION_STOPPED_EMPTY = _tr('Generation stopped before any images were ready.')
+TOAST_GENERATION_EMPTY = _tr('Generation finished without any images.')
 
 CLAMP_DELAY_MS = 50
 
@@ -151,7 +154,10 @@ class MainWindow(QMainWindow):
         self._generation_session.progress_changed.connect(self.set_loading_message)
         self._generation_session.generation_finished.connect(self._on_generation_finished)
         self._generation_session.generation_failed.connect(self._on_generation_failed)
+        self._generation_session.generation_ended.connect(self._on_generation_ended)
+        self._generation_session.stop_requested.connect(self.cancel_generation)
         self._image_selector: Optional[GeneratedImageSelector] = None
+        self._toast_message: Optional[ToastMessageItem] = None
         self._previous_options_available = False
 
         # The central widget shows the canvas, or the generated image selector in its place:
@@ -443,10 +449,23 @@ class MainWindow(QMainWindow):
         self.set_is_loading(False)
 
     def _on_generation_failed(self, err: BaseException) -> None:
-        """Closes the selection screen and shows the error."""
-        self.set_image_selector_visible(False)
+        """Shows the error. `_on_generation_ended` closes the selection screen if no option arrived."""
         self.set_is_loading(False)
         show_error_dialog(self, GENERATE_ERROR_TITLE_UNEXPECTED, err)
+
+    def _on_generation_ended(self) -> None:
+        """Lets the selection screen drop the placeholders no image arrived for, and closes it if none arrived.
+
+        A failed run already reported its error. Any other run that produced nothing says so on the canvas.
+        """
+        if self._image_selector is None or not self.is_image_selector_visible():
+            return
+        if self._image_selector.finish_generation():
+            return
+        self.set_image_selector_visible(False)
+        if not self._generation_session.failed:
+            message = TOAST_GENERATION_STOPPED_EMPTY if self._generation_session.stopped else TOAST_GENERATION_EMPTY
+            self._toast_message = ToastMessageItem(message, self._image_panel.image_viewer)
 
     def is_image_selector_visible(self) -> bool:
         """Returns whether the generated image selection screen is showing."""
@@ -458,7 +477,6 @@ class MainWindow(QMainWindow):
             self._image_selector = GeneratedImageSelector(self._image_stack,
                                                           self._generation_session,
                                                           held_weakly(partial(self.set_image_selector_visible, False)))
-            self._image_selector.cancel_generation.connect(self.cancel_generation)
             self._image_selector.previous_options_available.connect(self._report_previous_options_available)
         return self._image_selector
 
@@ -549,9 +567,11 @@ class MainWindow(QMainWindow):
         """Sets whether the loading spinner is shown, optionally setting loading spinner message text."""
         if is_loading:
             AppStateTracker.set_app_state(APP_STATE_LOADING)
-            self._loading_widget.show()
-            self._loading_widget.raise_()
             self._loading_widget.message = message if message is not None else DEFAULT_LOADING_MESSAGE
+            # The selection screen shows its own loading state in each unfilled option:
+            if TIMELAPSE_MODE_FLAG in sys.argv or not self.is_image_selector_visible():
+                self._loading_widget.show()
+                self._loading_widget.raise_()
         else:
             if AppStateTracker.app_state() == APP_STATE_LOADING:
                 if self.is_image_selector_visible():
@@ -568,19 +588,27 @@ class MainWindow(QMainWindow):
         self.update()
 
     def set_loading_message(self, message: str) -> None:
-        """Sets the loading spinner message text."""
+        """Sets the loading spinner message text, or the selection screen's progress text while it shows."""
+        if self._image_selector is not None and self.is_image_selector_visible():
+            self._image_selector.set_progress_text(message)
         if self._loading_widget.isVisible():
             self._loading_widget.message = message
 
     def _clamp_to_screen(self) -> None:
-        """Shrinks the window to the available size of the display it is on."""
+        """Shrinks the window, frame included, to the available size of the display it is on.
+
+        `resize` sets the size inside the frame, so the frame's margins come off the target size. Each resize schedules
+        another clamp, so a clamp that leaves the frame too large repeats forever.
+        """
         screen_size = get_screen_size(self, False)
         if screen_size.isNull():
             return
-        window_size = self.frameGeometry().size()
-        if window_size.width() > screen_size.width() or window_size.height() > screen_size.height():
-            self.resize(min(window_size.width(), screen_size.width()),
-                        min(window_size.height(), screen_size.height()))
+        frame_size = self.frameGeometry().size()
+        if frame_size.width() > screen_size.width() or frame_size.height() > screen_size.height():
+            margin_width = frame_size.width() - self.width()
+            margin_height = frame_size.height() - self.height()
+            self.resize(min(self.width(), screen_size.width() - margin_width),
+                        min(self.height(), screen_size.height() - margin_height))
 
     def _watch_displays(self) -> None:
         """Schedules a re-clamp when the window changes screens or a display's usable area changes."""

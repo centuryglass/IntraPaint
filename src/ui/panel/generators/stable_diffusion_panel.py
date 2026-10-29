@@ -1,7 +1,7 @@
 """The Stable Diffusion generation panel, for the WebUI and ComfyUI backends.
 
 It is a `DockPanel` that places controls by how often they're used. The action block holds the ones used after every
-generation: denoising strength, guidance, steps, batch size, padding and Generate, with Generate last. It is a side
+generation: denoising strength, CFG scale, steps, batch size, padding and Generate, with Generate last. It is a side
 panel's footer (`DockPanel.set_footer`) and a strip's trailing column (`DockPanel.trailing_layout`), so Generate stays
 in the bottom-right corner and never scrolls. The sections run Prompt, Mask, Sampling, Size and batch, then Advanced.
 A strip pins Prompt in a column at the left (`DockPanel.pinned_layout`) and packs the rest into columns between the
@@ -67,7 +67,7 @@ GROUP_TITLE_INPAINT_AND_SIZE = _tr('Inpainting and size')
 GROUP_TITLE_MODEL = _tr('Model')
 
 LABEL_MODEL = _tr('Model')
-LABEL_GUIDANCE = _tr('Guidance')
+LABEL_CFG_SCALE = _tr('CFG scale')
 LABEL_STEPS = _tr('Steps')
 LABEL_NEGATIVE_PROMPT = _tr('Negative prompt')
 LABEL_LAST_SEED = _tr('Last seed')
@@ -580,24 +580,24 @@ class StableDiffusionPanel(DockPanel):
     def _build_size_section(self, ui: PanelLayout, cache: Cache) -> None:
         section = ui.section(SECTION_TITLE_SIZE, collapsible=True, priority=SIZE_PRIORITY)
         self._size_section = section
-        self._gen_size_input = cache.get_control_widget(Cache.GENERATION_SIZE)
+        self._gen_resolution_input = cache.get_control_widget(Cache.GENERATION_SIZE)
         # The boxes' width follows their maximum, which is unbounded by default. The maximum image size bounds it, and
         # never below the current value, so no saved value is clamped:
-        if isinstance(self._gen_size_input, SizeField):
-            self._gen_size_input.maximum = AppConfig().get(AppConfig.MAX_IMAGE_SIZE).expandedTo(
-                self._gen_size_input.value())
+        if isinstance(self._gen_resolution_input, SizeField):
+            self._gen_resolution_input.maximum = AppConfig().get(AppConfig.MAX_IMAGE_SIZE).expandedTo(
+                self._gen_resolution_input.value())
         # The width and height boxes sit side by side, or stacked when the section is too narrow for that:
-        self._gen_size_holder = HonestSizeHints(self._gen_size_input)
+        self._gen_resolution_holder = HonestSizeHints(self._gen_resolution_input)
         # Both boxes together are as wide as one field, with each label beside its box:
-        self._gen_size_holder.setMaximumWidth(FIELD_MAX_WIDTH)
+        self._gen_resolution_holder.setMaximumWidth(FIELD_MAX_WIDTH)
         size_rows = LabeledRows([(normalize_row_label(cache.get_label(Cache.GENERATION_SIZE)),
-                                  self._gen_size_holder)])
+                                  self._gen_resolution_holder)])
         section.add(size_rows, REQUIRED, (partial(self._set_size_orientation, Qt.Orientation.Horizontal),
                                           partial(self._set_size_orientation, Qt.Orientation.Vertical)))
         self._batch_count_field = config_slider_field(cache, Cache.BATCH_COUNT)
         section.add(self._batch_count_field, REQUIRED)
 
-        section.widget.bind_summary(self._size_summary, self._gen_size_input.valueChanged,
+        section.widget.bind_summary(self._size_summary, self._gen_resolution_input.valueChanged,
                                     self._batch_count_field.valueChanged)
         section.widget.set_expanded(False)
 
@@ -611,8 +611,8 @@ class StableDiffusionPanel(DockPanel):
         # Strip columns are wide enough for the boxes side by side, and stacking them only takes more height there:
         if self.orientation == Orientation.STRIP:
             orientation = Qt.Orientation.Horizontal
-        self._gen_size_input.orientation = orientation
-        self._gen_size_holder.updateGeometry()
+        self._gen_resolution_input.orientation = orientation
+        self._gen_resolution_holder.updateGeometry()
 
     def _build_advanced_section(self, ui: PanelLayout, cache: Cache) -> None:
         section = ui.section(SECTION_TITLE_ADVANCED, collapsible=True, priority=ADVANCED_PRIORITY)
@@ -641,9 +641,9 @@ class StableDiffusionPanel(DockPanel):
         cache = Cache()
         self._denoising_field = config_slider_field(cache, Cache.DENOISING_STRENGTH)
         self._denoising_field.setFixedHeight(DENOISING_FIELD_HEIGHT)
-        self._guidance_field = config_slider_field(cache, Cache.GUIDANCE_SCALE, label=LABEL_GUIDANCE)
+        self._cfg_scale_field = config_slider_field(cache, Cache.GUIDANCE_SCALE, label=LABEL_CFG_SCALE)
         self._steps_field = config_slider_field(cache, Cache.SAMPLING_STEPS, label=LABEL_STEPS)
-        self._sampling_pair = FieldPair(self._guidance_field, self._steps_field)
+        self._sampling_pair = FieldPair(self._cfg_scale_field, self._steps_field)
         self._batch_size_field = config_slider_field(cache, Cache.BATCH_SIZE)
         padding_field = config_slider_field(cache, Cache.INPAINT_FULL_RES_PADDING, field_class=ToggledSliderField,
                                             off_text=PADDING_OFF)
@@ -668,7 +668,7 @@ class StableDiffusionPanel(DockPanel):
             cache.connect(padding_field, full_res_key, _sync_full_res_toggle)
         _sync_full_res_toggle()
         self._action_pair = FieldPair(self._batch_size_field, padding_field)
-        # Batch size sits at the left edge, under guidance, while padding is hidden:
+        # Batch size sits at the left edge, under CFG scale, while padding is hidden:
         for field in (self._batch_size_field, padding_field):
             self._action_pair.layout().setAlignment(field, Qt.AlignmentFlag.AlignLeft)
         self.add_fit_item(FitItem(REQUIRED, 2), self._apply_pair_form)
@@ -920,8 +920,8 @@ class StableDiffusionPanel(DockPanel):
 
     @property
     def action_fields(self) -> list[NumberField]:
-        """The action block's number fields: denoising strength, guidance, steps, batch size and padding."""
-        return [self._denoising_field, self._guidance_field, self._steps_field, self._batch_size_field,
+        """The action block's number fields: denoising strength, CFG scale, steps, batch size and padding."""
+        return [self._denoising_field, self._cfg_scale_field, self._steps_field, self._batch_size_field,
                 self._padding_field]
 
     @property
