@@ -207,6 +207,7 @@ class IntraPaintTestCaseTest(unittest.TestCase):
         inside_hotkey.assert_not_called()
         inside_listener.assert_not_called()
         self.assertIsNone(hotkey_filter.default_focus())
+        del widget  # Empties the cell that _Case and _press_key_and_change_modifiers share.
 
     def test_state_signals_reset_before_and_after(self) -> None:
         """Undo count and app state connections made outside a test, or inside one, don't outlive it, and each test
@@ -263,6 +264,7 @@ class IntraPaintTestCaseTest(unittest.TestCase):
         self.assertTrue(result.wasSuccessful(), result.errors + result.failures)
         self.assertEqual({name: shiboken6.isValid(widget) for name, widget in widgets.items()},
                          {'outside': True, 'plain': False, 'cycle': False, 'child': False})
+        widgets.clear()  # The test's local classes hold this dict, and stay in a cycle until the next collection.
 
 
 if __name__ == '__main__':
