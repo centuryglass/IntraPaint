@@ -745,6 +745,8 @@ def panel_scenes(controller: 'AppController') -> list[PanelScene]:
     Later scenes take their panels out of the main window while they're captured, so the main window comes first.
     """
     # pylint: disable=import-outside-toplevel,protected-access
+    from src.ui.panel.generators.glid_panel import GlidPanel
+    from src.ui.panel.generators.testing_panel import TestControlPanel
     # Panels that show the controller's ImageStack are the controller's own: a discarded copy would leave the stack
     # connected to deleted graphics items.
     return [
@@ -755,6 +757,8 @@ def panel_scenes(controller: 'AppController') -> list[PanelScene]:
         PanelScene('navigation_panel', lambda c: c._tool_panel_navigation_panel),
         PanelScene('sd_webui_panel', lambda _c: stable_diffusion_panel(True)),
         PanelScene('sd_comfyui_panel', lambda _c: stable_diffusion_panel(False)),
+        PanelScene('glid_panel', lambda _c: GlidPanel()),
+        PanelScene('test_generator_panel', lambda _c: TestControlPanel()),
         PanelScene('controlnet_webui_panel', lambda _c: controlnet_panel(True, set_up_units=True)),
         PanelScene('controlnet_comfyui_panel', lambda _c: controlnet_panel(False)),
         *_tool_control_scenes(controller),
