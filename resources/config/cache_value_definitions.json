@@ -937,10 +937,10 @@
         "translate": false
     },
     "sampling_steps": {
-        "label": "Sampling steps:",
+        "label": "Steps:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different Stable Diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits",
+        "description": "Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different Stable Diffusion models and samplers have different requirements, but in most cases setting this higher than 30 has only minimal benefits",
         "type": "int",
         "default": 30,
         "saved": true,
@@ -1488,10 +1488,10 @@
         }
     },
     "sd_upscaling_step_count": {
-        "label": "Step count:",
+        "label": "Steps:",
         "category": "Cache",
         "subcategory": "Stable Diffusion Upscale",
-        "description": "Number of diffusion steps to use when upscaling with Stable Diffusion",
+        "description": "Number of denoising steps to use when upscaling with Stable Diffusion",
         "type": "int",
         "default": 30,
         "saved": true,

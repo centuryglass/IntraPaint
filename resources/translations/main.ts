@@ -1558,12 +1558,12 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Sampling steps:</source>
+        <source>Steps:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different Stable Diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</source>
+        <source>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different Stable Diffusion models and samplers have different requirements, but in most cases setting this higher than 30 has only minimal benefits</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1898,12 +1898,7 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Step count:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/cache_value_definitions.json"/>
-        <source>Number of diffusion steps to use when upscaling with Stable Diffusion</source>
+        <source>Number of denoising steps to use when upscaling with Stable Diffusion</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
