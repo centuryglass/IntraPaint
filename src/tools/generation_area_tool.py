@@ -33,7 +33,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 ICON_PATH_GEN_AREA_TOOL = f'{PROJECT_DIR}/resources/icons/tools/gen_area_icon.svg'
-GENERATION_AREA_LABEL = _tr('Set Image Generation Area')
+GENERATION_AREA_LABEL = _tr('Generation area')
 GENERATION_AREA_TOOLTIP = _tr('Select an image region for AI image generation')
 GEN_AREA_CONTROL_HINT = _tr('{left_mouse_icon}: move area - {right_mouse_icon}: resize area')
 GEN_AREA_HANDLE_CONTROL_HINT = _tr('{left_mouse_icon}: move area, or drag a handle to resize - {right_mouse_icon}: '
@@ -59,7 +59,7 @@ _HANDLE_CURSOR_SHAPES = {
 
 
 class GenerationAreaTool(BaseTool):
-    """An image editing tool that moves and resizes the image generation area.
+    """An image editing tool that moves and resizes the generation area.
 
     Left-dragging inside the area moves it by the pointer's offset, and left-pressing outside centers it on the
     pointer before dragging from there. With `show_handles`, eight resize handles on the area's outline resize it.
@@ -195,7 +195,7 @@ class GenerationAreaTool(BaseTool):
         self._drag_changed_area = False
 
     def _resize_generation_area(self, bottom_right: QPoint) -> None:
-        """Updates the image generation area's size in the image."""
+        """Updates the generation area's size in the image."""
         generation_area = self._image_stack.generation_area
         width = min(self._image_stack.width - generation_area.x(), bottom_right.x() - generation_area.x())
         height = min(self._image_stack.height - generation_area.y(), bottom_right.y() - generation_area.y())
@@ -212,7 +212,7 @@ class GenerationAreaTool(BaseTool):
             self._image_stack.generation_area = QRect(generation_area.x(), generation_area.y(), width, height)
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Start moving or resizing the image generation area on left-click, start resizing on right-click."""
+        """Start moving or resizing the generation area on left-click, start resizing on right-click."""
         assert event is not None
         if event.buttons() == Qt.MouseButton.LeftButton:
             self._end_left_drag()
@@ -274,7 +274,7 @@ class GenerationAreaTool(BaseTool):
         return False
 
     def key_event(self, event: Optional[QKeyEvent]) -> bool:
-        """Move image generation area with arrow keys."""
+        """Move generation area with arrow keys."""
         assert event is not None
         translation = QPoint(0, 0)
         multiplier = 10 if KeyConfig().modifier_held(KeyConfig.SPEED_MODIFIER) else 1

@@ -20,16 +20,16 @@ from src.util.main_thread import run_on_main_thread
 
 logger = logging.getLogger(__name__)
 
-# Once the xy offset of sequential spacenav events adds up to this value, the image generation area will
+# Once the xy offset of sequential spacenav events adds up to this value, the generation area will
 # reach max scrolling speed:
 MAX_SPEED_AT_OFFSET = 20000
-# Controls how quickly the image generation area will move across the entire image at max speed:
+# Controls how quickly the generation area will move across the entire image at max speed:
 # Values must >= 0.  The higher the value, the slower the max speed will be.
 MAX_SPEED_CONTROL = 1
 
 
 class SpacenavManager:
-    """Tracks spacemouse input and applies it to the edited image generation area."""
+    """Tracks spacemouse input and applies it to the edited generation area."""
 
     def __init__(self, window: MainWindow, image_stack: ImageStack) -> None:
         """Connects the manager to the edited image and the main application window.""
@@ -65,7 +65,7 @@ class SpacenavManager:
 
             @property
             def dimensions_all_nonzero(self) -> bool:
-                """Return whether all image and image generation area dimensions are not zero."""
+                """Return whether all image and generation area dimensions are not zero."""
                 return any(dim == 0 for dim in (self.w_image, self.h_image, self.w_sel, self.h_sel))
 
         self._thread_data = ThreadData()
@@ -82,7 +82,7 @@ class SpacenavManager:
         self._image_stack.size_changed.connect(update_image_size)
 
         def update_generation_area_size(bounds: QRect):
-            """Keep tracked image generation area size in sync with the current image generation area."""
+            """Keep tracked generation area size in sync with the current generation area."""
             with self._thread_data.lock:
                 if bounds.width() != self._thread_data.w_sel:
                     self._thread_data.w_sel = bounds.width()
@@ -123,7 +123,7 @@ class SpacenavManager:
                 logger.info('spacenav connection started.')
 
                 def send_nav_signal() -> None:
-                    """Convert spacemouse events to appropriate image generation area changes, emit results to main
+                    """Convert spacemouse events to appropriate generation area changes, emit results to main
                        thread."""
                     with self._thread_data.lock:
                         if self._thread_data.pending:
@@ -186,7 +186,7 @@ class SpacenavManager:
         self._worker = SpacenavThreadWorker(self._thread_data)
 
         def move_generation_area(x_offset: int, y_offset: int) -> None:
-            """Move the image generation area when the thread worker requests. Main thread only."""
+            """Move the generation area when the thread worker requests. Main thread only."""
             with self._thread_data.lock:
                 self._thread_data.pending = False
             if self._window is None or AppStateTracker.app_state() != APP_STATE_EDITING:

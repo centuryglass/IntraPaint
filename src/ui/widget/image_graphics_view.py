@@ -83,7 +83,7 @@ class ImageGraphicsView(QGraphicsView):
         self.installEventFilter(self)
 
         if use_keybindings:
-            # Bind directional navigation and image generation area keys:
+            # Bind directional navigation and generation area keys:
             zoom_key = KeyConfig().get_keycodes(KeyConfig.ZOOM_TOGGLE)
 
             def _toggle_zoom_if_visible() -> bool:

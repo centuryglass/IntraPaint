@@ -354,19 +354,19 @@ class ImageStack(QObject):
 
     @property
     def generation_area(self) -> QRect:
-        """Returns the bounds of the area selected for editing within the image."""
+        """Returns the bounds of the generation area within the image."""
         return QRect(self._generation_area.topLeft(), self._generation_area.size())
 
     @generation_area.setter
     def generation_area(self, bounds_rect: QRect) -> None:
         """
-        Updates the bounds of the image generation area within the image. If `bounds_rect` exceeds the maximum  size
+        Updates the bounds of the generation area within the image. If `bounds_rect` exceeds the maximum  size
         or doesn't fit fully within the image bounds, the closest valid region will be selected.
         """
         self.set_generation_area(bounds_rect)
 
     def set_generation_area(self, bounds_rect: QRect) -> None:
-        """Updates the bounds of the image generation area, adjusted to fit like the `generation_area` setter.
+        """Updates the bounds of the generation area, adjusted to fit like the `generation_area` setter.
 
         Consecutive changes inside an open undo group, like a drag bracketed by `UndoStack.begin_gesture`, coalesce into
         one undo step.
@@ -377,7 +377,7 @@ class ImageStack(QObject):
             last_bounds = self._generation_area
 
             def update_fn(next_bounds: QRect) -> None:
-                """Apply an arbitrary image generation area change."""
+                """Apply an arbitrary generation area change."""
                 if self._generation_area != next_bounds:
                     self._generation_area = next_bounds
                     self.generation_area_bounds_changed.emit(next_bounds)
@@ -562,7 +562,7 @@ class ImageStack(QObject):
         self._layer_stack.render(base_image, transform, image_bounds, z_max, image_adjuster)
 
     def qimage_generation_area_content(self) -> QImage:
-        """Returns the contents of the image generation area as a QImage."""
+        """Returns the contents of the generation area as a QImage."""
         return self.qimage().copy(self.generation_area)
 
     # LAYER ACCESS / MANIPULATION FUNCTIONS:
@@ -1382,11 +1382,11 @@ class ImageStack(QObject):
                                     layer: Optional[Layer] = None,
                                     composition_mode: QPainter.CompositionMode
                                     = QPainter.CompositionMode.CompositionMode_SourceOver):
-        """Updates image generation area content within a layer.
+        """Updates generation area content within a layer.
         Parameters
         ----------
         image_data: QImage
-            Image data to draw into the image generation area. If the size of the image doesn't match the size of the
+            Image data to draw into the generation area. If the size of the image doesn't match the size of the
             bounds_rect, it will be scaled to fit.
         layer: Layer | None, default=None
             The layer object to copy, or its id. If None, the active layer will be used
@@ -1685,7 +1685,7 @@ class ImageStack(QObject):
         if image_bounds is None:
             image_bounds = self.bounds
         adjusted_area = QRect(initial_area)
-        # Make sure that the image generation area fits within allowed size limits:
+        # Make sure that the generation area fits within allowed size limits:
         min_size = self.min_generation_area_size
         adjusted_area = adjusted_area.united(QRect(adjusted_area.topLeft(), min_size))
         max_size = self.max_generation_area_size
@@ -1693,7 +1693,7 @@ class ImageStack(QObject):
         return adjusted_placement_in_bounds(adjusted_area, image_bounds)
 
     def _set_generation_area_internal(self, bounds_rect: QRect) -> None:
-        """Updates the image generation area, adjusting as needed based on image bounds, and sending the
+        """Updates the generation area, adjusting as needed based on image bounds, and sending the
            selection_changed signal if any changes happened. Does not update undo history."""
         assert isinstance(bounds_rect, QRect)
         bounds_rect = self._get_closest_valid_generation_area(bounds_rect)

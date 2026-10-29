@@ -13,7 +13,7 @@ from src.image.layers.image_stack import ImageStack
 from src.util.visual.pil_image_utils import pil_image_scaling
 
 
-def edit_size_image(image: QImage) -> QImage:
+def generation_area_size_image(image: QImage) -> QImage:
     """Returns `image` at `Cache.EDIT_SIZE`, the resolution generated content is applied at."""
     return pil_image_scaling(image, Cache().get(Cache.EDIT_SIZE))
 
@@ -55,7 +55,7 @@ class GeneratedImageBatch:
 
     def edit_image(self, option_index: int) -> QImage:
         """Returns option `option_index` at the resolution it is applied at."""
-        return edit_size_image(self.option_images[option_index])
+        return generation_area_size_image(self.option_images[option_index])
 
     def full_image(self, option_index: int) -> QImage:
         """Returns option `option_index` at the largest resolution available, as saved to a file."""

@@ -48,9 +48,9 @@ WINDOW_TITLE = _tr('Navigate')
 ZOOM_LABEL = _tr('Move view')
 ZOOM_TOOLTIP = _tr('Left-click to pan, Shift + left-click to draw viewport, right-click to add, move or remove '
                    'context pins')
-IMAGE_GEN_LABEL = _tr('Move gen. area')
+GENERATION_AREA_LABEL = _tr('Move gen. area')
 ZOOM_LABEL_SHORT = _tr('View')
-IMAGE_GEN_LABEL_SHORT = _tr('Gen. area')
+GENERATION_AREA_LABEL_SHORT = _tr('Gen. area')
 BUTTON_TEXT_RESET_VIEW = _tr('Reset view')
 ZOOM_PERCENT_TEXT = _tr('Zoom {percent}%')
 # Each hint is a list of lines, joined into one line where the panel has the width for it:
@@ -220,13 +220,13 @@ class NavigationWindow(ImagePanel):
         self._controls_layout.setContentsMargins(0, 0, 0, 0)
 
         # The stored values are the full labels, which `Cache.LAST_NAV_PANEL_TOOL` has always held:
-        self._tool_toggle = SegmentedControl([Segment(ZOOM_LABEL, ZOOM_LABEL, ICON_PATH_ZOOM_TOOL,
-                                                      f'{ZOOM_LABEL}\n{ZOOM_TOOLTIP}'),
-                                              Segment(IMAGE_GEN_LABEL, IMAGE_GEN_LABEL, ICON_PATH_GEN_AREA_TOOL,
-                                                      IMAGE_GEN_LABEL)], parent=self._controls)
+        zoom_segment = Segment(ZOOM_LABEL, ZOOM_LABEL, ICON_PATH_ZOOM_TOOL, f'{ZOOM_LABEL}\n{ZOOM_TOOLTIP}')
+        gen_area_segment = Segment(GENERATION_AREA_LABEL, GENERATION_AREA_LABEL, ICON_PATH_GEN_AREA_TOOL,
+                                   GENERATION_AREA_LABEL)
+        self._tool_toggle = SegmentedControl([zoom_segment, gen_area_segment], parent=self._controls)
         self._tool_toggle.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         initial_tool = Cache().get(Cache.LAST_NAV_PANEL_TOOL)
-        if initial_tool == IMAGE_GEN_LABEL:
+        if initial_tool == GENERATION_AREA_LABEL:
             self._tool_toggle.set_value(initial_tool)
             self._set_active_tool(initial_tool)
         self._tool_toggle.valueChanged.connect(self._set_active_tool)
@@ -288,7 +288,7 @@ class NavigationWindow(ImagePanel):
         self._refit()
 
     def _set_active_tool(self, tool_name: str) -> None:
-        if tool_name == IMAGE_GEN_LABEL:
+        if tool_name == GENERATION_AREA_LABEL:
             self._tool_controller.active_tool = self._generation_area_tool
         elif tool_name == ZOOM_LABEL:
             self._tool_controller.active_tool = self._zoom_tool
@@ -473,7 +473,8 @@ class NavigationWindow(ImagePanel):
                                            else DisplayMode.ICON_AND_LABEL)
         short = toggle_form == TOGGLE_SHORT_LABELS
         self._tool_toggle.set_segment_label(ZOOM_LABEL, ZOOM_LABEL_SHORT if short else ZOOM_LABEL)
-        self._tool_toggle.set_segment_label(IMAGE_GEN_LABEL, IMAGE_GEN_LABEL_SHORT if short else IMAGE_GEN_LABEL)
+        self._tool_toggle.set_segment_label(GENERATION_AREA_LABEL,
+                                            GENERATION_AREA_LABEL_SHORT if short else GENERATION_AREA_LABEL)
 
         hint_form = placement[HINT_ITEM]
         stacked = hint_form == HINT_STACKED and not side

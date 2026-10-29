@@ -117,7 +117,7 @@
         "label": "Highlight generation area and selection on rulers:",
         "category": "Interface",
         "subcategory": "Layout",
-        "description": "Mark the image generation area and the selection's bounds with bars along the rulers.",
+        "description": "Mark the generation area and the selection's bounds with bars along the rulers.",
         "type": "bool",
         "default": true,
         "saved": true
@@ -126,7 +126,7 @@
         "label": "Ruler generation area color:",
         "category": "Interface",
         "subcategory": "Layout",
-        "description": "Color of the image generation area's bar on the rulers. Leave empty to use the theme's accent color. The selection's bar uses the selection overlay color. Both are drawn opaque, lightened or darkened as needed to stand out against the ruler.",
+        "description": "Color of the generation area's bar on the rulers. Leave empty to use the theme's accent color. The selection's bar uses the selection overlay color. Both are drawn opaque, lightened or darkened as needed to stand out against the ruler.",
         "type": "string",
         "default": "",
         "saved": true
@@ -156,7 +156,7 @@
     "animate_outlines_and_previews": {
         "label": "Animate area outlines and preview lines",
         "category": "Interface",
-        "description": "Enable or disable animation on the image generation area outline, selected content area outline, and line previews.",
+        "description": "Enable or disable animation on the generation area outline, selected content area outline, and line previews.",
         "type": "bool",
         "default": true,
         "saved": true
@@ -236,10 +236,10 @@
         "saved": true
     },
     "max_edit_size": {
-        "label": "Maximum editing size:",
+        "label": "Maximum generation area size:",
         "category": "Editing",
         "subcategory": "Size",
-        "description": "Maximum size in pixels of the area selected for editing",
+        "description": "Maximum size in pixels of the generation area",
         "type": "Size",
         "default": "10240x10240",
         "saved": true
@@ -248,7 +248,7 @@
         "label": "Minimum generation area size:",
         "category": "Editing",
         "subcategory": "Size",
-        "description": "Minimum size in pixels of the AI image generation area",
+        "description": "Minimum size in pixels of the generation area",
         "type": "Size",
         "default": "8x8",
         "saved": true
@@ -354,7 +354,7 @@
     "pil_upscale_mode": {
         "label": "Upscale mode:",
         "category": "Editing",
-        "description": "Upscaling mode used when the inpainting resolution doesn't match the image generation area size.",
+        "description": "Upscaling mode used when the inpainting resolution doesn't match the generation area size.",
         "type": "string",
         "default": "Lanczos",
         "options":  [],
@@ -363,7 +363,7 @@
     "pil_downscale_mode": {
         "label": "Downscale mode:",
         "category": "Editing",
-        "description": "Downscaling mode used when the inpainting resolution doesn't match the image generation area size.",
+        "description": "Downscaling mode used when the inpainting resolution doesn't match the generation area size.",
         "type": "string",
         "default": "Lanczos",
         "options": [],

@@ -1333,7 +1333,7 @@ class AppController(MenuBuilder):
 
     @menu_action(MENU_VIEW, 'zoom_to_gen_area_shortcut', 193, valid_app_states=[APP_STATE_EDITING])
     def zoom_to_generation_area(self) -> None:
-        """Center the view on the image generation area."""
+        """Center the view on the generation area."""
         self._image_viewer.zoom_to_generation_area()
 
     @menu_action(MENU_VIEW, 'toggle_control_hints_shortcut', 196, valid_app_states=[APP_STATE_EDITING])

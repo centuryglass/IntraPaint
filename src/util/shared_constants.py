@@ -97,8 +97,8 @@ DESCRIBE_LOADING_TEXT = _tr('Describing image')
 
 # Image generation:
 GENERATE_ERROR_TITLE = _tr('Image generation failed')
-GENERATE_ERROR_MESSAGE_EMPTY_MASK = _tr('Nothing was selected in the image generation area. Either use the selection'
-                                        ' tool to mark part of the image generation area for inpainting, move the image'
+GENERATE_ERROR_MESSAGE_EMPTY_MASK = _tr('Nothing was selected in the generation area. Either use the selection'
+                                        ' tool to mark part of the generation area for inpainting, move the image'
                                         ' generation area to cover selected content, or switch to another image'
                                         ' generation mode.')
 

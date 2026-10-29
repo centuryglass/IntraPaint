@@ -122,7 +122,7 @@ class ImageGenerator(MenuBuilder, ABC):
             Signal to emit when status updates are available. Expected keys are 'seed' and 'progress'.
         source_image : QImage
             Image to potentially use as a basis for the created or edited image.  This will be ignored if the editing
-            mode is text-to-image and there are no ControlNet units using the image generation area.
+            mode is text-to-image and there are no ControlNet units using the generation area.
         mask_image : QImage, optional
             Mask marking the edited image region.
         """
