@@ -6,8 +6,8 @@ the `_tr` and `QApplication.translate` calls under `src/` and from the config de
 
 Every other `.ts` file in `resources/translations/` is a translation into the language its `language` attribute names.
 Each is merged with the catalog: translations of strings still in the catalog are kept, new strings are added
-unfinished, and translations of removed strings are kept as vanished. Each is compiled with PySide6's `lrelease` into
-the `.qm` file of the same name beside it, which IntraPaint loads at startup.
+unfinished, and translations of removed strings are kept as vanished. Each is compiled with `lrelease` (see
+`_find_lrelease`) into the `.qm` file of the same name beside it, which IntraPaint loads at startup.
 
 Output is deterministic, so a rebuild with no source changes leaves the files untouched:
 - Contexts are sorted by name. Messages keep the order they are first found in, reading files in sorted path order.
@@ -32,6 +32,7 @@ import ast
 import json
 import os
 import re
+import shutil
 import string
 import subprocess
 import sys
@@ -370,11 +371,27 @@ def placeholder_problems(file_name: str, catalog: Catalog) -> list[str]:
     return problems
 
 
-def compile_qm(ts_path: str, qm_path: str) -> None:
-    """Compiles a `.ts` file into a `.qm` file with the lrelease that ships in the PySide6 package."""
+def _find_lrelease() -> str:
+    """Locates an lrelease executable, preferring the one bundled with the PySide6 package.
+
+    A PySide6 package installed from a system package manager (e.g. Arch's `pyside6`) may not bundle lrelease,
+    unlike the PyPI wheel. Fall back to a Qt6 lrelease on PATH, such as the one Arch's `qt6-tools` package provides.
+    """
     import PySide6  # pylint: disable=import-outside-toplevel
-    lrelease = os.path.join(os.path.dirname(PySide6.__file__), 'lrelease' + ('.exe' if os.name == 'nt' else ''))
-    subprocess.run([lrelease, '-silent', ts_path, '-qm', qm_path], check=True)
+    bundled = os.path.join(os.path.dirname(PySide6.__file__), 'lrelease' + ('.exe' if os.name == 'nt' else ''))
+    if os.path.isfile(bundled):
+        return bundled
+    for name in ('pyside6-lrelease', 'lrelease6', 'lrelease'):
+        found = shutil.which(name)
+        if found is not None:
+            return found
+    raise FileNotFoundError('lrelease not found: install PySide6 from PyPI (it bundles lrelease), or install Qt6\'s'
+                             ' lrelease tools (e.g. Arch\'s qt6-tools package) so lrelease6 or lrelease is on PATH.')
+
+
+def compile_qm(ts_path: str, qm_path: str) -> None:
+    """Compiles a `.ts` file into a `.qm` file with lrelease."""
+    subprocess.run([_find_lrelease(), '-silent', ts_path, '-qm', qm_path], check=True)
 
 
 def _read_bytes(path: str) -> Optional[bytes]:
