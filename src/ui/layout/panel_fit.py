@@ -20,9 +20,10 @@ as much as fits there. Thresholds live in this module, so DPI normalization (iss
 - `plan_fit` keeps the current placement until a better one fits with `HYSTERESIS` pixels to spare, so dragging a
   separator across a boundary doesn't flicker. A current placement that no longer fits doesn't hold, since forms of
   one item can differ in shape.
-- `plan_orientation` plans both orientations. The one whose content fits better wins; ties go to the orientation the
-  size suggests, so a square-ish panel keeps its orientation until the other axis is longer by more than `HYSTERESIS`
-  pixels. Switching needs `HYSTERESIS` pixels to spare too.
+- `plan_orientation` plans both orientations. The one whose content fits better wins, or of two that only scroll, the
+  one that scrolls less of it out of view. Ties go to the orientation the size suggests, so a square-ish panel keeps
+  its orientation until the other axis is longer by more than `HYSTERESIS` pixels. Switching needs `HYSTERESIS` pixels
+  to spare too.
 - `plan_fit` is pure. A `measure` callback returns a placement's minimum size. `FitPlanner` binds it to widgets, and
   `fresh_minimum_size` measures widgets without waiting on the event loop.
 """
@@ -240,16 +241,44 @@ def _overflows(need: QSize, available: QSize) -> bool:
     return need.width() > available.width() or need.height() > available.height()
 
 
+def _scrolled_share(need: QSize, available: QSize, orientation: Orientation) -> Optional[float]:
+    """Returns the share of content with size need that scrolls out of view in available, or None if it overflows
+    across, where it is clipped."""
+    if cross_extent(need, orientation) > cross_extent(available, orientation):
+        return None
+    if scroll_extent(need, orientation) <= scroll_extent(available, orientation):
+        return 0.0
+    return 1.0 - max(scroll_extent(available, orientation), 0) / scroll_extent(need, orientation)
+
+
+@dataclass(frozen=True)
+class _OrientationScore:
+    """How well one orientation's plan suits the available size, for `plan_orientation`."""
+    rank: tuple
+    scrolled_share: Optional[float]
+
+    def beats(self, other: '_OrientationScore') -> bool:
+        """Returns whether this plan is better than other's: by the share of content that scrolls out of view when
+        both only scroll along their scroll axis, then by rank."""
+        if self.scrolled_share is not None and other.scrolled_share is not None \
+                and self.scrolled_share != other.scrolled_share:
+            return self.scrolled_share < other.scrolled_share
+        return self.rank < other.rank
+
+
 def plan_orientation(items: Sequence[FitItem], available: QSize,
                      measure: Callable[[Orientation, Placement], QSize],
                      current: Optional[tuple[Orientation, Placement]] = None) -> tuple[Orientation, Placement]:
     """Returns the orientation and placement for content in an available size, planning each orientation with
     `plan_fit`.
 
-    - The orientation whose content doesn't overflow the available size wins. When both fit, the one that shows more
-      optional items, in fill order, wins next. Then comes the one the size's shape suggests, then the one with larger
-      forms. Form sizes come last because forms differ between orientations, so a strip's larger buttons say nothing
-      about which orientation suits the space.
+    - The orientation whose content doesn't overflow the available size wins. When both overflow only along their
+      scroll axis, the one that scrolls the smaller share of its content out of view wins. When both fit, the one that
+      shows more optional items, in fill order, wins next. Then comes the one the size's shape suggests, then the one
+      with larger forms. Form sizes come last because forms differ between orientations, so a strip's larger buttons
+      say nothing about which orientation suits the space.
+    - Content that overflows across is clipped, not scrolled, so when either orientation's content does, the scrolled
+      share is skipped.
     - The shape suggestion comes from `orientation_for_size` with the current orientation as its hysteresis anchor, so
       a square-ish panel keeps its arrangement until the other axis is longer by more than `HYSTERESIS` pixels.
     - `current` is the orientation and placement in use, if any. Another orientation replaces it only once it also
@@ -257,28 +286,29 @@ def plan_orientation(items: Sequence[FitItem], available: QSize,
     """
     guess = orientation_for_size(available, current[0] if current is not None else None)
 
-    def _plan(orientation: Orientation, size: QSize) -> tuple[tuple, Placement]:
+    def _plan(orientation: Orientation, size: QSize) -> tuple[_OrientationScore, Placement]:
         in_use = current[1] if current is not None and current[0] == orientation else None
         placement = plan_fit(items, size, orientation, lambda p: measure(orientation, p), in_use)
-        overflows = _overflows(measure(orientation, placement), size)
+        need = measure(orientation, placement)
+        overflows = _overflows(need, size)
         # Content that overflows scrolls, so what it leaves out says nothing about how well the orientation suits the
         # space:
-        score = (overflows, () if overflows else _left_out(items, placement), orientation != guess,
-                 _rank(items, placement))
-        return score, placement
+        rank = (overflows, () if overflows else _left_out(items, placement), orientation != guess,
+                _rank(items, placement))
+        return _OrientationScore(rank, _scrolled_share(need, size, orientation)), placement
 
     plans = {guess: _plan(guess, available)}
-    overflows, left_out = plans[guess][0][:2]
+    overflows, left_out = plans[guess][0].rank[:2]
     # Nothing beats the suggested orientation when it fits and leaves nothing out, so the other needs no plan:
     if not overflows and not any(left_out) and (current is None or current[0] == guess):
         return guess, plans[guess][1]
     other = Orientation.STRIP if guess == Orientation.SIDE else Orientation.SIDE
     plans[other] = _plan(other, available)
-    best = min(plans, key=lambda orientation: plans[orientation][0])
+    best = other if plans[other][0].beats(plans[guess][0]) else guess
     if current is None or best == current[0]:
         return best, plans[best][1]
     roomy_score, _ = _plan(best, QSize(available.width() - HYSTERESIS, available.height() - HYSTERESIS))
-    if roomy_score < plans[current[0]][0]:
+    if roomy_score.beats(plans[current[0]][0]):
         return best, plans[best][1]
     return current[0], plans[current[0]][1]
 
