@@ -37,7 +37,7 @@ These concepts and controls are specific to AI inpainting, understanding them wi
 ## Generation Area
 
 The section of an image where the AI can make changes. In IntraPaint, the Generation Area is shown as a dotted
-rectangle within the image, and you can use the [Generation Area tool](./tool_guide.md#-image-generation-area-tool-g) to
+rectangle within the image, and you can use the [Generation Area tool](./tool_guide.md#-generation-area-tool-g) to
 change its size and placement.
 
 The way the generation area is used varies depending on the image editing mode:
@@ -169,7 +169,7 @@ It's much easier to get the AI to do exactly what you want if you can manually s
 
 ## Prompt adjusting
 
-- Since the AI only sees the image generation area, leaving anything in the prompt that's outside the generation area is likely to result in duplicate content, especially at higher denoising strength. Consider temporarily removing parts, or adding more text related to the specific spot you're editing.
+- Since the AI only sees the generation area, leaving anything in the prompt that's outside the generation area is likely to result in duplicate content, especially at higher denoising strength. Consider temporarily removing parts, or adding more text related to the specific spot you're editing.
 - At lower denoising strengths (< 30% or so), image context often matters more than prompt context, so you often won't need to change the prompt much.
 
 |                                      ![Example 1: Prompt mismatch in a small area](../examples/prompt_adjusting_1.png)                                       | ![Example 2: Prompt mismatch corrected](../examples/prompt_adjusting_2.png)  |   ![Example 3: Low denoising to sidestep prompt issues](../examples/prompt_adjusting_3.png)    |

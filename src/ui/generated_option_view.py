@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QApplication, QGraphicsPixmapItem, QStyleOptionGra
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.controller.image_generation.generated_image_batch import edit_size_image, full_size_image
+from src.controller.image_generation.generated_image_batch import generation_area_size_image, full_size_image
 from src.ui.ink_style import ink_colors
 from src.ui.loading.halftone_press import HalftonePress
 from src.ui.loading.loading_design import LoadingDesign
@@ -124,7 +124,7 @@ class ImageOption(QGraphicsPixmapItem):
     @image.setter
     def image(self, new_image: QImage) -> None:
         final_size = Cache().get(Cache.EDIT_SIZE)
-        self._scaled_image = edit_size_image(new_image)
+        self._scaled_image = generation_area_size_image(new_image)
         self._full_image = None if new_image.size() == final_size else new_image
         self.refresh_pixmap()
 

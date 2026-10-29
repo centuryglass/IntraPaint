@@ -245,7 +245,7 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Mark the image generation area and the selection's bounds with bars along the rulers.</source>
+        <source>Mark the generation area and the selection's bounds with bars along the rulers.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -255,7 +255,7 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Color of the image generation area's bar on the rulers. Leave empty to use the theme's accent color. The selection's bar uses the selection overlay color. Both are drawn opaque, lightened or darkened as needed to stand out against the ruler.</source>
+        <source>Color of the generation area's bar on the rulers. Leave empty to use the theme's accent color. The selection's bar uses the selection overlay color. Both are drawn opaque, lightened or darkened as needed to stand out against the ruler.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -285,7 +285,7 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Enable or disable animation on the image generation area outline, selected content area outline, and line previews.</source>
+        <source>Enable or disable animation on the generation area outline, selected content area outline, and line previews.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -390,12 +390,12 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Maximum editing size:</source>
+        <source>Maximum generation area size:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Maximum size in pixels of the area selected for editing</source>
+        <source>Maximum size in pixels of the generation area</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -405,7 +405,7 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Minimum size in pixels of the AI image generation area</source>
+        <source>Minimum size in pixels of the generation area</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -510,7 +510,7 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
+        <source>Upscaling mode used when the inpainting resolution doesn't match the generation area size.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -520,7 +520,7 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
+        <source>Downscaling mode used when the inpainting resolution doesn't match the generation area size.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -803,12 +803,12 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Editing size:</source>
+        <source>Generation area size:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Current/initial size in pixels of the area selected for editing</source>
+        <source>Current size in pixels of the generation area</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2258,7 +2258,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Move the image generation area left, move active layer left, or view previous generated image option</source>
+        <source>Move the generation area left, move active layer left, or view previous generated image option</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2268,7 +2268,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Move the image generation area right, move active layer right, or view next generated image option</source>
+        <source>Move the generation area right, move active layer right, or view next generated image option</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2278,7 +2278,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Move the image generation area up, move active layer up, or zoom in on first generated image option</source>
+        <source>Move the generation area up, move active layer up, or zoom in on first generated image option</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2288,7 +2288,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Move the image generation area down, move active layer down, or zoom to show all generated image options</source>
+        <source>Move the generation area down, move active layer down, or zoom to show all generated image options</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2468,7 +2468,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Switch to the image generation area selection tool:</source>
+        <source>Switch to the generation area tool:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2828,7 +2828,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Center the view on the image generation area and zoom to fit it.</source>
+        <source>Center the view on the generation area and zoom to fit it.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2913,7 +2913,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Crop the image to fit image generation area.</source>
+        <source>Crop the image to fit the generation area.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5201,7 +5201,7 @@ Please remember to include the traceback from the Details expander.</source>
     <name>tools.generation_area_tool</name>
     <message>
         <location filename="../../src/tools/generation_area_tool.py"/>
-        <source>Set Image Generation Area</source>
+        <source>Generation area</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -8962,7 +8962,7 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/util/shared_constants.py"/>
-        <source>Nothing was selected in the image generation area. Either use the selection tool to mark part of the image generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</source>
+        <source>Nothing was selected in the generation area. Either use the selection tool to mark part of the generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

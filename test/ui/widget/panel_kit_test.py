@@ -145,7 +145,7 @@ class PanelHeaderTest(IntraPaintTestCase):
 
     def test_details_wrap_to_second_line_when_narrow(self) -> None:
         """The key and description share the name's line while they fit, and move to their own line when not."""
-        header = PanelHeader('Set Image Generation Area', key_text='G')
+        header = PanelHeader('Generation area', key_text='G')
         header.set_description('Select an image region for AI image generation')
         header.show()
         header.resize(1000, header.sizeHint().height())
@@ -175,7 +175,7 @@ class PanelHeaderTest(IntraPaintTestCase):
     def test_long_name_elides_and_keeps_full_text(self) -> None:
         """A name too long for the header ends with an ellipsis, shows its full text as a tooltip, and reads back in
         full."""
-        name = 'Set Image Generation Area'
+        name = 'Generation area'
         header = PanelHeader(name)
         header.show()
         header.resize(80, header.sizeHint().height())

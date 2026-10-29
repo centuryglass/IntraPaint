@@ -32,8 +32,8 @@ This panel is the main place where you'll control image generation.
 1. **Image generation tab**: Brings the image generation panel to the front. Drag the tab or the panel's title bar to move the panel to another edge of the window or float it, and press 2 to show or hide it.
 2. **Main/Extras inner tabs**: The WebUI and ComfyUI Stable Diffusion image generators each provide a few bonus features that the other lacks. Controls for these features are found within the "Extras" tab.
 3. **"Edit mode" dropdown**: Switch between the three main image generation modes:
-   - **Inpaint**: Only selected content in the image generation area is changed.
-   - **Image to Image**: The entire image generation area is changed, but previous image content affects the new image.
+   - **Inpaint**: Only selected content in the generation area is changed.
+   - **Image to Image**: The entire generation area is changed, but previous image content affects the new image.
    - **Text to Image**: Previous image content is ignored, a new image is generated using only prompt data and other settings.
 4. **"Stable Diffusion model" dropdown**: Selects which Stable Diffusion model file will be used for image generation.  If you're using the WebUI generator, changing this value will immediately load the new model, while ComfyUI will wait to load the model until the next time you start image generation.
 5. **"Sampling method" dropdown**: Selects between different mathematical approaches to dividing the image generation process into steps.  The differences between these can be subtle, see [sampling methods](#sampling-methods) below for more details.
@@ -57,8 +57,8 @@ This panel is the main place where you'll control image generation.
     - **18a. "Reuse last seed" button**:  Replaces the seed with the one in the "Last seed" box.
     - **18b. "Randomize seed" button**: Sets the seed value to -1, so that a random value will be used for each image generation.
 19. **Last seed value**: Shows the seed used the last time the generate button was pressed.
-20. **Describe** (More menu, WebUI generator only): Use AI image analysis to automatically generate a description of the section of the image in the image generation area.  The new description will replace the current prompt.
-21. **Generate button**: Click to trigger AI image generation, creating or altering image content to insert into the [image generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](./controls.md#generated-image-selection-view).
+20. **Describe** (More menu, WebUI generator only): Use AI image analysis to automatically generate a description of the section of the image in the generation area.  The new description will replace the current prompt.
+21. **Generate button**: Click to trigger AI image generation, creating or altering image content to insert into the [generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](./controls.md#generated-image-selection-view).
 
 ---
 
@@ -110,7 +110,7 @@ The wide variety of ControlNet preprocessors and models available can be challen
 3. **"Enable ControlNet Unit" checkbox**: Enable or disable the current ControlNet unit.
 4. **"Low VRAM" checkbox** (WebUI generator only): Systems with limited VRAM might fail to generate images with ControlNet active. Selecting this option will fix some of these issues, but may also slow down image generation.
 5. **"Pixel Perfect" checkbox** (WebUI generator only): Enables hidden automatic size adjustments to improve ControlNet results. In most cases, it's probably best to just keep this checked.
-6. **"Generation Area as Control" checkbox**: Most ControlNet modules need an initial image to function. If this box is checked, the contents of the image generation area will be used.
+6. **"Generation Area as Control" checkbox**: Most ControlNet modules need an initial image to function. If this box is checked, the contents of the generation area will be used.
 7. **"Set Control Image" button**: This button lets you select a separate image file to use as the control image.
 8. **Control image file path**: Shows the path of the selected control image, if any.
 9. **"Control Type" dropdown**:  An optional dropdown that lets you limit preprocessor and model dropdowns to a few useful presets.

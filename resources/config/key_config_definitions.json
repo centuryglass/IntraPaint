@@ -165,7 +165,7 @@
         "label": "Move left:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Move the image generation area left, move active layer left, or view previous generated image option",
+        "description": "Move the generation area left, move active layer left, or view previous generated image option",
         "type": "string",
         "default": "Left",
         "saved": true
@@ -174,7 +174,7 @@
         "label": "Move right:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Move the image generation area right, move active layer right, or view next generated image option",
+        "description": "Move the generation area right, move active layer right, or view next generated image option",
         "type": "string",
         "default": "Right",
         "saved": true
@@ -183,7 +183,7 @@
         "label": "Move up:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Move the image generation area up, move active layer up, or zoom in on first generated image option",
+        "description": "Move the generation area up, move active layer up, or zoom in on first generated image option",
         "type": "string",
         "default": "Up",
         "saved": true
@@ -192,7 +192,7 @@
         "label": "Move down:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Move the image generation area down, move active layer down, or zoom to show all generated image options",
+        "description": "Move the generation area down, move active layer down, or zoom to show all generated image options",
         "type": "string",
         "default": "Down",
         "saved": true
@@ -351,7 +351,7 @@
         "saved": true
     },
     "generation_area_tool_key": {
-        "label": "Switch to the image generation area selection tool:",
+        "label": "Switch to the generation area tool:",
         "category": "Keybindings",
         "subcategory": "Tool Selection",
         "description": "Activate the generation area tool to pick an image area for AI image generation.",
@@ -651,7 +651,7 @@
         "label": "Zoom to generation area",
         "category": "Menu Shortcuts",
         "subcategory": "View Menu",
-        "description": "Center the view on the image generation area and zoom to fit it.",
+        "description": "Center the view on the generation area and zoom to fit it.",
         "type": "string",
         "default": "Ctrl+Alt+Z",
         "saved": true
@@ -723,7 +723,7 @@
         "label": "Crop image to generation area",
         "category": "Menu Shortcuts",
         "subcategory": "Image Menu",
-        "description": "Crop the image to fit image generation area.",
+        "description": "Crop the image to fit the generation area.",
         "type": "string",
         "default": "Ctrl+Alt+G",
         "saved": true
