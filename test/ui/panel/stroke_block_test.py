@@ -1,4 +1,5 @@
 """Tests StrokeBlock's binding to Cache values, its pen pressure links and its arrangements."""
+import itertools
 import json
 from typing import Optional
 
@@ -17,7 +18,8 @@ from src.ui.panel.tool_control_panels.smudge_tool_panel import SmudgeToolPanel
 from src.tools.draw_tool import DrawTool
 from src.ui.layout.panel_fit import FitItem, Orientation
 from src.ui.panel.tool_control_panels.stroke_block import (BELOW, BESIDE, BESIDE_FIELD_MIN_WIDTH,
-                                                           FIELD_COLUMN_MAX_WIDTH, ONLY_INSIDE_SELECTION_LABEL)
+                                                           FIELD_COLUMN_MAX_WIDTH, ONLY_INSIDE_SELECTION_LABEL,
+                                                           StrokeToolPanel)
 from src.ui.panel.tool_panel import ToolPanel
 from src.ui.widget.panel_section import PanelSection
 from test.base_test_case import IntraPaintTestCase
@@ -305,6 +307,42 @@ class ToolPanelsOnStrokeBlockTest(ToolTestCase):
                     panel.set_fit_space(SIDE, size)
                     self.assertEqual(panel.stroke_block.arrangement.preview, preview)
                     self.assertEqual(preview_widget.isHidden(), preview is None)
+
+    def _stroke_panels(self) -> dict[str, StrokeToolPanel]:
+        """Returns shown panels, because Qt only hides a reparented widget that is visible."""
+        panels = {'Draw': DrawToolPanel(), 'Filter': self._filter_panel(), 'Clone stamp': CloneStampToolPanel()}
+        for panel in panels.values():
+            panel.show()
+        return panels
+
+    def test_placements_measure_the_same_whatever_came_before(self) -> None:
+        """Measuring a placement gives the same size after every other placement."""
+        for name, panel in self._stroke_panels().items():
+            for orientation, size in ((SIDE, QSize(420, 900)), (STRIP, QSize(1000, 150))):
+                panel.set_fit_space(orientation, size)
+                planner = panel._planner  # pylint: disable=protected-access
+                items = planner._items  # pylint: disable=protected-access
+                placements = list(itertools.product(*((None, *range(item.form_count)) if not item.required
+                                                      else tuple(range(item.form_count)) for item in items)))
+                for placement in placements:
+                    reference = planner.measure_placement(placement)
+                    for other in placements:
+                        planner.measure_placement(other)
+                        with self.subTest(panel=name, orientation=orientation, placement=placement, after=other):
+                            self.assertEqual(planner.measure_placement(placement), reference)
+
+    def test_preview_changes_form_at_most_once_while_a_panel_grows(self) -> None:
+        """Growing a panel a few pixels at a time never flips the preview between beside and below."""
+        for name, panel in self._stroke_panels().items():
+            for orientation, height, widths in ((SIDE, 700, range(300, 560, 3)), (STRIP, 150, range(500, 1100, 3))):
+                forms = []
+                for width in widths:
+                    panel.set_fit_space(orientation, QSize(width, height))
+                    form = panel.stroke_block.arrangement.preview
+                    if len(forms) == 0 or forms[-1] != form:
+                        forms.append(form)
+                with self.subTest(panel=name, orientation=orientation):
+                    self.assertLessEqual(len(forms) - 1, 1, forms)
 
     def test_size_field_keeps_its_position_between_tools(self) -> None:
         """Draw, Eraser, Smudge, Clone stamp and Filter put Size first with the same label and geometry."""
