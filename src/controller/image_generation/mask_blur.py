@@ -2,8 +2,8 @@
 
 Both Stable Diffusion backends blur the mask at generation resolution and treat `AppConfig.MASK_BLUR` as a Gaussian
 standard deviation. The band's real extent is about 2.5 standard deviations, and in image pixels it scales with the
-area the backend blurred: `extent * blurred_size / generation_resolution`, per axis. Inpaint crop growth and the paste clip
-take their widths from here, so they cannot disagree.
+area the backend blurred: `extent * blurred_size / generation_resolution`, per axis. Inpaint crop growth and the
+paste clip take their widths from here, so they cannot disagree.
 """
 import math
 
