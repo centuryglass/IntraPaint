@@ -66,7 +66,7 @@ kept in English or transliterated; per-language glossaries check community local
 | Negative prompt | Text describing what to avoid. | Image Generation panel | "Negative prompt", "Negative:" |
 | Prompt style | A saved prompt fragment, loaded from the WebUI, that can be added to the prompt. | Image Generation panel, Stable Diffusion menu | "Styles", "Saved Prompt Styles", "Add saved prompt styles to the prompt" |
 | CFG scale | How strongly the prompt and negative prompt steer generation. Short form: "CFG". | Image Generation panel | "CFG scale", "CFG scale:" |
-| Steps | The number of denoising steps per image. | Image Generation panel | "Steps", "Sampling steps:", "Step count:", "{steps} steps" |
+| Steps | The number of denoising steps per image. | Image Generation panel | "Steps", "Steps:", "{steps} steps" |
 | Sampler, sampling method | The algorithm that runs the steps. Sampler names such as "Euler a" come from the backend and are not translated. | Image Generation panel | "Sampling", "Sampling method:" |
 | Scheduler | How the noise level is spread across the steps. | Image Generation panel | "Scheduler:" |
 | Seed | The number that fixes generation's randomness, so a seed and settings reproduce an image. | Image Generation panel | "Use a random seed", "Last seed", "Reuse last seed value" |

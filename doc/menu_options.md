@@ -306,7 +306,7 @@ Scaling the image behaves differently depending on whether AI upscaling is in us
 5. **"Advanced AI upscaling" section**: Everything below this point is only visible in the "Advanced AI Upscaling" mode.
 6. **Use the "Ultimate SD Upscale" script**:  Only available if a Stable Diffusion image generator is active and the "Ultimate SD Upscale script is installed.  See [image upscaling section in the Stable Diffusion setup guide](./stable_diffusion_setup.md#upscaling-models-and-the-ultimate-sd-upscaler) for more information.
 7. **"Denoising strength" slider**: In advanced AI upscaling, this controls how much freedom Stable Diffusion is given when refining the upscaled image.  Higher values have more freedom to fix details, but are also more likely to deviate from the original image.
-8. **"Step count" slider**:  In advanced AI upscaling, this controls how many steps are taken to refine the image in Stable Diffusion.  Higher values may produce better results, but will take longer.
+8. **"Steps" slider**:  In advanced AI upscaling, this controls how many steps are taken to refine the image in Stable Diffusion.  Higher values may produce better results, but will take longer.
 9. **ControlNet tile model options**:  If a ControlNet tile model is installed and available, it can be used to increase the consistency of Stable Diffusion upscaling.  Controls for this will only be visible if a tile model and preprocessor are available.  Refer to [this guide](./stable_diffusion_setup.md#controlnet) for more information about ControlNet setup.
     - **9a. Tile ControlNet model**: Select a ControlNet tile model to use.  In most cases the one shown here will be the only option, but other tile models exist for use with Stable Diffusion XL.  ControlNet models will only appear here if they have the word "tile" in their filename.
     - **9b. Tile ControlNet preprocessor**: Select a ControlNet preprocessor module to use with the tile model.  All ControlNet preprocessors that include the word "tile" will be listed.
@@ -334,7 +334,7 @@ IntraPaint can read and write the following AI image generation parameters in im
 - Negative prompt
 - Generation resolution
 - Sampling method
-- Sampling steps
+- Steps
 - CFG scale
 - Seed
 
