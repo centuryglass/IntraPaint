@@ -14,6 +14,8 @@
   `set_floating_title_bar`, or Qt's without one, and is dragged by it. `show_title_bar_for_drag` shows Qt's title bar
   while docked, so a rail button or notch drag can hand off to Qt's own dock drag (see `src.ui.window.qt_dock_drag`).
 - The dock's owner can set a badge (`set_badge`), a short text its rail buttons draw while the dock is not showing.
+- A `DockPanel`'s title note (`DockPanel.set_title_note`) is the dock's `title_note`, which its floating title bar
+  shows. The dock re-emits the panel's `title_note_changed`, and emits it when its content changes.
 - The dock's key (`shortcut_config_key`) opens and focuses the dock, or closes it if it is already open.
 - A dock with no content is hidden and its toggle action is hidden too. It remembers whether it was open, and opens
   again when content arrives, unless another dock in its group is open by then.
@@ -64,6 +66,7 @@ class PanelDock(QDockWidget):
     _drop_rule_pauses = 0
 
     badge_changed = Signal()
+    title_note_changed = Signal()
     # Emitted after the dock moves within its tab group's order, which Qt reports with no signal of its own:
     tab_order_changed = Signal()
 
@@ -164,6 +167,11 @@ class PanelDock(QDockWidget):
             self.badge_changed.emit()
 
     @property
+    def title_note(self) -> str:
+        """The content's title note (`DockPanel.title_note`), or '' for content that isn't a `DockPanel`."""
+        return self._content.title_note if isinstance(self._content, DockPanel) else ''
+
+    @property
     def open_when_available(self) -> bool:
         """Whether a dock with no content opens when content arrives."""
         return self._open_when_available
@@ -175,10 +183,15 @@ class PanelDock(QDockWidget):
             return
         if self._content is not None:
             self._open_when_available = not self.isHidden()
+            if isinstance(self._content, DockPanel):
+                self._content.title_note_changed.disconnect(self.title_note_changed)
             self._content.hide()
             self._content.setParent(None)
         self._content = content
         self._orientation = None
+        if isinstance(content, DockPanel):
+            content.title_note_changed.connect(self.title_note_changed)
+        self.title_note_changed.emit()
         if content is None:
             self.toggleViewAction().setVisible(False)
             self.hide()

@@ -866,19 +866,20 @@ class LayerPanelTest(IntraPaintTestCase):
         self.panel.plan_in(Orientation.STRIP, QSize(900, 300))
         self.assertGreater(layer_list.minimumSizeHint().width(), side_minimum)
 
-    def test_floating_panel_header_leaves_the_title_to_the_title_bar(self) -> None:
-        """A floating panel's header drops its icon and name, whose title bar repeats them, and keeps the count."""
+    def test_floating_panel_leaves_its_header_to_the_title_bar(self) -> None:
+        """A floating panel hides its header, whose name and layer count its title bar shows, and the title note
+        follows the count."""
         header = self.panel.header
-        self.assertFalse(header._name_label.isHidden())
+        self.assertEqual(self.panel.title_note, '6 layers')
         self.panel.host_floating_changed(True)
         flush_layouts()
-        self.assertTrue(header._name_label.isHidden())
-        self.assertTrue(header._icon_label.isHidden())
-        self.assertEqual(header.description(), '6 layers')
-        self.assertFalse(header._description_label.isHidden())
+        self.assertTrue(header.isHidden())
+        self.image_stack.create_layer()
+        self.assertEqual(self.panel.title_note, '7 layers')
         self.panel.host_floating_changed(False)
         flush_layouts()
-        self.assertFalse(header._name_label.isHidden())
+        self.assertFalse(header.isHidden())
+        self.assertEqual(header.description(), '7 layers')
 
     # Drag and drop:
 
