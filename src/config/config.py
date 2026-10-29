@@ -49,6 +49,11 @@ INVALID_OPTION_KEY_ERROR = _tr('Tried to track fixed options for key "{key}", wh
                                ' options.')
 INVALID_KEYCODE_ERROR = _tr('Tried to get key code "{key}", found "{code_string}"')
 DUPLICATE_KEY_ERROR = _tr('Tried to add duplicate config entry for key "{key}"')
+NEWER_VERSION_WARNING = _tr('{path} was written by a newer version of IntraPaint (config version {version}). Its'
+                            ' values will load, but changes won\'t be saved.')
+
+# Top-level key holding the integer version of a saved config file. It isn't a config entry.
+CONFIG_VERSION_KEY = 'config_version'
 
 SAVE_DELAY_MS = 10
 
@@ -71,7 +76,19 @@ class Config:
     RuntimeError
         If a function that interacts with lists of accepted value options is called on a value that doesn't have
         a fixed list of acceptable options.
+
+    Saved files hold only entries that differ from their definition's default, plus a `config_version`. Child
+    classes can set these class attributes:
+
+    PREVIOUS_DEFAULTS: dict[str, list[Any]]
+        Maps a key to defaults it had in earlier releases, in their saved JSON form. An unversioned file holding one of
+        them for a non-pinned key sheds it on migration, so the key follows the current default. When a default
+        changes, add the old value here if any release or the integration branch may have written it.
+    RESET_KEYS: tuple[str, ...]
+        Keys dropped from unversioned files whatever they hold.
     """
+    PREVIOUS_DEFAULTS: dict[str, list[Any]] = {}
+    RESET_KEYS: tuple[str, ...] = ()
 
     def __init__(self, definition_path: str, saved_value_path: Optional[str], child_class: type) -> None:
         """Load existing config, or initialize from defaults.
@@ -82,14 +99,16 @@ class Config:
             Path to a file defining accepted config values.
         saved_value_path: str, optional
             Path where config values will be saved and read. If the file does not exist, it will be created with
-            default values. Any expected keys not found in the file will be added with default values. Any unexpected
-            values will be removed. If not provided, the Config object won't allow file IO.
+            default values. Only values that differ from their definition's default are saved (plus entries
+            defined with `"pinned": true`), and any expected key not found in the file loads with its current default.
+            Any unexpected values will be removed. If not provided, the Config object won't allow file IO.
         child_class: class
             Child class where definition keys should be written as properties when first initialized. Reading one of
             those properties before the first construction raises `AttributeError`. `conftest.py` constructs every
             config up front, so tests don't catch this.
         """
         self._entries: dict[str, ConfigEntry] = {}
+        self._newer_file = False
         self._connected: dict[str, dict[Any, Callable[..., None]]] = {}
         self._option_connected: dict[str, dict[Any, Callable[[ParamTypeList], None]]] = {}
         self._json_path = saved_value_path
@@ -175,8 +194,9 @@ class Config:
                         save_json = definition[DefinitionKey.SAVED]
                     else:
                         save_json = False
+                    pinned = bool(definition.get(DefinitionKey.PINNED, False))
                     self._add_entry(key, initial_value, label, category, subcategory, tooltip, options, range_options,
-                                    save_json)
+                                    save_json, pinned)
 
         except json.JSONDecodeError as err:
             raise RuntimeError(INVALID_JSON_DEFINITION_ERROR.format(err=err)) from err
@@ -208,8 +228,32 @@ class Config:
         """Override this to perform any adjustments to default values needed before file IO, e.g. loading list options
            from an external source."""
 
-    def _migrate_saved_values(self, json_data: dict[str, Any]) -> None:
-        """Override this to rewrite values saved under keys that no longer exist, in place, before they are loaded."""
+    def _migrate_legacy_keys(self, json_data: dict[str, Any]) -> None:
+        """Override this to rewrite values saved under keys that no longer exist, in place. Runs as part of the
+           migration from unversioned files (version 0 to 1)."""
+
+    def _migrate_unversioned(self, json_data: dict[str, Any]) -> None:
+        """Migration from version 0 to 1: converts legacy keys, then drops saved values that only held a default.
+
+        A non-pinned value is dropped when it equals the current default or one in `PREVIOUS_DEFAULTS`. Keys in
+        `RESET_KEYS` are dropped whatever they hold.
+        """
+        self._migrate_legacy_keys(json_data)
+        for key in self.RESET_KEYS:
+            json_data.pop(key, None)
+        for key, entry in self._entries.items():
+            if key not in json_data or entry.pinned:
+                continue
+            saved_value, saved_range = entry.json_state(json_data[key])
+            default_value, default_range = entry.default_json_state()
+            if saved_range == default_range and \
+                    (saved_value == default_value or saved_value in self.PREVIOUS_DEFAULTS.get(key, [])):
+                del json_data[key]
+
+    def _migrations(self) -> list[Callable[[dict[str, Any]], None]]:
+        """Returns the ordered migrations over the raw saved dict. Entry N migrates version N to version N + 1, and
+           `CONFIG_VERSION` is the length of the list."""
+        return [self._migrate_unversioned]
 
     @property
     def json_path(self) -> Optional[str]:
@@ -693,20 +737,21 @@ class Config:
                    tooltip: str,
                    options: Optional[list[ParamType]] = None,
                    range_options: Optional[dict[str, int | float]] = None,
-                   save_json: bool = True) -> None:
+                   save_json: bool = True,
+                   pinned: bool = False) -> None:
         if key in self._entries:
             raise KeyError(DUPLICATE_KEY_ERROR.format(key=key))
         entry = ConfigEntry(key, initial_value, label, category, subcategory, tooltip, options, range_options,
-                            save_json)
+                            save_json, pinned)
         self._entries[key] = entry
         self._connected[key] = {}
         if options is not None:
             self._option_connected[key] = {}
 
     def _write_to_json(self) -> None:
-        if self._json_path is None:
+        if self._json_path is None or self._newer_file:
             return
-        converted_dict: dict[str, Any] = {}
+        converted_dict: dict[str, Any] = {CONFIG_VERSION_KEY: len(self._migrations())}
         with self._lock:
             for entry in self._entries.values():
                 entry.save_to_json_dict(converted_dict)
@@ -733,7 +778,21 @@ class Config:
         if json_data is None:  # Invalid JSON, replace it with defaults
             self._write_to_json()
             return
-        self._migrate_saved_values(json_data)
+        if not isinstance(json_data, dict):
+            logger.error(INVALID_JSON_ERROR.format(err='expected a JSON object'))
+            self._write_to_json()
+            return
+        migrations = self._migrations()
+        file_version = json_data.pop(CONFIG_VERSION_KEY, 0)
+        if not isinstance(file_version, int) or isinstance(file_version, bool) or file_version < 0:
+            file_version = 0
+        if file_version > len(migrations):
+            logger.warning(NEWER_VERSION_WARNING.format(path=self._json_path, version=file_version))
+            self._newer_file = True
+        for migration in migrations[file_version:]:
+            migration(json_data)
         with self._lock:
             for entry in self._entries.values():
                 entry.load_from_json_dict(json_data)
+        if file_version < len(migrations):
+            self._write_to_json()

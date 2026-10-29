@@ -97,6 +97,12 @@ Config is JSON-backed and typed, with `get()` / `set()` / `connect()` (signal on
 - Singletons (the config classes, `UndoStack`) bind to the arguments of their first construction and ignore them
   afterwards, so `AppConfig('other.json')` returns the existing instance. `conftest.py` relies on this to back every
   test's config with temporary copies.
+- **Saved files are sparse and versioned.** A config file holds only entries that differ from their definition's
+  default, plus an integer `config_version`. A changed default reaches every install that never customized the key.
+  - `"pinned": true` in a definition keeps its saved entry even when it equals the default (`DefinitionKey.PINNED`).
+  - Changing a default needs no migration. If a release may have written the old default, add it to the config class's
+    `PREVIOUS_DEFAULTS` (`Config`'s docstring). Anything else that rewrites saved data is a new entry in
+    `Config._migrations`, which bumps the version. A file with a newer version loads as-is and isn't rewritten.
 - **Key constants like `Cache.BACKGROUND_COLOR` exist only after the class's first construction,** which sets them
   from the definition file. Code that runs at import time (default arguments, class bodies, module constants) can't
   use them. Tests can't catch this because `conftest.py` constructs every config first; CI's `bundle` smoke test can.

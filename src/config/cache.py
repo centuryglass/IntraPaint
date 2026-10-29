@@ -38,7 +38,7 @@ class Cache(Config, metaclass=Singleton):
         self._final_bounds: dict[QWidget, QRect] = {}
         self._last_bounds: dict[QWidget, QRect] = {}
 
-    def _migrate_saved_values(self, json_data: dict[str, Any]) -> None:
+    def _migrate_legacy_keys(self, json_data: dict[str, Any]) -> None:
         """Converts the saved `color_select_mode` checkbox to `selection_fill_area`."""
         if 'selection_fill_area' not in json_data and json_data.get('color_select_mode') is True:
             json_data['selection_fill_area'] = 'By color'
