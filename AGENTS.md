@@ -192,16 +192,15 @@ comments don't need rewriting to conform, and nothing enforces these rules mecha
     file that names a changed module (`grep -rl <module> test/`). A change under `src/ui/` runs all of `test/ui/`,
     whose style and panel tests render every panel.
   - The full suite runs when a change touches what every test depends on (`src/config/`, `src/util/`,
-    `src/ui/theme.py`, `resources/`, `conftest.py`, `test/base_test_case.py`, `requirements*.txt`), when lowering
-    the cycle baseline (`test/qt_cycles.py`), and when the scope is unclear.
+    `src/ui/theme.py`, `resources/`, `conftest.py`, `test/base_test_case.py`, `requirements*.txt`), when changing
+    the cycle check (`test/qt_cycles.py`), and when the scope is unclear.
 - **Tests extend `IntraPaintTestCase`** (`test/base_test_case.py`), in files named `<name>_test.py` under `test/`. Its
   `setUp` and `tearDown` reset the singletons listed in `reset_singletons`, and `setUp` changes to the project root.
   Tests share one process, so a test that changes any other singleton resets it too. `tearDown` deletes every
   parentless widget the test created, so a widget shared between tests is created in `setUpClass`.
-- **A test fails when it leaves Qt objects in reference cycles** beyond its entry in
-  `test/resources/qt_cycle_baseline/`, so a change in `src/` that adds a cycle fails the tests that reach it.
-  `test/qt_cycles.py` describes the check, its report of the code in each cycle, and updating the baseline (on Python
-  3.13 only).
+- **A test fails when it leaves Qt objects in reference cycles** (checked on Python
+  3.13 only), so a change in `src/` that adds a cycle fails the tests that reach it. `test/qt_cycles.py` describes the
+  check and its report of the code in each cycle.
 - **Golden images go through `assert_image_matches_golden`**, and JSON snapshots through
   `assert_json_matches_snapshot`, both in `test/base_test_case.py`. Its module docstring covers updating either.
 - **Style and panel layouts are pinned.** `test/ui/style_gallery_test.py` compares each standard control's states with

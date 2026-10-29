@@ -10,18 +10,10 @@ collection frees something turns `gc.DEBUG_SAVEALL` off around it.
 Only wrappers of objects that C++ can point to count (`TRACKED_TYPES`). Value types such as `QColor`, and mocks that
 pass `isinstance` checks for a Qt class, are safe to free at any time.
 
-`BASELINE_DIR` lists the tests that already leave such cycles, with the most wrappers each has left. It holds one JSON
-file per test module (`test/foo/bar_test.py` is `foo/bar_test.json`), so PRs that change counts in different modules
-don't conflict. A test fails when it leaves more than its entry, or none at all, so the entry of a test whose cycles
-are fixed gets removed. A count under the entry passes.
+A test fails when it leaves any such wrappers in cycles.
 
-Update entries by running only the affected tests with `UPDATE_ENV_VAR=1`. That rewrites the entries of the tests that
-ran and passed instead of failing them, and keeps every other entry. A test's count doesn't depend on which tests ran
-before it, so the full suite isn't needed. CI's full run on `BASELINE_PYTHON` checks the result. A module's file is
-deleted when its last entry goes.
-
-Counts differ between Python versions, since each version leaves different garbage, so they are compared and
-recorded only on `BASELINE_PYTHON`. Every version still frees cycles at the fixed points.
+Counts differ between Python versions, since each version leaves different garbage, so they are checked only on
+`CHECK_PYTHON`. Every version still frees cycles at the fixed points.
 
 Running pytest with `REPORT_ENV_VAR=<path>` also writes a JSON report of every passing test that left wrappers in
 cycles: the wrapper types, and the project functions and bound methods found in the cycles, which name the code that
@@ -39,10 +31,8 @@ from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QGraphicsItem, QLayoutItem
 from shiboken6 import Shiboken
 
-BASELINE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources', 'qt_cycle_baseline')
-UPDATE_ENV_VAR = 'INTRAPAINT_UPDATE_CYCLE_BASELINE'
 REPORT_ENV_VAR = 'INTRAPAINT_CYCLE_REPORT'
-BASELINE_PYTHON = (3, 13)
+CHECK_PYTHON = (3, 13)
 TRACKED_TYPES = (QObject, QGraphicsItem, QLayoutItem)
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _MAX_LISTED = 8
@@ -63,8 +53,6 @@ class _Tally:
 
 
 _tally = _Tally()
-_baseline: dict[str, dict[str, int]] = {}
-_updated: dict[str, int] = {}
 _report: dict[str, dict] = {}
 _module_path: Optional[str] = None
 
@@ -151,24 +139,15 @@ def finish_test(test_id: str, test_failed: bool) -> Optional[str]:
     _tally.__init__()
     if test_failed or not started:
         return None
-    if sys.version_info[:2] != BASELINE_PYTHON:
+    if sys.version_info[:2] != CHECK_PYTHON:
         return None
     if count and os.environ.get(REPORT_ENV_VAR):
         _report[test_id] = {'wrappers': count, 'wrapper_types': dict(wrapper_types.most_common()),
                             'functions': dict(functions.most_common())}
-    if os.environ.get(UPDATE_ENV_VAR):
-        _updated[test_id] = count
-        return None
-    module_id, _, name = test_id.partition('::')
-    expected = _load_baseline(module_id).get(name, 0)
-    if count == 0 and expected > 0:
-        return (f'This test left no PySide wrappers in reference cycles, but has an entry in '
-                f'{os.path.relpath(_baseline_path(module_id), _PROJECT_ROOT)}. Remove the entry, or rerun this '
-                f'test with {UPDATE_ENV_VAR}=1.')
-    if count <= expected:
+    if count == 0:
         return None
     types_listed = ', '.join(f'{name} x{n}' for name, n in wrapper_types.most_common(_MAX_LISTED))
-    lines = [f'This test left {count} PySide wrappers in reference cycles (baseline {expected}), which the garbage '
+    lines = [f'This test left {count} PySide wrappers in reference cycles, which the garbage '
              f'collector would delete at an unpredictable time. See test/qt_cycles.py.',
              f'Wrappers: {types_listed}']
     if functions:
@@ -176,53 +155,8 @@ def finish_test(test_id: str, test_failed: bool) -> Optional[str]:
     return '\n'.join(lines)
 
 
-def _baseline_path(module_id: str) -> str:
-    """Returns the baseline file for the test module a test ID (`test/foo/bar_test.py::Class::name`) belongs to."""
-    module_path = module_id.removeprefix('test/')
-    return os.path.join(BASELINE_DIR, os.path.splitext(module_path)[0] + '.json')
-
-
-def _load_baseline(module_id: str) -> dict[str, int]:
-    """Returns the entries for one test module, keyed by the test ID without its module path."""
-    if module_id not in _baseline:
-        try:
-            with open(_baseline_path(module_id), encoding='utf-8') as baseline_file:
-                _baseline[module_id] = json.load(baseline_file)
-        except FileNotFoundError:
-            _baseline[module_id] = {}
-    return _baseline[module_id]
-
-
-def write_baseline() -> None:
-    """In update mode, writes the counts recorded this session into the baseline, keeping entries for tests not run."""
-    if not os.environ.get(UPDATE_ENV_VAR):
-        return
-    if sys.version_info[:2] != BASELINE_PYTHON:
-        print(f'\n{UPDATE_ENV_VAR} ignored: the cycle baseline is recorded on Python '
-              f'{".".join(map(str, BASELINE_PYTHON))}.', file=sys.stderr)
-        return
-    changed: dict[str, dict[str, int]] = {}
-    for test_id, count in _updated.items():
-        module_id, _, name = test_id.partition('::')
-        entries = changed.setdefault(module_id, dict(_load_baseline(module_id)))
-        if count:
-            entries[name] = count
-        else:
-            entries.pop(name, None)
-    for module_id, entries in changed.items():
-        path = _baseline_path(module_id)
-        if not entries:
-            if os.path.exists(path):
-                os.remove(path)
-            continue
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, 'w', encoding='utf-8') as baseline_file:
-            json.dump(dict(sorted(entries.items())), baseline_file, indent=2)
-            baseline_file.write('\n')
-
-
 def write_report() -> None:
-    """Writes the report `REPORT_ENV_VAR` names, if it is set. Reports are only recorded on `BASELINE_PYTHON`."""
+    """Writes the report `REPORT_ENV_VAR` names, if it is set. Reports are only recorded on `CHECK_PYTHON`."""
     report_path = os.environ.get(REPORT_ENV_VAR)
     if not report_path:
         return

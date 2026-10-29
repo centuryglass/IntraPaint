@@ -1,5 +1,0 @@
-{
-  "TestAppController::test_init_settings": 2,
-  "TestAppController::test_style_change_pauses_garbage_collection": 1,
-  "TestAppController::test_theme_change_pauses_garbage_collection": 1
-}

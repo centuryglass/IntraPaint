@@ -3,6 +3,8 @@ import os
 import sys
 import tempfile
 import weakref
+from contextlib import contextmanager
+from typing import Iterator
 from unittest.mock import patch, MagicMock
 
 from PIL import Image
@@ -51,6 +53,17 @@ class _WidgetCycle:
         self.cycle = self
 
 
+@contextmanager
+def _collection_frees_garbage() -> Iterator[None]:
+    """Turns off gc.DEBUG_SAVEALL (see test/qt_cycles.py), so a collection in the block frees the cycles it finds."""
+    debug_flags = gc.get_debug()
+    gc.set_debug(debug_flags & ~gc.DEBUG_SAVEALL)
+    try:
+        yield
+    finally:
+        gc.set_debug(debug_flags)
+
+
 def _unreachable_widget_cycle() -> weakref.ref:
     """Creates an unreachable _WidgetCycle and returns a weak reference to it."""
     return weakref.ref(_WidgetCycle())
@@ -81,6 +94,7 @@ class TestAppController(IntraPaintTestCase):
         settings_modal = MockSettingsModal.return_value
         self.controller.init_settings(settings_modal)
         settings_modal.load_from_config.assert_called()
+        MockSettingsModal.reset_mock()  # Its recorded calls hold the custom control the controller added.
 
     @patch('src.controller.app_controller.SettingsModal')
     def test_refresh_settings(self, MockSettingsModal):
@@ -156,7 +170,8 @@ class TestAppController(IntraPaintTestCase):
         recorder = _GcStateRecorder()
         garbage = _unreachable_widget_cycle()
         try:
-            AppConfig().set(AppConfig.STYLE, new_style, add_missing_options=True)
+            with _collection_frees_garbage():
+                AppConfig().set(AppConfig.STYLE, new_style, add_missing_options=True)
         finally:
             AppConfig().set(AppConfig.STYLE, initial_style)
         self.assertIsNone(garbage())
@@ -172,7 +187,8 @@ class TestAppController(IntraPaintTestCase):
         recorder = _GcStateRecorder()
         garbage = _unreachable_widget_cycle()
         try:
-            AppConfig().set(AppConfig.THEME, 'qdarktheme_dark', add_missing_options=True)
+            with _collection_frees_garbage():
+                AppConfig().set(AppConfig.THEME, 'qdarktheme_dark', add_missing_options=True)
             gc_enabled_states = list(recorder.gc_enabled_states)
         finally:
             AppConfig().set(AppConfig.THEME, initial_theme)
