@@ -57,7 +57,7 @@ class KeyConfig(Config, metaclass=Singleton):
         ----------
         json_path: str
             Path where config values will be saved and read. If the file does not exist, it will be created with
-            default values. Any expected keys not found in the file will be added with default values. Any unexpected
+            default values. Any expected keys not found in the file load with their current default. Any unexpected
             keys will be discarded.
         """
         super().__init__(CONFIG_DEFINITIONS, json_path, KeyConfig)

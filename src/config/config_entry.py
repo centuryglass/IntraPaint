@@ -34,6 +34,13 @@ UNEXPECTED_TYPE_ERROR = _tr('unexpected type:')
 MISSING_VALUE_ERROR = _tr('{key}: missing value')
 
 
+def _json_scalar(value: Any) -> Any:
+    """Converts a value to its JSON form, writing sizes as 'WxH'."""
+    if isinstance(value, QSize):
+        return f'{value.width()}x{value.height()}'
+    return value
+
+
 class DefinitionKey:
     """Config definition key constants."""
     DEFAULT = 'default'
@@ -45,6 +52,9 @@ class DefinitionKey:
     OPTIONS = 'options'
     RANGE = 'range_options'
     SAVED = 'saved'
+    # Optional bool. When true, a saved entry stays in the config file even when it equals the default, so a later
+    # change to the default doesn't alter it for installs that already saved it.
+    PINNED = 'pinned'
 
 
 class DefinitionType:
@@ -78,7 +88,8 @@ class ConfigEntry(Parameter):
                  tooltip: str,
                  options: Optional[ParamTypeList] = None,
                  range_options: Optional[dict[str, int | float]] = None,
-                 save_json: bool = True) -> None:
+                 save_json: bool = True,
+                 pinned: bool = False) -> None:
         minimum = None
         maximum = None
         step = None
@@ -94,10 +105,12 @@ class ConfigEntry(Parameter):
                          maximum,
                          step)
         self._key = key
-        self._value = initial_value
+        self._value = deepcopy(initial_value)  # Mutating the value in place must not change the default.
+        self._default_range = (minimum, maximum, step)
         self._category = category
         self._subcategory = subcategory
         self.save_json = save_json
+        self.pinned = pinned
         self._default_options: Optional[ParamTypeList] = None
         if options is not None:
             self._default_options = [*options]
@@ -192,29 +205,45 @@ class ConfigEntry(Parameter):
             options.append(option)
         self.set_valid_options(options)
 
+    def is_default_state(self) -> bool:
+        """Returns whether the value, and for ranged entries the min, max and step, all match the definition."""
+        return self._value == self._default_value and \
+            (self.minimum, self.maximum, self.single_step) == self._default_range
+
+    def default_json_state(self) -> tuple[Any, tuple[Any, ...]]:
+        """Returns the definition's default as `json_state` describes saved values: (value, (min, max, step))."""
+        return _json_scalar(self._default_value), tuple(_json_scalar(item) for item in self._default_range)
+
+    def json_state(self, json_value: Any) -> tuple[Any, tuple[Any, ...]]:
+        """Splits a saved JSON value into (value, (min, max, step)), filling absent range parts from the default."""
+        default_range = self.default_json_state()[1]
+        if isinstance(json_value, dict) and self.type_name != TYPE_DICT:
+            saved_range = tuple(json_value.get(inner_key) for inner_key in RangeKey.ALL)
+            return json_value.get(VALUE_KEY), tuple(saved if saved is not None else default
+                                                    for saved, default in zip(saved_range, default_range))
+        return json_value, default_range
+
     def save_to_json_dict(self, json_dict: dict[str, Any]) -> None:
-        """Adds the value to a dict in a format that can be written to a JSON file."""
-        if self.save_json:
-            if isinstance(self._value, QSize):
-                json_dict[self._key] = f'{self._value.width()}x{self._value.height()}'
-            minimum = self.minimum
-            maximum = self.maximum
-            step = self.single_step
-            if minimum is not None or maximum is not None or step is not None:
-                json_dict[self._key] = {}
-                for config_param, inner_key in ((minimum, RangeKey.MIN),
-                                                (maximum, RangeKey.MAX),
-                                                (step, RangeKey.STEP),
-                                                (self._value, VALUE_KEY)):
-                    if config_param is None:
-                        continue
-                    if isinstance(config_param, QSize):
-                        config_param = f'{config_param.width()}x{config_param.height()}'
-                    json_dict[self._key][inner_key] = config_param
-            elif isinstance(self._value, QSize):
-                json_dict[self._key] = f'{self._value.width()}x{self._value.height()}'
-            else:
-                json_dict[self._key] = self._value
+        """Adds the value to a dict in a format that can be written to a JSON file.
+
+        Nothing is added for an entry that is unsaved, or that matches its definition and isn't pinned.
+        """
+        if not self.save_json or (self.is_default_state() and not self.pinned):
+            return
+        minimum = self.minimum
+        maximum = self.maximum
+        step = self.single_step
+        if minimum is not None or maximum is not None or step is not None:
+            json_dict[self._key] = {}
+            for config_param, inner_key in ((minimum, RangeKey.MIN),
+                                            (maximum, RangeKey.MAX),
+                                            (step, RangeKey.STEP),
+                                            (self._value, VALUE_KEY)):
+                if config_param is None:
+                    continue
+                json_dict[self._key][inner_key] = _json_scalar(config_param)
+        else:
+            json_dict[self._key] = _json_scalar(self._value)
 
     def load_from_json_dict(self, json_dict: dict[str, Any]) -> None:
         """Reads the value from a dict that was loaded from a JSON file."""

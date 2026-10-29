@@ -1974,6 +1974,11 @@
         <source>Tried to add duplicate config entry for key "{key}"</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../src/config/config.py"/>
+        <source>{path} was written by a newer version of IntraPaint (config version {version}). Its values will load, but changes won't be saved.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>config.config_entry</name>

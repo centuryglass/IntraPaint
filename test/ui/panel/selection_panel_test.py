@@ -153,11 +153,11 @@ class SelectionPanelsTest(IntraPaintTestCase):
     def test_old_color_select_setting_migrates(self) -> None:
         """A saved `color_select_mode` of true becomes the By color fill area, unless a fill area is saved."""
         data = {'color_select_mode': True}
-        Cache()._migrate_saved_values(data)  # pylint: disable=protected-access
+        Cache()._migrate_legacy_keys(data)  # pylint: disable=protected-access
         self.assertEqual(data['selection_fill_area'], FillArea.BY_COLOR.value)
         data = {'color_select_mode': True, 'selection_fill_area': 'Holes'}
-        Cache()._migrate_saved_values(data)  # pylint: disable=protected-access
+        Cache()._migrate_legacy_keys(data)  # pylint: disable=protected-access
         self.assertEqual(data['selection_fill_area'], 'Holes')
         data = {'color_select_mode': False}
-        Cache()._migrate_saved_values(data)  # pylint: disable=protected-access
+        Cache()._migrate_legacy_keys(data)  # pylint: disable=protected-access
         self.assertNotIn('selection_fill_area', data)
