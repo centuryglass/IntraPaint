@@ -359,6 +359,7 @@ class PanelDock(QDockWidget):
         if self._content is None:
             return
         if isinstance(self._content, DockPanel):
+            self._content.host_floating_changed(self.isFloating())
             self._content.set_host_facts(self._content.size())
             return
         orientation = orientation_for_dock(self._window.dockWidgetArea(self), self.isFloating(), self.size(),
