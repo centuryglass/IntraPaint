@@ -5,7 +5,7 @@ whenever the area size changes, and nothing here sets the area from the resoluti
 didn't write switches the rule to manual, so a typed resolution is never overwritten.
 
 Follow-selection moves the area after selection edits, and only when the selection bounds or context pins changed. Area
-moves and padding changes alone never trigger it, so it never undoes a manual move.
+moves and context changes alone never trigger it, so it never undoes a manual move.
 """
 from typing import Optional
 
@@ -52,10 +52,10 @@ def apply_generation_area_frame(image_stack: ImageStack, size: QSize) -> None:
     position = None
     if mode != FOLLOW_SELECTION_OFF:
         cache = Cache()
-        padding = cache.get(Cache.INPAINT_FULL_RES_PADDING) if cache.inpaint_full_res_in_effect() else 0
+        context = cache.get(Cache.INPAINT_FULL_RES_PADDING) if cache.limited_context_in_effect() else 0
         selection_layer = image_stack.selection_layer
         target = follow_selection_target(selection_layer.get_selection_bounds(), selection_layer.context_pins,
-                                         padding)
+                                         context)
         if target is not None:
             position = follow_selection_position(new_area, target, mode, image_stack.bounds)
             new_area.moveTopLeft(position)
@@ -76,7 +76,7 @@ class GenerationAreaController(QObject):
         self._writing_resolution = False
         # Whether the generation area is shown. The area only follows the selection while it is.
         self.generation_area_visible = False
-        # The selection bounds and pins the area last followed. Padding isn't part of it, so padding changes alone don't
+        # The selection bounds and pins the area last followed. Context isn't part of it, so context changes alone don't
         # move the area.
         self._followed_selection = self._current_selection_state()
         self._follow_skipped_for_history = False
@@ -125,8 +125,8 @@ class GenerationAreaController(QObject):
         if (skipped_for_history or mode == FOLLOW_SELECTION_OFF or not self.generation_area_visible
                 or cache.get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT):
             return
-        padding = cache.get(Cache.INPAINT_FULL_RES_PADDING) if cache.inpaint_full_res_in_effect() else 0
-        target = follow_selection_target(*selection_state, padding)
+        context = cache.get(Cache.INPAINT_FULL_RES_PADDING) if cache.limited_context_in_effect() else 0
+        target = follow_selection_target(*selection_state, context)
         if target is None:
             return
         area = self._image_stack.generation_area

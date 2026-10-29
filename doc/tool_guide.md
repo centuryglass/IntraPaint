@@ -451,10 +451,10 @@ Select areas by outlining them.
 1. **Selection mode toggle**: Choose the [selection mode](#selection-modes).
 2. **Clear button**: Remove all selections.
 3. **Select All button**: Select all image content. In inpainting mode, a **Clear Context Pins** button follows it, removing every [context pin](#-selection-brush-tool-s).
-4. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
-5. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
+4. **"Limit context to the selection" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
+5. **"Context:" slider**: Only visible when the Stable Diffusion AI image generator is active and "Limit context to the selection" is checked.  Controls how much extra context is included around selected content when inpainting.
 6. An in-progress selection.
-7. Previously selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
+7. Previously selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Limit context to the selection" is checked.
 
 ---
 
@@ -465,7 +465,7 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 #### Basic controls
 
 - **Left-click**: Select content within the image, using the current [selection mode](#selection-modes). In Replace and Intersect modes, each stroke starts from a cleared selection, and Intersect keeps the part of the old selection that the stroke covers.
-- **Right-click**: Add a context pin, or remove the pin under the cursor. A pin stretches the "Inpaint Full Resolution" crop to include its spot, without selecting it for inpainting. Pins stay until you remove them or use [Clear context pins](./menu_options.md#clear-context-pins-ctrlaltp).
+- **Right-click**: Add a context pin, or remove the pin under the cursor. A pin stretches the inpaint context crop to include its spot, without selecting it for inpainting. Pins stay until you remove them or use [Clear context pins](./menu_options.md#clear-context-pins-ctrlaltp).
 - **Right-click and drag**: Drag a new pin into place, or drag an existing pin to move it. Releasing a dragged pin outside the image removes it.
 - **Hold Alt before pressing**: Subtract the stroke from the selection, whatever the mode is.
 - **Hold shift and left-click**: Select a line from the last place you clicked, using the current mode. Hold Alt too to keep the line at a fixed angle.
@@ -483,13 +483,13 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 3. **Clear button**: Remove all selections.
 4. **Select All button**: Select all image content.
 5. **Clear Context Pins button**: Only visible in inpainting mode.  Removes every [context pin](#-selection-brush-tool-s).
-6. Selected content, under the selection brush cursor. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
+6. Selected content, under the selection brush cursor. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Limit context to the selection" is checked.
 7. A context pin. The cropped bounds stretch to include it, but the pinned spot isn't selected for inpainting.
 
 When the Stable Diffusion AI image generator is active, the panel also shows these controls:
 
-- **"Inpaint Full Resolution" checkbox**: When checked, the generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
-- **"Inpaint Full Resolution padding" slider**: Only visible when "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
+- **"Limit context to the selection" checkbox**: When checked, the generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
+- **"Context:" slider**: Only visible when "Limit context to the selection" is checked.  Controls how much extra context is included around selected content when inpainting.
 
 ---
 
@@ -513,9 +513,9 @@ Select or deselect rectangular or elliptical regions in the image.
    - **"Fixed 1:1 aspect ratio" checkbox**: When checked, every new selection is a square or circle.
 3. **Clear button**: Remove all selections.
 4. **Select All button**: Select all image content. In inpainting mode, a **Clear Context Pins** button follows it, removing every [context pin](#-selection-brush-tool-s).
-5. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
-6. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
-7. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
+5. **"Limit context to the selection" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
+6. **"Context:" slider**: Only visible when the Stable Diffusion AI image generator is active and "Limit context to the selection" is checked.  Controls how much extra context is included around selected content when inpainting.
+7. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Limit context to the selection" is checked.
 
 ---
 
@@ -537,9 +537,9 @@ Select content based on connected regions and color similarity.
 2. **"Sample merged" checkbox**:  When checked, the magic wand tool will use all image layers to determine where to select.  When unchecked, content outside the active layer will be ignored.
 3. **"Select all by color" checkbox**:  When checked, color boundaries will be ignored, and the magic wand tool will instead select every point in the image where the color matches the clicked point.  Enabling this will un-check "Fill selection holes".
 4. **"Fill selection holes" checkbox**: When checked, the magic wand tool will ignore image content entirely, and select/deselect based on existing selection content only. Useful for selecting a hole within an existing selection, or deselecting a connected block of image content.  Enabling this will un-check "Select all by color".
-5. **"Inpaint Full Resolution" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
-6. **"Inpaint Full Resolution padding" slider**: Only visible when the Stable Diffusion AI image generator is active and "Inpaint Full Resolution" is checked.  Controls how much extra padding space is included around selected content when inpainting.
-7. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Inpaint Full Resolution" is checked.
+5. **"Limit context to the selection" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
+6. **"Context:" slider**: Only visible when the Stable Diffusion AI image generator is active and "Limit context to the selection" is checked.  Controls how much extra context is included around selected content when inpainting.
+7. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Limit context to the selection" is checked.
 
 ---
 
@@ -556,13 +556,13 @@ Controls the area of the image in use for AI image generation. AI generators are
 - **Right-click**: Resize the generation area, without changing its position.  Hold Shift to keep the generation resolution's aspect ratio.
 - **Arrow keys**: Move the generation area.
 - **Hold Alt**: Increase speed when moving the generation area using keyboard keys.
-- **Shift + scroll wheel**: Change the "Inpaint Full Resolution" padding. This works with any tool, over the image or the navigation window.
+- **Shift + scroll wheel**: Change the inpaint context. This works with any tool, over the image or the navigation window.
 
 Each drag is one undo step. Resizing applies the resolution rule as the size changes, and adds the finished size to the recent area sizes.
 
 ### Following the selection
 
-In inpainting mode, the generation area moves after you change the selection or its context pins, so that it contains them along with the "Inpaint Full Resolution" padding. It moves only as far as needed, never changes size, and centers on a selection too large to fit. Undo and redo never move it, and moving it by hand isn't overridden until the selection changes again. Change this with **"Generation area follows selection"** in [settings](./menu_options.md#settings-f9) under the **"Editing"** category: **"Minimal move"** (default), **"Center on selection"**, or **"Off"**.
+In inpainting mode, the generation area moves after you change the selection or its context pins, so that it contains them along with the inpaint context. It moves only as far as needed, never changes size, and centers on a selection too large to fit. Undo and redo never move it, and moving it by hand isn't overridden until the selection changes again. Change this with **"Generation area follows selection"** in [settings](./menu_options.md#settings-f9) under the **"Editing"** category: **"Minimal move"** (default), **"Center on selection"**, or **"Off"**.
 
 ### User interface
 

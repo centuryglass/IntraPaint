@@ -59,13 +59,13 @@ class SelectionLayerContextPinTest(IntraPaintTestCase):
         self.assertEqual(self.selection_layer.get_selection_bounds(), QRect(QPoint(150, 20), QPoint(409, 169)))
 
     def test_crop_grows_to_fit_mask_blur_band(self) -> None:
-        """Padding below the blur band's width is raised to it, measured at the grown crop's scale."""
+        """Context below the blur band's width is raised to it, measured at the grown crop's scale."""
         Cache().set(Cache.GENERATION_SIZE, QSize(100, 100))
         AppConfig().set(AppConfig.MASK_BLUR, 4)  # Band reaches 10 generation px.
         self._select(SELECTION_BOUNDS)
         crop = self.selection_layer.get_selection_gen_area()
         assert crop is not None
-        # The band is ceil(10 * crop width / 100) image pixels, and padding grows to match it.
+        # The band is ceil(10 * crop width / 100) image pixels, and context grows to match it.
         margin = SELECTION_BOUNDS.left() - crop.left()
         self.assertEqual(crop.width(), crop.height())
         self.assertEqual(margin, 3)
@@ -95,8 +95,8 @@ class SelectionLayerContextPinTest(IntraPaintTestCase):
         self.selection_layer.add_context_pin(QPoint(250, 250))
         self.assertIsNone(self.selection_layer.get_selection_gen_area())
 
-    def test_pins_count_with_full_res_ignored(self) -> None:
-        """With ignore_config, pins stretch the crop even while inpaint full-res is off."""
+    def test_pins_count_with_context_limit_ignored(self) -> None:
+        """With ignore_config, pins stretch the crop even while the context limit is off."""
         Cache().set(Cache.INPAINT_FULL_RES, False)
         self._select(SELECTION_BOUNDS)
         self.selection_layer.add_context_pin(QPoint(200, 160))

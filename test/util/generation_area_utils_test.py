@@ -118,13 +118,13 @@ class FollowSelectionTargetTest(IntraPaintTestCase):
         self.assertIsNone(follow_selection_target(None, [QPoint(5, 5)], 10))
         self.assertIsNone(follow_selection_target(QRect(), [QPoint(5, 5)], 10))
 
-    def test_pins_and_padding_extend_selection(self) -> None:
-        """Pins stretch the selection bounds to include their pixel, then padding grows every side."""
+    def test_pins_and_context_extend_selection(self) -> None:
+        """Pins stretch the selection bounds to include their pixel, then context grows every side."""
         target = follow_selection_target(QRect(50, 50, 10, 10), [QPoint(80, 55), QPoint(55, 40)], 5)
         self.assertEqual(target, QRect(QPoint(45, 35), QPoint(85, 64)))
 
     def test_target_is_not_clamped(self) -> None:
-        """Padding can take the target past the image edge."""
+        """Context can take the target past the image edge."""
         self.assertEqual(follow_selection_target(QRect(0, 0, 10, 10), [], 4), QRect(-4, -4, 18, 18))
 
 

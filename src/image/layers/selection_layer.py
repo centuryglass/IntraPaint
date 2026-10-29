@@ -34,8 +34,8 @@ DEFAULT_BRUSH_COLOR_STR = '#55ff0000'
 # Pixels around a bounded change whose outline polygons are re-traced, in addition to the change itself.
 OUTLINE_RETRACE_MARGIN = 10
 
-# Upper bound on the passes that grow the inpaint crop's padding to fit the mask blur band.
-MAX_BLUR_PADDING_PASSES = 4
+# Upper bound on the passes that grow the inpaint crop's context to fit the mask blur band.
+MAX_BLUR_CONTEXT_PASSES = 4
 
 
 def _mask_array(mask: QImage) -> NpAnyArray:
@@ -460,36 +460,36 @@ class SelectionLayer(ImageLayer):
         return bounds.translated(self.position)
 
     def get_selection_gen_area(self, ignore_config: bool = False, include_context_pins: bool = True) -> Optional[QRect]:
-        """Returns the smallest QRect within the generation area containing all masked areas and pins, plus padding.
+        """Returns the smallest QRect within the generation area containing all masked areas and pins, plus context.
 
-        Used for showing the actual area visible to the image model while `Cache.inpaint_full_res_in_effect` is true.
-        The padding amount is set by the Config.INPAINT_FULL_RES_PADDING config option, measured in pixels. Context
+        Used for showing the actual area visible to the image model while `Cache.limited_context_in_effect` is true.
+        The context amount is set by the `Cache.INPAINT_FULL_RES_PADDING` option, measured in pixels. Context
         pins only count while some of the generation area is selected, and pins outside the generation area stretch the
         bounds to its edge. The returned rectangle uses image coordinates.
 
         Parameters
         ----------
         ignore_config : bool
-            If true, return the masked area bounds even when `Cache.inpaint_full_res_in_effect` is false.
+            If true, return the masked area bounds even when `Cache.limited_context_in_effect` is false.
         include_context_pins : bool
             If false, return the bounds the selection would have without any context pins.
         Returns
         -------
         QRect or None
-           Rectangle containing all non-transparent selected content plus padding, or None if the selection is empty
-           or `Cache.inpaint_full_res_in_effect` is false and ignore_config is false.
+           Rectangle containing all non-transparent selected content plus context, or None if the selection is empty
+           or `Cache.limited_context_in_effect` is false and ignore_config is false.
         """
         cache = Cache()
-        if (not ignore_config and not cache.inpaint_full_res_in_effect()) or self._bounding_box is None:
+        if (not ignore_config and not cache.limited_context_in_effect()) or self._bounding_box is None:
             return None
-        padding = cache.get(Cache.INPAINT_FULL_RES_PADDING)
-        pad_x, pad_y = padding, padding
+        context = cache.get(Cache.INPAINT_FULL_RES_PADDING)
+        pad_x, pad_y = context, context
         selection_rect = self._padded_gen_area(pad_x, pad_y, include_context_pins)
-        # Grow the padding until the mask blur band fits inside the crop. The band's width in image pixels depends on
+        # Grow the context until the mask blur band fits inside the crop. The band's width in image pixels depends on
         # the crop's size, so iterate; the generation area bounds the growth.
         mask_blur = AppConfig().get(AppConfig.MASK_BLUR)
         generation_resolution = cache.get(Cache.GENERATION_SIZE)
-        for _ in range(MAX_BLUR_PADDING_PASSES):
+        for _ in range(MAX_BLUR_CONTEXT_PASSES):
             if selection_rect is None:
                 return None
             band_x, band_y = blur_extent_in_image(mask_blur, selection_rect.size(), generation_resolution)
@@ -516,7 +516,7 @@ class SelectionLayer(ImageLayer):
         if top >= bottom:
             return None  # mask was empty
 
-        # Add padding:
+        # Add context:
         generation_area = self._generation_area
         area_left = generation_area.x()
         area_right = area_left + generation_area.width() - 1

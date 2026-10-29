@@ -1037,26 +1037,26 @@
         "label": "Inpaint options available",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Whether the \"inpaint full resolution\" and \"inpaint full resolution padding\" features are available.",
+        "description": "Whether the inpaint context options are available.",
         "type": "bool",
         "default": false,
         "saved": false,
         "translate": false
     },
     "inpaint_full_res": {
-        "label": "Inpaint Full Resolution",
+        "label": "Limit context to the selection",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.",
+        "description": "On: generate only the selection and the context around it, at the full generation resolution, for finer detail. Off: generate the whole generation area.",
         "type": "bool",
         "default": true,
         "saved": true
     },
     "inpaint_full_res_padding": {
-        "label": "Padding:",
+        "label": "Context:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.",
+        "description": "How far past the selection, in pixels, the generator sees while context is limited. Less context gives finer detail, and more gives better awareness of the surrounding image. Context pins stretch it further.",
         "type": "int",
         "default": 32,
         "range_options": {
@@ -1330,7 +1330,7 @@
         "label": "Tiling",
         "category": "Cache",
         "subcategory": "WebUI",
-        "description": "Generate tiling images that can be seamlessly repeated. Inpainting ignores Inpaint Full Resolution while tiling is on.",
+        "description": "Generate tiling images that can be seamlessly repeated. Inpainting ignores the context limit while tiling is on.",
         "type": "bool",
         "default": false,
         "saved": true

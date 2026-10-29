@@ -1,7 +1,7 @@
 """The Stable Diffusion generation panel, for the WebUI and ComfyUI backends.
 
 It is a `DockPanel` that places controls by how often they're used. The action block holds the ones used after every
-generation: denoising strength, CFG scale, steps, batch size, padding and Generate, with Generate last. It is a side
+generation: denoising strength, CFG scale, steps, batch size, context and Generate, with Generate last. It is a side
 panel's footer (`DockPanel.set_footer`) and a strip's trailing column (`DockPanel.trailing_layout`), so Generate stays
 in the bottom-right corner and never scrolls. The sections run Prompt, Mask, Sampling, Size and batch, then Advanced.
 A strip pins Prompt in a column at the left (`DockPanel.pinned_layout`) and packs the rest into columns between the
@@ -9,7 +9,7 @@ two (`DockPanel.set_column_packing`).
 
 - Every control is bound to its config value and has one owner here. Backend-specific controls arrive as constructor
   arguments (`webui`) and `set_advanced_content`.
-- The edit mode decides which controls show, and the panel plans again when it changes. The Mask section and padding
+- The edit mode decides which controls show, and the panel plans again when it changes. The Mask section and context
   show in Inpaint only, and denoising strength in Inpaint and Image to image. Outside Inpaint, the header's edit mode
   selector takes the caution color and a note above Generate names the mode.
 - The edit mode selector sits in the header. A strip puts the header at the top of the prompt column, so the columns
@@ -71,10 +71,10 @@ LABEL_CFG_SCALE = _tr('CFG scale')
 LABEL_STEPS = _tr('Steps')
 LABEL_NEGATIVE_PROMPT = _tr('Negative prompt')
 LABEL_LAST_SEED = _tr('Last seed')
-PADDING_OFF = _tr('off', 'Inpaint padding while full resolution is off')
-TOOLTIP_FULL_RES_TILING = _tr('Inpainting ignores full resolution while tiling is on.')
+CONTEXT_OFF = _tr('whole area', 'Inpaint context while it covers the whole generation area')
+TOOLTIP_LIMIT_CONTEXT_TILING = _tr('Inpainting ignores the context limit while tiling is on.')
 BUTTON_TEXT_TILING_ON = _tr('Tiling on')
-BUTTON_TOOLTIP_TILING_ON = _tr('Generated images tile, and inpainting ignores full resolution. Click to turn tiling '
+BUTTON_TOOLTIP_TILING_ON = _tr('Generated images tile, and inpainting ignores the context limit. Click to turn tiling '
                                'off.')
 
 BUTTON_TEXT_LORA = _tr('LoRA')
@@ -183,8 +183,8 @@ def group_label(text: str) -> QLabel:
 
 
 class ToggledSliderField(SliderField):
-    """A `SliderField` whose link toggles the setting its value belongs to, such as padding that applies only at full
-    resolution.
+    """A `SliderField` whose link toggles the setting its value belongs to, such as context that is limited only
+    while the toggle is on.
 
     The toggle is the field's pen pressure link (`set_pressure_link_enabled`, `pressureLinkToggled`), drawn with a
     full-frame glyph. While it is off, the field reads `off_text` in dim text with no fill, and ignores dragging, typing
@@ -645,31 +645,31 @@ class StableDiffusionPanel(DockPanel):
         self._steps_field = config_slider_field(cache, Cache.SAMPLING_STEPS, label=LABEL_STEPS)
         self._sampling_pair = FieldPair(self._cfg_scale_field, self._steps_field)
         self._batch_size_field = config_slider_field(cache, Cache.BATCH_SIZE)
-        padding_field = config_slider_field(cache, Cache.INPAINT_FULL_RES_PADDING, field_class=ToggledSliderField,
-                                            off_text=PADDING_OFF)
-        assert isinstance(padding_field, ToggledSliderField)
-        self._padding_field = padding_field
+        context_field = config_slider_field(cache, Cache.INPAINT_FULL_RES_PADDING, field_class=ToggledSliderField,
+                                            off_text=CONTEXT_OFF)
+        assert isinstance(context_field, ToggledSliderField)
+        self._context_field = context_field
 
-        def _full_res_toggled(enabled: bool) -> None:
-            if not padding_field.toggle_locked() and cache.get(Cache.INPAINT_FULL_RES) != enabled:
+        def _limit_context_toggled(enabled: bool) -> None:
+            if not context_field.toggle_locked() and cache.get(Cache.INPAINT_FULL_RES) != enabled:
                 cache.set(Cache.INPAINT_FULL_RES, enabled)
 
-        padding_field.pressureLinkToggled.connect(_full_res_toggled)
+        context_field.pressureLinkToggled.connect(_limit_context_toggled)
 
-        # Tiling shows full resolution as off and locks its toggle, leaving the saved value for when tiling ends:
-        def _sync_full_res_toggle(*_) -> None:
+        # Tiling shows the context limit as off and locks its toggle, leaving the saved value for when tiling ends:
+        def _sync_limit_context_toggle(*_) -> None:
             tiling = cache.tiling_in_effect()
-            padding_field.set_toggle_locked(tiling)
-            padding_field.set_pressure_link_tooltip(TOOLTIP_FULL_RES_TILING if tiling
+            context_field.set_toggle_locked(tiling)
+            context_field.set_pressure_link_tooltip(TOOLTIP_LIMIT_CONTEXT_TILING if tiling
                                                     else cache.get_tooltip(Cache.INPAINT_FULL_RES))
-            padding_field.set_pressure_link_enabled(cache.inpaint_full_res_in_effect())
+            context_field.set_pressure_link_enabled(cache.limited_context_in_effect())
 
-        for full_res_key in (Cache.INPAINT_FULL_RES, Cache.WEBUI_TILING, Cache.WEBUI_TILING_AVAILABLE):
-            cache.connect(padding_field, full_res_key, _sync_full_res_toggle)
-        _sync_full_res_toggle()
-        self._action_pair = FieldPair(self._batch_size_field, padding_field)
-        # Batch size sits at the left edge, under CFG scale, while padding is hidden:
-        for field in (self._batch_size_field, padding_field):
+        for limit_context_key in (Cache.INPAINT_FULL_RES, Cache.WEBUI_TILING, Cache.WEBUI_TILING_AVAILABLE):
+            cache.connect(context_field, limit_context_key, _sync_limit_context_toggle)
+        _sync_limit_context_toggle()
+        self._action_pair = FieldPair(self._batch_size_field, context_field)
+        # Batch size sits at the left edge, under CFG scale, while context is hidden:
+        for field in (self._batch_size_field, context_field):
             self._action_pair.layout().setAlignment(field, Qt.AlignmentFlag.AlignLeft)
         self.add_fit_item(FitItem(REQUIRED, 2), self._apply_pair_form)
 
@@ -801,7 +801,7 @@ class StableDiffusionPanel(DockPanel):
         """Shows the controls the edit mode uses, marks a mode other than Inpaint, and plans again."""
         inpaint = edit_mode == EDIT_MODE_INPAINT
         self._denoising_field.setVisible(edit_mode in (EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG))
-        self._padding_field.setVisible(inpaint)
+        self._context_field.setVisible(inpaint)
         if self._masked_content_rows is not None:
             self._masked_content_rows.setVisible(inpaint)
         notes = {EDIT_MODE_IMG2IMG: NOTE_IMG2IMG, EDIT_MODE_TXT2IMG: NOTE_TXT2IMG}
@@ -915,19 +915,19 @@ class StableDiffusionPanel(DockPanel):
 
     @property
     def action_block(self) -> QWidget:
-        """The widget holding denoising strength, batch size, padding and Generate."""
+        """The widget holding denoising strength, batch size, context and Generate."""
         return self._action_block
 
     @property
     def action_fields(self) -> list[NumberField]:
-        """The action block's number fields: denoising strength, CFG scale, steps, batch size and padding."""
+        """The action block's number fields: denoising strength, CFG scale, steps, batch size and context."""
         return [self._denoising_field, self._cfg_scale_field, self._steps_field, self._batch_size_field,
-                self._padding_field]
+                self._context_field]
 
     @property
-    def padding_field(self) -> ToggledSliderField:
-        """The padding field, whose toggle turns full resolution inpainting on and off."""
-        return self._padding_field
+    def context_field(self) -> ToggledSliderField:
+        """The context field, whose toggle limits inpaint context to the selection or lifts the limit."""
+        return self._context_field
 
     @property
     def model_combobox(self) -> QWidget:

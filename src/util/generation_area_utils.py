@@ -131,8 +131,8 @@ def previous_frame(recent: list[str], current_size: QSize) -> Optional[QSize]:
 
 
 def follow_selection_target(selection_bounds: Optional[QRect], context_pins: list[QPoint],
-                            padding: int) -> Optional[QRect]:
-    """Returns the bounds the generation area follows: the selection and its context pins, grown by `padding`.
+                            context: int) -> Optional[QRect]:
+    """Returns the bounds the generation area follows: the selection and its context pins, grown by `context`.
 
     Returns None when nothing is selected, since pins only count alongside a selection. The result isn't clamped to
     the image.
@@ -142,7 +142,7 @@ def follow_selection_target(selection_bounds: Optional[QRect], context_pins: lis
     target = QRect(selection_bounds)
     for pin in context_pins:
         target = target.united(QRect(pin, QSize(1, 1)))
-    return target.adjusted(-padding, -padding, padding, padding)
+    return target.adjusted(-context, -context, context, context)
 
 
 def _follow_axis(area_start: int, area_length: int, target_start: int, target_length: int, center: bool,

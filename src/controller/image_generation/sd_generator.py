@@ -405,7 +405,7 @@ class SDGenerator(ImageGenerator, ABC):
         return self._image_stack.selection_layer.mask_image
 
     def _inpaint_gen_area_crop_bounds(self, scale_to_generation_resolution=True) -> QRect:
-        """Returns the inpaint full-res crop within the generation area, or the whole area when nothing is cropped.
+        """Returns the inpaint context crop within the generation area, or the whole area when nothing is cropped.
 
         The crop is relative to the generation area's top left, scaled to Cache.GENERATION_SIZE when
         scale_to_generation_resolution is true.
@@ -417,7 +417,7 @@ class SDGenerator(ImageGenerator, ABC):
             image_size = cache.get(Cache.GENERATION_SIZE)
         else:
             image_size = gen_area.size()
-        if edit_mode != EDIT_MODE_INPAINT or not cache.inpaint_full_res_in_effect():
+        if edit_mode != EDIT_MODE_INPAINT or not cache.limited_context_in_effect():
             return QRect(QPoint(), image_size)
 
         selection_layer = self._image_stack.selection_layer
@@ -474,9 +474,9 @@ class SDGenerator(ImageGenerator, ABC):
         return restored_images
 
     def _context_pins_change_inpaint_crop(self) -> bool:
-        """Returns whether context pins change the inpaint full-res crop of the current inpainting settings."""
+        """Returns whether context pins change the inpaint context crop of the current inpainting settings."""
         cache = Cache()
-        if cache.get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT or not cache.inpaint_full_res_in_effect():
+        if cache.get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT or not cache.limited_context_in_effect():
             return False
         selection_layer = self._image_stack.selection_layer
         return selection_layer.get_selection_gen_area() \
@@ -601,7 +601,7 @@ class SDGenerator(ImageGenerator, ABC):
                                                                                   parameter_values={})))
                 cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS, saved_tile_unit.to_json())
 
-            # Enable inpainting cropping and padding:
+            # Enable the inpaint context options:
             cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, True)
 
             assert self._window is not None
@@ -619,7 +619,7 @@ class SDGenerator(ImageGenerator, ABC):
         if webservice is not None:
             webservice.disconnect()
             self.remove_webservice()
-        # Turn off inpainting cropping and padding again:
+        # Turn off the inpaint context options again:
         cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, False)
 
         # Clear cached webservice data:

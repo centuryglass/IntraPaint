@@ -119,13 +119,13 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         self._generate_and_check('inpaint')
 
     def test_inpaint_full_res(self) -> None:
-        """Inpainting at full resolution leaves cropping to the WebUI, so only the flag and padding change."""
+        """Limited context leaves cropping to the WebUI, so only the inpaint_full_res flag and padding change."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         Cache().set(Cache.INPAINT_FULL_RES, True)
         self._generate_and_check('inpaint_full_res')
 
     def test_inpaint_full_res_context_pin(self) -> None:
-        """With a pin stretching the crop, the image and mask are cropped locally and sent with full-res off."""
+        """With a pin stretching the crop, the image and mask are cropped locally and sent with inpaint_full_res off."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         Cache().set(Cache.INPAINT_FULL_RES, True)
         self.image_stack.selection_layer.add_context_pin(CONTEXT_PIN)
@@ -137,7 +137,7 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
             self.assertEqual(image.size(), GENERATION_SIZE)
 
     def test_inpaint_full_res_tiling(self) -> None:
-        """Tiling sends inpainting requests with full resolution off, and leaves the full resolution setting on."""
+        """Tiling sends inpainting requests with inpaint_full_res off, and leaves the context limit on."""
         cache = Cache()
         cache.set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         cache.set(Cache.INPAINT_FULL_RES, True)
@@ -167,7 +167,7 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         self.assertEqual({mask.pixelColor(x, middle_y).alpha() for x in range(mask.width())}, {0, 255})
 
     def test_connect_enables_inpaint_options(self) -> None:
-        """Connecting enables the inpainting crop and padding controls, and disconnecting disables them again."""
+        """Connecting enables the inpaint context controls, and disconnecting disables them again."""
         generator = self.generator
         assert isinstance(generator, SDWebUIGenerator)
         # Stub the backend queries, which have their own request snapshots, to test the shared connection logic:
@@ -188,14 +188,14 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         self.assertFalse(Cache().get(Cache.INPAINT_OPTIONS_AVAILABLE))
 
     def test_disconnect_ends_tiling(self) -> None:
-        """Disconnecting the WebUI stops its tiling option from turning off full resolution inpainting."""
+        """Disconnecting the WebUI stops its tiling option from turning off the context limit."""
         cache = Cache()
         cache.set(Cache.INPAINT_FULL_RES, True)
         cache.set(Cache.WEBUI_TILING, True)
         cache.set(Cache.WEBUI_TILING_AVAILABLE, True)
-        self.assertFalse(cache.inpaint_full_res_in_effect())
+        self.assertFalse(cache.limited_context_in_effect())
         self.generator.clear_cached_generator_data()
-        self.assertTrue(cache.inpaint_full_res_in_effect())
+        self.assertTrue(cache.limited_context_in_effect())
 
     def test_upscale_basic(self) -> None:
         """Upscaling without Stable Diffusion sends the whole image to the extras endpoint."""

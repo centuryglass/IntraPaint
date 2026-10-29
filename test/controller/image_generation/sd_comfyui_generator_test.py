@@ -188,13 +188,13 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         self._generate_and_check('inpaint')
 
     def test_inpaint_full_res(self) -> None:
-        """Inpainting at full resolution uploads the selection bounds cropped and scaled to the generation resolution."""
+        """Limited context uploads the selection bounds cropped and scaled to the generation resolution."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         Cache().set(Cache.INPAINT_FULL_RES, True)
         self._generate_and_check('inpaint_full_res')
 
     def test_inpaint_full_res_context_pin(self) -> None:
-        """A context pin stretches the uploaded full-res crop past the selection bounds."""
+        """A context pin stretches the uploaded context crop past the selection bounds."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         Cache().set(Cache.INPAINT_FULL_RES, True)
         self.image_stack.selection_layer.add_context_pin(CONTEXT_PIN)
