@@ -1,10 +1,10 @@
-"""Tests for GeneratedImageSelector: batch snapshots, the manual view carry-over between options, and re-opening the
-previous generation batch."""
+"""Tests for GeneratedImageSelector: batch snapshots, the manual view carry-over between options, re-opening the
+previous generation batch, and how a run's Cancel, Stop and end close or keep the screen."""
 import sys
 from unittest.mock import MagicMock, Mock, patch
 
-from PySide6.QtCore import QPoint, QPointF, QRect, QSize
-from PySide6.QtGui import QColor, QImage
+from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, QSize, Qt
+from PySide6.QtGui import QColor, QImage, QKeyEvent
 from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
@@ -12,6 +12,8 @@ from src.controller.image_generation.generation_session import GenerationSession
 from src.controller.image_generation.test_generator import TestGenerator
 from src.image.layers.image_stack import ImageStack
 from src.ui.generated_image_selector import GeneratedImageSelector, LABEL_TEXT_IMAGE_OPTION, ORIGINAL_CONTENT_LABEL
+from src.ui.generated_selector_bars import CANCEL_BUTTON_TEXT, CLOSE_BUTTON_TEXT, USE_OPTION_BUTTON_TEXT, VIEW_GRID, \
+    VIEW_SINGLE
 from src.ui.window.main_window import MainWindow
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_SELECTION
@@ -266,10 +268,10 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
         self._switch_live_mode_to_img2img()
 
         self.selector.start_new_options()
-        self.assertFalse(self.selector._selection_outline_checkbox.isVisibleTo(self.selector))
+        self.assertFalse(self.selector._selection_outline_checkbox.isEnabled())
 
         self.selector.restore_previous_options()
-        self.assertTrue(self.selector._selection_outline_checkbox.isVisibleTo(self.selector))
+        self.assertTrue(self.selector._selection_outline_checkbox.isEnabled())
         self.assertEqual(len(self.selector._selections), len(self.selector._option_items))
 
     def test_apply_uses_batch_edit_mode_and_mask(self) -> None:
@@ -374,7 +376,7 @@ class GeneratedImageSelectorWindowTest(IntraPaintTestCase):
     def test_cancel_keeps_the_batch_reopenable(self) -> None:
         """Closing with the Cancel button keeps the batch, and the tooltip no longer claims it is discarded."""
         self._run_completed_generation()
-        self.selector._cancel_button.click()
+        self.selector._button_bar.close_button.click()
         self.assertFalse(self.window.is_image_selector_visible())
         self.assertTrue(self.window.can_restore_previous_options())
 
@@ -531,3 +533,164 @@ class GeneratedImageSelectorGenerationTest(IntraPaintTestCase):
         UndoStack().undo()
         self.image_stack.flush_render()
         self.assertEqual(self.image_stack.qimage(), before)
+
+
+class GeneratedImageSelectorRunTest(IntraPaintTestCase):
+    """Tests how a run's Cancel, Stop and end close or keep the selection screen, with a fake backend action.
+
+    The action runs synchronously in place of the background task, and plays the user's part by clicking the screen's
+    buttons partway through.
+    """
+
+    BATCH = 4
+
+    def setUp(self) -> None:
+        super().setUp()
+        cache = Cache()
+        cache.set(Cache.GENERATION_SIZE, IMAGE_SIZE)
+        cache.set(Cache.EDIT_SIZE, IMAGE_SIZE)
+        cache.set(Cache.BATCH_COUNT, 1)
+        cache.set(Cache.BATCH_SIZE, self.BATCH)
+        self.image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE)
+        self.image_stack.load_image(_solid(QColor(10, 20, 30)))
+        self.window = MainWindow(self.image_stack)
+        self.session = self.window.generation_session
+        self.cancel_requests: list[bool] = []
+        self.window.cancel_generation.connect(lambda: self.cancel_requests.append(True))
+        start_patch = patch.object(AsyncTask, 'start', AsyncTask.run)
+        start_patch.start()
+        self.addCleanup(start_patch.stop)
+
+    @property
+    def selector(self) -> GeneratedImageSelector:
+        """The selection screen the run opened."""
+        selector = self.window._image_selector
+        assert selector is not None
+        return selector
+
+    def _deliver(self, idx: int) -> None:
+        """Delivers one result the way a backend does, minus the main-thread timer hop."""
+        self.session.store_result(_option_image(idx), idx)
+        self.session.deliver_result(idx)
+
+    def _run(self, action) -> None:
+        select_rect(self.image_stack, QRect(QPoint(0, 0), QSize(16, 16)))
+        image = self.image_stack.qimage_generation_area_content()
+        self.session.generate(lambda _status, _image, _mask: action(), image, None, None)
+
+    def test_cancel_before_first_result_closes_and_stops(self) -> None:
+        """With nothing ready the only exit is Cancel, which stops the backend and returns to the editor."""
+        def _action() -> None:
+            self.assertTrue(self.window.is_image_selector_visible())
+            self.assertEqual(self.selector._button_bar.close_button.text(), CANCEL_BUTTON_TEXT)
+            self.assertFalse(self.selector._button_bar.stop_button.isVisibleTo(self.selector))
+            self.selector._button_bar.close_button.click()
+        self._run(_action)
+        self.assertFalse(self.window.is_image_selector_visible())
+        self.assertEqual(self.cancel_requests, [True])
+        self.assertFalse(self.window.can_restore_previous_options())
+
+    def test_stop_after_two_of_four_keeps_two(self) -> None:
+        """Stop ends the run, keeps the two options that arrived, and drops the placeholders for the rest."""
+        def _action() -> None:
+            self._deliver(0)
+            self._deliver(1)
+            self.assertEqual(self.selector._button_bar.close_button.text(), CLOSE_BUTTON_TEXT)
+            self.assertTrue(self.selector._button_bar.stop_button.isVisibleTo(self.selector))
+            self.selector._button_bar.stop_button.click()
+        self._run(_action)
+        self.assertEqual(self.cancel_requests, [True])
+        self.assertTrue(self.window.is_image_selector_visible())
+        self.assertEqual(len(self.selector._option_items), 3)
+        self.assertNotIn(self.session.current.loading_image, self.session.current.option_images)
+        self.assertFalse(self.selector._button_bar.stop_button.isVisibleTo(self.selector))
+        self.assertEqual(self.selector._button_bar.close_button.text(), CLOSE_BUTTON_TEXT)
+
+    def test_stop_with_no_results_closes_and_reports(self) -> None:
+        """A stopped run that produced nothing closes the screen and says why on the canvas."""
+        self._run(self.session.stop)
+        self.assertFalse(self.window.is_image_selector_visible())
+        self.assertIsNotNone(self.window._toast_message)
+
+    def test_empty_run_closes_and_reports(self) -> None:
+        """A run that ends without images closes the screen and says why on the canvas."""
+        self._run(lambda: None)
+        self.assertFalse(self.window.is_image_selector_visible())
+        self.assertIsNotNone(self.window._toast_message)
+
+    def test_failure_with_zero_results_closes(self) -> None:
+        """A failure before any image arrived closes the screen, and the error dialog reports it."""
+        def _raises() -> None:
+            raise ValueError('bad input')
+        with patch('src.ui.window.main_window.show_error_dialog') as show_error_dialog:
+            self._run(_raises)
+        show_error_dialog.assert_called_once()
+        # The recorded exception's traceback holds the task's frames:
+        show_error_dialog.reset_mock()
+        self.assertFalse(self.window.is_image_selector_visible())
+
+    def test_failure_after_results_keeps_them(self) -> None:
+        """A failure after some images arrived reports the error and keeps those options on screen."""
+        def _partial() -> None:
+            self._deliver(0)
+            raise ValueError('bad input')
+        with patch('src.ui.window.main_window.show_error_dialog') as show_error_dialog:
+            self._run(_partial)
+        # The recorded exception's traceback holds the task's frames:
+        show_error_dialog.reset_mock()
+        self.assertTrue(self.window.is_image_selector_visible())
+        self.assertEqual(len(self.selector._option_items), 2)
+
+    def test_use_button_applies_the_focused_option(self) -> None:
+        """The primary button names the focused option and applies it."""
+        def _action() -> None:
+            for idx in range(self.BATCH):
+                self._deliver(idx)
+        self._run(_action)
+        self.selector._zoom_to_option(3, True)
+        self.assertEqual(self.selector._button_bar.use_button.text(), USE_OPTION_BUTTON_TEXT.format(index=3))
+        self.selector._button_bar.use_button.click()
+        self.assertFalse(self.window.is_image_selector_visible())
+        self.image_stack.flush_render()
+        canvas = self.image_stack.qimage_generation_area_content()
+        self.assertEqual(canvas.pixelColor(4, 4), _option_image(2).pixelColor(4, 4))
+
+    def test_view_modes_and_compare_keep_focus(self) -> None:
+        """Switching between grid and single views, and holding the compare modifier, leave the focus in place."""
+        def _action() -> None:
+            for idx in range(self.BATCH):
+                self._deliver(idx)
+        self._run(_action)
+        selector = self.selector
+        selector.toggle_zoom(2)
+        selector.toggle_zoom()
+        self.assertFalse(selector._zoomed_in)
+        self.assertEqual(selector._zoom_index, 2)
+
+        selector._view_mode_changed(VIEW_SINGLE)
+        self.assertTrue(selector._zoomed_in)
+        self.assertEqual(selector._zoom_index, 2)
+
+        selector.eventFilter(selector._view, QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Alt,
+                                                       Qt.KeyboardModifier.AltModifier))
+        self.assertTrue(selector._comparing)
+        self.assertTrue(selector._compare_item.isVisible())
+        self.assertEqual(selector._zoom_index, 2)
+        selector.eventFilter(selector._view, QKeyEvent(QEvent.Type.KeyRelease, Qt.Key.Key_Alt,
+                                                       Qt.KeyboardModifier.NoModifier))
+        self.assertFalse(selector._comparing)
+        self.assertFalse(selector._compare_item.isVisible())
+
+        selector._view_mode_changed(VIEW_GRID)
+        self.assertFalse(selector._zoomed_in)
+        self.assertEqual(selector._zoom_index, 2)
+
+    def test_compare_needs_single_view(self) -> None:
+        """Holding the compare modifier in the grid view shows nothing in place of an option."""
+        def _action() -> None:
+            self._deliver(0)
+        self._run(_action)
+        self.selector._zoom_index = 1
+        self.selector.eventFilter(self.selector._view, QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Alt,
+                                                                 Qt.KeyboardModifier.AltModifier))
+        self.assertFalse(self.selector._comparing)

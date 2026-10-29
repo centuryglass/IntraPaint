@@ -80,6 +80,15 @@
         "default": "Ctrl",
         "saved": true
     },
+    "compare_original_modifier": {
+        "label": "Compare With Original Modifier:",
+        "category": "Keybindings",
+        "subcategory": "Modifiers",
+        "description": "While held in the generated image selector's single view, the original image content shows in place of the focused option.",
+        "type": "string",
+        "default": "Alt",
+        "saved": true
+    },
     "padding_scroll_modifier": {
         "label": "Padding Scroll Modifier:",
         "category": "Keybindings",

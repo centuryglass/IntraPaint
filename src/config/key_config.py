@@ -208,6 +208,7 @@ class KeyConfig(Config, metaclass=Singleton):
     CLEAR_SHORTCUT: str
     CLONE_STAMP_TOOL_KEY: str
     COLOR_BALANCE_SHORTCUT: str
+    COMPARE_ORIGINAL_MODIFIER: str
     COPY_LAYER_SHORTCUT: str
     COPY_SHORTCUT: str
     CROP_IMAGE_SHORTCUT: str

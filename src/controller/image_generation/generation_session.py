@@ -50,6 +50,13 @@ class GenerationSession(QObject):
     generation_failed = Signal(object)
     """Emitted with the exception when the backend raises, before `generation_finished`."""
 
+    generation_ended = Signal()
+    """Emitted last when a task ends, after `generation_finished` and the `image_ready` deliveries it makes, so the
+    current batch holds every image the run produced. `stopped` and `failed` say how the run ended."""
+
+    stop_requested = Signal()
+    """Emitted when `stop` asks the backend to cancel the running task."""
+
     def __init__(self, image_stack: ImageStack) -> None:
         super().__init__()
         self._image_stack = image_stack
@@ -61,6 +68,8 @@ class GenerationSession(QObject):
         # False while a re-opened batch is current, which has no placeholders left to fill:
         self._accepting_results = False
         self._generating = False
+        self._stopped = False
+        self._failed = False
         self._results: list[QImage] = []
         image_stack.size_changed.connect(self._on_image_stack_resized)
         image_stack.document_changed.connect(self._on_document_changed)
@@ -87,6 +96,26 @@ class GenerationSession(QObject):
         """Whether a task started by `generate` has not finished."""
         return self._generating
 
+    @property
+    def stopped(self) -> bool:
+        """Whether `stop` was called during the last task `generate` started."""
+        return self._stopped
+
+    @property
+    def failed(self) -> bool:
+        """Whether the backend raised during the last task `generate` started."""
+        return self._failed
+
+    def stop(self) -> None:
+        """Asks the backend to cancel the running task. Images that already arrived stay in the batch.
+
+        Does nothing unless a task is running. The task still ends through `generation_finished` and
+        `generation_ended`.
+        """
+        if self._generating and not self._stopped:
+            self._stopped = True
+            self.stop_requested.emit()
+
     def generate(self, action: GenerateAction, image: QImage, mask: Optional[QImage],
                  paste_mask: Optional[QImage]) -> bool:
         """Runs `action(status_signal, image, mask)` in a background task and reports through the session's signals.
@@ -100,6 +129,8 @@ class GenerationSession(QObject):
             return False
         self._results.clear()
         self._generating = True
+        self._stopped = False
+        self._failed = False
 
         # Previews show the unscaled source outside the mask that clips them when applied, so they match the result.
         composite_base: Optional[QImage] = None
@@ -130,6 +161,7 @@ class GenerationSession(QObject):
 
         def _handle_error(err: BaseException) -> None:
             self._generating = False
+            self._failed = True
             self.generation_failed.emit(err)
 
         def _finished() -> None:
@@ -147,6 +179,7 @@ class GenerationSession(QObject):
                     painter.drawImage(QPoint(), composite_base)
                     painter.end()
                 self.image_ready.emit(result, idx)
+            self.generation_ended.emit()
 
         inpaint_task.error_signal.connect(_handle_error)
         inpaint_task.status_signal.connect(self._apply_status_update)
@@ -184,14 +217,14 @@ class GenerationSession(QObject):
         if 'progress' in status_dict:
             self.progress_changed.emit(status_dict['progress'])
 
-    def begin(self, loading_text: str, paste_mask: Optional[QImage] = None) -> GeneratedImageBatch:
+    def begin(self, paste_mask: Optional[QImage] = None) -> GeneratedImageBatch:
         """Starts a batch from the current image content, with placeholders for the images to come.
 
         Inpainted options are clipped by `paste_mask` when they are applied, or by the selection if it is None.
         """
         self._accepting_results = True
         self._current_archived = False
-        self._current = GeneratedImageBatch(self._image_stack, loading_text, paste_mask)
+        self._current = GeneratedImageBatch(self._image_stack, paste_mask)
         return self._current
 
     def add_image(self, image: QImage, idx: int) -> bool:
@@ -209,6 +242,15 @@ class GenerationSession(QObject):
         else:
             batch.option_images[slot] = image
         return True
+
+    def finish_current(self) -> list[int]:
+        """Stops the current batch taking results and drops its remaining placeholders.
+
+        Call it once a run has delivered its last image. Returns the indices of the options that were kept, from
+        before the placeholders were dropped.
+        """
+        self._accepting_results = False
+        return self.current.discard_placeholders()
 
     def archive_current(self) -> Optional[list[int]]:
         """Stores the current batch for `restore_previous` if any of its images arrived.

@@ -21,7 +21,6 @@ from test.base_test_case import IntraPaintTestCase
 app = QApplication.instance() or QApplication(sys.argv)
 
 IMAGE_SIZE = QSize(64, 64)
-LOADING_TEXT = 'Loading'
 
 
 def _solid(color: QColor) -> QImage:
@@ -44,7 +43,7 @@ class GenerationSessionTest(IntraPaintTestCase):
         self.session.previous_options_available.connect(self.availability.append)
 
     def _begin_with_results(self) -> None:
-        batch = self.session.begin(LOADING_TEXT)
+        batch = self.session.begin()
         batch.option_images.extend([batch.loading_image, batch.loading_image])
         self.session.add_image(_solid(QColor(0, 255, 0)), 0)
 
@@ -56,14 +55,22 @@ class GenerationSessionTest(IntraPaintTestCase):
     def test_begin_captures_original_content(self) -> None:
         """A new batch starts with the canvas content and accepts results."""
         self.image_stack.flush_render()
-        batch = self.session.begin(LOADING_TEXT)
+        batch = self.session.begin()
         self.assertEqual(batch.option_images, [self.image_stack.qimage_generation_area_content()])
         self.assertTrue(self.session.accepting_results)
         self.assertFalse(batch.has_results())
 
+    def test_finish_current_drops_placeholders_and_stops_accepting(self) -> None:
+        """Finishing a run keeps the arrived images, reports their indices, and takes no more results."""
+        self._begin_with_results()
+        self.assertEqual(self.session.finish_current(), [0, 1])
+        self.assertEqual(len(self.session.current.option_images), 2)
+        self.assertFalse(self.session.accepting_results)
+        self.assertFalse(self.session.add_image(_solid(QColor(9, 9, 9)), 1))
+
     def test_batch_without_results_is_not_archived(self) -> None:
         """Archiving a batch that only holds placeholders stores nothing."""
-        self.session.begin(LOADING_TEXT)
+        self.session.begin()
         self.assertIsNone(self.session.archive_current())
         self.assertFalse(self.session.can_restore_previous())
         self.assertEqual(self.availability, [])
@@ -82,7 +89,7 @@ class GenerationSessionTest(IntraPaintTestCase):
         """A restored batch shows the current canvas as option zero and takes no new results."""
         self._begin_with_results()
         self.session.archive_current()
-        self.session.begin(LOADING_TEXT)
+        self.session.begin()
         self.image_stack.active_layer.image = _solid(QColor(1, 2, 3))
         self.image_stack.flush_render()
         batch = self.session.restore_previous()
@@ -162,6 +169,8 @@ class GenerationSessionGenerateTest(IntraPaintTestCase):
         self.session.generation_started.connect(lambda _mask: self.events.append('started'))
         self.session.generation_finished.connect(lambda: self.events.append('finished'))
         self.session.generation_failed.connect(lambda _err: self.events.append('failed'))
+        self.session.generation_ended.connect(lambda: self.events.append('ended'))
+        self.session.stop_requested.connect(lambda: self.events.append('stop'))
         self.session.image_ready.connect(lambda _image, idx: self.events.append(f'image {idx}'))
         start_patch = patch.object(AsyncTask, 'start', AsyncTask.run)
         start_patch.start()
@@ -176,7 +185,7 @@ class GenerationSessionGenerateTest(IntraPaintTestCase):
             for idx in (0, 2, 1):
                 self.session.store_result(_solid(QColor(0, 255, 0)) if idx != 1 else QImage(), idx)
         self.assertTrue(self._run(_action))
-        self.assertEqual(self.events, ['started', 'finished', 'image 0'])
+        self.assertEqual(self.events, ['started', 'finished', 'image 0', 'ended'])
         self.assertFalse(self.session.generating)
         self.assertEqual(AppStateTracker.app_state(), APP_STATE_LOADING)
 
@@ -185,7 +194,8 @@ class GenerationSessionGenerateTest(IntraPaintTestCase):
         def _raises(_status, _image, _mask) -> None:
             raise ValueError('bad')
         self._run(_raises)
-        self.assertEqual(self.events, ['started', 'failed', 'finished'])
+        self.assertEqual(self.events, ['started', 'failed', 'finished', 'ended'])
+        self.assertTrue(self.session.failed)
         self.assertTrue(self._run(lambda _status, _image, _mask: None))
 
     def test_duplicate_request_is_ignored(self) -> None:
@@ -194,7 +204,27 @@ class GenerationSessionGenerateTest(IntraPaintTestCase):
             self.assertTrue(self.session.generating)
             self.assertFalse(self._run(lambda *_args: None))
         self._run(_nested)
-        self.assertEqual(self.events, ['started', 'finished'])
+        self.assertEqual(self.events, ['started', 'finished', 'ended'])
+
+    def test_stop_asks_once_and_keeps_arrived_images(self) -> None:
+        """Stopping requests a cancel once, and the images stored before it are still delivered."""
+        def _action(_status, _image, _mask) -> None:
+            self.session.store_result(_solid(QColor(0, 255, 0)), 0)
+            self.session.stop()
+            self.session.stop()
+        self._run(_action)
+        self.assertEqual(self.events, ['started', 'stop', 'finished', 'image 0', 'ended'])
+        self.assertTrue(self.session.stopped)
+        self.assertFalse(self.session.failed)
+
+    def test_stop_does_nothing_when_idle_and_resets_on_the_next_run(self) -> None:
+        """Stop outside a run requests nothing, and a new run starts out not stopped."""
+        self.session.stop()
+        self.assertEqual(self.events, [])
+        self._run(lambda _status, _image, _mask: self.session.stop())
+        self.assertTrue(self.session.stopped)
+        self._run(lambda *_args: None)
+        self.assertFalse(self.session.stopped)
 
     def test_status_updates_record_seeds_and_forward_progress(self) -> None:
         """Seed and subseed reach the cache, and progress text is emitted."""

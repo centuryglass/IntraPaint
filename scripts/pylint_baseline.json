@@ -37,9 +37,6 @@
     "assignment-from-none": 3,
     "unused-import": 1
   },
-  "src/ui/generated_image_selector.py": {
-    "fixme": 1
-  },
   "src/util/application_state.py": {
     "protected-access": 10
   },
