@@ -119,6 +119,11 @@ class GenerationAreaTool(BaseTool):
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
         return self._control_panel
 
+    @property
+    def control_panel(self) -> GenerationAreaToolPanel:
+        """The tool's control panel, which shows the resolution line and asks to open the generation panel."""
+        return self._control_panel
+
     def _on_activate(self, restoring_after_delegation=False) -> None:
         for handle in self._handles.values():
             handle.setVisible(True)

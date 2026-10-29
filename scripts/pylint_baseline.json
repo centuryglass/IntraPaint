@@ -40,10 +40,6 @@
   "src/ui/generated_image_selector.py": {
     "fixme": 1
   },
-  "src/ui/panel/tool_control_panels/generation_area_tool_panel.py": {
-    "no-member": 1,
-    "unbalanced-tuple-unpacking": 1
-  },
   "src/util/application_state.py": {
     "protected-access": 10
   },

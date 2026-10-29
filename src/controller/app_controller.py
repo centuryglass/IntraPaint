@@ -429,6 +429,7 @@ class AppController(MenuBuilder):
         self._tool_controller = ToolController(self._image_stack, self._image_viewer)
         self._tool_panel = ToolPanel()
         self._generation_area_tool = GenerationAreaTool(self._image_stack, self._image_viewer)
+        self._generation_area_tool.control_panel.edit_resolution_requested.connect(self.show_generation_panel)
         self._last_active_tool: Optional[BaseTool] = None
 
         # Fill the lower dock group:
@@ -624,9 +625,16 @@ class AppController(MenuBuilder):
         for image_panel in image_panels:
             image_panel.set_image_generation_controls_visible(show_image_gen_controls)
         self._generation_area_controller.generation_area_visible = show_image_gen_controls
+        # The Stable Diffusion panel owns the resolution, which the generation area panel only summarizes:
+        self._generation_area_tool.control_panel.set_resolution_shown(
+            isinstance(self._generator_control_panel, StableDiffusionPanel))
         generate_action = self.get_action_for_method(self.start_and_manage_inpainting)
         generate_action.setEnabled(self._generator is not None and not isinstance(self._generator, NullGenerator))
         self._update_enabled_actions()
+
+    def show_generation_panel(self) -> None:
+        """Opens the Image generation dock in its tab group."""
+        self._window.generation_dock.set_open(True)
 
     def init_settings(self, settings_modal: SettingsModal) -> None:
         """Load application settings into a SettingsModal"""
