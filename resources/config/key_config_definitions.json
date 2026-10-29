@@ -698,7 +698,7 @@
         "subcategory": "Image Menu",
         "description": "Change the image size without scaling layers.",
         "type": "string",
-        "default": "F2",
+        "default": "Shift+F2",
         "saved": true
     },
     "scale_image_shortcut": {
@@ -864,12 +864,21 @@
         "saved": true
     },
     "copy_layer_shortcut": {
-        "label": "Copy layer",
+        "label": "Duplicate layer",
         "category": "Menu Shortcuts",
         "subcategory": "Layer Menu",
-        "description": "Create a copy of the active layer.",
+        "description": "Create a duplicate of the active layer.",
         "type": "string",
         "default": "Ctrl+Shift+C",
+        "saved": true
+    },
+    "rename_layer_shortcut": {
+        "label": "Rename layer",
+        "category": "Menu Shortcuts",
+        "subcategory": "Layer Menu",
+        "description": "Edit the active layer's name in the layer panel.",
+        "type": "string",
+        "default": "F2",
         "saved": true
     },
     "delete_layer_shortcut": {

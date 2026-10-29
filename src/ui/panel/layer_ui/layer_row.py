@@ -26,7 +26,7 @@ from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
-from src.ui.ink_style import ROW_HOVER, ink_colors
+from src.ui.ink_style import ROW_HOVER, ink_colors, signal_color
 from src.ui.panel.layer_ui.layer_flags import LAYER_FLAGS, LayerStateIcon
 from src.ui.panel.layer_ui.layer_menu import build_layer_menu
 from src.ui.panel.layer_ui.layer_visibility_button import LayerVisibilityButton
@@ -58,7 +58,12 @@ ROW_SPACING = 4
 # Width of the selection stripe on the left edge of the active row and the selected-layer header:
 SELECTION_STRIPE_WIDTH = 3
 SMALL_THUMBNAIL_SIZE = 28
+MEDIUM_THUMBNAIL_SIZE = 36
 LARGE_THUMBNAIL_SIZE = 48
+# Width of the outline a row gets while a drag is about to land in its group, or is refused by it:
+DROP_OUTLINE_WIDTH = 2
+# Used for the refused-drop outline in styles with no signal color:
+FALLBACK_REFUSED_COLOR = QColor(200, 60, 60)
 # Previews of images larger than this on their short side render at a quarter of the size:
 PREVIEW_DOWNSCALE_THRESHOLD = 1000
 PREVIEW_RENDER_DELAY_MS = 500
@@ -70,6 +75,12 @@ MIN_NAME_TEXT = 'Mmm…'
 def selection_stripe_color(widget: QWidget) -> QColor:
     """Returns the color of the stripe marking the active row and the selected-layer header."""
     return widget.palette().color(QPalette.ColorRole.Highlight)
+
+
+def refused_drop_color() -> QColor:
+    """Returns the color that outlines a group a dragged layer can't be dropped into: the signal color the DANGER
+    button weight uses."""
+    return signal_color() or FALLBACK_REFUSED_COLOR
 
 
 def selection_fill_color(widget: QWidget) -> QColor:
@@ -334,6 +345,7 @@ class LayerRow(QWidget):
         self._hovered = False
         self._expanded = True
         self._dragging = False
+        self._drop_outline: Optional[QColor] = None
         self._press_pos: Optional[QPoint] = None
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
 
@@ -466,9 +478,21 @@ class LayerRow(QWidget):
         if self._disclosure is not None:
             self._disclosure.setArrowType(Qt.ArrowType.DownArrow if expanded else Qt.ArrowType.RightArrow)
 
-    def set_large(self, large: bool) -> None:
-        """Uses the large thumbnail, or the small one."""
-        self._thumbnail.set_edge_length(LARGE_THUMBNAIL_SIZE if large else SMALL_THUMBNAIL_SIZE)
+    def set_thumbnail_size(self, edge_length: int) -> None:
+        """Sets the thumbnail's width and height."""
+        self._thumbnail.set_edge_length(edge_length)
+
+    @property
+    def drop_outline(self) -> Optional[QColor]:
+        """The color of the drop outline, or None while the row has none."""
+        return self._drop_outline
+
+    def set_drop_outline(self, color: Optional[QColor]) -> None:
+        """Outlines the row in a color while a dragged layer is about to land in its group or be refused by it, or
+        removes the outline with None."""
+        if color != self._drop_outline:
+            self._drop_outline = color
+            self.update()
 
     def set_meta_shown(self, shown: bool) -> None:
         """Shows or hides the meta line. A shown meta line keeps its height while empty, so every row is as tall."""
@@ -528,13 +552,18 @@ class LayerRow(QWidget):
         painter.setPen(QPen(self.palette().color(QPalette.ColorRole.Mid), 1))
         for x in self.guide_line_xs():
             painter.drawLine(x, 0, x, self.height())
+        if self._drop_outline is not None:
+            painter.setPen(QPen(self._drop_outline, DROP_OUTLINE_WIDTH))
+            painter.drawRect(self.rect().adjusted(1, 1, -1, -1))
         painter.end()
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:  # pylint: disable=invalid-name
-        """Makes the row's layer active on a left click."""
+        """Makes the row's layer active on a left or right click, so the context menu, the selected-layer header and
+        the action bar all act on one layer."""
         assert event is not None
-        if event.button() == Qt.MouseButton.LeftButton:
-            self._press_pos = event.position().toPoint()
+        if event.button() in (Qt.MouseButton.LeftButton, Qt.MouseButton.RightButton):
+            if event.button() == Qt.MouseButton.LeftButton:
+                self._press_pos = event.position().toPoint()
             if self._image_stack.active_layer is not self._layer:
                 self._image_stack.active_layer = self._layer
 

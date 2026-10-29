@@ -189,6 +189,7 @@ class Cache(Config, metaclass=Singleton):
     LAST_BRUSH_COLOR: str
     LAST_FILE_PATH: str
     LAST_NAV_PANEL_TOOL: str
+    LAYER_THUMBNAIL_SIZE: str
     LAST_SEED: str
     LORA_MODELS: str
     MASKED_CONTENT: str

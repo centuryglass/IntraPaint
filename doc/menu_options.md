@@ -30,7 +30,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Show navigation window](#show-navigation-window-ctrlaltw)
      - [Navigation window](#navigation-window)
 4. [Image menu](#image-menu)
-   - [Resize canvas](#resize-canvas-f2)
+   - [Resize canvas](#resize-canvas-shiftf2)
      - [Resize image canvas window](#resize-image-canvas-window)
    - [Scale image](#scale-image-f3)
      - [Scale image window](#scale-image-window)
@@ -66,7 +66,8 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
      - [Rotate layer 90° CCW](#rotate-layer-90-ccw-ctrlshiftl)
    - [New layer](#new-layer-ctrlshiftn)
    - [New layer group](#new-layer-group-ctrlshiftg)
-   - [Copy layer](#copy-layer-ctrlshiftc)
+   - [Duplicate layer](#duplicate-layer-ctrlshiftc)
+   - [Rename layer](#rename-layer-f2)
    - [Delete layer](#delete-layer-ctrlshiftd)
    - [Flatten layer](#flatten-layer-ctrlshiftf)
    - [Merge layer down](#merge-layer-down-ctrlshiftm)
@@ -257,7 +258,7 @@ When **"Move gen. area"** is active, mouse controls match the [generation area t
 
 ## Image menu
 
-### Resize canvas (F2)
+### Resize canvas (Shift+F2)
 
 #### Resize image canvas window
 
@@ -419,7 +420,7 @@ This opens a window you can use to manage image layers.  Layer controls are also
 
 <img src="./labeled_screenshots/layers.png" alt="Screenshot of the layer window, with specific elements numbered."/>
 
-Click and drag any layer to move it within the list.  Right-click a layer to show more options for editing that layer.
+Click and drag any layer to move it within the list.  Right-click a layer to select it and show more options for editing it, grouped by purpose, with each command's key binding beside it.  Dragging a layer shows where it will land: the label at the marker's right end names the spot, a group it will enter is outlined, and a locked group is outlined in red and refuses the drop.  Press [F2](#rename-layer-f2) to rename the active layer.  The panel's **More** button holds the thumbnail size (Auto, Small, Medium or Large), the commands that select the previous or next layer, and, in the docked panel, a button that opens this window.
 
 1. **Opacity slider**: Controls the opacity of the active layer.
 2. **Layer mode**:  Sets the blending/compositing mode of the active layer, controlling how its content is rendered into the image.  See the [W3 Compositing and Blending Standard](https://www.w3.org/TR/compositing-1/) for in-depth descriptions and example images of the available modes.
@@ -510,9 +511,13 @@ Creates a new image layer.  If the active layer is an unlocked layer group, the 
 
 Creates a new layer group.  If the active layer is an unlocked layer group, the new group will be placed within that group at the top. Otherwise, the new group will be placed directly above the active layer.
 
-### Copy layer (Ctrl+Shift+C)
+### Duplicate layer (Ctrl+Shift+C)
 
 Creates a new copy of the current active layer, placing it above the active layer.
+
+### Rename layer (F2)
+
+Edits the active layer's name in the layer panel, opening any layer groups that hide its row. Enter applies the new name, and Escape cancels. With the image selected instead of a layer, this edits the image's name in the strip at the top of the layer panel.
 
 ### Delete layer (Ctrl+Shift+D)
 

@@ -6,12 +6,15 @@
   layers and deleting rows for removed ones, so nested changes and undo can't leave it out of step.
 - Activating a layer, or adding one, expands the groups above it. Locking a group collapses it and the groups in it.
 - Dragging a row onto the list moves its layer. The upper half of a row inserts above it, and the lower half below it,
-  or into an expanded group at its top. A marker shows where the layer lands, indented to its depth.
+  or into an expanded group at its top. A marker shows where the layer lands, indented to its depth, with a label
+  naming the spot. A drop inside a group outlines the group's row and its visible rows in the selection stripe color,
+  and a drop onto a locked group outlines only that group's row in the refused-drop color, with no marker.
 """
+from dataclasses import dataclass
 from typing import Optional
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QSize, Qt, QTimer
-from PySide6.QtGui import QDragMoveEvent, QDropEvent, QMouseEvent, QPainter, QPaintEvent, QPalette
+from PySide6.QtGui import QColor, QDragMoveEvent, QDropEvent, QMouseEvent, QPainter, QPaintEvent, QPalette
 from PySide6.QtWidgets import QApplication, QFrame, QHBoxLayout, QLabel, QMenu, QScrollArea, QSizePolicy, \
     QVBoxLayout, QWidget
 
@@ -21,7 +24,8 @@ from src.image.layers.layer_group import LayerGroup
 from src.ui.ink_style import ROW_HOVER
 from src.ui.panel.layer_ui.layer_menu import build_layer_menu
 from src.ui.panel.layer_ui.layer_row import (INDENT, MIN_NAME_TEXT, ROW_PADDING, ROW_SPACING, SELECTION_STRIPE_WIDTH,
-                                             LayerNameLabel, LayerRow, selection_fill_color, selection_stripe_color)
+                                             SMALL_THUMBNAIL_SIZE, LayerNameLabel, LayerRow, refused_drop_color,
+                                             selection_fill_color, selection_stripe_color)
 from src.ui.panel.layer_ui.layer_visibility_button import LayerVisibilityButton
 from src.ui.widget.panel_header import GlyphButton
 
@@ -37,12 +41,16 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 IMAGE_SIZE_TEXT = _tr('{width} x {height}')
 IMAGE_MENU_TOOLTIP = _tr('Image commands')
 IMAGE_STRIP_TOOLTIP = _tr('The whole image. Click to select it.')
+DROP_INTO_LABEL = _tr('Into {name}')
+DROP_ABOVE_LABEL = _tr('Above {name}')
+DROP_BELOW_LABEL = _tr('Below {name}')
 
 # Rows the list keeps room for, under the image strip:
 MIN_VISIBLE_ROWS = 2
 # Text whose width `LayerList.set_readable_names` keeps room for in a row's name:
 READABLE_NAME_TEXT = 'Background'
 INSERT_MARKER_HEIGHT = 2
+DROP_LABEL_PADDING = 3
 SCROLL_TIMER_INTERVAL_MS = 50
 SCROLL_HEIGHT_THRESHOLD = 1 / 8
 MIN_SCROLL_SPEED = 2
@@ -134,9 +142,9 @@ class ImageStrip(QWidget):
         self._size_label.setText(IMAGE_SIZE_TEXT.format(width=size.width(), height=size.height()))
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:  # pylint: disable=invalid-name
-        """Selects the root on a left click."""
+        """Selects the root on a left or right click, so the context menu acts on the active layer."""
         assert event is not None
-        if event.button() == Qt.MouseButton.LeftButton:
+        if event.button() in (Qt.MouseButton.LeftButton, Qt.MouseButton.RightButton):
             self._image_stack.active_layer = self._image_stack.layer_stack
 
     def enterEvent(self, event) -> None:  # pylint: disable=invalid-name
@@ -174,6 +182,33 @@ class _InsertMarker(QWidget):
         painter.end()
 
 
+class _DropLabel(QLabel):
+    """The text at the insert marker's right end that names where a dragged layer would land."""
+
+    def __init__(self, parent: QWidget) -> None:
+        super().__init__(parent)
+        self.setAutoFillBackground(True)
+        self.setMargin(DROP_LABEL_PADDING)
+        self.hide()
+
+    def refresh_colors(self) -> None:
+        """Takes the selection stripe color for its background."""
+        palette = self.palette()
+        palette.setColor(QPalette.ColorRole.Window, selection_stripe_color(self))
+        palette.setColor(QPalette.ColorRole.WindowText, palette.color(QPalette.ColorRole.HighlightedText))
+        self.setPalette(palette)
+
+
+@dataclass(frozen=True)
+class _DropSpot:
+    """Where a layer dropped at some y would land, before the locked-group check."""
+    parent: LayerGroup
+    index: int
+    marker_y: int
+    depth: int
+    label: str
+
+
 class LayerList(QScrollArea):
     """Shows the image strip and a row for every layer, and moves layers dropped onto it."""
 
@@ -183,7 +218,7 @@ class LayerList(QScrollArea):
         self._rows: dict[Layer, LayerRow] = {}
         # Layers in display order, as last placed in the layout:
         self._order: list[Layer] = []
-        self._large = False
+        self._thumbnail_size = SMALL_THUMBNAIL_SIZE
         self._meta_shown = True
         self._readable_names = False
         self.setWidgetResizable(True)
@@ -204,6 +239,9 @@ class LayerList(QScrollArea):
         self.setWidget(self._content)
         self._insert_marker = _InsertMarker(self._content)
         self._insert_marker.hide()
+        self._drop_label = _DropLabel(self._content)
+        # Rows outlined for the drop in progress:
+        self._outlined_rows: list[LayerRow] = []
         # Where a drop would put the dragged layer: its new parent and index.
         self._drop_target: Optional[tuple[LayerGroup, int]] = None
 
@@ -233,12 +271,34 @@ class LayerList(QScrollArea):
         """Returns the row showing a layer. Raises KeyError for the root and for layers not in the stack."""
         return self._rows[layer]
 
-    def set_large(self, large: bool) -> None:
-        """Uses large thumbnails in every row, or small ones."""
-        self._large = large
+    @property
+    def thumbnail_size(self) -> int:
+        """The width and height of every row's thumbnail."""
+        return self._thumbnail_size
+
+    @property
+    def insert_marker_text(self) -> str:
+        """The text naming where the dragged layer would land, or an empty string while no drop target shows."""
+        return self._drop_label.text() if self._drop_label.isVisibleTo(self._content) else ''
+
+    def set_thumbnail_size(self, edge_length: int) -> None:
+        """Sets the thumbnail size of every row, including rows created later."""
+        self._thumbnail_size = edge_length
         for row in self._rows.values():
-            row.set_large(large)
+            row.set_thumbnail_size(edge_length)
         self.updateGeometry()
+
+    def start_rename(self, layer: Layer) -> None:
+        """Scrolls a layer's row into view, opening the groups above it, and starts editing its name. The root's name
+        edits in the image strip."""
+        if layer is self._image_stack.layer_stack:
+            self.ensureWidgetVisible(self._strip, 0, 0)
+            self._strip.name_label.activate_input_mode()
+            return
+        row = self._rows[layer]
+        self._open_parent_groups(layer)
+        self.ensureWidgetVisible(row, 0, 0)
+        row.name_label.activate_input_mode()
 
     def set_readable_names(self, readable: bool) -> None:
         """Sets whether the list's minimum width leaves room to read the start of a layer name, instead of only its
@@ -314,7 +374,7 @@ class LayerList(QScrollArea):
 
     def _create_row(self, layer: Layer, depth: int) -> LayerRow:
         row = LayerRow(layer, self._image_stack, depth)
-        row.set_large(self._large)
+        row.set_thumbnail_size(self._thumbnail_size)
         row.set_meta_shown(self._meta_shown)
         row.set_active(layer is self._image_stack.active_layer)
         row.expanded_changed.connect(self._update_row_visibility)
@@ -390,32 +450,39 @@ class LayerList(QScrollArea):
 
     # Drag and drop:
 
+    def _drop_spot(self, y: int) -> _DropSpot:
+        """Returns where a layer dropped at a y position in the list's content would land."""
+        root = self._image_stack.layer_stack
+        shown = [self._rows[layer] for layer in self._order if not self._rows[layer].isHidden()]
+        if len(shown) == 0:
+            return _DropSpot(root, 0, self._strip.geometry().bottom() + 1, 0, DROP_INTO_LABEL.format(name=root.name))
+        if y < shown[0].y():
+            return _DropSpot(root, 0, self._strip.geometry().bottom() + 1, 0,
+                             DROP_ABOVE_LABEL.format(name=shown[0].layer.name))
+        if y >= shown[-1].geometry().bottom():
+            return _DropSpot(root, root.count, shown[-1].geometry().bottom() + 1, 0,
+                             DROP_BELOW_LABEL.format(name=shown[-1].layer.name))
+        row = next(row for row in shown if row.y() <= y <= row.geometry().bottom())
+        layer = row.layer
+        parent = layer.layer_parent
+        assert isinstance(parent, LayerGroup)
+        index = parent.get_layer_index(layer)
+        assert index is not None
+        if y < row.y() + row.height() // 2:
+            return _DropSpot(parent, index, row.y(), row.depth, DROP_ABOVE_LABEL.format(name=layer.name))
+        if isinstance(layer, LayerGroup) and row.is_expanded():
+            return _DropSpot(layer, 0, row.geometry().bottom() + 1, row.depth + 1,
+                             DROP_INTO_LABEL.format(name=layer.name))
+        return _DropSpot(parent, index + 1, row.geometry().bottom() + 1, row.depth,
+                         DROP_BELOW_LABEL.format(name=layer.name))
+
     def drop_target(self, y: int) -> Optional[tuple[LayerGroup, int, int, int]]:
         """Returns where a layer dropped at a y position in the list's content would land: its new parent and index,
         and the marker's y and nesting depth. Returns None where the target group is locked."""
-        root = self._image_stack.layer_stack
-        shown = [self._rows[layer] for layer in self._order if not self._rows[layer].isHidden()]
-        target: tuple[LayerGroup, int, int, int]
-        if len(shown) == 0 or y < shown[0].y():
-            target = (root, 0, self._strip.geometry().bottom() + 1, 0)
-        elif y >= shown[-1].geometry().bottom():
-            target = (root, root.count, shown[-1].geometry().bottom() + 1, 0)
-        else:
-            row = next(row for row in shown if row.y() <= y <= row.geometry().bottom())
-            layer = row.layer
-            parent = layer.layer_parent
-            assert isinstance(parent, LayerGroup)
-            index = parent.get_layer_index(layer)
-            assert index is not None
-            if y < row.y() + row.height() // 2:
-                target = (parent, index, row.y(), row.depth)
-            elif isinstance(layer, LayerGroup) and row.is_expanded():
-                target = (layer, 0, row.geometry().bottom() + 1, row.depth + 1)
-            else:
-                target = (parent, index + 1, row.geometry().bottom() + 1, row.depth)
-        if target[0].locked or target[0].parent_locked:
+        spot = self._drop_spot(y)
+        if spot.parent.locked or spot.parent.parent_locked:
             return None
-        return target
+        return spot.parent, spot.index, spot.marker_y, spot.depth
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # pylint: disable=invalid-name
         """Handles layer rows dragged over and dropped on the list's content."""
@@ -441,21 +508,24 @@ class LayerList(QScrollArea):
             return
         event.accept()
         position = event.position().toPoint()
-        target = self.drop_target(position.y())
+        spot = self._drop_spot(position.y())
         moved = source.layer
-        if target is not None and (target[0] is moved
-                                   or (isinstance(moved, LayerGroup) and moved.contains_recursive(target[0]))):
-            target = None
-        if target is None:
-            self._clear_drop_target()
+        self._clear_drop_target()
+        if spot.parent is moved or (isinstance(moved, LayerGroup) and moved.contains_recursive(spot.parent)):
+            pass
+        elif spot.parent.locked or spot.parent.parent_locked:
+            self._outline_rows([spot.parent], refused_drop_color())
         else:
-            parent, index, marker_y, depth = target
-            self._drop_target = (parent, index)
-            x = SELECTION_STRIPE_WIDTH + ROW_PADDING + depth * INDENT
-            self._insert_marker.setGeometry(x, marker_y - INSERT_MARKER_HEIGHT // 2,
+            self._drop_target = (spot.parent, spot.index)
+            x = SELECTION_STRIPE_WIDTH + ROW_PADDING + spot.depth * INDENT
+            self._insert_marker.setGeometry(x, spot.marker_y - INSERT_MARKER_HEIGHT // 2,
                                             max(self._content.width() - x, 0), INSERT_MARKER_HEIGHT)
             self._insert_marker.show()
             self._insert_marker.raise_()
+            self._show_drop_label(spot)
+            if spot.parent is not self._image_stack.layer_stack:
+                self._outline_rows([spot.parent, *(layer for layer in spot.parent.recursive_child_layers)],
+                                   selection_stripe_color(self))
         self._update_autoscroll(self._content.mapTo(self.viewport(), position).y())
 
     def drop(self, event: QDropEvent) -> None:
@@ -478,9 +548,35 @@ class LayerList(QScrollArea):
                 return
         self._image_stack.move_layer(moved, new_parent, index)
 
+    def _show_drop_label(self, spot: _DropSpot) -> None:
+        """Puts the landing spot's name at the marker's right end, above the line unless that leaves the list."""
+        label = self._drop_label
+        label.refresh_colors()
+        label.setText(spot.label)
+        label.adjustSize()
+        x = max(self._content.width() - label.width(), 0)
+        y = spot.marker_y - INSERT_MARKER_HEIGHT // 2 - label.height()
+        if y < 0:
+            y = spot.marker_y + INSERT_MARKER_HEIGHT
+        label.move(x, y)
+        label.show()
+        label.raise_()
+
+    def _outline_rows(self, layers: list[Layer], color: QColor) -> None:
+        """Outlines the rows that show for a list of layers."""
+        for layer in layers:
+            row = self._rows.get(layer)
+            if row is not None and not row.isHidden():
+                row.set_drop_outline(color)
+                self._outlined_rows.append(row)
+
     def _clear_drop_target(self) -> None:
         self._drop_target = None
         self._insert_marker.hide()
+        self._drop_label.hide()
+        for row in self._outlined_rows:
+            row.set_drop_outline(None)
+        self._outlined_rows = []
 
     def _drag_ended_slot(self) -> None:
         self._clear_drop_target()

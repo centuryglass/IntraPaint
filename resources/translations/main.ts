@@ -1438,6 +1438,36 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
+        <source>Layer thumbnail size:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Size of the previews in the layer panel's rows. 'Auto' uses large previews when the panel has room for them.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Auto</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Small</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Medium</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Large</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
         <source>Saved layer window placement</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3078,12 +3108,22 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Copy layer</source>
+        <source>Duplicate layer</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Create a copy of the active layer.</source>
+        <source>Create a duplicate of the active layer.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Rename layer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Edit the active layer's name in the layer panel.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6975,6 +7015,21 @@ Keys: {decrease} / {increase}</source>
         <source>The whole image. Click to select it.</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_list.py"/>
+        <source>Into {name}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_list.py"/>
+        <source>Above {name}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_list.py"/>
+        <source>Below {name}</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ui.panel.layer_ui.layer_menu</name>
@@ -6990,7 +7045,12 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
-        <source>Copy</source>
+        <source>Move to top</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Duplicate</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -7025,7 +7085,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
-        <source>Clear selected</source>
+        <source>Clear selected pixels</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -7060,7 +7120,27 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Rotate 90° clockwise</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Rotate 90° counter-clockwise</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
         <source>Select layer contents</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Crop and resize</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_menu.py"/>
+        <source>Mirror and rotate</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -7113,6 +7193,16 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Duplicate layer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Create a duplicate of the active layer above it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
         <source>Delete layer</source>
         <translation type="unfinished"></translation>
     </message>
@@ -7149,6 +7239,61 @@ Keys: {decrease} / {increase}</source>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
         <source>Merge the active layer with the one below it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>New</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Group</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Duplicate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Up</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Down</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Merge</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Delete</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Thumbnails:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Select previous layer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Select next layer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
+        <source>Show layer window</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
