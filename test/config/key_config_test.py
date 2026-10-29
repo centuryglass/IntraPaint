@@ -1,9 +1,14 @@
-"""Tests KeyConfig keybinding validation."""
+"""Tests KeyConfig keybinding validation and the migration of saved key bindings."""
+import json
+import os
+import shutil
+import tempfile
 from unittest.mock import patch
 
 from PySide6.QtCore import Qt
 
-from src.config.key_config import KeyConfig
+from src.config.config import Config
+from src.config.key_config import CONFIG_DEFINITIONS, KeyConfig
 from src.tools.base_tool import FIXED_ASPECT_HINT, BaseTool
 from test.base_test_case import IntraPaintTestCase
 
@@ -44,6 +49,44 @@ class KeyConfigValidationTest(IntraPaintTestCase):
         self.assertEqual(1, len(errors))
         self.assertIn('with speed modifier', errors[0])
         self.assertIn('Alt+Z', errors[0])
+
+
+class _ScratchKeyConfig(Config):
+    """A key config that isn't the shared singleton, with `KeyConfig`'s definitions and previous defaults."""
+    PREVIOUS_DEFAULTS = KeyConfig.PREVIOUS_DEFAULTS
+
+    def __init__(self, json_path: str) -> None:
+        super().__init__(CONFIG_DEFINITIONS, json_path, _ScratchKeyConfig)
+
+
+class KeyConfigMigrationTest(IntraPaintTestCase):
+    """Saved key bindings from before a default changed follow the new default, unless the user changed them."""
+
+    def _load(self, saved: dict[str, str]) -> _ScratchKeyConfig:
+        temp_dir = tempfile.mkdtemp(prefix='intrapaint-key-config-test-')
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
+        json_path = os.path.join(temp_dir, 'key_config.json')
+        with open(json_path, 'w', encoding='utf-8') as file:
+            json.dump(saved, file)
+        config = _ScratchKeyConfig(json_path)
+        self.addCleanup(config._save_timer.stop)  # pylint: disable=protected-access
+        return config
+
+    def test_rename_and_resize_defaults(self) -> None:
+        """Rename layer takes F2, and Resize canvas moved to Shift+F2."""
+        self.assertEqual('F2', KeyConfig().get(KeyConfig.RENAME_LAYER_SHORTCUT))
+        self.assertEqual('Shift+F2', KeyConfig().get(KeyConfig.RESIZE_CANVAS_SHORTCUT))
+
+    def test_saved_old_resize_default_moves(self) -> None:
+        """An unversioned file that holds the old F2 for Resize canvas loads the new default."""
+        config = self._load({'resize_canvas_shortcut': 'F2'})
+        self.assertEqual('Shift+F2', config.get('resize_canvas_shortcut'))
+        self.assertEqual('F2', config.get('rename_layer_shortcut'))
+
+    def test_custom_resize_binding_kept(self) -> None:
+        """An unversioned file keeps a Resize canvas binding the user chose."""
+        config = self._load({'resize_canvas_shortcut': 'Ctrl+Alt+Z'})
+        self.assertEqual('Ctrl+Alt+Z', config.get('resize_canvas_shortcut'))
 
 
 class KeyConfigModifierTest(IntraPaintTestCase):

@@ -13,7 +13,7 @@ from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
 
-ICON_PATH = 'resources/icons/layer/minus_icon.svg'
+ICON_PATH = 'resources/icons/layer/delete_icon.svg'
 ICON_SIZE = 16
 
 

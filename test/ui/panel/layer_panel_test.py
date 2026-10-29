@@ -6,12 +6,14 @@ by depth, shown only under expanded groups, and laid out without overlap or sque
 import re
 import sys
 from typing import Callable
+from unittest.mock import patch
 
 from PySide6 import QtTest
 from PySide6.QtCore import QSize, QEvent, Qt, QPoint, QPointF
 from PySide6.QtGui import QEnterEvent
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication, QComboBox, QMenu, QPushButton, QToolButton, QWidget
 
+from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
@@ -22,13 +24,18 @@ from src.image.layers.text_layer import TextLayer
 from src.ui.layout.panel_fit import Orientation
 from src.ui.panel.layer_ui.blend_mode_combo_box import COMPOSITING_HEADING, COMPOSITING_MODES, MODE_FAMILIES
 from src.ui.panel.layer_ui.layer_flags import ALPHA_LOCK_FLAG, ISOLATE_FLAG, LOCK_FLAG, LayerFlag, LayerFlagButton
-from src.ui.panel.layer_ui.layer_list import LayerList
+from src.ui.panel.layer_ui.layer_list import DROP_ABOVE_LABEL, DROP_BELOW_LABEL, DROP_INTO_LABEL, LayerList
 from src.ui.panel.layer_ui.layer_menu import MENU_OPTION_MOVE_UP, MENU_OPTION_MOVE_DOWN, MENU_OPTION_DELETE, \
     MENU_OPTION_MERGE_DOWN, MENU_OPTION_RENAME, MENU_OPTION_CROP_TO_SELECTION, MENU_OPTION_MIRROR_HORIZONTAL, \
-    MENU_OPTION_MIRROR_VERTICAL
+    MENU_OPTION_MIRROR_VERTICAL, MENU_OPTION_DUPLICATE, MENU_OPTION_MOVE_TO_TOP, MENU_OPTION_MERGE_GROUP, \
+    MENU_OPTION_MERGE_ALL_VISIBLE, MENU_OPTION_FLATTEN, MENU_OPTION_CLEAR_SELECTED, MENU_OPTION_COPY_SELECTED, \
+    MENU_OPTION_SELECT_CONTENT, MENU_OPTION_LAYER_TO_IMAGE_SIZE, MENU_OPTION_CROP_TO_CONTENT, \
+    MENU_OPTION_ROTATE_CW, MENU_OPTION_ROTATE_CCW, SUBMENU_CROP_AND_RESIZE, SUBMENU_MIRROR_AND_ROTATE
 from src.ui.panel.layer_ui.layer_panel import LayerPanel, ADD_BUTTON_TITLE, MERGE_DOWN_BUTTON_TITLE, \
-    DELETE_BUTTON_TITLE
-from src.ui.panel.layer_ui.layer_row import INDENT, LayerRow, layer_meta_text
+    DELETE_BUTTON_TITLE, DUPLICATE_BUTTON_TITLE, SELECT_NEXT_LABEL, SELECT_PREVIOUS_LABEL, SHOW_WINDOW_LABEL
+from src.ui.panel.layer_ui.layer_row import (INDENT, LARGE_THUMBNAIL_SIZE, MEDIUM_THUMBNAIL_SIZE,
+                                             SMALL_THUMBNAIL_SIZE, LayerRow, layer_meta_text, refused_drop_color,
+                                             selection_stripe_color)
 from src.ui.panel.layer_ui.layer_visibility_button import LayerVisibilityButton
 from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
@@ -818,6 +825,8 @@ class LayerPanelTest(IntraPaintTestCase):
         flush_layouts()
         properties, layer_list = self.panel.properties, self.panel.layer_list
         self.assertLess(properties.geometry().bottom(), layer_list.y())
+        # The strip is as large as the plan, since the labeled action bar is wider than the fixture's panel:
+        self.panel.resize(900, 240)
         self.panel.plan_in(Orientation.STRIP, QSize(900, 240))
         flush_layouts()
         self.assertLess(properties.geometry().right(), layer_list.x())
@@ -952,3 +961,226 @@ class LayerPanelTest(IntraPaintTestCase):
         self._drop(self.bottom, self.nested_child, below=False)
         self.assertIs(self.bottom.layer_parent, self.image_stack.layer_stack)
         self.assertEqual(UndoStack().undo_count(), 0)
+
+    def test_drop_marker_names_the_landing_spot(self) -> None:
+        """The marker's label says whether the layer lands above, below or into the layer under the pointer."""
+        layer_list = self.panel.layer_list
+        flush_layouts()
+        for target, below, expected in ((self.bottom, False, DROP_ABOVE_LABEL.format(name='bottom')),
+                                        (self.inner_top, True, DROP_BELOW_LABEL.format(name='inner_top')),
+                                        (self.group, True, DROP_INTO_LABEL.format(name='group'))):
+            row = self.row(target)
+            y_offset = row.height() * 3 // 4 if below else row.height() // 4
+            layer_list.drag_move(_DragEvent(self.row(self.nested_child), QPointF(row.width() / 2, row.y() + y_offset)))
+            self.assertEqual(layer_list.insert_marker_text, expected)
+        layer_list.drag_move(_DragEvent(self.row(self.group), QPointF(5, 0)))
+        self.assertEqual(layer_list.insert_marker_text, DROP_ABOVE_LABEL.format(name='group'))
+        layer_list.drop(_DragEvent(self.row(self.group), QPointF(5, 0)))
+        self.assertEqual(layer_list.insert_marker_text, '')
+
+    def test_drop_into_group_outlines_its_rows(self) -> None:
+        """A drop inside a group outlines the group's row and its visible rows in the selection stripe color, and the
+        outline goes when the drag leaves."""
+        layer_list = self.panel.layer_list
+        layer_list.set_expanded(self.nested, False)
+        flush_layouts()
+        target = self.row(self.inner_top)
+        layer_list.drag_move(_DragEvent(self.row(self.bottom), QPointF(5, target.y() + target.height() // 4)))
+        stripe = selection_stripe_color(layer_list)
+        outlined = {row.layer.name for row in layer_list.rows if row.drop_outline == stripe}
+        self.assertEqual(outlined, {'group', 'inner_top', 'nested', 'inner_bottom'})
+        layer_list.drag_move(_DragEvent(self.row(self.bottom), QPointF(5, self.row(self.bottom).y() + 1)))
+        self.assertEqual([row for row in layer_list.rows if row.drop_outline is not None], [])
+
+    def test_drop_into_locked_group_outlines_only_that_group(self) -> None:
+        """A drop onto a locked group outlines its row in the refused-drop color, with no marker."""
+        layer_list = self.panel.layer_list
+        self.nested.locked = True
+        layer_list.set_expanded(self.nested, True)
+        flush_layouts()
+        target = self.row(self.nested_child)
+        layer_list.drag_move(_DragEvent(self.row(self.bottom), QPointF(5, target.y() + target.height() // 4)))
+        outlined = {row.layer.name: row.drop_outline for row in layer_list.rows if row.drop_outline is not None}
+        self.assertEqual(outlined, {'nested': refused_drop_color()})
+        self.assertEqual(layer_list.insert_marker_text, '')
+
+    # Right-click, menu groups and rename:
+
+    def test_right_click_selects_the_row(self) -> None:
+        """Right-pressing a row makes its layer active, so the menu acts on the active layer."""
+        self.assertIs(self.image_stack.active_layer, self.bottom)
+        strip = self.panel.layer_list.image_strip
+        QtTest.QTest.mousePress(self.row(self.inner_top), Qt.MouseButton.RightButton)
+        self.assertIs(self.image_stack.active_layer, self.inner_top)
+        QtTest.QTest.mousePress(strip, Qt.MouseButton.RightButton)
+        self.assertIs(self.image_stack.active_layer, self.image_stack.layer_stack)
+
+    def test_menu_action_acts_on_the_clicked_layer(self) -> None:
+        """After a right-press selects a row, choosing Duplicate from its menu duplicates that row's layer. The menu
+        isn't opened, since `conftest.py` fails a test that opens one."""
+        row = self.row(self.inner_top)
+        QtTest.QTest.mousePress(row, Qt.MouseButton.RightButton)
+        self.assertIs(self.image_stack.active_layer, self.inner_top)
+        menu = row.build_menu()
+        self.assertEqual(menu.title(), 'inner_top')
+        next(action for action in menu.actions() if action.text() == MENU_OPTION_DUPLICATE).trigger()
+        self.assertEqual(self.group.count, 4)
+        self.assertEqual(self.group.get_layer_by_index(0).name, 'inner_top copy')
+
+    def test_menu_groups_and_separators(self) -> None:
+        """A layer's menu has its commands in groups: rename, move, duplicate, merge, selection, submenus, delete."""
+        def _texts(menu: QMenu) -> list[str]:
+            return ['-' if action.isSeparator() else action.text() for action in menu.actions()]
+
+        menu = self.row(self.inner_top).build_menu()
+        self.assertEqual(_texts(menu), [
+            MENU_OPTION_RENAME, '-',
+            MENU_OPTION_MOVE_UP, MENU_OPTION_MOVE_DOWN, MENU_OPTION_MOVE_TO_TOP, '-',
+            MENU_OPTION_DUPLICATE, '-',
+            MENU_OPTION_MERGE_DOWN, MENU_OPTION_MERGE_ALL_VISIBLE, MENU_OPTION_FLATTEN, '-',
+            MENU_OPTION_CLEAR_SELECTED, MENU_OPTION_COPY_SELECTED, MENU_OPTION_SELECT_CONTENT, '-',
+            SUBMENU_CROP_AND_RESIZE, SUBMENU_MIRROR_AND_ROTATE, '-',
+            MENU_OPTION_DELETE])
+        submenus = {action.text(): action.menu() for action in menu.actions() if action.menu() is not None}
+        self.assertEqual(_texts(submenus[SUBMENU_CROP_AND_RESIZE]),
+                         [MENU_OPTION_LAYER_TO_IMAGE_SIZE, MENU_OPTION_CROP_TO_CONTENT, MENU_OPTION_CROP_TO_SELECTION])
+        self.assertEqual(_texts(submenus[SUBMENU_MIRROR_AND_ROTATE]),
+                         [MENU_OPTION_MIRROR_HORIZONTAL, MENU_OPTION_MIRROR_VERTICAL, MENU_OPTION_ROTATE_CW,
+                          MENU_OPTION_ROTATE_CCW])
+
+    def test_menu_move_to_top(self) -> None:
+        """Move to top is disabled for the top layer, and moves any other layer to the top of the stack."""
+        self.assertFalse(self._menu_actions(self.group)[MENU_OPTION_MOVE_TO_TOP])
+        self.assertTrue(self._menu_actions(self.nested_child)[MENU_OPTION_MOVE_TO_TOP])
+        menu = self.row(self.nested_child).build_menu()
+        next(action for action in menu.actions() if action.text() == MENU_OPTION_MOVE_TO_TOP).trigger()
+        self.assertIs(self.image_stack.layer_stack.get_layer_by_index(0), self.nested_child)
+        self.assert_panel_matches_stack()
+
+    def test_menu_merge_group_only_for_groups(self) -> None:
+        """Merge group is in a group's menu and not in a layer's menu."""
+        self.assertIn(MENU_OPTION_MERGE_GROUP, self._menu_actions(self.group))
+        self.assertNotIn(MENU_OPTION_MERGE_GROUP, self._menu_actions(self.inner_top))
+
+    def test_menu_rotate_needs_a_transform_layer(self) -> None:
+        """A group's rotate options are disabled, and rotating a layer from the menu rotates that layer."""
+        def _rotate_actions(menu: QMenu) -> list:
+            submenu = next(action.menu() for action in menu.actions() if action.text() == SUBMENU_MIRROR_AND_ROTATE)
+            return [action for action in submenu.actions() if action.text() in (MENU_OPTION_ROTATE_CW,
+                                                                                MENU_OPTION_ROTATE_CCW)]
+
+        # The menus must outlive their actions:
+        group_menu = self.row(self.group).build_menu()
+        layer_menu = self.row(self.inner_top).build_menu()
+        self.assertFalse(any(action.isEnabled() for action in _rotate_actions(group_menu)))
+        clockwise = _rotate_actions(layer_menu)[0]
+        self.assertTrue(clockwise.isEnabled())
+        with patch.object(ImageLayer, 'rotate') as rotate:
+            clockwise.trigger()
+        rotate.assert_called_once_with(90)
+
+    def test_menu_shows_key_hints(self) -> None:
+        """Menu actions show their KeyConfig bindings."""
+        menu = self.row(self.inner_top).build_menu()
+        shortcuts = {action.text(): action.shortcut().toString() for action in menu.actions()}
+        self.assertEqual(shortcuts[MENU_OPTION_RENAME], KeyConfig().get(KeyConfig.RENAME_LAYER_SHORTCUT))
+        self.assertEqual(shortcuts[MENU_OPTION_DUPLICATE], KeyConfig().get(KeyConfig.COPY_LAYER_SHORTCUT))
+
+    def test_rename_starts_in_a_collapsed_group(self) -> None:
+        """Renaming the active layer opens the groups above its row and starts editing there."""
+        self.image_stack.active_layer = self.nested_child
+        self.panel.layer_list.set_expanded(self.nested, False)
+        self.panel.layer_list.set_expanded(self.group, False)
+        flush_layouts()
+        self.assertTrue(self.row(self.nested_child).isHidden())
+        self.panel.start_rename()
+        flush_layouts()
+        label = self.row(self.nested_child).name_label
+        self.assertFalse(self.row(self.nested_child).isHidden())
+        self.assertTrue(label.is_requesting_input())
+        self.assertFalse(self.row(self.bottom).name_label.is_requesting_input())
+
+    def test_rename_root_edits_the_image_strip(self) -> None:
+        """Renaming with the root active edits the image strip's name."""
+        self.image_stack.active_layer = self.image_stack.layer_stack
+        self.panel.start_rename()
+        self.assertTrue(self.panel.layer_list.image_strip.name_label.is_requesting_input())
+
+    # Action bar:
+
+    def _bar_button(self, title: str):
+        return next(button for button in self.panel.findChildren(QToolButton)
+                    if button.accessibleName() == title)
+
+    def test_duplicate_button(self) -> None:
+        """The action bar's Duplicate button duplicates the active layer."""
+        self.image_stack.active_layer = self.inner_top
+        self._bar_button(DUPLICATE_BUTTON_TITLE).click()
+        self.assertEqual(self.group.get_layer_by_index(0).name, 'inner_top copy')
+
+    def test_action_bar_forms(self) -> None:
+        """The action bar shows text beside its icons where there is room, and bare icons in a narrow panel."""
+        button = self._bar_button(DELETE_BUTTON_TITLE)
+        self.panel.resize(700, 900)
+        self.panel.plan_in(Orientation.SIDE, QSize(700, 900))
+        flush_layouts()
+        self.assertEqual(button.toolButtonStyle(), Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.panel.resize(PANEL_SIZE)
+        self.panel.plan_in(Orientation.SIDE, QSize(PANEL_SIZE.width() - 190, 900))
+        flush_layouts()
+        self.assertEqual(button.toolButtonStyle(), Qt.ToolButtonStyle.ToolButtonIconOnly)
+
+    # Thumbnail size and the More popover:
+
+    def test_thumbnail_size_choice_resizes_rows(self) -> None:
+        """A fixed thumbnail size applies to every row at once, and to rows created later. Auto goes back to the
+        fitted size."""
+        sizes = {'Small': SMALL_THUMBNAIL_SIZE, 'Medium': MEDIUM_THUMBNAIL_SIZE, 'Large': LARGE_THUMBNAIL_SIZE}
+        for choice, size in sizes.items():
+            Cache().set(Cache.LAYER_THUMBNAIL_SIZE, choice)
+            self.assertEqual({row.thumbnail.width() for row in self.panel.layer_list.rows}, {size}, choice)
+        new_layer = self.image_stack.create_layer('new')
+        self.assertEqual(self.row(new_layer).thumbnail.width(), LARGE_THUMBNAIL_SIZE)
+        Cache().set(Cache.LAYER_THUMBNAIL_SIZE, 'Auto')
+        self.panel.plan_in(Orientation.SIDE, QSize(170, 900))
+        flush_layouts()
+        self.assertEqual(self.row(self.bottom).thumbnail.width(), SMALL_THUMBNAIL_SIZE)
+
+    def test_fixed_thumbnail_size_keeps_toggle_labels_fit_driven(self) -> None:
+        """A fixed size doesn't change when the toggles get text labels."""
+        Cache().set(Cache.LAYER_THUMBNAIL_SIZE, 'Small')
+        button = self._flag_button(LOCK_FLAG)
+        self.panel.plan_in(Orientation.SIDE, QSize(600, 900))
+        flush_layouts()
+        self.assertEqual(button.toolButtonStyle(), Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.assertEqual(self.row(self.bottom).thumbnail.width(), SMALL_THUMBNAIL_SIZE)
+
+    def test_more_popover_sets_thumbnail_size(self) -> None:
+        """The More popover's size choice is saved in the Cache, and the popover is always available."""
+        content = self.panel.more_content()
+        assert content is not None
+        box = content.findChild(QComboBox)
+        assert box is not None
+        box.setCurrentIndex(box.findData('Medium'))
+        box.activated.emit(box.currentIndex())
+        self.assertEqual(Cache().get(Cache.LAYER_THUMBNAIL_SIZE), 'Medium')
+        self.assertEqual(self.row(self.bottom).thumbnail.width(), MEDIUM_THUMBNAIL_SIZE)
+
+    def test_more_popover_selects_neighbor_layers(self) -> None:
+        """The popover's select buttons move the active layer, and the window button appears only with a callback."""
+        content = self.panel.more_content()
+        assert content is not None
+        buttons = {button.text().split(' (')[0]: button for button in content.findChildren(QPushButton)}
+        self.assertEqual(set(buttons), {SELECT_PREVIOUS_LABEL, SELECT_NEXT_LABEL})
+        self.image_stack.active_layer = self.inner_bottom
+        buttons[SELECT_PREVIOUS_LABEL].click()
+        self.assertIsNot(self.image_stack.active_layer, self.inner_bottom)
+        shown: list[bool] = []
+        panel = LayerPanel(self.image_stack, show_window=lambda: shown.append(True))
+        window_content = panel.more_content()
+        assert window_content is not None
+        window_button = next(button for button in window_content.findChildren(QPushButton)
+                             if button.text().startswith(SHOW_WINDOW_LABEL))
+        window_button.click()
+        self.assertEqual(shown, [True])
+        panel.close()

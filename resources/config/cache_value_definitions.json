@@ -827,6 +827,16 @@
         "default": "",
         "saved": true
     },
+    "layer_thumbnail_size": {
+        "label": "Layer thumbnail size:",
+        "category": "Cache",
+        "description": "Size of the previews in the layer panel's rows. 'Auto' uses large previews when the panel has room for them.",
+        "type": "string",
+        "default": "Auto",
+        "options": ["Auto", "Small", "Medium", "Large"],
+        "saved": true,
+        "translate": false
+    },
     "saved_layer_window_pos": {
         "label": "Saved layer window placement",
         "category": "Cache",

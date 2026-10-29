@@ -266,6 +266,7 @@ class AppController(MenuBuilder):
         cache = Cache()
         cache.apply_args(args)
         self._layer_panel: Optional[LayerPanel] = None
+        self._layer_dock_panel: Optional[LayerPanel] = None
         self._generator_window: Optional[GeneratorSetupWindow] = None
 
         # Apply style and theme before creating widgets, which copy the palette and font when they're created:
@@ -437,7 +438,8 @@ class AppController(MenuBuilder):
                                                              include_zoom_controls=False, use_keybindings=False)
         self._tool_panel_navigation_panel.mouse_navigation_enabled = False
         self._tool_panel_color_picker = ColorControlPanel()
-        self._window.layers_dock.set_content(LayerPanel(self._image_stack))
+        self._layer_dock_panel = LayerPanel(self._image_stack, show_window=self.show_layer_panel)
+        self._window.layers_dock.set_content(self._layer_dock_panel)
         self._window.color_dock.set_content(self._tool_panel_color_picker)
         self._window.navigation_dock.set_content(self._tool_panel_navigation_panel)
 
@@ -1541,6 +1543,18 @@ class AppController(MenuBuilder):
         self._layer_panel.show()
         self._layer_panel.raise_()
 
+    @menu_action(MENU_LAYERS, 'rename_layer_shortcut', 398, valid_app_states=[APP_STATE_EDITING])
+    def rename_layer(self) -> None:
+        """Edit the active layer's name in the layer panel. The layer window takes it while that window is the active
+        one, and otherwise the docked panel does, opening its dock if it is closed."""
+        panel = self._layer_dock_panel
+        if self._layer_panel is not None and self._layer_panel.isVisible() and self._layer_panel.isActiveWindow():
+            panel = self._layer_panel
+        elif panel is not None:
+            self._window.layers_dock.open_in_group()
+        if panel is not None:
+            panel.start_rename()
+
     @menu_action(f'{MENU_LAYERS}.{SUBMENU_SELECT}', 'select_previous_layer_shortcut', 400,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def select_previous_layer(self) -> None:
@@ -1621,7 +1635,7 @@ class AppController(MenuBuilder):
     @menu_action(MENU_LAYERS, 'copy_layer_shortcut', 442,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def copy_layer(self) -> None:
-        """Create a copy of the active layer."""
+        """Duplicate the active layer."""
         self._image_stack.copy_layer()
 
     @menu_action(MENU_LAYERS, 'delete_layer_shortcut', 443, valid_app_states=[APP_STATE_EDITING])

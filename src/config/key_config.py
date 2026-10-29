@@ -50,6 +50,11 @@ OPTIONAL_KEYS = ('toggle_sample_merged_hotkey', 'toggle_selection_shape_hotkey')
 class KeyConfig(Config, metaclass=Singleton):
     """Provides access to the user-editable application keybinding config."""
 
+    # Defaults from released versions, so installs that never changed them follow the current default:
+    PREVIOUS_DEFAULTS = {
+        'resize_canvas_shortcut': ['F2']
+    }
+
     def __init__(self, json_path: Optional[str] = DEFAULT_CONFIG_PATH) -> None:
         """Load existing config, or initialize from defaults.
 
@@ -272,6 +277,7 @@ class KeyConfig(Config, metaclass=Singleton):
     QUIT_SHORTCUT: str
     REDO_SHORTCUT: str
     RELOAD_SHORTCUT: str
+    RENAME_LAYER_SHORTCUT: str
     RESET_COLORS_SHORTCUT: str
     RESET_VIEW_SHORTCUT: str
     RESIZE_CANVAS_SHORTCUT: str
