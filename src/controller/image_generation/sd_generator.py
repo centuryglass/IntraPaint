@@ -1,6 +1,7 @@
 """Shared base for generators that provide Stable Diffusion image generation with possible ControlNet and upscaling
    support."""
 import logging
+import weakref
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from typing import Optional, cast, Any, Protocol, Dict
@@ -747,13 +748,19 @@ class SDGenerator(ImageGenerator, ABC):
 
         task.image_ready.connect(self._apply_upscaled_image)
 
+        # The slots hold the task weakly: a strong reference would make a cycle through the task's connections.
+        task_ref = weakref.ref(task)
+
         def _on_finish() -> None:
             assert self._window is not None
             self._window.set_is_loading(False)
-            task.status_signal.disconnect(_apply_status_update)
-            task.error_signal.disconnect(handle_error)
-            task.image_ready.disconnect(self._apply_upscaled_image)
-            task.finish_signal.disconnect(_on_finish)
+            finished_task = task_ref()
+            if finished_task is None:
+                return
+            finished_task.status_signal.disconnect(_apply_status_update)
+            finished_task.error_signal.disconnect(handle_error)
+            finished_task.image_ready.disconnect(self._apply_upscaled_image)
+            finished_task.finish_signal.disconnect(_on_finish)
 
         task.finish_signal.connect(_on_finish)
         task.start()

@@ -25,8 +25,7 @@ prepare the environment that the Qt-based tests rely on:
 - On Python 3.12 and up, keep the last few exceptions raised in the project's own code. A failure that says a Qt call "returned
   NULL without setting an exception" gets a report section listing them and the test that ran before it, since
   PySide lost the exception that caused it (issue #283).
-- Fail any test that leaves PySide wrappers in a reference cycle, beyond its entry in the baseline
-  (`test/qt_cycles.py`).
+- Fail any test that leaves PySide wrappers in a reference cycle (`test/qt_cycles.py`).
 - Report GC state when a test runs for two minutes, ahead of pytest's thread dump
   (`test/hang_diagnostics.py`, issue #390).
 """
@@ -100,9 +99,8 @@ def pytest_sessionstart(session: pytest.Session) -> None:
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """Write the cycle baseline and report when asked to, and remove the temporary config copies and user directories."""
+    """Write the cycle report when asked to, and remove the temporary config copies and user directories."""
     qt_cycles.stop()
-    qt_cycles.write_baseline()
     qt_cycles.write_report()
     if _config_copy_dir is not None:
         shutil.rmtree(_config_copy_dir, ignore_errors=True)
@@ -210,7 +208,7 @@ def pytest_runtest_setup(item: pytest.Item):
 
 @pytest.hookimpl(wrapper=True)
 def pytest_runtest_teardown(item: pytest.Item, nextitem: Optional[pytest.Item]):
-    """Fail a test whose count of PySide wrappers left in reference cycles doesn't fit its baseline entry.
+    """Fail a test that leaves PySide wrappers in reference cycles.
 
     This runs after teardown, when pytest has dropped a unittest test's instance and the objects its attributes held.
     A test whose body failed, even as an xfail marker expected, is left alone: its traceback can hold objects that a
