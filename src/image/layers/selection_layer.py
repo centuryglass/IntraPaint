@@ -488,11 +488,11 @@ class SelectionLayer(ImageLayer):
         # Grow the padding until the mask blur band fits inside the crop. The band's width in image pixels depends on
         # the crop's size, so iterate; the generation area bounds the growth.
         mask_blur = AppConfig().get(AppConfig.MASK_BLUR)
-        generation_size = cache.get(Cache.GENERATION_SIZE)
+        generation_resolution = cache.get(Cache.GENERATION_SIZE)
         for _ in range(MAX_BLUR_PADDING_PASSES):
             if selection_rect is None:
                 return None
-            band_x, band_y = blur_extent_in_image(mask_blur, selection_rect.size(), generation_size)
+            band_x, band_y = blur_extent_in_image(mask_blur, selection_rect.size(), generation_resolution)
             if band_x <= pad_x and band_y <= pad_y:
                 break
             pad_x, pad_y = max(pad_x, band_x), max(pad_y, band_y)

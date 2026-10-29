@@ -410,12 +410,12 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Maximum generation area size:</source>
+        <source>Maximum generation resolution:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>Maximum size in pixels of the AI image generation area</source>
+        <source>The largest generation resolution, in pixels, that the "Match area, upscale small areas" rule scales a small generation area up to. Areas larger than this keep their own size.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -555,7 +555,7 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>How much to blur the inpainting mask, in pixels at the generation size, so generated content blends smoothly into the original image.</source>
+        <source>How much to blur the inpainting mask, in pixels at the generation resolution, so generated content blends smoothly into the original image.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -818,12 +818,12 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Generation size:</source>
+        <source>Generation resolution:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Current/initial size in pixels used for AI image generation</source>
+        <source>Current/initial generation resolution: the size in pixels the AI image generator works at</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1843,7 +1843,7 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Generated images using the same seed will match images created at this resolution, regardless of generation size.</source>
+        <source>Generated images using the same seed will match images created at this resolution, regardless of generation resolution.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

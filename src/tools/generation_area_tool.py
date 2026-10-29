@@ -201,8 +201,8 @@ class GenerationAreaTool(BaseTool):
         height = min(self._image_stack.height - generation_area.y(), bottom_right.y() - generation_area.y())
         if width > 0 and height > 0:
             if KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER):
-                gen_size = cast(QSize, Cache().get(Cache.GENERATION_SIZE))
-                aspect_ratio = gen_size.width() / gen_size.height()
+                gen_resolution = cast(QSize, Cache().get(Cache.GENERATION_SIZE))
+                aspect_ratio = gen_resolution.width() / gen_resolution.height()
                 bottom_right = closest_point_keeping_aspect_ratio(QPointF(bottom_right),
                                                                   QPointF(generation_area.topLeft()),
                                                                   aspect_ratio)

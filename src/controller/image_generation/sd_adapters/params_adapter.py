@@ -2,7 +2,7 @@
 
 Each builder reads `Cache` and `AppConfig` when called and returns a new model, so a caller that runs it on the main
 thread can hand the result to a worker thread unchanged. Images are passed in, already cropped and scaled to the
-generation size.
+generation resolution.
 """
 from typing import Optional
 
@@ -49,9 +49,9 @@ def _shared_params(params: DiffusionParams, edit_mode: str, source_image: Option
     params.batch_size = cache.get(Cache.BATCH_SIZE)
     params.steps = cache.get(Cache.SAMPLING_STEPS)
     params.cfg_scale = cache.get(Cache.GUIDANCE_SCALE)
-    generation_size = cache.get(Cache.GENERATION_SIZE)
-    params.width = generation_size.width()
-    params.height = generation_size.height()
+    generation_resolution = cache.get(Cache.GENERATION_SIZE)
+    params.width = generation_resolution.width()
+    params.height = generation_resolution.height()
     params.prompt = cache.get(Cache.PROMPT)
     params.negative_prompt = cache.get(Cache.NEGATIVE_PROMPT)
     params.seed = int(cache.get(Cache.SEED))

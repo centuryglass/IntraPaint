@@ -188,7 +188,7 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         self._generate_and_check('inpaint')
 
     def test_inpaint_full_res(self) -> None:
-        """Inpainting at full resolution uploads the selection bounds cropped and scaled to the generation size."""
+        """Inpainting at full resolution uploads the selection bounds cropped and scaled to the generation resolution."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         Cache().set(Cache.INPAINT_FULL_RES, True)
         self._generate_and_check('inpaint_full_res')

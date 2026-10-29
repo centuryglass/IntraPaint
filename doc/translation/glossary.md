@@ -96,7 +96,7 @@ chooses a rendering and records its reasoning.
 | Term | Meaning | Where | UI strings |
 | --- | --- | --- | --- |
 | Generation area | The rectangle of the image sent to the image generator. Generated content replaces it. It is separate from the selection. | Generation area tool, Image Generation panel, rulers | "Image generation area:", "Set Image Generation Area", "Move gen. area", "Editing size:", "Zoom in on the area selected for image generation" |
-| Generation resolution | The size in pixels the generator works at, which can differ from the generation area's size. | Image Generation panel | "Image generation resolution:", "Generation size:", "Minimum generation resolution:" |
+| Generation resolution | The size in pixels the generator works at, which can differ from the generation area's size. | Image Generation panel | "Generation resolution:", "Maximum generation resolution:", "Minimum generation resolution:" |
 | Resolution rule | How the generation resolution follows changes to the generation area's size. | Image Generation panel | "Resolution rule:", "Match area", "Match area, upscale small areas", "Manual" |
 | Context pin | A marker that stretches the inpainting crop to include a point without inpainting it. Placed with the right mouse button. | Selection tools, Selection menu | "Clear context pins", "{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin" |
 | Generated image options | The window that shows each image a generation produced, for choosing one to apply. | Opens after generating | "Select from generated image options.", "Option {index}", "Reopen last generated options" |

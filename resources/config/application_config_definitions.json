@@ -254,10 +254,10 @@
         "saved": true
     },
     "max_generation_size": {
-        "label": "Maximum generation area size:",
+        "label": "Maximum generation resolution:",
         "category": "Editing",
         "subcategory": "Size",
-        "description": "Maximum size in pixels of the AI image generation area",
+        "description": "The largest generation resolution, in pixels, that the \"Match area, upscale small areas\" rule scales a small generation area up to. Areas larger than this keep their own size.",
         "type": "Size",
         "default": "2048x2048",
         "saved": true
@@ -388,7 +388,7 @@
     "mask_blur": {
         "label": "Mask blur:",
         "category": "Stable Diffusion",
-        "description": "How much to blur the inpainting mask, in pixels at the generation size, so generated content blends smoothly into the original image.",
+        "description": "How much to blur the inpainting mask, in pixels at the generation resolution, so generated content blends smoothly into the original image.",
         "type": "int",
         "default": 4,
         "range_options": {

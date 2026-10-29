@@ -578,9 +578,9 @@ In inpainting mode, the generation area moves after you change the selection or 
    - **Recent sizes**: Up to four generation area sizes you've used recently, labeled with their size.
    - **Shift+G**: Switches back to the size used before the current one. Press it again to switch back.
 6. **"+ size" field**: Type a size such as `768` (a square) or `640x480`, then press Enter to resize the area.
-7. **"Resolution rule" dropdown**: Controls how the AI image generation resolution changes when the generation area is resized.
+7. **"Resolution rule" dropdown**: Controls how the generation resolution changes when the generation area is resized.
    - **"Match area"**: The resolution always equals the generation area size.
-   - **"Match area, upscale small areas"** (default): Like "Match area", but small areas are scaled up by a whole-number factor until their shorter side reaches the minimum set in the settings ("Minimum upscaled resolution side", 512 by default). The factor is reduced if the result would be larger than the maximum generation size.
+   - **"Match area, upscale small areas"** (default): Like "Match area", but small areas are scaled up by a whole-number factor until their shorter side reaches the minimum set in the settings ("Minimum upscaled resolution side", 512 by default). The factor is reduced if the result would be larger than the "Maximum generation resolution" set in the settings.
    - **"Manual"**: The resolution only changes when you edit it. Editing the resolution by hand selects this rule.
-8. **"Image generation resolution" inputs**: Sets the resolution used for AI image generation.
+8. **"Generation resolution" inputs**: Sets the resolution used for AI image generation.
 9. **Image generation area**: The dotted outline shows the generation area. While this tool is active, drag the square handles on the outline to resize it. Corner handles keep the aspect ratio unless you hold Shift, and edge handles move one side.
