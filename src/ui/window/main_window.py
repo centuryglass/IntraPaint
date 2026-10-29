@@ -573,14 +573,20 @@ class MainWindow(QMainWindow):
             self._loading_widget.message = message
 
     def _clamp_to_screen(self) -> None:
-        """Shrinks the window to the available size of the display it is on."""
+        """Shrinks the window, frame included, to the available size of the display it is on.
+
+        `resize` sets the size inside the frame, so the frame's margins come off the target size. Each resize schedules
+        another clamp, so a clamp that leaves the frame too large repeats forever.
+        """
         screen_size = get_screen_size(self, False)
         if screen_size.isNull():
             return
-        window_size = self.frameGeometry().size()
-        if window_size.width() > screen_size.width() or window_size.height() > screen_size.height():
-            self.resize(min(window_size.width(), screen_size.width()),
-                        min(window_size.height(), screen_size.height()))
+        frame_size = self.frameGeometry().size()
+        if frame_size.width() > screen_size.width() or frame_size.height() > screen_size.height():
+            margin_width = frame_size.width() - self.width()
+            margin_height = frame_size.height() - self.height()
+            self.resize(min(self.width(), screen_size.width() - margin_width),
+                        min(self.height(), screen_size.height() - margin_height))
 
     def _watch_displays(self) -> None:
         """Schedules a re-clamp when the window changes screens or a display's usable area changes."""
