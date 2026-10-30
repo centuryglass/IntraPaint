@@ -35,7 +35,7 @@ if not is_pyinstaller_bundle():
                   'IntraPaint directory to enable them. All other tools will work normally.', file=sys.stderr)
 
 
-from PySide6.QtCore import QTranslator, QObject, QEvent
+from PySide6.QtCore import QTranslator, QObject, QEvent, QtMsgType, qFormatLogMessage, qInstallMessageHandler
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QApplication, QSplashScreen, QWidget, QDialog, QLabel, QMenu
 
@@ -92,6 +92,24 @@ if args.verbose:
     handlers.append(stdout_handler)  # type: ignore
 if args.cursor_debug:
     os.environ[DEBUG_CURSOR_ENV_VAR] = 'True'
+
+# Qt's Wayland platform plugin warns whenever anything grabs the mouse on a window that isn't a popup, since Wayland
+# only allows that for popups. QDockWidget's own drag-and-drop does this when floating a dock (e.g. dragging its
+# title bar), which is expected there, not an IntraPaint bug. Qt logs it with a plain, uncategorized qWarning(), so it
+# can't be filtered through QT_LOGGING_RULES; install a message handler that drops just this one message by text,
+# passing everything else through with Qt's own formatting:
+_SUPPRESSED_QT_MESSAGES = ('This plugin supports grabbing the mouse only for popup windows',)
+
+
+def _filtered_qt_message_handler(msg_type: QtMsgType, context, message: str) -> None:
+    """Reproduces Qt's default message handling, except for the suppressed messages above."""
+    if any(suppressed in message for suppressed in _SUPPRESSED_QT_MESSAGES):
+        return
+    stream = sys.stdout if msg_type in (QtMsgType.QtDebugMsg, QtMsgType.QtInfoMsg) else sys.stderr
+    print(qFormatLogMessage(msg_type, context, message), file=stream)
+
+
+qInstallMessageHandler(_filtered_qt_message_handler)
 
 logging.basicConfig(level=logging.INFO, handlers=handlers)
 print(f'Logs will be saved at {LOG_FILE_PATH}')
