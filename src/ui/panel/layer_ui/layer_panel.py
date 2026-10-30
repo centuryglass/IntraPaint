@@ -131,6 +131,8 @@ class LayerPanel(DockPanel):
         self._floating = False
         # The index in `BAR_FORMS` of the action bar's current form:
         self._bar_form = len(BAR_FORMS) - 1
+        # The action bar's minimum width in its narrowest form, as of the latest time that form applied:
+        self._narrow_bar_width = 0
         super().__init__(PANEL_TITLE, QIcon(ICON_PATH_PANEL), parent=parent)
         self.setWindowTitle(WINDOW_TITLE)
         self.setWindowIcon(QIcon(APP_ICON_PATH))
@@ -328,6 +330,8 @@ class LayerPanel(DockPanel):
         for button in self._bar_buttons:
             button.setIconSize(QSize(bar_form.icon_size, bar_form.icon_size))
             button.setToolButtonStyle(style)
+        if form == len(BAR_FORMS) - 1:
+            self._narrow_bar_width = fresh_minimum_size(self._button_bar).width()
 
     @property
     def button_bar_style(self) -> Qt.ToolButtonStyle:
@@ -339,21 +343,18 @@ class LayerPanel(DockPanel):
 
         The labeled bar forms are wider, so a minimum width that included the applied form would keep the dock from
         shrinking the panel, and the panel could never plan for the narrower size. The height stays as the applied
-        form measures it, since the forms differ in height as well.
+        form measures it, since the forms differ in height as well. Reading the hint changes no widget, since a
+        change would post layout requests that repeat while the window is idle.
         """
-        if self._bar_form == len(BAR_FORMS) - 1:
-            return super().minimumSizeHint()
-        applied = self._bar_form
-        self._apply_bar_form(len(BAR_FORMS) - 1)
-        try:
-            fresh_minimum_size(self._button_bar)
-            self.layout().invalidate()
-            narrow = super().minimumSizeHint()
-        finally:
-            self._apply_bar_form(applied)
-            fresh_minimum_size(self._button_bar)
-            self.layout().invalidate()
-        return QSize(narrow.width(), super().minimumSizeHint().height())
+        hint = super().minimumSizeHint()
+        bar_width = self._button_bar.minimumSizeHint().width()
+        # The width the rest of the panel needs, when it is wider than the bar in its narrowest form:
+        other = max(self._content.layout().minimumSize().width(), self.header.minimumSizeHint().width(),
+                    self._narrow_bar_width)
+        reduction = bar_width - other
+        if reduction <= 0 or hint.width() < bar_width:
+            return hint
+        return QSize(hint.width() - reduction, hint.height())
 
     def _apply_controls_form(self, form: Optional[int]) -> None:
         self._properties.set_stacked(form == CONTROLS_STACKED)
