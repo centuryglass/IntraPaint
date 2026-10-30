@@ -205,6 +205,7 @@ class Cache(Config, metaclass=Singleton):
     SAMPLE_MERGED: str
     SAMPLING_METHOD: str
     SAMPLING_STEPS: str
+    SAVED_LAYOUTS: str
     SAVED_LAYER_WINDOW_POS: str
     SAVED_MAIN_WINDOW_GEOMETRY: str
     SAVED_MAIN_WINDOW_STATE: str
