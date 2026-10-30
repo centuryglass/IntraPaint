@@ -369,6 +369,34 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         self.assertLessEqual(rect.right(), self.panel.width())
         self.assertGreater(rect.right(), self.panel.width() - 2 * self.panel.inset - button.height())
 
+    def test_generate_is_no_wider_than_the_fields_above_it(self) -> None:
+        """In a wide side panel, Generate stops growing where the action block's fields do, with their edges lined
+        up."""
+        self.panel.show()
+        _host(self.panel, SIDE, QSize(700, 900))
+        self.assertEqual(self.panel.orientation, SIDE)
+        button = _rect_in(self.panel.generate_button, self.panel)
+        denoising = _rect_in(self.panel.action_fields[0], self.panel)
+        self.assertLess(denoising.width(), self.panel.width() // 2)
+        self.assertEqual((button.left(), button.right()), (denoising.left(), denoising.right()))
+
+    def test_collapsed_prompt_stays_at_the_top_of_a_strip(self) -> None:
+        """A strip's prompt column keeps a collapsed Prompt section under the header, with the spare height below
+        it, and gives the spare height back to the prompt box when the section opens."""
+        self.panel.show()
+        prompt = self._section(SECTION_TITLE_PROMPT)
+        prompt.set_expanded(False)
+        _host(self.panel, STRIP, QSize(900, 500))
+        self.assertEqual(self.panel.orientation, STRIP)
+        header = _rect_in(self.panel.header, self.panel)
+        section = _rect_in(prompt, self.panel)
+        self.assertLess(header.height(), self.panel.height() // 4)
+        self.assertLess(section.top() - header.bottom(), header.height())
+        self.assertLess(section.height(), self.panel.height() // 4)
+        prompt.set_expanded(True)
+        settle_layouts(self.panel)
+        self.assertGreater(_rect_in(prompt, self.panel).bottom(), self.panel.height() * 3 // 4)
+
     def test_strip_pins_prompt_left_and_the_action_block_right(self) -> None:
         """A strip keeps Prompt in a column at the left and the action block in one at the right, neither of which
         scrolls sideways, and a side panel puts the action block back in the footer."""

@@ -2,16 +2,14 @@
   "minimum": {
     "problems": [
       "overlap: QWidget[2]/QWidget/SliderField and QWidget[2]/QWidget/FieldPair[0] share 226x4",
-      "overlap: QWidget[2]/QWidget/FieldPair[0]/SliderField[0] and QWidget[2]/QWidget/FieldPair[0]/SliderField[1] share 226x11",
-      "overlap: QWidget[2]/QWidget/FieldPair[1]/SliderField and QWidget[2]/QWidget/FieldPair[1]/ToggledSliderField share 150x11",
-      "squeezed: QWidget[2] is 226x98, minimum 110x184",
-      "squeezed: QWidget[2]/QWidget is 226x98, minimum 110x184",
-      "squeezed: QWidget[2]/QWidget/FieldPair[0] is 226x20, minimum 110x54",
-      "clipped: QWidget[2]/QWidget/FieldPair[0]/SliderField[0] shows 226x20 of 226x24",
-      "clipped: QWidget[2]/QWidget/FieldPair[0]/SliderField[1] shows 226x7 of 226x24",
-      "squeezed: QWidget[2]/QWidget/FieldPair[1] is 226x20, minimum 110x54",
-      "clipped: QWidget[2]/QWidget/FieldPair[1]/SliderField shows 150x20 of 150x24",
-      "clipped: QWidget[2]/QWidget/FieldPair[1]/ToggledSliderField shows 150x7 of 150x24",
+      "squeezed: QWidget[2] is 226x98, minimum 226x124",
+      "squeezed: QWidget[2]/QWidget is 226x98, minimum 226x124",
+      "squeezed: QWidget[2]/QWidget/FieldPair[0] is 226x20, minimum 226x24",
+      "clipped: QWidget[2]/QWidget/FieldPair[0]/SliderField[0] shows 110x20 of 110x24",
+      "clipped: QWidget[2]/QWidget/FieldPair[0]/SliderField[1] shows 110x20 of 110x24",
+      "squeezed: QWidget[2]/QWidget/FieldPair[1] is 226x20, minimum 226x24",
+      "clipped: QWidget[2]/QWidget/FieldPair[1]/SliderField shows 110x20 of 110x24",
+      "clipped: QWidget[2]/QWidget/FieldPair[1]/ToggledSliderField shows 110x20 of 110x24",
       "squeezed: QWidget[2]/QWidget/QPushButton 'Generate' is 226x20, minimum 82x28"
     ],
     "size": [

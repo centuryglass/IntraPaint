@@ -3,9 +3,9 @@
 It is a `DockPanel` that places controls by how often they're used. The action block holds the ones used after every
 generation: denoising strength, CFG scale, steps, batch size, context and Generate, with Generate last. It is a side
 panel's footer (`DockPanel.set_footer`) and a strip's trailing column (`DockPanel.trailing_layout`), so Generate stays
-in the bottom-right corner and never scrolls. The sections run Prompt, Mask, Sampling, Size and batch, then Advanced.
-A strip pins Prompt in a column at the left (`DockPanel.pinned_layout`) and packs the rest into columns between the
-two (`DockPanel.set_column_packing`).
+at the bottom and never scrolls. Generate is capped at the fields' width, so in a wide side panel it ends where they
+do. The sections run Prompt, Mask, Sampling, Size and batch, then Advanced. A strip pins Prompt in a column at the left
+(`DockPanel.pinned_layout`) and packs the rest into columns between the two (`DockPanel.set_column_packing`).
 
 - Every control is bound to its config value and has one owner here. Backend-specific controls arrive as constructor
   arguments (`webui`) and `set_advanced_content`.
@@ -427,6 +427,12 @@ class StableDiffusionPanel(DockPanel):
         self._build_action_block()
         self._build_more_menu()
         self._connect_edit_mode()
+        # Keeps a strip's prompt column at the top of its column while the Prompt section is collapsed. `arrange`
+        # puts the header and section above it:
+        self._prompt_column_spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        self.pinned_layout.addItem(self._prompt_column_spacer)
+        self._prompt_section.widget.expanded_changed.connect(self._update_prompt_column_spacer)
+        self._update_prompt_column_spacer()
 
     # ---------------------------------------------------------------------------------------------------------------
     # Content
@@ -687,6 +693,8 @@ class StableDiffusionPanel(DockPanel):
             cache.connect(self._tiling_button, tiling_key, self._update_tiling_button)
         self._tiling_button.setVisible(self._webui and cache.tiling_in_effect())
         self._generate_button = QPushButton(BUTTON_TEXT_GENERATE)
+        # Capped like the fields above it, so its right edge lines up with theirs in a wide side panel:
+        self._generate_button.setMaximumWidth(FIELD_MAX_WIDTH)
         self._generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
         set_primary_button(self._generate_button)
         self._generate_button.clicked.connect(self.generate_signal)
@@ -854,8 +862,9 @@ class StableDiffusionPanel(DockPanel):
         else:
             outer.insertWidget(0, self.header)
         if strip:
-            # The pinned column sets its own width, so the section drops the strip column limits:
-            self.pinned_layout.addWidget(prompt)
+            # The pinned column sets its own width, so the section drops the strip column limits. It goes under the
+            # header and above the spacer `_update_prompt_column_spacer` sizes:
+            self.pinned_layout.insertWidget(1, prompt)
             prompt.setMinimumWidth(0)
             prompt.setMaximumWidth(QWIDGETSIZE_MAX)
             self.pinned_layout.parentWidget().setMaximumWidth(PROMPT_COLUMN_MAX_WIDTH)
@@ -887,6 +896,14 @@ class StableDiffusionPanel(DockPanel):
                 section.widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
             self.section_layout.setAlignment(section.widget, Qt.AlignmentFlag.AlignTop if strip
                                              else Qt.AlignmentFlag(0))
+
+    def _update_prompt_column_spacer(self, *_) -> None:
+        """Lets the spacer under the Prompt section take a strip's spare column height while the section is
+        collapsed. While it is expanded, the prompt box takes that height."""
+        collapsed = self._prompt_section.widget.is_collapsed()
+        self._prompt_column_spacer.changeSize(0, 0, QSizePolicy.Policy.Minimum,
+                                              QSizePolicy.Policy.Expanding if collapsed else QSizePolicy.Policy.Fixed)
+        self.pinned_layout.invalidate()
 
     def header_width(self, available: QSize) -> int:
         """Returns the prompt column's widest width in a strip, and the available width in a side panel."""
