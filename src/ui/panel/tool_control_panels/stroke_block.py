@@ -19,7 +19,9 @@ Layout is planned by fit (`src.ui.layout.panel_fit`) in the space the Tools pane
 - Every control column stops at `FIELD_COLUMN_MAX_WIDTH`, so a wide panel leaves spare width after the last column
   instead of stretching the columns apart.
 - The color pair and Pattern, and the checkboxes, are required items. In a side panel each row stacks into a column
-  when it doesn't fit across. In a strip the rows stay inline, because stacking would make them taller.
+  when it doesn't fit across. In a strip the color pair row stays inline, because stacking would make it taller.
+- In a strip, the checkboxes take one row each when the strip is tall enough for the extra row. A tool with a color
+  pair keeps them on one row unless that row is wider than the options column's cap, which would cut off a label.
 - A tool with a `StrokePreview` shows it beside the fields or below them in the Stroke section, or hides it. A side
   panel prefers below, where the preview can take the column's width, and goes beside only when below doesn't fit. A
   strip prefers beside, since height is what it lacks. The preview is decorative, so it never moves to the More
@@ -325,12 +327,33 @@ class StrokeBlock(QWidget):
         preview_form = forms.get(PREVIEW_ITEM)
         if preview_form is not None:
             forms[PREVIEW_ITEM] = _PREVIEW_FORMS[orientation][preview_form]
-        # Stacking a row makes it taller, which only saves room in a side panel:
+        # Stacking the paint row makes it taller, which only saves room in a side panel:
         side = orientation == Orientation.SIDE
         self._arrange(StrokeArrangement(orientation, paint_stacked=side and forms.get(PAINT_ITEM) == STACKED,
-                                        checks_stacked=side and forms.get(CHECKS_ITEM) == STACKED,
+                                        checks_stacked=self._checks_stacked(orientation, forms[CHECKS_ITEM]),
                                         preview=forms.get(PREVIEW_ITEM),
                                         headers=side or forms.get(HEADERS_ITEM) is not None))
+
+    def _checks_stacked(self, orientation: Orientation, form: int) -> bool:
+        """Returns whether the checkboxes take one row each in a placement's form for them.
+
+        A side panel tries inline first and stacks when that doesn't fit across. A strip tries stacked first, which fits
+        when the strip is tall enough. A tool with a color pair stacks there only if the inline row is wider than the
+        options column's cap, since the planner can't see that clipping on the strip's scroll axis.
+        """
+        if orientation == Orientation.SIDE:
+            return form == STACKED
+        if self._paint_widget is not None and self._inline_checks_width() <= FIELD_COLUMN_MAX_WIDTH:
+            return False
+        return form == INLINE
+
+    def _inline_checks_width(self) -> int:
+        """Returns the width the checkboxes need in one row."""
+        direction = self._checks_layout.direction()
+        self._checks_layout.setDirection(QBoxLayout.Direction.LeftToRight)
+        width = self._checks_layout.minimumSize().width()
+        self._checks_layout.setDirection(direction)
+        return width
 
     def add_tool_section(self, section: PanelSection, stretch: bool = False) -> None:
         """Adds a tool's own section after the block's: below them in a side panel, and in the next column in a
@@ -410,7 +433,9 @@ class StrokeBlock(QWidget):
                 self._grid.setColumnStretch(2, CONTROL_COLUMN_STRETCH)
                 column = 3
             if len(self._tool_sections) > 0:
-                # With columns after it, an options column wider than its content would leave a gap before them:
+                # With columns after it, an options column wider than its content would leave a gap before them. The
+                # fresh measurement counts the checkboxes' direction, which was set a moment ago:
+                fresh_minimum_size(self._options_section)
                 self._options_section.setMaximumWidth(min(FIELD_COLUMN_MAX_WIDTH,
                                                           self._options_section.sizeHint().width()))
             self._tool_columns = {}

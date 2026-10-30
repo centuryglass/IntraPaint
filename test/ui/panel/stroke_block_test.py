@@ -1,6 +1,7 @@
 """Tests StrokeBlock's binding to Cache values, its pen pressure links and its arrangements."""
 import itertools
 import json
+import unittest.mock
 from typing import Optional
 
 from PySide6.QtCore import QPoint, QSize
@@ -19,7 +20,7 @@ from src.tools.draw_tool import DrawTool
 from src.ui.layout.panel_fit import FitItem, Orientation
 from src.ui.panel.tool_control_panels.stroke_block import (BELOW, BESIDE, BESIDE_FIELD_MIN_WIDTH,
                                                            FIELD_COLUMN_MAX_WIDTH, ONLY_INSIDE_SELECTION_LABEL,
-                                                           StrokeToolPanel)
+                                                           StrokeBlock, StrokeToolPanel)
 from src.ui.panel.tool_panel import ToolPanel
 from src.ui.widget.panel_section import PanelSection
 from test.base_test_case import IntraPaintTestCase
@@ -223,7 +224,7 @@ class StrokeBlockTest(IntraPaintTestCase):
 
     def test_rows_stack_when_they_do_not_fit_across(self) -> None:
         """A narrow side panel stacks the checkboxes into a column and a wider one keeps them in a row. A strip keeps
-        them in a row, however narrow."""
+        the color pair row and, in Draw's case, the checkboxes in a row, however narrow."""
         self.panel.set_fit_space(SIDE, QSize(170, 900))
         self.assertTrue(self.block.arrangement.checks_stacked)
         self.panel.set_fit_space(SIDE, QSize(500, 900))
@@ -231,6 +232,36 @@ class StrokeBlockTest(IntraPaintTestCase):
         self.panel.set_fit_space(STRIP, QSize(170, 300))
         self.assertFalse(self.block.arrangement.checks_stacked)
         self.assertFalse(self.block.arrangement.paint_stacked)
+
+    def test_strip_stacks_checks_of_tools_without_a_color_pair(self) -> None:
+        """The Eraser's checkboxes take a row each in a strip with room for the extra row."""
+        eraser = EraserToolPanel()
+        for height in (90, 160, 300):
+            with self.subTest(height=height):
+                eraser.set_fit_space(STRIP, QSize(1400, height))
+                self.assertTrue(eraser.stroke_block.arrangement.checks_stacked)
+        eraser.set_fit_space(SIDE, QSize(500, 900))
+        self.assertFalse(eraser.stroke_block.arrangement.checks_stacked)
+
+    def test_strip_keeps_checks_inline_when_the_extra_row_does_not_fit(self) -> None:
+        """A strip as tall as the options section needs for one row of checkboxes keeps them in a row, and a strip with
+        room for a second row stacks them. The block has one field, so the options section sets the height."""
+        block = StrokeBlock(size_key=Cache.ERASER_TOOL_SIZE, antialias_key=Cache.ERASER_TOOL_ANTIALIAS)
+        panel = StrokeToolPanel(block)
+        base = panel.fit_base_size(STRIP)
+        panel.set_fit_space(STRIP, QSize(1400, base.height()))
+        self.assertFalse(block.arrangement.checks_stacked)
+        panel.set_fit_space(STRIP, QSize(1400, base.height() + 400))
+        self.assertTrue(block.arrangement.checks_stacked)
+
+    def test_strip_stacks_color_tool_checks_only_when_the_row_would_be_cut_off(self) -> None:
+        """Draw keeps its checkboxes in a row in a tall strip, since the row fits the options column. They take a row
+        each only where the row is wider than the column's cap."""
+        self.panel.set_fit_space(STRIP, QSize(1400, 400))
+        self.assertFalse(self.block.arrangement.checks_stacked)
+        with unittest.mock.patch.object(StrokeBlock, '_inline_checks_width', return_value=FIELD_COLUMN_MAX_WIDTH + 1):
+            self.panel.set_fit_space(STRIP, QSize(1401, 400))
+            self.assertTrue(self.block.arrangement.checks_stacked)
 
     def test_orientation_reaches_subclass_sections(self) -> None:
         """Planning for a strip calls set_orientation, so subclasses arrange their own sections."""

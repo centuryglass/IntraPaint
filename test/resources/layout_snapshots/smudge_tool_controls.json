@@ -59,12 +59,11 @@
   },
   "strip_minimum": {
     "problems": [
-      "squeezed: StrokeBlock is 245x160, minimum 365x106",
-      "squeezed: StrokeBlock/PanelSection[1] is 125x48, minimum 245x48",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 125x22, minimum 245x22",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 125x22, minimum 245x22",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Antialiasing' is 60x22, minimum 93x22",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 59x22, minimum 146x22"
+      "squeezed: StrokeBlock is 245x160, minimum 266x106",
+      "squeezed: StrokeBlock/PanelSection[1] is 125x76, minimum 146x76",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 125x50, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 125x50, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 125x22, minimum 146x22"
     ],
     "size": [
       263,
@@ -73,18 +72,18 @@
   },
   "strip_narrow": {
     "problems": [
-      "squeezed: StrokeBlock is 113x160, minimum 365x106",
+      "squeezed: StrokeBlock is 113x160, minimum 266x106",
       "squeezed: StrokeBlock/PanelSection[0] is 52x106, minimum 110x106",
       "squeezed: StrokeBlock/PanelSection[0]/QWidget is 52x80, minimum 110x80",
       "squeezed: StrokeBlock/PanelSection[0]/QWidget/QWidget is 52x80, minimum 110x80",
       "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[0] shows 52x24 of 110x24",
       "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[1] shows 52x24 of 110x24",
       "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[2] shows 52x24 of 110x24",
-      "squeezed: StrokeBlock/PanelSection[1] is 51x48, minimum 245x48",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 51x22, minimum 245x22",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 51x22, minimum 245x22",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Antialiasing' is 23x22, minimum 93x22",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 22x22, minimum 146x22"
+      "squeezed: StrokeBlock/PanelSection[1] is 51x76, minimum 146x76",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 51x50, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 51x50, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Antialiasing' is 51x22, minimum 93x22",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 51x22, minimum 146x22"
     ],
     "size": [
       131,
@@ -93,12 +92,11 @@
   },
   "strip_preferred": {
     "problems": [
-      "squeezed: StrokeBlock is 245x160, minimum 365x106",
-      "squeezed: StrokeBlock/PanelSection[1] is 125x48, minimum 245x48",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 125x22, minimum 245x22",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 125x22, minimum 245x22",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Antialiasing' is 60x22, minimum 93x22",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 59x22, minimum 146x22"
+      "squeezed: StrokeBlock is 245x160, minimum 266x106",
+      "squeezed: StrokeBlock/PanelSection[1] is 125x76, minimum 146x76",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 125x50, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 125x50, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 125x22, minimum 146x22"
     ],
     "size": [
       263,
@@ -107,16 +105,15 @@
   },
   "strip_short": {
     "problems": [
-      "squeezed: StrokeBlock is 245x71, minimum 365x80",
+      "squeezed: StrokeBlock is 245x71, minimum 266x80",
       "squeezed: StrokeBlock/PanelSection[0] is 110x71, minimum 110x80",
       "squeezed: StrokeBlock/PanelSection[0]/QWidget is 110x71, minimum 110x80",
       "squeezed: StrokeBlock/PanelSection[0]/QWidget/QWidget is 110x71, minimum 110x80",
       "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[2] shows 110x21 of 110x24",
-      "squeezed: StrokeBlock/PanelSection[1] is 125x22, minimum 245x22",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 125x22, minimum 245x22",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 125x22, minimum 245x22",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Antialiasing' is 60x22, minimum 93x22",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 59x22, minimum 146x22"
+      "squeezed: StrokeBlock/PanelSection[1] is 125x50, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 125x50, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 125x50, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 125x22, minimum 146x22"
     ],
     "size": [
       263,
@@ -125,12 +122,11 @@
   },
   "strip_tall": {
     "problems": [
-      "squeezed: StrokeBlock is 245x1182, minimum 365x106",
-      "squeezed: StrokeBlock/PanelSection[1] is 125x48, minimum 245x48",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 125x22, minimum 245x22",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 125x22, minimum 245x22",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Antialiasing' is 60x22, minimum 93x22",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 59x22, minimum 146x22"
+      "squeezed: StrokeBlock is 245x1182, minimum 266x106",
+      "squeezed: StrokeBlock/PanelSection[1] is 125x76, minimum 146x76",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 125x50, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 125x50, minimum 146x50",
+      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 125x22, minimum 146x22"
     ],
     "size": [
       263,
