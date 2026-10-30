@@ -683,6 +683,24 @@
         "default": "Ctrl+Alt+Shift+P",
         "saved": true
     },
+    "save_dock_layout_shortcut": {
+        "label": "Save current layout...",
+        "category": "Menu Shortcuts",
+        "subcategory": "View Menu",
+        "description": "Save the current panel arrangement under a name, so it can be applied later.",
+        "type": "string",
+        "default": "Ctrl+Alt+Shift+S",
+        "saved": true
+    },
+    "manage_dock_layouts_shortcut": {
+        "label": "Manage layouts...",
+        "category": "Menu Shortcuts",
+        "subcategory": "View Menu",
+        "description": "Apply, rename or delete saved panel layouts.",
+        "type": "string",
+        "default": "Ctrl+Alt+Shift+L",
+        "saved": true
+    },
     "toggle_rulers_shortcut": {
         "label": "Show/hide rulers",
         "category": "Menu Shortcuts",

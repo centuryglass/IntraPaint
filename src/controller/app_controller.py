@@ -93,6 +93,8 @@ from src.tools.generation_area_tool import GenerationAreaTool
 from src.ui.input_fields.pressure_curve_input import PressureCurveInput
 from src.ui.modal.animation_save_modal import AnimationSaveModal, saved_animation_options
 from src.ui.modal.image_scale_modal import ImageScaleModal
+from src.ui.modal.layout_name_modal import prompt_layout_name, TITLE_SAVE
+from src.ui.modal.manage_layouts_modal import ManageLayoutsModal
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers, \
     show_warning_dialog
 from src.ui.modal.new_image_modal import NewImageModal
@@ -107,6 +109,7 @@ from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
 from src.ui.window.dock_menu import MENU_MOVE_ALL_TO_EDGE, edge_title
 from src.ui.window.dock_placement import DockEdge
+from src.ui.window import saved_layouts
 from src.ui.window.main_window import MainWindow
 from src.ui.window.navigation_window import NavigationWindow
 from src.undo_stack import UndoStack
@@ -166,6 +169,11 @@ MENU_EDIT = _tr('Edit')
 MENU_IMAGE = _tr('Image')
 MENU_VIEW = _tr('View')
 MENU_VIEW_PANELS = MENU_VIEW + '.' + _tr('Panels')
+LAYOUT_ACTION_PROPERTY = 'saved_layout_entry'
+TITLE_LAYOUT_ERROR = _tr('Layout not applied')
+MESSAGE_LAYOUT_ERROR = _tr('The layout "{layout_name}" could not be restored. It may be corrupt or saved by an older '
+                           'version. Delete it in Manage layouts.')
+MENU_VIEW_LAYOUTS = MENU_VIEW_PANELS + '.' + _tr('Layouts')
 MENU_VIEW_MOVE_ALL_PANELS = MENU_VIEW_PANELS + '.' + MENU_MOVE_ALL_TO_EDGE
 MENU_SELECTION = _tr('Selection')
 MENU_LAYERS = _tr('Layers')
@@ -352,6 +360,7 @@ class AppController(MenuBuilder):
         # Set up menus:
         self.build_menus()
         self.insert_menu_actions(MENU_VIEW_PANELS, self._window.dock_toggle_actions())
+        self.get_menu(MENU_VIEW_LAYOUTS).aboutToShow.connect(self._update_layout_menu)
         for edge in DockEdge:
             self.add_menu_action(MENU_VIEW_MOVE_ALL_PANELS, lambda e=edge: self._window.move_all_docks_to_edge(e),
                                  title=edge_title(edge))
@@ -1396,6 +1405,51 @@ class AppController(MenuBuilder):
     def reset_panel_layout(self) -> None:
         """Put every panel back where it starts on first run, and open it."""
         self._window.reset_dock_layout()
+
+    @menu_action(MENU_VIEW_LAYOUTS, 'save_dock_layout_shortcut', 197,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
+    def save_panel_layout(self) -> None:
+        """Save the current panel arrangement under a name chosen by the user."""
+        name = prompt_layout_name(self._window, TITLE_SAVE, saved_layouts.default_layout_name(),
+                                  set(saved_layouts.layout_names()))
+        if name is not None:
+            saved_layouts.save_layout(name, self._window.save_dock_state())
+
+    @menu_action(MENU_VIEW_LAYOUTS, 'manage_dock_layouts_shortcut', 197,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
+    def manage_panel_layouts(self) -> None:
+        """Open the dialog for applying, renaming and deleting saved panel layouts."""
+        ManageLayoutsModal(self._apply_saved_layout, self._window).exec()
+
+    def _apply_saved_layout(self, name: str) -> None:
+        """Applies a saved layout, showing an error if its text can't be restored."""
+        try:
+            applied = self._window.apply_dock_state(saved_layouts.get_layout_state(name))
+        except KeyError:
+            applied = False
+        if not applied:
+            show_error_dialog(self._window, TITLE_LAYOUT_ERROR, MESSAGE_LAYOUT_ERROR.format(layout_name=name))
+
+    def _update_layout_menu(self) -> None:
+        """Lists the saved layouts below the static Layouts actions, rebuilt each time the submenu opens."""
+        menu = self.get_menu(MENU_VIEW_LAYOUTS)
+        for action in menu.actions():
+            if action.property(LAYOUT_ACTION_PROPERTY):
+                menu.removeAction(action)
+                action.deleteLater()
+        names = saved_layouts.layout_names()
+        if len(names) == 0:
+            return
+        separator = menu.addSeparator()
+        assert separator is not None
+        separator.setProperty(LAYOUT_ACTION_PROPERTY, True)
+        enabled = AppStateTracker.app_state() in (APP_STATE_EDITING, APP_STATE_NO_IMAGE)
+        for name in names:
+            action = menu.addAction(name.replace('&', '&&'))
+            assert action is not None
+            action.setProperty(LAYOUT_ACTION_PROPERTY, True)
+            action.setEnabled(enabled)
+            action.triggered.connect(lambda _=False, layout_name=name: self._apply_saved_layout(layout_name))
 
     @menu_action(MENU_VIEW, 'toggle_rulers_shortcut', 198)
     def toggle_rulers(self) -> None:
