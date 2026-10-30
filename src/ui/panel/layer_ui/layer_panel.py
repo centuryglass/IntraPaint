@@ -348,9 +348,13 @@ class LayerPanel(DockPanel):
         """
         hint = super().minimumSizeHint()
         bar_width = self._button_bar.minimumSizeHint().width()
-        # The width the rest of the panel needs, when it is wider than the bar in its narrowest form:
-        other = max(self._content.layout().minimumSize().width(), self.header.minimumSizeHint().width(),
-                    self._narrow_bar_width)
+        # The width the rest of the panel needs, when it is wider than the bar in its narrowest form. The scrolled
+        # content sits inside the body's margins, beside a side panel's vertical scroll bar:
+        margins = self.content_margins()
+        content_width = self._content.layout().minimumSize().width() + margins.left() + margins.right()
+        if self.content_scrolls and self.orientation == Orientation.SIDE:
+            content_width += self.scroll_bar_extent()
+        other = max(content_width, self.header.minimumSizeHint().width(), self._narrow_bar_width)
         reduction = bar_width - other
         if reduction <= 0 or hint.width() < bar_width:
             return hint

@@ -250,6 +250,12 @@ class DockPanel(QWidget):
         self._cross_floor: Optional[tuple[Orientation, int, int]] = None
         # The inputs of the latest plan that checked for overflow, so repeated ones don't measure again:
         self._floor_inputs: Optional[tuple[Optional[Orientation], QSize]] = None
+        # The minimum and preferred size hints the panel last reported outside a plan, which it reports during one:
+        self._reported_minimum: Optional[QSize] = None
+        self._reported_preferred: Optional[QSize] = None
+        self._planning = False
+        # Whether anything read a size hint during the running plan:
+        self._hints_read_while_planning = False
         self._layout_model = PanelLayout()
         self._extra_items: list[tuple[FitItem, Callable[[Optional[int]], None]]] = []
         self._planner: Optional[FitPlanner] = None
@@ -264,6 +270,8 @@ class DockPanel(QWidget):
         self._packed = False
         # The room the horizontal scroll bar takes from column packing's height, while the content scrolls:
         self._pack_reserve = 0
+        # The room the scroll bar takes across the scrolled body, while the content scrolls:
+        self._scroll_bar_room = 0
         self._packed_columns = PackedColumns()
         # Shows a collapsed section's body when its header is clicked, and the section it shows:
         self._section_popover: Optional[PanelPopover] = None
@@ -516,7 +524,24 @@ class DockPanel(QWidget):
         self._update_plan(None, self._inside_inset(self.size()))
 
     def _update_plan(self, orientation: Optional[Orientation], available: QSize, force: bool = False) -> None:
-        """Plans for an available size, then records the cross extent the content overflows to, if it overflows."""
+        """Plans for an available size, then records the cross extent the content overflows to, if it overflows.
+
+        While the plan runs, the panel's size hints are the ones it last reported (see `minimumSizeHint`). Anything that
+        read them then is told to read them again afterwards.
+        """
+        if self._planning:
+            self._plan(orientation, available, force)
+            return
+        self._planning = True
+        self._hints_read_while_planning = False
+        try:
+            self._plan(orientation, available, force)
+        finally:
+            self._planning = False
+        if self._hints_read_while_planning:
+            self.updateGeometry()
+
+    def _plan(self, orientation: Optional[Orientation], available: QSize, force: bool) -> None:
         planner = self._fit_planner()
         planner.update(orientation, available, force)
         if not force and self._floor_inputs == (orientation, available):
@@ -541,14 +566,35 @@ class DockPanel(QWidget):
 
         The floor is learned when the content overflows and applies while the orientation and the scroll-axis size stay
         the same, since the smallest placement's cross extent depends on both.
+
+        While a plan runs, it returns the hint it last returned outside one, as `sizeHint` does. Showing a widget
+        activates the layouts of every shown ancestor, so a trial arrangement's hints would otherwise reach the dock's
+        main window, which resizes the dock to fit an arrangement the plan may not keep.
         """
+        if self._planning and self._reported_minimum is not None:
+            self._hints_read_while_planning = True
+            return QSize(self._reported_minimum)
         hint = super().minimumSizeHint()
-        if self._cross_floor is None:
-            return hint
-        orientation, _, floor = self._cross_floor
-        if orientation == Orientation.SIDE:
-            return QSize(max(hint.width(), floor), hint.height())
-        return QSize(hint.width(), max(hint.height(), floor))
+        if self._cross_floor is not None:
+            orientation, _, floor = self._cross_floor
+            if orientation == Orientation.SIDE:
+                hint = QSize(max(hint.width(), floor), hint.height())
+            else:
+                hint = QSize(hint.width(), max(hint.height(), floor))
+        if not self._planning:
+            self._reported_minimum = QSize(hint)
+        return hint
+
+    def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the layout's preferred size, or while a plan runs, the one it last returned outside one (see
+        `minimumSizeHint`)."""
+        if self._planning and self._reported_preferred is not None:
+            self._hints_read_while_planning = True
+            return QSize(self._reported_preferred)
+        hint = super().sizeHint()
+        if not self._planning:
+            self._reported_preferred = QSize(hint)
+        return hint
 
     def arrange(self, orientation: Orientation) -> None:
         """Lays out structure that depends only on the orientation. Called when it changes, before any placement.
@@ -583,28 +629,28 @@ class DockPanel(QWidget):
         return self._scroll.horizontalScrollBar().sizeHint().height()
 
     def measure(self) -> QSize:
-        """Returns the content's minimum size as currently arranged, from `measure_content`, with room across for the
-        scroll bar when the content overflows along the scroll axis.
+        """Returns the content's minimum size as currently arranged, from `measure_content`, with room across the
+        scrolled body for the scroll bar when the content overflows along the scroll axis.
 
-        A scroll bar narrows the body, so the header is fit to its `header_width` again when that changes.
+        The scroll bar sits inside the scroll area, so it adds to the body alone, not to the header, footer or columns
+        beside it. A scroll bar narrows the body, so the header is fit to its `header_width` again when that changes.
         """
         self._pack_reserve = 0
+        self._scroll_bar_room = 0
         need = self.measure_content()
         available = self.available_size
         scrolls = available is not None and scroll_extent(need, self._orientation) > scroll_extent(available,
                                                                                                   self._orientation)
-        if scrolls and self._packed:
-            self._pack_reserve = self.scroll_bar_extent()
-            need = self.measure_content()
+        if not scrolls and scrolls == self._scrolls:
+            return need
         if scrolls != self._scrolls:
             self._scrolls = scrolls
             self._fit_header_width()
-            need = self.measure_content()
-        if not scrolls:
-            return need
-        if self._orientation == Orientation.SIDE:
-            return QSize(need.width() + self.scroll_bar_extent(), need.height())
-        return QSize(need.width(), need.height() + self.scroll_bar_extent())
+        if scrolls:
+            self._scroll_bar_room = self.scroll_bar_extent()
+            if self._packed:
+                self._pack_reserve = self._scroll_bar_room
+        return self.measure_content()
 
     def measure_content(self) -> QSize:
         """Returns the content's minimum size as currently arranged: the header, if shown above the scroll area, over
@@ -619,6 +665,10 @@ class DockPanel(QWidget):
         if self._packed:
             self._pack_sections()
         content = fresh_minimum_size(self._body)
+        if self._orientation == Orientation.SIDE:
+            content.setWidth(content.width() + self._scroll_bar_room)
+        else:
+            content.setHeight(content.height() + self._scroll_bar_room)
         spacing = max(self.layout().spacing(), 0)
         if self._pinned.shown or (self._trailing is not None and self._trailing.shown):
             content = self._measure_with_pinned_columns(content)

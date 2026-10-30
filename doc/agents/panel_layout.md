@@ -49,3 +49,6 @@ These hold at every size, whatever the design shows.
 - **Hints never fail a test:** every kind in `HINT_KINDS`. Sweep sheets caption them in amber. Change a layout for a
   hint only when the maintainer asks.
 - The other invariants have no sweep check.
+- **The sweep's host is a plain widget, not a dock.** `test/ui/window/docked_panel_resize_test.py` drags the separators
+  around a panel docked in a `QMainWindow`, which is where a panel's size hints decide whether the dock overlaps its
+  neighbors.
