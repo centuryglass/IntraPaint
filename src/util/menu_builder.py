@@ -141,6 +141,12 @@ class MenuBuilder:
         menu.addAction(action)
         return action
 
+    def get_menu(self, menu_name: str) -> QMenu:
+        """Returns the `QMenu` for a menu name, creating it if needed. Nested menus are named "menu.submenu"."""
+        menu = self._find_or_add_menu(menu_name)
+        assert menu is not None
+        return menu
+
     def insert_menu_actions(self, menu_name: str, actions: list[QAction]) -> None:
         """Adds existing actions at the start of a menu, above a separator, creating the menu if needed.
 

@@ -2948,6 +2948,26 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
+        <source>Save current layout...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Save the current panel arrangement under a name, so it can be applied later.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Manage layouts...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Apply, rename or delete saved panel layouts.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
         <source>Show/hide rulers</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3534,6 +3554,21 @@
     <message>
         <location filename="../../src/controller/app_controller.py"/>
         <source>Panels</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Layout not applied</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>The layout "{layout_name}" could not be restored. It may be corrupt or saved by an older version. Delete it in Manage layouts.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Layouts</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6239,6 +6274,49 @@ Keys: {decrease} / {increase}</source>
     </message>
 </context>
 <context>
+    <name>ui.modal.layout_name_modal</name>
+    <message>
+        <location filename="../../src/ui/modal/layout_name_modal.py"/>
+        <source>Save panel layout</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/layout_name_modal.py"/>
+        <source>Rename panel layout</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/layout_name_modal.py"/>
+        <source>Layout name:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/layout_name_modal.py"/>
+        <source>Save</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/layout_name_modal.py"/>
+        <source>Cancel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/layout_name_modal.py"/>
+        <source>Enter a name for the layout.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/layout_name_modal.py"/>
+        <source>Replace layout?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/layout_name_modal.py"/>
+        <source>A layout named "{layout_name}" already exists. Replace it?</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.modal.login_modal</name>
     <message>
         <location filename="../../src/ui/modal/login_modal.py"/>
@@ -6273,6 +6351,44 @@ Keys: {decrease} / {increase}</source>
     <message>
         <location filename="../../src/ui/modal/login_modal.py"/>
         <source>Unknown error, try again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.modal.manage_layouts_modal</name>
+    <message>
+        <location filename="../../src/ui/modal/manage_layouts_modal.py"/>
+        <source>Manage panel layouts</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/manage_layouts_modal.py"/>
+        <source>Apply</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/manage_layouts_modal.py"/>
+        <source>Rename</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/manage_layouts_modal.py"/>
+        <source>Delete</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/manage_layouts_modal.py"/>
+        <source>Close</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/manage_layouts_modal.py"/>
+        <source>Delete layout?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/manage_layouts_modal.py"/>
+        <source>Delete the layout "{layout_name}"?</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

@@ -15,7 +15,8 @@ from PySide6.QtWidgets import QApplication, QStyleFactory, QWidget
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.controller.app_controller import AppController
+from src.controller.app_controller import AppController, MENU_VIEW_LAYOUTS, LAYOUT_ACTION_PROPERTY
+from src.ui.window import saved_layouts
 from src.controller.image_generation.test_generator import TestGenerator
 from src.image.layers.image_layer import ImageLayer
 from src.ui.modal.settings_modal import SettingsModal
@@ -80,6 +81,35 @@ class TestAppController(IntraPaintTestCase):
         self.args.server_url = ''
         self.args.fast_ngrok_connection = False
         self.controller = AppController(self.args)
+
+    def _layout_entries(self) -> list[str]:
+        """Opens the Layouts submenu and returns the saved-layout entry texts."""
+        menu = self.controller.get_menu(MENU_VIEW_LAYOUTS)
+        menu.aboutToShow.emit()
+        return [action.text() for action in menu.actions() if action.property(LAYOUT_ACTION_PROPERTY)
+                and not action.isSeparator()]
+
+    def test_layout_menu_lists_saved_layouts(self):
+        """The Layouts submenu lists exactly the saved names, with "&" shown literally."""
+        self.assertEqual(self._layout_entries(), [])
+        saved_layouts.save_layout('Wide & tall', self.controller._window.save_dock_state())
+        saved_layouts.save_layout('alpha', 'bad')
+        self.assertEqual(self._layout_entries(), ['alpha', 'Wide && tall'])
+        saved_layouts.rename_layout('alpha', 'zed')
+        self.assertEqual(self._layout_entries(), ['Wide && tall', 'zed'])
+        saved_layouts.delete_layout('zed')
+        self.assertEqual(self._layout_entries(), ['Wide && tall'])
+
+    @patch('src.controller.app_controller.show_error_dialog')
+    def test_apply_saved_layout(self, mock_error_dialog):
+        """A good layout applies silently, and a corrupt one shows an error."""
+        saved_layouts.save_layout('good', self.controller._window.save_dock_state())
+        saved_layouts.save_layout('bad', 'not a layout')
+        self.controller._apply_saved_layout('good')
+        mock_error_dialog.assert_not_called()
+        self.controller._apply_saved_layout('bad')
+        self.controller._apply_saved_layout('missing')
+        self.assertEqual(mock_error_dialog.call_count, 2)
 
     def test_init(self):
         self.assertIsInstance(self.controller, AppController)
