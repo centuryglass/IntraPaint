@@ -106,7 +106,7 @@ def show_warning_dialog(parent: Optional[QWidget], title: str, message: str,
     messagebox.setWindowTitle(title)
     messagebox.setText(message)
     messagebox.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxWarning, parent))
-    messagebox.setIcon(QMessageBox.Icon.Critical)
+    messagebox.setIcon(QMessageBox.Icon.Warning)
     if reminder_config_key is not None:
         checkbox = CheckBox()
         checkbox.setText(CHECKBOX_MESSAGE_DO_NOT_WARN_AGAIN)
