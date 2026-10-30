@@ -1,6 +1,5 @@
 """Popup modal window used for cropping or extending the edited image without scaling its contents."""
 from typing import Optional, cast
-import math
 from PySide6.QtWidgets import QWidget, QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QApplication, QLabel
 from PySide6.QtCore import QSize, QRect, QPoint
 from PySide6.QtGui import QResizeEvent, QIcon
@@ -38,6 +37,7 @@ CANCEL_BUTTON_LABEL = _tr('Cancel')
 RESIZE_BUTTON_LABEL = _tr('Resize image canvas')
 
 MIN_PX_VALUE = 1
+MIN_PREVIEW_PX = 240
 
 
 class ResizeCanvasModal(QDialog):
@@ -89,6 +89,7 @@ class ResizeCanvasModal(QDialog):
         self._crop_checkbox.valueChanged.connect(self.update)
 
         self._preview = CanvasChangePreviewWidget(image_stack)
+        self._preview.setMinimumSize(MIN_PREVIEW_PX, MIN_PREVIEW_PX)
 
         for input_field in (self._width_slider, self._height_slider, self._x_offset_slider, self._y_offset_slider):
             input_field.valueChanged.connect(self._update_preview)
@@ -137,6 +138,7 @@ class ResizeCanvasModal(QDialog):
             self._layout.addWidget(widget)
         self._layout.setStretch(self._layout.indexOf(self._preview), 1)
         self.setLayout(self._layout)
+        self.resize(self.sizeHint().expandedTo(QSize(MIN_PREVIEW_PX * 2, MIN_PREVIEW_PX * 3)))
         self.resizeEvent(None)
 
     def _update_preview(self, _) -> None:
@@ -155,10 +157,7 @@ class ResizeCanvasModal(QDialog):
         self.hide()
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
-        """Recalculate preview bounds on resize."""
-        min_preview = math.ceil(min(self.width(), self.height()) * 0.8)
-        self._preview.setMinimumSize(QSize(min_preview, min_preview))
-        self._preview.setMaximumSize(self.width(), self.height())
+        """Realign the sliders on resize. The preview's minimum size is fixed so the window can shrink again."""
         IntSliderSpinbox.align_slider_spinboxes([self._width_slider, self._height_slider,
                                                  self._x_offset_slider, self._y_offset_slider])
 
