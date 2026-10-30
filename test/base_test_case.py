@@ -25,6 +25,7 @@ from unittest.mock import MagicMock
 import numpy as np
 from PySide6.QtCore import QCoreApplication, QEvent, Qt, SignalInstance
 from PySide6.QtGui import QImage, QKeyEvent, QPalette
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLayoutItem, QWidget
 from shiboken6 import getAllValidWrappers
 
@@ -73,6 +74,37 @@ def app_appearance() -> dict[str, Any]:
         'stylesheet': app.styleSheet(),
         'palette': QPalette(app.palette())
     }
+
+
+def held_input() -> list[str]:
+    """Returns the mouse buttons and keyboard modifiers the application still counts as held, by name.
+
+    `QTest` press events set this state and only a matching release clears it, so a test that presses without
+    releasing leaves it set for every later test. Listeners such as `GenerationAreaController.follow_selection` wait
+    while a button is held.
+    """
+    buttons = QApplication.mouseButtons()
+    modifiers = QApplication.keyboardModifiers()
+    held = [button.name for button in Qt.MouseButton if button != Qt.MouseButton.NoButton and button in buttons
+            and button.value & (button.value - 1) == 0]
+    held.extend(modifier.name for modifier in Qt.KeyboardModifier
+                if modifier != Qt.KeyboardModifier.NoModifier and modifier in modifiers
+                and modifier.value & (modifier.value - 1) == 0)
+    return held
+
+
+def release_held_input() -> None:
+    """Clears the held mouse buttons and keyboard modifiers by sending releases to a temporary widget."""
+    widget = QWidget()
+    widget.show()
+    try:
+        for button in Qt.MouseButton:
+            if button != Qt.MouseButton.NoButton and button in QApplication.mouseButtons():
+                QTest.mouseRelease(widget, button)
+        QTest.keyRelease(widget, Qt.Key.Key_unknown, Qt.KeyboardModifier.NoModifier)
+    finally:
+        widget.hide()
+        widget.deleteLater()
 
 
 def reset_singletons() -> None:
@@ -272,6 +304,9 @@ class IntraPaintTestCase(unittest.TestCase):
     A test fails if it changes the application's font, style, stylesheet or palette without restoring them, since every
     later test's layout depends on them. The fixture appearance is reapplied after such a test.
 
+    A test also fails if it leaves a mouse button or keyboard modifier held (`held_input`), since the state is
+    application-wide. It is released after such a test.
+
     Subclasses that override setUp or tearDown must call the superclass implementation: setUp first, tearDown last.
     """
 
@@ -297,7 +332,11 @@ class IntraPaintTestCase(unittest.TestCase):
         del self._appearance
         if len(changed_appearance) > 0:
             apply_fixture_appearance()
+        held = held_input()
+        if len(held) > 0:
+            release_held_input()
         super().tearDown()
+        self.assertEqual(held, [], 'The test left mouse buttons or keyboard modifiers held without releasing them')
         self.assertLessEqual(leaked, 0, f'{leaked} layout item wrappers outlived the test (see'
                                         f' layout_item_wrapper_count)')
         self.assertEqual(changed_appearance, [], 'The test changed the application appearance without restoring it')

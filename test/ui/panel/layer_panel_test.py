@@ -1011,8 +1011,10 @@ class LayerPanelTest(IntraPaintTestCase):
         self.assertIs(self.image_stack.active_layer, self.bottom)
         strip = self.panel.layer_list.image_strip
         QtTest.QTest.mousePress(self.row(self.inner_top), Qt.MouseButton.RightButton)
+        QtTest.QTest.mouseRelease(self.row(self.inner_top), Qt.MouseButton.RightButton)
         self.assertIs(self.image_stack.active_layer, self.inner_top)
         QtTest.QTest.mousePress(strip, Qt.MouseButton.RightButton)
+        QtTest.QTest.mouseRelease(strip, Qt.MouseButton.RightButton)
         self.assertIs(self.image_stack.active_layer, self.image_stack.layer_stack)
 
     def test_menu_action_acts_on_the_clicked_layer(self) -> None:
@@ -1020,6 +1022,7 @@ class LayerPanelTest(IntraPaintTestCase):
         isn't opened, since `conftest.py` fails a test that opens one."""
         row = self.row(self.inner_top)
         QtTest.QTest.mousePress(row, Qt.MouseButton.RightButton)
+        QtTest.QTest.mouseRelease(row, Qt.MouseButton.RightButton)
         self.assertIs(self.image_stack.active_layer, self.inner_top)
         menu = row.build_menu()
         self.assertEqual(menu.title(), 'inner_top')
