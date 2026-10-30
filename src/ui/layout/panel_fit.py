@@ -81,12 +81,18 @@ Placement = tuple[Optional[int], ...]
 
 @dataclass(frozen=True)
 class FitItem:
-    """One part of a panel's content: a priority, and how many forms it has, largest first.
+    """One part of a panel's content: a priority, how many forms it has (largest first), and whether its forms must fit
+    the available width.
+
+    `fit_width` is for content that never scrolls sideways, such as a footer: a form that is wider than the available
+    width loses to a narrower one in a strip too, where width is the scroll axis. A form still fits when it adds no
+    width to the content's minimum.
 
     Raises ValueError for a negative priority or a form count below 1.
     """
     priority: int = REQUIRED
     form_count: int = 1
+    fit_width: bool = False
 
     def __post_init__(self) -> None:
         if self.priority < REQUIRED:
@@ -178,6 +184,8 @@ def _greedy(items: Sequence[FitItem], available: QSize, orientation: Orientation
             need = measure(tuple(trial))
             fits = _fits_axis(cross_extent(need, orientation), cross_extent(before, orientation),
                               cross_extent(available, orientation))
+            if fits and item.fit_width:
+                fits = _fits_axis(need.width(), before.width(), available.width())
             if fits and not item.required:
                 fits = _fits_axis(scroll_extent(need, orientation), scroll_extent(before, orientation),
                                   scroll_extent(available, orientation))

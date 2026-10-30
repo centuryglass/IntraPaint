@@ -180,7 +180,7 @@ class LayerPanel(DockPanel):
         self._build_more_content()
 
         self.add_fit_item(FitItem(REQUIRED, 2), self._apply_controls_form)
-        self.add_fit_item(FitItem(REQUIRED, len(BAR_FORMS)), self._apply_bar_form)
+        self.add_fit_item(FitItem(REQUIRED, len(BAR_FORMS), fit_width=True), self._apply_bar_form)
         self.add_fit_item(FitItem(META_PRIORITY), self._apply_meta_form)
         self.add_fit_item(FitItem(LARGE_PRIORITY), self._apply_large_form)
         self.set_strip_scroll_limit(STRIP_SCROLL_LIMIT)

@@ -93,6 +93,14 @@ class PlanFitTest(IntraPaintTestCase):
         self.assertEqual(plan_fit(items, QSize(100, 250), STRIP, content.measure), (0, None))
         self.assertEqual(plan_fit(items, QSize(1000, 150), STRIP, content.measure), (1, 0))
 
+    def test_fit_width_items_are_also_judged_by_width_in_a_strip(self) -> None:
+        """A required item with `fit_width` takes a form that fits the available width, even where width scrolls."""
+        content = StackedContent(STRIP, [(20, 300), (20, 100)])
+        available = QSize(200, 50)
+        self.assertEqual(plan_fit([FitItem(REQUIRED, 2)], available, STRIP, content.measure), (0,))
+        self.assertEqual(plan_fit([FitItem(REQUIRED, 2, fit_width=True)], available, STRIP, content.measure), (1,))
+        self.assertEqual(plan_fit([FitItem(REQUIRED, 2, fit_width=True)], QSize(400, 50), STRIP, content.measure), (0,))
+
     def test_fill_order_follows_priority_then_declaration(self) -> None:
         """Lower priorities are placed first, ties go in declaration order, and a later item that fits is still
         placed after an earlier one didn't."""
