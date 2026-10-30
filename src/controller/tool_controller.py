@@ -31,8 +31,8 @@ from src.ui.modal.modal_utils import show_warning_dialog
 from src.util.math_utils import clamp
 from src.util.optional_import import optional_import
 
-# PyInstaller can't see optional imports: each module below must be listed in the `hiddenimports` of IntraPaint.spec
-# and IntraPaint-linux.spec, or bundles ship without it.
+# PyInstaller can't see optional imports: each module below must be listed in the `hiddenimports` of IntraPaint.spec,
+# or bundles ship without it.
 MyPaintBrushTool = optional_import('src.tools.mypaint_brush_tool', attr_name='MyPaintBrushTool')
 # Both fill tools import the compiled `src.util.visual.image_fill` module, which is missing when the Cython build
 # failed. They are None in that case, and every use in ToolController must handle that.
