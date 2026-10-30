@@ -428,10 +428,6 @@ class StrokeBlock(QWidget):
             self._grid.setColumnStretch(0, CONTROL_COLUMN_STRETCH)
             self._grid.setColumnStretch(1, CONTROL_COLUMN_STRETCH)
             column = 2
-            if self._preview is not None and beside:
-                self._grid.addWidget(self._preview, 0, 2)
-                self._grid.setColumnStretch(2, CONTROL_COLUMN_STRETCH)
-                column = 3
             if len(self._tool_sections) > 0:
                 # With columns after it, an options column wider than its content would leave a gap before them. The
                 # fresh measurement counts the checkboxes' direction, which was set a moment ago:
@@ -448,6 +444,11 @@ class StrokeBlock(QWidget):
                 self._tool_columns[section] = column
                 column += 1
             self.update_tool_columns()
+            # The preview is decorative, so it follows the tool's own columns:
+            if self._preview is not None and beside:
+                self._grid.addWidget(self._preview, 0, column)
+                self._grid.setColumnStretch(column, CONTROL_COLUMN_STRETCH)
+                column += 1
             self._grid.setColumnStretch(column, SPARE_COLUMN_STRETCH)
             # Height beyond what the sections need goes below them:
             self._grid.setRowStretch(1, 1)

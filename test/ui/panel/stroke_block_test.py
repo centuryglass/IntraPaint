@@ -341,6 +341,22 @@ class ToolPanelsOnStrokeBlockTest(ToolTestCase):
                     self.assertEqual(panel.stroke_block.arrangement.preview, preview)
                     self.assertEqual(preview_widget.isHidden(), preview is None)
 
+    def test_strip_puts_the_preview_after_the_tool_columns(self) -> None:
+        """In a strip wide enough for the preview, it sits right of the Filter and Source sections."""
+        for name, panel in (('Filter', self._filter_panel()), ('Clone stamp', CloneStampToolPanel())):
+            with self.subTest(panel=name):
+                panel.show()
+                panel.set_fit_space(STRIP, QSize(1400, 200))
+                settle_layouts(panel)
+                block = panel.stroke_block
+                preview_widget = block._preview  # pylint: disable=protected-access
+                assert preview_widget is not None
+                self.assertEqual(block.arrangement.preview, BESIDE)
+                sections = [section for section, _ in block._tool_sections]  # pylint: disable=protected-access
+                self.assertGreater(len(sections), 0)
+                for section in sections:
+                    self.assertGreater(preview_widget.x(), section.geometry().right())
+
     def _stroke_panels(self) -> dict[str, StrokeToolPanel]:
         """Returns shown panels, because Qt only hides a reparented widget that is visible."""
         panels = {'Draw': DrawToolPanel(), 'Filter': self._filter_panel(), 'Clone stamp': CloneStampToolPanel()}
