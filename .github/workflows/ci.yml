@@ -290,12 +290,10 @@ jobs:
             # A Linux bundle needs at least the glibc of the machine that built it. 22.04's is just above the
             # PySide6 wheel's own minimum, so building there keeps the bundle running on older distros.
             os: ubuntu-22.04
-            spec: IntraPaint-linux.spec
             executable: dist/IntraPaint
             artifact: IntraPaint-linux
           - name: windows
             os: windows-latest
-            spec: IntraPaint.spec
             executable: dist/IntraPaint.exe
             artifact: IntraPaint-windows
     defaults:
@@ -333,7 +331,7 @@ jobs:
           python -c "import src.util.visual.image_fill as m; assert not m.__file__.endswith('.py'), m.__file__"
 
       - name: Build bundle
-        run: pyinstaller --noconfirm ${{ matrix.spec }}
+        run: pyinstaller --noconfirm IntraPaint.spec
 
       - name: Launch test
         run: python scripts/smoke_test_bundle.py ${{ matrix.executable }}

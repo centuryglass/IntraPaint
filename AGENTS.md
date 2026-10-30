@@ -369,9 +369,10 @@ of a Claude Code on the web session it also installs the system libraries CI ins
 
 ## Packaging
 
-- `scripts/build.sh` → builds the Cython extension then runs `pyinstaller IntraPaint-linux.spec` (Windows uses
-  `IntraPaint.spec`). Output lands in `dist/`. `scripts/clean.sh` removes `build/` and `dist/`.
-- The specs' splash screen needs tkinter in the Python that runs PyInstaller; without it the build aborts.
+- `scripts/build.sh` → builds the Cython extension then runs `pyinstaller IntraPaint.spec`, which branches on
+  `sys.platform` (Windows users run the script from Git Bash). Output lands in `dist/`. `scripts/clean.sh` removes
+  `build/` and `dist/`.
+- The spec's splash screen needs tkinter in the Python that runs PyInstaller; without it the build aborts.
 - CI's `bundle` job builds the Linux and Windows bundles and runs `scripts/smoke_test_bundle.py` on each, so a
   dependency bump that breaks packaging fails CI. Its uploaded artifacts are the release candidates, and
   `.github/workflows/release.yml` attaches master's to the release.
