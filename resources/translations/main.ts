@@ -1438,6 +1438,16 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
+        <source>Named panel layouts</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Panel layouts the user saved by name, each holding the dock arrangement only: base64 QMainWindow.saveState data under 'state'.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
         <source>Layer thumbnail size:</source>
         <translation type="unfinished"></translation>
     </message>

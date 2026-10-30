@@ -827,6 +827,15 @@
         "default": "",
         "saved": true
     },
+    "saved_layouts": {
+        "label": "Named panel layouts",
+        "category": "Cache",
+        "subcategory": "Window placement",
+        "description": "Panel layouts the user saved by name, each holding the dock arrangement only: base64 QMainWindow.saveState data under 'state'.",
+        "type": "dict",
+        "default": {},
+        "saved": true
+    },
     "layer_thumbnail_size": {
         "label": "Layer thumbnail size:",
         "category": "Cache",

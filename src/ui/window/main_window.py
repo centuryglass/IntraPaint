@@ -3,7 +3,8 @@ The primary image editing window: the canvas in the center, with every other pan
 
 - Docks float, tabify and nest freely. Their arrangement is saved with `saveState` (`save_dock_state`) and restored
   once at startup with `restore_dock_state`. `__init__` lays out the first-run layout, which stays when nothing is
-  saved or a restore fails.
+  saved or a restore fails. `apply_dock_state` applies a saved layout at any time, for named layouts
+  (`src.ui.window.saved_layouts`).
 - Each tab group shows one dock at a time, and Qt's dock tab bars are never drawn (see `src.ui.window.dock_groups`).
 - The Tools, Image Generation and ControlNet docks always exist, so a restore can place them even before their
   generator provides content. A dock without content stays hidden (see `PanelDock.set_content`).
@@ -87,7 +88,8 @@ ICON_PATH_COLOR_DOCK = f'{PROJECT_DIR}/resources/icons/tabs/colors.svg'
 ICON_PATH_NAVIGATION_DOCK = f'{PROJECT_DIR}/resources/icons/tabs/navigation.svg'
 
 # A saved dock layout carries this version, and `restore_dock_state` rejects any other. Increase it when the docks
-# change in a way an older layout can't describe.
+# change in a way an older layout can't describe. Increasing it invalidates every named layout in
+# `src.ui.window.saved_layouts` as well as the auto-saved one.
 DOCK_STATE_VERSION = 2
 
 # First-run dock sizes, across the dock area: width for a side area, height for a strip area.
@@ -391,17 +393,30 @@ class MainWindow(QMainWindow):
         return state.toBase64().data().decode()
 
     def restore_dock_state(self, saved_state: str) -> bool:
-        """Restores a layout from `save_dock_state`, returning whether it did.
+        """Restores a layout from `save_dock_state` at startup, returning whether it did.
 
-        Call it once, at startup, after restoring the window geometry so docks are fitted to the restored window size.
-        Qt keeps docks inside the window and moves floating docks onto a current display. Empty, invalid or
-        wrong-version text leaves the first-run layout from `__init__` in place.
+        Call it once, after restoring the window geometry so docks are fitted to the restored window size. Empty,
+        invalid or wrong-version text leaves the first-run layout from `__init__` in place. See `apply_dock_state` for
+        later changes.
         """
         if saved_state == '':
             return False
-        # A failed restore changes nothing, so the first-run layout from __init__ stays:
-        if not self._restore_layout(QByteArray.fromBase64(saved_state.encode())):
+        if not self.apply_dock_state(saved_state):
             logger.warning('Could not restore the saved panel layout, using the default layout')
+            return False
+        return True
+
+    def apply_dock_state(self, saved_state: str) -> bool:
+        """Applies a layout from `save_dock_state`, returning whether it did.
+
+        Qt keeps docks inside the window and moves floating docks onto a current display. The window's geometry is
+        unchanged. Empty, invalid or wrong-version text leaves the live layout unchanged.
+        """
+        if saved_state == '':
+            return False
+        # Closing the selector puts the docks back, so a rejected state leaves the layout from before the selector:
+        self.set_image_selector_visible(False)
+        if not self._restore_layout(QByteArray.fromBase64(saved_state.encode())):
             return False
         self._rails.sync()
         return True
