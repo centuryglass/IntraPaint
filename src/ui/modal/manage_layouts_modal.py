@@ -2,7 +2,8 @@
 from typing import Callable, Optional
 
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import (QApplication, QDialog, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QDialog, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton,
+                               QVBoxLayout, QWidget)
 
 from src.ui.modal.layout_name_modal import TITLE_RENAME, prompt_layout_name
 from src.ui.modal.modal_utils import request_confirmation
