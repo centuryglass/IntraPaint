@@ -4,7 +4,7 @@ import sys
 import tempfile
 import weakref
 from contextlib import contextmanager
-from typing import Iterator
+from typing import Iterator, Optional
 from unittest.mock import patch, MagicMock
 
 from PIL import Image
@@ -23,7 +23,7 @@ from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
 from src.util.arg_parser import build_arg_parser
 from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_READ_FORMATS, \
-    IMAGE_WRITE_FORMATS
+    IMAGE_WRITE_FORMATS, AnimationSaveOptions, count_image_frames, load_image_frames
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -290,8 +290,8 @@ class TestAppController(IntraPaintTestCase):
                                          f'Metadata expected but not found for format {file_format}')
 
 
-class TestOpenAnimation(IntraPaintTestCase):
-    """Tests opening animated images as one layer per frame."""
+class AnimationControllerTestCase(IntraPaintTestCase):
+    """Builds a mock-mode controller and a three-frame GIF for the animation open and save tests."""
 
     COLORS = [(255, 0, 0, 255), (0, 255, 0, 255), (0, 0, 255, 255)]
 
@@ -314,6 +314,11 @@ class TestOpenAnimation(IntraPaintTestCase):
 
     def _layer_names_bottom_up(self) -> list[str]:
         return [layer.name for layer in sorted(self.image_stack.top_level_layers, key=lambda layer: layer.z_value)]
+
+
+
+class TestOpenAnimation(AnimationControllerTestCase):
+    """Tests opening animated images as one layer per frame."""
 
     def test_open_animation(self) -> None:
         """Opening an animated GIF loads one layer per frame and keeps the loop count in the metadata."""
@@ -422,3 +427,64 @@ class TestRestorePreviousChoicesAction(IntraPaintTestCase):
         self.window.set_image_selector_visible(False)
         AppStateTracker.set_app_state(APP_STATE_LOADING)
         self.assertFalse(self._action().isEnabled())
+
+
+class TestSaveAnimation(AnimationControllerTestCase):
+    """Tests saving one layer per frame as an animated image."""
+
+    SAVE_MODAL = 'src.controller.app_controller.AnimationSaveModal.show_animation_save_modal'
+
+    def setUp(self) -> None:
+        super().setUp()
+        # Decline the metadata prompt and hide the data loss warnings, which would block offscreen:
+        for target, return_value in (('request_confirmation', False), ('show_warning_dialog', None)):
+            patcher = patch(f'src.controller.app_controller.{target}', return_value=return_value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def _saved_frame_durations(self, file_path: str) -> list[Optional[int]]:
+        return [frame.duration_ms for frame in load_image_frames(file_path)]
+
+    def test_save_animation_round_trip(self) -> None:
+        """Save As with the modal's animation options writes every layer as a frame, and reopening restores them."""
+        self.controller.load_image(self.gif_path)
+        for extension in ('gif', 'webp', 'apng'):
+            with self.subTest(extension=extension), patch(
+                    self.SAVE_MODAL, return_value=(True, AnimationSaveOptions(75, 0))) as mock_modal:
+                path = os.path.join(self.temp_dir.name, f'saved.{extension}')
+                with patch('src.controller.app_controller.open_image_file', return_value=path):
+                    self.controller.save_image_as()
+                mock_modal.assert_called_once()
+                self.assertEqual(self._saved_frame_durations(path), [100, 200, 50])
+                self.controller.load_image(path)
+                self.assertEqual(self._layer_names_bottom_up(),
+                                 ['Frame 1 (100ms)', 'Frame 2 (200ms)', 'Frame 3 (50ms)'])
+
+    def test_save_flattened(self) -> None:
+        """Choosing a flattened save in the modal writes a single frame."""
+        self.controller.load_image(self.gif_path)
+        path = os.path.join(self.temp_dir.name, 'flat.webp')
+        with patch(self.SAVE_MODAL, return_value=(True, None)), \
+                patch('src.controller.app_controller.open_image_file', return_value=path):
+            self.controller.save_image_as()
+        self.assertEqual(count_image_frames(path), 1)
+
+    def test_cancel_saves_nothing(self) -> None:
+        """Canceling the animation modal writes no file."""
+        self.controller.load_image(self.gif_path)
+        path = os.path.join(self.temp_dir.name, 'canceled.gif')
+        with patch(self.SAVE_MODAL, return_value=(False, None)), \
+                patch('src.controller.app_controller.open_image_file', return_value=path):
+            self.controller.save_image_as()
+        self.assertFalse(os.path.exists(path))
+
+    def test_plain_save_reuses_options(self) -> None:
+        """Saving to a known path doesn't show the modal, and uses the options remembered from the opened file."""
+        self.controller.load_image(self.gif_path)
+        path = os.path.join(self.temp_dir.name, 'plain.gif')
+        with patch(self.SAVE_MODAL) as mock_modal:
+            self.controller.save_image_as(path)
+        mock_modal.assert_not_called()
+        self.assertEqual(self._saved_frame_durations(path), [100, 200, 50])
+        with Image.open(path) as saved:
+            self.assertEqual(saved.info.get('loop'), 0)

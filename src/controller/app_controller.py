@@ -70,7 +70,7 @@ from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator,
 from src.controller.image_generation.test_generator import TestGenerator
 from src.controller.tool_controller import ToolController
 from src.hotkey_filter import HotkeyFilter
-from src.image.animation import load_frames_as_image, add_frame_layers
+from src.image.animation import load_frames_as_image, add_frame_layers, render_frames
 from src.image.filter.blur import BlurFilter
 from src.image.filter.brightness_contrast import BrightnessContrastFilter
 from src.image.filter.invert import InvertFilter
@@ -91,6 +91,7 @@ from src.image.open_raster import save_ora_image, read_ora_image, ORA_FILE_EXTEN
 from src.tools.base_tool import BaseTool
 from src.tools.generation_area_tool import GenerationAreaTool
 from src.ui.input_fields.pressure_curve_input import PressureCurveInput
+from src.ui.modal.animation_save_modal import AnimationSaveModal, saved_animation_options
 from src.ui.modal.image_scale_modal import ImageScaleModal
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers, \
     show_warning_dialog
@@ -126,7 +127,8 @@ from src.util.visual.image_format_utils import save_image_with_metadata, save_im
     IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_FORMATS_SUPPORTING_ALPHA, IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA, \
     METADATA_PARAMETER_KEY, IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, IMAGE_FORMATS_WITH_FIXED_SIZE, \
     GREYSCALE_IMAGE_FORMATS, METADATA_COMMENT_KEY, PIL_WRITE_FORMATS, QIMAGE_WRITE_FORMATS, count_image_frames, \
-    load_image_frames, ImageFrame
+    load_image_frames, ImageFrame, save_animation, AnimationSaveOptions, ANIMATION_WRITE_FORMATS, \
+    ANIMATION_ONLY_FORMATS
 from src.util.visual.image_utils import image_is_fully_opaque, image_has_partial_alpha, create_transparent_image
 
 # Optional spacenav support:
@@ -213,9 +215,14 @@ TITLE_CONFIRM_METADATA_UPDATE = _tr('Update image generation metadata?')
 MESSAGE_CONFIRM_METADATA_UPDATE = _tr('Image generation parameters have changed, would you like this image to be saved'
                                       ' with the most recent values?')
 
+# Upper limits of the animation save option ranges in cache_value_definitions.json:
+ANIMATION_MAX_FRAME_MS = 60000
+ANIMATION_MAX_LOOP_COUNT = 65535
+
 # Warnings when saving images cause data loss:
 LAYERS_NOT_SAVED_TITLE = _tr('Image saved without layer data')
-LAYERS_NOT_SAVED_MESSAGE = _tr('To save layer data, images must be saved in .ora format.')
+LAYERS_NOT_SAVED_MESSAGE = _tr('To save layer data, images must be saved in .ora format. To save each layer as an'
+                               ' animation frame, use one of the following formats: {animation_formats}')
 
 ALPHA_NOT_SAVED_TITLE = _tr('Image saved without full transparency')
 ALPHA_NOT_SAVED_MESSAGE = _tr('To preserve transparency, save using one of the following file formats:'
@@ -882,6 +889,8 @@ class AppController(MenuBuilder):
         cache = Cache()
         config = AppConfig()
         error_handled = False
+        # Plain saves reuse the remembered animation options, Save As asks:
+        ask_about_animation = not isinstance(file_path, str)
         try:
             if not isinstance(file_path, str):
                 self._window.setUpdatesEnabled(False)
@@ -901,6 +910,18 @@ class AppController(MenuBuilder):
             if (file_format not in QIMAGE_WRITE_FORMATS and file_format not in PIL_WRITE_FORMATS
                     and file_format != 'ORA'):
                 raise ValueError(SAVE_ERROR_MESSAGE_INVALID_EXTENSION.format(extension=file_format))
+
+            animation_options: Optional[AnimationSaveOptions] = None
+            if file_format in ANIMATION_WRITE_FORMATS and self._image_stack.layer_stack.count > 1:
+                animation_only = file_format in ANIMATION_ONLY_FORMATS
+                if ask_about_animation:
+                    confirmed, animation_options = AnimationSaveModal(
+                        self._window, allow_flattened=not animation_only).show_animation_save_modal()
+                    if not confirmed:
+                        error_handled = True  # Nothing was written, and canceling isn't an error.
+                        return
+                elif animation_only or cache.get(Cache.ANIMATION_SAVE_AS_ANIMATION):
+                    animation_options = saved_animation_options()
 
             # Check if metadata is out of date, ask if it should update:
             if file_format in IMAGE_FORMATS_SUPPORTING_METADATA and self._generator is not None \
@@ -935,15 +956,21 @@ class AppController(MenuBuilder):
                 save_ora_image(self._image_stack, file_path, json.dumps(self._metadata, cls=_Encoder))
             else:
                 image = self._image_stack.qimage()
+                animation_frames: Optional[list[ImageFrame]] = None
+                if animation_options is not None:
+                    animation_frames = render_frames(self._image_stack)
+                saved_images = [image] if animation_frames is None else [frame.image for frame in animation_frames]
 
                 # Check for data loss conditions that should be mentioned:
                 warn_save_discards_layers = (config.get(AppConfig.WARN_BEFORE_LAYERLESS_SAVE)
+                                             and animation_options is None
                                              and self._image_stack.layer_stack.count > 1)
                 warn_save_discards_alpha = (config.get(AppConfig.WARN_BEFORE_RGB_SAVE)
                                             and ((file_format not in IMAGE_FORMATS_SUPPORTING_ALPHA
-                                                  and not image_is_fully_opaque(image))
+                                                  and not all(image_is_fully_opaque(saved) for saved in saved_images))
                                                  or (file_format in IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA
-                                                     and image_has_partial_alpha(image))))
+                                                     and any(image_has_partial_alpha(saved)
+                                                             for saved in saved_images))))
                 warn_save_discards_metadata = (config.get(AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA)
                                                and self._metadata is not None
                                                and METADATA_PARAMETER_KEY in self._metadata
@@ -956,7 +983,10 @@ class AppController(MenuBuilder):
                                           and image.size() != IMAGE_FORMATS_WITH_FIXED_SIZE[file_format])
                 warn_save_removes_color = (config.get(AppConfig.WARN_BEFORE_COLOR_LOSS)
                                            and file_format in GREYSCALE_IMAGE_FORMATS)
-                if file_format in IMAGE_FORMATS_SUPPORTING_METADATA:
+                if animation_frames is not None:
+                    assert animation_options is not None
+                    save_animation(animation_frames, file_path, animation_options, self._metadata, self._exif)
+                elif file_format in IMAGE_FORMATS_SUPPORTING_METADATA:
 
                     try:
                         save_image_with_metadata(image, file_path, self._metadata, self._exif)
@@ -978,6 +1008,8 @@ class AppController(MenuBuilder):
                     return ', '.join((f'.{ext.lower()}' for ext in extensions))
 
                 format_str = f'.{file_format.lower()}'
+                layers_loss_message = LAYERS_NOT_SAVED_MESSAGE.format(
+                    animation_formats=_extension_str(tuple(sorted(ANIMATION_WRITE_FORMATS))))
 
                 if warn_save_discards_alpha:
                     alpha_loss_message = alpha_loss_message.format(
@@ -999,7 +1031,7 @@ class AppController(MenuBuilder):
 
                 for loss_condition, warn_on_save_config_key, title, message in (
                         (warn_save_discards_layers, AppConfig.WARN_BEFORE_LAYERLESS_SAVE, LAYERS_NOT_SAVED_TITLE,
-                         LAYERS_NOT_SAVED_MESSAGE),
+                         layers_loss_message),
                         (warn_save_discards_alpha, AppConfig.WARN_BEFORE_RGB_SAVE, ALPHA_NOT_SAVED_TITLE,
                          alpha_loss_message),
                         (warn_save_discards_metadata, AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA,
@@ -1080,7 +1112,9 @@ class AppController(MenuBuilder):
                             self._metadata = {}
                         self._metadata[METADATA_PARAMETER_KEY] = description
                 if self._should_load_frames(file_path, image.size()):
-                    load_frames_as_image(self._image_stack, load_image_frames(file_path))
+                    frames = load_image_frames(file_path)
+                    load_frames_as_image(self._image_stack, frames)
+                    self._remember_animation_options(frames, self._metadata)
                 else:
                     self._image_stack.load_image(image)
             cache.set(Cache.LAST_FILE_PATH, file_path)
@@ -1164,6 +1198,19 @@ class AppController(MenuBuilder):
             show_error_dialog(self._window, LOAD_LAYER_ERROR_TITLE, LOAD_LAYER_ERROR_MESSAGE + ','.join(errors))
         if self._image_stack.has_image:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
+
+    @staticmethod
+    def _remember_animation_options(frames: list[ImageFrame], file_info: Optional[dict[str, Any]]) -> None:
+        """Fills the animation save options from an opened animation's first frame duration and loop count."""
+        cache = Cache()
+        cache.set(Cache.ANIMATION_SAVE_AS_ANIMATION, True)
+        if frames[0].duration_ms is not None:
+            cache.set(Cache.ANIMATION_FRAME_DURATION, min(frames[0].duration_ms, ANIMATION_MAX_FRAME_MS))
+        loop = None if file_info is None else file_info.get('loop')
+        if isinstance(loop, int):
+            cache.set(Cache.ANIMATION_LOOP_FOREVER, loop == 0)
+            if loop > 0:
+                cache.set(Cache.ANIMATION_LOOP_COUNT, min(loop, ANIMATION_MAX_LOOP_COUNT))
 
     def _should_load_frames(self, file_path: str, frame_size: QSize) -> bool:
         """Returns whether to open each frame of a file as a layer, asking first if that would use a lot of memory."""

@@ -31,11 +31,12 @@ PIL_WRITE_FORMATS = {ex[1:].upper() for ex, f in Image.registered_extensions().i
                      if f in Image.SAVE and f not in EXCLUDED_PIL_FORMATS}
 
 # Formats that are programmatically listed as valid, but fail in testing.
-INVALID_WRITE_FORMATS = {'MSP', 'JFIF', 'PFM', 'APNG', 'WBMP', 'AVIFS', 'WMF', 'EMF'}
+INVALID_WRITE_FORMATS = {'MSP', 'JFIF', 'PFM', 'WBMP', 'AVIFS', 'WMF', 'EMF'}
 
 # Formats that need to be renamed to work correctly:
 RENAMED_FORMATS = {'ICB': 'TGA', 'VST': 'TGA', 'VDA': 'TGA', 'EMF': 'WMF', 'JPE': 'JPEG', 'JPG': 'JPEG',
-                   'RGB': 'SGI', 'RGBA': 'SGI', 'BW': 'SGI', 'PBM': 'PPM', 'PGM': 'PPM', 'PNM': 'PPM', 'TIF': 'TIFF'}
+                   'RGB': 'SGI', 'RGBA': 'SGI', 'BW': 'SGI', 'PBM': 'PPM', 'PGM': 'PPM', 'PNM': 'PPM', 'TIF': 'TIFF',
+                   'APNG': 'PNG'}
 
 # Formats saved with no Pillow format name. Pillow names these JPEG2000, and picks the container from the extension.
 OMITTED_FORMATS = {'JP2', 'J2K', 'JPC', 'JPF', 'JPX', 'J2C'}
@@ -50,13 +51,13 @@ for format_set in PIL_WRITE_FORMATS, QIMAGE_WRITE_FORMATS:
             format_set.add(renamed_format)
 
 
-IMAGE_FORMATS_SUPPORTING_METADATA = ('ORA', 'PNG', 'JPG', 'JPEG', 'GIF', 'WEBP', 'TIF', 'TIFF', 'JPX', 'JPC', 'JPM',
-                                     'JPE', 'J2C', 'JP2')
+IMAGE_FORMATS_SUPPORTING_METADATA = ('ORA', 'PNG', 'APNG', 'JPG', 'JPEG', 'GIF', 'WEBP', 'TIF', 'TIFF', 'JPX', 'JPC',
+                                     'JPM', 'JPE', 'J2C', 'JP2')
 IMAGE_READ_FORMATS = {OPENRASTER_FORMAT, *PIL_READ_FORMATS, *QIMAGE_READ_FORMATS}
 IMAGE_WRITE_FORMATS = {OPENRASTER_FORMAT, *PIL_WRITE_FORMATS, *QIMAGE_WRITE_FORMATS}
 
-IMAGE_FORMATS_SUPPORTING_ALPHA = ('ORA', 'PNG', 'WEBP', 'TIF', 'TIFF', 'TGA', 'ICB', 'JP2', 'JPX', 'ICNS', 'ICO', 'CUR',
-                                  'VDA', 'VST')
+IMAGE_FORMATS_SUPPORTING_ALPHA = ('ORA', 'PNG', 'APNG', 'AVIF', 'WEBP', 'TIF', 'TIFF', 'TGA', 'ICB', 'JP2', 'JPX',
+                                  'ICNS', 'ICO', 'CUR', 'VDA', 'VST')
 
 IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA = {'GIF', 'XPM'}
 
@@ -71,6 +72,13 @@ IMAGE_FORMATS_WITH_FIXED_SIZE = {
 # Pillow formats whose files open as one layer per frame. Other multi-frame formats load only their first frame, so a
 # camera's MPO stereo pair opens as one photo.
 ANIMATION_READ_FORMATS = {'GIF', 'PNG', 'WEBP', 'AVIF', 'TIFF'}
+
+# Formats that can save more than one frame. Pillow has no APNG save format, so APNG files are PNG saved with
+# `save_all`, see RENAMED_FORMATS.
+ANIMATION_WRITE_FORMATS = {'GIF', 'WEBP', 'AVIF', 'APNG'}
+
+# Formats where an animation save is the only way to keep more than one layer, so they never offer a flattened save.
+ANIMATION_ONLY_FORMATS = {'APNG'}
 
 # File formats that need explicit conversion before save:
 PALETTE_FORMATS = {'BLP', 'PALM', 'XPM'}
@@ -279,3 +287,53 @@ def load_image_frames(file_path: str) -> list[ImageFrame]:
             duration = image.info.get('duration')
             frames.append(ImageFrame(pil_image_to_qimage(image), None if duration is None else round(duration)))
     return frames
+
+
+class AnimationSaveOptions(NamedTuple):
+    """How to write an animation: the display time for frames without their own, and the loop count (0 is forever)."""
+    default_duration_ms: int
+    loop_count: int
+
+
+def save_animation(frames: list[ImageFrame], file_path: str, options: AnimationSaveOptions,
+                   metadata: Optional[dict[str, Any]] = None, exif: Optional[Image.Exif] = None) -> None:
+    """Saves frames as an animated GIF, WebP, APNG or AVIF, chosen by the file extension.
+
+    Frames without a duration use `options.default_duration_ms`. Image generation data in `metadata` goes with the
+    first frame, as the GIF comment, a PNG text chunk or WebP EXIF. AVIF animations save none.
+    """
+    if len(frames) == 0:
+        raise ValueError('Cannot save an animation with no frames.')
+    delimiter_index = file_path.rfind('.')
+    if delimiter_index < 0:
+        raise ValueError(f'Invalid path {file_path} missing extension')
+    extension = file_path[delimiter_index + 1:].upper()
+    if extension not in ANIMATION_WRITE_FORMATS:
+        raise ValueError(f'Format {extension} cannot be used to save animations.')
+    file_format = RENAMED_FORMATS.get(extension, extension)
+    durations = [options.default_duration_ms if frame.duration_ms is None else frame.duration_ms for frame in frames]
+    parameter_text = ''
+    if metadata is not None:
+        parameter_text = metadata.get(METADATA_PARAMETER_KEY, metadata.get(METADATA_COMMENT_KEY, ''))
+        if isinstance(parameter_text, bytes):
+            parameter_text = parameter_text.decode('utf-8')
+        elif not isinstance(parameter_text, str):
+            parameter_text = ''
+    save_args: dict[str, Any] = {'save_all': True, 'duration': durations, 'loop': options.loop_count}
+    match file_format:
+        case 'GIF':
+            # Without disposal=2, transparent pixels show the previous frames through them.
+            save_args['disposal'] = 2
+            save_args['duration'] = [round(duration / 10) * 10 for duration in durations]
+            if parameter_text != '':
+                save_args['comment'] = parameter_text
+        case 'PNG':
+            if parameter_text != '':
+                png_info = PngImagePlugin.PngInfo()
+                png_info.add_itxt(METADATA_PARAMETER_KEY, parameter_text)
+                save_args['pnginfo'] = png_info
+        case 'WEBP':
+            if parameter_text != '' or exif is not None:
+                save_args['exif'] = _write_data_to_exif_description(exif, parameter_text)
+    pil_frames = [qimage_to_pil_image(frame.image) for frame in frames]
+    pil_frames[0].save(file_path, file_format, append_images=pil_frames[1:], **save_args)

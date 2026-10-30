@@ -117,6 +117,10 @@ class Cache(Config, metaclass=Singleton):
     # DYNAMIC PROPERTIES:
     # Generate with `python scripts/dynamic_import_typing.py src/config/cache.py`
 
+    ANIMATION_FRAME_DURATION: str
+    ANIMATION_LOOP_COUNT: str
+    ANIMATION_LOOP_FOREVER: str
+    ANIMATION_SAVE_AS_ANIMATION: str
     BACKGROUND_COLOR: str
     BATCH_COUNT: str
     BATCH_SIZE: str

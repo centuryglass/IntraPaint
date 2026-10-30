@@ -1673,6 +1673,51 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
+        <source>Save as an animation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Saves each top-level layer as one frame of the animation. When unchecked, the image is saved flattened.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Save animation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Default frame duration (ms):</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Display time in milliseconds for frames whose layer names have no duration tag like "(120ms)".</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Loop forever</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Repeats the animation until it is stopped.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Loop count:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Number of times the animation repeats when it doesn't loop forever.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
         <source>Seed:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3650,7 +3695,7 @@ Choose "No" to open only the first frame.</source>
     </message>
     <message>
         <location filename="../../src/controller/app_controller.py"/>
-        <source>To save layer data, images must be saved in .ora format.</source>
+        <source>To save layer data, images must be saved in .ora format. To save each layer as an animation frame, use one of the following formats: {animation_formats}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6023,6 +6068,29 @@ Keys: {decrease} / {increase}</source>
     <message>
         <location filename="../../src/ui/input_fields/size_field.py"/>
         <source>H:</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.modal.animation_save_modal</name>
+    <message>
+        <location filename="../../src/ui/modal/animation_save_modal.py"/>
+        <source>Save animation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/animation_save_modal.py"/>
+        <source>Each top-level layer is saved as one frame, with the bottom layer first. A frame lasts as long as the "(120ms)" tag at the end of its layer name says.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/animation_save_modal.py"/>
+        <source>Cancel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/animation_save_modal.py"/>
+        <source>Save</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

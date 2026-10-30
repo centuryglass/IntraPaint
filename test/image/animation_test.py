@@ -6,7 +6,8 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage, QColor
 from PySide6.QtWidgets import QApplication
 
-from src.image.animation import frame_layer_name, load_frames_as_image, add_frame_layers
+from src.image.animation import frame_layer_name, load_frames_as_image, add_frame_layers, frame_duration_from_name, \
+    render_frames
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.undo_stack import UndoStack
@@ -83,3 +84,22 @@ class AnimationTest(IntraPaintTestCase):
         self.assertEqual([layer.name for layer in layers[1:]],
                          ['anim.gif: Frame 1 (100ms)', 'anim.gif: Frame 2 (200ms)', 'anim.gif: Frame 3'])
         self.assertEqual([layer.visible for layer in layers], [True, True, False, False])
+
+    def test_frame_duration_from_name(self) -> None:
+        """Only a trailing "(120ms)" tag sets a duration."""
+        self.assertEqual(frame_duration_from_name('Frame 1 (120ms)'), 120)
+        self.assertEqual(frame_duration_from_name('anim.gif: Frame 2 (0ms)'), 0)
+        self.assertIsNone(frame_duration_from_name('Frame 3'))
+        self.assertIsNone(frame_duration_from_name('(120ms) Frame 3'))
+
+    def test_render_frames(self) -> None:
+        """Every top-level layer renders as a canvas-sized frame in order, hidden layers included."""
+        self.image_stack.load_image(QImage(QSize(10, 10), QImage.Format.Format_ARGB32_Premultiplied))
+        load_frames_as_image(self.image_stack, FRAMES)
+        layers = self._frame_layers_bottom_up()
+        frames = render_frames(self.image_stack)
+        self.assertEqual([frame.duration_ms for frame in frames], [100, 200, None])
+        for frame, source in zip(frames, FRAMES):
+            self.assertEqual(frame.image.size(), IMG_SIZE)
+            self.assertEqual(frame.image.pixelColor(0, 0), source.image.pixelColor(0, 0))
+        self.assertEqual([layer.visible for layer in layers], [True, False, False])
