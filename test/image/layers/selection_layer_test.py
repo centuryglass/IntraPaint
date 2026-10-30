@@ -5,8 +5,10 @@ The operation tests pin observable results (the selected pixel mask, pixel value
 how the layer stores its mask (#26) must reproduce them.
 """
 import sys
+from unittest import mock
 from typing import Callable, Optional
 
+import cv2
 import numpy as np
 import pytest
 from PySide6.QtCore import QPoint, QRect, QSize, Qt, QRectF
@@ -18,6 +20,7 @@ from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
 from src.image.layers.layer_resize_mode import LayerResizeMode
+from src.image.layers import selection_layer as selection_layer_module
 from src.image.layers.selection_layer import SelectionLayer
 from src.undo_stack import UndoStack
 from src.util.visual.image_utils import image_data_as_numpy_8bit
@@ -691,26 +694,42 @@ class SelectionLayerStorageTest(SelectionLayerOperationTestCase):
         self.assertTrue(self.selection_layer.is_empty(QRect(16, 16, 8, 8)))
 
 
-class SelectionLayerTimingTest(IntraPaintTestCase):
-    """Guards against edit costs that grow with the canvas, with thresholds loose enough not to flake."""
+class SelectionLayerScalingTest(IntraPaintTestCase):
+    """Guards against edit costs that grow with the canvas, by checking how much of the mask each step processes."""
 
     CANVAS_SIZE = QSize(4000, 4000)
+    EDIT_SIZE = 30
+    # Each retrace covers an edit, OUTLINE_RETRACE_MARGIN on every side, and any outline polygons that touch it.
+    MAX_RETRACE_SIDE = 200
 
     def test_small_edit_and_select_all_on_large_canvas(self) -> None:
-        """A small brush edit and select-all each finish well within a second on a 4000x4000 canvas."""
-        import time
+        """Small brush edits on a 4000x4000 canvas process only their neighborhood, and select-all traces once."""
         image_stack = ImageStack(self.CANVAS_SIZE, QSize(512, 512), QSize(8, 8), QSize(8000, 8000))
         selection_layer = image_stack.selection_layer
-        start = time.monotonic()
-        for i in range(5):
-            bounds = QRect(100 + i * 40, 100, 30, 30)
-            with selection_layer.borrow_image(bounds) as image:
-                assert image is not None
-                painter = QPainter(image)
-                painter.fillRect(bounds, Qt.GlobalColor.black)
-                painter.end()
-        self.assertLess(time.monotonic() - start, 1.0)
-        start = time.monotonic()
-        selection_layer.select_all()
-        self.assertLess(time.monotonic() - start, 2.0)
+        with mock.patch.object(cv2, 'findContours', wraps=cv2.findContours) as find_contours, \
+                mock.patch('src.image.layers.selection_layer._binary_mask',
+                           wraps=selection_layer_module._binary_mask) as binary_mask:
+            for i in range(5):
+                bounds = QRect(100 + i * 40, 100, self.EDIT_SIZE, self.EDIT_SIZE)
+                with selection_layer.borrow_image(bounds) as image:
+                    assert image is not None
+                    painter = QPainter(image)
+                    painter.fillRect(bounds, Qt.GlobalColor.black)
+                    painter.end()
+            self.assertEqual(find_contours.call_count, 5)
+            for call in find_contours.call_args_list:
+                traced_height, traced_width = call.args[0].shape
+                # The traced mask is scaled by 3, so contour points land on pixel edges.
+                self.assertLessEqual(max(traced_width, traced_height), 3 * self.MAX_RETRACE_SIDE)
+            self.assertEqual(binary_mask.call_count, 5)
+            for call in binary_mask.call_args_list:
+                self.assertEqual(call.args[0].size(), QSize(self.EDIT_SIZE, self.EDIT_SIZE))
+            self.assertEqual(len(selection_layer.outline), 5)
+
+            find_contours.reset_mock()
+            selection_layer.select_all()
+            self.assertEqual(find_contours.call_count, 1)
         self.assertTrue(selection_layer.generation_area_fully_selected())
+        outline = selection_layer.outline
+        self.assertEqual(len(outline), 1)
+        self.assertEqual(outline[0].boundingRect().toAlignedRect(), QRect(QPoint(), self.CANVAS_SIZE))
