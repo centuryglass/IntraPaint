@@ -22,10 +22,17 @@ the main window:
 - `sheets/<panel>/<orientation>.json`: each cell's problems and hints, by `<width>x<height>`.
 - `index.html`: every sheet.
 
+With `--windows`, it saves the secondary windows from `test/ui/window_capture.py` instead: dialogs, one message box
+of each form, and the windows opened from menus.
+- `windows/<window>/<size>.png`: each window at the size the app opens it at, its minimum size and, if it is
+  resizable, a large size.
+- `windows/layout_report.json` and `index.html`: each capture's size and layout problems, as above.
+
 `--edit-mode` sets `Cache.EDIT_MODE` before any panel is built, for either kind of capture. Panels that show or hide
 controls by edit mode (the Stable Diffusion panels, the selection tool's controls) render that mode's layout.
 
 Usage: python scripts/capture_ui.py [--output DIR] [--only NAME_PART ...] [--edit-mode MODE]
+       python scripts/capture_ui.py --windows [--output DIR] [--only NAME_PART ...]
        python scripts/capture_ui.py --sheet [--only NAME_PART ...] [--widths W ...] [--heights H ...] [--scale S]
                                     [--overlay] [--edit-mode MODE]
 """
@@ -61,6 +68,7 @@ from test.ui.panel_capture import (SWEEP_HEIGHTS, SWEEP_WIDTHS, PanelHost, Panel
                                    mock_app_controller, panel_scenes, tools_panel_scenes)
 from test.ui.ui_capture import (CELL_MARGIN, GALLERY_CONTROLS, GalleryControl, gallery_cell_rect,
                                 render_gallery_control)
+from test.ui.window_capture import capture_window, release_window, window_scenes
 
 EDIT_MODES = (EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG)
 
@@ -108,13 +116,16 @@ def _save(image: QImage, output_dir: str, relative_path: str) -> str:
     return relative_path
 
 
-def _write_index(output_dir: str, gallery_paths: list[str], report: dict[str, dict[str, dict]]) -> None:
+def _write_index(output_dir: str, gallery_paths: list[str], report: dict[str, dict[str, dict]],
+                 title: str = 'IntraPaint UI captures') -> None:
     window_color = QApplication.palette().color(QPalette.ColorRole.Window).name()
     text_color = QApplication.palette().color(QPalette.ColorRole.WindowText).name()
-    parts = [f'<!doctype html><meta charset="utf-8"><title>IntraPaint UI captures</title><style>'
+    parts = [f'<!doctype html><meta charset="utf-8"><title>{title}</title><style>'
              f'body{{background:{window_color};color:{text_color};font-family:sans-serif;margin:16px}}'
              f'img{{border:1px dashed #888;display:block;margin:4px 0}}figure{{margin:0 0 24px}}'
-             f'li{{font-family:monospace;font-size:12px}}</style><h1>IntraPaint UI captures</h1><h2>Style gallery</h2>']
+             f'li{{font-family:monospace;font-size:12px}}</style><h1>{title}</h1>']
+    if gallery_paths:
+        parts.append('<h2>Style gallery</h2>')
     parts.extend(f'<figure><img src="{html.escape(path)}" alt=""><figcaption>{html.escape(path)}</figcaption></figure>'
                  for path in gallery_paths)
     for scene_name, captures in report.items():
@@ -179,6 +190,32 @@ def capture_all(output_dir: str, filters: list[str], edit_mode: Optional[str]) -
         with open(os.path.join(output_dir, 'layout_report.json'), 'w', encoding='utf-8') as report_file:
             json.dump(report, report_file, indent=2)
         _write_index(output_dir, gallery_paths, report)
+    finally:
+        shutil.rmtree(config_dir, ignore_errors=True)
+
+
+def capture_windows(output_dir: str, filters: list[str]) -> None:
+    """Captures every secondary window into output_dir. See the module docstring for its layout."""
+    config_dir = tempfile.mkdtemp(prefix='intrapaint-capture-config-')
+    try:
+        _set_up_config(config_dir, None)
+        controller = mock_app_controller()
+        report: dict[str, dict[str, dict]] = {}
+        for scene in window_scenes(controller):
+            if not _wanted(scene.name, filters):
+                continue
+            with scene.context():
+                window = scene.build(controller)
+                report[scene.name] = {}
+                for name, size in scene.sizes(window).items():
+                    image = capture_window(window, size)
+                    report[scene.name][name] = {
+                        **layout_report(window.size(), find_layout_problems(window)),
+                        'image': _save(image, output_dir, f'windows/{scene.name}/{name}.png')}
+                release_window(window)
+        with open(os.path.join(output_dir, 'windows', 'layout_report.json'), 'w', encoding='utf-8') as report_file:
+            json.dump(report, report_file, indent=2)
+        _write_index(output_dir, [], report, 'IntraPaint window captures')
     finally:
         shutil.rmtree(config_dir, ignore_errors=True)
 
@@ -330,6 +367,8 @@ def main() -> None:
                         help='Directory to write captures into. Existing files there are overwritten.')
     parser.add_argument('--only', nargs='*', default=[],
                         help='Capture only gallery controls and panels whose names contain one of these.')
+    parser.add_argument('--windows', action='store_true',
+                        help='Capture dialogs, message boxes and other secondary windows instead.')
     parser.add_argument('--sheet', action='store_true',
                         help='Save sweep sheets of each panel across a grid of sizes instead.')
     parser.add_argument('--widths', nargs='+', type=int, default=list(SWEEP_WIDTHS), help='Sweep sheet widths.')
@@ -345,6 +384,8 @@ def main() -> None:
         if args.sheet:
             sheet_paths = capture_sheets(args.output, args.only, args.widths, args.heights, args.scale, args.overlay,
                                    args.edit_mode)
+        elif args.windows:
+            capture_windows(args.output, args.only)
         else:
             capture_all(args.output, args.only, args.edit_mode)
     finally:
