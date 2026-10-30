@@ -46,6 +46,7 @@ from PySide6.QtWidgets import (QApplication, QBoxLayout, QFrame, QHBoxLayout, QL
 
 from src.ui.ink_style import InkStyle
 from src.ui.layout.bordered_widget import DEFAULT_LINE_WIDTH
+from src.ui.layout.flow_layout import FlowWidget
 from src.ui.layout.panel_fit import (REQUIRED, STRIP_SECTION_MAX_WIDTH, STRIP_SECTION_MIN_WIDTH, FitItem, FitPlanner,
                                      Orientation, Placement, cross_extent, fresh_minimum_size,
                                      held_weakly, scroll_extent)
@@ -785,6 +786,15 @@ class DockPanel(QWidget):
         self.measure()
         QApplication.sendEvent(self._scroll, QEvent(QEvent.Type.LayoutRequest))
         self._apply_layouts()
+        # A planned wrap width is an estimate of the width a flow gets. One that missed leaves the flow's height
+        # measured for the wrong width, and a resize event only corrects it when the width changes:
+        stale = [flow for flow in self.findChildren(FlowWidget)
+                 if not flow.isHidden() and flow.wrap_width != flow.width()]
+        if stale:
+            for flow in stale:
+                flow.set_wrap_width(flow.width())
+            self.measure()
+            self._apply_layouts()
 
     def _apply_layouts(self) -> None:
         """Applies the planned layout's geometry now, parents first.
