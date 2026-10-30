@@ -47,10 +47,12 @@ class ColumnPackingTest(IntraPaintTestCase):
         parent = QWidget()
         widgets = [QWidget(parent) for _ in range(3)]
         packed = PackedColumns()
-        columns = packed.fill([(widgets[0], widgets[1]), (widgets[2],)], 4)
+        columns: list[QWidget] = []
+        packed.fill([(widgets[0], widgets[1]), (widgets[2],)], 4, columns.append)
         self.assertEqual(len(columns), 2)
         self.assertTrue(all(packed.holds(widget) for widget in widgets))
-        columns = packed.fill([tuple(widgets)], 4)
+        columns = []
+        packed.fill([tuple(widgets)], 4, columns.append)
         self.assertEqual(len(columns), 1)
         self.assertTrue(all(widget.parentWidget() is columns[0] and not widget.isHidden() for widget in widgets))
         self.assertTrue(packed.columns[1].isHidden())

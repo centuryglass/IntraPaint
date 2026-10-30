@@ -5,7 +5,7 @@ import unittest.mock
 from typing import Optional
 
 from PySide6.QtCore import QPoint, QSize
-from PySide6.QtWidgets import QCheckBox, QGridLayout, QLabel
+from PySide6.QtWidgets import QCheckBox, QLabel
 
 from src.config.cache import Cache
 from src.tools.filter_tool import FilterTool
@@ -17,7 +17,7 @@ from src.ui.panel.tool_control_panels.fill_tool_panel import FillToolPanel
 from src.ui.panel.tool_control_panels.filter_tool_panel import FilterToolPanel
 from src.ui.panel.tool_control_panels.smudge_tool_panel import SmudgeToolPanel
 from src.tools.draw_tool import DrawTool
-from src.ui.layout.panel_fit import FitItem, Orientation
+from src.ui.layout.panel_fit import FitItem, Orientation, fresh_minimum_size
 from src.ui.panel.tool_control_panels.stroke_block import (BELOW, BESIDE, BESIDE_FIELD_MIN_WIDTH,
                                                            FIELD_COLUMN_MAX_WIDTH, ONLY_INSIDE_SELECTION_LABEL,
                                                            StrokeBlock, StrokeToolPanel)
@@ -279,7 +279,10 @@ class StrokeBlockTest(IntraPaintTestCase):
 
     def test_tool_sections_join_the_arrangement(self) -> None:
         """A tool section goes below the block's sections in a side panel and in the next column in a strip, an
-        optional one is planned with the block's items, and a hidden one's column takes no spare width."""
+        optional one is planned with the block's items, and a hidden one takes no column."""
+        def corner(widget: PanelSection) -> QPoint:
+            return widget.mapTo(self.block, QPoint(0, 0))
+
         section = PanelSection('Tool', QLabel('Tool controls'))
         forms: list[tuple[Orientation, Optional[int]]] = []
 
@@ -292,19 +295,94 @@ class StrokeBlockTest(IntraPaintTestCase):
         settle_layouts(self.panel)
         options = self.block._options_section  # pylint: disable=protected-access
         self.assertEqual(forms[-1], (SIDE, 0))
-        self.assertGreaterEqual(section.y(), options.geometry().bottom())
-        self.assertEqual(section.x(), options.x())
+        self.assertGreaterEqual(corner(section).y(), corner(options).y() + options.height())
+        self.assertEqual(corner(section).x(), corner(options).x())
         self.panel.set_fit_space(STRIP, QSize(1400, 200))
         settle_layouts(self.panel)
         self.assertEqual(forms[-1], (STRIP, 0))
-        self.assertGreater(section.x(), options.geometry().right())
-        self.assertEqual(section.y(), options.y())
+        self.assertEqual(corner(section).x(), corner(options).x())
+        self.assertGreater(corner(section).y(), corner(options).y())
+        self.panel.set_fit_space(STRIP, QSize(1400, 120))
+        settle_layouts(self.panel)
+        self.assertEqual(forms[-1], (STRIP, 0))
+        self.assertGreater(corner(section).x(), corner(options).x() + options.width())
+        self.assertEqual(corner(section).y(), corner(options).y())
         base = self.panel.fit_base_size(STRIP)
-        self.panel.set_fit_space(STRIP, QSize(base.width(), 200))
+        self.panel.set_fit_space(STRIP, QSize(base.width(), 120))
         self.assertEqual(forms[-1], (STRIP, None))
-        grid = self.block.layout()
-        assert isinstance(grid, QGridLayout)
-        self.assertEqual(grid.columnStretch(grid.getItemPosition(grid.indexOf(section))[1]), 0)
+        self.assertNotIn(section, [packed for column in self.block._packed.plan for packed in column])  # pylint: disable=protected-access
+
+
+class StrokeBlockPackingTest(IntraPaintTestCase):
+    """Tests how a strip stacks the Draw panel's sections in columns."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.panel = DrawToolPanel()
+        self.block = self.panel.stroke_block
+        self.panel.show()
+
+    def _shape(self) -> list[int]:
+        """Returns how many sections each column holds."""
+        return [len(column) for column in self.block._packed.plan]  # pylint: disable=protected-access
+
+    def _plan_strip(self, height: int) -> None:
+        self.panel.set_fit_space(STRIP, QSize(1400, height))
+        settle_layouts(self.panel)
+
+    def _tight_height(self) -> int:
+        """Returns a strip height where Stroke and Options can't stack, but a collapsed Stroke and Options can."""
+        stroke = self.block._stroke_section  # pylint: disable=protected-access
+        options = self.block._options_section  # pylint: disable=protected-access
+        self._plan_strip(1000)
+        stroke.set_expanded(False)
+        collapsed = fresh_minimum_size(stroke).height()
+        stroke.set_expanded(True)
+        both = fresh_minimum_size(stroke).height() + fresh_minimum_size(options).height()
+        self.assertLess(collapsed, fresh_minimum_size(stroke).height())
+        return both - 4 + 22
+
+    def test_collapsing_a_section_lets_the_next_move_beneath_it(self) -> None:
+        """Collapsing Stroke stacks Options under it and narrows the block, and opening it again undoes that."""
+        stroke = self.block._stroke_section  # pylint: disable=protected-access
+        options = self.block._options_section  # pylint: disable=protected-access
+        self._plan_strip(self._tight_height())
+        self.assertEqual(self._shape(), [1, 1])
+        wide = fresh_minimum_size(self.block).width()
+        stroke.set_expanded(False)
+        settle_layouts(self.panel)
+        self.assertEqual(self._shape(), [2])
+        self.assertGreater(options.mapTo(self.block, QPoint(0, 0)).y(), stroke.mapTo(self.block, QPoint(0, 0)).y())
+        self.assertLess(fresh_minimum_size(self.block).width(), wide)
+        stroke.set_expanded(True)
+        settle_layouts(self.panel)
+        self.assertEqual(self._shape(), [1, 1])
+        self.assertEqual(fresh_minimum_size(self.block).width(), wide)
+
+    def test_a_tall_strip_stacks_expanded_sections(self) -> None:
+        """Sections that both fit the strip's height share a column, and a short strip gives each its own."""
+        self._plan_strip(600)
+        self.assertEqual(self._shape(), [2])
+        self._plan_strip(150)
+        self.assertEqual(self._shape(), [1, 1])
+
+    def test_side_layout_leaves_the_columns(self) -> None:
+        """A side panel puts the sections back in the block's grid, shown."""
+        self._plan_strip(600)
+        self.panel.set_fit_space(SIDE, QSize(400, 900))
+        settle_layouts(self.panel)
+        for section in (self.block._stroke_section, self.block._options_section):  # pylint: disable=protected-access
+            self.assertIs(section.parentWidget(), self.block)
+            self.assertFalse(section.isHidden())
+
+    def test_packing_changes_once_per_boundary_while_a_strip_grows(self) -> None:
+        """Growing a strip a few pixels at a time never returns to an earlier packing."""
+        shapes: list[list[int]] = []
+        for height in range(100, 500, 3):
+            self._plan_strip(height)
+            if len(shapes) == 0 or shapes[-1] != self._shape():
+                shapes.append(self._shape())
+        self.assertEqual(len(shapes), len({tuple(shape) for shape in shapes}), shapes)
 
 
 class ToolPanelsOnStrokeBlockTest(ToolTestCase):

@@ -64,27 +64,7 @@
     ]
   },
   "strip_minimum": {
-    "problems": [
-      "overlap: StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[0] and StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[1] share 58x24",
-      "squeezed: StrokeBlock is 312x276, minimum 588x106",
-      "squeezed: StrokeBlock/PanelSection[0] is 98x106, minimum 110x106",
-      "squeezed: StrokeBlock/PanelSection[0]/QWidget is 98x80, minimum 110x80",
-      "squeezed: StrokeBlock/PanelSection[0]/QWidget/QWidget is 98x80, minimum 110x80",
-      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[0] shows 98x24 of 110x24",
-      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[1] shows 98x24 of 110x24",
-      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[2] shows 98x24 of 110x24",
-      "squeezed: StrokeBlock/PanelSection[1] is 97x76, minimum 146x76",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 97x50, minimum 146x50",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 97x50, minimum 146x50",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 97x22, minimum 146x22",
-      "squeezed: StrokeBlock/PanelSection[2] is 97x80, minimum 312x80",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget is 97x54, minimum 312x54",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget/SegmentedControl is 97x24, minimum 113x24",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget/SegmentedControl/QComboBox is 97x24, minimum 113x25",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget/QWidget is 97x24, minimum 226x24",
-      "clipped: StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[0] shows 97x24 of 110x24",
-      "clipped: StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[1] shows 45x24 of 110x24"
-    ],
+    "problems": [],
     "size": [
       330,
       294
@@ -92,26 +72,14 @@
   },
   "strip_narrow": {
     "problems": [
-      "overlap: StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[0] and StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[1] share 86x24",
-      "squeezed: StrokeBlock is 147x276, minimum 588x106",
-      "squeezed: StrokeBlock/PanelSection[0] is 43x106, minimum 110x106",
-      "squeezed: StrokeBlock/PanelSection[0]/QWidget is 43x80, minimum 110x80",
-      "squeezed: StrokeBlock/PanelSection[0]/QWidget/QWidget is 43x80, minimum 110x80",
-      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[0] shows 43x24 of 110x24",
-      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[1] shows 43x24 of 110x24",
-      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[2] shows 43x24 of 110x24",
-      "squeezed: StrokeBlock/PanelSection[1] is 42x76, minimum 146x76",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 42x50, minimum 146x50",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 42x50, minimum 146x50",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Antialiasing' is 42x22, minimum 93x22",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 42x22, minimum 146x22",
-      "squeezed: StrokeBlock/PanelSection[2] is 42x80, minimum 312x80",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget is 42x54, minimum 312x54",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget/SegmentedControl is 42x24, minimum 113x24",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget/SegmentedControl/QComboBox is 42x24, minimum 113x25",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget/QWidget is 42x24, minimum 226x24",
-      "clipped: StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[0] shows 42x24 of 110x24",
-      "clipped: StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[1] shows 18x24 of 110x24"
+      "overlap: StrokeBlock/QWidget[0]/PanelSection[2]/QWidget/QWidget/NumberField[0] and StrokeBlock/QWidget[0]/PanelSection[2]/QWidget/QWidget/NumberField[1] share 33x24",
+      "squeezed: StrokeBlock is 147x276, minimum 312x274",
+      "squeezed: StrokeBlock/QWidget[0] is 147x274, minimum 312x274",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[2] is 147x80, minimum 312x80",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[2]/QWidget is 147x54, minimum 312x54",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[2]/QWidget/SegmentedControl/QComboBox is 147x24, minimum 113x25",
+      "squeezed: StrokeBlock/QWidget[0]/PanelSection[2]/QWidget/QWidget is 147x24, minimum 226x24",
+      "clipped: StrokeBlock/QWidget[0]/PanelSection[2]/QWidget/QWidget/NumberField[1] shows 70x24 of 110x24"
     ],
     "size": [
       165,
@@ -119,27 +87,7 @@
     ]
   },
   "strip_preferred": {
-    "problems": [
-      "overlap: StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[0] and StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[1] share 58x24",
-      "squeezed: StrokeBlock is 312x276, minimum 588x106",
-      "squeezed: StrokeBlock/PanelSection[0] is 98x106, minimum 110x106",
-      "squeezed: StrokeBlock/PanelSection[0]/QWidget is 98x80, minimum 110x80",
-      "squeezed: StrokeBlock/PanelSection[0]/QWidget/QWidget is 98x80, minimum 110x80",
-      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[0] shows 98x24 of 110x24",
-      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[1] shows 98x24 of 110x24",
-      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[2] shows 98x24 of 110x24",
-      "squeezed: StrokeBlock/PanelSection[1] is 97x76, minimum 146x76",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 97x50, minimum 146x50",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 97x50, minimum 146x50",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 97x22, minimum 146x22",
-      "squeezed: StrokeBlock/PanelSection[2] is 97x80, minimum 312x80",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget is 97x54, minimum 312x54",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget/SegmentedControl is 97x24, minimum 113x24",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget/SegmentedControl/QComboBox is 97x24, minimum 113x25",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget/QWidget is 97x24, minimum 226x24",
-      "clipped: StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[0] shows 97x24 of 110x24",
-      "clipped: StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[1] shows 45x24 of 110x24"
-    ],
+    "problems": [],
     "size": [
       330,
       294
@@ -147,25 +95,14 @@
   },
   "strip_short": {
     "problems": [
-      "overlap: StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[0] and StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[1] share 58x24",
-      "squeezed: StrokeBlock is 312x129, minimum 588x106",
-      "squeezed: StrokeBlock/PanelSection[0] is 98x106, minimum 110x106",
-      "squeezed: StrokeBlock/PanelSection[0]/QWidget is 98x80, minimum 110x80",
-      "squeezed: StrokeBlock/PanelSection[0]/QWidget/QWidget is 98x80, minimum 110x80",
-      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[0] shows 98x24 of 110x24",
-      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[1] shows 98x24 of 110x24",
-      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[2] shows 98x24 of 110x24",
-      "squeezed: StrokeBlock/PanelSection[1] is 97x76, minimum 146x76",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 97x50, minimum 146x50",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 97x50, minimum 146x50",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 97x22, minimum 146x22",
-      "squeezed: StrokeBlock/PanelSection[2] is 97x80, minimum 312x80",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget is 97x54, minimum 312x54",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget/SegmentedControl is 97x24, minimum 113x24",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget/SegmentedControl/QComboBox is 97x24, minimum 113x25",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget/QWidget is 97x24, minimum 226x24",
-      "clipped: StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[0] shows 97x24 of 110x24",
-      "clipped: StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[1] shows 45x24 of 110x24"
+      "overlap: StrokeBlock/QWidget[1]/PanelSection[1]/QWidget/QWidget/NumberField[0] and StrokeBlock/QWidget[1]/PanelSection[1]/QWidget/QWidget/NumberField[1] share 11x24",
+      "squeezed: StrokeBlock is 312x129, minimum 432x110",
+      "squeezed: StrokeBlock/QWidget[1] is 192x110, minimum 312x110",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection[1] is 192x54, minimum 312x54",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection[1]/QWidget is 192x54, minimum 312x54",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection[1]/QWidget/SegmentedControl/QComboBox is 192x24, minimum 113x25",
+      "squeezed: StrokeBlock/QWidget[1]/PanelSection[1]/QWidget/QWidget is 192x24, minimum 226x24",
+      "clipped: StrokeBlock/QWidget[1]/PanelSection[1]/QWidget/QWidget/NumberField[1] shows 93x24 of 110x24"
     ],
     "size": [
       330,
@@ -173,27 +110,7 @@
     ]
   },
   "strip_tall": {
-    "problems": [
-      "overlap: StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[0] and StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[1] share 58x24",
-      "squeezed: StrokeBlock is 312x1182, minimum 588x106",
-      "squeezed: StrokeBlock/PanelSection[0] is 98x106, minimum 110x106",
-      "squeezed: StrokeBlock/PanelSection[0]/QWidget is 98x80, minimum 110x80",
-      "squeezed: StrokeBlock/PanelSection[0]/QWidget/QWidget is 98x80, minimum 110x80",
-      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[0] shows 98x24 of 110x24",
-      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[1] shows 98x24 of 110x24",
-      "clipped: StrokeBlock/PanelSection[0]/QWidget/QWidget/SliderField[2] shows 98x24 of 110x24",
-      "squeezed: StrokeBlock/PanelSection[1] is 97x76, minimum 146x76",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget is 97x50, minimum 146x50",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget is 97x50, minimum 146x50",
-      "squeezed: StrokeBlock/PanelSection[1]/QWidget/QWidget/CheckBox 'Only inside selection' is 97x22, minimum 146x22",
-      "squeezed: StrokeBlock/PanelSection[2] is 97x80, minimum 312x80",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget is 97x54, minimum 312x54",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget/SegmentedControl is 97x24, minimum 113x24",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget/SegmentedControl/QComboBox is 97x24, minimum 113x25",
-      "squeezed: StrokeBlock/PanelSection[2]/QWidget/QWidget is 97x24, minimum 226x24",
-      "clipped: StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[0] shows 97x24 of 110x24",
-      "clipped: StrokeBlock/PanelSection[2]/QWidget/QWidget/NumberField[1] shows 45x24 of 110x24"
-    ],
+    "problems": [],
     "size": [
       330,
       1200

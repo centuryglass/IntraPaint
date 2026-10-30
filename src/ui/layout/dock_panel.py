@@ -914,5 +914,4 @@ class DockPanel(QWidget):
             return
         for column in self._packed_columns.columns:
             self._section_layout.removeWidget(column)
-        for column in self._packed_columns.fill(plan, spacing):
-            self._section_layout.addWidget(column)
+        self._packed_columns.fill(plan, spacing, self._section_layout.addWidget)

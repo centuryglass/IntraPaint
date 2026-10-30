@@ -4,7 +4,7 @@
 and moves sections between them without rebuilding the sections. `DockPanel` and `StrokeBlock` use both, each placing
 the column widgets in its own layout.
 """
-from typing import Collection, Sequence
+from typing import Callable, Collection, Sequence
 
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
@@ -35,7 +35,7 @@ def pack_columns(heights: Sequence[int], budget: int, spacing: int, alone: Colle
 class PackedColumns:
     """The column widgets that hold packed sections.
 
-    The owner removes `columns` from its layout, calls `fill` with a plan, and adds the returned columns to its layout.
+    The owner removes `columns` from its layout, calls `fill` with a plan, which adds the columns in use.
     A section moves between columns without being rebuilt, so its state and focus survive.
     """
 
@@ -57,11 +57,12 @@ class PackedColumns:
         """Returns whether a column is the widget's parent."""
         return widget.parentWidget() in self._columns
 
-    def fill(self, plan: list[tuple[QWidget, ...]], spacing: int,
-             stretching: Collection[QWidget] = ()) -> list[QWidget]:
-        """Moves each plan entry's sections into a column, and returns the columns in use, in order.
+    def fill(self, plan: list[tuple[QWidget, ...]], spacing: int, add_column: Callable[[QWidget], None],
+             stretching: Collection[QWidget] = ()) -> None:
+        """Moves each plan entry's sections into a column, and adds each column in use to the owner's layout in order
+        with `add_column`. The columns are shown after they are added, since adding a widget to a layout reparents it.
 
-        The caller has removed `columns` from its layout. Sections are shown after the move, since reparenting hides a
+        The owner has removed `columns` from its layout. Sections are shown after the move, since reparenting hides a
         widget, so only sections that are shown belong in a plan. A section in `stretching` takes the column's spare
         height.
         """
@@ -82,10 +83,10 @@ class PackedColumns:
             for widget in sections:
                 column_layout.insertWidget(column_layout.count() - 1, widget, 1 if widget in stretching else 0)
                 widget.show()
+            add_column(column)
             column.show()
         for column in self._columns[len(plan):]:
             column.hide()
-        return self._columns[:len(plan)]
 
     def release(self, sections: Sequence[QWidget]) -> None:
         """Takes sections out of their columns and hides the columns, for an owner that stops packing. The owner puts
