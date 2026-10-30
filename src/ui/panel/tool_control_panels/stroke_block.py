@@ -51,6 +51,7 @@ from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, 
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.panel_section import PanelSection
+from src.util.layout import layout_contents
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.stroke_block'
@@ -633,9 +634,8 @@ class StrokeToolPanel(QWidget):
         margins = self._layout.contentsMargins()
         spacing = max(self._layout.spacing(), 0)
         reserved = margins.top() + margins.bottom()
-        for index in range(self._layout.count()):
-            widget = self._layout.itemAt(index).widget()
-            if widget is not None and widget is not self._block and not widget.isHidden():
+        for widget in layout_contents(self._layout):
+            if isinstance(widget, QWidget) and widget is not self._block and not widget.isHidden():
                 reserved += fresh_minimum_size(widget).height() + spacing
         return space.height() - reserved
 
