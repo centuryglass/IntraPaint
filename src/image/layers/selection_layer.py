@@ -54,15 +54,15 @@ def _binary_mask(image: QImage) -> QImage:
     if image.format() == QImage.Format.Format_Alpha8:
         mask = image.copy()
         array = _mask_array(mask)
-        array[array > 0] = 255
+        array[...] = cv2.threshold(array, 0, 255, cv2.THRESH_BINARY)[1]
         return mask
     if image.format() not in (QImage.Format.Format_ARGB32_Premultiplied, QImage.Format.Format_ARGB32):
         image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
     image_ptr = image.constBits()
     assert image_ptr is not None, 'Selection image was invalid'
-    alpha = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)[:, :, 3]
+    pixels = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
     mask = QImage(image.size(), QImage.Format.Format_Alpha8)
-    _mask_array(mask)[...] = np.where(alpha > 0, 255, 0)
+    _mask_array(mask)[...] = cv2.threshold(cv2.extractChannel(pixels, 3), 0, 255, cv2.THRESH_BINARY)[1]
     return mask
 
 
