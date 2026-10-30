@@ -46,6 +46,7 @@ from PySide6.QtWidgets import (QApplication, QBoxLayout, QFrame, QHBoxLayout, QL
 
 from src.ui.ink_style import InkStyle
 from src.ui.layout.bordered_widget import DEFAULT_LINE_WIDTH
+from src.ui.layout.column_packing import PackedColumns, pack_columns
 from src.ui.layout.flow_layout import FlowWidget
 from src.ui.layout.panel_fit import (REQUIRED, STRIP_SECTION_MAX_WIDTH, STRIP_SECTION_MIN_WIDTH, FitItem, FitPlanner,
                                      Orientation, Placement, cross_extent, fresh_minimum_size,
@@ -263,8 +264,7 @@ class DockPanel(QWidget):
         self._packed = False
         # The room the horizontal scroll bar takes from column packing's height, while the content scrolls:
         self._pack_reserve = 0
-        self._pack_columns: list[QWidget] = []
-        self._pack_plan: list[tuple[QWidget, ...]] = []
+        self._packed_columns = PackedColumns()
         # Shows a collapsed section's body when its header is clicked, and the section it shows:
         self._section_popover: Optional[PanelPopover] = None
         self._popover_section: Optional[DockSection] = None
@@ -874,25 +874,16 @@ class DockPanel(QWidget):
         if packed:
             return
         sections = [section.widget for section in self._layout_model.sections if self._packable(section.widget)]
-        for widget in sections:
-            self._detach(widget)
-        for column in self._pack_columns:
+        self._packed_columns.release(sections)
+        for column in self._packed_columns.columns:
             self._section_layout.removeWidget(column)
-            column.hide()
-        self._pack_plan = []
         for widget in sections:
             self._section_layout.addWidget(widget)
 
     def _packable(self, widget: QWidget) -> bool:
         """Whether a section is still where `section_layout` or a packed column holds it."""
         parent = widget.parentWidget()
-        return parent is self._section_holder or parent in self._pack_columns
-
-    @staticmethod
-    def _detach(widget: QWidget) -> None:
-        parent = widget.parentWidget()
-        if parent is not None and parent.layout() is not None:
-            parent.layout().removeWidget(widget)
+        return parent is self._section_holder or parent in self._packed_columns.columns
 
     def _column_budget(self) -> int:
         """Returns the height a packed column has: the strip's, less the header and footer above and below the scrolled
@@ -915,40 +906,12 @@ class DockPanel(QWidget):
         """Splits the shown sections into columns by their measured heights, then moves them into the columns."""
         widgets = [section.widget for section in self._layout_model.sections
                    if self._packable(section.widget) and not section.widget.isHidden()]
-        budget = self._column_budget()
         spacing = max(self._section_layout.spacing(), 0)
-        columns: list[list[QWidget]] = []
-        used = 0
-        for widget in widgets:
-            height = fresh_minimum_size(widget).height()
-            if len(columns) > 0 and used + spacing + height <= budget:
-                columns[-1].append(widget)
-                used += spacing + height
-            else:
-                columns.append([widget])
-                used = height
-        plan = [tuple(column) for column in columns]
-        if plan == self._pack_plan:
+        heights = [fresh_minimum_size(widget).height() for widget in widgets]
+        plan = [tuple(widgets[index] for index in column)
+                for column in pack_columns(heights, self._column_budget(), spacing)]
+        if plan == self._packed_columns.plan:
             return
-        self._pack_plan = plan
-        for widget in widgets:
-            self._detach(widget)
-        for column in self._pack_columns:
+        for column in self._packed_columns.columns:
             self._section_layout.removeWidget(column)
-        while len(self._pack_columns) < len(plan):
-            column = QWidget()
-            column_layout = QVBoxLayout(column)
-            column_layout.setContentsMargins(0, 0, 0, 0)
-            column_layout.setSpacing(spacing)
-            column_layout.addStretch()
-            self._pack_columns.append(column)
-        for column, column_sections in zip(self._pack_columns, plan):
-            column_layout = column.layout()
-            for widget in column_sections:
-                column_layout.insertWidget(column_layout.count() - 1, widget)
-                # Reparenting hides a widget, and only shown sections are packed:
-                widget.show()
-            self._section_layout.addWidget(column)
-            column.show()
-        for column in self._pack_columns[len(plan):]:
-            column.hide()
+        self._packed_columns.fill(plan, spacing, self._section_layout.addWidget)
