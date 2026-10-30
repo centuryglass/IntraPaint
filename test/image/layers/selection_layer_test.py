@@ -496,6 +496,24 @@ class SelectionLayerOutlineTest(SelectionLayerOperationTestCase):
         self.selection_layer.set_image(self._image_with(QRect(4, 4, 1, 1), QRect(5, 5, 1, 1), QRect(6, 4, 1, 1)))
         self.assert_selection(rect_mask(QRect(4, 4, 1, 1), QRect(5, 5, 1, 1), QRect(6, 4, 1, 1)))
 
+    def test_vertices_match_reference_trace(self) -> None:
+        """Outline vertices, in order, match tracing the whole 3x-scaled mask, for full, rectangular and other shapes."""
+        cases = {
+            'select all': [SMALL_RECT],
+            'offset rectangle': [QRect(5, 7, 9, 4)],
+            'L shape and rectangle': [QRect(3, 3, 10, 2), QRect(3, 3, 2, 12), QRect(20, 20, 6, 6)],
+        }
+        for name, rects in cases.items():
+            with self.subTest(name):
+                self.selection_layer.set_image(self._image_with(*rects))
+                mask = np.where(rect_mask(*rects), 255, 0).astype(np.uint8)
+                contours, _ = cv2.findContours(np.kron(mask, np.ones((3, 3), dtype=np.uint8)), cv2.RETR_TREE,
+                                               cv2.CHAIN_APPROX_SIMPLE)
+                expected = sorted(tuple(map(tuple, np.rint(c[:, 0, :] / 3.0).tolist())) for c in contours)
+                actual = sorted(tuple((point.x(), point.y()) for point in polygon)
+                                for polygon in self.selection_layer.outline)
+                self.assertEqual(actual, expected)
+
     def test_bounded_edit_far_from_other_regions(self) -> None:
         """A bounded edit leaves the outlines of regions far from it alone."""
         self._paint(QRect(1, 1, 3, 3))
@@ -703,7 +721,10 @@ class SelectionLayerScalingTest(IntraPaintTestCase):
     MAX_RETRACE_SIDE = 200
 
     def test_small_edit_and_select_all_on_large_canvas(self) -> None:
-        """Small brush edits on a 4000x4000 canvas process only their neighborhood, and select-all traces once."""
+        """Small brush edits on a 4000x4000 canvas process only their neighborhood, and select-all traces nothing.
+
+        The edits are ellipses because a fully selected traced area takes the rectangle shortcut without tracing.
+        """
         image_stack = ImageStack(self.CANVAS_SIZE, QSize(512, 512), QSize(8, 8), QSize(8000, 8000))
         selection_layer = image_stack.selection_layer
         with mock.patch.object(cv2, 'findContours', wraps=cv2.findContours) as find_contours, \
@@ -714,7 +735,11 @@ class SelectionLayerScalingTest(IntraPaintTestCase):
                 with selection_layer.borrow_image(bounds) as image:
                     assert image is not None
                     painter = QPainter(image)
-                    painter.fillRect(bounds, Qt.GlobalColor.black)
+                    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+                    painter.fillRect(bounds, Qt.GlobalColor.transparent)
+                    painter.setPen(Qt.PenStyle.NoPen)
+                    painter.setBrush(Qt.GlobalColor.black)
+                    painter.drawEllipse(bounds)
                     painter.end()
             self.assertEqual(find_contours.call_count, 5)
             for call in find_contours.call_args_list:
@@ -728,7 +753,7 @@ class SelectionLayerScalingTest(IntraPaintTestCase):
 
             find_contours.reset_mock()
             selection_layer.select_all()
-            self.assertEqual(find_contours.call_count, 1)
+            find_contours.assert_not_called()
         self.assertTrue(selection_layer.generation_area_fully_selected())
         outline = selection_layer.outline
         self.assertEqual(len(outline), 1)

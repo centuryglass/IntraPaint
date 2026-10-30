@@ -429,9 +429,24 @@ class SelectionLayer(ImageLayer):
             y_offset += final_local_bounds.y()
         else:
             self._outline_polygons = []
+        # Tracing only the selected pixels' bounds keeps the cost tied to the selection, not the canvas. findContours
+        # treats the image edge as unselected, so the crop needs no padding.
+        content_bounds = _array_bounds(mask)
+        if content_bounds.isNull():
+            return
+        mask = _area(mask, content_bounds)
+        x_offset += content_bounds.x()
+        y_offset += content_bounds.y()
+        if mask.all():
+            # A fully selected area is one rectangle, with its vertices in findContours order.
+            right = x_offset + content_bounds.width()
+            bottom = y_offset + content_bounds.height()
+            self._outline_polygons.append(QPolygonF([QPointF(x_offset, y_offset), QPointF(x_offset, bottom),
+                                                     QPointF(right, bottom), QPointF(right, y_offset)]))
+            return
         # Scaling the mask by 3 puts contour points on pixel edges instead of pixel centers. CHAIN_APPROX_SIMPLE drops
         # only the points inside straight runs, so the polygons still trace every pixel edge.
-        cv2_image = np.kron(mask, np.ones((3, 3), dtype=np.uint8))
+        cv2_image = cv2.resize(mask, None, fx=3, fy=3, interpolation=cv2.INTER_NEAREST)
         contours, _ = cv2.findContours(cv2_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         for contour in contours:
             points = np.rint(contour[:, 0, :] / 3.0)
