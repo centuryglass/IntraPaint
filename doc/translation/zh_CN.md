@@ -59,7 +59,7 @@ Vocabulary from the Stable Diffusion community and the A1111 WebUI and ComfyUI i
 | Image to image, text to image | 图生图, 文生图 | 翻译 translate | [a1-terms] | 高 high | 两个汉化包一致 / both zh packs agree. |
 | Mask | 蒙版 | 翻译 translate | [a1-dtlnor] | 高 high | 两个 A1111 汉化包、Photoshop 和 Krita 都用「蒙版」；ComfyUI 中文界面以「遮罩」为主（编辑器标题作「遮罩编辑器」），也混用「蒙版编辑器」/ both A1111 packs, Photoshop and Krita use 蒙版; ComfyUI's zh UI is predominantly 遮罩 (its editor is titled 遮罩编辑器), mixing in 蒙版编辑器 strings. |
 | Masked content | 蒙版内容 | 翻译 translate | — | 低 low | 由 diffus-me 的「蒙版蒙住的内容」缩短而来，两个汉化包都没有「蒙版内容」；dtlnor 作「重绘参考内容」/ shortened from diffus-me's 蒙版蒙住的内容, so neither pack uses 蒙版内容 itself; dtlnor uses 重绘参考内容. |
-| Masked content option values: fill, original, latent noise, latent nothing | 填充, 原图, 潜空间噪声, 空白潜空间 | 翻译 translate | [a1-diffus], [a1-dtlnor] | 中 medium | 「填充」「原图」取自 diffus-me，「潜空间噪声」「空白潜空间」取自 dtlnor；是配置文件存储值，#297 修复前暂不翻译 / 填充 and 原图 come from diffus-me, 潜空间噪声 and 空白潜空间 from dtlnor; these are stored config values, untranslated until #297 is fixed. |
+| Masked content option values: fill, original, latent noise, latent nothing | 填充, 原图, 潜空间噪声, 空白潜空间 | 翻译 translate | [a1-diffus], [a1-dtlnor] | 中 medium | 「填充」「原图」取自 diffus-me，「潜空间噪声」「空白潜空间」取自 dtlnor；配置文件仍保存英文值，只翻译显示文字 / 填充 and 原图 come from diffus-me, 潜空间噪声 and 空白潜空间 from dtlnor; config files keep the English value, and only the displayed text is translated. |
 | Prompt | 提示词 | 翻译 translate | [a1-dtlnor] | 高 high | — |
 | Negative prompt | 负面提示词 | 翻译 translate | [a1-dtlnor], [kad-zh] | 高 high | dtlnor 汉化包和 krita-ai-diffusion 中文界面都作「负面提示词」，教程与术语站多用同词；diffus-me 作「反向提示词」/ the dtlnor pack and krita-ai-diffusion's zh UI both use 负面提示词, as do most tutorials and glossaries; diffus-me uses 反向提示词. |
 | Prompt style | 风格模板 | 翻译 translate | [a1-dtlnor] | 中 medium | dtlnor 汉化包作「风格模版」，diffus-me 作「模板风格」；「模板」是规范写法 / the dtlnor pack writes 风格模版 and diffus-me 模板风格; 模板 is the standard spelling of the 模版 variant. |
@@ -96,7 +96,7 @@ Words IntraPaint gives its own meaning. No other program's localization covers t
 | --- | --- | --- | --- | --- | --- |
 | Generation area | 生成区域 | 翻译 translate | — | 低 low | IntraPaint 专有；备选「生成范围」/ IntraPaint-specific; alternative 生成范围. |
 | Generation resolution | 生成分辨率 | 翻译 translate | — | 低 low | — |
-| Resolution rule | 分辨率规则 | 翻译 translate | — | 低 low | 选项「Match area 匹配区域、Match area, upscale small areas 匹配区域并放大小区域、Manual 手动」为存储值，暂不翻译 / option strings are stored values. |
+| Resolution rule | 分辨率规则 | 翻译 translate | — | 低 low | 选项「Match area 匹配区域、Match area, upscale small areas 匹配区域并放大小区域、Manual 手动」；配置文件仍保存英文值，只翻译显示文字 / options: Match area 匹配区域, Match area, upscale small areas 匹配区域并放大小区域, Manual 手动; config files keep the English value, and only the displayed text is translated. |
 | Context | 周边范围 | 翻译 translate | — | 低 low | 局部重绘时生成器看到的选区周边图像，滑块以「whole area」收尾；「上下文」偏文字语境，也与本文件「需要上下文才能翻译的字符串」撞词；WebUI「Only masked padding」的汉化「预留像素」（两个汉化包一致）只指边距，盖不住整档 / the image around the selection that the generator sees while inpainting, with the slider ending at "whole area"; 上下文 reads as textual context and collides with this file's own "strings that need context" wording, and the WebUI packs' 预留像素 for "Only masked padding" names only the pixel margin, not the whole range. |
 | Context pin | 周边范围锚点 | 翻译 translate | — | 低 low | 「锚点」是图形软件常见词（如 Photoshop 的锚点工具），「固定点」少见 / 锚点 (anchor point) is a common graphics term (Photoshop's anchor-point tools, for example); 固定点 is not. |
 | Generated image options | 生成图像选项 | 翻译 translate | — | 低 low | — |
@@ -124,8 +124,8 @@ These product, format, model and color-model names stay in Latin script.
 
 - 名词/动词同形的英文词：Fill、Clear、Select、Transform、Stroke、Invert、Float、Dock 等在中文里名词、动词通常同形（填充、清除、选择、变换、描边、反转、浮动、停靠），但 Filter 不同：名词是「滤镜」，动词（筛选列表）是「筛选」或「过滤」；Outline 作名词是「轮廓」，作动词是「描边」。翻译前仍要查看代码上下文。
   English noun/verb words: Fill, Clear, Select, Transform, Stroke, Invert, Float, Dock and similar usually take one Chinese word for both (填充, 清除, 选择, 变换, 描边, 反转, 浮动, 停靠), but Filter differs: the noun is 滤镜 and the verb (filtering a list) is 筛选 or 过滤; Outline as a noun is 轮廓 and as a verb 描边. Check the code context before translating.
-- 存储值：编辑模式、「Masked content」的值、分辨率规则等同时是配置文件保存的值，在 #297 修复前不出现在翻译文件中。
-  Stored values: the edit modes, the "Masked content" values, the resolution rules and similar options are also values saved in config files, and stay out of translation files until #297 is fixed.
+- 选项值：编辑模式、「Masked content」的值、分辨率规则等同时是配置文件保存的值。配置文件仍保存英文值，只翻译显示文字（`Config.get_option_display`），因此照常翻译。选项所属的设置就是它的上下文：「fill」「original」是「Masked content」的值，不是填充工具。
+  Option values: the edit modes, the "Masked content" values, the resolution rules and similar options are also values saved in config files. Config files keep the English value and only its display is translated (`Config.get_option_display`), so they are translated like other strings. The setting an option belongs to is its context: "fill" and "original" are "Masked content" values, not the Fill tool.
 - 单位与短标签：px、pt、deg、x 以及 W:、H:、X:、R、G、B、H、S、V、L、C 保留拉丁字母。
   Unit and short labels: px, pt, deg, x and W:, H:, X:, R, G, B, H, S, V, L, C stay in Latin script.
 

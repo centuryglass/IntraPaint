@@ -127,8 +127,9 @@ uses each one before translating it.
 
 - **Noun or verb:** "Fill", "Clear", "Select", "Filter", "Transform", "Outline", "Stroke", "Invert", "Float", "Dock",
   "Paint", "Draw", "Erase", "Merged".
-- **Stored values:** some option strings, such as the edit modes, "Masked content" values and resolution rules, are
-  also the values saved in config files. Translating them breaks those settings until #297 is fixed, so they stay
-  out of translation files until then.
+- **Option values:** some option strings, such as the edit modes, "Masked content" values and resolution rules, are
+  also the values saved in config files. Config files keep the English value and only its display is translated
+  (`Config.get_option_display`), so they are translated like other strings. The setting an option belongs to is its
+  context: "fill" and "original" are "Masked content" values, not the Fill tool.
 - **Unit and short labels:** "px", "pt", "deg", "x", and the axis and channel letters "W:", "H:", "X:", "R", "G", "B",
   "H", "S", "V", "L", "C".
