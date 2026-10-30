@@ -130,8 +130,8 @@ Config is JSON-backed and typed, with `get()` / `set()` / `connect()` (signal on
   them installed.
 - Match the surrounding code's style, naming, and structure.
 - **A bug found during unrelated work gets fixed or filed, never just noticed.**
-  - Trivial to fix (a wrong assertion, an off-by-one, a stale comment or pointer): fix it in the same pass. A bug users
-    can see gets its own PR (see "A user-visible fix gets its own `fix` PR" under "Working with GitHub").
+  - Trivial to fix (a wrong assertion, an off-by-one, a stale comment or pointer): fix it in the same pass. A bug in a
+    release gets its own PR (see "A released bug's fix gets its own `fix` PR" under "Working with GitHub").
   - Needs real investigation or design, or touches code you weren't already changing: open a GitHub issue (see
     "Tracking open work") with what was observed, how to reproduce it, and what is ruled out.
   - "Trivial" is about the fix, not the effort spent finding it. A fix that needs a manual GUI check, a new test
@@ -310,10 +310,16 @@ PyMarkdown can make itself. It runs on every change, including Markdown-only one
   (`fix(layers): ...`). Mark a breaking change with `!` (`feat!: ...`). PRs into `integration` are squash-merged, so
   the title becomes the commit release-please turns into a changelog entry and version bump (`feat`, `fix` and
   `perf` appear in the changelog). Describe the change from a user's or contributor's point of view.
-- **A user-visible fix gets its own `fix` PR.** release-please reads only the squash commit's title, so a fix inside a
-  `test`, `refactor` or `feat` PR never reaches the changelog. When work on one PR finds a bug users can see in
-  `integration`, put the fix in a separate PR, stacked on the first if it depends on it. Fixes to tests, comments and
-  code the PR itself adds stay in that PR.
+- **A released bug's fix gets its own `fix` PR.** release-please reads only the squash commit's title, so a fix inside
+  a `test`, `refactor` or `feat` PR never reaches the changelog.
+  - `fix` is for a bug in the latest release: the commit that introduced it is an ancestor of the newest `v*` tag
+    (`git merge-base --is-ancestor <commit> <tag>`; a shallow clone needs `git fetch --tags` first).
+  - A fix to work merged since that release is typed `chore` or `refactor`, so the changelog doesn't list a fix for a
+    bug no release had.
+  - When work on one PR finds a released bug, put the fix in a separate PR, stacked on the first if it depends on it.
+    Fixes to tests, comments and code the PR itself adds stay in that PR.
+  - Closely related bugs share one PR when one changelog line describes them all, such as a second bug the first one
+    hid. Fix them together.
 - **A PR closing an issue says `Closes #NN` in its description.**
 - **Subscribing to your own PR's activity is optional** (`subscribe_pr_activity`). The maintainer also tells you when a
   PR needs further work. A subscribed agent answers review comments and handles CI failures by the next two rules.
