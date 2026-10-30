@@ -1020,6 +1020,52 @@
         "default": true,
         "saved": true
     },
+    "animation_save_as_animation": {
+        "label": "Save as an animation",
+        "category": "Cache",
+        "subcategory": "Save animation",
+        "description": "Saves each top-level layer as one frame of the animation. When unchecked, the image is saved flattened.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "animation_frame_duration": {
+        "label": "Default frame duration (ms):",
+        "category": "Cache",
+        "subcategory": "Save animation",
+        "description": "Display time in milliseconds for frames whose layer names have no duration tag like \"(120ms)\".",
+        "type": "int",
+        "default": 100,
+        "saved": true,
+        "range_options": {
+            "min": 0,
+            "max": 60000,
+            "step": 10
+        }
+    },
+    "animation_loop_forever": {
+        "label": "Loop forever",
+        "category": "Cache",
+        "subcategory": "Save animation",
+        "description": "Repeats the animation until it is stopped.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "animation_loop_count": {
+        "label": "Loop count:",
+        "category": "Cache",
+        "subcategory": "Save animation",
+        "description": "Number of times the animation repeats when it doesn't loop forever.",
+        "type": "int",
+        "default": 1,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 65535,
+            "step": 1
+        }
+    },
     "seed": {
         "label": "Seed:",
         "category": "Cache",

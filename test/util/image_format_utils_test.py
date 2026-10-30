@@ -6,10 +6,12 @@ import unittest
 from typing import Optional
 
 from PIL import Image, UnidentifiedImageError
+from PySide6.QtGui import QColor, QImage
 from PySide6.QtWidgets import QApplication
 
 from src.util.visual.image_format_utils import IMAGE_READ_FORMATS, IMAGE_WRITE_FORMATS, \
-    IMAGE_FORMATS_SUPPORTING_METADATA, load_image, save_image, count_image_frames, load_image_frames
+    IMAGE_FORMATS_SUPPORTING_METADATA, load_image, save_image, count_image_frames, load_image_frames, ImageFrame, \
+    AnimationSaveOptions, save_animation, METADATA_PARAMETER_KEY
 
 
 app = QApplication.instance() or QApplication([])
@@ -148,3 +150,61 @@ class TestImageFrames(unittest.TestCase):
                     self.assertEqual(count_image_frames(file_path), 1)
                     self.assertEqual(len(load_image_frames(file_path)), 1)
             self.assertEqual(count_image_frames(svg_path), 1)
+
+
+class TestSaveAnimation(unittest.TestCase):
+    """Test saving frames as animated images."""
+
+    COLORS = [QColor(255, 0, 0), QColor(0, 255, 0), QColor(0, 0, 255)]
+    DURATIONS = [100, 200, None]
+    DEFAULT_DURATION = 50
+
+    def _frames(self) -> list[ImageFrame]:
+        frames = []
+        for color, duration in zip(self.COLORS, self.DURATIONS):
+            image = QImage(16, 16, QImage.Format.Format_ARGB32_Premultiplied)
+            image.fill(color)
+            frames.append(ImageFrame(image, duration))
+        return frames
+
+    def test_save_animation_round_trip(self) -> None:
+        """Each animation format keeps its frame count, durations and loop count."""
+        for extension in ('gif', 'webp', 'apng', 'avif'):
+            for loop_count in (0, 3):
+                with self.subTest(extension=extension, loop_count=loop_count), \
+                        tempfile.TemporaryDirectory() as temp_dir:
+                    file_path = os.path.join(temp_dir, f'animation.{extension}')
+                    save_animation(self._frames(), file_path, AnimationSaveOptions(self.DEFAULT_DURATION, loop_count),
+                                   {METADATA_PARAMETER_KEY: 'prompt text'})
+                    self.assertEqual(count_image_frames(file_path), len(self.COLORS))
+                    loaded = load_image_frames(file_path)
+                    self.assertEqual([frame.duration_ms for frame in loaded], [100, 200, self.DEFAULT_DURATION])
+                    for frame, color in zip(loaded, self.COLORS):
+                        for actual, expected in zip(frame.image.pixelColor(8, 8).getRgb(), color.getRgb()):
+                            self.assertAlmostEqual(actual, expected, delta=8)
+                    if extension != 'avif':  # Pillow doesn't report an AVIF file's loop count.
+                        with Image.open(file_path) as saved:
+                            self.assertEqual(saved.info.get('loop', 0), loop_count)
+
+    def test_save_gif_animation_with_transparency(self) -> None:
+        """GIF frames don't show earlier frames through their transparent pixels."""
+        frames = []
+        for square_x in (0, 8):
+            image = QImage(16, 16, QImage.Format.Format_ARGB32_Premultiplied)
+            image.fill(0)
+            for x in range(square_x, square_x + 4):
+                for y in range(4):
+                    image.setPixelColor(x, y, QColor(255, 0, 0))
+            frames.append(ImageFrame(image, 100))
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, 'animation.gif')
+            save_animation(frames, file_path, AnimationSaveOptions(100, 0))
+            self.assertEqual(load_image_frames(file_path)[1].image.pixelColor(1, 1).alpha(), 0)
+
+    def test_save_animation_rejects_other_formats(self) -> None:
+        """Only animation formats save as animations, and an animation needs a frame."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with self.assertRaises(ValueError):
+                save_animation(self._frames(), os.path.join(temp_dir, 'still.jpg'), AnimationSaveOptions(100, 0))
+            with self.assertRaises(ValueError):
+                save_animation([], os.path.join(temp_dir, 'empty.gif'), AnimationSaveOptions(100, 0))
