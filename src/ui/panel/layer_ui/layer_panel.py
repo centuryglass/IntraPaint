@@ -33,7 +33,7 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel
-from src.ui.layout.panel_fit import REQUIRED, STRIP_SECTION_MAX_WIDTH, FitItem, Orientation
+from src.ui.layout.panel_fit import REQUIRED, STRIP_SECTION_MAX_WIDTH, FitItem, Orientation, fresh_minimum_size
 from src.ui.panel.layer_ui.layer_list import LayerList
 from src.ui.panel.layer_ui.layer_properties import LayerProperties
 from src.ui.panel.layer_ui.layer_row import LARGE_THUMBNAIL_SIZE, MEDIUM_THUMBNAIL_SIZE, SMALL_THUMBNAIL_SIZE
@@ -129,6 +129,10 @@ class LayerPanel(DockPanel):
         self._large_form = False
         # Whether the panel's dock floats, which hides the header:
         self._floating = False
+        # The index in `BAR_FORMS` of the action bar's current form:
+        self._bar_form = len(BAR_FORMS) - 1
+        # The action bar's minimum width in its narrowest form, as of the latest time that form applied:
+        self._narrow_bar_width = 0
         super().__init__(PANEL_TITLE, QIcon(ICON_PATH_PANEL), parent=parent)
         self.setWindowTitle(WINDOW_TITLE)
         self.setWindowIcon(QIcon(APP_ICON_PATH))
@@ -178,7 +182,7 @@ class LayerPanel(DockPanel):
         self._build_more_content()
 
         self.add_fit_item(FitItem(REQUIRED, 2), self._apply_controls_form)
-        self.add_fit_item(FitItem(REQUIRED, len(BAR_FORMS)), self._apply_bar_form)
+        self.add_fit_item(FitItem(REQUIRED, len(BAR_FORMS), fit_width=True), self._apply_bar_form)
         self.add_fit_item(FitItem(META_PRIORITY), self._apply_meta_form)
         self.add_fit_item(FitItem(LARGE_PRIORITY), self._apply_large_form)
         self.set_strip_scroll_limit(STRIP_SCROLL_LIMIT)
@@ -319,12 +323,38 @@ class LayerPanel(DockPanel):
 
     def _apply_bar_form(self, form: Optional[int]) -> None:
         assert form is not None
+        self._bar_form = form
         bar_form = BAR_FORMS[form]
         style = (Qt.ToolButtonStyle.ToolButtonTextBesideIcon if bar_form.labeled
                  else Qt.ToolButtonStyle.ToolButtonIconOnly)
         for button in self._bar_buttons:
             button.setIconSize(QSize(bar_form.icon_size, bar_form.icon_size))
             button.setToolButtonStyle(style)
+        if form == len(BAR_FORMS) - 1:
+            self._narrow_bar_width = fresh_minimum_size(self._button_bar).width()
+
+    @property
+    def button_bar_style(self) -> Qt.ToolButtonStyle:
+        """Returns the tool button style the action bar's buttons have in its current form."""
+        return self._add_button.toolButtonStyle()
+
+    def minimumSizeHint(self) -> QSize:  # pylint: disable=invalid-name
+        """Returns the minimum size, with the width the panel has when the action bar is in its narrowest form.
+
+        The labeled bar forms are wider, so a minimum width that included the applied form would keep the dock from
+        shrinking the panel, and the panel could never plan for the narrower size. The height stays as the applied
+        form measures it, since the forms differ in height as well. Reading the hint changes no widget, since a
+        change would post layout requests that repeat while the window is idle.
+        """
+        hint = super().minimumSizeHint()
+        bar_width = self._button_bar.minimumSizeHint().width()
+        # The width the rest of the panel needs, when it is wider than the bar in its narrowest form:
+        other = max(self._content.layout().minimumSize().width(), self.header.minimumSizeHint().width(),
+                    self._narrow_bar_width)
+        reduction = bar_width - other
+        if reduction <= 0 or hint.width() < bar_width:
+            return hint
+        return QSize(hint.width() - reduction, hint.height())
 
     def _apply_controls_form(self, form: Optional[int]) -> None:
         self._properties.set_stacked(form == CONTROLS_STACKED)

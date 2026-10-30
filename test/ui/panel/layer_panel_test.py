@@ -11,7 +11,7 @@ from unittest.mock import patch
 from PySide6 import QtTest
 from PySide6.QtCore import QSize, QEvent, Qt, QPoint, QPointF
 from PySide6.QtGui import QEnterEvent
-from PySide6.QtWidgets import QApplication, QComboBox, QMenu, QPushButton, QToolButton, QWidget
+from PySide6.QtWidgets import QApplication, QComboBox, QMenu, QPushButton, QSplitter, QToolButton, QWidget
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
@@ -1184,3 +1184,23 @@ class LayerPanelTest(IntraPaintTestCase):
         window_button.click()
         self.assertEqual(shown, [True])
         panel.close()
+
+    def test_labeled_bar_does_not_keep_the_panel_wide(self) -> None:
+        """A dock can shrink the panel after the labeled action bar form applied, and the bar drops back to icons."""
+        splitter = QSplitter()
+        splitter.addWidget(QWidget())
+        panel = LayerPanel(self.image_stack)
+        splitter.addWidget(panel)
+        splitter.resize(1600, 600)
+        splitter.show()
+        try:
+            splitter.setSizes([1000, 600])
+            flush_layouts()
+            wide_style = panel.button_bar_style
+            self.assertEqual(wide_style, Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+            splitter.setSizes([1450, 150])
+            flush_layouts()
+            self.assertLess(panel.width(), 300)
+            self.assertEqual(panel.button_bar_style, Qt.ToolButtonStyle.ToolButtonIconOnly)
+        finally:
+            splitter.close()
