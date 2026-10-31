@@ -216,3 +216,25 @@ class EyedropperToolTest(ToolTestCase):
         self.assertIs(self.tool_controller.active_tool, fill_tool)
         self.assert_colors_equal(color_controller.foreground(), color)
         self.assert_images_equal(layer.image, initial_image)
+
+    def test_ctrl_delegate_from_fill_tool_right_click_sets_background(self) -> None:
+        """Holding the eyedropper modifier over the fill tool hands a right click to the eyedropper, which sets the
+           background and leaves the foreground and the layer unchanged."""
+        color = QColor(30, 140, 220)
+        layer = self.add_layer(color)
+        self.image_stack.active_layer = layer
+        fill_tool = FillTool(self.image_stack)
+        self.tool_controller.add_tool(fill_tool)
+        self.tool_controller.register_tool_delegate(fill_tool, self.eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
+        self.activate_tool(fill_tool)
+        initial_image = layer.image
+        HotkeyFilter.instance().modifiers_changed.emit(Qt.KeyboardModifier.ControlModifier)
+        try:
+            self.assertIs(self.tool_controller.active_tool, self.eyedropper_tool)
+            self.mouse_drag([SAMPLE_POINT], Qt.MouseButton.RightButton, modifiers=Qt.KeyboardModifier.ControlModifier)
+        finally:
+            HotkeyFilter.instance().modifiers_changed.emit(Qt.KeyboardModifier.NoModifier)
+        self.assertIs(self.tool_controller.active_tool, fill_tool)
+        self.assert_colors_equal(color_controller.background(), color)
+        self.assert_colors_equal(color_controller.foreground(), INITIAL_FOREGROUND)
+        self.assert_images_equal(layer.image, initial_image)
