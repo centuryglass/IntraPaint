@@ -19,6 +19,7 @@ DEFINITION_FILES = ('a1111_setting', 'application_config', 'cache_value', 'key_c
 # Files that map an option to a display string on purpose; the stored value stays untranslated.
 DISPLAY_MAP_FILES = frozenset({
     'src/ui/input_fields/selection_mode_bar.py',
+    'src/ui/modal/settings_controls.py',
     'src/ui/panel/generators/testing_panel.py',
     'src/util/visual/magic_wand_area.py',
     'src/ui/widget/color_picker/color_slider_block.py',
