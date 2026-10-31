@@ -1603,5 +1603,44 @@
         "type": "bool",
         "default": true,
         "saved": true
+    },
+    "soft_inpainting": {
+        "label": "Soft inpainting",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion",
+        "description": "Treat the blurred edge of the inpainting mask as a gradual, per-pixel change, so inpainted content blends into its surroundings at high denoising strength. A wider mask blur widens the gradual band.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "soft_inpainting_available": {
+        "label": "Soft inpainting available",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion",
+        "description": "Whether the connected backend supports soft inpainting",
+        "type": "bool",
+        "default": false,
+        "saved": false,
+        "translate": false
+    },
+    "soft_inpainting_parameters": {
+        "label": "Soft inpainting parameters",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion",
+        "description": "Serialized definitions of the connected backend's soft inpainting settings",
+        "type": "list",
+        "default": [],
+        "saved": false,
+        "translate": false
+    },
+    "soft_inpainting_values": {
+        "label": "Soft inpainting settings",
+        "category": "Cache",
+        "subcategory": "Stable Diffusion",
+        "description": "JSON object holding the soft inpainting settings the user changed, by parameter key",
+        "type": "string",
+        "default": "{}",
+        "saved": true,
+        "translate": false
     }
 }

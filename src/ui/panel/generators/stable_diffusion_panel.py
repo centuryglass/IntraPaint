@@ -40,6 +40,7 @@ from src.ui.layout.label_column_layout import LabelColumnLayout, normalize_row_l
 from src.ui.layout.panel_fit import (FIELD_MAX_WIDTH, REQUIRED, FitItem, Orientation, fresh_minimum_size,
                                      held_weakly)
 from src.ui.panel.generators.prompt_boxes import PromptBoxes
+from src.ui.panel.generators.soft_inpainting_controls import SoftInpaintingControls
 from src.ui.widget.disabled_banner import DisabledBanner
 from src.ui.widget.panel_section import PanelSection
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
@@ -97,6 +98,7 @@ NOTE_TXT2IMG = _tr('Text to image: ignores the canvas')
 BANNER_FIX_TEXT = _tr('Setup...')
 
 SUMMARY_MASK = _tr('blur {blur}', 'Mask section summary')
+SUMMARY_MASK_SOFT = _tr('blur {blur}, soft inpainting', 'Mask section summary')
 SUMMARY_SAMPLING_FIXED_SEED = _tr('seed {seed}, {sampler}', 'Sampling section summary while the seed is fixed')
 SUMMARY_SIZE = _tr('{width} x {height}, count {count}', 'Size and batch section summary')
 SUMMARY_ADVANCED_DEFAULT = _tr('defaults')
@@ -530,10 +532,17 @@ class StableDiffusionPanel(DockPanel):
         self._mask_section = section
         self._mask_blur_field = config_slider_field(AppConfig(), AppConfig.MASK_BLUR)
         section.add(self._mask_blur_field, REQUIRED)
-        section.widget.bind_summary(self._mask_summary, self._mask_blur_field.valueChanged)
+        self._soft_inpainting_controls = SoftInpaintingControls()
+        self._soft_inpainting_controls.layout_changed.connect(self.refit)
+        section.add(self._soft_inpainting_controls, REQUIRED)
+        section.widget.bind_summary(self._mask_summary, self._mask_blur_field.valueChanged,
+                                    self._soft_inpainting_controls.checkbox.toggled)
 
     def _mask_summary(self) -> str:
-        return SUMMARY_MASK.format(blur=self._mask_blur_field.value_text())
+        cache = Cache()
+        summary = SUMMARY_MASK_SOFT if cache.get(Cache.SOFT_INPAINTING_AVAILABLE) \
+            and cache.get(Cache.SOFT_INPAINTING) else SUMMARY_MASK
+        return summary.format(blur=self._mask_blur_field.value_text())
 
     def _build_sampling_section(self, ui: PanelLayout, cache: Cache) -> None:
         section = ui.section(SECTION_TITLE_SAMPLING, collapsible=True, priority=SAMPLING_PRIORITY)

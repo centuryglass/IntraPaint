@@ -10,9 +10,10 @@ from PIL import Image
 from PySide6.QtCore import Signal, QSize, SignalInstance, QRect, QPoint
 from PySide6.QtGui import QImage, QPainter, QTransform
 from PySide6.QtWidgets import QInputDialog, QApplication, QWidget
-from sd_backend_client import AuthError, CONTROLNET_MODEL_NONE, ControlNetModel, ControlNetPreprocessor, \
+from sd_backend_client import AuthError, BackendCapabilities, CONTROLNET_MODEL_NONE, ControlNetModel, \
+    ControlNetPreprocessor, \
     ControlNetUnit, ControlTypeDef, GenerationError, GenerationHandle, GenerationProgress, GenerationResult, \
-    GenerationStatus, PreprocessorParams, SDBackendError
+    GenerationStatus, ParameterDef, PreprocessorParams, SDBackendError
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -21,6 +22,7 @@ from src.controller.image_generation.mask_blur import blur_extent_in_image, grow
 from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTROLNET_REUSE_IMAGE_CODE, \
     SavedControlNetUnit
 from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qimage, qimage_to_pil
+from src.controller.image_generation.sd_adapters.soft_inpainting_adapter import save_parameter_defs
 from src.controller.image_generation.sd_adapters.progress_adapter import progress_status_update
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
@@ -202,6 +204,12 @@ class SDClient(Protocol):
     def submit_preprocessor_preview(self, image: Image.Image, preprocessor: PreprocessorParams,
                                     mask: Optional[Image.Image] = None) -> GenerationHandle:
         """Queues a ControlNet preprocessor preview job."""
+
+    def get_capabilities(self) -> BackendCapabilities:
+        """Reports which optional features the server has."""
+
+    def get_soft_inpainting_parameters(self) -> list[ParameterDef]:
+        """Lists the server's soft inpainting settings, empty when it has none."""
 
 
 def _check_lcm_mode_available(_) -> bool:
@@ -601,6 +609,8 @@ class SDGenerator(ImageGenerator, ABC):
                                                                                   parameter_values={})))
                 cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_SETTINGS, saved_tile_unit.to_json())
 
+            self._load_soft_inpainting()
+
             # Enable the inpaint context options:
             cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, True)
 
@@ -610,6 +620,22 @@ class SDGenerator(ImageGenerator, ABC):
             return True
         except AuthError:
             return False
+
+    def _load_soft_inpainting(self) -> None:
+        """Caches whether the backend supports soft inpainting, and the settings it publishes."""
+        cache = Cache()
+        webservice = self.get_webservice()
+        assert webservice is not None
+        parameters: list[ParameterDef] = []
+        available = False
+        try:
+            available = webservice.get_capabilities().soft_inpainting
+            if available:
+                parameters = webservice.get_soft_inpainting_parameters()
+        except SDBackendError as err:
+            logger.error(f'Loading soft inpainting support failed: {err}')
+        save_parameter_defs(parameters)
+        cache.set(Cache.SOFT_INPAINTING_AVAILABLE, available)
 
     def disconnect_or_disable(self) -> None:
         """Closes any connections, unloads models, or otherwise turns off this generator."""
@@ -629,6 +655,8 @@ class SDGenerator(ImageGenerator, ABC):
         cache = Cache()
         cache.set(Cache.SD_UPSCALING_AVAILABLE, False)
         cache.set(Cache.ULTIMATE_UPSCALE_SCRIPT_AVAILABLE, False)
+        cache.set(Cache.SOFT_INPAINTING_AVAILABLE, False)
+        save_parameter_defs([])
         for cache_key in (Cache.SD_MODEL, Cache.LORA_MODELS, Cache.HYPERNETWORK_MODELS, Cache.SAMPLING_METHOD,
                           Cache.SCHEDULER, Cache.GENERATOR_SCALING_MODES, Cache.SD_UPSCALING_CONTROLNET_TILE_MODELS,
                           Cache.SD_UPSCALING_CONTROLNET_TILE_PREPROCESSORS):
