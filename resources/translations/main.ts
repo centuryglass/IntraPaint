@@ -5282,12 +5282,12 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/tools/eyedropper_tool.py"/>
-        <source>Select a brush color</source>
+        <source>Select a brush or background color</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/tools/eyedropper_tool.py"/>
-        <source>{left_mouse_icon}: pick color - </source>
+        <source>{left_mouse_icon}: pick color - {right_mouse_icon}: pick background color - </source>
         <translation type="unfinished"></translation>
     </message>
 </context>
