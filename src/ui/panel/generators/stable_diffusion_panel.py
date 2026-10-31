@@ -37,7 +37,9 @@ from src.ui.input_fields.size_field import SizeField
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel, PanelDivider, PanelLayout
 from src.ui.layout.label_column_layout import LabelColumnLayout, normalize_row_label
-from src.ui.layout.panel_fit import FIELD_MAX_WIDTH, REQUIRED, FitItem, Orientation, held_weakly
+from src.ui.layout.panel_fit import (FIELD_MAX_WIDTH, REQUIRED, FitItem, Orientation, fresh_minimum_size,
+                                     held_weakly)
+from src.ui.panel.generators.prompt_boxes import PromptBoxes
 from src.ui.widget.disabled_banner import DisabledBanner
 from src.ui.widget.panel_section import PanelSection
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
@@ -104,13 +106,6 @@ PROMPT_COLUMN_MAX_WIDTH = 300
 # The widest the action block grows as a strip's trailing column:
 ACTION_COLUMN_MAX_WIDTH = 240
 
-# Side panels cap the prompt box at this many lines, and the negative prompt box everywhere. A strip's prompt box takes
-# the pinned column's spare height:
-PROMPT_MAX_LINES = 5
-# The prompt box never shrinks below this many lines, so an open negative prompt section can still claim most of a
-# short pinned column's height:
-PROMPT_MIN_LINES = 5
-PROMPT_BOX_PADDING = 12
 # The prompt box is never narrower than this many average characters. A strip with no room for that beside the other
 # columns plans as a side panel:
 PROMPT_MIN_CHARACTERS = 24
@@ -427,12 +422,10 @@ class StableDiffusionPanel(DockPanel):
         self._build_action_block()
         self._build_more_menu()
         self._connect_edit_mode()
-        # Keeps a strip's prompt column at the top of its column while the Prompt section is collapsed. `arrange`
-        # puts the header and section above it:
-        self._prompt_column_spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        # Takes a strip's spare column height past the Prompt section's cap. `arrange` puts the header and section
+        # above it:
+        self._prompt_column_spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
         self.pinned_layout.addItem(self._prompt_column_spacer)
-        self._prompt_section.widget.expanded_changed.connect(self._update_prompt_column_spacer)
-        self._update_prompt_column_spacer()
 
     # ---------------------------------------------------------------------------------------------------------------
     # Content
@@ -476,28 +469,17 @@ class StableDiffusionPanel(DockPanel):
         self._prompt_textbox = cache.get_control_widget(Cache.PROMPT, multi_line=True)
         self._prompt_textbox.setMinimumWidth(self._prompt_textbox.fontMetrics().averageCharWidth()
                                              * PROMPT_MIN_CHARACTERS)
-        self._prompt_textbox.setMinimumHeight(self._line_box_height(PROMPT_MIN_LINES))
-        section.add(self._prompt_textbox, REQUIRED)
         self._negative_textbox = cache.get_control_widget(Cache.NEGATIVE_PROMPT, multi_line=True)
-        self._negative_textbox.setMaximumHeight(self._prompt_height_cap())
-        # Capped the same in both orientations, so it never needs to grow. A `QWidgetItem` for a widget with a layout
-        # reports that layout's `expandingDirections()` regardless of the widget's own size policy, so leaving this
-        # Expanding lets a parent that runs out of room to grow Prompt's own Expanding controls fall back to growing
-        # some other sibling instead, once height grows enough that the surplus can't all go to those controls:
-        negative_policy = self._negative_textbox.sizePolicy()
-        negative_policy.setVerticalPolicy(QSizePolicy.Policy.Preferred)
-        self._negative_textbox.setSizePolicy(negative_policy)
         # The negative prompt folds to one line that shows its text:
         self._negative_fold = PanelSection(LABEL_NEGATIVE_PROMPT, self._negative_textbox, expanded=False)
-        # Caps the fold at its header plus the negative prompt box's own cap, so a VBoxLayout with spare room gives
-        # the spare height to the prompt box beside it instead of stretching the fold's header and padding:
-        self._negative_fold.setMaximumHeight(self._negative_fold.header_button.sizeHint().height()
-                                             + self._prompt_height_cap())
         self._negative_fold.setToolTip(self._negative_textbox.toolTip())
         self._negative_fold.bind_summary(partial(self._negative_summary, self._negative_textbox),
                                          self._negative_textbox.textChanged)
+        self._prompt_boxes = PromptBoxes(self._prompt_textbox, self._negative_textbox, self._negative_fold)
+        # Connected after the boxes' own connection, so planning sees the fold's new cap:
         self._negative_fold.expanded_changed.connect(lambda _expanded: self.refit())
-        section.add(self._negative_fold, REQUIRED)
+        self._prompt_boxes.limits_changed.connect(self._cap_prompt_section)
+        section.add(self._prompt_boxes, REQUIRED)
 
         # Prompt tools open existing windows. Each hides when it has nothing to show:
         self._lora_button = self._header_tool_button(BUTTON_TEXT_LORA, BUTTON_TOOLTIP_LORA, self.lora_requested)
@@ -526,13 +508,14 @@ class StableDiffusionPanel(DockPanel):
     def _negative_summary(textbox: QPlainTextEdit) -> str:
         return ' '.join(textbox.toPlainText().split())
 
-    def _prompt_height_cap(self) -> int:
-        """Returns the tallest a prompt box grows in a side panel, or the negative prompt box anywhere."""
-        return self._line_box_height(PROMPT_MAX_LINES)
-
-    def _line_box_height(self, lines: int) -> int:
-        """Returns the height of a prompt box `lines` text lines tall."""
-        return self._prompt_textbox.fontMetrics().lineSpacing() * lines + PROMPT_BOX_PADDING
+    def _cap_prompt_section(self) -> None:
+        """Caps the Prompt section at its minimum height plus the prompt boxes' spare height, so spare height past the
+        boxes' caps goes below the section. A side panel's sections take that much spare height before the space
+        below them does."""
+        section = self._prompt_section.widget
+        spare = 0 if section.is_collapsed() else self._prompt_boxes.spare_height()
+        section.setMaximumHeight(fresh_minimum_size(section).height() + spare)
+        self.set_section_growth(spare if self.orientation == Orientation.SIDE else 0)
 
     @staticmethod
     def _header_tool_button(text: str, tooltip: str, signal) -> QPushButton:
@@ -863,8 +846,8 @@ class StableDiffusionPanel(DockPanel):
             outer.insertWidget(0, self.header)
         if strip:
             # The pinned column sets its own width, so the section drops the strip column limits. It goes under the
-            # header and above the spacer `_update_prompt_column_spacer` sizes:
-            self.pinned_layout.insertWidget(1, prompt)
+            # header and above the spacer, and takes spare height before the spacer does:
+            self.pinned_layout.insertWidget(1, prompt, stretch=1)
             prompt.setMinimumWidth(0)
             prompt.setMaximumWidth(QWIDGETSIZE_MAX)
             self.pinned_layout.parentWidget().setMaximumWidth(PROMPT_COLUMN_MAX_WIDTH)
@@ -885,31 +868,22 @@ class StableDiffusionPanel(DockPanel):
         self._action_block.show()
         self._footer_holder.setVisible(not strip)
         self.set_trailing_visible(strip)
-        self._prompt_textbox.setMaximumHeight(QWIDGETSIZE_MAX if strip else self._prompt_height_cap())
-        # A side panel caps the prompt box the same as the negative prompt box, so it never needs to grow there
-        # either (see the negative prompt box's policy, set in `_build_prompt_section`):
-        prompt_policy = self._prompt_textbox.sizePolicy()
-        prompt_policy.setVerticalPolicy(QSizePolicy.Policy.Expanding if strip else QSizePolicy.Policy.Preferred)
-        self._prompt_textbox.setSizePolicy(prompt_policy)
         for section in self.sections:
             if strip:
                 section.widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
             self.section_layout.setAlignment(section.widget, Qt.AlignmentFlag.AlignTop if strip
                                              else Qt.AlignmentFlag(0))
 
-    def _update_prompt_column_spacer(self, *_) -> None:
-        """Lets the spacer under the Prompt section take a strip's spare column height while the section is
-        collapsed. While it is expanded, the prompt box takes that height."""
-        collapsed = self._prompt_section.widget.is_collapsed()
-        self._prompt_column_spacer.changeSize(0, 0, QSizePolicy.Policy.Minimum,
-                                              QSizePolicy.Policy.Expanding if collapsed else QSizePolicy.Policy.Fixed)
-        self.pinned_layout.invalidate()
-
     def header_width(self, available: QSize) -> int:
         """Returns the prompt column's widest width in a strip, and the available width in a side panel."""
         if self.orientation == Orientation.STRIP:
             return min(available.width(), PROMPT_COLUMN_MAX_WIDTH)
         return available.width()
+
+    def fit_finished(self, orientation: Orientation) -> None:
+        """Caps the Prompt section for its planned contents."""
+        super().fit_finished(orientation)
+        self._cap_prompt_section()
 
     def finish_placement(self) -> None:
         """Hides the Mask section outside Inpaint mode."""
@@ -950,6 +924,26 @@ class StableDiffusionPanel(DockPanel):
     def model_combobox(self) -> QWidget:
         """The Stable Diffusion model selector."""
         return self._model_combobox
+
+    @property
+    def prompt_boxes(self) -> PromptBoxes:
+        """The prompt box and the negative prompt fold under it."""
+        return self._prompt_boxes
+
+    @property
+    def prompt_textbox(self) -> QPlainTextEdit:
+        """The prompt box."""
+        return self._prompt_textbox
+
+    @property
+    def negative_prompt_textbox(self) -> QPlainTextEdit:
+        """The negative prompt box."""
+        return self._negative_textbox
+
+    @property
+    def negative_prompt_fold(self) -> PanelSection:
+        """The fold that holds the negative prompt box."""
+        return self._negative_fold
 
     @property
     def tiling_button(self) -> QPushButton:
