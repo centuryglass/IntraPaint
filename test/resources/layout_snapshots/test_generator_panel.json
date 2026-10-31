@@ -1,56 +1,35 @@
 {
   "minimum": {
-    "problems": [
-      "squeezed: PanelHeader is 82x35, minimum 1x36",
-      "squeezed: PanelHeader/QWidget is 82x16, minimum 1x17",
-      "squeezed: PanelHeader/QWidget/QLabel '--mode mock' is 82x16, minimum 34x17",
-      "squeezed: QScrollArea is 82x34, minimum 59x59"
-    ],
+    "problems": [],
     "size": [
       104,
-      138
+      171
     ]
   },
   "narrow": {
     "problems": [
-      "squeezed: PanelHeader/QWidget/QLabel '--mode mock' is 30x27, minimum 34x17",
-      "squeezed: QScrollArea is 30x45, minimum 59x59",
+      "squeezed: PanelHeader/QWidget/QLabel '--mode mock' is 30x30, minimum 34x17",
+      "squeezed: QScrollArea is 30x49, minimum 59x59",
       "squeezed: QWidget[1] is 30x28, minimum 82x28",
       "squeezed: QWidget[1]/QPushButton 'Generate' is 30x28, minimum 82x28"
     ],
     "size": [
       52,
-      160
+      167
     ]
   },
   "preferred": {
-    "problems": [
-      "squeezed: QScrollArea/QWidget[0]/QWidget is 301x82, minimum 225x97",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget is 283x64, minimum 207x79",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection is 283x64, minimum 207x79",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection/QWidget is 283x64, minimum 207x79",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection/QWidget/LabeledRows is 283x34, minimum 161x49",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection/QWidget/LabeledRows/QLabel 'Generation resolution' is 127x14, minimum 65x17",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection/QWidget/LabeledRows/HonestSizeHints is 283x14, minimum 161x26",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection/QWidget/LabeledRows/HonestSizeHints/SizeField is 283x14, minimum 80x26",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection/QWidget/LabeledRows/HonestSizeHints/SizeField/QSpinBox[0] is 127x14, minimum 66x26",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection/QWidget/LabeledRows/HonestSizeHints/SizeField/QSpinBox[1] is 127x14, minimum 66x26",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection/QWidget/LabeledRows/HonestSizeHints/SizeField/QLabel 'W:' is 16x14, minimum 16x17",
-      "squeezed: QScrollArea/QWidget[0]/QWidget/QWidget/PanelSection/QWidget/LabeledRows/HonestSizeHints/SizeField/QLabel 'H:' is 13x14, minimum 13x17"
-    ],
+    "problems": [],
     "size": [
       334,
-      160
+      167
     ]
   },
   "short": {
-    "problems": [
-      "squeezed: QScrollArea is 217x47, minimum 59x59",
-      "squeezed: QWidget[2]/_PinnedScrollArea is 82x47, minimum 59x59"
-    ],
+    "problems": [],
     "size": [
       334,
-      69
+      85
     ]
   },
   "tall": {
@@ -64,7 +43,7 @@
     "problems": [],
     "size": [
       1600,
-      160
+      167
     ]
   }
 }

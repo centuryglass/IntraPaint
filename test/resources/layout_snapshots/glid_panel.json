@@ -1,11 +1,9 @@
 {
   "minimum": {
-    "problems": [
-      "squeezed: QScrollArea is 82x40, minimum 59x59"
-    ],
+    "problems": [],
     "size": [
       104,
-      145
+      171
     ]
   },
   "narrow": {
@@ -28,13 +26,10 @@
     ]
   },
   "short": {
-    "problems": [
-      "squeezed: QScrollArea is 179x50, minimum 59x59",
-      "squeezed: QWidget[2]/_PinnedScrollArea is 82x50, minimum 59x59"
-    ],
+    "problems": [],
     "size": [
       296,
-      72
+      85
     ]
   },
   "tall": {

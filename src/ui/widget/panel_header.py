@@ -339,6 +339,19 @@ class PanelHeader(QWidget):
         """Returns the size with the key and description on the first line."""
         return QSize(self._one_line_width(), self._first_line_height())
 
+    def minimum_height_for_width(self, width: int) -> int:
+        """Returns the minimum height the header has once it is `width` wide, whether or not it is that wide now.
+
+        The key and description move to a second line below `_one_line_width`, so the minimum height depends on the
+        width the header gets.
+        """
+        wrap = self._needs_second_line(width)
+        if wrap == self._wrapped:
+            return self.minimumSizeHint().height()
+        if wrap:
+            return self._first_line_height() + LINE_SPACING + self._details.minimumSizeHint().height()
+        return self._first_line_height()
+
     def _first_line_height(self) -> int:
         widgets = [self._icon_label, self._key_badge, self._reset_button, self._more_button, *self._widgets]
         if self._title_shown:
