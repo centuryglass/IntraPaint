@@ -26,7 +26,7 @@ from test.image.layers.image_stack_state import CANVAS_SIZE, ImageStackOpTestCas
 from test.render_assertions import full_render
 
 ERROR_DIALOG = 'src.image.layers.image_stack.show_error_dialog'
-CONFIRM_RENDER_TEXT = 'src.image.layers.text_layer.request_confirmation'
+CONFIRM_RENDER_TEXT = 'src.image.layers.non_destructive_layer.request_confirmation'
 
 ISSUE_ROTATED_EXPAND = ('https://github.com/centuryglass/IntraPaint/issues/236: expanding a layer rotated by a'
                         ' non-right angle changes its edge pixels')

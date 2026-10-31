@@ -5128,33 +5128,33 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
 </context>
 <context>
-    <name>image.layers.selection_layer</name>
+    <name>image.layers.non_destructive_layer</name>
     <message>
-        <location filename="../../src/image/layers/selection_layer.py"/>
-        <source>Selection</source>
+        <location filename="../../src/image/layers/non_destructive_layer.py"/>
+        <source>Convert layer to image?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/image/layers/non_destructive_layer.py"/>
+        <source>Attempted action: &lt;b&gt;{action_name}&lt;/b&gt;. To complete this action, layer "{layer_name}" must be converted to an image layer, and you will no longer be able to edit its original content. Continue?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/image/layers/non_destructive_layer.py"/>
+        <source>Convert layers to image?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/image/layers/non_destructive_layer.py"/>
+        <source>Attempted action: &lt;b&gt;{action_name}&lt;/b&gt;. To complete this action, {num_layers} layers must be converted to image layers, and you will no longer be able to edit their original content. Continue?</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
-    <name>image.layers.text_layer</name>
+    <name>image.layers.selection_layer</name>
     <message>
-        <location filename="../../src/image/layers/text_layer.py"/>
-        <source>Convert text layer to image?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/image/layers/text_layer.py"/>
-        <source>Attempted action: &lt;b&gt;{action_name}&lt;/b&gt;. To complete this action, layer "{layer_name}" must be converted to an image layer, and you will no longer be able to edit it with the text tool. Continue?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/image/layers/text_layer.py"/>
-        <source>Convert text layers to image?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/image/layers/text_layer.py"/>
-        <source>Attempted action: &lt;b&gt;{action_name}&lt;/b&gt;. To complete this action,{num_text_layers} text layers must be converted to image layers, and you will no longer be able to edit them with the text tool. Continue?</source>
+        <location filename="../../src/image/layers/selection_layer.py"/>
+        <source>Selection</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
