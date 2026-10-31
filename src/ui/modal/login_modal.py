@@ -4,9 +4,9 @@ from typing import Callable, Optional
 
 import requests
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import (QDialog, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QPushButton, QApplication,
-                               QSizePolicy)
+from PySide6.QtWidgets import (QDialog, QFormLayout, QLabel, QLineEdit, QApplication, QSizePolicy)
 
+from src.ui.modal.dialog_footer import DialogFooter
 from src.util.shared_constants import APP_ICON_PATH
 
 # The QCoreApplication.translate context for strings in this file
@@ -22,7 +22,6 @@ LOGIN_TITLE = _tr('Enter image generation server credentials:')
 USERNAME_LABEL = _tr('Username:')
 PASSWORD_LABEL = _tr('Password:')
 LOGIN_BUTTON_TEXT = _tr('Log in')
-CANCEL_BUTTON_TEXT = _tr('Cancel')
 
 ERROR_MISSING_INFO = _tr('Username and password cannot be empty.')
 ERROR_UNKNOWN = _tr('Unknown error, try again.')
@@ -55,14 +54,8 @@ class LoginModal(QDialog):
         self._status = QLabel(self)
         self._layout.addRow(self._status)
 
-        self._button_row = QHBoxLayout()
-        self._login_button = QPushButton(self)
-        self._login_button.setText(LOGIN_BUTTON_TEXT)
-        self._button_row.addWidget(self._login_button)
-        self._cancel_button = QPushButton(self)
-        self._cancel_button.setText(CANCEL_BUTTON_TEXT)
-        self._button_row.addWidget(self._cancel_button)
-        self._layout.addRow(self._button_row)
+        self._footer = DialogFooter(LOGIN_BUTTON_TEXT, self)
+        self._layout.addRow(self._footer)
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
 
         def on_login() -> None:
@@ -83,14 +76,14 @@ class LoginModal(QDialog):
                 except json.JSONDecodeError:
                     self._status.setText(ERROR_UNKNOWN)
 
-        self._login_button.clicked.connect(on_login)
+        self._footer.accepted.connect(on_login)
 
         def on_cancel() -> None:
             """Close and set response to none when the cancel button is clicked."""
             self._res = None
             self.hide()
 
-        self._cancel_button.clicked.connect(on_cancel)
+        self._footer.rejected.connect(on_cancel)
         self.setLayout(self._layout)
 
     def clear_password(self) -> None:

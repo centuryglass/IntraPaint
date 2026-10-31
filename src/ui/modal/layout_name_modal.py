@@ -2,8 +2,9 @@
 from typing import Optional
 
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QApplication, QDialog, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QDialog, QLabel, QLineEdit, QVBoxLayout, QWidget
 
+from src.ui.modal.dialog_footer import DialogFooter
 from src.ui.modal.modal_utils import request_confirmation
 from src.util.shared_constants import APP_ICON_PATH
 
@@ -19,8 +20,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 TITLE_SAVE = _tr('Save panel layout')
 TITLE_RENAME = _tr('Rename panel layout')
 LABEL_NAME = _tr('Layout name:')
-BUTTON_SAVE = _tr('Save')
-BUTTON_CANCEL = _tr('Cancel')
+BUTTON_SAVE = _tr('Save layout')
 ERROR_EMPTY_NAME = _tr('Enter a name for the layout.')
 TITLE_CONFIRM_OVERWRITE = _tr('Replace layout?')
 MESSAGE_CONFIRM_OVERWRITE = _tr('A layout named "{layout_name}" already exists. Replace it?')
@@ -44,15 +44,10 @@ class LayoutNameModal(QDialog):
         self._status = QLabel(self)
         layout.addWidget(self._status)
 
-        button_row = QHBoxLayout()
-        self._save_button = QPushButton(BUTTON_SAVE, self)
-        self._save_button.setDefault(True)
-        self._save_button.clicked.connect(self._accept_name)
-        button_row.addWidget(self._save_button)
-        cancel_button = QPushButton(BUTTON_CANCEL, self)
-        cancel_button.clicked.connect(self.reject)
-        button_row.addWidget(cancel_button)
-        layout.addLayout(button_row)
+        footer = DialogFooter(BUTTON_SAVE, self)
+        footer.accepted.connect(self._accept_name)
+        footer.rejected.connect(self.reject)
+        layout.addWidget(footer)
         self._name_input.returnPressed.connect(self._accept_name)
 
     def _accept_name(self) -> None:

@@ -1,10 +1,11 @@
 """Popup modal asking how to save a multi-layer image as an animation."""
 from typing import Optional
 
-from PySide6.QtWidgets import QApplication, QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QDialog, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 from PySide6.QtGui import QIcon
 
 from src.config.cache import Cache
+from src.ui.modal.dialog_footer import DialogFooter
 from src.util.shared_constants import APP_ICON_PATH
 from src.util.visual.image_format_utils import AnimationSaveOptions
 
@@ -20,8 +21,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 WINDOW_TITLE = _tr('Save animation')
 INFO_LABEL = _tr('Each top-level layer is saved as one frame, with the bottom layer first. A frame lasts as long as '
                  'the "(120ms)" tag at the end of its layer name says.')
-CANCEL_BUTTON_LABEL = _tr('Cancel')
-SAVE_BUTTON_LABEL = _tr('Save')
+SAVE_BUTTON_LABEL = _tr('Save animation')
 
 
 class AnimationSaveModal(QDialog):
@@ -73,18 +73,12 @@ class AnimationSaveModal(QDialog):
         self._loop_forever_checkbox.valueChanged.connect(self._update_enabled_controls)
         self._update_enabled_controls()
 
-        cancel_button = QPushButton(CANCEL_BUTTON_LABEL, self)
-        cancel_button.clicked.connect(self.reject)
-        self._save_button = QPushButton(SAVE_BUTTON_LABEL, self)
-        self._save_button.setDefault(True)
-        self._save_button.clicked.connect(self._confirm)
-        button_row = QWidget(self)
-        button_layout = QHBoxLayout(button_row)
-        button_layout.addWidget(self._save_button)
-        button_layout.addWidget(cancel_button)
+        footer = DialogFooter(SAVE_BUTTON_LABEL, self)
+        footer.accepted.connect(self._confirm)
+        footer.rejected.connect(self.reject)
 
         layout = QVBoxLayout(self)
-        for widget in (info_label, self._mode_checkbox, *self._animation_controls, button_row):
+        for widget in (info_label, self._mode_checkbox, *self._animation_controls, footer):
             layout.addWidget(widget)
 
     def _update_enabled_controls(self, _=None) -> None:

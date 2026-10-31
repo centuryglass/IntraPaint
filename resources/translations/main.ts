@@ -6128,22 +6128,20 @@ Keys: {decrease} / {increase}</source>
         <source>Each top-level layer is saved as one frame, with the bottom layer first. A frame lasts as long as the "(120ms)" tag at the end of its layer name says.</source>
         <translation type="unfinished"></translation>
     </message>
-    <message>
-        <location filename="../../src/ui/modal/animation_save_modal.py"/>
-        <source>Cancel</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/modal/animation_save_modal.py"/>
-        <source>Save</source>
-        <translation type="unfinished"></translation>
-    </message>
 </context>
 <context>
     <name>ui.modal.color_dialog</name>
     <message>
         <location filename="../../src/ui/modal/color_dialog.py"/>
         <source>Select Color</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.modal.dialog_footer</name>
+    <message>
+        <location filename="../../src/ui/modal/dialog_footer.py"/>
+        <source>Cancel</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -6292,12 +6290,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/layout_name_modal.py"/>
-        <source>Save</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/modal/layout_name_modal.py"/>
-        <source>Cancel</source>
+        <source>Save layout</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6340,11 +6333,6 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/login_modal.py"/>
-        <source>Cancel</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/modal/login_modal.py"/>
         <source>Username and password cannot be empty.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -6363,7 +6351,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/manage_layouts_modal.py"/>
-        <source>Apply</source>
+        <source>Apply layout</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

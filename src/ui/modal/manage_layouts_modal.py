@@ -2,9 +2,9 @@
 from typing import Callable, Optional
 
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import (QApplication, QDialog, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton,
-                               QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QDialog, QListWidget, QListWidgetItem, QVBoxLayout, QWidget)
 
+from src.ui.modal.dialog_footer import DialogFooter
 from src.ui.modal.layout_name_modal import TITLE_RENAME, prompt_layout_name
 from src.ui.modal.modal_utils import request_confirmation
 from src.ui.window import saved_layouts
@@ -20,7 +20,7 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 TITLE_MANAGE = _tr('Manage panel layouts')
-BUTTON_APPLY = _tr('Apply')
+BUTTON_APPLY = _tr('Apply layout')
 BUTTON_RENAME = _tr('Rename')
 BUTTON_DELETE = _tr('Delete')
 BUTTON_CLOSE = _tr('Close')
@@ -41,19 +41,16 @@ class ManageLayoutsModal(QDialog):
         layout = QVBoxLayout(self)
         self._list = QListWidget(self)
         layout.addWidget(self._list)
-        button_row = QHBoxLayout()
-        self._apply_button = QPushButton(BUTTON_APPLY, self)
-        self._rename_button = QPushButton(BUTTON_RENAME, self)
-        self._delete_button = QPushButton(BUTTON_DELETE, self)
-        close_button = QPushButton(BUTTON_CLOSE, self)
-        for button in (self._apply_button, self._rename_button, self._delete_button, close_button):
-            button_row.addWidget(button)
-        layout.addLayout(button_row)
+        footer = DialogFooter(BUTTON_APPLY, self, cancel_text=BUTTON_CLOSE)
+        self._rename_button = footer.add_secondary_button(BUTTON_RENAME)
+        self._delete_button = footer.add_secondary_button(BUTTON_DELETE, destructive=True)
+        self._apply_button = footer.confirm_button
+        layout.addWidget(footer)
 
-        self._apply_button.clicked.connect(self.apply_selected)
+        footer.accepted.connect(self.apply_selected)
         self._rename_button.clicked.connect(self.rename_selected)
         self._delete_button.clicked.connect(self.delete_selected)
-        close_button.clicked.connect(self.accept)
+        footer.rejected.connect(self.accept)
         self._list.itemDoubleClicked.connect(self._on_item_double_clicked)
         self._list.currentRowChanged.connect(self._on_row_changed)
         self.refresh()
