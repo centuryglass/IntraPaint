@@ -2006,6 +2006,21 @@
         <source>If selected, the "Ultimate SD Upscale" script will be used for enhanced image upscaling</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Soft inpainting</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Treat the blurred edge of the inpainting mask as a gradual, per-pixel change, so inpainted content blends into its surroundings at high denoising strength. A wider mask blur widens the gradual band.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Stable Diffusion</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>config.config</name>
@@ -7063,6 +7078,12 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>blur {blur}, soft inpainting</source>
+        <comment>Mask section summary</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>seed {seed}, {sampler}</source>
         <comment>Sampling section summary while the seed is fixed</comment>
         <translation type="unfinished"></translation>
@@ -7076,6 +7097,19 @@ Keys: {decrease} / {increase}</source>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>defaults</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.panel.generators.soft_inpainting_controls</name>
+    <message>
+        <location filename="../../src/ui/panel/generators/soft_inpainting_controls.py"/>
+        <source>Soft inpainting settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/soft_inpainting_controls.py"/>
+        <source>Soft inpainting works best with a mask blur of {blur} or more: the blurred edge sets how gradually the content changes.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

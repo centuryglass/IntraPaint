@@ -6,6 +6,9 @@ from PySide6.QtWidgets import QApplication, QBoxLayout, QPushButton, QScrollArea
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from sd_backend_client import ParameterDef
+
+from src.controller.image_generation.sd_adapters.soft_inpainting_adapter import save_parameter_defs
 from src.ui.ink_style import PRIMARY_BUTTON_PROPERTY, caution_color
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.panel_fit import Orientation
@@ -536,6 +539,29 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
                 if scrolls:
                     self.assertEqual((prompt_lines, negative_lines), (PROMPT_MIN_LINES, NEGATIVE_PROMPT_MIN_LINES))
                 previous = (prompt_lines, negative_lines)
+
+    def test_soft_inpainting_controls_follow_backend_support(self) -> None:
+        """The soft inpainting controls show only when the backend supports it, and the settings fold and the blur hint
+        show only while it is on."""
+        cache = Cache()
+        controls = self.panel._soft_inpainting_controls  # pylint: disable=protected-access
+        checkbox = controls.checkbox
+        hint = controls.hint  # pylint: disable=protected-access
+        fold = controls.fold  # pylint: disable=protected-access
+        self.assertTrue(checkbox.isHidden())
+        save_parameter_defs([ParameterDef(key='strength', display_name='Strength', default_value=1.0, min_val=0.05,
+                                          max_val=1.0, step_val=0.05)])
+        cache.set(Cache.SOFT_INPAINTING_AVAILABLE, True)
+        self.assertFalse(checkbox.isHidden())
+        self.assertTrue(fold.isHidden())
+        AppConfig().set(AppConfig.MASK_BLUR, 4)
+        cache.set(Cache.SOFT_INPAINTING, True)
+        self.assertFalse(fold.isHidden())
+        self.assertFalse(hint.isHidden())
+        AppConfig().set(AppConfig.MASK_BLUR, 24)
+        self.assertTrue(hint.isHidden())
+        cache.set(Cache.SOFT_INPAINTING_AVAILABLE, False)
+        self.assertTrue(checkbox.isHidden())
 
     def test_prompt_boxes_stop_at_their_caps(self) -> None:
         """Past both boxes' caps, spare height stays below the Prompt section: under the fold in a strip, and under
