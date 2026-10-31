@@ -1808,12 +1808,15 @@ class AppController(MenuBuilder):
         alt_window.setGeometry(window_bounds)
 
     def _set_alt_window_centered_bounds(self, alt_window: QWidget) -> None:
-        """Set a new window's bounds centered over the main window bounds, scaled to the sizeHint."""
+        """Set a new window's bounds centered over the main window bounds, scaled to the sizeHint and restricted to
+           the screen size, unless the minimum size hint is larger."""
         window_bounds = self._window.geometry()
         center = window_bounds.center()
         size_hint = alt_window.sizeHint()
-        window_bounds.setWidth(size_hint.width())
-        window_bounds.setHeight(size_hint.height())
+        minimum_size = alt_window.minimumSizeHint()
+        screen_size = get_screen_size(self._window)
+        window_bounds.setWidth(max(min(size_hint.width(), screen_size.width()), minimum_size.width()))
+        window_bounds.setHeight(max(min(size_hint.height(), screen_size.height()), minimum_size.height()))
         window_bounds.moveCenter(center)
         alt_window.setGeometry(window_bounds)
 
