@@ -6124,6 +6124,49 @@ Keys: {decrease} / {increase}</source>
     </message>
 </context>
 <context>
+    <name>ui.input_fields.setting_fields</name>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>Theme default</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>Use the theme's color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>Choose a color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>Browse...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>Choose a directory</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>Width</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>Height</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/input_fields/setting_fields.py"/>
+        <source>Unbound</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.input_fields.size_field</name>
     <message>
         <location filename="../../src/ui/input_fields/size_field.py"/>
@@ -6570,6 +6613,39 @@ Keys: {decrease} / {increase}</source>
     </message>
 </context>
 <context>
+    <name>ui.modal.settings_controls</name>
+    <message>
+        <location filename="../../src/ui/modal/settings_controls.py"/>
+        <source>Ask</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/settings_controls.py"/>
+        <source>Always</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/settings_controls.py"/>
+        <source>Never</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/settings_controls.py"/>
+        <source>Minimal move</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/settings_controls.py"/>
+        <source>Center</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/settings_controls.py"/>
+        <source>Off</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.modal.settings_modal</name>
     <message>
         <location filename="../../src/ui/modal/settings_modal.py"/>
@@ -6578,7 +6654,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/settings_modal.py"/>
-        <source>Settings file locations:</source>
+        <source>Settings file locations</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6588,12 +6664,37 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/settings_modal.py"/>
-        <source>Cancel</source>
+        <source>Save</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/settings_modal.py"/>
-        <source>Save</source>
+        <source>Search settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/settings_modal.py"/>
+        <source>No settings match the search.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/settings_modal.py"/>
+        <source>Restore defaults</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/settings_modal.py"/>
+        <source>Set every setting in this section back to its default value. Nothing changes until you click Save.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/settings_modal.py"/>
+        <source>Open folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/settings_modal.py"/>
+        <source>Show the folder containing this file</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
