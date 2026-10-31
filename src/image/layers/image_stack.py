@@ -29,7 +29,7 @@ from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_
 from src.util.cached_data import CachedData
 from src.util.visual.geometry_utils import adjusted_placement_in_bounds, map_rect_precise, extract_transform_parameters
 from src.util.visual.image_utils import create_transparent_image, image_content_bounds, \
-    image_is_fully_transparent, image_data_as_numpy_8bit
+    image_is_fully_transparent, image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly
 from src.util.visual.pil_image_utils import pil_image_to_qimage
 
 logger = logging.getLogger(__name__)
@@ -1152,11 +1152,16 @@ class ImageStack(QObject):
                 composite_op = top_layer.composition_mode.custom_composite_op()
                 composite_op(top_image, merged_image, top_layer.opacity, painter.transform(),
                              map_rect_precise(top_layer.bounds, painter.transform()).toAlignedRect())
-            if base_layer.alpha_locked:
-                painter.setTransform(base_paint_transform)
-                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-                painter.drawImage(QPoint(), base_layer.image)
             painter.end()
+            if base_layer.alpha_locked:
+                # Alpha is copied rather than composited: base alpha inside its old bounds, transparent outside.
+                straight_image = merged_image.convertToFormat(QImage.Format.Format_ARGB32)
+                merged_alpha = image_data_as_numpy_8bit(straight_image)[:, :, 3]
+                merged_alpha[:, :] = 0
+                base_alpha = image_data_as_numpy_8bit_readonly(base_layer.image)[:, :, 3]
+                x, y = offset.x(), offset.y()
+                merged_alpha[y:y + base_alpha.shape[0], x:x + base_alpha.shape[1]] = base_alpha
+                merged_image = straight_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
 
             final_transform = QTransform.fromTranslate(-offset.x(), -offset.y()) * base_layer.transform
 
