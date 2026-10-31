@@ -32,14 +32,14 @@
     ],
     "size": [
       124,
-      522
+      505
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
       342,
-      522
+      505
     ]
   },
   "short": {
@@ -58,8 +58,8 @@
   },
   "strip_minimum": {
     "problems": [
-      "squeezed: QWidget[0] is 71x220, minimum 203x59",
-      "clipped: QWidget[0]/_PinnedScrollArea shows 71x220 of 203x220",
+      "squeezed: QWidget[0] is 71x220, minimum 192x59",
+      "clipped: QWidget[0]/_PinnedScrollArea shows 71x220 of 192x220",
       "clipped: QWidget[0]/_PinnedScrollArea/QWidget[0] shows 71x220 of 192x220",
       "squeezed: QWidget[1] is 71x220, minimum 226x124",
       "clipped: QWidget[1]/_PinnedScrollArea shows 71x220 of 226x220",
@@ -74,14 +74,14 @@
     "problems": [],
     "size": [
       342,
-      1566
+      1515
     ]
   },
   "wide": {
     "problems": [],
     "size": [
       1600,
-      522
+      505
     ]
   }
 }
