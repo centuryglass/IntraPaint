@@ -23,6 +23,7 @@ from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
 from src.util.arg_parser import build_arg_parser
+from src.util.visual.display_size import get_screen_size
 from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_READ_FORMATS, \
     IMAGE_WRITE_FORMATS, AnimationSaveOptions, count_image_frames, load_image_frames
 from test.base_test_case import IntraPaintTestCase
@@ -110,6 +111,22 @@ class TestAppController(IntraPaintTestCase):
         self.controller._apply_saved_layout('bad')
         self.controller._apply_saved_layout('missing')
         self.assertEqual(mock_error_dialog.call_count, 2)
+
+    def test_alt_window_bounds_fit_screen(self):
+        """A window whose size hint exceeds the screen opens at the screen size, not its hint."""
+
+        class _HugeWidget(QWidget):
+            def sizeHint(self) -> QSize:
+                return QSize(20000, 20000)
+
+            def minimumSizeHint(self) -> QSize:
+                return QSize(100, 100)
+
+        window = _HugeWidget()
+        self.controller._set_alt_window_centered_bounds(window)
+        screen_size = get_screen_size(self.controller._window)
+        self.assertEqual(window.width(), screen_size.width())
+        self.assertEqual(window.height(), screen_size.height())
 
     def test_init(self):
         self.assertIsInstance(self.controller, AppController)
