@@ -306,6 +306,10 @@ class HotkeyFilter(QObject):
                         and (binding_modifiers is None or QApplication.keyboardModifiers() == binding_modifiers):
                     is_text_control_event = True
             if event.key() == Qt.Key.Key_Escape and self._default_focus is not None and self._default_focus.isVisible():
+                # In another top-level window (a floating panel), setFocus only records the focus child; the
+                # active window has to change for the field to lose keyboard focus.
+                if self._default_focus.window() is not focused_widget.window():
+                    self._default_focus.window().activateWindow()
                 self._default_focus.setFocus()
                 return True
             if (not is_text_control_event and isinstance(focused_widget, (QAbstractSpinBox, GradientSlider))
