@@ -25,9 +25,10 @@ their state survives.
   section's body in a popover. The item fills by the section's `priority`, among the controls' priorities, so the
   section collapses after the optional controls it outranks have moved to More. Controls in a collapsed section cost no
   room and stay placed. A section whose controls are all required collapses only if declared `collapsible`.
-- Side panels stack sections in one column and scroll vertically. Strip panels put sections in fixed-width columns and
-  scroll horizontally. Both also scroll along the other axis when content can't shrink to fit, so nothing is cut off
-  out of reach.
+- Side panels stack sections in one column and scroll vertically. Spare height goes under the sections, except what
+  `set_section_growth` lets their vertically expanding controls take first. Strip panels put sections in fixed-width
+  columns and scroll horizontally. Both also scroll along the other axis when content can't shrink to fit, so nothing
+  is cut off out of reach.
 - Subclasses add their own items with `add_fit_item`, extend `arrange` for structure that depends on the orientation,
   and override `measure_content` if they move the header. `prepare_fit` and `fit_finished` bracket each plan, for nested
   content that plans itself (`src.ui.layout.panel_fit.FitContent`).
@@ -175,6 +176,8 @@ class _PinnedColumn:
         self.layout = QVBoxLayout(self.content)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.scroll = _PinnedScrollArea()
+        # A resizable scroll area sizes content whose height depends on its width to its preferred height, so content
+        # preferring more than its minimum height scrolls before the planner measures that it overflows:
         self.scroll.setWidgetResizable(True)
         self.scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -426,6 +429,20 @@ class DockPanel(QWidget):
         self._strip_scroll_limit = limit
         if self._planner is not None:
             self._planner.strip_scroll_limit = limit
+
+    def set_section_growth(self, extra: int) -> None:
+        """Lets a side panel's sections take up to `extra` more height than their minimum from spare height, before
+        the space under them takes the rest. Zero, the default, leaves all spare height under the sections.
+
+        The extra goes to the sections' vertically expanding controls, so it is no more than those can take, and is
+        set again whenever the sections' minimum height changes, such as from `fit_finished`.
+        """
+        if extra > 0:
+            self._body_layout.setStretchFactor(self._section_holder, 1)
+            self._section_holder.setMaximumHeight(fresh_minimum_size(self._section_holder).height() + extra)
+        else:
+            self._body_layout.setStretchFactor(self._section_holder, 0)
+            self._section_holder.setMaximumHeight(QWIDGETSIZE_MAX)
 
     @property
     def section_layout(self) -> QBoxLayout:

@@ -10,6 +10,8 @@ from src.ui.ink_style import PRIMARY_BUTTON_PROPERTY, caution_color
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.panel_fit import Orientation
 from src.ui.panel.generators.comfyui_advanced_controls import ComfyUIAdvancedControls
+from src.ui.panel.generators.prompt_boxes import (NEGATIVE_PROMPT_MAX_LINES, NEGATIVE_PROMPT_MIN_LINES,
+                                                  PROMPT_MAX_LINES, PROMPT_MIN_LINES)
 from src.ui.panel.generators.stable_diffusion_panel import (NOTE_IMG2IMG, NOTE_TXT2IMG, CONTEXT_OFF,
                                                             SECTION_TITLE_ADVANCED, SECTION_TITLE_MASK,
                                                             SECTION_TITLE_PROMPT, SECTION_TITLE_SAMPLING,
@@ -476,3 +478,113 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         primary = [button for button in self.panel.findChildren(QPushButton)
                    if button.property(PRIMARY_BUTTON_PROPERTY) is True]
         self.assertEqual(primary, [self.panel.generate_button])
+
+    def _prompt_scrolls(self) -> bool:
+        """Returns whether the scroll area holding the Prompt section scrolls vertically: a strip's prompt column, or
+        a side panel's sections."""
+        prompt = self._section(SECTION_TITLE_PROMPT)
+        scroll_area = next(area for area in self.panel.findChildren(QScrollArea) if area.isAncestorOf(prompt))
+        return scroll_area.verticalScrollBar().isVisibleTo(self.panel)
+
+    def _box_lines(self) -> tuple[float, float]:
+        boxes = self.panel.prompt_boxes
+        return boxes.line_count(self.panel.prompt_textbox), boxes.line_count(self.panel.negative_prompt_textbox)
+
+    def _sweep_prompt_boxes(self, orientation: Orientation, sizes: list[QSize]) -> list[tuple[bool, float, float]]:
+        """Returns whether the Prompt section's scroll area scrolls and each box's line count, at each size."""
+        host = PanelHost(self.panel)
+        results = []
+        try:
+            for size in sizes:
+                host.capture(size, orientation)
+                self.assertEqual(self.panel.orientation, orientation)
+                results.append((self._prompt_scrolls(), *self._box_lines()))
+        finally:
+            host.release()
+        return results
+
+    def test_prompt_boxes_share_spare_lines_two_to_one(self) -> None:
+        """An open negative prompt box takes one spare line for every two the prompt box takes, both boxes show whole
+        lines, and the fold sits under the prompt box with the section's spacing between them, in both orientations."""
+        self.panel.negative_prompt_fold.set_expanded(True)
+        for orientation, sizes in ((STRIP, [QSize(1400, height) for height in range(300, 700, 20)]),
+                                   (SIDE, [QSize(340, height) for height in range(700, 1300, 40)])):
+            for size, (_, prompt_lines, negative_lines) in zip(sizes, self._sweep_prompt_boxes(orientation, sizes)):
+                with self.subTest(orientation=orientation, size=size):
+                    self.assertEqual(prompt_lines, int(prompt_lines))
+                    self.assertEqual(negative_lines, int(negative_lines))
+                    if prompt_lines < PROMPT_MAX_LINES and negative_lines < NEGATIVE_PROMPT_MAX_LINES:
+                        self.assertLessEqual(abs(prompt_lines - 2 * negative_lines), 2)
+                    prompt = _rect_in(self.panel.prompt_textbox, self.panel)
+                    fold = _rect_in(self.panel.negative_prompt_fold, self.panel)
+                    spacing = self._section(SECTION_TITLE_PROMPT).body.layout().spacing()
+                    self.assertEqual(fold.top() - prompt.bottom() - 1, spacing)
+
+    def test_prompt_boxes_shrink_to_their_minimums_before_anything_scrolls(self) -> None:
+        """As a strip shrinks, the boxes lose lines and never gain them, and the prompt column only scrolls once
+        both boxes are at their minimums, where they stay."""
+        self.panel.negative_prompt_fold.set_expanded(True)
+        sizes = [QSize(1400, height) for height in range(700, 160, -10)]
+        results = self._sweep_prompt_boxes(STRIP, sizes)
+        self.assertTrue(results[-1][0], 'The smallest strip should scroll the prompt column')
+        self.assertFalse(results[0][0])
+        previous = (PROMPT_MAX_LINES, NEGATIVE_PROMPT_MAX_LINES)
+        for size, (scrolls, prompt_lines, negative_lines) in zip(sizes, results):
+            with self.subTest(size=size):
+                self.assertLessEqual(prompt_lines, previous[0])
+                self.assertLessEqual(negative_lines, previous[1])
+                if scrolls:
+                    self.assertEqual((prompt_lines, negative_lines), (PROMPT_MIN_LINES, NEGATIVE_PROMPT_MIN_LINES))
+                previous = (prompt_lines, negative_lines)
+
+    def test_prompt_boxes_stop_at_their_caps(self) -> None:
+        """Past both boxes' caps, spare height stays below the Prompt section: under the fold in a strip, and under
+        the other sections in a side panel."""
+        self.panel.negative_prompt_fold.set_expanded(True)
+        for orientation, size in ((STRIP, QSize(1400, 900)), (SIDE, QSize(340, 2400))):
+            with self.subTest(orientation=orientation):
+                self.assertEqual(self._sweep_prompt_boxes(orientation, [size])[0],
+                                 (False, PROMPT_MAX_LINES, NEGATIVE_PROMPT_MAX_LINES))
+                host = PanelHost(self.panel)
+                try:
+                    host.capture(size, orientation)
+                    section = _rect_in(self._section(SECTION_TITLE_PROMPT), self.panel)
+                    fold = _rect_in(self.panel.negative_prompt_fold, self.panel)
+                    self.assertEqual(fold.bottom(), section.bottom())
+                    if orientation == SIDE:
+                        next_section = _rect_in(self._section(SECTION_TITLE_MASK), self.panel)
+                        self.assertLess(next_section.top() - section.bottom(), self.panel.prompt_textbox.height() // 4)
+                finally:
+                    host.release()
+
+    def test_prompt_box_heights_ignore_their_text(self) -> None:
+        """A long prompt gets the same box heights as an empty one, whether or not the column scrolls."""
+        self.panel.negative_prompt_fold.set_expanded(True)
+        sizes = [QSize(1400, 500), QSize(1400, 200), QSize(340, 1000)]
+        for orientation, size in ((STRIP, sizes[0]), (STRIP, sizes[1]), (SIDE, sizes[2])):
+            with self.subTest(orientation=orientation, size=size):
+                self.panel.prompt_textbox.setPlainText('')
+                self.panel.negative_prompt_textbox.setPlainText('')
+                empty = self._sweep_prompt_boxes(orientation, [size])
+                self.panel.prompt_textbox.setPlainText('\n'.join(['a prompt line'] * 40))
+                self.panel.negative_prompt_textbox.setPlainText('\n'.join(['a negative line'] * 40))
+                self.assertEqual(self._sweep_prompt_boxes(orientation, [size]), empty)
+
+    def test_prompt_box_heights_do_not_depend_on_the_last_size(self) -> None:
+        """A size gives the same box heights whatever size the panel showed before."""
+        self.panel.negative_prompt_fold.set_expanded(True)
+        size = QSize(1400, 420)
+        first = self._sweep_prompt_boxes(STRIP, [size])
+        self._sweep_prompt_boxes(STRIP, [QSize(1400, 900), QSize(1400, 180)])
+        self.assertEqual(self._sweep_prompt_boxes(STRIP, [size]), first)
+        self._sweep_prompt_boxes(SIDE, [QSize(340, 1600)])
+        self.assertEqual(self._sweep_prompt_boxes(STRIP, [size]), first)
+
+    def test_closing_the_negative_prompt_gives_its_lines_to_the_prompt_box(self) -> None:
+        """With the negative prompt folded, the prompt box takes every spare line up to its cap."""
+        size = QSize(1400, 420)
+        self.panel.negative_prompt_fold.set_expanded(True)
+        opened = self._sweep_prompt_boxes(STRIP, [size])[0]
+        self.panel.negative_prompt_fold.set_expanded(False)
+        closed = self._sweep_prompt_boxes(STRIP, [size])[0]
+        self.assertGreater(closed[1], opened[1])
