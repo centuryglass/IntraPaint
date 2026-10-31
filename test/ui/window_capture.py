@@ -141,11 +141,12 @@ def _warning_box(_controller: 'AppController') -> QWidget:
 
 def _confirm_box(_controller: 'AppController') -> QWidget:
     # pylint: disable=import-outside-toplevel
-    from src.controller.app_controller import LARGE_ANIMATION_MESSAGE, LARGE_ANIMATION_TITLE
+    from src.controller.app_controller import LARGE_ANIMATION_BUTTON, LARGE_ANIMATION_MESSAGE, LARGE_ANIMATION_TITLE
     from src.ui.modal.modal_utils import request_confirmation
     message = LARGE_ANIMATION_MESSAGE.format(file_name='walk_cycle.gif', frame_count=480, size_gb=1.4)
     return _message_box(lambda: request_confirmation(None, LARGE_ANIMATION_TITLE, message, None,
-                                                     QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No))
+                                                     QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No,
+                                                     confirm_label=LARGE_ANIMATION_BUTTON))
 
 
 def _confirm_remember_box(_controller: 'AppController') -> QWidget:
@@ -160,10 +161,10 @@ def _confirm_remember_box(_controller: 'AppController') -> QWidget:
 
 def _discard_box(_controller: 'AppController') -> QWidget:
     # pylint: disable=import-outside-toplevel
-    from src.controller.app_controller import CONFIRM_QUIT_MESSAGE, CONFIRM_QUIT_TITLE
+    from src.controller.app_controller import CONFIRM_QUIT_BUTTON, CONFIRM_QUIT_MESSAGE, CONFIRM_QUIT_TITLE
     from src.ui.modal.modal_utils import request_confirmation
     return _message_box(lambda: request_confirmation(None, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE,
-                                                     discards_work=True))
+                                                     discards_work=True, confirm_label=CONFIRM_QUIT_BUTTON))
 
 
 def _bug_report_box(_controller: 'AppController') -> QWidget:

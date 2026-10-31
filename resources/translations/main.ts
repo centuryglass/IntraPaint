@@ -3628,12 +3628,22 @@
     </message>
     <message>
         <location filename="../../src/controller/app_controller.py"/>
+        <source>Quit without saving</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
         <source>Create new image?</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/controller/app_controller.py"/>
         <source>This will discard all unsaved changes.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Discard and create</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3683,6 +3693,11 @@
     </message>
     <message>
         <location filename="../../src/controller/app_controller.py"/>
+        <source>Discard and reload</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
         <source>Metadata updated</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3711,6 +3726,11 @@
         <source>{file_name} has {frame_count} frames. Opening each one as a layer will use about {size_gb:.1f} GB of memory.
 
 Choose "No" to open only the first frame.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Open all frames</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
