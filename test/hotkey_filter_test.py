@@ -1,9 +1,9 @@
 """Tests which key presses HotkeyFilter sees."""
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QGuiApplication, QKeyEvent, QKeySequence
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication, QLineEdit, QVBoxLayout, QWidget
 
 from src.hotkey_filter import HotkeyFilter
 from test.base_test_case import IntraPaintTestCase
@@ -54,3 +54,21 @@ class HotkeyFilterTest(IntraPaintTestCase):
         self.action.return_value = False
         QApplication.sendEvent(self.window, _key_press())
         self.action.assert_called_once()
+
+    def test_escape_in_other_window_activates_default_focus_window(self) -> None:
+        """Escape in a field of a floating panel activates the window holding the default focus widget."""
+        floating = QWidget()
+        field = QLineEdit(floating)
+        QVBoxLayout(floating).addWidget(field)
+        main = QWidget()
+        target = QWidget(main)
+        for widget in (floating, main):
+            widget.show()
+        hotkeys = HotkeyFilter.instance()
+        hotkeys.set_default_focus(target)
+        escape = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Escape, Qt.KeyboardModifier.NoModifier)
+        # Offscreen windows never become active, so report the field as focused directly.
+        with patch.object(QApplication, 'focusWidget', new=staticmethod(lambda: field)), \
+                patch.object(QWidget, 'activateWindow') as activate:
+            self.assertTrue(hotkeys.eventFilter(field, escape))
+        activate.assert_called_once()
