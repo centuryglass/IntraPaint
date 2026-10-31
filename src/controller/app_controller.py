@@ -190,8 +190,10 @@ GENERATOR_LOAD_ERROR_TITLE = _tr('Loading image generator failed')
 GENERATOR_LOAD_ERROR_MESSAGE = _tr('Unable to load the {generator_name} image generator')
 CONFIRM_QUIT_TITLE = _tr('Quit now?')
 CONFIRM_QUIT_MESSAGE = _tr('All unsaved changes will be lost.')
+CONFIRM_QUIT_BUTTON = _tr('Quit without saving')
 NEW_IMAGE_CONFIRMATION_TITLE = _tr('Create new image?')
 NEW_IMAGE_CONFIRMATION_MESSAGE = _tr('This will discard all unsaved changes.')
+NEW_IMAGE_CONFIRMATION_BUTTON = _tr('Discard and create')
 SAVE_ERROR_TITLE = _tr('Save failed')
 LOAD_ERROR_TITLE = _tr('Open failed')
 SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE = _tr('Saving as "{file_path}" failed due to an unknown error, try saving in a'
@@ -205,6 +207,7 @@ RELOAD_ERROR_MESSAGE_INVALID_FILE = _tr('Image path "{file_path}" is not a valid
 RELOAD_ERROR_MESSAGE_NO_IMAGE = _tr('Enter an image path or click "Open Image" first.')
 RELOAD_CONFIRMATION_TITLE = _tr('Reload image?')
 RELOAD_CONFIRMATION_MESSAGE = _tr('This will discard all unsaved changes.')
+RELOAD_CONFIRMATION_BUTTON = _tr('Discard and reload')
 METADATA_UPDATE_TITLE = _tr('Metadata updated')
 METADATA_UPDATE_MESSAGE = _tr('On save, current image generation parameters will be stored within the image')
 LOAD_LAYER_ERROR_TITLE = _tr('Opening layers failed')
@@ -212,6 +215,7 @@ LOAD_LAYER_ERROR_MESSAGE = _tr('Could not open the following images: ')
 LARGE_ANIMATION_TITLE = _tr('Open every frame?')
 LARGE_ANIMATION_MESSAGE = _tr('{file_name} has {frame_count} frames. Opening each one as a layer will use about'
                               ' {size_gb:.1f} GB of memory.\n\nChoose "No" to open only the first frame.')
+LARGE_ANIMATION_BUTTON = _tr('Open all frames')
 
 # Decoded frame data, in bytes, above which opening an animation asks before loading every frame.
 LARGE_ANIMATION_BYTES = 1024 ** 3
@@ -873,7 +877,9 @@ class AppController(MenuBuilder):
         if image_size and (not self._image_stack.has_image or request_confirmation(self._window,
                                                                                    NEW_IMAGE_CONFIRMATION_TITLE,
                                                                                    NEW_IMAGE_CONFIRMATION_MESSAGE,
-                                                                                   discards_work=True)):
+                                                                                   discards_work=True,
+                                                                                   confirm_label=
+                                                                                   NEW_IMAGE_CONFIRMATION_BUTTON)):
             new_image = QImage(image_size, QImage.Format.Format_ARGB32_Premultiplied)
             new_image.fill(Cache().get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, Qt.GlobalColor.white))
             Cache().set(Cache.LAST_FILE_PATH, '')
@@ -1232,7 +1238,8 @@ class AppController(MenuBuilder):
         message = LARGE_ANIMATION_MESSAGE.format(file_name=os.path.basename(file_path), frame_count=frame_count,
                                                  size_gb=frame_bytes / 1024 ** 3)
         return request_confirmation(self._window, LARGE_ANIMATION_TITLE, message, None,
-                                    QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
+                                    QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No,
+                                    confirm_label=LARGE_ANIMATION_BUTTON)
 
     @menu_action(MENU_FILE, 'reload_shortcut', 5, valid_app_states=[APP_STATE_EDITING])
     def reload_image(self) -> None:
@@ -1248,7 +1255,8 @@ class AppController(MenuBuilder):
         if not self._image_stack.has_image or request_confirmation(self._window,
                                                                    RELOAD_CONFIRMATION_TITLE,
                                                                    RELOAD_CONFIRMATION_MESSAGE,
-                                                                   discards_work=True):
+                                                                   discards_work=True,
+                                                                   confirm_label=RELOAD_CONFIRMATION_BUTTON):
             self.load_image(file_path=file_path)
 
     @menu_action(MENU_FILE, 'quit_shortcut', 6)
@@ -1261,7 +1269,8 @@ class AppController(MenuBuilder):
 
     def _confirm_quit(self) -> bool:
         """Asks the user to confirm closing the main window, returning whether to proceed."""
-        return request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE, discards_work=True)
+        return request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE, discards_work=True,
+                                    confirm_label=CONFIRM_QUIT_BUTTON)
 
     # Edit menu:
 

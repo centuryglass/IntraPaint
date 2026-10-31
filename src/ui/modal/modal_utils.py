@@ -1,12 +1,14 @@
 """
 Provides simple popup windows for error messages, requesting confirmation, and loading images.
 """
+import html
 import logging
 import os
 import traceback
 from typing import Optional
 
 from PIL import UnidentifiedImageError
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle, QApplication
 
 from src.config.application_config import AppConfig
@@ -78,6 +80,17 @@ def _new_message_box(parent: Optional[QWidget]) -> QMessageBox:
     return message_box
 
 
+def _set_title_and_message(message_box: QMessageBox, title: str, message: str) -> None:
+    """Shows `title` as a bold first line in the box, with `message` under it.
+
+    Both strings are escaped, since the box renders rich text to get the bold line.
+    """
+    message_box.setWindowTitle(title)
+    message_box.setTextFormat(Qt.TextFormat.RichText)
+    message_box.setText(f'<b>{html.escape(title)}</b>')
+    message_box.setInformativeText(html.escape(message).replace('\n', '<br>'))
+
+
 def show_error_dialog(parent: Optional[QWidget], title: str, error: str | BaseException,
                       signal: bool = False) -> None:
     """Opens a message box to show some text to the user. With `signal` set, the OK button uses the signal color."""
@@ -85,8 +98,7 @@ def show_error_dialog(parent: Optional[QWidget], title: str, error: str | BaseEx
     if isinstance(error, BaseException) and hasattr(error, '__traceback__'):
         traceback.print_exception(type(error), error, error.__traceback__)
     messagebox = _new_message_box(parent)
-    messagebox.setWindowTitle(title)
-    messagebox.setText(f'{error}')
+    _set_title_and_message(messagebox, title, f'{error}')
     messagebox.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxWarning, parent))
     messagebox.setIcon(QMessageBox.Icon.Critical)
     messagebox.setStandardButtons(QMessageBox.StandardButton.Ok)
@@ -103,8 +115,7 @@ def show_warning_dialog(parent: Optional[QWidget], title: str, message: str,
     if reminder_config_key is not None and not AppConfig().get(reminder_config_key):
         return  # Warning already disabled
     messagebox = _new_message_box(parent)
-    messagebox.setWindowTitle(title)
-    messagebox.setText(message)
+    _set_title_and_message(messagebox, title, message)
     messagebox.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxWarning, parent))
     messagebox.setIcon(QMessageBox.Icon.Warning)
     if reminder_config_key is not None:
@@ -119,10 +130,12 @@ def show_warning_dialog(parent: Optional[QWidget], title: str, message: str,
 def request_confirmation(parent: Optional[QWidget], title: str, message: str,
                          reminder_config_key: Optional[str] = None,
                          confirm_option=QMessageBox.StandardButton.Ok,
-                         cancel_option=QMessageBox.StandardButton.Cancel, discards_work: bool = False) -> bool:
+                         cancel_option=QMessageBox.StandardButton.Cancel, discards_work: bool = False,
+                         confirm_label: Optional[str] = None) -> bool:
     """Requests confirmation from the user, returns whether that confirmation was granted.
 
-    With `discards_work` set, the confirm button uses the signal color.
+    With `discards_work` set, the confirm button uses the signal color. With `confirm_label` set, the confirm button
+    names the action ("Quit without saving") instead of using the standard button's text.
     """
     if reminder_config_key is not None:
         reminder_setting = AppConfig().get(reminder_config_key)
@@ -133,13 +146,15 @@ def request_confirmation(parent: Optional[QWidget], title: str, message: str,
         if reminder_setting == REMEMBER_OPTION_CANCEL:
             return False
     confirm_box = _new_message_box(parent)
-    confirm_box.setWindowTitle(title)
-    confirm_box.setText(message)
+    _set_title_and_message(confirm_box, title, message)
     confirm_box.setStandardButtons(confirm_option | cancel_option)
     confirm_box.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxQuestion, parent))
+    confirm_box.setIcon(QMessageBox.Icon.Question)
+    confirm_button = confirm_box.button(confirm_option)
+    assert confirm_button is not None
+    if confirm_label is not None:
+        confirm_button.setText(confirm_label)
     if discards_work:
-        confirm_button = confirm_box.button(confirm_option)
-        assert confirm_button is not None
         set_signal(confirm_button)
     checkbox: Optional[CheckBox] = None
     if reminder_config_key is not None:
