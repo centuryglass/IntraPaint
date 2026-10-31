@@ -25,8 +25,6 @@ CONFIRM_RENDER_TEXT = 'src.image.layers.text_layer.request_confirmation'
 
 ISSUE_BASE_OPACITY = ('https://github.com/centuryglass/IntraPaint/issues/211: merge down applies the base layer\'s'
                       ' opacity to the merged top layer')
-ISSUE_ALPHA_LOCK = ('https://github.com/centuryglass/IntraPaint/issues/212: merge down onto an alpha-locked layer'
-                    ' changes its alpha')
 
 TOP_SIZE = QSize(14, 10)
 TOP_OFFSET = QPoint(20, 16)
@@ -97,7 +95,6 @@ class MergeLayerDownTest(MergeTestCase):
         self.assert_composite_kept(lambda: self.image_stack.merge_layer_down(self.top))
         self.assertEqual(QTransform.fromTranslate(-3, 2), self.base.transform)
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_ALPHA_LOCK)
     def test_merge_down_alpha_locked_base(self) -> None:
         """Merging onto an alpha-locked base keeps the base's alpha channel, inside and outside its old bounds."""
         self.base.image = self.base.image.copy(QRect(0, 0, 24, 20))
