@@ -1,20 +1,9 @@
 {
   "minimum": {
-    "problems": [
-      "overlap: QWidget[2]/QWidget/SliderField and QWidget[2]/QWidget/FieldPair[0] share 226x4",
-      "squeezed: QWidget[2] is 226x98, minimum 226x124",
-      "squeezed: QWidget[2]/QWidget is 226x98, minimum 226x124",
-      "squeezed: QWidget[2]/QWidget/FieldPair[0] is 226x20, minimum 226x24",
-      "clipped: QWidget[2]/QWidget/FieldPair[0]/SliderField[0] shows 110x20 of 110x24",
-      "clipped: QWidget[2]/QWidget/FieldPair[0]/SliderField[1] shows 110x20 of 110x24",
-      "squeezed: QWidget[2]/QWidget/FieldPair[1] is 226x20, minimum 226x24",
-      "clipped: QWidget[2]/QWidget/FieldPair[1]/SliderField shows 110x20 of 110x24",
-      "clipped: QWidget[2]/QWidget/FieldPair[1]/ToggledSliderField shows 110x20 of 110x24",
-      "squeezed: QWidget[2]/QWidget/QPushButton 'Generate' is 226x20, minimum 82x28"
-    ],
+    "problems": [],
     "size": [
       248,
-      242
+      268
     ]
   },
   "narrow": {
@@ -32,56 +21,42 @@
     ],
     "size": [
       124,
-      505
+      512
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
       342,
-      505
+      512
     ]
   },
   "short": {
     "problems": [
-      "squeezed: QWidget[0] is 118x99, minimum 203x59",
-      "clipped: QWidget[0]/_PinnedScrollArea shows 118x99 of 203x99",
-      "clipped: QWidget[0]/_PinnedScrollArea/QWidget[0] shows 118x99 of 192x99",
-      "squeezed: QWidget[1] is 118x99, minimum 226x124",
-      "clipped: QWidget[1]/_PinnedScrollArea shows 118x99 of 226x124",
-      "clipped: QWidget[1]/_PinnedScrollArea/QWidget[0] shows 118x99 of 226x124"
+      "squeezed: QWidget[0] is 118x112, minimum 203x59",
+      "clipped: QWidget[0]/_PinnedScrollArea shows 118x112 of 203x112",
+      "clipped: QWidget[0]/_PinnedScrollArea/QWidget[0] shows 118x112 of 192x112",
+      "squeezed: QWidget[1] is 118x112, minimum 226x124",
+      "clipped: QWidget[1]/_PinnedScrollArea shows 118x112 of 226x124",
+      "clipped: QWidget[1]/_PinnedScrollArea/QWidget[0] shows 118x112 of 226x124"
     ],
     "size": [
       342,
-      121
-    ]
-  },
-  "strip_minimum": {
-    "problems": [
-      "squeezed: QWidget[0] is 71x220, minimum 192x59",
-      "clipped: QWidget[0]/_PinnedScrollArea shows 71x220 of 192x220",
-      "clipped: QWidget[0]/_PinnedScrollArea/QWidget[0] shows 71x220 of 192x220",
-      "squeezed: QWidget[1] is 71x220, minimum 226x124",
-      "clipped: QWidget[1]/_PinnedScrollArea shows 71x220 of 226x220",
-      "clipped: QWidget[1]/_PinnedScrollArea/QWidget[0] shows 71x220 of 226x220"
-    ],
-    "size": [
-      248,
-      242
+      134
     ]
   },
   "tall": {
     "problems": [],
     "size": [
       342,
-      1515
+      1536
     ]
   },
   "wide": {
     "problems": [],
     "size": [
       1600,
-      505
+      512
     ]
   }
 }

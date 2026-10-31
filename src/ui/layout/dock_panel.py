@@ -345,9 +345,11 @@ class DockPanel(QWidget):
         """Keeps the footer's divider hidden exactly while the footer itself is hidden, however that changes.
 
         It follows `isHidden`, not visibility, so the divider counts toward the minimum size before the panel is first
-        shown and while it is out of view."""
+        shown and while it is out of view. `ShowToParent` and `HideToParent` are the events a footer gets then, since
+        `Show` and `Hide` go only to widgets whose parents are visible."""
         if watched is self._footer and self._footer_divider is not None \
-                and event.type() in (QEvent.Type.Show, QEvent.Type.Hide):
+                and event.type() in (QEvent.Type.Show, QEvent.Type.Hide, QEvent.Type.ShowToParent,
+                                     QEvent.Type.HideToParent):
             self._footer_divider.setHidden(self._footer.isHidden())
         return super().eventFilter(watched, event)
 
@@ -598,9 +600,22 @@ class DockPanel(QWidget):
                 hint = QSize(max(hint.width(), floor), hint.height())
             else:
                 hint = QSize(hint.width(), max(hint.height(), floor))
+        hint.setHeight(hint.height() + self._header_wrap_height(hint.width()))
         if not self._planning:
             self._reported_minimum = QSize(hint)
         return hint
+
+    def _header_wrap_height(self, panel_width: int) -> int:
+        """Returns how much taller a side panel's header gets at a panel width than the layout's minimum counted.
+
+        The layout counts the header at the width it has now, but the key and description wrap to a second line once
+        the panel narrows to its minimum width. Without this, the minimum height depends on the width the panel last
+        had, and the dock lets the panel shrink until the footer is squeezed.
+        """
+        if self._orientation != Orientation.SIDE or self._header.isHidden() or self._header.parentWidget() is not self:
+            return 0
+        width = self.header_width(QSize(max(panel_width - 2 * self._inset, 0), 0))
+        return max(self._header.minimum_height_for_width(width) - self._header.minimumSizeHint().height(), 0)
 
     def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
         """Returns the layout's preferred size, or while a plan runs, the one it last returned outside one (see
