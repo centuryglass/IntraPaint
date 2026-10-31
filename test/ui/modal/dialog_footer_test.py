@@ -3,6 +3,7 @@ from PySide6.QtWidgets import QPushButton
 
 from src.ui.button_weight import ButtonWeight, button_weight
 from src.ui.modal.dialog_footer import DialogFooter
+from src.util.layout import layout_contents
 from test.base_test_case import IntraPaintTestCase
 
 
@@ -32,7 +33,6 @@ class DialogFooterTest(IntraPaintTestCase):
         remove = footer.add_secondary_button('Remove', destructive=True)
         self.assertEqual(button_weight(remove), ButtonWeight.DANGER)
         self.assertFalse(center.autoDefault())
-        layout = footer.layout()
-        order = [layout.itemAt(i).widget() for i in range(layout.count())]
+        order = layout_contents(footer.layout())
         self.assertEqual([w for w in order if isinstance(w, QPushButton)], [center, remove])
         self.assertIs(order[0], center)
