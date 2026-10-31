@@ -12,7 +12,7 @@ from src.image.layers.image_stack_utils import image_stack_color_at_point
 from src.tools.base_tool import BaseTool
 from src.ui.panel.color_panel import ColorControlPanel
 from src.util.shared_constants import PROJECT_DIR
-from src.util.visual.text_drawing_utils import left_button_hint_text
+from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.eyedropper_tool'
@@ -28,8 +28,8 @@ CURSOR_PATH_EYEDROPPER_TOOL = f'{PROJECT_DIR}/resources/cursors/eyedropper_curso
 CURSOR_SIZE = 50
 
 EYEDROPPER_LABEL = _tr('Color picker')
-EYEDROPPER_TOOLTIP = _tr('Select a brush color')
-EYEDROPPER_CONTROL_HINT = _tr('{left_mouse_icon}: pick color - ')
+EYEDROPPER_TOOLTIP = _tr('Select a brush or background color')
+EYEDROPPER_CONTROL_HINT = _tr('{left_mouse_icon}: pick color - {right_mouse_icon}: pick background color - ')
 
 
 class EyedropperTool(BaseTool):
@@ -46,7 +46,8 @@ class EyedropperTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        eyedropper_hint = EYEDROPPER_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
+        eyedropper_hint = EYEDROPPER_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
+                                                       right_mouse_icon=right_button_hint_text())
         return f'{eyedropper_hint}</br>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
@@ -57,10 +58,12 @@ class EyedropperTool(BaseTool):
         return self._control_panel
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Copy the color under the mouse on left-click."""
+        """Copy the color under the mouse to the foreground on left-click, or the background on right-click."""
         assert event is not None
         if event.buttons() == Qt.MouseButton.LeftButton:
-            color = image_stack_color_at_point(self._image_stack, image_coordinates)
-            color_controller.set_foreground(color)
+            color_controller.set_foreground(image_stack_color_at_point(self._image_stack, image_coordinates))
+            return True
+        if event.buttons() == Qt.MouseButton.RightButton:
+            color_controller.set_background(image_stack_color_at_point(self._image_stack, image_coordinates))
             return True
         return False

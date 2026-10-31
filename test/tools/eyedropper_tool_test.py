@@ -1,7 +1,7 @@
 """Tests the eyedropper tool through synthetic mouse input.
 
 These pin the eyedropper as it stands: one merged-image pixel, alpha included, written to the foreground color on left
-click. #58 plans to change the sampling options and give the right button the background color.
+click. Right click sets the background color. #58 plans to change the sampling options.
 """
 from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtGui import QColor, QImage, QPainter, QTransform
@@ -155,12 +155,14 @@ class EyedropperToolTest(ToolTestCase):
         self.assertGreater(sampled.red(), 100)
         self.assertGreater(sampled.blue(), 100)
 
-    def test_right_click_sets_no_color(self) -> None:
-        """Right click changes neither the foreground nor the background. #58 plans to make it set the background."""
-        self.add_layer(QColor(30, 140, 220))
+    def test_right_click_sets_background(self) -> None:
+        """Right click copies the pixel to the background, adds it to the recent colors, and leaves the foreground."""
+        color = QColor(30, 140, 220)
+        self.add_layer(color)
         self.mouse_drag([SAMPLE_POINT], Qt.MouseButton.RightButton)
-        self.assert_colors_unchanged()
-        self.assertEqual(Cache().get(Cache.RECENT_COLORS), [])
+        self.assert_colors_equal(color_controller.background(), color)
+        self.assert_colors_equal(color_controller.foreground(), INITIAL_FOREGROUND)
+        self.assertEqual(Cache().get(Cache.RECENT_COLORS), [color.name(QColor.NameFormat.HexArgb)])
 
     def test_middle_click_sets_no_color(self) -> None:
         """Middle click changes neither color slot."""
@@ -213,4 +215,26 @@ class EyedropperToolTest(ToolTestCase):
             HotkeyFilter.instance().modifiers_changed.emit(Qt.KeyboardModifier.NoModifier)
         self.assertIs(self.tool_controller.active_tool, fill_tool)
         self.assert_colors_equal(color_controller.foreground(), color)
+        self.assert_images_equal(layer.image, initial_image)
+
+    def test_ctrl_delegate_from_fill_tool_right_click_sets_background(self) -> None:
+        """Holding the eyedropper modifier over the fill tool hands a right click to the eyedropper, which sets the
+           background and leaves the foreground and the layer unchanged."""
+        color = QColor(30, 140, 220)
+        layer = self.add_layer(color)
+        self.image_stack.active_layer = layer
+        fill_tool = FillTool(self.image_stack)
+        self.tool_controller.add_tool(fill_tool)
+        self.tool_controller.register_tool_delegate(fill_tool, self.eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
+        self.activate_tool(fill_tool)
+        initial_image = layer.image
+        HotkeyFilter.instance().modifiers_changed.emit(Qt.KeyboardModifier.ControlModifier)
+        try:
+            self.assertIs(self.tool_controller.active_tool, self.eyedropper_tool)
+            self.mouse_drag([SAMPLE_POINT], Qt.MouseButton.RightButton, modifiers=Qt.KeyboardModifier.ControlModifier)
+        finally:
+            HotkeyFilter.instance().modifiers_changed.emit(Qt.KeyboardModifier.NoModifier)
+        self.assertIs(self.tool_controller.active_tool, fill_tool)
+        self.assert_colors_equal(color_controller.background(), color)
+        self.assert_colors_equal(color_controller.foreground(), INITIAL_FOREGROUND)
         self.assert_images_equal(layer.image, initial_image)
