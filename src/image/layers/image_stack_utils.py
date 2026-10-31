@@ -16,7 +16,7 @@ from src.image.layers.image_stack import ImageStack, ERROR_TITLE_CROP_FAILED, ER
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.layer_resize_mode import LayerResizeMode
-from src.image.layers.text_layer import TextLayer
+from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog
 from src.undo_stack import UndoStack
@@ -74,11 +74,11 @@ def crop_layer_to_selection(image_stack: ImageStack, layer: Optional[Layer] = No
         all_layers = layer.recursive_child_layers
     else:
         all_layers = [layer]
-    text_layers = [crop_layer for crop_layer in all_layers if isinstance(crop_layer, TextLayer)]
-    if len(text_layers) > 0:
-        text_layer_names = [text_layer.name for text_layer in text_layers]
-        if not TextLayer.confirm_or_cancel_render_to_image(text_layer_names,
-                                                           ACTION_NAME_CROP_LAYER_TO_SELECTION):
+    non_destructive_layers = [crop_layer for crop_layer in all_layers if isinstance(crop_layer, NonDestructiveLayer)]
+    if len(non_destructive_layers) > 0:
+        layer_names = [layer.name for layer in non_destructive_layers]
+        if not NonDestructiveLayer.confirm_or_cancel_render_to_image(layer_names,
+                                                                     ACTION_NAME_CROP_LAYER_TO_SELECTION):
             return
     with UndoStack().combining_actions('image_stack_utils.crop_layer_to_selection'):
         no_overlap_count = 0
@@ -86,11 +86,11 @@ def crop_layer_to_selection(image_stack: ImageStack, layer: Optional[Layer] = No
         crop_success_count = 0
         to_delete = []
         deleted_layer_names = []
-        if len(text_layers) > 0:
+        if len(non_destructive_layers) > 0:
             replacements: dict[int, Layer] = {}
             for i, updated_layer in enumerate(all_layers):
-                if isinstance(updated_layer, TextLayer):
-                    replacements[i] = image_stack.replace_text_layer_with_image(updated_layer)
+                if isinstance(updated_layer, NonDestructiveLayer):
+                    replacements[i] = image_stack.replace_layer_with_image(updated_layer)
             for i, image_layer in replacements.items():
                 all_layers[i] = image_layer
         for cropped_layer in all_layers:
@@ -186,12 +186,13 @@ def image_stack_color_at_point(image_stack: ImageStack, image_point: QPoint) -> 
     return image_stack.qimage(False).pixelColor(image_point - content_bounds.topLeft())
 
 
-def top_layer_at_point(image_stack: ImageStack, image_coordinates: QPoint) -> Optional[ImageLayer | TextLayer]:
-    """Return the topmost image or text layer that contains non-transparent pixels at the given coordinates, or the
-       topmost with transparent pixels if none are non-transparent at that point."""
+def top_layer_at_point(image_stack: ImageStack,
+                       image_coordinates: QPoint) -> Optional[ImageLayer | NonDestructiveLayer]:
+    """Return the topmost image or non-destructive layer that contains non-transparent pixels at the given
+       coordinates, or the topmost with transparent pixels if none are non-transparent at that point."""
     all_layers = [layer for layer in image_stack.layer_stack.recursive_child_layers
-                  if isinstance(layer, (ImageLayer, TextLayer))]
-    top_transparent: Optional[ImageLayer | TextLayer] = None
+                  if isinstance(layer, (ImageLayer, NonDestructiveLayer))]
+    top_transparent: Optional[ImageLayer | NonDestructiveLayer] = None
     for layer in all_layers:
         layer_point = layer.map_from_image(image_coordinates)
         if not layer.bounds.contains(layer_point):

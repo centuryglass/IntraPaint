@@ -11,7 +11,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
-from src.image.layers.text_layer import TextLayer
+from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.image_filter_modal import ImageFilterModal
 from src.undo_stack import UndoStack
@@ -242,27 +242,29 @@ class ImageFilter:
         """
         updated_layer_images: dict[int, QImage] = {}
 
-        changed_text_layers: list[TextLayer] = []
+        to_convert: list[NonDestructiveLayer] = []
         changed_parent_group: Optional[LayerGroup] = None
         if self._filter_active_layer_only:
             active_layer = self._image_stack.active_layer
             if isinstance(active_layer, LayerGroup):
                 changed_parent_group = active_layer
-            elif isinstance(active_layer, TextLayer) and not active_layer.locked and not active_layer.parent_locked:
-                changed_text_layers.append(active_layer)
+            elif isinstance(active_layer, NonDestructiveLayer) \
+                    and not active_layer.locked and not active_layer.parent_locked:
+                to_convert.append(active_layer)
         else:
             changed_parent_group = self._image_stack.layer_stack
         if changed_parent_group is not None:
             for child_layer in changed_parent_group.recursive_child_layers:
-                if isinstance(child_layer, TextLayer) and not child_layer.locked and not child_layer.parent_locked:
-                    changed_text_layers.append(child_layer)
+                if isinstance(child_layer, NonDestructiveLayer) \
+                        and not child_layer.locked and not child_layer.parent_locked:
+                    to_convert.append(child_layer)
 
-        text_layer_names = [layer.name for layer in changed_text_layers]
-        if len(changed_text_layers) > 0 and not TextLayer.confirm_or_cancel_render_to_image(text_layer_names,
-                                                                                            ACTION_NAME_FILTER):
+        layer_names = [layer.name for layer in to_convert]
+        if len(to_convert) > 0 \
+                and not NonDestructiveLayer.confirm_or_cancel_render_to_image(layer_names, ACTION_NAME_FILTER):
             return
-        for text_layer in changed_text_layers:
-            self._image_stack.replace_text_layer_with_image(text_layer)
+        for non_destructive_layer in to_convert:
+            self._image_stack.replace_layer_with_image(non_destructive_layer)
 
         def _filter_images() -> None:
             layer_images: dict[int, QImage] = {}

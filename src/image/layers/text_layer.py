@@ -3,40 +3,20 @@ from typing import Any, Optional
 
 from PySide6.QtCore import Signal, QPoint, QPointF
 from PySide6.QtGui import QImage, QTransform
-from PySide6.QtWidgets import QApplication
 
 from src.image.composite_mode import CompositeMode
-from src.image.layers.image_layer import ImageLayer
-from src.image.layers.transform_layer import TransformLayer
+from src.image.layers.non_destructive_layer import NonDestructiveLayer
+from src.image.ora_extensions import OraWriteContext
 from src.image.text_rect import TextRect
-from src.ui.modal.modal_utils import request_confirmation
-from src.undo_stack import UndoStack
 from src.util.cached_data import CachedData
 
-# The `QCoreApplication.translate` context for strings in this file
-TR_ID = 'image.layers.text_layer'
-
-
-def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
-    """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, key, disambiguation, n)
-
-
-CONFIRM_SINGLE_CONVERT_TO_IMAGE_TITLE = _tr('Convert text layer to image?')
-CONFIRM_SINGLE_CONVERT_TO_IMAGE_MESSAGE = _tr('Attempted action: <b>{action_name}</b>. To complete this action,'
-                                              ' layer "{layer_name}" must be converted to an image layer, and you will'
-                                              ' no longer be able to edit it with the text tool. Continue?')
-
-CONFIRM_MULTI_CONVERT_TO_IMAGE_TITLE = _tr('Convert text layers to image?')
-CONFIRM_MULTI_CONVERT_TO_IMAGE_MESSAGE = _tr('Attempted action: <b>{action_name}</b>. To complete this action,'
-                                             '{num_text_layers} text layers must be converted to image'
-                                             ' layers, and you will no longer be able to edit them with the text tool.'
-                                             ' Continue?')
+# Attribute on a text layer's extended_data.xml entry holding its `TextRect.serialize()` JSON.
+ORA_TEXT_DATA_TAG = 'text-data'
 
 MAX_NAME_LENGTH_BEFORE_TRUNC = 10
 
 
-class TextLayer(TransformLayer):
+class TextLayer(NonDestructiveLayer):
     """Represents a layer in the image holding text data."""
 
     text_data_changed = Signal(TextRect)
@@ -54,20 +34,6 @@ class TextLayer(TransformLayer):
         self._text_rect = text_rect if text_rect is not None else TextRect()
         self._image_cache = CachedData(self._text_rect.render_to_image())
         self.set_size(self._text_rect.size)
-
-    @staticmethod
-    def confirm_or_cancel_render_to_image(layer_names: list[str], action_name: str) -> bool:
-        """Request confirmation before converting text layers to image, returning the user's choice."""
-        assert len(layer_names) > 0
-        if len(layer_names) == 1:
-            title = CONFIRM_SINGLE_CONVERT_TO_IMAGE_TITLE
-            message = CONFIRM_SINGLE_CONVERT_TO_IMAGE_MESSAGE.format(action_name=action_name,
-                                                                     layer_name=layer_names[0])
-        else:
-            title = CONFIRM_MULTI_CONVERT_TO_IMAGE_TITLE
-            message = CONFIRM_MULTI_CONVERT_TO_IMAGE_MESSAGE.format(action_name=action_name,
-                                                                    num_text_layers=len(layer_names))
-        return request_confirmation(None, title, message, discards_work=True)
 
     @property
     def offset(self) -> QPointF:
@@ -116,9 +82,9 @@ class TextLayer(TransformLayer):
             if self.visible and self.opacity > 0.0:
                 self.signal_content_changed(self.bounds)
 
-    def set_qimage(self, image: QImage) -> None:
-        """Throw an error when attempting to directly set this layer's image data."""
-        raise RuntimeError('Tried to apply image data to a text layer, must convert to image layer first')
+    def ora_extension_data(self, context: OraWriteContext) -> dict[str, str]:
+        """Saves the text data so the layer reloads as an editable text layer."""
+        return {ORA_TEXT_DATA_TAG: self._text_rect.serialize()}
 
     # LAYER/IMAGE FUNCTIONS:
 
@@ -130,42 +96,6 @@ class TextLayer(TransformLayer):
         layer.set_composition_mode(self.composition_mode)
         layer.set_transform(super()._get_transform())
         return layer
-
-    def copy_as_image_layer(self) -> ImageLayer:
-        """Creates a copy of this layer, rendered as an image layer."""
-        layer = ImageLayer(self.get_qimage(), self.name)
-        layer.set_opacity(self.opacity)
-        layer.set_visible(self.visible)
-        layer.set_composition_mode(self.composition_mode)
-        layer.set_transform(self.transform)
-        return layer
-
-    def replace_with_image_layer(self) -> ImageLayer:
-        """Replace this layer within its parent with an equivalent image layer, returning the replacement."""
-        parent = self.layer_parent
-        assert parent is not None
-
-        image_layer = self.copy_as_image_layer()
-        text_layer = self
-
-        def _swap_in_image_layer():
-            layer_index = parent.get_layer_index(text_layer)
-            assert layer_index is not None
-            parent.remove_layer(text_layer)
-            parent.insert_layer(image_layer, layer_index)
-
-        def _swap_back():
-            layer_index = parent.get_layer_index(image_layer)
-            assert layer_index is not None
-            parent.remove_layer(image_layer)
-            parent.insert_layer(text_layer, layer_index)
-
-        UndoStack().commit_action(_swap_in_image_layer, _swap_back, 'TextLayer.replace_with_image_layer')
-        return image_layer
-
-    def cut_masked(self, image_mask: QImage) -> None:
-        """Throw an error when attempting to cut mask content from a text layer."""
-        raise RuntimeError('Tried to apply image data to a text layer, must convert to image layer first')
 
     def save_state(self) -> Any:
         """Export the current layer state, so it can be restored later."""

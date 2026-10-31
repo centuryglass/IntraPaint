@@ -21,7 +21,7 @@ from test.image.layers.image_stack_state import CANVAS_SIZE, ImageStackOpTestCas
 
 ERROR_DIALOG = 'src.image.layers.image_stack.show_error_dialog'
 CONFIRM = 'src.image.layers.image_stack.request_confirmation'
-CONFIRM_RENDER_TEXT = 'src.image.layers.text_layer.request_confirmation'
+CONFIRM_RENDER_TEXT = 'src.image.layers.non_destructive_layer.request_confirmation'
 
 ISSUE_BASE_OPACITY = ('https://github.com/centuryglass/IntraPaint/issues/211: merge down applies the base layer\'s'
                       ' opacity to the merged top layer')

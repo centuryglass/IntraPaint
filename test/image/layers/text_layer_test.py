@@ -371,7 +371,7 @@ class TextLayerTransformTest(IntraPaintTestCase):
         self.assertEqual(image_layer.image, self.layer.get_qimage())
 
     def test_replace_with_image_in_stack(self) -> None:
-        """ImageStack.replace_text_layer_with_image swaps in an equivalent image layer that renders the same, and
+        """ImageStack.replace_layer_with_image swaps in an equivalent image layer that renders the same, and
            undo brings back the text layer."""
         self.layer.rotate(90)
         self.image_stack.flush_render()
@@ -380,7 +380,7 @@ class TextLayerTransformTest(IntraPaintTestCase):
         assert isinstance(parent, LayerGroup)
         index = parent.get_layer_index(self.layer)
 
-        image_layer = self.image_stack.replace_text_layer_with_image(self.layer)
+        image_layer = self.image_stack.replace_layer_with_image(self.layer)
         self.image_stack.flush_render()
         self.assertEqual(parent.get_layer_index(image_layer), index)
         self.assertEqual(self.image_stack.text_layers, [])
@@ -392,15 +392,3 @@ class TextLayerTransformTest(IntraPaintTestCase):
         self.assertEqual(self.image_stack.text_layers, [self.layer])
         self.assertEqual(parent.get_layer_index(self.layer), index)
         self.assertIs(self.image_stack.active_layer, self.layer)
-
-    def test_replace_with_image_layer(self) -> None:
-        """TextLayer.replace_with_image_layer swaps in an image layer at the same index, and undo swaps back."""
-        parent = self.layer.layer_parent
-        assert isinstance(parent, LayerGroup)
-        index = parent.get_layer_index(self.layer)
-        image_layer = self.layer.replace_with_image_layer()
-        self.assertEqual(parent.get_layer_index(image_layer), index)
-        self.assertIsNone(parent.get_layer_index(self.layer))
-        UndoStack().undo()
-        self.assertEqual(parent.get_layer_index(self.layer), index)
-        self.assertIsNone(parent.get_layer_index(image_layer))

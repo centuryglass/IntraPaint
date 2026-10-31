@@ -19,7 +19,7 @@ from test.image.layers.image_stack_state import ImageStackOpTestCase, masked_to_
 from test.render_assertions import full_render
 
 SELECTED = QRect(5, 4, 15, 12)
-CONFIRM_RENDER_TEXT = 'src.image.layers.text_layer.request_confirmation'
+CONFIRM_RENDER_TEXT = 'src.image.layers.non_destructive_layer.request_confirmation'
 
 
 class CopyPasteTest(ImageStackOpTestCase):

@@ -20,6 +20,7 @@ from src.image.layers.layer import Layer, LayerParent
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.layer_resize_mode import LayerResizeMode
 from src.image.layers.selection_layer import SelectionLayer
+from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.text_rect import TextRect
@@ -279,6 +280,11 @@ class ImageStack(QObject):
         return [layer for layer in self.layers if isinstance(layer, TextLayer)]
 
     @property
+    def non_destructive_layers(self) -> list[NonDestructiveLayer]:
+        """Returns the list of all child non-destructive layers, including nested layers"""
+        return [layer for layer in self.layers if isinstance(layer, NonDestructiveLayer)]
+
+    @property
     def selection_layer(self) -> SelectionLayer:
         """Returns the unique SelectionLayer used for highlighting image regions."""
         return self._selection_layer
@@ -423,7 +429,7 @@ class ImageStack(QObject):
 
         intersect_bounds = canvas_image_bounds.translated(-x_offset, -y_offset)
         interfering_locked_layers = []
-        affected_text_layers = []
+        affected_layers = []
 
         # Exit with an appropriate error message if the resize would need to crop a locked layer:
 
@@ -440,21 +446,21 @@ class ImageStack(QObject):
             return
 
         for tested_layer in self.all_layers():
-            if not isinstance(tested_layer, TextLayer):
+            if not isinstance(tested_layer, NonDestructiveLayer):
                 continue
             layer_bounds = tested_layer.transformed_bounds
             if not intersect_bounds.contains(layer_bounds):
                 if tested_layer.locked or tested_layer.parent_locked:
                     interfering_locked_layers.append(tested_layer)
-                if isinstance(tested_layer, TextLayer):
-                    affected_text_layers.append(tested_layer)
+                affected_layers.append(tested_layer)
         with (UndoStack().combining_actions('ImageStack.resize_canvas')):
-            if len(affected_text_layers) > 0:
-                text_layer_names = [layer.name for layer in affected_text_layers]
-                if not TextLayer.confirm_or_cancel_render_to_image(text_layer_names, ACTION_NAME_RESIZE_IMAGE_CANVAS):
+            if len(affected_layers) > 0:
+                layer_names = [layer.name for layer in affected_layers]
+                if not NonDestructiveLayer.confirm_or_cancel_render_to_image(layer_names,
+                                                                             ACTION_NAME_RESIZE_IMAGE_CANVAS):
                     return
-                for text_layer in affected_text_layers:
-                    self.replace_text_layer_with_image(text_layer)
+                for non_destructive_layer in affected_layers:
+                    self.replace_layer_with_image(non_destructive_layer)
 
             layer_state = self._layer_stack.save_state()
 
@@ -498,7 +504,7 @@ class ImageStack(QObject):
                         elif final_bounds != new_bounds:
                             mapped_bounds = layer.map_rect_from_image(final_bounds)
                             layer.adjust_local_bounds(mapped_bounds, False)
-                for layer in self.text_layers:
+                for layer in self.non_destructive_layers:
                     with layer.with_lock_disabled():
                         layer.set_transform(layer.transform * translate)
 
@@ -761,11 +767,12 @@ class ImageStack(QObject):
 
         UndoStack().commit_action(_install_replacement, _revert_replacement, 'ImageStack.replace_layer')
 
-    def replace_text_layer_with_image(self, text_layer: TextLayer) -> ImageLayer:
-        """Convert a text layer into an image layer, replacing it in the layer stack and returning the new layer."""
-        assert self._layer_stack.contains_recursive(text_layer)
-        image_layer = text_layer.copy_as_image_layer()
-        self.replace_layer(text_layer, image_layer)
+    def replace_layer_with_image(self, layer: NonDestructiveLayer) -> ImageLayer:
+        """Convert a non-destructive layer into an image layer, replacing it in the layer stack and returning the new
+        layer."""
+        assert self._layer_stack.contains_recursive(layer)
+        image_layer = layer.copy_as_image_layer()
+        self.replace_layer(layer, image_layer)
         return image_layer
 
     def offset_active_selection(self, offset: int) -> None:
@@ -994,18 +1001,18 @@ class ImageStack(QObject):
             return  # Already a single image layer; nothing to merge.
 
         locked_layers = []
-        text_layer_names = []
+        layer_names = []
         for layer in visible_layers:
             if layer.locked:
                 locked_layers.append(layer)
-            if isinstance(layer, TextLayer):
-                text_layer_names.append(layer.name)
+            if isinstance(layer, NonDestructiveLayer):
+                layer_names.append(layer.name)
             elif isinstance(layer, LayerGroup):
                 for child in layer.recursive_child_layers:
                     if child.locked:
                         locked_layers.append(child)
-                    if isinstance(child, TextLayer) and child.shown:
-                        text_layer_names.append(child.name)
+                    if isinstance(child, NonDestructiveLayer) and child.shown:
+                        layer_names.append(child.name)
         if len(locked_layers) > 0:
             if len(locked_layers) > 1:
                 layer_names = ', '.join([f'"{layer.name}"' for layer in locked_layers])
@@ -1016,8 +1023,8 @@ class ImageStack(QObject):
                     layer_name=f'"{locked_layers[0].name}"')
             show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, error_message)
             return
-        if len(text_layer_names) > 0:
-            if not TextLayer.confirm_or_cancel_render_to_image(text_layer_names, ACTION_NAME_MERGE_VISIBLE):
+        if len(layer_names) > 0:
+            if not NonDestructiveLayer.confirm_or_cancel_render_to_image(layer_names, ACTION_NAME_MERGE_VISIBLE):
                 return
 
         # Check for hidden layers within visible groups that would be deleted:
@@ -1109,18 +1116,18 @@ class ImageStack(QObject):
             return
 
         with UndoStack().combining_actions('ImageStack.merge_layer_down'):
-            text_layer_names = []
-            if isinstance(base_layer, TextLayer):
-                text_layer_names.append(base_layer.name)
-            if isinstance(top_layer, TextLayer):
-                text_layer_names.append(top_layer.name)
-            if len(text_layer_names) > 0:
-                if not TextLayer.confirm_or_cancel_render_to_image(text_layer_names, ACTION_NAME_MERGE_LAYERS):
+            layer_names = []
+            if isinstance(base_layer, NonDestructiveLayer):
+                layer_names.append(base_layer.name)
+            if isinstance(top_layer, NonDestructiveLayer):
+                layer_names.append(top_layer.name)
+            if len(layer_names) > 0:
+                if not NonDestructiveLayer.confirm_or_cancel_render_to_image(layer_names, ACTION_NAME_MERGE_LAYERS):
                     return
-                if isinstance(base_layer, TextLayer):
-                    base_layer = self.replace_text_layer_with_image(base_layer)
-                if isinstance(top_layer, TextLayer):
-                    top_layer = self.replace_text_layer_with_image(top_layer)
+                if isinstance(base_layer, NonDestructiveLayer):
+                    base_layer = self.replace_layer_with_image(base_layer)
+                if isinstance(top_layer, NonDestructiveLayer):
+                    top_layer = self.replace_layer_with_image(top_layer)
             assert isinstance(base_layer, ImageLayer)
             assert isinstance(top_layer, ImageLayer)
 
@@ -1212,14 +1219,15 @@ class ImageStack(QObject):
                 self._layer_to_image_size_internal(layer)
 
     def _layer_to_image_size_internal(self, layer: Layer) -> None:
-        """Resizes one unlocked image or text layer to match the image size, committing to the open undo group. Text
-        layers outside the image bounds are converted to image layers if the user confirms."""
-        if isinstance(layer, TextLayer):
+        """Resizes one unlocked image or non-destructive layer to match the image size, committing to the open undo
+        group. Non-destructive layers outside the image bounds are converted to image layers if the user confirms."""
+        if isinstance(layer, NonDestructiveLayer):
             if self.bounds.contains(layer.transformed_bounds):
-                return  # No need to alter text layers that are already fully in the image bounds.
-            if not TextLayer.confirm_or_cancel_render_to_image([layer.name], ACTION_NAME_LAYER_TO_IMAGE_SIZE):
+                return  # No need to alter non-destructive layers that are already fully in the image bounds.
+            if not NonDestructiveLayer.confirm_or_cancel_render_to_image([layer.name],
+                                                                         ACTION_NAME_LAYER_TO_IMAGE_SIZE):
                 return
-            layer = self.replace_text_layer_with_image(layer)
+            layer = self.replace_layer_with_image(layer)
         assert isinstance(layer, ImageLayer)
         if layer.transformed_bounds == self.bounds:
             return
@@ -1336,18 +1344,18 @@ class ImageStack(QObject):
         if not self.validate_layer_showing_errors(layer, allow_layer_stack=True):
             return None
         transformed_mask = self.get_layer_selection_mask(layer)
-        if isinstance(layer, TextLayer):
+        if isinstance(layer, NonDestructiveLayer):
             copy_buffer_backup = (self._copy_buffer, self._copy_buffer_transform, self._copy_buffer_layer_properties)
             selected = self.copy_selected(layer, transformed_mask)
             if not save_to_copy_buffer:
                 self._copy_buffer, self._copy_buffer_transform, self._copy_buffer_layer_properties = copy_buffer_backup
             if selected is None or image_is_fully_transparent(selected):
                 return None  # cutting selection changes nothing, no need to render to image.
-            if not TextLayer.confirm_or_cancel_render_to_image([layer.name], ACTION_NAME_CLEAR_SELECTED):
+            if not NonDestructiveLayer.confirm_or_cancel_render_to_image([layer.name], ACTION_NAME_CLEAR_SELECTED):
                 self._copy_buffer, self._copy_buffer_transform, self._copy_buffer_layer_properties = copy_buffer_backup
                 return None
             with UndoStack().combining_actions('ImageStack.clear_selected'):
-                layer = self.replace_text_layer_with_image(layer)
+                layer = self.replace_layer_with_image(layer)
                 layer.cut_masked(transformed_mask)
             return selected if save_to_copy_buffer else None
         copied = self.copy_selected(layer, transformed_mask) if save_to_copy_buffer else None

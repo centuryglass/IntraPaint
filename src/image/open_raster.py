@@ -23,7 +23,11 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
-from src.image.layers.text_layer import TextLayer
+from src.image.layers.transform_layer import TransformLayer
+from src.image.layers.non_destructive_layer import NonDestructiveLayer
+from src.image.layers.text_layer import TextLayer, ORA_TEXT_DATA_TAG
+from src.image.ora_extensions import (OraWriteContext, OraReadContext, layer_loaders, document_extensions,
+                                      register_layer_loader, EXTENSION_ELEMENT, EXTENSION_TAG_NAME)
 from src.image.text_rect import TextRect
 from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.visual.image_utils import read_qimage
@@ -98,12 +102,20 @@ LAYER_TAG_SRC = 'src'  # str
 TRANSFORM_TAG = 'transformation'
 TRANSFORM_SRC_TAG = 'src_untransformed'
 ATTR_TAG_ALPHA_LOCKED = 'alpha-locked'  # str, optional
+# Key under which the reader keeps a layer entry's remaining attributes, for layer extension loaders:
+EXTENSION_ATTRIBUTES = 'extension_attributes'
 
-# Text layer support:
-# A text layer's extended data entry holds its `TextRect.serialize()` JSON under this tag. Its stack.xml entry and
-# PNG are written as for any image layer, so other editors see the rendered text. Without this tag, or if its data
-# can't be parsed, the layer loads as an image layer.
-TEXT_DATA_TAG = 'text-data'
+# Layer and document extensions (see src/image/ora_extensions.py):
+# A non-destructive layer's stack.xml entry and PNG are written as for any image layer, so other editors see the
+# rendered layer. Its extended data entry also holds the attributes from `NonDestructiveLayer.ora_extension_data`, and
+# the loader registered for one of those attributes rebuilds the layer. Entries no loader claims load as image layers.
+# Document-level data is stored in `<extension name="...">` children of the extended data root.
+#
+# Text layers store their `TextRect.serialize()` JSON under this attribute. If it can't be parsed, the layer loads as
+# an image layer.
+TEXT_DATA_TAG = ORA_TEXT_DATA_TAG
+# Attributes written by this module, which layer extensions can't use:
+RESERVED_EXTENDED_TAGS = frozenset({LAYER_TAG_SRC, TRANSFORM_TAG, TRANSFORM_SRC_TAG, ATTR_TAG_ALPHA_LOCKED})
 
 # Metadata support:
 # The top-level 'metadata' tag can be used to store arbitrary additional string-encoded data, usually image generation
@@ -129,6 +141,18 @@ def _normalize_archive_path(path: str) -> str:
     return path.replace('\\', '/')
 
 
+def _load_text_layer(attributes: dict[str, str], _context: OraReadContext) -> Optional[Layer]:
+    """Builds a text layer from its saved text data, or returns None if the data can't be parsed."""
+    try:
+        return TextLayer(TextRect.deserialize(attributes[TEXT_DATA_TAG]))
+    except (ValueError, KeyError, TypeError, AssertionError) as err:
+        logger.error(f'Invalid text data, loading the layer as an image layer: {err}')
+        return None
+
+
+register_layer_loader(TEXT_DATA_TAG, _load_text_layer)
+
+
 def _layer_file_stem(layer: Layer) -> str:
     """Returns a file name base for a layer's image files, unique per layer and safe for any layer name.
 
@@ -150,13 +174,14 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
 
     # Save layers and build xml data file:
     extended_data: dict[str, dict[str, str]] = {}
+    write_context = OraWriteContext()
 
     def _get_transform_str(transform: QTransform) -> str:
         return (f'{transform.m11()},{transform.m12()},{transform.m13()},'
                 f'{transform.m21()},{transform.m22()},{transform.m23()},'
                 f'{transform.m31()},{transform.m32()},{transform.m33()}')
 
-    def encode_image_layer(layer: ImageLayer | TextLayer) -> dict[str, Any]:
+    def encode_image_layer(layer: ImageLayer | NonDestructiveLayer) -> dict[str, Any]:
         """Encode an ImageLayer as image data."""
         layer_data: dict[str, Any] = {
             DICT_ELEMENT_NAME: LAYER_ELEMENT,
@@ -181,10 +206,12 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
         # Store untransformed images and transformations in a separate extended data section:
         layer_transform = layer.transform
         is_alpha_locked = isinstance(layer, ImageLayer) and layer.alpha_locked
-        if layer_transform != offset_transform or is_alpha_locked or isinstance(layer, TextLayer):
-            extended_layer_data: dict[str, str] = {}
-            if isinstance(layer, TextLayer):
-                extended_layer_data[TEXT_DATA_TAG] = layer.text_rect.serialize()
+        layer_extension_data = layer.ora_extension_data(write_context) if isinstance(layer, NonDestructiveLayer) else {}
+        reserved = RESERVED_EXTENDED_TAGS.intersection(layer_extension_data)
+        if len(reserved) > 0:
+            raise ValueError(f'{type(layer).__name__} extension data uses reserved attributes {sorted(reserved)}')
+        if layer_transform != offset_transform or is_alpha_locked or len(layer_extension_data) > 0:
+            extended_layer_data: dict[str, str] = dict(layer_extension_data)
             if is_alpha_locked:
                 extended_layer_data[ATTR_TAG_ALPHA_LOCKED] = BOOLEAN_TRUE_STR
             if layer_transform != offset_transform:
@@ -218,7 +245,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
         for child_layer in layer.child_layers:
             if isinstance(child_layer, LayerGroup):
                 stack_data[DICT_NESTED_CONTENT_NAME].append(encode_layer_group(child_layer))
-            elif isinstance(child_layer, (ImageLayer, TextLayer)):
+            elif isinstance(child_layer, (ImageLayer, NonDestructiveLayer)):
                 stack_data[DICT_NESTED_CONTENT_NAME].append(encode_image_layer(child_layer))
             else:
                 # Saving another layer type as an image layer would lose its data without warning.
@@ -265,13 +292,19 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
     for image_file_path, layer_extended_data in extended_data.items():
         extended_layer = Element(LAYER_ELEMENT)
         extended_layer.set(LAYER_TAG_SRC, image_file_path)
-        for extension_tag in [TRANSFORM_TAG, TRANSFORM_SRC_TAG, ATTR_TAG_ALPHA_LOCKED, TEXT_DATA_TAG]:
-            if extension_tag in layer_extended_data:
-                extended_layer.set(extension_tag, layer_extended_data[extension_tag])
+        for extension_tag, extension_value in layer_extended_data.items():
+            extended_layer.set(extension_tag, extension_value)
         extended_xml_root.append(extended_layer)
     if metadata is not None:
         extended_xml_root.set(METADATA_TAG, metadata)
         image_data[METADATA_TAG] = metadata
+    for extension_name, extension in document_extensions().items():
+        payload = extension.save(image_stack, write_context.for_extension(extension_name))
+        if payload is not None:
+            extension_element = Element(EXTENSION_ELEMENT)
+            extension_element.set(EXTENSION_TAG_NAME, extension_name)
+            extension_element.text = payload
+            extended_xml_root.append(extension_element)
     extended_xml_tree = ElementTree(extended_xml_root)
     extended_xml_tree.write(os.path.join(tmpdir, EXTENDED_DATA_XML_FILE_NAME))
 
@@ -309,6 +342,8 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
             if TRANSFORM_SRC_TAG in extended_params:
                 untransformed_path = extended_params[TRANSFORM_SRC_TAG]
                 zip_file.write(os.path.join(tmpdir, untransformed_path), untransformed_path)
+        for extension_file_path, extension_file_data in write_context.files.items():
+            zip_file.writestr(extension_file_path, extension_file_data)
     shutil.move(tmp_save_path, file_path)
     shutil.rmtree(tmpdir)
 
@@ -322,11 +357,19 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
     extended_xml_path = os.path.join(tmpdir, EXTENDED_DATA_XML_FILE_NAME)
     metadata = None
     extended_data: dict[str, dict[str, Any]] = {}
+    document_payloads: dict[str, str] = {}
     if os.path.isfile(extended_xml_path):
         extended_xml_root = ElementTree().parse(extended_xml_path)
         metadata = extended_xml_root.get(METADATA_TAG)
         for extended_layer in extended_xml_root:
-            extended_layer_data = {}
+            if extended_layer.tag == EXTENSION_ELEMENT:
+                extension_name = extended_layer.get(EXTENSION_TAG_NAME)
+                if extension_name is not None:
+                    document_payloads[extension_name] = extended_layer.text or ''
+                continue
+            if extended_layer.tag != LAYER_ELEMENT:
+                continue
+            extended_layer_data: dict[str, Any] = {}
             flattened_image_path = extended_layer.get(LAYER_TAG_SRC)
             assert flattened_image_path is not None
             flattened_image_path = _normalize_archive_path(flattened_image_path)
@@ -343,7 +386,8 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
                 transform = QTransform(*matrix_elements)
                 extended_layer_data[TRANSFORM_TAG] = transform
             extended_layer_data[ATTR_TAG_ALPHA_LOCKED] = extended_layer.get(ATTR_TAG_ALPHA_LOCKED)
-            extended_layer_data[TEXT_DATA_TAG] = extended_layer.get(TEXT_DATA_TAG)
+            extended_layer_data[EXTENSION_ATTRIBUTES] = {key: value for key, value in extended_layer.attrib.items()
+                                                         if key not in RESERVED_EXTENDED_TAGS}
             extended_data[flattened_image_path] = extended_layer_data
 
     def _parse_common_attributes(layer: Layer, element: Element) -> bool:
@@ -370,18 +414,22 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
                 logger.error(f'Unrecognised layer composite mode {composite_op} ignored')
         return element.get(ATTR_TAG_SELECTED) == BOOLEAN_TRUE_STR
 
-    def _parse_text_data(text_data: Optional[str], layer_name: Optional[str]) -> Optional[TextRect]:
-        """Returns the TextRect for a text layer's saved text data, or None if it is missing or can't be parsed."""
-        if text_data is None:
-            return None
-        try:
-            return TextRect.deserialize(text_data)
-        except (ValueError, KeyError, TypeError, AssertionError) as err:
-            logger.error(f'Invalid text data for layer "{layer_name}", loading it as an image layer: {err}')
-            return None
+    read_context = OraReadContext(tmpdir)
 
-    def parse_image_element(element: Element) -> tuple[ImageLayer | TextLayer, bool]:
-        """Load an image or text layer from its saved XML definition, return whether this layer is selected."""
+    def _claim_with_loader(extension_attributes: dict[str, str], layer_name: Optional[str]) -> Optional[Layer]:
+        """Returns the layer built by the first registered loader whose attribute is present, if any."""
+        for attribute_tag, loader in layer_loaders().items():
+            if attribute_tag in extension_attributes:
+                try:
+                    return loader(extension_attributes, read_context)
+                except (ValueError, KeyError, TypeError, AssertionError) as err:
+                    logger.error(f'Invalid "{attribute_tag}" data for layer "{layer_name}", loading it as an image'
+                                 f' layer: {err}')
+                    return None
+        return None
+
+    def parse_image_element(element: Element) -> tuple[ImageLayer | Layer, bool]:
+        """Load a layer from its saved XML definition, return whether this layer is selected."""
         assert element.tag == LAYER_ELEMENT
         base_image_path = element.get(LAYER_TAG_SRC)
         assert base_image_path is not None
@@ -389,7 +437,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
         layer_image = QImage()
         layer_transform = QTransform()
         alpha_locked = None
-        text_rect: Optional[TextRect] = None
+        extension_attributes: dict[str, str] = {}
         if base_image_path in extended_data:
             extended_layer_load_data = extended_data[base_image_path]
             if TRANSFORM_SRC_TAG in extended_layer_load_data:
@@ -397,17 +445,16 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
                 layer_transform = extended_layer_load_data[TRANSFORM_TAG]
             if ATTR_TAG_ALPHA_LOCKED in extended_layer_load_data:
                 alpha_locked = extended_layer_load_data[ATTR_TAG_ALPHA_LOCKED]
-            text_rect = _parse_text_data(extended_layer_load_data.get(TEXT_DATA_TAG), element.get(ATTR_TAG_NAME))
-        layer: ImageLayer | TextLayer
-        if text_rect is not None:
-            layer = TextLayer(text_rect)
-        else:
+            extension_attributes = extended_layer_load_data[EXTENSION_ATTRIBUTES]
+        layer: Optional[Layer] = _claim_with_loader(extension_attributes, element.get(ATTR_TAG_NAME))
+        if layer is None:
             if layer_image.isNull():
                 layer_image = read_qimage(os.path.join(tmpdir, base_image_path))
             layer = ImageLayer(layer_image, '')
         is_active = _parse_common_attributes(layer, element)
         if isinstance(layer, ImageLayer) and alpha_locked == BOOLEAN_TRUE_STR:
             layer.set_alpha_locked(True)
+        assert isinstance(layer, TransformLayer)
         if not layer_transform.isIdentity():
             layer.set_transform(layer_transform)
         elif ATTR_TAG_X_POS in element.keys() and ATTR_TAG_Y_POS in element.keys():
@@ -447,4 +494,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
     img_size = QSize(int(str(xml_root.get(IMAGE_TAG_WIDTH))), int(str(xml_root.get(IMAGE_TAG_HEIGHT))))
     layer_stack, saved_active_layer = parse_stack_element(xml_root[0])
     image_stack.load_layer_stack(layer_stack, img_size, saved_active_layer)
+    for extension_name, extension in document_extensions().items():
+        if extension_name in document_payloads:
+            extension.load(image_stack, document_payloads[extension_name], read_context)
     return metadata
