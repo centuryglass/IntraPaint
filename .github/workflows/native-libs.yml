@@ -1,0 +1,146 @@
+name: native-libs
+
+# Builds the libmypaint that IntraPaint bundles in lib/<platform tag>/, for every platform, and uploads each as an
+# artifact. Run it by hand from the Actions tab when the pinned libmypaint version changes; it also runs on pull
+# requests that change the build. Nothing commits the results: the maintainer copies an artifact's library files into
+# lib/<platform tag>/ and its BUILD_INFO.txt into lib/MANIFEST.md through a normal pull request. BUILD_INFO.txt stays
+# out of lib/<platform tag>/, because `_load_from_dir` in src/image/mypaint/libmypaint.py loads every file there.
+#
+# The pinned version lives in scripts/build_libmypaint.sh (Linux, macOS) and in the Windows job's LIBMYPAINT_VERSION
+# below; scripts/check_libmypaint.py checks every build's brush setting count.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/native-libs.yml
+      - scripts/build_libmypaint.sh
+      - scripts/check_libmypaint.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-libs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Linux builds run in manylinux_2_28 containers, so the library needs glibc 2.28 or newer rather than the runner's.
+  linux:
+    name: build (${{ matrix.tag }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tag: linux-x86_64
+            runner: ubuntu-24.04
+            image: quay.io/pypa/manylinux_2_28_x86_64
+          - tag: linux-aarch64
+            runner: ubuntu-24.04-arm
+            image: quay.io/pypa/manylinux_2_28_aarch64
+    container: ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install build tools
+        run: dnf install -y pkgconf-pkg-config xz
+
+      - name: Build libmypaint
+        run: |
+          export PATH="/opt/python/cp313-cp313/bin:$PATH"
+          scripts/build_libmypaint.sh out
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: libmypaint-${{ matrix.tag }}
+          path: out/${{ matrix.tag }}
+          if-no-files-found: error
+
+  macos:
+    name: build (${{ matrix.tag }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tag: macos-arm64
+            runner: macos-14
+          - tag: macos-x86_64
+            runner: macos-15-intel
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install build tools
+        run: brew install pkgconf
+
+      - name: Build libmypaint
+        run: scripts/build_libmypaint.sh out
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: libmypaint-${{ matrix.tag }}
+          path: out/${{ matrix.tag }}
+          if-no-files-found: error
+
+  # Windows takes MSYS2's MINGW64 libmypaint package and the DLLs it loads from the MSYS2 tree, as listed by ldd.
+  windows:
+    name: build (win-x86_64)
+    runs-on: windows-2022
+    timeout-minutes: 20
+    env:
+      LIBMYPAINT_VERSION: 1.6.1
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
+        with:
+          msystem: MINGW64
+          update: true
+          install: mingw-w64-x86_64-libmypaint
+
+      - name: Collect libmypaint and its dependencies
+        run: |
+          set -euo pipefail
+          package_version="$(pacman -Q mingw-w64-x86_64-libmypaint | cut -d' ' -f2)"
+          case "$package_version" in
+            "$LIBMYPAINT_VERSION"-*) ;;
+            *) echo "MSYS2 has libmypaint $package_version, expected $LIBMYPAINT_VERSION" >&2; exit 1 ;;
+          esac
+          out=out/win-x86_64
+          mkdir -p "$out"
+          library="$(ls /mingw64/bin/libmypaint-*.dll | head -n 1)"
+          cp "$library" "$out/"
+          dependencies="$(ldd "$library" | awk '$3 ~ "^/mingw64/" { print $3 }' | sort -u)"
+          for dependency in $dependencies; do
+            cp "$dependency" "$out/"
+          done
+          {
+            echo "platform: win-x86_64"
+            echo "package: mingw-w64-x86_64-libmypaint $package_version (MSYS2 MINGW64)"
+            echo "packages providing the dependencies:"
+            for dependency in $dependencies; do
+              pacman -Qo "$dependency" | sed 's/^/  /'
+            done
+            echo "sha256:"
+            (cd "$out" && sha256sum *.dll | sed 's/^/  /')
+          } > "$out/BUILD_INFO.txt"
+          cat "$out/BUILD_INFO.txt"
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.13'
+
+      - name: Check the library loads
+        shell: pwsh
+        run: python scripts/check_libmypaint.py out/win-x86_64 | Tee-Object -Append -FilePath out/win-x86_64/BUILD_INFO.txt
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: libmypaint-win-x86_64
+          path: out/win-x86_64
+          if-no-files-found: error
