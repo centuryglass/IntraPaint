@@ -18,6 +18,7 @@ from src.ui.panel.generators.generator_panel import GenerateFooterPanel
 from src.ui.panel.generators.stable_diffusion_panel import LabeledRows, config_slider_field, option_combo_box
 from src.ui.widget.panel_section import PanelSection
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
+from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.generators.glid_panel'
@@ -67,7 +68,7 @@ class GlidPanel(GenerateFooterPanel):
         return self.fontMetrics().lineSpacing() * PROMPT_LINES + PROMPT_BOX_PADDING
 
     def _prompt_box(self, key: str) -> QPlainTextEdit:
-        box = Cache().get_control_widget(key, multi_line=True)
+        box = create_control_widget(Cache(), key, multi_line=True)
         assert isinstance(box, QPlainTextEdit)
         box.setMaximumHeight(self._prompt_box_height())
         box.setMinimumHeight(self._prompt_box_height())
@@ -102,7 +103,7 @@ class GlidPanel(GenerateFooterPanel):
         for field in (self._guidance_scale_field, self._skip_steps_field, self._cutn_field, self._batch_size_field,
                       self._batch_count_field):
             section.add(field, REQUIRED)
-        self._full_res_checkbox = cache.get_control_widget(Cache.INPAINT_FULL_RES)
+        self._full_res_checkbox = create_control_widget(cache, Cache.INPAINT_FULL_RES)
         self._full_res_checkbox.setText(normalize_row_label(cache.get_label(Cache.INPAINT_FULL_RES)))
         section.add(self._full_res_checkbox, REQUIRED)
         section.widget.bind_summary(

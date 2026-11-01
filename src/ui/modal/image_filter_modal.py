@@ -8,8 +8,9 @@ from PySide6.QtWidgets import QDialog, QFormLayout, QLabel, QWidget, QHBoxLayout
 from src.ui.ink_style import set_signal
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.widget.image_widget import ImageWidget
-from src.util.parameter import Parameter, DynamicFieldWidget
+from src.util.parameter import Parameter
 from src.util.shared_constants import APP_ICON_PATH
+from src.ui.input_fields.field_factory import DynamicFieldWidget, create_input_widget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.modal.image_filter_modal'
@@ -59,7 +60,7 @@ class ImageFilterModal(QDialog):
         label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self._layout.addRow(label)
         for param in parameters:
-            field_widget = param.get_input_widget()
+            field_widget = create_input_widget(param)
             self._param_inputs.append(field_widget)
             self._layout.addRow(param.name, field_widget)
             field_widget.valueChanged.connect(self._update_preview)

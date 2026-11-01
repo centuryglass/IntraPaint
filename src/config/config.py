@@ -22,11 +22,8 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
 from src.config.definition_tr_contexts import DEFINITION_TR_CONTEXTS
-from src.ui.input_fields.check_box import CheckBox
-from src.ui.input_fields.combo_box import ComboBox
 from src.util.main_thread import assert_main_thread
-from src.util.parameter import ParamType, DynamicFieldWidget, ParamTypeList, get_parameter_type
-from src.util.signals_blocked import signals_blocked
+from src.util.parameter import ParamType, ParamTypeList, get_parameter_type
 
 logger = logging.getLogger(__name__)
 
@@ -348,55 +345,10 @@ class Config:
         """
         self.set(key, QColor(color).name(QColor.NameFormat.HexArgb), save_change)
 
-    def get_control_widget(self, key: str, connect_to_config: bool = True, multi_line=False) -> DynamicFieldWidget:
-        """Returns a QWidget capable of adjusting the chosen config value. Unless connect_to_config is false, changes
-        will immediately propagate to the underlying config file."""
+    def get_entry(self, key: str) -> ConfigEntry:
+        """Returns the entry holding a key's value and metadata. Widget factories read it; don't mutate it directly."""
         with self._lock:
-            entry = self._entries[key]
-            control_widget = entry.get_input_widget(multi_line, False, self.get_option_display)
-            control_widget.setValue(entry.get_value())
-            if isinstance(control_widget, CheckBox):
-                control_widget.setText(entry.name)
-            if connect_to_config:
-                config_key = key
-
-                def _update_config(new_value: Any) -> None:
-                    self.set(config_key, new_value)
-
-                assert hasattr(control_widget, 'valueChanged')
-                control_widget.valueChanged.connect(_update_config)
-
-                def _update_control(new_value: Any) -> None:
-                    if control_widget.value() != new_value:
-                        if isinstance(control_widget, ComboBox):
-                            current_options = self.get_options(config_key)
-                            widget_options = [control_widget.itemData(i) for i in range(control_widget.count())]
-                            if widget_options != current_options:
-                                with signals_blocked(control_widget):
-                                    while control_widget.count() > 0:
-                                        control_widget.removeItem(0)
-                                    for new_option in current_options:
-                                        control_widget.addItem(self.get_option_display(new_option), userData=new_option)
-                        control_widget.setValue(new_value)
-
-                self.connect(control_widget, key, _update_control)
-
-                if isinstance(control_widget, ComboBox):
-                    combobox = control_widget
-
-                    def _update_options(new_options: ParamTypeList) -> None:
-                        last_selected = combobox.currentData()
-                        with signals_blocked(combobox):
-                            while combobox.count() > 0:
-                                combobox.removeItem(0)
-                            for option in new_options:
-                                combobox.addItem(self.get_option_display(option), userData=option)
-                            new_index = combobox.findData(last_selected)
-                            if new_index >= 0:
-                                combobox.setCurrentIndex(new_index)
-
-                    self.connect_to_option_changes(combobox, key, _update_options)
-            return control_widget
+            return self._entries[key]
 
     def get_keycodes(self, key: str) -> QKeySequence:
         """Returns a config value as a key sequence, throws RuntimeError if the value isn't a keycode."""

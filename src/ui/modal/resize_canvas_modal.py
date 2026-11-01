@@ -10,6 +10,7 @@ from src.image.layers.image_stack import ImageStack
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.widget.canvas_change_preview_widget import CanvasChangePreviewWidget
 from src.util.shared_constants import APP_ICON_PATH
+from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.modal.resize_canvas_modal'
@@ -76,14 +77,14 @@ class ResizeCanvasModal(QDialog):
 
         cache = Cache()
         self._layer_mode_label = QLabel(cache.get_label(Cache.CANVAS_RESIZE_LAYER_MODE))
-        self._layer_mode_dropdown = cache.get_control_widget(Cache.CANVAS_RESIZE_LAYER_MODE)
+        self._layer_mode_dropdown = create_control_widget(cache, Cache.CANVAS_RESIZE_LAYER_MODE)
         self._layer_mode_row = QWidget(self)
         self._layer_mode_row.setToolTip(cache.get_tooltip(Cache.CANVAS_RESIZE_LAYER_MODE))
         layer_mode_row_layout = QHBoxLayout(self._layer_mode_row)
         layer_mode_row_layout.addWidget(self._layer_mode_label)
         layer_mode_row_layout.addWidget(self._layer_mode_dropdown, stretch=1)
 
-        self._crop_checkbox = cache.get_control_widget(Cache.CANVAS_RESIZE_CROP_LAYERS)
+        self._crop_checkbox = create_control_widget(cache, Cache.CANVAS_RESIZE_CROP_LAYERS)
         self._crop_checkbox.setText(cache.get_label(Cache.CANVAS_RESIZE_CROP_LAYERS))
         self._crop_checkbox.setParent(self)
         self._crop_checkbox.valueChanged.connect(self.update)

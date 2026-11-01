@@ -46,6 +46,7 @@ from src.ui.widget.panel_section import PanelSection
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.shared_constants import (BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENERATE, EDIT_MODE_IMG2IMG,
                                        EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG)
+from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.generators.sd_webui_panel'
@@ -159,7 +160,7 @@ def config_slider_field(config: Config, key: str, parent: Optional[QWidget] = No
 def option_combo_box(config: Config, key: str, parent: Optional[QWidget] = None) -> QWidget:
     """Returns the config value's control widget. A combo box is set to shrink below its longest option, so a long
     model or sampler name can't widen the panel."""
-    control = config.get_control_widget(key)
+    control = create_control_widget(config, key)
     control.setParent(parent)
     if isinstance(control, QComboBox):
         control.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
@@ -445,7 +446,7 @@ class StableDiffusionPanel(DockPanel):
 
     def _build_edit_mode_control(self) -> None:
         cache = Cache()
-        combobox = cache.get_control_widget(Cache.EDIT_MODE)
+        combobox = create_control_widget(cache, Cache.EDIT_MODE)
         assert isinstance(combobox, QComboBox)
         self._edit_mode_combobox = combobox
         # It prefers the width of its longest mode, and shrinks to a few characters in a narrow header:
@@ -468,10 +469,10 @@ class StableDiffusionPanel(DockPanel):
         # near miss:
         self._model_combobox = option_combo_box(cache, Cache.SD_MODEL)
         section.add(LabeledRows([(LABEL_MODEL, self._model_combobox)]), REQUIRED)
-        self._prompt_textbox = cache.get_control_widget(Cache.PROMPT, multi_line=True)
+        self._prompt_textbox = create_control_widget(cache, Cache.PROMPT, multi_line=True)
         self._prompt_textbox.setMinimumWidth(self._prompt_textbox.fontMetrics().averageCharWidth()
                                              * PROMPT_MIN_CHARACTERS)
-        self._negative_textbox = cache.get_control_widget(Cache.NEGATIVE_PROMPT, multi_line=True)
+        self._negative_textbox = create_control_widget(cache, Cache.NEGATIVE_PROMPT, multi_line=True)
         # The negative prompt folds to one line that shows its text:
         self._negative_fold = PanelSection(LABEL_NEGATIVE_PROMPT, self._negative_textbox, expanded=False)
         self._negative_fold.setToolTip(self._negative_textbox.toolTip())
@@ -578,7 +579,7 @@ class StableDiffusionPanel(DockPanel):
     def _build_size_section(self, ui: PanelLayout, cache: Cache) -> None:
         section = ui.section(SECTION_TITLE_SIZE, collapsible=True, priority=SIZE_PRIORITY)
         self._size_section = section
-        self._gen_resolution_input = cache.get_control_widget(Cache.GENERATION_SIZE)
+        self._gen_resolution_input = create_control_widget(cache, Cache.GENERATION_SIZE)
         # The boxes' width follows their maximum, which is unbounded by default. The maximum image size bounds it, and
         # never below the current value, so no saved value is clamped:
         if isinstance(self._gen_resolution_input, SizeField):

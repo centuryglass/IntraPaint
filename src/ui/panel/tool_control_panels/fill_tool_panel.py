@@ -8,6 +8,7 @@ from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.panel.tool_control_panels.stroke_block import (build_paint_row, build_selection_only_checkbox,
                                                            tool_section)
+from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.fill_tool_panel'
@@ -49,7 +50,7 @@ def build_threshold_field(parent: Optional[QWidget] = None) -> SliderField:
 
 def build_sample_merged_checkbox() -> QCheckBox:
     """Returns the Sample merged checkbox that the Fill and Magic wand panels share."""
-    checkbox = Cache().get_control_widget(Cache.SAMPLE_MERGED)
+    checkbox = create_control_widget(Cache(), Cache.SAMPLE_MERGED)
     assert isinstance(checkbox, QCheckBox)
     checkbox.setToolTip(SAMPLE_MERGED_TOOLTIP)
     return checkbox

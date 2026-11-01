@@ -41,6 +41,7 @@ from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
 from src.ui.widget.color_button import ColorButton
 from src.ui.widget.panel_section import PanelSection
 from src.util.visual.shape_mode import ShapeMode
+from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.shape_tool_panel'
@@ -135,7 +136,7 @@ class ShapeToolPanel(FitToolPanel):
         self._vertex_field = self._bound_field(Cache.SHAPE_TOOL_VERTEX_COUNT, VERTICES_LABEL)
         self._inner_radius_field = self._bound_field(Cache.SHAPE_TOOL_STAR_INNER_POINT_FRACTION, INNER_RADIUS_LABEL,
                                                      step=0.01, page_step=0.1)
-        self._antialias_checkbox = cache.get_control_widget(Cache.SHAPE_TOOL_ANTIALIAS)
+        self._antialias_checkbox = create_control_widget(cache, Cache.SHAPE_TOOL_ANTIALIAS)
         if isinstance(self._antialias_checkbox, QCheckBox):
             self._antialias_checkbox.setText(normalize_row_label(cache.get_label(Cache.SHAPE_TOOL_ANTIALIAS)))
         self._antialias_checkbox.setParent(self)
@@ -155,7 +156,7 @@ class ShapeToolPanel(FitToolPanel):
         self._fit_combo(self._pen_style_dropdown)
         self._line_color_label.setBuddy(self._line_color_button)
         self._dash_label = QLabel(DASH_LABEL, self)
-        self._dash_textbox = cache.get_control_widget(Cache.SHAPE_TOOL_DASH_PATTERN)
+        self._dash_textbox = create_control_widget(cache, Cache.SHAPE_TOOL_DASH_PATTERN)
         assert isinstance(self._dash_textbox, QLineEdit)
         self._dash_textbox.setValidator(build_dash_pattern_validator(self))
         self._dash_textbox.setParent(self)

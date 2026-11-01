@@ -25,8 +25,8 @@ from src.ui.layout.label_column_layout import LabelColumnLayout, normalize_row_l
 from src.ui.modal.dialog_footer import DialogFooter
 from src.ui.modal.settings_controls import create_setting_control
 from src.ui.widget.panel_section import PanelSection
-from src.util.parameter import DynamicFieldWidget
 from src.util.shared_constants import APP_ICON_PATH
+from src.ui.input_fields.field_factory import DynamicFieldWidget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.modal.settings_modal'

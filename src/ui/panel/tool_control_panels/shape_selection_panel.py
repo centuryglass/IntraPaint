@@ -14,6 +14,7 @@ from src.ui.panel.tool_control_panels.selection_panel import SelectionPanel
 from src.ui.panel.tool_control_panels.stroke_block import tool_section
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.shape_mode import ShapeMode
+from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.shape_selection_panel'
@@ -51,7 +52,7 @@ class ShapeSelectionPanel(SelectionPanel):
         self._shape_control.valueChanged.connect(
             lambda value: self.tool_mode_changed.emit(ShapeMode[value].name))
 
-        fixed_ratio = Cache().get_control_widget(Cache.SHAPE_SELECTION_FIXED_ASPECT)
+        fixed_ratio = create_control_widget(Cache(), Cache.SHAPE_SELECTION_FIXED_ASPECT)
         if isinstance(fixed_ratio, QCheckBox):
             fixed_ratio.setText(FIXED_RATIO_LABEL)
         self._fixed_ratio = fixed_ratio
