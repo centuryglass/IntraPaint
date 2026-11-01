@@ -557,7 +557,8 @@ class SDWebUIGenerator(SDGenerator):
                 assert self._webservice is not None
                 prompt_ready.emit(self._webservice.interrogate(qimage_to_pil(image), interrogate_model))
             except BackendTimeoutError as err:
-                raise RuntimeError(ERROR_MESSAGE_TIMEOUT) from err
+                logger.error(f'Describe timed out: {err}')
+                error_signal.emit(RuntimeError(ERROR_MESSAGE_TIMEOUT))
             except (SDBackendError, RuntimeError, AssertionError) as err:
                 logger.error(f'err:{err}')
                 error_signal.emit(err)
