@@ -5,7 +5,7 @@ from typing import Any
 from unittest import mock
 
 from PySide6.QtCore import Qt
-from sd_backend_client import A1111Webservice
+from sd_backend_client import A1111Webservice, BackendTimeoutError
 from sd_backend_client.api.a1111_webservice import ULTIMATE_UPSCALE_SCRIPT
 
 from src.config.a1111_config import A1111Config
@@ -15,7 +15,7 @@ from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_NO_IMAGE
 from src.util.async_task import AsyncTask
-from src.util.shared_constants import DESCRIBE_ERROR_TITLE, DESCRIBE_ERROR_MESSAGE_NO_IMAGE
+from src.util.shared_constants import DESCRIBE_ERROR_TITLE, DESCRIBE_ERROR_MESSAGE_NO_IMAGE, ERROR_MESSAGE_TIMEOUT
 from src.util.singleton import Singleton
 from test.controller.image_generation.fake_sd_backend import FakeResponse, image_to_png_bytes
 from test.controller.image_generation.sd_generator_test_case import SdGeneratorTestCase, solid_image
@@ -252,6 +252,18 @@ class SDWebUIGeneratorBackendTest(SdGeneratorTestCase):
         self.show_error_dialog.assert_called_once()
         self.assertEqual(self.show_error_dialog.call_args.args[1], DESCRIBE_ERROR_TITLE)
         self.assertEqual(Cache().get(Cache.PROMPT), old_prompt)
+        self.assertEqual(AppStateTracker.app_state(), APP_STATE_EDITING)
+
+    def test_describe_timeout_shows_error(self) -> None:
+        """A describe request that times out shows the timeout message and returns to editing."""
+        def _timeout(_arguments: dict[str, Any]) -> None:
+            raise BackendTimeoutError('POST /sdapi/v1/interrogate timed out')
+        self.backend.route('POST', Endpoints.INTERROGATE, _timeout)
+        assert isinstance(self.generator, SDWebUIGenerator)
+        self.generator._window = mock.MagicMock()  # pylint: disable=protected-access
+        self.generator.describe()
+        self.show_error_dialog.assert_called_once()
+        self.assertEqual(str(self.show_error_dialog.call_args.args[2]), ERROR_MESSAGE_TIMEOUT)
         self.assertEqual(AppStateTracker.app_state(), APP_STATE_EDITING)
 
     def test_lora_thumbnail(self) -> None:
