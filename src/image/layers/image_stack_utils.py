@@ -188,10 +188,11 @@ def image_stack_color_at_point(image_stack: ImageStack, image_point: QPoint) -> 
 
 def top_layer_at_point(image_stack: ImageStack,
                        image_coordinates: QPoint) -> Optional[ImageLayer | NonDestructiveLayer]:
-    """Return the topmost image or non-destructive layer that contains non-transparent pixels at the given
-       coordinates, or the topmost with transparent pixels if none are non-transparent at that point."""
+    """Return the topmost shown image or non-destructive layer that contains non-transparent pixels at the given
+       coordinates, or the topmost with transparent pixels if none are non-transparent at that point. Hidden layers,
+       and layers inside hidden groups, are never returned."""
     all_layers = [layer for layer in image_stack.layer_stack.recursive_child_layers
-                  if isinstance(layer, (ImageLayer, NonDestructiveLayer))]
+                  if isinstance(layer, (ImageLayer, NonDestructiveLayer)) and layer.shown]
     top_transparent: Optional[ImageLayer | NonDestructiveLayer] = None
     for layer in all_layers:
         layer_point = layer.map_from_image(image_coordinates)
@@ -201,8 +202,7 @@ def top_layer_at_point(image_stack: ImageStack,
         pixel_color = layer_image.pixelColor(layer_point)
         if pixel_color.alpha() > 0:
             return layer
-        if top_transparent is None or (top_transparent.locked or top_transparent.parent_locked
-                                       or not top_transparent.shown):
+        if top_transparent is None or (top_transparent.locked or top_transparent.parent_locked):
             top_transparent = layer
     return top_transparent
 
