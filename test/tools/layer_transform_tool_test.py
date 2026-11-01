@@ -265,6 +265,31 @@ class LayerTransformToolTest(ToolTestCase):
         self.assertEqual(self.outline.rect(), QRectF(0, 0, 50, 50))
         self.assertEqual(self.outline.transformation_origin, QPointF(25, 25))
 
+    def _create_blue_layer_over_active(self):
+        blue_image = QImage(50, 50, QImage.Format.Format_ARGB32_Premultiplied)
+        blue_image.fill(Qt.GlobalColor.blue)
+        return self.image_stack.create_layer(image_data=blue_image, transform=QTransform.fromTranslate(400, 400))
+
+    def test_layer_click_picks_topmost_overlapping_layer(self) -> None:
+        """Clicking where two layers overlap outside the active layer activates the upper one."""
+        lower = self._create_blue_layer_over_active()
+        self.image_stack.active_layer = lower  # New layers are inserted just above the active layer.
+        upper = self._create_blue_layer_over_active()
+        self.image_stack.active_layer = self.layer
+        self.mouse_drag([QPoint(420, 420)])
+        self.assertEqual(self.image_stack.active_layer, upper)
+        self.assertNotEqual(self.image_stack.active_layer, lower)
+
+    def test_layer_click_skips_hidden_layer(self) -> None:
+        """A hidden layer is never activated by a canvas click, so the click picks the visible layer beneath it."""
+        lower = self._create_blue_layer_over_active()
+        self.image_stack.active_layer = lower  # New layers are inserted just above the active layer.
+        upper = self._create_blue_layer_over_active()
+        upper.visible = False
+        self.image_stack.active_layer = self.layer
+        self.mouse_drag([QPoint(420, 420)])
+        self.assertEqual(self.image_stack.active_layer, lower)
+
     def test_temporary_ratio_lock_reaches_outline(self) -> None:
         """Holding the fixed-aspect modifier keeps canvas edits at the layer's ratio without changing the stored
         "Keep aspect ratio" setting."""
