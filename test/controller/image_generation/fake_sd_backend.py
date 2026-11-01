@@ -6,7 +6,9 @@ turns those records into JSON that stays stable across runs: image data becomes 
 placeholder, and per-session ids become fixed strings.
 
 A request with no route fails the test. Generators catch and wrap most exceptions, so the failure can surface as a
-RuntimeError naming the unrouted endpoint.
+RuntimeError naming the unrouted endpoint. A route that returns a `FakeResponse` with a failure status other than 401
+raises `ServerError`, as `WebService` does, unless the request was sent with `throw_on_failure` off. A route can also
+raise an `SDBackendError` itself, such as `BackendTimeoutError`.
 """
 import base64
 import hashlib
@@ -19,6 +21,7 @@ from unittest import mock
 import numpy as np
 from PySide6.QtCore import QBuffer, QByteArray
 from PySide6.QtGui import QImage
+from sd_backend_client import ServerError
 from sd_backend_client.api import webservice as library_webservice
 
 from src.util.visual.image_utils import BASE_64_PREFIX
@@ -136,9 +139,12 @@ class FakeSdBackend:
                 raise AssertionError(f'FakeSdBackend: no route for {method} {endpoint}')
             handler = self._routes[max(prefixes, key=lambda key: len(key[1]))]
         response = handler(arguments)
-        if isinstance(response, FakeResponse):
-            return response
-        return FakeResponse(response)
+        if not isinstance(response, FakeResponse):
+            response = FakeResponse(response)
+        # 401 starts the client's own auth flow, which the fake doesn't emulate:
+        if response.status_code >= 400 and response.status_code != 401 and arguments.get('throw_on_failure', True):
+            raise ServerError(response.status_code, response.text, endpoint, method)
+        return response
 
 
 def image_to_png_bytes(image: QImage) -> bytes:

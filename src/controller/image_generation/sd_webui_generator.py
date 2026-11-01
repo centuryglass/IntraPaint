@@ -512,7 +512,9 @@ class SDWebUIGenerator(SDGenerator):
                 AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
                 for key, changed_value in web_changes.items():
                     web_config.set(key, changed_value)
-                update_task.finish_signal.disconnect(_update_setting)
+                # Disconnecting by slot would make this closure refer to itself, a cycle that holds the task:
+                for signal in (update_task.finish_signal, update_task.error_signal):
+                    signal.disconnect()
 
             def _handle_error(err: Exception) -> None:
                 logger.error(f'Error updating settings: {err}')
@@ -541,6 +543,7 @@ class SDWebUIGenerator(SDGenerator):
             show_error_dialog(None, DESCRIBE_ERROR_TITLE, DESCRIBE_ERROR_MESSAGE_NO_IMAGE)
             return
         image = self._image_stack.qimage_generation_area_content()
+        interrogate_model = AppConfig().get(AppConfig.INTERROGATE_MODEL)
 
         class _DescribeTask(AsyncTask):
             prompt_ready = Signal(str)
@@ -552,7 +555,7 @@ class SDWebUIGenerator(SDGenerator):
         def _describe(prompt_ready: SignalInstance, error_signal: SignalInstance) -> None:
             try:
                 assert self._webservice is not None
-                prompt_ready.emit(self._webservice.interrogate(qimage_to_pil(image)))
+                prompt_ready.emit(self._webservice.interrogate(qimage_to_pil(image), interrogate_model))
             except BackendTimeoutError as err:
                 raise RuntimeError(ERROR_MESSAGE_TIMEOUT) from err
             except (SDBackendError, RuntimeError, AssertionError) as err:
