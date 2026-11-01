@@ -32,6 +32,7 @@ from src.ui.input_fields.geometry_block import (ANGLE, HEIGHT, SCALE_X, SCALE_Y,
                                                 bind_step_keys)
 from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement
 from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
+from src.undo_stack import UndoStack
 from src.util.visual.geometry_utils import get_rect_transformation, get_scaled_placement
 from src.util.visual.image_utils import get_transparency_tile_pixmap
 
@@ -58,6 +59,8 @@ PREVIEW_MARGIN = 4
 LEGEND_SWATCH_SIZE = 10
 IMAGE_BOUNDS_ALPHA = 0.3
 LAYER_OUTLINE_WIDTH = 3
+
+UNDO_GESTURE = 'LayerTransformToolPanel.drag'
 
 # The planned items, in placement order:
 GEOMETRY_ITEM = FitItem(REQUIRED, 2)
@@ -103,6 +106,10 @@ class LayerTransformToolPanel(FitToolPanel):
                          HEIGHT: self.height_changed, SCALE_X: self.x_scale_changed, SCALE_Y: self.y_scale_changed,
                          ANGLE: self.angle_changed}
         self._geometry.valueChanged.connect(lambda name, value: field_signals[name].emit(float(value)))
+        for name in field_signals:
+            field = self._geometry.field(name)
+            field.dragStarted.connect(self._drag_started)
+            field.dragFinished.connect(self._drag_finished)
 
         def _key_predicate() -> bool:
             active_layer = image_stack.active_layer
@@ -269,6 +276,14 @@ class LayerTransformToolPanel(FitToolPanel):
 
     def _lock_changed(self, _locked: bool) -> None:
         self.preserve_aspect_ratio_changed.emit(self._geometry.effective_ratio_locked())
+
+    @staticmethod
+    def _drag_started() -> None:
+        UndoStack().begin_gesture(UNDO_GESTURE)
+
+    @staticmethod
+    def _drag_finished() -> None:
+        UndoStack().end_gesture()
 
     def set_preview_bounds(self, bounds: QRect) -> None:
         """Update the preview widget bounds"""

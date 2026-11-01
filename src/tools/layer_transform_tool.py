@@ -277,10 +277,7 @@ class LayerTransformTool(BaseTool):
         layer = self._layer
         if layer is None or layer.locked or layer.parent_locked:
             return
-        try:
-            layer.transform = transform
-        except RuntimeError:  # undo stack conflict: just don't register this one in the undo history
-            layer.set_transform(transform)
+        layer.transform = transform
         self._control_panel.set_preview_transform(layer.transform)
 
     @staticmethod
