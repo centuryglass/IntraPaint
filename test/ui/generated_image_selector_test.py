@@ -1,6 +1,7 @@
 """Tests for GeneratedImageSelector: batch snapshots, the manual view carry-over between options, re-opening the
 previous generation batch, and how a run's Cancel, Stop and end close or keep the screen."""
 import sys
+import time
 from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
 
@@ -12,7 +13,8 @@ from src.config.cache import Cache
 from src.controller.image_generation.generation_session import GenerationSession
 from src.controller.image_generation.test_generator import TestGenerator
 from src.image.layers.image_stack import ImageStack
-from src.ui.generated_image_selector import GeneratedImageSelector, LABEL_TEXT_IMAGE_OPTION, ORIGINAL_CONTENT_LABEL
+from src.ui.generated_image_selector import GeneratedImageSelector, LABEL_TEXT_IMAGE_OPTION, ORIGINAL_CONTENT_LABEL, \
+    SCROLL_DEBOUNCE_MS
 from src.ui.generated_selector_bars import CANCEL_BUTTON_TEXT, CLOSE_BUTTON_TEXT, USE_OPTION_BUTTON_TEXT, VIEW_GRID, \
     VIEW_SINGLE
 from src.ui.window.main_window import MainWindow
@@ -30,6 +32,8 @@ app = QApplication.instance() or QApplication(sys.argv)
 IMAGE_SIZE = QSize(64, 64)
 # The number of images each test batch delivers: `Cache.BATCH_SIZE` with `Cache.BATCH_COUNT` left at 1.
 OPTION_COUNT = 5
+# A fake clock reading later than any `time.time()` the selector recorded before the test:
+_CLOCK_BASE = time.time() + 3600
 
 
 def _solid(color: QColor, size: QSize = IMAGE_SIZE) -> QImage:
@@ -740,25 +744,38 @@ class GeneratedImageSelectorInputTest(_RunScreenTestCase):
         self.assertFalse(self._key(Qt.Key.Key_A, 'a'))
         self.assertEqual(self.selector._zoom_index, 3)
 
+    def _wheel_at(self, clock: Mock, ms: float, dx: int) -> bool:
+        """Sends a wheel event with the selector's clock reading `ms` milliseconds."""
+        clock.return_value = _CLOCK_BASE + ms / 1000
+        return self._wheel(dx)
+
     def test_wheel_steps_through_options(self) -> None:
         """Horizontal wheel motion steps forward or back and is consumed; vertical-only motion is not."""
         self.selector._zoom_to_option(1, True)
-        self.assertTrue(self._wheel(120))
-        self.assertEqual(self.selector._zoom_index, 2)
-        # Wheel steps are debounced, so a second step right away is ignored:
-        self.assertTrue(self._wheel(-120))
-        self.assertEqual(self.selector._zoom_index, 2)
-        self.selector._last_scroll_time = 0
-        self.assertTrue(self._wheel(-120))
-        self.assertEqual(self.selector._zoom_index, 1)
-        self.assertFalse(self._wheel(0))
-        self.assertEqual(self.selector._zoom_index, 1)
+        with patch('src.ui.generated_image_selector.time.time') as clock:
+            self.assertTrue(self._wheel_at(clock, 1000, 120))
+            self.assertEqual(self.selector._zoom_index, 2)
+            self.assertTrue(self._wheel_at(clock, 2000, -120))
+            self.assertEqual(self.selector._zoom_index, 1)
+            self.assertFalse(self._wheel_at(clock, 3000, 0))
+            self.assertEqual(self.selector._zoom_index, 1)
+
+    def test_wheel_steps_are_debounced(self) -> None:
+        """Wheel events closer together than SCROLL_DEBOUNCE_MS are consumed without stepping again."""
+        self.selector._zoom_to_option(1, True)
+        with patch('src.ui.generated_image_selector.time.time') as clock:
+            self._wheel_at(clock, 1000, 120)
+            self.assertTrue(self._wheel_at(clock, 1000 + SCROLL_DEBOUNCE_MS - 1, 120))
+            self.assertEqual(self.selector._zoom_index, 2)
+            self.assertTrue(self._wheel_at(clock, 1000 + SCROLL_DEBOUNCE_MS + 1, 120))
+            self.assertEqual(self.selector._zoom_index, 3)
 
     def test_wheel_from_another_source_does_not_step_again(self) -> None:
         """A wheel event bubbling up from the view is ignored, so it doesn't step twice."""
         self.selector._zoom_to_option(1, True)
-        self.selector._last_scroll_time = 0
-        self.assertFalse(self._wheel(120, source=self.window))
+        with patch('src.ui.generated_image_selector.time.time') as clock:
+            clock.return_value = _CLOCK_BASE + 1.0
+            self.assertFalse(self._wheel(120, source=self.window))
         self.assertEqual(self.selector._zoom_index, 1)
 
     def test_escape_leaves_single_view_before_closing(self) -> None:
