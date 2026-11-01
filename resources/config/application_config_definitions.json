@@ -1,4 +1,15 @@
 {
+    "language": {
+        "label": "Language:",
+        "category": "Interface",
+        "subcategory": "Appearance",
+        "description": "Language of the user interface (requires restart). \"System language\" uses the system's language when IntraPaint has a translation for it, and English otherwise. Languages marked machine-translated were translated by AI models, not people: report wrong or confusing wording at https://github.com/centuryglass/IntraPaint/issues.",
+        "type": "string",
+        "default": "System language",
+        "options": ["System language"],
+        "saved": true,
+        "translate": false
+    },
     "style": {
         "label": "Style:",
         "category": "Interface",

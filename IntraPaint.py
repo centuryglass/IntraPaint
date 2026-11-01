@@ -35,12 +35,13 @@ if not is_pyinstaller_bundle():
                   'IntraPaint directory to enable them. All other tools will work normally.', file=sys.stderr)
 
 
-from PySide6.QtCore import QTranslator, QObject, QEvent, QtMsgType, qFormatLogMessage, qInstallMessageHandler
+from PySide6.QtCore import QObject, QEvent, QtMsgType, qFormatLogMessage, qInstallMessageHandler
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QApplication, QSplashScreen, QWidget, QDialog, QLabel, QMenu
 
 from src.util.arg_parser import build_arg_parser
 from src.util.optional_import import check_import
+from src.util.translation import install_translation, resolve_language, saved_language_setting
 from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR, LOG_DIR, DEBUG_CURSOR_ENV_VAR
 
@@ -145,13 +146,10 @@ splash_screen.show()
 splash_screen.raise_()
 app.processEvents()
 
-# Load translations:
-translator = QTranslator()
-for root, _, files in os.walk(f'{PROJECT_DIR}/resources/translations'):
-    for file in files:
-        if file.endswith('.qm'):
-            assert translator.load(os.path.join(root, file)), f'Failed to load {file}'
-app.installTranslator(translator)
+# Load the chosen translation (src/util/translation.py explains why this happens before most imports):
+ui_language = resolve_language(saved_language_setting())
+logger.info(f'UI language: {ui_language}')
+translator = install_translation(app, ui_language)
 
 # If relevant directories exist, update paths for GLID-3-XL dependencies:
 if not is_pyinstaller_bundle():

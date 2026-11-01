@@ -13,7 +13,9 @@ without needing a professional localization budget. It builds on the catalog wor
 A machine translation ships only when all of these hold. Without them, the language is left out and users get English.
 
 - **English is one click away.** The language picker labels the language as machine-translated, and a user can switch
-  back to English at any time.
+  back to English at any time. The picker is the Interface > Language setting
+  ([`resources/translations/README.md`](../resources/translations/README.md#choosing-a-language)). A translation is
+  labeled when its `languages.json` entry has `"machine_translated": true`.
 - **Stale translations fall back to English.** When an English string changes, its old translation is dropped until
   it is redone. A translation that no longer matches its source is worse than none. Untranslated strings show in
   English, so a partly translated UI is acceptable.
@@ -112,7 +114,8 @@ For each string:
   goes to the English source in a separate PR, such as a `_tr` disambiguation or a rewording, or into an issue. The
   batch PR lists the flagged strings.
 
-Edit the `.ts` file directly, then run `python scripts/build_translations.py` to normalize it and build its `.qm`
+The first batch of a language adds its `languages.json` entry, with `"machine_translated": true`. Edit the `.ts` file
+directly, then run `python scripts/build_translations.py` to normalize it and build its `.qm`
 file. An entry is either translated and marked finished, or left empty. `lrelease` compiles unfinished translations
 too, so a draft left in an unfinished entry ships.
 
@@ -190,7 +193,5 @@ more than one translation across contexts. Each one either has a context that ex
 
 ## Open questions
 
-- Where the language picker lives, and how it labels machine-translated languages. IntraPaint currently loads every
-  `.qm` file it finds and has no way to choose a language.
 - Which models to use for translation and for review. Each batch PR records the models it used.
 - Whether to use a hosted platform such as Weblate if volunteer translators appear.
