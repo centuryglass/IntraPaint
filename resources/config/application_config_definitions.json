@@ -123,6 +123,7 @@
         "saved": true
     },
     "ruler_generation_area_color": {
+        "control": "color",
         "label": "Ruler generation area color:",
         "category": "Interface",
         "subcategory": "Layout",
@@ -178,6 +179,7 @@
         "saved": true
     },
     "selection_color": {
+        "control": "color_required",
         "label": "Selection overlay color:",
         "category": "Interface",
         "description": "Overlay color used to highlight selected image areas",
@@ -559,6 +561,7 @@
         "saved": true
     },
     "added_font_dir": {
+        "control": "directory",
         "label": "Added font directory:",
         "category": "Files",
         "description": "Directory to search for additional font files to load",
@@ -567,6 +570,7 @@
         "saved": true
     },
     "added_mypaint_brush_dir": {
+        "control": "directory",
         "label": "Added MyPaint brush directory:",
         "category": "Files",
         "description": "Directory to search for additional MyPaint brush files to load",
@@ -575,6 +579,7 @@
         "saved": true
     },
     "libmypaint_library_dir": {
+        "control": "directory",
         "label": "libmypaint library directory:",
         "category": "Files",
         "description": "Directory to search for libmypaint library files if unable to load default libraries",

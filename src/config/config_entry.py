@@ -55,6 +55,19 @@ class DefinitionKey:
     # Optional bool. When true, a saved entry stays in the config file even when it equals the default, so a later
     # change to the default doesn't alter it for installs that already saved it.
     PINNED = 'pinned'
+    # Optional string naming the control a settings window shows for a string value: one of the `ControlHint`
+    # constants. A string with no hint is a text field.
+    CONTROL = 'control'
+
+
+class ControlHint:
+    """Values of a definition's `control` key."""
+    # A color string. An empty value means "use the theme's color" and the control offers that state.
+    COLOR = 'color'
+    # A color string that is always set.
+    COLOR_REQUIRED = 'color_required'
+    # A directory path, with a Browse button.
+    DIRECTORY = 'directory'
 
 
 class DefinitionType:
@@ -89,7 +102,8 @@ class ConfigEntry(Parameter):
                  options: Optional[ParamTypeList] = None,
                  range_options: Optional[dict[str, int | float]] = None,
                  save_json: bool = True,
-                 pinned: bool = False) -> None:
+                 pinned: bool = False,
+                 control_hint: Optional[str] = None) -> None:
         minimum = None
         maximum = None
         step = None
@@ -111,6 +125,7 @@ class ConfigEntry(Parameter):
         self._subcategory = subcategory
         self.save_json = save_json
         self.pinned = pinned
+        self.control_hint = control_hint
         self._default_options: Optional[ParamTypeList] = None
         if options is not None:
             self._default_options = [*options]

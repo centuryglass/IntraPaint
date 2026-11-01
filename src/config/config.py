@@ -195,8 +195,9 @@ class Config:
                     else:
                         save_json = False
                     pinned = bool(definition.get(DefinitionKey.PINNED, False))
+                    control_hint = definition.get(DefinitionKey.CONTROL)
                     self._add_entry(key, initial_value, label, category, subcategory, tooltip, options, range_options,
-                                    save_json, pinned)
+                                    save_json, pinned, control_hint)
 
         except json.JSONDecodeError as err:
             raise RuntimeError(INVALID_JSON_DEFINITION_ERROR.format(err=err)) from err
@@ -312,6 +313,12 @@ class Config:
         if key not in self._entries:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         return self._entries[key].subcategory
+
+    def get_control_hint(self, key: str) -> Optional[str]:
+        """Returns the `ControlHint` a key's definition names, or None. Raises KeyError for an unknown key."""
+        if key not in self._entries:
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
+        return self._entries[key].control_hint
 
     def get_color(self, key: str, default_color: QColor | Qt.GlobalColor) -> QColor:
         """Returns a color value from config.
@@ -738,11 +745,12 @@ class Config:
                    options: Optional[list[ParamType]] = None,
                    range_options: Optional[dict[str, int | float]] = None,
                    save_json: bool = True,
-                   pinned: bool = False) -> None:
+                   pinned: bool = False,
+                   control_hint: Optional[str] = None) -> None:
         if key in self._entries:
             raise KeyError(DUPLICATE_KEY_ERROR.format(key=key))
         entry = ConfigEntry(key, initial_value, label, category, subcategory, tooltip, options, range_options,
-                            save_json, pinned)
+                            save_json, pinned, control_hint)
         self._entries[key] = entry
         self._connected[key] = {}
         if options is not None:

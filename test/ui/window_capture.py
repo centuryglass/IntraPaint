@@ -22,7 +22,7 @@ from unittest.mock import patch
 
 from PySide6.QtCore import QPoint, QSize
 from PySide6.QtGui import QColor, QImage, QLinearGradient, QPainter
-from PySide6.QtWidgets import QMessageBox, QScrollArea, QTabWidget, QWidget
+from PySide6.QtWidgets import QMessageBox, QScrollArea, QWidget
 
 from test.ui.panel_capture import WINDOW_SIZES, _settle_layouts
 
@@ -208,8 +208,8 @@ def _with_sample_image(controller: 'AppController') -> None:
     setattr(controller, '_capture_has_sample_image', True)
 
 
-def _settings_modal(controller: 'AppController', tab_index: int) -> QWidget:
-    """Returns the controller's settings modal on one tab, with the Stable Diffusion settings a generator adds."""
+def _settings_modal(controller: 'AppController', category: str) -> QWidget:
+    """Returns the controller's settings modal on one category, with the Stable Diffusion settings a generator adds."""
     # pylint: disable=import-outside-toplevel,protected-access
     from src.config.application_config import AppConfig
     from src.controller.image_generation.sd_generator import STABLE_DIFFUSION_CONFIG_CATEGORY
@@ -219,22 +219,18 @@ def _settings_modal(controller: 'AppController', tab_index: int) -> QWidget:
         modal.load_from_config(AppConfig(), [STABLE_DIFFUSION_CONFIG_CATEGORY])
         setattr(modal, '_capture_has_sd', True)
     controller.refresh_settings(modal)
-    tabs = modal.findChild(QTabWidget)
-    assert tabs is not None
-    tabs.setCurrentIndex(tab_index)
+    modal.select_category(category)
     setattr(modal, '_capture_keep', True)
     return modal
 
 
 def _settings_scenes(controller: 'AppController') -> list[WindowScene]:
     # pylint: disable=protected-access
-    modal = _settings_modal(controller, 0)
-    tabs = modal.findChild(QTabWidget)
-    assert tabs is not None
+    modal = _settings_modal(controller, '')
     scenes = []
-    for index in range(tabs.count()):
-        name = 'settings_' + ''.join(char if char.isalnum() else '_' for char in tabs.tabText(index).lower())
-        scenes.append(WindowScene(name, lambda c, i=index: _settings_modal(c, i), lambda _w: fractional_size(),
+    for category in modal.categories():
+        name = 'settings_' + ''.join(char if char.isalnum() else '_' for char in category.lower())
+        scenes.append(WindowScene(name, lambda c, cat=category: _settings_modal(c, cat), lambda _w: fractional_size(),
                                   resizable=True, full_content=True))
     return scenes
 
