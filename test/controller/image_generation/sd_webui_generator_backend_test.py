@@ -188,14 +188,12 @@ class SDWebUIGeneratorBackendTest(SdGeneratorTestCase):
         self.assertEqual(len(self._option_posts()), 1)
 
     def test_update_settings_applies_webui_and_app_changes(self) -> None:
-        """WebUI settings are sent to the WebUI and stored once it accepts them, and app settings are set locally."""
+        """Only WebUI settings are sent to the WebUI, and stored once it accepts them. App settings are set locally."""
         self._connect_settings()
         self.image_stack.flush_render()
         assert isinstance(self.generator, SDWebUIGenerator)
         self.generator.update_settings({A1111Config.CLIP_STOP_AT_LAST_LAYERS: 2, AppConfig.MASK_BLUR: 9})
-        posts = self._option_posts()
-        self.assertEqual(len(posts), 1)
-        self.assertEqual(posts[0][A1111Config.CLIP_STOP_AT_LAST_LAYERS], 2)
+        self.assertEqual(self._option_posts(), [{A1111Config.CLIP_STOP_AT_LAST_LAYERS: 2}])
         self.assertEqual(A1111Config().get(A1111Config.CLIP_STOP_AT_LAST_LAYERS), 2)
         self.assertEqual(Cache().get(Cache.CLIP_SKIP), 2)
         self.assertEqual(AppConfig().get(AppConfig.MASK_BLUR), 9)
@@ -209,14 +207,15 @@ class SDWebUIGeneratorBackendTest(SdGeneratorTestCase):
         self.assertEqual(AppConfig().get(AppConfig.MASK_BLUR), 9)
         self.assertEqual(self.backend.requests, [])
 
-    def test_update_settings_failure_shows_error(self) -> None:
-        """A rejected update shows an error and leaves the loading state."""
+    def test_update_settings_failure_keeps_old_values(self) -> None:
+        """A rejected update shows an error, leaves the loading state and keeps the local WebUI settings."""
         self._connect_settings()
         self.backend.route('POST', Endpoints.OPTIONS, _server_error)
         assert isinstance(self.generator, SDWebUIGenerator)
         self.image_stack.remove_layer(self.image_stack.active_layer)
         self.generator.update_settings({A1111Config.CLIP_STOP_AT_LAST_LAYERS: 2})
         self.show_error_dialog.assert_called_once()
+        self.assertEqual(A1111Config().get(A1111Config.CLIP_STOP_AT_LAST_LAYERS), 1)
         self.assertEqual(AppStateTracker.app_state(), APP_STATE_NO_IMAGE)
 
     def test_describe_sets_prompt_as_one_undo_step(self) -> None:

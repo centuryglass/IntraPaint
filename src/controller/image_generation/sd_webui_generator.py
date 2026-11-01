@@ -502,21 +502,26 @@ class SDWebUIGenerator(SDGenerator):
             def _update_config(error_signal: SignalInstance) -> None:
                 assert self._webservice is not None
                 try:
-                    self._webservice.set_config(changed_settings)
+                    self._webservice.set_config(web_changes)
                 except (KeyError, SDBackendError) as err:
                     error_signal.emit(err)
 
             update_task = _SettingsUpdateTask(_update_config, True)
+            # Set by `_handle_error`, which runs before `_update_setting`, so a rejected update changes nothing locally:
+            update_failed = False
 
             def _update_setting() -> None:
                 AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
-                for key, changed_value in web_changes.items():
-                    web_config.set(key, changed_value)
+                if not update_failed:
+                    for key, changed_value in web_changes.items():
+                        web_config.set(key, changed_value)
                 # Disconnecting by slot would make this closure refer to itself, a cycle that holds the task:
                 for signal in (update_task.finish_signal, update_task.error_signal):
                     signal.disconnect()
 
             def _handle_error(err: Exception) -> None:
+                nonlocal update_failed
+                update_failed = True
                 logger.error(f'Error updating settings: {err}')
                 show_error_dialog(None, ERROR_TITLE_SETTINGS_SAVE_FAILED, ERROR_MESSAGE_SETTINGS_SAVE_FAILED)
 
