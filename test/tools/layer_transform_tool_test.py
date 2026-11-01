@@ -104,6 +104,19 @@ class LayerTransformToolTest(ToolTestCase):
         self.mouse_drag([start, start + QPoint(10, 5), start + QPoint(30, 40)])
         self.assertEqual(UndoStack().undo_count(), 1)
 
+    def test_panel_field_drag_is_one_undo_step(self) -> None:
+        """Scrub-dragging a panel field adds one undo entry, and undoing it restores the original transform."""
+        original = self.layer.transform
+        field = self.panel.geometry_block.field(X)
+        field.dragStarted.emit()
+        for x_pos in (10.0, 20.0, 30.0):
+            field.set_value(x_pos)
+        field.dragFinished.emit()
+        self.assertEqual(UndoStack().undo_count(), 1)
+        UndoStack().undo()
+        self.assertEqual(self.layer.transform, original)
+        self.assert_panel_matches_outline()
+
     def test_corner_drag_scales(self) -> None:
         """Dragging the bottom-right handle scales the layer and leaves the top-left corner fixed."""
         start = self._handle_image_point(BR_HANDLE_ID)
