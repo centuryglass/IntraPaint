@@ -23,6 +23,10 @@ Extraction fails, naming the file and line, on calls it can't extract:
 A translation file fails when it doesn't match a fresh merge, when a translation drops or adds a `{name}` or `%1`
 placeholder of its source, or when its `.qm` file is missing or stale. A `.qm` file with no `.ts` file also fails.
 
+`languages.json` needs one entry per translation file, keyed by the file's name without `.ts`, whose
+`machine_translated` value is true or false. The language picker labels a machine-translated language as such
+(`src/util/translation.py`). An entry with no translation file fails.
+
 Usage: python scripts/build_translations.py [--check]
   Without options, rewrites main.ts, merges every translation file and rebuilds its .qm file.
   --check changes nothing, and exits with status 1 if a rebuild would change any file or any problem is found.
@@ -50,6 +54,8 @@ from src.config.definition_tr_contexts import DEFINITION_TR_CONTEXTS  # noqa: E4
 
 TRANSLATION_DIR = 'resources/translations'
 CATALOG_NAME = 'main.ts'
+MANIFEST_NAME = 'languages.json'
+MANIFEST_MACHINE_TRANSLATED = 'machine_translated'
 SOURCE_DIR = 'src'
 DEFINITION_DIR = 'resources/config'
 SOURCE_LANGUAGE = 'en_US'
@@ -401,6 +407,32 @@ def _read_bytes(path: str) -> Optional[bytes]:
         return file.read()
 
 
+def manifest_problems(translation_dir: str, translations: list[str]) -> list[str]:
+    """Checks that `languages.json` has a valid entry for each named translation, and none for anything else."""
+    manifest_path = f'{TRANSLATION_DIR}/{MANIFEST_NAME}'
+    try:
+        with open(os.path.join(translation_dir, MANIFEST_NAME), encoding='utf-8') as file:
+            manifest = json.load(file)
+    except FileNotFoundError:
+        manifest = {}
+        if translations:
+            return [f'{manifest_path} is missing.']
+    except json.JSONDecodeError as err:
+        return [f'{manifest_path} is not valid JSON: {err}']
+    if not isinstance(manifest, dict):
+        return [f'{manifest_path} must hold a JSON object.']
+    problems = []
+    for language in translations:
+        entry = manifest.get(language)
+        if not isinstance(entry, dict) or not isinstance(entry.get(MANIFEST_MACHINE_TRANSLATED), bool):
+            problems.append(f'{manifest_path} needs an entry for {language}.ts, like '
+                            f'"{language}": {{"{MANIFEST_MACHINE_TRANSLATED}": true}}.')
+    for language in manifest:
+        if language not in translations:
+            problems.append(f'{manifest_path} has an entry for {language}, which has no {language}.ts.')
+    return problems
+
+
 def build(project_dir: str = PROJECT_DIR, check: bool = False) -> tuple[list[str], list[str]]:
     """Rebuilds the catalog and translation files, or only checks them.
 
@@ -431,6 +463,8 @@ def build(project_dir: str = PROJECT_DIR, check: bool = False) -> tuple[list[str
     _update(CATALOG_NAME, write_ts(catalog).encode('utf-8'))
 
     file_names = sorted(os.listdir(translation_dir))
+    translations = [os.path.splitext(name)[0] for name in file_names if name.endswith('.ts') and name != CATALOG_NAME]
+    problems.extend(manifest_problems(translation_dir, translations))
     for file_name in file_names:
         stem, extension = os.path.splitext(file_name)
         if extension == '.qm' and f'{stem}.ts' not in file_names:

@@ -110,6 +110,31 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
+        <source>Language:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Language of the user interface (requires restart). "System language" uses the system's language when IntraPaint has a translation for it, and English otherwise. Languages marked machine-translated were translated by AI models, not people: report wrong or confusing wording at https://github.com/centuryglass/IntraPaint/issues.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>System language</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Interface</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Appearance</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
         <source>Style:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -121,16 +146,6 @@
     <message>
         <location filename="../config/application_config_definitions.json"/>
         <source>Fusion</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/application_config_definitions.json"/>
-        <source>Interface</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/application_config_definitions.json"/>
-        <source>Appearance</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -9543,6 +9558,14 @@ Click to pick, or press Esc to cancel</source>
     <message>
         <location filename="../../src/util/shared_constants.py"/>
         <source>{modifier_or_modifiers}: pick color</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>util.translation</name>
+    <message>
+        <location filename="../../src/util/translation.py"/>
+        <source>{language} (machine-translated)</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

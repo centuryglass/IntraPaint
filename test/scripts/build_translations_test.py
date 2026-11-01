@@ -56,6 +56,7 @@ class BuildTranslationsTest(IntraPaintTestCase):
         for file_name in build_translations.DEFINITION_TR_CONTEXTS:
             self._write(f'resources/config/{file_name}', DEFINITIONS.get(file_name, '{}'))
         self._write('src/ui/example.py', TRANSLATED_MODULE)
+        self._write('resources/translations/languages.json', '{}')
 
     def _path(self, relative_path: str) -> str:
         return os.path.join(self.project, *relative_path.split('/'))
@@ -138,6 +139,7 @@ class BuildTranslationsTest(IntraPaintTestCase):
 
     def test_translation_file_is_merged_and_compiled(self) -> None:
         """Translations are kept, new strings are added unfinished, removed ones vanish, and the .qm file works."""
+        self._write('resources/translations/languages.json', '{"de_DE": {"machine_translated": false}}')
         self._write('resources/translations/de_DE.ts', """\
             <?xml version="1.0" encoding="utf-8"?>
             <!DOCTYPE TS>
@@ -175,6 +177,7 @@ class BuildTranslationsTest(IntraPaintTestCase):
 
     def test_reports_changed_placeholders_and_orphan_qm_files(self) -> None:
         """A translation must keep its source's placeholders, and every .qm file needs its .ts file."""
+        self._write('resources/translations/languages.json', '{"fr_FR": {"machine_translated": true}}')
         self._write('resources/translations/fr_FR.ts', """\
             <?xml version="1.0" encoding="utf-8"?>
             <!DOCTYPE TS>
@@ -193,3 +196,26 @@ class BuildTranslationsTest(IntraPaintTestCase):
         self.assertEqual(2, len(problems), problems)
         self.assertIn('en_US.qm has no en_US.ts', problems[0])
         self.assertIn("'Hello, {name}'", problems[1])
+
+    def test_every_translation_needs_a_manifest_entry(self) -> None:
+        """languages.json flags each translation as machine-translated or not, and lists nothing else."""
+        self._write('resources/translations/fr_FR.ts', """\
+            <?xml version="1.0" encoding="utf-8"?>
+            <!DOCTYPE TS>
+            <TS version="2.1" language="fr_FR">
+            </TS>
+        """)
+        self._write('resources/translations/languages.json', '{"ja_JP": {"machine_translated": true}}')
+        problems, _ = build_translations.build(self.project, check=True)
+        self.assertEqual(2, len(problems), problems)
+        self.assertIn('needs an entry for fr_FR.ts', problems[0])
+        self.assertIn('entry for ja_JP, which has no ja_JP.ts', problems[1])
+
+        self._write('resources/translations/languages.json', '{"fr_FR": {"machine_translated": "yes"}}')
+        problems, _ = build_translations.build(self.project, check=True)
+        self.assertEqual(1, len(problems), problems)
+        self.assertIn('needs an entry for fr_FR.ts', problems[0])
+
+        self._write('resources/translations/languages.json', '{"fr_FR": {"machine_translated": true}}')
+        problems, _ = build_translations.build(self.project)
+        self.assertEqual([], problems)

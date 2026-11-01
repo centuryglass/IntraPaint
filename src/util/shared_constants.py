@@ -27,6 +27,8 @@ DATA_DIR = os.environ.get(DATA_DIR_ENV_VAR) or user_data_dir('IntraPaint', 'cent
 LOG_DIR = os.environ.get(LOG_DIR_ENV_VAR) or user_log_dir('IntraPaint', 'centuryglass')
 for app_dir in [DATA_DIR, LOG_DIR]:
     os.makedirs(app_dir, exist_ok=True)
+# AppConfig's saved file. src/util/translation.py reads it at startup, before AppConfig exists.
+APP_CONFIG_PATH = f'{DATA_DIR}/config.json'
 
 # Numeric:
 INT_MIN = -2147483647

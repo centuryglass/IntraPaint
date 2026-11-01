@@ -1,20 +1,21 @@
 """Provides access to the user-editable application config."""
 import os
-from typing import Optional
+from typing import Any, Optional
 
 from PySide6.QtWidgets import QStyleFactory
 
 from src.config.config import Config
 from src.ui.theme import THEME_INK, THEME_SYSTEM
 from src.util.optional_import import optional_import
-from src.util.shared_constants import PROJECT_DIR, DATA_DIR, PIL_SCALING_MODES
+from src.util.shared_constants import PROJECT_DIR, DATA_DIR, PIL_SCALING_MODES, APP_CONFIG_PATH
+from src.util.translation import SYSTEM_LANGUAGE, available_languages, language_name
 from src.util.singleton import Singleton
 
 # Optional theme modules:
 qdarktheme = optional_import('qdarktheme')
 qt_material = optional_import('qt_material')
 
-DEFAULT_CONFIG_PATH = f'{DATA_DIR}/config.json'
+DEFAULT_CONFIG_PATH = APP_CONFIG_PATH
 CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/application_config_definitions.json'
 
 
@@ -45,6 +46,8 @@ class AppConfig(Config, metaclass=Singleton):
             default values. Any expected keys not found in the file load with their current default. Any unexpected
             keys will be discarded.
         """
+        # Set by `_adjust_defaults`, which runs during construction:
+        self._language_codes: list[str] = []
         super().__init__(CONFIG_DEFINITIONS, json_path, AppConfig)
 
     def _adjust_defaults(self):
@@ -56,6 +59,8 @@ class AppConfig(Config, metaclass=Singleton):
             theme_options += [f'qt_material_{theme}' for theme in qt_material.list_themes()]
         self.update_options(AppConfig.THEME, theme_options)
         self.update_options(AppConfig.STYLE, list(QStyleFactory.keys()))
+        self._language_codes = available_languages()
+        self.update_options(AppConfig.LANGUAGE, [SYSTEM_LANGUAGE, *self._language_codes])
 
         # Put default user data directories in the user data dir:
         for config_key, dir_name in ((AppConfig.LIBMYPAINT_LIBRARY_DIR, 'libmypaint-lib-files'),
@@ -71,6 +76,12 @@ class AppConfig(Config, metaclass=Singleton):
         scaling_options = list(PIL_SCALING_MODES.keys())
         self.update_options(AppConfig.PIL_UPSCALE_MODE, scaling_options)
         self.update_options(AppConfig.PIL_DOWNSCALE_MODE, scaling_options)
+
+    def get_option_display(self, option: Any) -> str:
+        """Shows `AppConfig.LANGUAGE`'s language codes by their own names, and every other option as `Config` does."""
+        if isinstance(option, str) and option in self._language_codes:
+            return language_name(option)
+        return super().get_option_display(option)
 
     # DYNAMIC PROPERTIES:
     # Generate with `python scripts/dynamic_import_typing.py src/config/application_config.py`
@@ -94,6 +105,7 @@ class AppConfig(Config, metaclass=Singleton):
     GLID_VAE_MODEL_PATH: str
     INTERROGATE_MODEL: str
     KEY_HINT_FONT_SIZE: str
+    LANGUAGE: str
     LIBMYPAINT_LIBRARY_DIR: str
     MASK_BLUR: str
     MAX_EDIT_SIZE: str
