@@ -1,17 +1,20 @@
 """Tests for GeneratedImageSelector: batch snapshots, the manual view carry-over between options, re-opening the
 previous generation batch, and how a run's Cancel, Stop and end close or keep the screen."""
 import sys
+import time
+from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, QSize, Qt
-from PySide6.QtGui import QColor, QImage, QKeyEvent
-from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QColor, QImage, QKeyEvent, QMouseEvent, QWheelEvent
+from PySide6.QtWidgets import QApplication, QMenu
 
 from src.config.cache import Cache
 from src.controller.image_generation.generation_session import GenerationSession
 from src.controller.image_generation.test_generator import TestGenerator
 from src.image.layers.image_stack import ImageStack
-from src.ui.generated_image_selector import GeneratedImageSelector, LABEL_TEXT_IMAGE_OPTION, ORIGINAL_CONTENT_LABEL
+from src.ui.generated_image_selector import GeneratedImageSelector, LABEL_TEXT_IMAGE_OPTION, ORIGINAL_CONTENT_LABEL, \
+    SCROLL_DEBOUNCE_MS
 from src.ui.generated_selector_bars import CANCEL_BUTTON_TEXT, CLOSE_BUTTON_TEXT, USE_OPTION_BUTTON_TEXT, VIEW_GRID, \
     VIEW_SINGLE
 from src.ui.window.main_window import MainWindow
@@ -29,6 +32,8 @@ app = QApplication.instance() or QApplication(sys.argv)
 IMAGE_SIZE = QSize(64, 64)
 # The number of images each test batch delivers: `Cache.BATCH_SIZE` with `Cache.BATCH_COUNT` left at 1.
 OPTION_COUNT = 5
+# A fake clock reading later than any `time.time()` the selector recorded before the test:
+_CLOCK_BASE = time.time() + 3600
 
 
 def _solid(color: QColor, size: QSize = IMAGE_SIZE) -> QImage:
@@ -535,11 +540,10 @@ class GeneratedImageSelectorGenerationTest(IntraPaintTestCase):
         self.assertEqual(self.image_stack.qimage(), before)
 
 
-class GeneratedImageSelectorRunTest(IntraPaintTestCase):
-    """Tests how a run's Cancel, Stop and end close or keep the selection screen, with a fake backend action.
+class _RunScreenTestCase(IntraPaintTestCase):
+    """Base for tests that run a generation in a `MainWindow` with a fake backend action.
 
-    The action runs synchronously in place of the background task, and plays the user's part by clicking the screen's
-    buttons partway through.
+    The action runs synchronously in place of the background task.
     """
 
     BATCH = 4
@@ -577,6 +581,12 @@ class GeneratedImageSelectorRunTest(IntraPaintTestCase):
         select_rect(self.image_stack, QRect(QPoint(0, 0), QSize(16, 16)))
         image = self.image_stack.qimage_generation_area_content()
         self.session.generate(lambda _status, _image, _mask: action(), image, None, None)
+
+class GeneratedImageSelectorRunTest(_RunScreenTestCase):
+    """Tests how a run's Cancel, Stop and end close or keep the selection screen.
+
+    The action plays the user's part by clicking the screen's buttons partway through.
+    """
 
     def test_cancel_before_first_result_closes_and_stops(self) -> None:
         """With nothing ready the only exit is Cancel, which stops the backend and returns to the editor."""
@@ -694,3 +704,221 @@ class GeneratedImageSelectorRunTest(IntraPaintTestCase):
         self.selector.eventFilter(self.selector._view, QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Alt,
                                                                  Qt.KeyboardModifier.AltModifier))
         self.assertFalse(self.selector._comparing)
+
+
+class GeneratedImageSelectorInputTest(_RunScreenTestCase):
+    """Tests the keyboard, wheel and mouse handling in `eventFilter`, and the option context menu."""
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        def _action() -> None:
+            for idx in range(self.BATCH):
+                self._deliver(idx)
+        self._run(_action)
+        self.selector.resize(400, 300)
+
+    def _key(self, key: Qt.Key, text: str = '', event_type: QEvent.Type = QEvent.Type.KeyPress) -> bool:
+        event = QKeyEvent(event_type, key, Qt.KeyboardModifier.NoModifier, text)
+        return bool(self.selector.eventFilter(self.selector._view, event))
+
+    def _wheel(self, dx: int, source=None) -> bool:
+        event = QWheelEvent(QPointF(5, 5), QPointF(5, 5), QPoint(0, 0), QPoint(dx, 0), Qt.MouseButton.NoButton,
+                            Qt.KeyboardModifier.NoModifier, Qt.ScrollPhase.NoScrollPhase, False)
+        return bool(self.selector.eventFilter(source or self.selector._view, event))
+
+    def _mouse(self, event_type: QEvent.Type, pos: QPoint, button: Qt.MouseButton = Qt.MouseButton.LeftButton) -> bool:
+        event = QMouseEvent(event_type, QPointF(pos), QPointF(pos), button, button, Qt.KeyboardModifier.NoModifier)
+        return bool(self.selector.eventFilter(self.selector._view, event))
+
+    def _option_center(self, idx: int) -> QPoint:
+        """The view position at the center of an option."""
+        return self.selector._view.scene_point_to_widget(self.selector._option_items[idx].bounds.center())
+
+    def test_number_keys_focus_that_option(self) -> None:
+        """A digit key focuses the matching option and is consumed; out-of-range digits and other keys are not."""
+        self.assertTrue(self._key(Qt.Key.Key_3, '3'))
+        self.assertEqual(self.selector._zoom_index, 3)
+        self.assertFalse(self._key(Qt.Key.Key_9, '9'))
+        self.assertEqual(self.selector._zoom_index, 3)
+        self.assertFalse(self._key(Qt.Key.Key_A, 'a'))
+        self.assertEqual(self.selector._zoom_index, 3)
+
+    def _wheel_at(self, clock: Mock, ms: float, dx: int) -> bool:
+        """Sends a wheel event with the selector's clock reading `ms` milliseconds."""
+        clock.return_value = _CLOCK_BASE + ms / 1000
+        return self._wheel(dx)
+
+    def test_wheel_steps_through_options(self) -> None:
+        """Horizontal wheel motion steps forward or back and is consumed; vertical-only motion is not."""
+        self.selector._zoom_to_option(1, True)
+        with patch('src.ui.generated_image_selector.time.time') as clock:
+            self.assertTrue(self._wheel_at(clock, 1000, 120))
+            self.assertEqual(self.selector._zoom_index, 2)
+            self.assertTrue(self._wheel_at(clock, 2000, -120))
+            self.assertEqual(self.selector._zoom_index, 1)
+            self.assertFalse(self._wheel_at(clock, 3000, 0))
+            self.assertEqual(self.selector._zoom_index, 1)
+
+    def test_wheel_steps_are_debounced(self) -> None:
+        """Wheel events closer together than SCROLL_DEBOUNCE_MS are consumed without stepping again."""
+        self.selector._zoom_to_option(1, True)
+        with patch('src.ui.generated_image_selector.time.time') as clock:
+            self._wheel_at(clock, 1000, 120)
+            self.assertTrue(self._wheel_at(clock, 1000 + SCROLL_DEBOUNCE_MS - 1, 120))
+            self.assertEqual(self.selector._zoom_index, 2)
+            self.assertTrue(self._wheel_at(clock, 1000 + SCROLL_DEBOUNCE_MS + 1, 120))
+            self.assertEqual(self.selector._zoom_index, 3)
+
+    def test_wheel_from_another_source_does_not_step_again(self) -> None:
+        """A wheel event bubbling up from the view is ignored, so it doesn't step twice."""
+        self.selector._zoom_to_option(1, True)
+        with patch('src.ui.generated_image_selector.time.time') as clock:
+            clock.return_value = _CLOCK_BASE + 1.0
+            self.assertFalse(self._wheel(120, source=self.window))
+        self.assertEqual(self.selector._zoom_index, 1)
+
+    def test_escape_leaves_single_view_before_closing(self) -> None:
+        """Escape returns from the single view to the grid first, and closes the screen from the grid."""
+        self.selector.toggle_zoom(2)
+        self.assertTrue(self.selector._zoomed_in)
+        self.assertTrue(self._key(Qt.Key.Key_Escape))
+        self.assertFalse(self.selector._zoomed_in)
+        self.assertTrue(self.window.is_image_selector_visible())
+        self.assertTrue(self._key(Qt.Key.Key_Escape))
+        self.assertFalse(self.window.is_image_selector_visible())
+
+    def test_enter_applies_the_focused_option(self) -> None:
+        """Enter applies the focused option and closes the screen."""
+        self.selector._zoom_to_option(2, True)
+        self.assertTrue(self._key(Qt.Key.Key_Return))
+        self.assertFalse(self.window.is_image_selector_visible())
+        self.image_stack.flush_render()
+        canvas = self.image_stack.qimage_generation_area_content()
+        self.assertEqual(canvas.pixelColor(4, 4), _option_image(1).pixelColor(4, 4))
+
+    def test_enter_ignores_an_unfinished_option(self) -> None:
+        """Enter on a loading placeholder does nothing."""
+        self.session.current.option_images[2] = self.session.current.loading_image
+        self.selector._zoom_index = 2
+        self.assertTrue(self._key(Qt.Key.Key_Return))
+        self.assertTrue(self.window.is_image_selector_visible())
+
+    def test_modifier_release_and_focus_loss_end_comparing(self) -> None:
+        """Releasing the compare modifier, or losing focus, stops comparing."""
+        self.selector.toggle_zoom(2)
+        for end_comparing in (lambda: self._key(Qt.Key.Key_Alt, event_type=QEvent.Type.KeyRelease),
+                              lambda: self.selector.eventFilter(self.selector._view, QEvent(QEvent.Type.FocusOut))):
+            self.selector.eventFilter(self.selector._view, QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Alt,
+                                                                     Qt.KeyboardModifier.AltModifier))
+            self.assertTrue(self.selector._comparing)
+            end_comparing()
+            self.assertFalse(self.selector._comparing)
+
+    def test_left_click_applies_the_option_under_the_cursor(self) -> None:
+        """A left click on a finished option applies it and closes the screen."""
+        self.assertEqual(self.selector._option_at(self._option_center(3)), 3)
+        self._mouse(QEvent.Type.MouseButtonPress, self._option_center(3))
+        self.assertFalse(self.window.is_image_selector_visible())
+        self.image_stack.flush_render()
+        canvas = self.image_stack.qimage_generation_area_content()
+        self.assertEqual(canvas.pixelColor(4, 4), _option_image(2).pixelColor(4, 4))
+
+    def test_click_on_a_placeholder_does_nothing(self) -> None:
+        """Clicking an option that is still loading leaves the screen open."""
+        self.session.current.option_images[3] = self.session.current.loading_image
+        self._mouse(QEvent.Type.MouseButtonPress, self._option_center(3))
+        self.assertTrue(self.window.is_image_selector_visible())
+
+    def test_middle_click_and_empty_space_do_nothing(self) -> None:
+        """Other buttons, and clicks outside every option, don't apply anything."""
+        self._mouse(QEvent.Type.MouseButtonPress, self._option_center(1), Qt.MouseButton.MiddleButton)
+        self.assertTrue(self.window.is_image_selector_visible())
+        self.assertIsNone(self.selector._option_at(QPoint(-500, -500)))
+        self._mouse(QEvent.Type.MouseButtonPress, QPoint(-500, -500))
+        self.assertTrue(self.window.is_image_selector_visible())
+
+    def test_hover_follows_the_cursor(self) -> None:
+        """Moving over an option sets the hover index, and leaving the view clears it."""
+        self._mouse(QEvent.Type.MouseMove, self._option_center(2), Qt.MouseButton.NoButton)
+        self.assertEqual(self.selector._hover_index, 2)
+        self.selector.eventFilter(self.selector._view, QEvent(QEvent.Type.Leave))
+        self.assertIsNone(self.selector._hover_index)
+
+    def test_right_click_opens_the_context_menu(self) -> None:
+        """A right click on a finished option opens its context menu without applying it."""
+        with patch.object(self.selector, '_show_context_menu') as show_menu:
+            self._mouse(QEvent.Type.MouseButtonPress, self._option_center(2), Qt.MouseButton.RightButton)
+        show_menu.assert_called_once()
+        self.assertEqual(show_menu.call_args.args[0], 2)
+        self.assertTrue(self.window.is_image_selector_visible())
+
+    def _open_menu(self, idx: int, trigger: Optional[int] = None) -> int:
+        """Opens an option's context menu with `exec` replaced, optionally triggering one action while it is open.
+
+        Returns the number of actions the menu offered.
+        """
+        captured: dict = {}
+
+        class _RecordingMenu(QMenu):
+            def exec(self, *_args) -> None:  # type: ignore[override]
+                captured['title'] = self.title()
+                actions = self.actions()
+                captured['count'] = len(actions)
+                if trigger is not None:
+                    actions[trigger].trigger()
+        with patch('src.ui.generated_image_selector.QMenu', _RecordingMenu):
+            self.selector._show_context_menu(idx, QPoint(5, 5))
+        self.assertEqual(captured['title'], ORIGINAL_CONTENT_LABEL if idx == 0
+                         else LABEL_TEXT_IMAGE_OPTION.format(index=idx))
+        return captured['count']
+
+    def test_context_menu_lists_three_actions(self) -> None:
+        """The menu offers select, save and send to a new layer."""
+        self.assertEqual(self._open_menu(1), 3)
+        self.assertEqual(self._open_menu(0), 3)
+
+    def test_context_menu_select_applies_the_option(self) -> None:
+        """The menu's select action applies its option and closes the screen."""
+        self._open_menu(4, trigger=0)
+        self.assertFalse(self.window.is_image_selector_visible())
+        self.image_stack.flush_render()
+        canvas = self.image_stack.qimage_generation_area_content()
+        self.assertEqual(canvas.pixelColor(4, 4), _option_image(3).pixelColor(4, 4))
+
+    def test_context_menu_save_asks_for_a_path(self) -> None:
+        """The menu's save action saves its option to the chosen path."""
+        with patch('src.ui.generated_image_selector.open_image_file', return_value='/tmp/out.png'), \
+                patch.object(self.session, 'save_to_file') as save:
+            self._open_menu(2, trigger=1)
+        save.assert_called_once_with(2, '/tmp/out.png')
+
+    def test_context_menu_send_to_new_layer_keeps_the_screen_open(self) -> None:
+        """Sending an option to a new layer adds a layer and keeps the selector open."""
+        layer_count = len(self.image_stack.layers)
+        self._open_menu(2, trigger=2)
+        self.assertEqual(len(self.image_stack.layers), layer_count + 1)
+        self.assertTrue(self.window.is_image_selector_visible())
+        self.assertIsNotNone(self.selector._toast_message)
+
+    def test_save_to_file_saves_the_option(self) -> None:
+        """Saving writes the option to the chosen path, and cancelling the dialog writes nothing."""
+        with patch('src.ui.generated_image_selector.open_image_file', return_value='/tmp/out.png'), \
+                patch.object(self.session, 'save_to_file') as save:
+            self.selector._save_to_file(2)
+        save.assert_called_once_with(2, '/tmp/out.png')
+        with patch('src.ui.generated_image_selector.open_image_file', return_value=None), \
+                patch.object(self.session, 'save_to_file') as save:
+            self.selector._save_to_file(2)
+        save.assert_not_called()
+        self.assertIsNotNone(self.selector._toast_message)
+
+    def test_save_and_send_ignore_a_placeholder(self) -> None:
+        """An option that hasn't arrived can't be saved or sent to a layer."""
+        self.session.current.option_images[2] = self.session.current.loading_image
+        layer_count = len(self.image_stack.layers)
+        with patch('src.ui.generated_image_selector.open_image_file') as open_file:
+            self.selector._save_to_file(2)
+        open_file.assert_not_called()
+        self.selector._send_to_new_layer(2)
+        self.assertEqual(len(self.image_stack.layers), layer_count)
