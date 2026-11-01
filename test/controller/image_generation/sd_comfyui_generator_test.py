@@ -6,11 +6,12 @@ from typing import Any, Optional
 from unittest import mock
 
 from PySide6.QtCore import Qt
-from sd_backend_client import ControlNetPreprocessor, PreprocessorParams, ComfyUiWebservice, GenerationError, GenerationHandle, GenerationProgress, \
+from sd_backend_client import ParameterDef, ControlNetPreprocessor, PreprocessorParams, ComfyUiWebservice, GenerationError, GenerationHandle, GenerationProgress, \
     GenerationResult, GenerationStatus
 from sd_backend_client.api.comfyui_webservice import ComfyEndpoints, ComfyModelType
 
 from src.config.cache import Cache
+from src.controller.image_generation.sd_adapters.soft_inpainting_adapter import save_parameter_defs, save_value
 from src.controller.image_generation.sd_comfyui_generator import SDComfyUIGenerator
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT
@@ -186,6 +187,19 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         """Inpainting uploads the image and a blurred, inverted mask once, then reuses both."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         self._generate_and_check('inpaint')
+
+    def test_inpaint_soft_inpainting(self) -> None:
+        """Soft inpainting samples through the DifferentialDiffusion node, with the saved strength."""
+        cache = Cache()
+        cache.set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
+        cache.set(Cache.SOFT_INPAINTING_AVAILABLE, True)
+        cache.set(Cache.SOFT_INPAINTING, True)
+        save_parameter_defs([ParameterDef(key='strength', display_name='Strength', default_value=1.0, min_val=0.05,
+                                          max_val=1.0, step_val=0.05)])
+        save_value('strength', 0.75)
+        self.backend.route('GET', '/object_info/DifferentialDiffusion', {'DifferentialDiffusion': {
+            'input': {'optional': {'strength': ['FLOAT', {'default': 1.0, 'min': 0.0, 'max': 1.0, 'step': 0.01}]}}}})
+        self._generate_and_check('inpaint_soft_inpainting')
 
     def test_inpaint_full_res(self) -> None:
         """Limited context uploads the selection bounds cropped and scaled to the generation resolution."""

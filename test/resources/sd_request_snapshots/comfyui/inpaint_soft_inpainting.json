@@ -1,0 +1,422 @@
+[
+  {
+    "body": {
+      "subfolder": "sd_backend_client",
+      "type": "input"
+    },
+    "body_format": "multipart/form-data",
+    "endpoint": "/upload/image",
+    "files": {
+      "image": [
+        "67ead36a115777da664d19d3f4791c6a.png",
+        "<image 512x512 Format_ARGB32 72947f38b2e91f8d>",
+        "image/png"
+      ]
+    },
+    "method": "POST",
+    "timeout": 90
+  },
+  {
+    "body": {
+      "original_ref": "{\"filename\":\"67ead36a115777da664d19d3f4791c6a.png\",\"subfolder\":\"sd_backend_client\",\"type\":\"input\"}",
+      "subfolder": "sd_backend_client",
+      "type": "input"
+    },
+    "body_format": "multipart/form-data",
+    "endpoint": "/upload/mask",
+    "files": {
+      "image": [
+        "mask_9c6263e5bc70585c3fa6e234dba3de88_67ead36a115777da664d19d3f4791c6a.png",
+        "<image 512x512 Format_ARGB32 1ac480c24e5e4754>",
+        "image/png"
+      ]
+    },
+    "method": "POST",
+    "timeout": 90
+  },
+  {
+    "body": {
+      "client_id": "<client id>",
+      "prompt": {
+        "10": {
+          "class_type": "LoraLoader",
+          "inputs": {
+            "clip": [
+              "5",
+              1
+            ],
+            "lora_name": "detail_lora.safetensors",
+            "model": [
+              "5",
+              0
+            ],
+            "strength_clip": 0.8,
+            "strength_model": 0.8
+          }
+        },
+        "11": {
+          "class_type": "DifferentialDiffusion",
+          "inputs": {
+            "model": [
+              "10",
+              0
+            ],
+            "strength": 0.75
+          }
+        },
+        "12": {
+          "class_type": "CLIPTextEncode",
+          "inputs": {
+            "clip": [
+              "10",
+              1
+            ],
+            "text": "blurry"
+          }
+        },
+        "13": {
+          "class_type": "CLIPTextEncode",
+          "inputs": {
+            "clip": [
+              "10",
+              1
+            ],
+            "text": "a lighthouse on a cliff "
+          }
+        },
+        "14": {
+          "class_type": "KSampler",
+          "inputs": {
+            "cfg": 6.5,
+            "denoise": 0.6,
+            "latent_image": [
+              "9",
+              0
+            ],
+            "model": [
+              "11",
+              0
+            ],
+            "negative": [
+              "12",
+              0
+            ],
+            "positive": [
+              "13",
+              0
+            ],
+            "sampler_name": "euler_ancestral",
+            "scheduler": "karras",
+            "seed": 1234,
+            "steps": 20
+          }
+        },
+        "15": {
+          "class_type": "VAEDecode",
+          "inputs": {
+            "samples": [
+              "14",
+              0
+            ],
+            "vae": [
+              "5",
+              2
+            ]
+          }
+        },
+        "16": {
+          "class_type": "SaveImage",
+          "inputs": {
+            "filename_prefix": "sd_backend_client",
+            "images": [
+              "15",
+              0
+            ]
+          }
+        },
+        "3": {
+          "class_type": "LoadImage",
+          "inputs": {
+            "image": "sd_backend_client/67ead36a115777da664d19d3f4791c6a.png",
+            "upload": "image"
+          }
+        },
+        "4": {
+          "class_type": "ImageScale",
+          "inputs": {
+            "crop": "disabled",
+            "height": 512,
+            "image": [
+              "3",
+              0
+            ],
+            "upscale_method": "lanczos",
+            "width": 512
+          }
+        },
+        "5": {
+          "class_type": "CheckpointLoaderSimple",
+          "inputs": {
+            "ckpt_name": "dreamshaper_8.safetensors"
+          }
+        },
+        "6": {
+          "class_type": "VAEEncode",
+          "inputs": {
+            "pixels": [
+              "4",
+              0
+            ],
+            "vae": [
+              "5",
+              2
+            ]
+          }
+        },
+        "7": {
+          "class_type": "LoadImageMask",
+          "inputs": {
+            "channel": "alpha",
+            "image": "sd_backend_client/mask_9c6263e5bc70585c3fa6e234dba3de88_67ead36a115777da664d19d3f4791c6a.png",
+            "upload": "image"
+          }
+        },
+        "8": {
+          "class_type": "SetLatentNoiseMask",
+          "inputs": {
+            "mask": [
+              "7",
+              0
+            ],
+            "samples": [
+              "6",
+              0
+            ]
+          }
+        },
+        "9": {
+          "class_type": "RepeatLatentBatch",
+          "inputs": {
+            "amount": 2,
+            "samples": [
+              "8",
+              0
+            ]
+          }
+        }
+      }
+    },
+    "endpoint": "/prompt",
+    "method": "POST"
+  },
+  {
+    "body": {
+      "subfolder": "sd_backend_client",
+      "type": "input"
+    },
+    "body_format": "multipart/form-data",
+    "endpoint": "/upload/image",
+    "files": {
+      "image": [
+        "67ead36a115777da664d19d3f4791c6a.png",
+        "<image 512x512 Format_ARGB32 72947f38b2e91f8d>",
+        "image/png"
+      ]
+    },
+    "method": "POST",
+    "timeout": 90
+  },
+  {
+    "body": {
+      "original_ref": "{\"filename\":\"67ead36a115777da664d19d3f4791c6a.png\",\"subfolder\":\"sd_backend_client\",\"type\":\"input\"}",
+      "subfolder": "sd_backend_client",
+      "type": "input"
+    },
+    "body_format": "multipart/form-data",
+    "endpoint": "/upload/mask",
+    "files": {
+      "image": [
+        "mask_9c6263e5bc70585c3fa6e234dba3de88_67ead36a115777da664d19d3f4791c6a.png",
+        "<image 512x512 Format_ARGB32 1ac480c24e5e4754>",
+        "image/png"
+      ]
+    },
+    "method": "POST",
+    "timeout": 90
+  },
+  {
+    "body": {
+      "client_id": "<client id>",
+      "prompt": {
+        "10": {
+          "class_type": "LoraLoader",
+          "inputs": {
+            "clip": [
+              "5",
+              1
+            ],
+            "lora_name": "detail_lora.safetensors",
+            "model": [
+              "5",
+              0
+            ],
+            "strength_clip": 0.8,
+            "strength_model": 0.8
+          }
+        },
+        "11": {
+          "class_type": "DifferentialDiffusion",
+          "inputs": {
+            "model": [
+              "10",
+              0
+            ],
+            "strength": 0.75
+          }
+        },
+        "12": {
+          "class_type": "CLIPTextEncode",
+          "inputs": {
+            "clip": [
+              "10",
+              1
+            ],
+            "text": "blurry"
+          }
+        },
+        "13": {
+          "class_type": "CLIPTextEncode",
+          "inputs": {
+            "clip": [
+              "10",
+              1
+            ],
+            "text": "a lighthouse on a cliff "
+          }
+        },
+        "14": {
+          "class_type": "KSampler",
+          "inputs": {
+            "cfg": 6.5,
+            "denoise": 0.6,
+            "latent_image": [
+              "9",
+              0
+            ],
+            "model": [
+              "11",
+              0
+            ],
+            "negative": [
+              "12",
+              0
+            ],
+            "positive": [
+              "13",
+              0
+            ],
+            "sampler_name": "euler_ancestral",
+            "scheduler": "karras",
+            "seed": 1235,
+            "steps": 20
+          }
+        },
+        "15": {
+          "class_type": "VAEDecode",
+          "inputs": {
+            "samples": [
+              "14",
+              0
+            ],
+            "vae": [
+              "5",
+              2
+            ]
+          }
+        },
+        "16": {
+          "class_type": "SaveImage",
+          "inputs": {
+            "filename_prefix": "sd_backend_client",
+            "images": [
+              "15",
+              0
+            ]
+          }
+        },
+        "3": {
+          "class_type": "LoadImage",
+          "inputs": {
+            "image": "sd_backend_client/67ead36a115777da664d19d3f4791c6a.png",
+            "upload": "image"
+          }
+        },
+        "4": {
+          "class_type": "ImageScale",
+          "inputs": {
+            "crop": "disabled",
+            "height": 512,
+            "image": [
+              "3",
+              0
+            ],
+            "upscale_method": "lanczos",
+            "width": 512
+          }
+        },
+        "5": {
+          "class_type": "CheckpointLoaderSimple",
+          "inputs": {
+            "ckpt_name": "dreamshaper_8.safetensors"
+          }
+        },
+        "6": {
+          "class_type": "VAEEncode",
+          "inputs": {
+            "pixels": [
+              "4",
+              0
+            ],
+            "vae": [
+              "5",
+              2
+            ]
+          }
+        },
+        "7": {
+          "class_type": "LoadImageMask",
+          "inputs": {
+            "channel": "alpha",
+            "image": "sd_backend_client/mask_9c6263e5bc70585c3fa6e234dba3de88_67ead36a115777da664d19d3f4791c6a.png",
+            "upload": "image"
+          }
+        },
+        "8": {
+          "class_type": "SetLatentNoiseMask",
+          "inputs": {
+            "mask": [
+              "7",
+              0
+            ],
+            "samples": [
+              "6",
+              0
+            ]
+          }
+        },
+        "9": {
+          "class_type": "RepeatLatentBatch",
+          "inputs": {
+            "amount": 2,
+            "samples": [
+              "8",
+              0
+            ]
+          }
+        }
+      }
+    },
+    "endpoint": "/prompt",
+    "method": "POST"
+  }
+]
