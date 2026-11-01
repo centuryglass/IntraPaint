@@ -84,7 +84,8 @@ jobs:
           path: out/${{ matrix.tag }}
           if-no-files-found: error
 
-  # Windows takes MSYS2's MINGW64 libmypaint package and the DLLs it loads from the MSYS2 tree, as listed by ldd.
+  # Windows takes MSYS2's UCRT64 libmypaint package and the DLLs it loads from the MSYS2 tree, as listed by ldd. MSYS2
+  # builds libmypaint for ucrt64, clang64 and clangarm64 only, not MINGW64.
   windows:
     name: build (win-x86_64)
     runs-on: windows-2022
@@ -99,29 +100,29 @@ jobs:
 
       - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
         with:
-          msystem: MINGW64
+          msystem: UCRT64
           update: true
-          install: mingw-w64-x86_64-libmypaint
+          install: mingw-w64-ucrt-x86_64-libmypaint
 
       - name: Collect libmypaint and its dependencies
         run: |
           set -euo pipefail
-          package_version="$(pacman -Q mingw-w64-x86_64-libmypaint | cut -d' ' -f2)"
+          package_version="$(pacman -Q "${MINGW_PACKAGE_PREFIX}-libmypaint" | cut -d' ' -f2)"
           case "$package_version" in
             "$LIBMYPAINT_VERSION"-*) ;;
             *) echo "MSYS2 has libmypaint $package_version, expected $LIBMYPAINT_VERSION" >&2; exit 1 ;;
           esac
           out=out/win-x86_64
           mkdir -p "$out"
-          library="$(ls /mingw64/bin/libmypaint-*.dll | head -n 1)"
+          library="$(ls "$MINGW_PREFIX"/bin/libmypaint*.dll | head -n 1)"
           cp "$library" "$out/"
-          dependencies="$(ldd "$library" | awk '$3 ~ "^/mingw64/" { print $3 }' | sort -u)"
+          dependencies="$(ldd "$library" | awk -v prefix="$MINGW_PREFIX/" 'index($3, prefix) == 1 { print $3 }' | sort -u)"
           for dependency in $dependencies; do
             cp "$dependency" "$out/"
           done
           {
             echo "platform: win-x86_64"
-            echo "package: mingw-w64-x86_64-libmypaint $package_version (MSYS2 MINGW64)"
+            echo "package: ${MINGW_PACKAGE_PREFIX}-libmypaint $package_version (MSYS2 $MSYSTEM)"
             echo "packages providing the dependencies:"
             for dependency in $dependencies; do
               pacman -Qo "$dependency" | sed 's/^/  /'
