@@ -5437,7 +5437,7 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/tools/layer_transform_tool.py"/>
-        <source>{left_mouse_icon}: select layer&lt;br/&gt;{left_mouse_icon}, drag: move layer</source>
+        <source>{left_mouse_icon}: select layer&lt;br/&gt;{left_mouse_icon}, drag: move layer&lt;br/&gt;{right_mouse_icon}: choose from layers under cursor</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
