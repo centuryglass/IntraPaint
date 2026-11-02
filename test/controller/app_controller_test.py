@@ -135,7 +135,7 @@ class TestAppController(IntraPaintTestCase):
         self.assertIsInstance(self.controller._settings_modal, SettingsModal)
         self.assertIsInstance(self.controller._generator, TestGenerator)
         self.assertIsNone(self.controller._layer_panel)
-        self.assertIsNone(self.controller._metadata)
+        self.assertIsNone(self.controller._image_io.metadata)
 
     @patch('src.controller.app_controller.SettingsModal')
     def test_init_settings(self, MockSettingsModal):
@@ -401,8 +401,8 @@ class TestOpenAnimation(AnimationControllerTestCase):
         self.controller.load_image(self.gif_path)
         self.assertEqual(self._layer_names_bottom_up(), ['Frame 1 (100ms)', 'Frame 2 (200ms)', 'Frame 3 (50ms)'])
         self.assertEqual(self.image_stack.size, QSize(16, 16))
-        assert self.controller._metadata is not None
-        self.assertEqual(self.controller._metadata.get('loop'), 0)
+        assert self.controller._image_io.metadata is not None
+        self.assertEqual(self.controller._image_io.metadata.get('loop'), 0)
 
     @patch('src.controller.app_controller.request_confirmation', return_value=False)
     @patch('src.controller.app_controller.LARGE_ANIMATION_BYTES', 16)
