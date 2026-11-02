@@ -141,6 +141,7 @@ class OpenRasterGroupTest(GroupRenderTestCase):
             ora_path = os.path.join(temp_dir, ORA_FILE_NAME)
             save_ora_image(self.image_stack, ora_path, '')
             with zipfile.ZipFile(ora_path) as zip_file:
+                self.assertEqual('mergedimage.png', MERGED_IMAGE_FILE_NAME, 'the ORA spec names this file')
                 merged = QImage.fromData(zip_file.read(MERGED_IMAGE_FILE_NAME))
         self.assertFalse(merged.isNull())
         self.assert_images_equal(merged, full_render(self.image_stack))

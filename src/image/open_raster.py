@@ -44,7 +44,7 @@ EXTENDED_DATA_XML_FILE_NAME = 'extended_data.xml'
 DATA_DIRECTORY_NAME = 'data'
 THUMBNAIL_DIRECTORY_NAME = 'Thumbnails'
 THUMBNAIL_FILE_NAME = 'thumbnail.png'
-MERGED_IMAGE_FILE_NAME = 'mergedimage'
+MERGED_IMAGE_FILE_NAME = 'mergedimage.png'  # Required by the ORA spec; other programs read it as a preview
 
 BOOLEAN_TRUE_STR = 'true'
 # BOOLEAN_FALSE_STR = 'false'
