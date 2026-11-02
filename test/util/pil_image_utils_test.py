@@ -9,7 +9,7 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage, QColor
 
 from src.config.application_config import AppConfig
-from src.util.shared_constants import PIL_SCALING_MODES
+from src.util.shared_text import PIL_SCALING_MODES
 from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_qsize, pil_image_scaling
 from test.base_test_case import IntraPaintTestCase
 

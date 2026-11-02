@@ -12,7 +12,8 @@ from src.tools.brush_tool import BrushTool
 from src.tools.qt_paint_brush_tool import QtPaintBrushTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.draw_tool_panel import DrawToolPanel
-from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
+from src.util.shared_constants import PROJECT_DIR
+from src.util.shared_text import COLOR_PICK_HINT
 from src.util.visual.text_drawing_utils import left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file

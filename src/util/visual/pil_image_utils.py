@@ -8,7 +8,7 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage
 
 from src.config.application_config import AppConfig
-from src.util.shared_constants import PIL_SCALING_MODES
+from src.util.shared_text import PIL_SCALING_MODES
 from src.util.visual.geometry_utils import is_smaller_size
 from src.util.visual.image_utils import BASE_64_PREFIX
 

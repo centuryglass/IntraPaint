@@ -27,8 +27,9 @@ from src.ui.window.main_window import MainWindow
 from src.util.application_state import APP_STATE_EDITING
 from src.util.menu_builder import menu_action
 from src.util.parameter import TYPE_LIST, TYPE_STR
-from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, AUTH_ERROR, \
-    GENERATE_ERROR_MESSAGE_EMPTY_MASK, GENERATE_ERROR_TITLE, ERROR_MESSAGE_TIMEOUT, MISC_CONNECTION_ERROR
+from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG
+from src.util.shared_text import (AUTH_ERROR, GENERATE_ERROR_MESSAGE_EMPTY_MASK, GENERATE_ERROR_TITLE,
+                                  ERROR_MESSAGE_TIMEOUT, MISC_CONNECTION_ERROR)
 from src.util.visual.pil_image_utils import pil_image_scaling
 
 logger = logging.getLogger(__name__)
