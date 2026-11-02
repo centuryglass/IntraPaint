@@ -116,8 +116,8 @@ For each string:
 
 The first batch of a language adds its `languages.json` entry, with `"machine_translated": true`. Edit the `.ts` file
 directly, then run `python scripts/build_translations.py` to normalize it and build its `.qm`
-file. An entry is either translated and marked finished, or left empty. `lrelease` compiles unfinished translations
-too, so a draft left in an unfinished entry ships.
+file. An entry is either translated and marked finished, or left empty. The build compiles with `-nounfinished`, so
+an unfinished entry shows English instead of its draft.
 
 The batch PR names the translating model and the reviewing model, lists the flagged strings, summarizes the review's
 findings and how each was resolved, and names the UI sheets checked (step 6).
@@ -170,10 +170,12 @@ low-confidence finding says what would settle it.
 
 Automated checks run on every translation file after every batch:
 
-- placeholders, markup and keyboard accelerators match the source;
-- glossary terms are used wherever the English term appears;
-- no accelerator collisions within a menu;
-- punctuation and spacing follow the language's style section, where a rule can be checked mechanically.
+- placeholders, HTML markup and keyboard accelerators match the source, with the accelerator in the form the
+  language's style section gives (`python scripts/build_translations.py --check` fails on a mismatch);
+- no two translations in one context share an accelerator (the same script; a context stands in for a menu);
+- glossary terms are used wherever the English term appears (not yet automated);
+- punctuation and spacing follow the language's style section, where a rule can be checked mechanically (not yet
+  automated).
 
 Then run `python scripts/capture_ui.py --sheet` in the language for the batch's panels and windows, and look for
 clipped or overflowing text, which needs no knowledge of the language to spot. The batch PR names the sheets checked.

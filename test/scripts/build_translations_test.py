@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+from xml.sax.saxutils import escape
 
 from PySide6.QtCore import QTranslator
 
@@ -219,3 +220,80 @@ class BuildTranslationsTest(IntraPaintTestCase):
         self._write('resources/translations/languages.json', '{"fr_FR": {"machine_translated": true}}')
         problems, _ = build_translations.build(self.project)
         self.assertEqual([], problems)
+
+    def _write_translation(self, language: str, messages: list[tuple[str, str, str]], translation_type: str = '') -> None:
+        """Writes a translation file with (context, source, translation) messages."""
+        self._write('resources/translations/languages.json', f'{{"{language}": {{"machine_translated": true}}}}')
+        entries = ''.join(
+            f'<context><name>{context}</name><message><source>{escape(source)}</source>'
+            f'<translation{translation_type}>{escape(translation)}</translation></message></context>'
+            for context, source, translation in messages)
+        self._write(f'resources/translations/{language}.ts',
+                    f'<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE TS>\n'
+                    f'<TS version="2.1" language="{language}">{entries}</TS>\n')
+
+    def _check_problems(self, language: str, messages: list[tuple[str, str, str]]) -> list[str]:
+        directory = self._path('resources/translations')
+        for name in os.listdir(directory):
+            if name.endswith(('.ts', '.qm')) and name != build_translations.CATALOG_NAME:
+                os.remove(os.path.join(directory, name))
+        self._write_translation(language, messages)
+        build_translations.build(self.project)
+        problems, _ = build_translations.build(self.project, check=True)
+        return problems
+
+    def test_reports_changed_markup(self) -> None:
+        """Tags, entities and line breaks must match the source, in any order."""
+        source = 'a<br>b<b>c</b>&nbsp;'
+        self._write('src/ui/markup.py', f"""
+            from PySide6.QtWidgets import QApplication
+            TR_ID = 'ui.markup'
+            def _tr(key):
+                return QApplication.translate(TR_ID, key)
+            TEXT = _tr('{source}')
+            LINES = _tr('one\\ntwo')
+        """)
+        self.assertEqual([], self._check_problems('de_DE', [
+            ('ui.markup', source, 'x<b>y</b>z<br>&nbsp;'), ('ui.markup', 'one\ntwo', 'eins\nzwei')]))
+        problems = self._check_problems('de_DE', [
+            ('ui.markup', source, 'a b<b>c'), ('ui.markup', 'one\ntwo', 'eins zwei')])
+        self.assertEqual(2, len(problems), problems)
+        self.assertIn('markup', problems[0])
+        self.assertIn("'one\\ntwo'", problems[1])
+
+    def test_reports_accelerator_problems(self) -> None:
+        """A translation keeps its accelerator, in its language's form, and no two share one in a context."""
+        self._write('src/ui/menu.py', """
+            from PySide6.QtWidgets import QApplication
+            TR_ID = 'ui.menu'
+            def _tr(key):
+                return QApplication.translate(TR_ID, key)
+            SAVE = _tr('&Save')
+            SLIDERS = _tr('Sl&iders')
+            PLAIN = _tr('Plain')
+            AMP = _tr('A && B')
+        """)
+        german = [('ui.menu', '&Save', '&Speichern'), ('ui.menu', 'Sl&iders', 'Schieberegler'),
+                  ('ui.menu', 'Plain', 'Einfach'), ('ui.menu', 'A && B', 'A && B')]
+        problems = self._check_problems('de_DE', german)
+        self.assertEqual(1, len(problems), problems)
+        self.assertIn("'Sl&iders': the translation has 0 accelerator(s), expected 1", problems[0])
+
+        problems = self._check_problems('de_DE', [('ui.menu', '&Save', '&Speichern'),
+                                                  ('ui.menu', 'Sl&iders', '&Schieber')])
+        self.assertEqual(1, len(problems), problems)
+        self.assertIn('also used by', problems[0])
+
+        problems = self._check_problems('zh_CN', [('ui.menu', '&Save', '保存(&S)'),
+                                                 ('ui.menu', 'Sl&iders', '&滑块')])
+        self.assertEqual(1, len(problems), problems)
+        self.assertIn('not in the form', problems[0])
+
+    def test_unfinished_drafts_are_not_compiled(self) -> None:
+        """An unfinished entry that holds draft text falls back to English in the .qm file."""
+        self._write_translation('de_DE', [('ui.example', 'Open', 'Entwurf')], ' type="unfinished"')
+        problems, _ = build_translations.build(self.project)
+        self.assertEqual([], problems)
+        translator = QTranslator()
+        self.assertTrue(translator.load(self._path('resources/translations/de_DE.qm')))
+        self.assertEqual('', translator.translate('ui.example', 'Open'))
