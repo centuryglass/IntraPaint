@@ -219,7 +219,7 @@ class ImageViewer(ImageGraphicsView):
         self._pixel_outline.setVisible(scale >= MIN_OUTLINE_PIXEL_SIZE)
 
     def set_cursor_pos(self, widget_cursor_pos: Optional[QPoint | QPointF]) -> None:
-        """Updates the last cursor position within the widget so that pixmap cursor rendering stays active."""
+        """Moves the pixel outline under the cursor, then records the cursor position."""
         if widget_cursor_pos is None:
             self._pixel_outline.setVisible(False)
         else:

@@ -27,7 +27,6 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 ICON_PATH_CLONE_STAMP_TOOL = f'{PROJECT_DIR}/resources/icons/tools/stamp_icon.svg'
-CURSOR_PATH_CLONE_STAMP_TOOL = f'{PROJECT_DIR}/resources/cursors/stamp_cursor.svg'
 IMAGE_PATH_CLONE_SAMPLE_POINT = f'{PROJECT_DIR}/resources/cursors/stamp_cursor_source.svg'
 
 CLONE_STAMP_LABEL = _tr('Clone stamp')
@@ -75,7 +74,6 @@ class CloneStampTool(QtPaintBrushTool):
                          pressure_hardness_key=Cache.CLONE_STAMP_TOOL_PRESSURE_HARDNESS,
                          antialias_key=Cache.CLONE_STAMP_TOOL_ANTIALIAS, brush=CloneStampBrush())
         self._source_marker.setVisible(False)
-        self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_CLONE_STAMP_TOOL))
         cache.connect(self, Cache.CLONE_STAMP_TOOL_SOURCE_MODE, self._update_source_mode)
 
     def get_input_hint(self) -> str:

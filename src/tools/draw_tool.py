@@ -25,7 +25,6 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 ICON_PATH_DRAW_TOOL = f'{PROJECT_DIR}/resources/icons/tools/pen_icon.svg'
-CURSOR_PATH_DRAW_TOOL = f'{PROJECT_DIR}/resources/cursors/draw_cursor.svg'
 LABEL_TEXT_DRAW_TOOL = _tr('Draw')
 TOOLTIP_DRAW_TOOL = _tr('Draw into the image')
 CONTROL_HINT_DRAW_TOOL = _tr('{left_mouse_icon}: draw')
@@ -43,7 +42,6 @@ class DrawTool(QtPaintBrushTool):
                          hardness_key=Cache.DRAW_TOOL_HARDNESS, pressure_hardness_key=Cache.DRAW_TOOL_PRESSURE_HARDNESS,
                          color_key=Cache.LAST_BRUSH_COLOR, pattern_key=Cache.DRAW_TOOL_BRUSH_PATTERN,
                          antialias_key=Cache.DRAW_TOOL_ANTIALIAS)
-        self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_DRAW_TOOL))
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

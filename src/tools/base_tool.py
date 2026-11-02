@@ -11,7 +11,7 @@ from enum import IntEnum
 from typing import Optional
 
 from PySide6.QtCore import QObject, Signal, QPoint, QEvent, Qt
-from PySide6.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QWheelEvent, QIcon
+from PySide6.QtGui import QCursor, QMouseEvent, QTabletEvent, QWheelEvent, QIcon
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
@@ -71,8 +71,7 @@ class BaseTool(QObject):
 
     5.  If the tool should change the cursor, use `tool.cursor = cursor` to change the cursor when the tool is active
        and the pointer is over the image.  Use `tool.cursor = None` to go back to using the default cursor with the
-       tool.  Tool cursors can be either a QCursor or a QPixmap, but QPixmap should only be used for extra large
-       cursors that might not work well with the windowing system.
+       tool.
 
     To integrate:
     -------------
@@ -87,8 +86,7 @@ class BaseTool(QObject):
        - Set the image widget cursor to tool cursor, if not None.
        - Connect to the cursor_change signal to handle cursor updates.
 
-    4. When applying cursors, if the cursor is a Pixmap instead of a  QCursor, instead use a minimal cursor and
-       manually draw the pixmap over the mouse cursor. If the cursor is None, use the default cursor.
+    4. When applying cursors, use the default cursor if the cursor is None.
 
     5. When the image display component receives QEvents, calculate the associated image coordinates if relevant and
        call the associated BaseTool event function. To support, MouseEnter and MouseExit, use the mouse events to flag
@@ -107,8 +105,8 @@ class BaseTool(QObject):
                  enable_selection_restrictions: bool = True) -> None:
         super().__init__()
         self._activation_config_key = activation_config_key
-        self._cursor: Optional[QCursor | QPixmap] = None
-        self._saved_cursor: Optional[QCursor | QPixmap] = None
+        self._cursor: Optional[QCursor] = None
+        self._saved_cursor: Optional[QCursor] = None
         self._disabled_cursor = QCursor(Qt.CursorShape.ForbiddenCursor)
         self._active = False
         self._label_text = label_text
@@ -134,7 +132,7 @@ class BaseTool(QObject):
 
     @staticmethod
     def load_cursor_icon(cursor_path: str) -> QIcon:
-        """Loads a cursor file as a QCursor or QPixmap, using the debug path if the appropriate env var is set."""
+        """Loads a cursor image file as a QIcon, using the debug path if the appropriate env var is set."""
         if DEBUG_CURSOR_ENV_VAR in os.environ and os.environ[DEBUG_CURSOR_ENV_VAR]:
             cursor_dir = os.path.dirname(cursor_path)
             cursor_file = os.path.basename(cursor_path)
@@ -142,19 +140,24 @@ class BaseTool(QObject):
         return QIcon(cursor_path)
 
     @property
-    def cursor(self) -> Optional[QCursor | QPixmap]:
-        """Returns the active tool cursor or tool pixmap."""
+    def cursor(self) -> Optional[QCursor]:
+        """Returns the active tool cursor."""
         return self._cursor
 
     @cursor.setter
-    def cursor(self, new_cursor: Optional[QCursor | QPixmap]) -> None:
-        """Sets the active tool cursor or tool pixmap."""
+    def cursor(self, new_cursor: Optional[QCursor]) -> None:
+        """Sets the active tool cursor."""
         if self._cursor != self._disabled_cursor:
             self._cursor = new_cursor
             if self.is_active:
                 self.cursor_change.emit()
         else:
             self._saved_cursor = new_cursor
+
+    @property
+    def cursor_disabled(self) -> bool:
+        """Returns whether the tool is showing the cursor that indicates input is disabled."""
+        return self._cursor == self._disabled_cursor
 
     def set_disabled_cursor(self, use_disabled_cursor: bool) -> None:
         """Sets or removes a cursor indicating that input is disabled."""

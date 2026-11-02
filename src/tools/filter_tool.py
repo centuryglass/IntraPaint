@@ -34,7 +34,6 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 ICON_PATH_FILTER_TOOL = f'{PROJECT_DIR}/resources/icons/tools/filter_icon.svg'
-CURSOR_PATH_FILTER_TOOL = f'{PROJECT_DIR}/resources/cursors/filter_cursor.svg'
 FILTER_LABEL = _tr('Filter brush')
 FILTER_TOOLTIP = _tr('Draw to apply an image filter')
 FILTER_CONTROL_HINT = _tr('{left_mouse_icon}: filter')
@@ -85,7 +84,6 @@ class FilterTool(QtPaintBrushTool):
                          antialias_key=Cache.FILTER_TOOL_ANTIALIAS, brush=brush)
         cache.connect(self, Cache.FILTER_TOOL_SELECTED_FILTER, self._filter_update_slot)
         cache.connect(self, Cache.FILTER_TOOL_CACHED_PARAMETERS, self._filter_param_update_slot)
-        self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_FILTER_TOOL))
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
