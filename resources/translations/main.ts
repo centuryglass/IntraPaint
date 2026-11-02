@@ -7767,7 +7767,7 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_row.py"/>
-        <source>{width} x {height} px, transformed to cover {shown_width} x {shown_height} at ({x}, {y})</source>
+        <source>{width} x {height} px, transformed to cover {cover_w} x {cover_h} at ({x}, {y})</source>
         <comment>layer thumbnail tooltip</comment>
         <translation type="unfinished"></translation>
     </message>

@@ -15,8 +15,8 @@ never changes size when it becomes active, so the list doesn't shift.
 from typing import Optional
 
 from PySide6.QtCore import QEvent, QMimeData, QPoint, QRect, QSize, Qt, QTimer, Signal, QObject
-from PySide6.QtGui import (QColor, QDrag, QEnterEvent, QFont, QHelpEvent, QImage, QKeyEvent, QMouseEvent, QPainter, QPaintEvent,
-                           QPalette, QPen, QPixmap, QTransform)
+from PySide6.QtGui import (QColor, QDrag, QEnterEvent, QFont, QHelpEvent, QImage, QKeyEvent, QMouseEvent, QPainter,
+                           QPaintEvent, QPalette, QPen, QPixmap, QTransform)
 from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLineEdit, QMenu, QSizePolicy, QToolButton, QToolTip,
                                QVBoxLayout, QWidget)
 
@@ -50,7 +50,7 @@ META_LAYER_COUNT = _tr('{count} layers')
 TEXT_LAYER_MARK = _tr('Aa', 'marks text layer thumbnails')
 EXPAND_TOOLTIP = _tr('Show or hide the layers in this group')
 SIZE_TOOLTIP = _tr('{width} x {height} px at ({x}, {y})', 'layer thumbnail tooltip')
-TRANSFORMED_SIZE_TOOLTIP = _tr('{width} x {height} px, transformed to cover {shown_width} x {shown_height} at ({x}, {y})',
+TRANSFORMED_SIZE_TOOLTIP = _tr('{width} x {height} px, transformed to cover {cover_w} x {cover_h} at ({x}, {y})',
                                'layer thumbnail tooltip')
 EMPTY_GROUP_TOOLTIP = _tr('Empty group', 'layer thumbnail tooltip')
 
@@ -86,8 +86,8 @@ def layer_size_text(layer: Layer) -> str:
         size = layer.size
         shown = layer.transformed_bounds
         if layer.transform.type().value > QTransform.TransformationType.TxTranslate.value:
-            return TRANSFORMED_SIZE_TOOLTIP.format(width=size.width(), height=size.height(), shown_width=shown.width(),
-                                                   shown_height=shown.height(), x=shown.x(), y=shown.y())
+            return TRANSFORMED_SIZE_TOOLTIP.format(width=size.width(), height=size.height(), cover_w=shown.width(),
+                                                   cover_h=shown.height(), x=shown.x(), y=shown.y())
         return SIZE_TOOLTIP.format(width=size.width(), height=size.height(), x=shown.x(), y=shown.y())
     bounds = layer.bounds
     if isinstance(layer, LayerGroup) and bounds.isEmpty():
