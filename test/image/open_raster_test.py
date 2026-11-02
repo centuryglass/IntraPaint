@@ -18,7 +18,7 @@ from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
-from src.image.open_raster import (save_ora_image, read_ora_image, DATA_DIRECTORY_NAME, THUMBNAIL_DIRECTORY_NAME,
+from src.image.open_raster import (save_ora_image, capture_ora_image, write_ora_snapshot, read_ora_image, DATA_DIRECTORY_NAME, THUMBNAIL_DIRECTORY_NAME,
                                    XML_FILE_NAME, EXTENDED_DATA_XML_FILE_NAME, LAYER_TAG_SRC, TRANSFORM_SRC_TAG,
                                    TEXT_DATA_TAG)
 from src.image.text_rect import TextRect
@@ -400,3 +400,46 @@ class OpenRasterTest(IntraPaintTestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             with self.assertRaises(TypeError):
                 save_ora_image(self.image_stack, os.path.join(temp_dir, 'unsupported.ora'), METADATA)
+
+    def test_two_phase_save_matches_single_call_save(self) -> None:
+        """Capturing, then writing separately, produces the file `save_ora_image` produces."""
+        self._add_image_layer('first')
+        self._add_image_layer('second').set_transform(QTransform.fromTranslate(3, 2).rotate(30))
+        with tempfile.TemporaryDirectory() as temp_dir:
+            single_path = os.path.join(temp_dir, 'single.ora')
+            two_phase_path = os.path.join(temp_dir, 'two_phase.ora')
+            save_ora_image(self.image_stack, single_path, METADATA)
+            write_ora_snapshot(capture_ora_image(self.image_stack, two_phase_path, METADATA))
+            with zipfile.ZipFile(single_path) as single, zipfile.ZipFile(two_phase_path) as two_phase:
+                self.assertEqual(single.namelist(), two_phase.namelist())
+                for name in single.namelist():
+                    if name.endswith('.xml'):
+                        # The image name element differs, since the file names do:
+                        self.assertEqual(single.read(name).replace(b'single', b'x'),
+                                         two_phase.read(name).replace(b'two_phase', b'x'), name)
+                    else:
+                        self.assertEqual(single.read(name), two_phase.read(name), name)
+            self.assertEqual(METADATA, read_ora_image(self.loaded_stack, two_phase_path))
+
+    def test_editing_after_capture_does_not_change_saved_file(self) -> None:
+        """The written file reflects the document when it was captured."""
+        layer = self._add_image_layer('edited')
+        original = layer.image
+        snapshot = capture_ora_image(self.image_stack, 'unused.ora', METADATA)
+        layer.set_qimage(_solid_image(QColor(Qt.GlobalColor.black)))
+        self.image_stack.flush_render()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            snapshot.file_path = os.path.join(temp_dir, 'captured.ora')
+            write_ora_snapshot(snapshot)
+            read_ora_image(self.loaded_stack, snapshot.file_path)
+        loaded = next(iter(self.loaded_stack.image_layers))
+        self.assert_images_equal(loaded.image, original, 'layer content after editing post-capture')
+
+    def test_write_error_is_raised_and_leaves_no_files(self) -> None:
+        """A failed write raises to its caller, and leaves neither the target nor a temporary file."""
+        self._add_image_layer('layer')
+        with tempfile.TemporaryDirectory() as temp_dir:
+            snapshot = capture_ora_image(self.image_stack, os.path.join(temp_dir, 'missing', 'bad.ora'), METADATA)
+            with self.assertRaises(OSError):
+                write_ora_snapshot(snapshot)
+            self.assertEqual([], os.listdir(temp_dir))

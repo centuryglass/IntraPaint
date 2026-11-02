@@ -35,7 +35,6 @@ TOOLTIP_SELECTION_TOOL = _tr('Draw to select areas for editing or inpainting.')
 CONTROL_HINT_SELECTION_TOOL = _tr('{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin')
 
 ICON_PATH_SELECTION_TOOL = f'{PROJECT_DIR}/resources/icons/tools/selection_icon.svg'
-CURSOR_PATH_SELECTION_TOOL = f'{PROJECT_DIR}/resources/cursors/selection_cursor.svg'
 
 # Undo gesture that holds a REPLACE or INTERSECT stroke together with the clearing that precedes it:
 UNDO_GESTURE = 'SelectionBrushTool.stroke'
@@ -56,7 +55,6 @@ class SelectionBrushTool(BrushTool):
         self._pin_dragger = ContextPinDragger(image_stack, image_viewer)
         self._stroke_mode = SelectionMode.ADD
         self._selection_before_stroke: Optional[QImage] = None  # Set only while an INTERSECT stroke is in progress.
-        self.set_scaling_icon_cursor(self.load_cursor_icon(CURSOR_PATH_SELECTION_TOOL))
 
         # Setup brush, load size from config
         self.brush_color = QColor()

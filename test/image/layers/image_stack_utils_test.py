@@ -8,7 +8,7 @@ from PySide6.QtGui import QColor, QImage, QTransform
 from PySide6.QtWidgets import QApplication
 
 from src.image.layers.image_stack import ImageStack
-from src.image.layers.image_stack_utils import image_stack_color_at_point, scale_all_layers
+from src.image.layers.image_stack_utils import image_stack_color_at_point, layers_at_point, scale_all_layers
 from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
 
@@ -60,3 +60,45 @@ class ImageStackUtilsTest(IntraPaintTestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class LayersAtPointTest(IntraPaintTestCase):
+    """Tests layers_at_point."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        UndoStack().clear()
+        self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
+
+    def _layer(self, name: str, size: int = 100, offset: tuple[int, int] = (0, 0), color=Qt.GlobalColor.red):
+        image = QImage(size, size, QImage.Format.Format_ARGB32_Premultiplied)
+        image.fill(color)
+        layer = self.image_stack.create_layer(name, image)
+        layer.set_transform(QTransform.fromTranslate(*offset))
+        return layer
+
+    def test_overlapping_layers_topmost_first(self) -> None:
+        """Layers covering the point are listed from the top of the stack down."""
+        lower = self._layer('lower')
+        upper = self._layer('upper')
+        self.assertEqual(layers_at_point(self.image_stack, QPoint(10, 10)), [upper, lower])
+
+    def test_point_outside_transformed_bounds(self) -> None:
+        """A layer is only listed where its transformed bounds are."""
+        moved = self._layer('moved', offset=(200, 200))
+        base = self._layer('base')
+        self.assertEqual(layers_at_point(self.image_stack, QPoint(10, 10)), [base])
+        self.assertEqual(layers_at_point(self.image_stack, QPoint(210, 210)), [moved])
+
+    def test_transparent_pixel_sorted_last(self) -> None:
+        """A layer transparent at the point is still listed, after the layers with content there."""
+        lower = self._layer('lower')
+        upper = self._layer('upper', color=Qt.GlobalColor.transparent)
+        self.assertEqual(layers_at_point(self.image_stack, QPoint(10, 10)), [lower, upper])
+
+    def test_hidden_layer_excluded(self) -> None:
+        """Hidden layers are not listed."""
+        lower = self._layer('lower')
+        upper = self._layer('upper')
+        upper.visible = False
+        self.assertEqual(layers_at_point(self.image_stack, QPoint(10, 10)), [lower])

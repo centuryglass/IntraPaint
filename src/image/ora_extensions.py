@@ -6,9 +6,10 @@ Two kinds of extension exist, both stored in `extended_data.xml`:
   `NonDestructiveLayer.ora_extension_data`. A loader registered with `register_layer_loader` claims entries that have
   its tag and builds the layer. Entries nobody claims load as image layers from their PNG.
 - **Document extensions.** Data that isn't a layer (a layer reference held by a ControlNet unit, prompt-region masks,
-  guides, foreign data carried through a load and save) goes in `<extension name="...">` children of the root, with a
-  text payload and any number of files under `data/extensions/<name>/`. A `DocumentExtension` registered with
-  `register_document_extension` writes and reads it.
+  guides) goes in `<extension name="...">` children of the root, with a text payload and any number of files under
+  `data/extensions/<name>/`. A `DocumentExtension` registered with `register_document_extension` writes and reads it.
+
+Other programs' data is not an extension: `src/image/ora_foreign_data.py` carries it where those programs put it.
 
 This module imports no layer classes, so layer modules can use it. `open_raster` owns the archive layout and drives
 both registries.
@@ -28,7 +29,7 @@ LAYER_FILE_DIRECTORY = 'data'
 EXTENSION_DIRECTORY = 'data/extensions'
 
 
-def _safe_relative_path(path: str) -> str:
+def safe_relative_path(path: str) -> str:
     """Returns path normalized to '/' separators, raising ValueError unless it stays inside its directory."""
     normalized = posixpath.normpath(path.replace('\\', '/'))
     if normalized in ('', '.') or normalized.startswith(('/', '../')) or normalized == '..' or ':' in normalized:
@@ -47,7 +48,7 @@ class OraWriteContext:
 
     def for_extension(self, name: str) -> 'OraWriteContext':
         """Returns a context that shares this one's file collection and writes under the named extension's folder."""
-        child = OraWriteContext(posixpath.join(EXTENSION_DIRECTORY, _safe_relative_path(name)))
+        child = OraWriteContext(posixpath.join(EXTENSION_DIRECTORY, safe_relative_path(name)))
         child._files = self._files  # pylint: disable=protected-access
         return child
 
@@ -61,7 +62,7 @@ class OraWriteContext:
 
         Raises ValueError if `relative_path` would leave this extension's directory.
         """
-        archive_path = posixpath.join(self._archive_directory, _safe_relative_path(relative_path))
+        archive_path = posixpath.join(self._archive_directory, safe_relative_path(relative_path))
         self._files[archive_path] = data
         return archive_path
 
@@ -75,7 +76,7 @@ class OraReadContext:
     def read_file(self, archive_path: str) -> Optional[bytes]:
         """Returns a file's content, or None if the archive has no file at that path (or the path is invalid)."""
         try:
-            full_path = os.path.join(self._directory, *_safe_relative_path(archive_path).split('/'))
+            full_path = os.path.join(self._directory, *safe_relative_path(archive_path).split('/'))
         except ValueError:
             return None
         if not os.path.isfile(full_path):
@@ -124,7 +125,7 @@ def layer_loaders() -> dict[str, LayerLoader]:
 
 def register_document_extension(extension: DocumentExtension) -> None:
     """Registers a document-level extension, replacing any with the same name."""
-    _safe_relative_path(extension.name)
+    safe_relative_path(extension.name)
     _document_extensions[extension.name] = extension
 
 

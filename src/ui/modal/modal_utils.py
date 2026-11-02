@@ -187,7 +187,7 @@ def open_image_file(parent: QWidget, mode: str = LOAD_IMAGE_MODE,
         file_dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
     if is_pyinstaller_bundle():
         file_dialog.setOption(QFileDialog.Option.HideNameFilterDetails, True)
-    max_size = get_screen_size()
+    max_size = get_screen_size(parent.window())
     file_dialog.setMaximumSize(max_size)
     try:
         if file_dialog.exec():

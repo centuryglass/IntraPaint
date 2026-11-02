@@ -44,8 +44,8 @@ from src.ui.panel.generators.soft_inpainting_controls import SoftInpaintingContr
 from src.ui.widget.disabled_banner import DisabledBanner
 from src.ui.widget.panel_section import PanelSection
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
-from src.util.shared_constants import (BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENERATE, EDIT_MODE_IMG2IMG,
-                                       EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG)
+from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
+from src.util.shared_text import BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENERATE
 from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file

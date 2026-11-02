@@ -81,7 +81,7 @@ class ImageFilter:
         modal = ImageFilterModal(self.get_name(),
                                  self.get_modal_description(),
                                  self.get_parameters(),
-                                 self.get_preview_image,
+                                 self.prepare_preview,
                                  self.apply_filter,
                                  self.selection_only,
                                  self.active_layer_only)
@@ -193,6 +193,13 @@ class ImageFilter:
             QImage:
                 The new preview image, possibly downscaled to avoid excess image processing time.
         """
+        return self.prepare_preview(filter_param_values)()
+
+    def prepare_preview(self, filter_param_values: list[Any]) -> Callable[[], QImage]:
+        """
+        Set up a filter preview on the main thread, returning a function that renders it and is safe to run on a
+        worker thread. Anything that needs a QPixmap or reads UI state happens here, not in the returned function.
+        """
         bounds = self._image_stack.layer_stack.bounds
         preview_bounds = QRect(bounds)
         if self.active_layer_only:
@@ -214,7 +221,7 @@ class ImageFilter:
         preview_bounds.setHeight(min(bounds.y() + bounds.height() - preview_bounds.y(),
                                      round(change_size.height() * 1.2)))
         if preview_bounds.isEmpty():
-            return QImage()
+            return QImage
 
         preview_transform = QTransform.fromTranslate(-preview_bounds.x(), -preview_bounds.y())
         preview_image = QImage(preview_bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
@@ -228,8 +235,11 @@ class ImageFilter:
             self._filter_layer_image(filter_param_values, layer.id, layer_image)
             return layer_image
 
-        self._image_stack.render(base_image=preview_image, transform=preview_transform, image_adjuster=apply_filter)
-        return preview_image
+        def _render_preview() -> QImage:
+            self._image_stack.render(base_image=preview_image, transform=preview_transform,
+                                     image_adjuster=apply_filter)
+            return preview_image
+        return _render_preview
 
     def apply_filter(self, filter_param_values: list[Any]) -> None:
         """

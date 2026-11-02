@@ -15,7 +15,7 @@ from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_NO_IMAGE
 from src.util.async_task import AsyncTask
-from src.util.shared_constants import DESCRIBE_ERROR_TITLE, DESCRIBE_ERROR_MESSAGE_NO_IMAGE, ERROR_MESSAGE_TIMEOUT
+from src.util.shared_text import DESCRIBE_ERROR_TITLE, DESCRIBE_ERROR_MESSAGE_NO_IMAGE, ERROR_MESSAGE_TIMEOUT
 from src.util.singleton import Singleton
 from test.controller.image_generation.fake_sd_backend import FakeResponse, image_to_png_bytes
 from test.controller.image_generation.sd_generator_test_case import SdGeneratorTestCase, solid_image

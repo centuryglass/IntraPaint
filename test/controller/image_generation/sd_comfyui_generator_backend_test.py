@@ -10,7 +10,8 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.sd_comfyui_generator import SDComfyUIGenerator
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
-from src.util.shared_constants import EDIT_MODE_TXT2IMG, ERROR_MESSAGE_TIMEOUT
+from src.util.shared_constants import EDIT_MODE_TXT2IMG
+from src.util.shared_text import ERROR_MESSAGE_TIMEOUT
 from test.controller.image_generation.fake_sd_backend import FakeResponse
 from test.controller.image_generation.sd_comfyui_generator_test import OBJECT_INFO, CANNY_PREPROCESSOR, \
     CANNY_MODEL, TILE_MODEL, UPSCALE_MODEL, ULTIMATE_UPSCALE_NODE

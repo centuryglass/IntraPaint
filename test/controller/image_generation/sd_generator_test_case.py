@@ -29,7 +29,7 @@ from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTR
 from src.image.layers.image_stack import ImageStack
 from src.undo_stack import UndoStack
 from src.util.async_task import AsyncTask
-from src.util.shared_constants import UPSCALED_LAYER_NAME
+from src.util.shared_text import UPSCALED_LAYER_NAME
 from test.base_test_case import IntraPaintTestCase, TEST_IMAGE_DIR, PROJECT_ROOT
 from test.controller.image_generation.fake_sd_backend import FakeSdBackend, RecordedRequest, snapshot_requests
 
@@ -105,6 +105,14 @@ class SdGeneratorTestCase(IntraPaintTestCase):
         self.status = StatusRecorder()
         self.generated_images: dict[int, QImage] = {}
         self.generator: Optional[ImageGenerator] = None
+
+    def clear_source_corner(self) -> None:
+        """Makes the generation area's top-left corner transparent in the source layer."""
+        with self.image_stack.active_layer.borrow_image() as layer_image:
+            painter = QPainter(layer_image)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
+            painter.fillRect(QRect(GENERATION_AREA.topLeft(), QSize(100, 100)), Qt.GlobalColor.black)
+            painter.end()
 
     @staticmethod
     def server_args() -> Namespace:

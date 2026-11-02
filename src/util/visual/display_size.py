@@ -3,12 +3,12 @@ import logging
 from typing import Optional, cast
 
 from PySide6.QtCore import QSize, QRect
-from PySide6.QtWidgets import QApplication, QMainWindow
+from PySide6.QtWidgets import QApplication, QWidget
 
 logger = logging.getLogger(__name__)
 
 
-def get_screen_bounds(window: Optional[QMainWindow] = None, default_to_primary: bool = True,
+def get_screen_bounds(window: Optional[QWidget] = None, default_to_primary: bool = True,
                       alt_test_bounds: Optional[QRect] = None) -> QRect:
     """Returns the bounds of the display a window is in, or the bounds of the primary display if window is None."""
     app = cast(QApplication, QApplication.instance())
@@ -37,7 +37,7 @@ def get_screen_bounds(window: Optional[QMainWindow] = None, default_to_primary: 
     return screen.availableGeometry()
 
 
-def get_screen_size(window: Optional[QMainWindow] = None, default_to_primary: bool = True) -> QSize:
+def get_screen_size(window: Optional[QWidget] = None, default_to_primary: bool = True) -> QSize:
     """Returns the size of the display a window is in, or the size of the primary display if window is None."""
     return get_screen_bounds(window, default_to_primary).size()
 

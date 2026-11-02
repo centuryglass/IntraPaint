@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 from PySide6 import QtTest
 from PySide6.QtCore import QSize, QEvent, Qt, QPoint, QPointF
-from PySide6.QtGui import QEnterEvent
+from PySide6.QtGui import QEnterEvent, QHelpEvent, QTransform
 from PySide6.QtWidgets import QApplication, QComboBox, QMenu, QPushButton, QSplitter, QToolButton, QWidget
 
 from src.config.cache import Cache
@@ -33,9 +33,9 @@ from src.ui.panel.layer_ui.layer_menu import MENU_OPTION_MOVE_UP, MENU_OPTION_MO
     MENU_OPTION_ROTATE_CW, MENU_OPTION_ROTATE_CCW, SUBMENU_CROP_AND_RESIZE, SUBMENU_MIRROR_AND_ROTATE
 from src.ui.panel.layer_ui.layer_panel import LayerPanel, ADD_BUTTON_TITLE, MERGE_DOWN_BUTTON_TITLE, \
     DELETE_BUTTON_TITLE, DUPLICATE_BUTTON_TITLE, SELECT_NEXT_LABEL, SELECT_PREVIOUS_LABEL, SHOW_WINDOW_LABEL
-from src.ui.panel.layer_ui.layer_row import (INDENT, LARGE_THUMBNAIL_SIZE, MEDIUM_THUMBNAIL_SIZE,
-                                             SMALL_THUMBNAIL_SIZE, LayerRow, layer_meta_text, refused_drop_color,
-                                             selection_stripe_color)
+from src.ui.panel.layer_ui.layer_row import (EMPTY_GROUP_TOOLTIP, INDENT, LARGE_THUMBNAIL_SIZE,
+                                             MEDIUM_THUMBNAIL_SIZE, SMALL_THUMBNAIL_SIZE, LayerRow, layer_meta_text,
+                                             layer_size_text, refused_drop_color, selection_stripe_color)
 from src.ui.panel.layer_ui.layer_visibility_button import LayerVisibilityButton
 from src.undo_stack import UndoStack
 from test.base_test_case import IntraPaintTestCase
@@ -323,6 +323,36 @@ class LayerPanelTest(IntraPaintTestCase):
         self.assertTrue(icons[LOCK_FLAG].slot_shown)
         QApplication.sendEvent(row, QEvent(QEvent.Type.Leave))
         self.assertFalse(icons[LOCK_FLAG].slot_shown)
+
+    def test_size_text_gives_size_and_position(self) -> None:
+        """A layer's size text gives its pixel size and where it sits in the image."""
+        self.assertEqual(layer_size_text(self.bottom), '64 x 64 px at (0, 0)')
+        self.bottom.set_transform(QTransform.fromTranslate(10, -5))
+        self.assertEqual(layer_size_text(self.bottom), '64 x 64 px at (10, -5)')
+
+    def test_size_text_gives_transformed_area(self) -> None:
+        """A scaled or rotated layer's size text adds the image area it covers."""
+        self.bottom.set_transform(QTransform.fromTranslate(4, 8).scale(2, 0.5))
+        self.assertEqual(layer_size_text(self.bottom),
+                         '64 x 64 px, transformed to cover 128 x 32 at (4, 8)')
+
+    def test_size_text_gives_group_bounds(self) -> None:
+        """A group's size text gives its contents' bounds, and an empty group says it is empty."""
+        self.inner_top.set_transform(QTransform.fromTranslate(32, 16))
+        self.assertEqual(layer_size_text(self.group), '96 x 80 px at (0, 0)')
+        empty = self.image_stack.create_layer_group('empty', layer_parent=self.group)
+        self.assertEqual(layer_size_text(empty), EMPTY_GROUP_TOOLTIP)
+
+    def test_thumbnail_tooltip_shows_size_text(self) -> None:
+        """Hovering a thumbnail shows its layer's current size text."""
+        thumbnail = self.row(self.bottom).thumbnail
+        self.bottom.set_transform(QTransform.fromTranslate(3, 7))
+        event = QHelpEvent(QEvent.Type.ToolTip, QPoint(2, 2), thumbnail.mapToGlobal(QPoint(2, 2)))
+        with patch('src.ui.panel.layer_ui.layer_row.QToolTip.showText') as show_text:
+            self.assertTrue(QApplication.sendEvent(thumbnail, event))
+        show_text.assert_called_once()
+        self.assertEqual(show_text.call_args.args[1], layer_size_text(self.bottom))
+        self.assertIn('(3, 7)', show_text.call_args.args[1])
 
     def test_state_icons_toggle_from_the_row(self) -> None:
         """Clicking an on icon turns its flag off, and clicking a hovered slot turns it on."""

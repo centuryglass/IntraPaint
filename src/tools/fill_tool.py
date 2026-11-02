@@ -14,7 +14,8 @@ from src.image.layers.layer_group import LayerGroup
 from src.tools.base_tool import BaseTool
 from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.panel.tool_control_panels.fill_tool_panel import FillToolPanel
-from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
+from src.util.shared_constants import PROJECT_DIR
+from src.util.shared_text import COLOR_PICK_HINT
 from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit
 from src.util.visual.image_fill import flood_fill
 from src.util.visual.text_drawing_utils import left_button_hint_text

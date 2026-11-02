@@ -37,6 +37,7 @@ User settings:
 - Creates the settings modal, ensures that it contains appropriate entries from the assorted Config classes
 - Applies changes to config whenever the settings modal closes.
 """
+import copy
 import json
 import logging
 import os
@@ -49,7 +50,7 @@ from weakref import WeakSet
 
 from PIL import Image, UnidentifiedImageError, ExifTags
 from PIL.ExifTags import IFD
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, QEventLoop
 from PySide6.QtGui import QImage, Qt, QTransform
 from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
 
@@ -87,7 +88,8 @@ from src.image.layers.layer_group import LayerGroup
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
-from src.image.open_raster import save_ora_image, read_ora_image, ORA_FILE_EXTENSION
+from src.image.open_raster import capture_ora_image, write_ora_snapshot, read_ora_image, ORA_FILE_EXTENSION
+from src.util.async_task import AsyncTask
 from src.tools.base_tool import BaseTool
 from src.tools.generation_area_tool import GenerationAreaTool
 from src.ui.input_fields.pressure_curve_input import PressureCurveInput
@@ -121,7 +123,7 @@ from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, Menu
 from src.util.optional_import import optional_import
 from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.qtexcepthook import QtExceptHook
-from src.util.shared_constants import PIL_SCALING_MODES
+from src.util.shared_text import PIL_SCALING_MODES
 from src.util.system_clipboard import clipboard_has_image, clipboard_image_is_own_copy, get_clipboard_image, \
     set_clipboard_image
 from src.ui.window.window_geometry import restore_window
@@ -307,6 +309,8 @@ class AppController(MenuBuilder):
 
         self._metadata: Optional[dict[str, Any]] = None
         self._exif: Optional[Image.Exif] = None
+        self._pending_save: Optional[AsyncTask] = None
+        self._save_wait_loop: Optional[QEventLoop] = None
 
         # Initialize main window:
         self._window = MainWindow(self._image_stack)
@@ -871,6 +875,7 @@ class AppController(MenuBuilder):
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def new_image(self) -> None:
         """Open a new image creation modal."""
+        self.wait_for_pending_save()
         default_size = AppConfig().get(AppConfig.DEFAULT_IMAGE_SIZE)
         image_modal = NewImageModal(default_size.width(), default_size.height())
         image_size = image_modal.show_image_modal()
@@ -896,6 +901,52 @@ class AppController(MenuBuilder):
         if not os.path.isfile(image_path):
             image_path = None
         self.save_image_as(file_path=image_path)
+
+    def wait_for_pending_save(self) -> None:
+        """Returns once any background write has finished, keeping the UI responsive while it runs."""
+        if self._pending_save is None:
+            return
+        loop = QEventLoop()
+        self._save_wait_loop = loop  # `_finished` quits it, and runs after this call whatever the write's progress.
+        loop.exec()
+        self._save_wait_loop = None
+
+    def _start_save(self, file_path: str, write: Callable[[], None],
+                    on_success: Optional[Callable[[], None]] = None) -> None:
+        """Runs `write` on a worker thread, then reports the result on the GUI thread.
+
+        `write` may only use data captured beforehand, never `Layer`, `ImageStack` or widget objects. On success,
+        `file_path` becomes the last saved path and `on_success` runs. Failure shows an error dialog.
+        """
+        self.wait_for_pending_save()
+        errors: list[Exception] = []
+
+        def _write() -> None:
+            try:
+                write()
+            except Exception as err:  # pylint: disable=broad-exception-caught
+                errors.append(err)
+
+        task = AsyncTask(_write)
+        self._pending_save = task
+
+        def _finished() -> None:
+            if self._pending_save is task:
+                self._pending_save = None
+            if len(errors) == 0 and os.path.isfile(file_path):
+                Cache().set(Cache.LAST_FILE_PATH, file_path)
+                if on_success is not None:
+                    on_success()
+            else:
+                message = (str(errors[0]) if len(errors) > 0
+                           else SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE.format(file_path=file_path))
+                logger.error(f'save failed: {message}')
+                show_error_dialog(self._window, SAVE_ERROR_TITLE, message)
+            if self._save_wait_loop is not None:
+                self._save_wait_loop.quit()
+
+        task.finish_signal.connect(_finished)
+        task.start()
 
     @menu_action(MENU_FILE, 'save_as_shortcut', priority=2,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION, APP_STATE_LOADING])
@@ -968,51 +1019,64 @@ class AppController(MenuBuilder):
                             return o.decode()
                         return super().default(o)
 
-                save_ora_image(self._image_stack, file_path, json.dumps(self._metadata, cls=_Encoder))
-            else:
-                image = self._image_stack.qimage()
-                animation_frames: Optional[list[ImageFrame]] = None
-                if animation_options is not None:
-                    animation_frames = render_frames(self._image_stack)
-                saved_images = [image] if animation_frames is None else [frame.image for frame in animation_frames]
+                snapshot = capture_ora_image(self._image_stack, file_path, json.dumps(self._metadata, cls=_Encoder))
+                self._start_save(snapshot.file_path, lambda: write_ora_snapshot(snapshot))
+                error_handled = True  # The write's own handler reports any failure.
+                return
+            image = self._image_stack.qimage()
+            animation_frames: Optional[list[ImageFrame]] = None
+            if animation_options is not None:
+                animation_frames = render_frames(self._image_stack)
+            saved_images = [image] if animation_frames is None else [frame.image for frame in animation_frames]
 
-                # Check for data loss conditions that should be mentioned:
-                warn_save_discards_layers = (config.get(AppConfig.WARN_BEFORE_LAYERLESS_SAVE)
-                                             and animation_options is None
-                                             and self._image_stack.layer_stack.count > 1)
-                warn_save_discards_alpha = (config.get(AppConfig.WARN_BEFORE_RGB_SAVE)
-                                            and ((file_format not in IMAGE_FORMATS_SUPPORTING_ALPHA
-                                                  and not all(image_is_fully_opaque(saved) for saved in saved_images))
-                                                 or (file_format in IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA
-                                                     and any(image_has_partial_alpha(saved)
-                                                             for saved in saved_images))))
-                warn_save_discards_metadata = (config.get(AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA)
-                                               and self._metadata is not None
-                                               and METADATA_PARAMETER_KEY in self._metadata
-                                               and file_format not in IMAGE_FORMATS_SUPPORTING_METADATA)
-                warn_save_is_write_only = (config.get(AppConfig.WARN_BEFORE_WRITE_ONLY_SAVE)
-                                           and file_format in IMAGE_WRITE_FORMATS
-                                           and file_format not in IMAGE_READ_FORMATS)
-                warn_save_changes_size = (config.get(AppConfig.WARN_BEFORE_FIXED_SIZE_SAVE)
-                                          and file_format in IMAGE_FORMATS_WITH_FIXED_SIZE
-                                          and image.size() != IMAGE_FORMATS_WITH_FIXED_SIZE[file_format])
-                warn_save_removes_color = (config.get(AppConfig.WARN_BEFORE_COLOR_LOSS)
-                                           and file_format in GREYSCALE_IMAGE_FORMATS)
+            # Check for data loss conditions that should be mentioned:
+            warn_save_discards_layers = (config.get(AppConfig.WARN_BEFORE_LAYERLESS_SAVE)
+                                         and animation_options is None
+                                         and self._image_stack.layer_stack.count > 1)
+            warn_save_discards_alpha = (config.get(AppConfig.WARN_BEFORE_RGB_SAVE)
+                                        and ((file_format not in IMAGE_FORMATS_SUPPORTING_ALPHA
+                                              and not all(image_is_fully_opaque(saved) for saved in saved_images))
+                                             or (file_format in IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA
+                                                 and any(image_has_partial_alpha(saved)
+                                                         for saved in saved_images))))
+            warn_save_discards_metadata = (config.get(AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA)
+                                           and self._metadata is not None
+                                           and METADATA_PARAMETER_KEY in self._metadata
+                                           and file_format not in IMAGE_FORMATS_SUPPORTING_METADATA)
+            warn_save_is_write_only = (config.get(AppConfig.WARN_BEFORE_WRITE_ONLY_SAVE)
+                                       and file_format in IMAGE_WRITE_FORMATS
+                                       and file_format not in IMAGE_READ_FORMATS)
+            warn_save_changes_size = (config.get(AppConfig.WARN_BEFORE_FIXED_SIZE_SAVE)
+                                      and file_format in IMAGE_FORMATS_WITH_FIXED_SIZE
+                                      and image.size() != IMAGE_FORMATS_WITH_FIXED_SIZE[file_format])
+            warn_save_removes_color = (config.get(AppConfig.WARN_BEFORE_COLOR_LOSS)
+                                       and file_format in GREYSCALE_IMAGE_FORMATS)
+            # The worker writes from copies, so edits made while it runs don't reach the file:
+            saved_image = image.copy()
+            saved_metadata = copy.deepcopy(self._metadata)
+            saved_exif = copy.deepcopy(self._exif)
+            metadata_fallback_used: list[bool] = []
+
+            def _write_flat_image() -> None:
                 if animation_frames is not None:
                     assert animation_options is not None
-                    save_animation(animation_frames, file_path, animation_options, self._metadata, self._exif)
+                    save_animation(animation_frames, file_path, animation_options, saved_metadata, saved_exif)
                 elif file_format in IMAGE_FORMATS_SUPPORTING_METADATA:
-
                     try:
-                        save_image_with_metadata(image, file_path, self._metadata, self._exif)
+                        save_image_with_metadata(saved_image, file_path, saved_metadata, saved_exif)
                     except ValueError:
-                        logger.error(f'Format {file_format} should support metadata, but saving with metadata failed.')
-                        warn_save_discards_metadata = config.get(AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA)
-                        save_image(image, file_path, self._exif)
+                        logger.error(f'Format {file_format} should support metadata, but saving with metadata'
+                                     ' failed.')
+                        metadata_fallback_used.append(True)
+                        save_image(saved_image, file_path, saved_exif)
                 else:
-                    save_image(image, file_path, self._exif)
+                    save_image(saved_image, file_path, saved_exif)
 
-                # Show data loss warnings, if not disabled:
+            def _show_data_loss_warnings() -> None:
+                """Shows the data loss warnings that apply to the finished save, unless disabled."""
+                nonlocal warn_save_discards_metadata
+                if len(metadata_fallback_used) > 0:
+                    warn_save_discards_metadata = config.get(AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA)
                 alpha_loss_message = ALPHA_NOT_SAVED_MESSAGE
                 metadata_loss_message = METADATA_NOT_SAVED_MESSAGE
                 fixed_size_message = FIXED_SIZE_SAVE_MESSAGE
@@ -1059,9 +1123,9 @@ class AppController(MenuBuilder):
                          color_loss_message)):
                     if loss_condition:
                         show_warning_dialog(self._window, title, message, warn_on_save_config_key)
-            if not os.path.isfile(file_path):
-                raise RuntimeError(SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE.format(file_path=file_path))
-            cache.set(Cache.LAST_FILE_PATH, file_path)
+
+            self._start_save(file_path, _write_flat_image, _show_data_loss_warnings)
+            error_handled = True  # The write's own handler reports any failure.
         except (IOError, TypeError, ValueError, RuntimeError) as save_err:
             error_handled = True
             logger.error(f'save failed: {save_err}')
@@ -1078,6 +1142,7 @@ class AppController(MenuBuilder):
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def load_image(self, file_path: Optional[str | list[str]] = None) -> None:
         """Open a loading dialog, then load the selected image for editing."""
+        self.wait_for_pending_save()
         cache = Cache()
         if file_path is None:
             self._window.setUpdatesEnabled(False)
@@ -1263,14 +1328,18 @@ class AppController(MenuBuilder):
     def quit(self, skip_confirmation: bool = False) -> None:
         """Quit the application after getting confirmation from the user."""
         if skip_confirmation:
+            self.wait_for_pending_save()
             self._window.close_without_confirmation()
         else:
             self._window.close()  # MainWindow.closeEvent asks through _confirm_quit.
 
     def _confirm_quit(self) -> bool:
         """Asks the user to confirm closing the main window, returning whether to proceed."""
-        return request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE, discards_work=True,
-                                    confirm_label=CONFIRM_QUIT_BUTTON)
+        confirmed = request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE, discards_work=True,
+                                         confirm_label=CONFIRM_QUIT_BUTTON)
+        if confirmed:
+            self.wait_for_pending_save()
+        return confirmed
 
     # Edit menu:
 

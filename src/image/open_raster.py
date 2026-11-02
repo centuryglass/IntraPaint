@@ -5,15 +5,21 @@ https://www.openraster.org/baseline/file-layout-spec.html
 
 XML file spec:
 https://invent.kde.org/documentation/openraster-org/-/blob/master/openraster-standard/schema.rnc
+
+Data from other programs that IntraPaint doesn't model (unknown attributes, elements, composite ops and archive files)
+is carried through a load and save by `src/image/ora_foreign_data.py`'s records. `stack.xml` is parsed with
+ElementTree, which doesn't fetch external entities or DTDs, and foreign XML is copied back without being evaluated.
 """
+import copy
 import logging
 import os.path
 import re
 import shutil
 import tempfile
 import zipfile
-from typing import Optional, Any, cast
-from xml.etree.ElementTree import ElementTree, Element
+from dataclasses import dataclass
+from typing import Optional, Any
+from xml.etree.ElementTree import ElementTree, Element, iterparse, register_namespace
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QTransform, QImage
@@ -27,7 +33,10 @@ from src.image.layers.transform_layer import TransformLayer
 from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.text_layer import TextLayer, ORA_TEXT_DATA_TAG
 from src.image.ora_extensions import (OraWriteContext, OraReadContext, layer_loaders, document_extensions,
-                                      register_layer_loader, EXTENSION_ELEMENT, EXTENSION_TAG_NAME)
+                                      register_layer_loader, EXTENSION_ELEMENT, EXTENSION_TAG_NAME,
+                                      EXTENSION_DIRECTORY, safe_relative_path)
+from src.image.ora_foreign_data import (OraArchiveFile, OraForeignDocumentData, OraForeignLayerData,
+                                        pixel_fingerprint)
 from src.image.text_rect import TextRect
 from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.visual.image_utils import read_qimage
@@ -43,7 +52,7 @@ EXTENDED_DATA_XML_FILE_NAME = 'extended_data.xml'
 DATA_DIRECTORY_NAME = 'data'
 THUMBNAIL_DIRECTORY_NAME = 'Thumbnails'
 THUMBNAIL_FILE_NAME = 'thumbnail.png'
-MERGED_IMAGE_FILE_NAME = 'mergedimage'
+MERGED_IMAGE_FILE_NAME = 'mergedimage.png'  # Required by the ORA spec; other programs read it as a preview
 
 BOOLEAN_TRUE_STR = 'true'
 # BOOLEAN_FALSE_STR = 'false'
@@ -54,6 +63,7 @@ ORA_SPEC_VERSION = '0.0.3'
 # Dict keys used before converting to xml:
 DICT_ELEMENT_NAME = 'ELEMENT'
 DICT_NESTED_CONTENT_NAME = 'NESTED'
+DICT_FOREIGN_ELEMENTS_NAME = 'FOREIGN_ELEMENTS'
 
 # image XML element tags:
 IMAGE_ELEMENT = 'image'
@@ -122,6 +132,20 @@ RESERVED_EXTENDED_TAGS = frozenset({LAYER_TAG_SRC, TRANSFORM_TAG, TRANSFORM_SRC_
 # parameters.
 METADATA_TAG = 'metadata'
 
+# Attributes IntraPaint reads on each element. Any other attribute is foreign data, kept by `OraForeignLayerData`:
+IMAGE_KNOWN_ATTRIBUTES = frozenset({IMAGE_TAG_VERSION, IMAGE_TAG_WIDTH, IMAGE_TAG_HEIGHT, IMAGE_TAG_NAME})
+_COMMON_KNOWN_ATTRIBUTES = frozenset({ATTR_TAG_NAME, ATTR_TAG_COMPOSITE, ATTR_TAG_OPACITY, ATTR_TAG_VISIBILITY,
+                                      ATTR_TAG_EDIT_LOCKED, ATTR_TAG_SELECTED})
+STACK_KNOWN_ATTRIBUTES = _COMMON_KNOWN_ATTRIBUTES | {STACK_TAG_ISOLATION}
+LAYER_KNOWN_ATTRIBUTES = _COMMON_KNOWN_ATTRIBUTES | {ATTR_TAG_X_POS, ATTR_TAG_Y_POS, LAYER_TAG_SRC}
+
+# Archive members IntraPaint rebuilds on every save, which are never kept as foreign files. 'mergedimage' is the merged
+# image's name in files from IntraPaint v1.4.0 and earlier.
+_REBUILT_ARCHIVE_FILES = frozenset({MIMETYPE_FILE_NAME, XML_FILE_NAME, EXTENDED_DATA_XML_FILE_NAME,
+                                    MERGED_IMAGE_FILE_NAME, 'mergedimage', 'mergedimage.png',
+                                    f'{THUMBNAIL_DIRECTORY_NAME}/{THUMBNAIL_FILE_NAME}'})
+_PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
+
 # Layer names become part of the layer's in-archive file name, so characters outside this set are replaced:
 _FILE_NAME_UNSAFE_CHARS = re.compile(r'[^\w .-]')
 _MAX_FILE_NAME_LENGTH = 50
@@ -163,23 +187,116 @@ def _layer_file_stem(layer: Layer) -> str:
     return f'{safe_name}_{layer.id}'
 
 
-def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> None:
-    """Save image layers in an editable state using the Open Raster specification."""
-    # Create temporary directory structure
-    tmpdir = tempfile.mkdtemp()
-    data_dir_path = os.path.join(tmpdir, DATA_DIRECTORY_NAME)
-    thumbnail_dir_path = os.path.join(tmpdir, THUMBNAIL_DIRECTORY_NAME)
-    os.mkdir(data_dir_path)
-    os.mkdir(thumbnail_dir_path)
+@dataclass(frozen=True)
+class _ForeignLayerPlan:
+    """How `save_ora_image` writes one layer's `OraForeignLayerData`."""
 
-    # Save layers and build xml data file:
+    record: OraForeignLayerData
+    keep_foreign: bool
+    """Whether the layer is unedited since load, so its attributes, elements and files are written."""
+
+    src: Optional[str]
+    """The record's `src`, when the layer keeps it. Otherwise the layer gets a new file name."""
+
+
+def _plan_foreign_layers(layer_stack: LayerGroup, claimed_paths: set[str]) -> dict[int, _ForeignLayerPlan]:
+    """Returns a plan for each layer with foreign data, keyed by layer id, adding the paths they keep to claimed_paths.
+
+    An edited layer drops its foreign data (see `src/image/ora_foreign_data.py`). It keeps its `src` only when that is
+    a PNG, since its new pixels are written as one.
+    """
+    plans: dict[int, _ForeignLayerPlan] = {}
+    for layer in layer_stack.recursive_child_layers:
+        record = layer.ora_foreign_data
+        if record is None:
+            continue
+        keep_foreign = record.fingerprint is None or (
+            isinstance(layer, TransformLayer)
+            and pixel_fingerprint(layer.get_qimage(), layer.transform) == record.fingerprint)
+        src = None
+        if record.src is not None and (keep_foreign or record.source is None) and record.src not in claimed_paths:
+            src = record.src
+            claimed_paths.add(src)
+        plans[layer.id] = _ForeignLayerPlan(record, keep_foreign, src)
+    for plan in plans.values():
+        if plan.keep_foreign:
+            claimed_paths.update(plan.record.files)
+    return plans
+
+
+def _unique_archive_path(stem: str, suffix: str, claimed_paths: set[str]) -> str:
+    """Returns an unclaimed path in the data directory for a new layer file, and claims it."""
+    path = _archive_path(DATA_DIRECTORY_NAME, f'{stem}{suffix}')
+    duplicate_count = 0
+    while path in claimed_paths:
+        duplicate_count += 1
+        path = _archive_path(DATA_DIRECTORY_NAME, f'{stem}-{duplicate_count}{suffix}')
+    claimed_paths.add(path)
+    return path
+
+
+def _add_foreign_xml(element_data: dict[str, Any], record: OraForeignLayerData, keep_foreign: bool,
+                     composition_mode: CompositeMode) -> None:
+    """Adds a record's foreign attributes and elements to an element's data dict.
+
+    An unsupported composite op loaded as Normal, so it is written back while the layer is still Normal.
+    """
+    if record.composite_op is not None and composition_mode == CompositeMode.NORMAL:
+        element_data[ATTR_TAG_COMPOSITE] = record.composite_op
+    if keep_foreign:
+        element_data.update(record.attributes)
+        element_data[DICT_FOREIGN_ELEMENTS_NAME] = record.copy_elements()
+
+
+@dataclass
+class OraSnapshot:
+    """Everything `write_ora_snapshot` needs to write an .ora file, held as plain data.
+
+    Built on the GUI thread by `capture_ora_image`, so the write can run on a worker without touching `Layer` or
+    `ImageStack` objects. Every `QImage` is an unshared copy, so later edits neither change the file nor force a
+    full-layer copy when the next stroke starts.
+    """
+    file_path: str
+    image_data: dict[str, Any]
+    extended_data: dict[str, dict[str, str]]
+    metadata: Optional[str]
+    layer_images: dict[str, QImage]
+    extension_payloads: dict[str, str]
+    extension_files: dict[str, bytes]
+    merged_image: QImage
+    foreign_files: dict[str, OraArchiveFile]
+    """Other programs' archive files, written as stored. See `src/image/ora_foreign_data.py`."""
+
+
+def _get_transform_str(transform: QTransform) -> str:
+    return (f'{transform.m11()},{transform.m12()},{transform.m13()},'
+            f'{transform.m21()},{transform.m22()},{transform.m23()},'
+            f'{transform.m31()},{transform.m32()},{transform.m33()}')
+
+
+def capture_ora_image(image_stack: ImageStack, file_path: str, metadata: Optional[str]) -> OraSnapshot:
+    """Reads everything an .ora file needs from the image stack, for `write_ora_snapshot`.
+
+    Runs on the GUI thread, and not while a brush stroke is in progress, since that stroke's content isn't in its
+    layer's image until it ends. Raises ValueError or TypeError if a layer can't be saved.
+    """
+    image_stack.flush_render()
+
+    # Plan which archive paths foreign data keeps, so new layer files avoid them:
+    foreign_document = image_stack.ora_foreign_data
+    claimed_paths: set[str] = set(_REBUILT_ARCHIVE_FILES)
+    foreign_files: dict[str, OraArchiveFile] = {}
+    if foreign_document is not None:
+        foreign_files.update(foreign_document.files)
+        claimed_paths.update(foreign_document.files)
+    foreign_plans = _plan_foreign_layers(image_stack.layer_stack, claimed_paths)
+    for foreign_plan in foreign_plans.values():
+        if foreign_plan.keep_foreign:
+            foreign_files.update(foreign_plan.record.files)
+
     extended_data: dict[str, dict[str, str]] = {}
+    layer_images: dict[str, QImage] = {}
     write_context = OraWriteContext()
-
-    def _get_transform_str(transform: QTransform) -> str:
-        return (f'{transform.m11()},{transform.m12()},{transform.m13()},'
-                f'{transform.m21()},{transform.m22()},{transform.m23()},'
-                f'{transform.m31()},{transform.m32()},{transform.m33()}')
 
     def encode_image_layer(layer: ImageLayer | NonDestructiveLayer) -> dict[str, Any]:
         """Encode an ImageLayer as image data."""
@@ -196,12 +313,22 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
             layer_data[ATTR_TAG_SELECTED] = BOOLEAN_TRUE_STR
         layer_data[ATTR_TAG_OPACITY] = layer.opacity
         layer_data[ATTR_TAG_VISIBILITY] = ATTR_VISIBLE if layer.visible else ATTR_HIDDEN
-        image_path = _archive_path(DATA_DIRECTORY_NAME, f'{_layer_file_stem(layer)}.png')
+        foreign_plan = foreign_plans.get(layer.id)
+        if foreign_plan is not None and foreign_plan.src is not None:
+            image_path = foreign_plan.src
+        else:
+            image_path = _unique_archive_path(_layer_file_stem(layer), '.png', claimed_paths)
         flattened_image, offset_transform = layer.transformed_image()
         layer_data[ATTR_TAG_X_POS] = round(offset_transform.dx())
         layer_data[ATTR_TAG_Y_POS] = round(offset_transform.dy())
         layer_data[LAYER_TAG_SRC] = image_path
-        flattened_image.save(os.path.join(tmpdir, image_path))
+        if foreign_plan is not None:
+            _add_foreign_xml(layer_data, foreign_plan.record, foreign_plan.keep_foreign, layer.composition_mode)
+        source = None if foreign_plan is None or image_path != foreign_plan.src else foreign_plan.record.source
+        if source is not None:
+            foreign_files[image_path] = source
+        else:
+            layer_images[image_path] = flattened_image  # Already unshared: `transformed_image` returns a copy.
 
         # Store untransformed images and transformations in a separate extended data section:
         layer_transform = layer.transform
@@ -215,13 +342,11 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
             if is_alpha_locked:
                 extended_layer_data[ATTR_TAG_ALPHA_LOCKED] = BOOLEAN_TRUE_STR
             if layer_transform != offset_transform:
-                layer_transform_str = _get_transform_str(layer_transform)
-                layer_untransformed_path = _archive_path(DATA_DIRECTORY_NAME,
-                                                         f'{_layer_file_stem(layer)}-untransformed.png')
-                full_untransformed_path = os.path.join(tmpdir, layer_untransformed_path)
-                assert layer.image.save(full_untransformed_path), f'failed to write to {full_untransformed_path}'
+                layer_untransformed_path = _unique_archive_path(_layer_file_stem(layer), '-untransformed.png',
+                                                                claimed_paths)
+                layer_images[layer_untransformed_path] = layer.image
                 extended_layer_data[TRANSFORM_SRC_TAG] = layer_untransformed_path
-                extended_layer_data[TRANSFORM_TAG] = layer_transform_str
+                extended_layer_data[TRANSFORM_TAG] = _get_transform_str(layer_transform)
             extended_data[image_path] = extended_layer_data
         return layer_data
 
@@ -241,6 +366,12 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
         stack_data[ATTR_TAG_OPACITY] = layer.opacity
         stack_data[ATTR_TAG_VISIBILITY] = ATTR_VISIBLE if layer.visible else ATTR_HIDDEN
         stack_data[STACK_TAG_ISOLATION] = ISOLATION_ISOLATE if layer.isolate else ISOLATION_AUTO
+        if layer is image_stack.layer_stack:
+            stack_record = None if foreign_document is None else foreign_document.root
+        else:
+            stack_record = layer.ora_foreign_data
+        if stack_record is not None:
+            _add_foreign_xml(stack_data, stack_record, True, layer.composition_mode)
         stack_data[DICT_NESTED_CONTENT_NAME] = []
         for child_layer in layer.child_layers:
             if isinstance(child_layer, LayerGroup):
@@ -258,7 +389,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
     else:
         file_path += ORA_FILE_EXTENSION
 
-    image_data = {
+    image_data: dict[str, Any] = {
         DICT_ELEMENT_NAME: IMAGE_ELEMENT,
         IMAGE_TAG_VERSION: ORA_SPEC_VERSION,
         IMAGE_TAG_WIDTH: image_stack.width,
@@ -266,86 +397,113 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
         IMAGE_TAG_NAME: image_name,
         DICT_NESTED_CONTENT_NAME: [encode_layer_group(image_stack.layer_stack)]
     }
-
-    # Convert to XML, write XML file structure:
-
-    def _create_element(data_dict: dict[str, Any]) -> Element:
-        new_element = Element(data_dict[DICT_ELEMENT_NAME])
-        for key, value in data_dict.items():
-            if key == DICT_ELEMENT_NAME:
-                continue
-            if key == DICT_NESTED_CONTENT_NAME:
-                assert isinstance(value, list)
-                for child_dict in value:
-                    assert isinstance(child_dict, dict)
-                    child = _create_element(child_dict)
-                    new_element.append(child)
-            else:
-                new_element.set(key, str(value))
-        return new_element
-
-    # Write non-standard layer info (transformations, untransformed layers) to a different xml file:
-    xml_root = ElementTree(_create_element(image_data))
-    xml_root.write(os.path.join(tmpdir, XML_FILE_NAME))
-
-    extended_xml_root = Element(STACK_ELEMENT)
-    for image_file_path, layer_extended_data in extended_data.items():
-        extended_layer = Element(LAYER_ELEMENT)
-        extended_layer.set(LAYER_TAG_SRC, image_file_path)
-        for extension_tag, extension_value in layer_extended_data.items():
-            extended_layer.set(extension_tag, extension_value)
-        extended_xml_root.append(extended_layer)
-    if metadata is not None:
-        extended_xml_root.set(METADATA_TAG, metadata)
-        image_data[METADATA_TAG] = metadata
+    if foreign_document is not None:
+        image_data.update(foreign_document.image_attributes)
+        image_data[DICT_FOREIGN_ELEMENTS_NAME] = [(index, copy.deepcopy(element))
+                                                  for index, element in foreign_document.image_elements]
+        for prefix, uri in foreign_document.namespaces.items():
+            try:
+                register_namespace(prefix, uri)
+            except ValueError:
+                logger.warning(f'Namespace prefix "{prefix}" can\'t be kept, ElementTree will write its own')
+    extension_payloads: dict[str, str] = {}
     for extension_name, extension in document_extensions().items():
         payload = extension.save(image_stack, write_context.for_extension(extension_name))
         if payload is not None:
+            extension_payloads[extension_name] = payload
+    return OraSnapshot(file_path, image_data, extended_data, metadata, layer_images, extension_payloads,
+                       dict(write_context.files), image_stack.qimage(True).copy(), foreign_files)
+
+
+def _create_element(data_dict: dict[str, Any]) -> Element:
+    new_element = Element(data_dict[DICT_ELEMENT_NAME])
+    for key, value in data_dict.items():
+        if key == DICT_ELEMENT_NAME:
+            continue
+        if key == DICT_NESTED_CONTENT_NAME:
+            assert isinstance(value, list)
+            for child_dict in value:
+                assert isinstance(child_dict, dict)
+                new_element.append(_create_element(child_dict))
+        elif key != DICT_FOREIGN_ELEMENTS_NAME:
+            new_element.set(key, str(value))
+    # Foreign elements go back at their loaded positions, after the layers are in place:
+    for index, foreign_element in data_dict.get(DICT_FOREIGN_ELEMENTS_NAME, []):
+        new_element.insert(min(index, len(new_element)), foreign_element)
+    return new_element
+
+
+def write_ora_snapshot(snapshot: OraSnapshot) -> None:
+    """Writes a captured document to its .ora file, through a temporary file that replaces the target on success.
+
+    Touches no `Layer` or Qt widget objects, so it is safe to run on a worker thread.
+    """
+    tmpdir = tempfile.mkdtemp()
+    tmp_save_path = snapshot.file_path + '.tmp'
+    try:
+        os.mkdir(os.path.join(tmpdir, DATA_DIRECTORY_NAME))
+        os.mkdir(os.path.join(tmpdir, THUMBNAIL_DIRECTORY_NAME))
+        for archive_path, layer_image in snapshot.layer_images.items():
+            full_path = os.path.join(tmpdir, *archive_path.split('/'))
+            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+            if not layer_image.save(full_path, 'PNG'):
+                raise IOError(f'failed to write to {full_path}')
+
+        # Write non-standard layer info (transformations, untransformed layers) to a different xml file:
+        ElementTree(_create_element(snapshot.image_data)).write(os.path.join(tmpdir, XML_FILE_NAME))
+        extended_xml_root = Element(STACK_ELEMENT)
+        for image_file_path, layer_extended_data in snapshot.extended_data.items():
+            extended_layer = Element(LAYER_ELEMENT)
+            extended_layer.set(LAYER_TAG_SRC, image_file_path)
+            for extension_tag, extension_value in layer_extended_data.items():
+                extended_layer.set(extension_tag, extension_value)
+            extended_xml_root.append(extended_layer)
+        if snapshot.metadata is not None:
+            extended_xml_root.set(METADATA_TAG, snapshot.metadata)
+        for extension_name, payload in snapshot.extension_payloads.items():
             extension_element = Element(EXTENSION_ELEMENT)
             extension_element.set(EXTENSION_TAG_NAME, extension_name)
             extension_element.text = payload
             extended_xml_root.append(extension_element)
-    extended_xml_tree = ElementTree(extended_xml_root)
-    extended_xml_tree.write(os.path.join(tmpdir, EXTENDED_DATA_XML_FILE_NAME))
+        ElementTree(extended_xml_root).write(os.path.join(tmpdir, EXTENDED_DATA_XML_FILE_NAME))
 
-    # Archive as .ora:
-    tmp_save_path = file_path + '.tmp'
-    with zipfile.ZipFile(tmp_save_path, 'w', compression=zipfile.ZIP_STORED) as zip_file:
-        # Write mandatory MIMETYPE file:
-        zip_file.writestr(MIMETYPE_FILE_NAME, MIMETYPE_FILE_CONTENT)
+        # Archive as .ora:
+        with zipfile.ZipFile(tmp_save_path, 'w', compression=zipfile.ZIP_STORED) as zip_file:
+            # Write mandatory MIMETYPE file:
+            zip_file.writestr(MIMETYPE_FILE_NAME, MIMETYPE_FILE_CONTENT)
 
-        # Create merged image file:
-        merged_image = image_stack.qimage(True)
-        tmp_merged_path = os.path.join(tmpdir, 'merged.png')
-        merged_image.save(tmp_merged_path)
-        zip_file.write(tmp_merged_path, MERGED_IMAGE_FILE_NAME)
+            # Create merged image file:
+            tmp_merged_path = os.path.join(tmpdir, 'merged.png')
+            snapshot.merged_image.save(tmp_merged_path)
+            zip_file.write(tmp_merged_path, MERGED_IMAGE_FILE_NAME)
 
-        # Create thumbnail:
-        thumbnail_size = get_scaled_placement(QSize(256, 256), merged_image.size()).size()
-        thumbnail = merged_image.scaled(thumbnail_size)
-        tmp_thumbnail_path = os.path.join(tmpdir, THUMBNAIL_FILE_NAME)
-        thumbnail.save(tmp_thumbnail_path)
-        zip_file.write(tmp_thumbnail_path, _archive_path(THUMBNAIL_DIRECTORY_NAME, THUMBNAIL_FILE_NAME))
+            # Create thumbnail:
+            thumbnail_size = get_scaled_placement(QSize(256, 256), snapshot.merged_image.size()).size()
+            thumbnail = snapshot.merged_image.scaled(thumbnail_size)
+            tmp_thumbnail_path = os.path.join(tmpdir, THUMBNAIL_FILE_NAME)
+            thumbnail.save(tmp_thumbnail_path)
+            zip_file.write(tmp_thumbnail_path, _archive_path(THUMBNAIL_DIRECTORY_NAME, THUMBNAIL_FILE_NAME))
 
-        zip_file.write(os.path.join(tmpdir, XML_FILE_NAME), XML_FILE_NAME)
-        zip_file.write(os.path.join(tmpdir, EXTENDED_DATA_XML_FILE_NAME), EXTENDED_DATA_XML_FILE_NAME)
-        element_data = [image_data]
-        while len(element_data) > 0:
-            element = element_data.pop()
-            if LAYER_TAG_SRC in element:
-                img_path = str(element[LAYER_TAG_SRC])
-                zip_file.write(os.path.join(tmpdir, img_path), img_path)
-            if DICT_NESTED_CONTENT_NAME in element:
-                for nested in cast(list, element[DICT_NESTED_CONTENT_NAME]):
-                    element_data.append(nested)
-        for _, extended_params in extended_data.items():
-            if TRANSFORM_SRC_TAG in extended_params:
-                untransformed_path = extended_params[TRANSFORM_SRC_TAG]
-                zip_file.write(os.path.join(tmpdir, untransformed_path), untransformed_path)
-        for extension_file_path, extension_file_data in write_context.files.items():
-            zip_file.writestr(extension_file_path, extension_file_data)
-    shutil.move(tmp_save_path, file_path)
-    shutil.rmtree(tmpdir)
+            zip_file.write(os.path.join(tmpdir, XML_FILE_NAME), XML_FILE_NAME)
+            zip_file.write(os.path.join(tmpdir, EXTENDED_DATA_XML_FILE_NAME), EXTENDED_DATA_XML_FILE_NAME)
+            for layer_file_path in snapshot.layer_images:
+                zip_file.write(os.path.join(tmpdir, *layer_file_path.split('/')), layer_file_path)
+            for extension_file_path, extension_file_data in snapshot.extension_files.items():
+                zip_file.writestr(extension_file_path, extension_file_data)
+            for foreign_file_path, foreign_file in snapshot.foreign_files.items():
+                file_info = zipfile.ZipInfo(foreign_file_path, foreign_file.date_time)
+                file_info.compress_type = foreign_file.compress_type
+                zip_file.writestr(file_info, foreign_file.data)
+        shutil.move(tmp_save_path, snapshot.file_path)
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        if os.path.exists(tmp_save_path):
+            os.remove(tmp_save_path)
+
+
+def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: Optional[str]) -> None:
+    """Save image layers in an editable state using the Open Raster specification, on the calling thread."""
+    write_ora_snapshot(capture_ora_image(image_stack, file_path, metadata))
 
 
 def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
@@ -353,6 +511,28 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
     tmpdir = tempfile.mkdtemp()
     with zipfile.ZipFile(file_path) as zip_file:
         zip_file.extractall(tmpdir)
+        archive_entries = {info.filename: info for info in zip_file.infolist() if not info.is_dir()}
+    read_context = OraReadContext(tmpdir)
+    # Archive paths that IntraPaint reads itself, which aren't kept as foreign files:
+    consumed_paths: set[str] = set(_REBUILT_ARCHIVE_FILES)
+    foreign_records: list[OraForeignLayerData] = []
+
+    def _archive_file(archive_path: str) -> Optional[OraArchiveFile]:
+        """Returns an archive member's content and zip settings, or None if it's missing or its path is unsafe."""
+        entry = archive_entries.get(archive_path)
+        data = read_context.read_file(archive_path)
+        if entry is None or data is None:
+            return None
+        return OraArchiveFile(data, entry.compress_type, entry.date_time)
+
+    def _capture_foreign_data(element: Element, known_attributes: frozenset[str],
+                              known_children: frozenset[str]) -> OraForeignLayerData:
+        """Returns a record of an element's unrecognized attributes and children."""
+        record = OraForeignLayerData(
+            attributes={key: value for key, value in element.attrib.items() if key not in known_attributes},
+            elements=[(index, child) for index, child in enumerate(element) if child.tag not in known_children])
+        foreign_records.append(record)
+        return record
 
     extended_xml_path = os.path.join(tmpdir, EXTENDED_DATA_XML_FILE_NAME)
     metadata = None
@@ -376,6 +556,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
             transform_image_path = extended_layer.get(TRANSFORM_SRC_TAG)
             if transform_image_path is not None:
                 transform_image_path = _normalize_archive_path(transform_image_path)
+                consumed_paths.add(transform_image_path)
                 transform_image_full_path = os.path.join(tmpdir, transform_image_path)
                 assert os.path.isfile(transform_image_full_path), f'missing file: {transform_image_full_path}'
                 transform_image = read_qimage(transform_image_full_path)
@@ -390,8 +571,9 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
                                                          if key not in RESERVED_EXTENDED_TAGS}
             extended_data[flattened_image_path] = extended_layer_data
 
-    def _parse_common_attributes(layer: Layer, element: Element) -> bool:
-        """Parse shared attributes, return whether this layer is selected."""
+    def _parse_common_attributes(layer: Layer, element: Element, record: OraForeignLayerData) -> bool:
+        """Parse shared attributes, return whether this layer is selected. An unsupported composite op is kept in
+        the layer's foreign data record."""
         layer_name = element.get(ATTR_TAG_NAME, 'layer')
         layer.set_name(layer_name)
         if ATTR_TAG_VISIBILITY in element.keys():
@@ -411,10 +593,15 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
                 else:
                     layer.set_composition_mode(comp_mode)
             except ValueError:
-                logger.error(f'Unrecognised layer composite mode {composite_op} ignored')
+                logger.warning(f'Unsupported layer composite mode {composite_op} rendered as Normal')
+                record.composite_op = composite_op
         return element.get(ATTR_TAG_SELECTED) == BOOLEAN_TRUE_STR
 
-    read_context = OraReadContext(tmpdir)
+    def _attach_foreign_data(layer: Layer, record: OraForeignLayerData) -> None:
+        """Stores the record on the layer if it holds anything foreign."""
+        if (len(record.attributes) > 0 or len(record.elements) > 0 or record.composite_op is not None
+                or record.source is not None):
+            layer.ora_foreign_data = record
 
     def _claim_with_loader(extension_attributes: dict[str, str], layer_name: Optional[str]) -> Optional[Layer]:
         """Returns the layer built by the first registered loader whose attribute is present, if any."""
@@ -434,6 +621,17 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
         base_image_path = element.get(LAYER_TAG_SRC)
         assert base_image_path is not None
         base_image_path = _normalize_archive_path(base_image_path)
+        consumed_paths.add(base_image_path)
+        record = _capture_foreign_data(element, LAYER_KNOWN_ATTRIBUTES, frozenset())
+        try:
+            # A kept path is written under the save's temporary directory, so it must stay inside it:
+            if safe_relative_path(base_image_path) == base_image_path:
+                record.src = base_image_path
+        except ValueError:
+            pass
+        source_file = _archive_file(base_image_path)
+        if source_file is not None and not source_file.data.startswith(_PNG_SIGNATURE):
+            record.source = source_file
         layer_image = QImage()
         layer_transform = QTransform()
         alpha_locked = None
@@ -451,7 +649,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
             if layer_image.isNull():
                 layer_image = read_qimage(os.path.join(tmpdir, base_image_path))
             layer = ImageLayer(layer_image, '')
-        is_active = _parse_common_attributes(layer, element)
+        is_active = _parse_common_attributes(layer, element, record)
         if isinstance(layer, ImageLayer) and alpha_locked == BOOLEAN_TRUE_STR:
             layer.set_alpha_locked(True)
         assert isinstance(layer, TransformLayer)
@@ -462,6 +660,8 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
             y = float(str(element.get(ATTR_TAG_Y_POS)))
             layer_transform = QTransform.fromTranslate(x, y)
             layer.set_transform(layer_transform)
+        record.fingerprint = pixel_fingerprint(layer.get_qimage(), layer.transform)
+        _attach_foreign_data(layer, record)
         return layer, is_active
 
     def parse_stack_element(element: Element) -> tuple[LayerGroup, Optional[Layer]]:
@@ -469,7 +669,8 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
         assert element.tag == STACK_ELEMENT
         layer = LayerGroup('')
         active_layer = None
-        if _parse_common_attributes(layer, element):
+        record = _capture_foreign_data(element, STACK_KNOWN_ATTRIBUTES, frozenset({STACK_ELEMENT, LAYER_ELEMENT}))
+        if _parse_common_attributes(layer, element, record):
             active_layer = layer
         if STACK_TAG_ISOLATION in element.keys() and element.get(STACK_TAG_ISOLATION) == ISOLATION_ISOLATE:
             layer.isolate = True
@@ -486,14 +687,51 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
             if is_active:
                 active_layer = child_layer
             layer.insert_layer(child_layer, layer.count)
+        _attach_foreign_data(layer, record)
         return layer, active_layer
 
     xml_path = os.path.join(tmpdir, XML_FILE_NAME)
-    xml_root = ElementTree().parse(xml_path)
+    namespaces: dict[str, str] = {}
+    xml_events = iterparse(xml_path, events=('start-ns',))
+    for _, (namespace_prefix, namespace_uri) in xml_events:
+        namespaces[namespace_prefix] = namespace_uri
+    xml_root = xml_events.root  # type: ignore[attr-defined]
     assert xml_root.tag == IMAGE_ELEMENT, f'Unexpected tag "{xml_root.tag}"'
     img_size = QSize(int(str(xml_root.get(IMAGE_TAG_WIDTH))), int(str(xml_root.get(IMAGE_TAG_HEIGHT))))
-    layer_stack, saved_active_layer = parse_stack_element(xml_root[0])
+    root_stack_element = xml_root.find(STACK_ELEMENT)
+    assert root_stack_element is not None, 'No root stack element'
+    image_record = OraForeignLayerData(
+        attributes={key: value for key, value in xml_root.attrib.items() if key not in IMAGE_KNOWN_ATTRIBUTES},
+        elements=[(index, child) for index, child in enumerate(xml_root) if child is not root_stack_element])
+    layer_stack, saved_active_layer = parse_stack_element(root_stack_element)
+    root_record = layer_stack.ora_foreign_data or OraForeignLayerData()
+    layer_stack.ora_foreign_data = None
+
+    # A file named by a foreign layer or stack attribute belongs to that element. Other files nobody reads, including
+    # files named by `<image>` attributes, belong to the document:
+    owned_paths: set[str] = set()
+    for foreign_record in foreign_records:
+        for value in foreign_record.attributes.values():
+            owned_path = _normalize_archive_path(value)
+            if owned_path in consumed_paths:
+                continue
+            owned_file = _archive_file(owned_path)
+            if owned_file is not None:
+                foreign_record.files[owned_path] = owned_file
+                owned_paths.add(owned_path)
+    foreign_document = OraForeignDocumentData(image_attributes=image_record.attributes,
+                                              image_elements=image_record.elements,
+                                              root=root_record,
+                                              namespaces=namespaces)
+    for archive_path in archive_entries:
+        if archive_path in consumed_paths or archive_path in owned_paths \
+                or archive_path.startswith(f'{EXTENSION_DIRECTORY}/'):
+            continue
+        foreign_file = _archive_file(archive_path)
+        if foreign_file is not None:
+            foreign_document.files[archive_path] = foreign_file
     image_stack.load_layer_stack(layer_stack, img_size, saved_active_layer)
+    image_stack.ora_foreign_data = foreign_document
     for extension_name, extension in document_extensions().items():
         if extension_name in document_payloads:
             extension.load(image_stack, document_payloads[extension_name], read_context)
