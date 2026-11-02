@@ -12,7 +12,7 @@ constants), which the shape tool reads. Their segment values are the `ShapeMode`
 The panel is a `src.ui.layout.panel_fit.FitContent`, planned in the space the Tools panel gives it:
 - Side: one column. The roomy arrangement puts Outline and Fill side by side, the compact one stacks them. The shape
   type and join show labels, or icons where labels don't fit across. Section headers always show.
-- Strip: Shape, Outline and Fill are columns of up to `STRIP_SECTION_MAX_WIDTH`. The roomy arrangement gives each
+- Strip: Shape, Outline and Fill are columns of up to `strip_section_max_width()`. The roomy arrangement gives each
   control its own row. The compact one pairs them into two rows per column, with icon-only shape types. Section headers
   are optional, and Width is labeled "Outline" and the fill row "Fill" while they are hidden.
 - Join is optional: a plan without room for it moves it to `overflow_content`, which the Tools panel shows in its More

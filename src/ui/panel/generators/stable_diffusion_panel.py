@@ -37,7 +37,7 @@ from src.ui.input_fields.size_field import SizeField
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel, PanelDivider, PanelLayout
 from src.ui.layout.label_column_layout import LabelColumnLayout, normalize_row_label
-from src.ui.layout.panel_fit import (FIELD_MAX_WIDTH, REQUIRED, FitItem, Orientation, fresh_minimum_size,
+from src.ui.layout.panel_fit import (REQUIRED, FitItem, Orientation, fresh_minimum_size, limit_field_width,
                                      held_weakly)
 from src.ui.panel.generators.prompt_boxes import PromptBoxes
 from src.ui.panel.generators.soft_inpainting_controls import SoftInpaintingControls
@@ -166,7 +166,7 @@ def option_combo_box(config: Config, key: str, parent: Optional[QWidget] = None)
         control.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
         control.setMinimumContentsLength(8)
         control.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
-    control.setMaximumWidth(FIELD_MAX_WIDTH)
+    limit_field_width(control)
     return control
 
 
@@ -279,11 +279,11 @@ class ToggledSliderField(SliderField):
 
 class FieldPair(QWidget):
     """Two fields side by side, or stacked when they don't fit that way. Used as a control with two forms. The pair is
-    capped at `FIELD_MAX_WIDTH`, so its right edge lines up with the other fields' in a wide side panel."""
+    capped at `field_max_width`, so its right edge lines up with the other fields' in a wide side panel."""
 
     def __init__(self, first: QWidget, second: QWidget, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self.setMaximumWidth(FIELD_MAX_WIDTH)
+        limit_field_width(self)
         self._layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self)
         self._layout.setContentsMargins(0, 0, 0, 0)
         self._layout.addWidget(first)
@@ -348,12 +348,12 @@ class HonestSizeHints(QWidget):
 
 
 class LabeledRows(QWidget):
-    """Rows of a label and a field that share one label column. The rows are capped at `FIELD_MAX_WIDTH`, label
+    """Rows of a label and a field that share one label column. The rows are capped at `field_max_width`, label
     included, so every row's right edge lines up with the other fields' in a wide side panel."""
 
     def __init__(self, rows: Sequence[tuple[str, QWidget]], parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self.setMaximumWidth(FIELD_MAX_WIDTH)
+        limit_field_width(self)
         layout = LabelColumnLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         self._form = layout
@@ -549,7 +549,7 @@ class StableDiffusionPanel(DockPanel):
         section = ui.section(SECTION_TITLE_SAMPLING, collapsible=True, priority=SAMPLING_PRIORITY)
         self._sampling_section = section
         self._seed_input = SeedValueSpinbox(Cache.SEED, Cache.LAST_SEED)
-        self._seed_input.setMaximumWidth(FIELD_MAX_WIDTH)
+        limit_field_width(self._seed_input)
         section.add(LabeledRows([(normalize_row_label(cache.get_label(Cache.SEED)), self._seed_input)]), REQUIRED)
         self._last_seed_label = QLabel()
         self._last_seed_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
@@ -588,7 +588,7 @@ class StableDiffusionPanel(DockPanel):
         # The width and height boxes sit side by side, or stacked when the section is too narrow for that:
         self._gen_resolution_holder = HonestSizeHints(self._gen_resolution_input)
         # Both boxes together are as wide as one field, with each label beside its box:
-        self._gen_resolution_holder.setMaximumWidth(FIELD_MAX_WIDTH)
+        limit_field_width(self._gen_resolution_holder)
         size_rows = LabeledRows([(normalize_row_label(cache.get_label(Cache.GENERATION_SIZE)),
                                   self._gen_resolution_holder)])
         section.add(size_rows, REQUIRED, (partial(self._set_size_orientation, Qt.Orientation.Horizontal),
@@ -687,7 +687,7 @@ class StableDiffusionPanel(DockPanel):
         self._tiling_button.setVisible(self._webui and cache.tiling_in_effect())
         self._generate_button = QPushButton(BUTTON_TEXT_GENERATE)
         # Capped like the fields above it, so its right edge lines up with theirs in a wide side panel:
-        self._generate_button.setMaximumWidth(FIELD_MAX_WIDTH)
+        limit_field_width(self._generate_button)
         self._generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
         set_primary_button(self._generate_button)
         self._generate_button.clicked.connect(self.generate_signal)

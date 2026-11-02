@@ -33,7 +33,7 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel
-from src.ui.layout.panel_fit import REQUIRED, STRIP_SECTION_MAX_WIDTH, FitItem, Orientation, fresh_minimum_size
+from src.ui.layout.panel_fit import REQUIRED, strip_section_max_width, FitItem, Orientation, fresh_minimum_size
 from src.ui.panel.layer_ui.layer_list import LayerList
 from src.ui.panel.layer_ui.layer_properties import LayerProperties
 from src.ui.panel.layer_ui.layer_row import LARGE_THUMBNAIL_SIZE, MEDIUM_THUMBNAIL_SIZE, SMALL_THUMBNAIL_SIZE
@@ -303,10 +303,10 @@ class LayerPanel(DockPanel):
             layout.addWidget(self._layer_list, 0, 1)
             layout.setColumnStretch(1, 1)
             layout.setRowStretch(0, 1)
-            self._properties.setMaximumWidth(STRIP_SECTION_MAX_WIDTH)
-            self._layer_list.setMaximumWidth(STRIP_SECTION_MAX_WIDTH)
+            self._properties.setMaximumWidth(strip_section_max_width())
+            self._layer_list.setMaximumWidth(strip_section_max_width())
             # The columns end where their widgets' widths do, and the body's layout keeps them at its left edge:
-            self._content.setMaximumWidth(2 * STRIP_SECTION_MAX_WIDTH + max(layout.horizontalSpacing(), 0))
+            self._content.setMaximumWidth(2 * strip_section_max_width() + max(layout.horizontalSpacing(), 0))
             self._layer_list.set_readable_names(True)
             layout.setAlignment(self._properties, Qt.AlignmentFlag.AlignTop)
         self._properties.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)

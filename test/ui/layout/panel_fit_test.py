@@ -7,7 +7,8 @@ from typing import Sequence
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QApplication, QComboBox, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
-from src.ui.layout.panel_fit import (FIELD_MAX_WIDTH, HYSTERESIS, REQUIRED, FitItem, FitPlanner, Orientation,
+from src.ui.layout.panel_fit import (field_max_width, limit_field_width, strip_section_max_width,
+                                     strip_section_min_width, HYSTERESIS, REQUIRED, FitItem, FitPlanner, Orientation,
                                      Placement, base_placement, field_width_cap, fresh_minimum_size,
                                      orientation_for_dock, orientation_for_size, plan_fit, plan_orientation,
                                      set_field_width_cap)
@@ -404,23 +405,23 @@ class FieldWidthCapTest(IntraPaintTestCase):
         super().setUp()
         self.panel = QWidget()
         self.field = QComboBox(self.panel)
-        self.field.setGeometry(0, 0, FIELD_MAX_WIDTH + 100, 24)
-        self.panel.resize(FIELD_MAX_WIDTH + 100, 24)
+        self.field.setGeometry(0, 0, field_max_width() + 100, 24)
+        self.panel.resize(field_max_width() + 100, 24)
 
     def _stretched(self) -> list[str]:
         return [problem for problem in find_arrangement_problems(self.panel) if problem.startswith('stretched')]
 
     def test_default_cap(self) -> None:
-        """A field with no cap of its own gets FIELD_MAX_WIDTH, and is stretched past it."""
-        self.assertEqual(FIELD_MAX_WIDTH, field_width_cap(self.field))
+        """A field with no cap of its own gets field_max_width(), and is stretched past it."""
+        self.assertEqual(field_max_width(), field_width_cap(self.field))
         self.assertEqual(1, len(self._stretched()))
 
     def test_own_cap(self) -> None:
-        """A field's own cap replaces FIELD_MAX_WIDTH."""
-        set_field_width_cap(self.field, FIELD_MAX_WIDTH + 200)
-        self.assertEqual(FIELD_MAX_WIDTH + 200, field_width_cap(self.field))
+        """A field's own cap replaces field_max_width()."""
+        set_field_width_cap(self.field, field_max_width() + 200)
+        self.assertEqual(field_max_width() + 200, field_width_cap(self.field))
         self.assertEqual([], self._stretched())
-        set_field_width_cap(self.field, FIELD_MAX_WIDTH + 50)
+        set_field_width_cap(self.field, field_max_width() + 50)
         self.assertEqual(1, len(self._stretched()))
 
     def test_uncapped(self) -> None:
@@ -428,3 +429,49 @@ class FieldWidthCapTest(IntraPaintTestCase):
         set_field_width_cap(self.field, None)
         self.assertIsNone(field_width_cap(self.field))
         self.assertEqual([], self._stretched())
+
+
+class FontScaledWidthTest(IntraPaintTestCase):
+    """Tests that the width constants follow the application font."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._font = QApplication.font()
+
+    def tearDown(self) -> None:
+        QApplication.setFont(self._font)
+        super().tearDown()
+
+    @staticmethod
+    def _set_point_size(size: int) -> None:
+        font = QApplication.font()
+        font.setPointSize(size)
+        QApplication.setFont(font)
+
+    def test_reference_size_keeps_base_values(self) -> None:
+        """At 10pt the widths are 240, 300 and 300."""
+        self._set_point_size(10)
+        self.assertEqual((240, 300, 300),
+                         (strip_section_min_width(), strip_section_max_width(), field_max_width()))
+
+    def test_widths_grow_with_font(self) -> None:
+        """A larger font widens every threshold, and a smaller one narrows them."""
+        self._set_point_size(10)
+        base = strip_section_min_width()
+        self._set_point_size(14)
+        self.assertGreater(strip_section_min_width(), base)
+        self.assertGreater(field_max_width(), 300)
+        self._set_point_size(8)
+        self.assertLess(strip_section_min_width(), base)
+
+    def test_limited_field_follows_font_change(self) -> None:
+        """A field limited with `limit_field_width` is re-capped when the application font changes."""
+        self._set_point_size(10)
+        field = QComboBox()
+        limit_field_width(field)
+        self.assertEqual(300, field.maximumWidth())
+        self._set_point_size(14)
+        # Qt posts the widget's FontChange event rather than sending it:
+        QApplication.sendPostedEvents(field, 0)
+        self.assertEqual(field_max_width(), field.maximumWidth())
+        self.assertGreater(field.maximumWidth(), 300)

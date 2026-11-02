@@ -14,7 +14,7 @@ from PySide6.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
 
 from src.config.cache import Cache
 from src.image.mypaint.mypaint_brush import MyPaintBrush
-from src.ui.layout.panel_fit import REQUIRED, STRIP_SECTION_MIN_WIDTH, FitItem, Orientation
+from src.ui.layout.panel_fit import REQUIRED, strip_section_min_width, FitItem, Orientation
 from src.ui.panel.mypaint_brush_dynamics import BrushDynamicsWidget
 from src.ui.panel.mypaint_brush_panel import MAX_CELL_SIZE, MypaintBrushPanel, brush_name
 from src.ui.panel.tool_control_panels.stroke_block import StrokeBlock, StrokeToolPanel
@@ -137,7 +137,7 @@ class MyPaintBrushToolPanel(StrokeToolPanel):
         shown = form == DYNAMICS_OPEN or (form == DYNAMICS_COLLAPSED and orientation == Orientation.SIDE)
         self._dynamics_section.setVisible(shown)
         self._dynamics_section.set_forced_collapsed(form == DYNAMICS_COLLAPSED)
-        self._dynamics_section.setMinimumWidth(STRIP_SECTION_MIN_WIDTH if orientation == Orientation.STRIP else 0)
+        self._dynamics_section.setMinimumWidth(strip_section_min_width() if orientation == Orientation.STRIP else 0)
         if shown:
             self._overflow_title.hide()
             self._dynamics_body_layout.addWidget(self._dynamics)

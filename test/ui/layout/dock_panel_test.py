@@ -10,7 +10,7 @@ from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtWidgets import QApplication, QCheckBox, QLineEdit, QPushButton, QScrollArea, QSlider, QWidget
 
 from src.ui.layout.dock_panel import DockPanel, PanelLayout
-from src.ui.layout.panel_fit import HYSTERESIS, REQUIRED, STRIP_SECTION_MAX_WIDTH, STRIP_SECTION_MIN_WIDTH, Orientation
+from src.ui.layout.panel_fit import HYSTERESIS, REQUIRED, strip_section_max_width, strip_section_min_width, Orientation
 from src.ui.widget.panel_section import HEADER_HEIGHT
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
 from test.ui.panel_capture import PanelHost, find_layout_problems, tell_orientation
@@ -367,8 +367,8 @@ class DockPanelTest(IntraPaintTestCase):
                 }
                 if orientation == STRIP:
                     for section in shown:
-                        self.assertGreaterEqual(section.widget.width(), STRIP_SECTION_MIN_WIDTH)
-                        self.assertLessEqual(section.widget.width(), STRIP_SECTION_MAX_WIDTH)
+                        self.assertGreaterEqual(section.widget.width(), strip_section_min_width())
+                        self.assertLessEqual(section.widget.width(), strip_section_max_width())
         finally:
             host.release()
         self.assert_json_matches_snapshot(result, os.path.join(SNAPSHOT_DIR, 'dock_panel_sample.json'))
