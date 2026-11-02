@@ -23,6 +23,7 @@ from src.image.layers.selection_layer import SelectionLayer
 from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
+from src.image.ora_foreign_data import OraForeignDocumentData
 from src.image.text_rect import TextRect
 from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog, request_confirmation
 from src.undo_stack import UndoStack
@@ -128,6 +129,8 @@ class ImageStack(QObject):
         """Initializes the image stack with an empty initial layer."""
         super().__init__()
         self._size = image_size
+        # Another program's data from the loaded .ora file. Only `open_raster` uses it, and every load clears it.
+        self.ora_foreign_data: Optional[OraForeignDocumentData] = None
         self._min_generation_area_size = min_generation_area_size
         self._max_generation_area_size = max_generation_area_size
         self._generation_area = QRect(0, 0, generation_area_size.width(), generation_area_size.height())
@@ -1513,6 +1516,7 @@ class ImageStack(QObject):
 
     def _clear_for_load(self, new_size: QSize) -> None:
         """Removes every layer and resets the selection layer to cover `new_size`."""
+        self.ora_foreign_data = None
         self.selection_layer.clear(False)
         self.selection_layer.clear_context_pins(False)
         self.selection_layer.adjust_local_bounds(QRect(QPoint(), new_size), False)
