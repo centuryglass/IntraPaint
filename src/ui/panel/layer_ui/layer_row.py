@@ -5,7 +5,7 @@ Every row has the same anatomy, left to right, so columns line up down the list 
 - the eye, in a fixed column at the left edge;
 - the indent, `INDENT` per level of nesting, with a guide line for each level;
 - the disclosure triangle for a group, or an empty slot of the same width;
-- the thumbnail, marked "Aa" for a text layer;
+- the thumbnail, marked "Aa" for a text layer, with the layer's size and position as its tooltip;
 - the name, ellipsized with the full name as its tooltip, over an optional meta line;
 - the state icons (`LayerStateIcon`), drawn only while on, or as faint slots while the row is hovered.
 
@@ -15,9 +15,9 @@ never changes size when it becomes active, so the list doesn't shift.
 from typing import Optional
 
 from PySide6.QtCore import QEvent, QMimeData, QPoint, QRect, QSize, Qt, QTimer, Signal, QObject
-from PySide6.QtGui import (QColor, QDrag, QEnterEvent, QFont, QImage, QKeyEvent, QMouseEvent, QPainter, QPaintEvent,
+from PySide6.QtGui import (QColor, QDrag, QEnterEvent, QFont, QHelpEvent, QImage, QKeyEvent, QMouseEvent, QPainter, QPaintEvent,
                            QPalette, QPen, QPixmap, QTransform)
-from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLineEdit, QMenu, QSizePolicy, QToolButton,
+from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLineEdit, QMenu, QSizePolicy, QToolButton, QToolTip,
                                QVBoxLayout, QWidget)
 
 from src.image.composite_mode import CompositeMode
@@ -49,6 +49,10 @@ META_ONE_LAYER = _tr('1 layer')
 META_LAYER_COUNT = _tr('{count} layers')
 TEXT_LAYER_MARK = _tr('Aa', 'marks text layer thumbnails')
 EXPAND_TOOLTIP = _tr('Show or hide the layers in this group')
+SIZE_TOOLTIP = _tr('{width} x {height} px at ({x}, {y})', 'layer thumbnail tooltip')
+TRANSFORMED_SIZE_TOOLTIP = _tr('{width} x {height} px, transformed to cover {shown_width} x {shown_height} at ({x}, {y})',
+                               'layer thumbnail tooltip')
+EMPTY_GROUP_TOOLTIP = _tr('Empty group', 'layer thumbnail tooltip')
 
 # Indent per level of nesting:
 INDENT = 14
@@ -70,6 +74,25 @@ PREVIEW_RENDER_DELAY_MS = 500
 HIDDEN_LAYER_SHADE = QColor(0, 0, 0, 100)
 # The narrowest a name gets, measured in the row's font:
 MIN_NAME_TEXT = 'Mmm…'
+
+
+def layer_size_text(layer: Layer) -> str:
+    """Returns a thumbnail's tooltip: the layer's size in pixels and its position in the image.
+
+    A transform other than a translation adds the image area the transformed layer covers. A group gives its
+    contents' bounds.
+    """
+    if isinstance(layer, TransformLayer):
+        size = layer.size
+        shown = layer.transformed_bounds
+        if layer.transform.type().value > QTransform.TransformationType.TxTranslate.value:
+            return TRANSFORMED_SIZE_TOOLTIP.format(width=size.width(), height=size.height(), shown_width=shown.width(),
+                                                   shown_height=shown.height(), x=shown.x(), y=shown.y())
+        return SIZE_TOOLTIP.format(width=size.width(), height=size.height(), x=shown.x(), y=shown.y())
+    bounds = layer.bounds
+    if isinstance(layer, LayerGroup) and bounds.isEmpty():
+        return EMPTY_GROUP_TOOLTIP
+    return SIZE_TOOLTIP.format(width=bounds.width(), height=bounds.height(), x=bounds.x(), y=bounds.y())
 
 
 def selection_stripe_color(widget: QWidget) -> QColor:
@@ -109,7 +132,8 @@ class LayerThumbnail(QWidget):
     """A square preview of a layer's content, cropped to content, over a transparency pattern.
 
     Previews update on a timer after the layer's content changes, so a stroke doesn't render one per change. A hidden
-    layer's preview is shaded, and a text layer's is marked "Aa".
+    layer's preview is shaded, and a text layer's is marked "Aa". The tooltip (`layer_size_text`) is built when it
+    opens, so it never needs updating.
     """
 
     # Shared transparency background pixmap, created by the first thumbnail:
@@ -178,6 +202,13 @@ class LayerThumbnail(QWidget):
                 layer_image = layer_image.scaled(layer_image.width() // 4, layer_image.height() // 4)
             self._layer_image = crop_to_content(layer_image)
         self.update()
+
+    def event(self, event: QEvent) -> bool:
+        """Shows the layer's size and position as the tooltip."""
+        if event.type() == QEvent.Type.ToolTip and isinstance(event, QHelpEvent) and self._layer is not None:
+            QToolTip.showText(event.globalPos(), layer_size_text(self._layer), self)
+            return True
+        return super().event(event)
 
     def paintEvent(self, _event: Optional[QPaintEvent]) -> None:  # pylint: disable=invalid-name
         """Draws the preview inside an outlined square."""
