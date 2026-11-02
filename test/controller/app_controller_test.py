@@ -23,6 +23,7 @@ from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
 from src.util.arg_parser import build_arg_parser
+from src.util.main_thread import is_main_thread
 from src.util.visual.display_size import get_screen_size
 from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_READ_FORMATS, \
     IMAGE_WRITE_FORMATS, AnimationSaveOptions, count_image_frames, load_image_frames
@@ -323,6 +324,7 @@ class TestAppController(IntraPaintTestCase):
                 Cache().set(Cache.PROMPT, test_prompt_str)
                 self.controller.update_metadata(show_messagebox=False)
                 self.controller.save_image_as(save_path)
+                self.controller.wait_for_pending_save()
                 self.assertTrue(os.path.isfile(save_path), f'{file_format} save test failed')
                 Cache().set(Cache.PROMPT, '')
                 if file_format in IMAGE_READ_FORMATS:
@@ -335,6 +337,33 @@ class TestAppController(IntraPaintTestCase):
                     else:
                         self.assertFalse(expected_metadata,
                                          f'Metadata expected but not found for format {file_format}')
+
+    def test_save_write_error_reaches_error_dialog_on_main_thread(self):
+        """A failed background write shows the error dialog from the GUI thread and leaves the last path alone."""
+        self.controller.load_image(LAYER_IMAGE)
+        self.controller.update_metadata(show_messagebox=False)
+        Cache().set(Cache.LAST_FILE_PATH, '')
+        dialog_threads = []
+        with tempfile.TemporaryDirectory() as save_dir, \
+                patch('src.controller.app_controller.show_error_dialog',
+                      side_effect=lambda *_: dialog_threads.append(is_main_thread())) as error_dialog:
+            for extension in ('png', 'ora'):
+                self.controller.save_image_as(os.path.join(save_dir, 'missing', f'bad.{extension}'))
+                self.controller.wait_for_pending_save()
+        self.assertEqual(2, error_dialog.call_count)
+        self.assertEqual([True, True], dialog_threads)
+        self.assertEqual('', Cache().get(Cache.LAST_FILE_PATH))
+
+    def test_save_ora_in_background_sets_last_path(self):
+        """A finished background .ora save records its path once the GUI thread handles the result."""
+        self.controller.load_image(LAYER_IMAGE)
+        self.controller.update_metadata(show_messagebox=False)
+        with tempfile.TemporaryDirectory() as save_dir:
+            save_path = os.path.join(save_dir, 'saved.ora')
+            self.controller.save_image_as(save_path)
+            self.controller.wait_for_pending_save()
+            self.assertTrue(os.path.isfile(save_path))
+            self.assertEqual(save_path, Cache().get(Cache.LAST_FILE_PATH))
 
 
 class AnimationControllerTestCase(IntraPaintTestCase):
@@ -501,6 +530,7 @@ class TestSaveAnimation(AnimationControllerTestCase):
                 path = os.path.join(self.temp_dir.name, f'saved.{extension}')
                 with patch('src.controller.app_controller.open_image_file', return_value=path):
                     self.controller.save_image_as()
+                    self.controller.wait_for_pending_save()
                 mock_modal.assert_called_once()
                 self.assertEqual(self._saved_frame_durations(path), [100, 200, 50])
                 self.controller.load_image(path)
@@ -514,6 +544,7 @@ class TestSaveAnimation(AnimationControllerTestCase):
         with patch(self.SAVE_MODAL, return_value=(True, None)), \
                 patch('src.controller.app_controller.open_image_file', return_value=path):
             self.controller.save_image_as()
+            self.controller.wait_for_pending_save()
         self.assertEqual(count_image_frames(path), 1)
 
     def test_cancel_saves_nothing(self) -> None:
@@ -531,6 +562,7 @@ class TestSaveAnimation(AnimationControllerTestCase):
         path = os.path.join(self.temp_dir.name, 'plain.gif')
         with patch(self.SAVE_MODAL) as mock_modal:
             self.controller.save_image_as(path)
+            self.controller.wait_for_pending_save()
         mock_modal.assert_not_called()
         self.assertEqual(self._saved_frame_durations(path), [100, 200, 50])
         with Image.open(path) as saved:
