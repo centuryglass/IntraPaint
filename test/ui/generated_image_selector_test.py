@@ -5,7 +5,7 @@ import time
 from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
 
-from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, QSize, Qt
+from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QImage, QKeyEvent, QMouseEvent, QWheelEvent
 from PySide6.QtWidgets import QApplication, QMenu
 
@@ -15,6 +15,7 @@ from src.controller.image_generation.test_generator import TestGenerator
 from src.image.layers.image_stack import ImageStack
 from src.ui.generated_image_selector import GeneratedImageSelector, LABEL_TEXT_IMAGE_OPTION, ORIGINAL_CONTENT_LABEL, \
     SCROLL_DEBOUNCE_MS
+from src.ui.generated_option_view import CAPTION_HEIGHT
 from src.ui.generated_selector_bars import CANCEL_BUTTON_TEXT, CLOSE_BUTTON_TEXT, USE_OPTION_BUTTON_TEXT, VIEW_GRID, \
     VIEW_SINGLE
 from src.ui.window.main_window import MainWindow
@@ -922,3 +923,37 @@ class GeneratedImageSelectorInputTest(_RunScreenTestCase):
         open_file.assert_not_called()
         self.selector._send_to_new_layer(2)
         self.assertEqual(len(self.image_stack.layers), layer_count)
+
+
+class GeneratedImageSelectorGridLayoutTest(IntraPaintTestCase):
+    """Tests how the grid fills the view and leaves room for the bottom row's captions."""
+
+    def _selector(self, option_count: int, width: int = 1600, height: int = 900) -> GeneratedImageSelector:
+        image_stack = ImageStack(IMAGE_SIZE, IMAGE_SIZE, QSize(8, 8), IMAGE_SIZE)
+        Cache().set(Cache.BATCH_SIZE, 1)
+        Cache().set(Cache.BATCH_COUNT, option_count)
+        selector = GeneratedImageSelector(image_stack, GenerationSession(image_stack), lambda: None)
+        selector.resize(width, height)
+        selector._layout.activate()
+        selector._apply_ideal_image_arrangement()
+        selector._view.reset_scale()
+        return selector
+
+    def test_bottom_captions_fit_under_the_grid(self) -> None:
+        """The bottom row's captions fit inside the view, with padding below the images."""
+        for count in (5, 11, 39):
+            with self.subTest(count=count):
+                selector = self._selector(count)
+                view = selector._view
+                bottom = max(view.scene_rect_to_widget_rect(QRectF(item.bounds)).bottom()
+                             for item in selector._option_items)
+                self.assertLessEqual(bottom + CAPTION_HEIGHT + 4, view.height())
+
+    def test_many_options_fill_the_view(self) -> None:
+        """A large batch is spread over several rows instead of one thin row."""
+        selector = self._selector(39)
+        rows = {item.pos().y() for item in selector._option_items}
+        self.assertGreater(len(rows), 2)
+        view = selector._view
+        image_height = view.scene_rect_to_widget_rect(QRectF(selector._option_items[0].bounds)).height()
+        self.assertGreater(image_height, 40)

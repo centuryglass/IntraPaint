@@ -23,7 +23,7 @@ from src.controller.image_generation.apply_option import ApplyOutcome, ApplyResu
 from src.controller.image_generation.generation_session import GenerationSession
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
-from src.ui.generated_option_view import GeneratedOptionView, ImageOption, OverlayState
+from src.ui.generated_option_view import CAPTION_HEIGHT, GeneratedOptionView, ImageOption, OverlayState
 from src.ui.generated_selector_bars import ButtonBarState, SelectorButtonBar, SelectorTopBar, VIEW_GRID, VIEW_SINGLE
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.selection_outline import SelectionOutline
@@ -34,7 +34,6 @@ from src.ui.modal.modal_utils import open_image_file, SAVE_IMAGE_MODE, show_warn
 from src.ui.widget.option_filmstrip import OptionFilmstrip, THUMB_SIZE
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, EDIT_MODE_INPAINT
 from src.util.validation import assert_valid_index
-from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.visual.pil_image_utils import pil_image_scaling
 from src.util.visual.text_drawing_utils import get_key_display_string
 
@@ -75,6 +74,8 @@ WARNING_MESSAGE_2_CREATED_NEW = _tr('Image content was added as new layer "{new_
 VIEW_MARGIN = 6
 IMAGE_MARGIN_FRACTION = 1 / 6
 SCROLL_DEBOUNCE_MS = 100
+# Viewport pixels kept clear under the grid for the bottom row's captions, and their padding:
+GRID_CAPTION_RESERVE = CAPTION_HEIGHT + 8
 FILMSTRIP_SMALL_THUMB_SIZE = 44
 # Below this selector height, filmstrip thumbnails use the small size:
 FILMSTRIP_SMALL_HEIGHT = 720
@@ -791,48 +792,42 @@ class GeneratedImageSelector(QWidget):
         self._zoom_to_option(idx)
 
     def _apply_ideal_image_arrangement(self) -> None:
-        """Arrange options in a grid within the scene, choosing grid dimensions to maximize use of available space."""
+        """Arranges the options in the grid whose rows and columns make the images largest on screen.
+
+        The bottom row's captions sit under the images, so the layout reserves `GRID_CAPTION_RESERVE` viewport pixels
+        below the grid. Margins between images are in scene units, and the reserve is in viewport pixels, so the
+        scale each grid shape allows is solved for, not assumed.
+        """
         if len(self._option_items) == 0:
             return
-        view_width = self._view.size().width()
-        view_height = self._view.size().height()
+        border = self._view.border_size
+        avail_width = max(self._view.width() - border * 2, 1)
+        avail_height = max(self._view.height() - border * 2, 1)
         # All options should have matching sizes:
         image_size = self._option_items[0].size
         option_count = len(self._option_items)
         image_margin = int(min(image_size.width(), image_size.height()) * IMAGE_MARGIN_FRACTION)
 
-        def get_scale_factor_for_row_count(row_count: int):
-            """Returns the largest image scale multiplier possible to fit images within row_count rows."""
-            column_count = math.ceil(option_count / row_count)
-            img_bounds = QRect(0, 0, view_width // column_count, view_height // row_count)
-            img_rect = get_scaled_placement(img_bounds, image_size, image_margin)
-            return img_rect.width() / image_size.width()
+        def grid_size(rows: int) -> QSizeF:
+            columns = math.ceil(option_count / rows)
+            return QSizeF(columns * (image_size.width() + image_margin) - image_margin + VIEW_MARGIN * 2,
+                          rows * (image_size.height() + image_margin) - image_margin + VIEW_MARGIN * 2)
 
-        num_rows = 1
-        best_scale = 0
-        for i in range(1, option_count + 1):
-            scale = get_scale_factor_for_row_count(i)
-            last_scale = scale
-            if scale > best_scale:
-                best_scale = scale
-                num_rows = i
-            elif scale < last_scale:
-                break
+        def scale_for_rows(rows: int) -> float:
+            """Returns the viewport scale at which a grid of this many rows and its caption reserve fit."""
+            size = grid_size(rows)
+            return min(avail_width / size.width(), (avail_height - GRID_CAPTION_RESERVE) / size.height())
+
+        num_rows = max(range(1, option_count + 1), key=scale_for_rows)
         num_columns = math.ceil(option_count / num_rows)
-        scene_size = QSizeF(num_columns * (image_size.width() + image_margin) - image_margin + VIEW_MARGIN * 2,
-                            num_rows * (image_size.height() + image_margin) - image_margin + VIEW_MARGIN * 2)
-        view_ratio = self._view.width() / max(self._view.height(), 1)
-        scene_ratio = scene_size.width() / scene_size.height()
-        scene_x0 = VIEW_MARGIN
-        scene_y0 = VIEW_MARGIN
-        if scene_ratio < view_ratio:
-            new_width = int(view_ratio * scene_size.height())
-            scene_x0 += int((new_width - scene_size.width()) / 2)
-            scene_size.setWidth(new_width)
-        elif scene_ratio > view_ratio:
-            new_height = scene_size.width() // view_ratio
-            scene_y0 += int((new_height - scene_size.height()) / 2)
-            scene_size.setHeight(new_height)
+        scale = max(scale_for_rows(num_rows), 0.01)
+        grid = grid_size(num_rows)
+        reserve = GRID_CAPTION_RESERVE / scale
+        # The scene matches the view's aspect ratio, so the view's fit scales it by exactly `scale`:
+        scene_size = QSizeF(max(grid.width(), math.ceil(avail_width / scale)),
+                            max(grid.height() + reserve, math.ceil(avail_height / scale)))
+        scene_x0 = VIEW_MARGIN + int((scene_size.width() - grid.width()) / 2)
+        scene_y0 = VIEW_MARGIN + int((scene_size.height() - grid.height() - reserve) / 2)
 
         self._view.content_size = scene_size.toSize()
         for idx in range(option_count):
@@ -845,8 +840,8 @@ class GeneratedImageSelector(QWidget):
             if len(self._selections) > idx:
                 selection = self._selections[idx]
                 selection.setZValue(self._option_items[idx].zValue() + 1)
-                scale = self._option_items[idx].bounds.width() / self._session.current.generation_area.width()
-                selection.setScale(scale)
+                selection.setScale(self._option_items[idx].bounds.width()
+                                   / self._session.current.generation_area.width())
                 selection.move_to(QPointF(x / selection.scale(), y / selection.scale()))
         if self._comparing:
             self._compare_item.setPos(self._option_items[self._zoom_index].pos())

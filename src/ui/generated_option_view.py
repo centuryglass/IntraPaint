@@ -16,7 +16,7 @@ from src.config.cache import Cache
 from src.controller.image_generation.generated_image_batch import generation_area_size_image, full_size_image
 from src.ui.ink_style import ink_colors
 from src.ui.loading.halftone_press import HalftonePress
-from src.ui.loading.loading_design import LoadingDesign
+from src.ui.loading.loading_design import LoadingDesign, MESSAGE_ZONE
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.ui.widget.option_filmstrip import MAX_DIGIT_KEY
 from src.util.visual.image_utils import get_transparency_tile_pixmap
@@ -44,9 +44,9 @@ CAPTION_HEIGHT = 24
 CAPTION_PADDING = 6
 FOCUS_RING_WIDTH = 3
 CHIP_PADDING = 6
-LOADING_SIZE_FRACTION = 0.4
-LOADING_MIN_SIZE = 16
-LOADING_MAX_SIZE = 96
+# The loading indicator's side, as a fraction of the shorter side of the option it covers:
+LOADING_SIZE_FRACTION = 0.8
+MIN_LOADING_TEXT_POINTS = 5.0
 
 VIEW_BACKGROUND = QColor(8, 9, 10)
 CAPTION_BACKGROUND = QColor(36, 38, 42)
@@ -313,16 +313,26 @@ class GeneratedOptionView(ImageGraphicsView):
         painter.drawText(chip, Qt.AlignmentFlag.AlignCenter, text)
 
     def _paint_loading_cell(self, painter: QPainter, rect: QRect, generating: bool, font: QFont) -> None:
-        """Draws the loading indicator over a placeholder, and whether it is generating or waiting."""
+        """Draws the loading indicator over a placeholder, with its state text in the indicator's message zone."""
         design = self._overlay.loading_design
-        side = int(min(rect.width(), rect.height()) * LOADING_SIZE_FRACTION)
-        side = max(LOADING_MIN_SIZE, min(side, LOADING_MAX_SIZE))
-        indicator = QRectF(rect.center().x() - side / 2, rect.center().y() - side / 2 - side / 4, side, side)
+        side = min(rect.width(), rect.height()) * LOADING_SIZE_FRACTION
+        indicator = QRectF(rect.center().x() - side / 2, rect.center().y() - side / 2, side, side)
         painter.save()
         design.paint(painter, design.fit(indicator), self._overlay.loading_phase, True)
         painter.restore()
-        painter.setFont(font)
+        zone_width, zone_height = MESSAGE_ZONE
+        zone = QRectF(0, 0, side * zone_width, side * zone_height)
+        zone.moveCenter(indicator.center())
+        text = GENERATING_TEXT if generating else WAITING_TEXT
+        text_font = QFont(font)
+        metrics = QFontMetrics(text_font)
+        if metrics.horizontalAdvance(text) > zone.width() or metrics.height() > zone.height():
+            # Shrink the text to the zone, and skip it when it would be unreadable:
+            fit = min(zone.width() / max(metrics.horizontalAdvance(text), 1), zone.height() / max(metrics.height(), 1))
+            point_size = text_font.pointSizeF() * fit
+            if text_font.pointSizeF() <= 0 or point_size < MIN_LOADING_TEXT_POINTS:
+                return
+            text_font.setPointSizeF(point_size)
+        painter.setFont(text_font)
         painter.setPen(CAPTION_DIM_TEXT)
-        text_rect = QRect(rect.left(), int(indicator.bottom()) + CHIP_PADDING, rect.width(),
-                          QFontMetrics(font).height())
-        painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, GENERATING_TEXT if generating else WAITING_TEXT)
+        painter.drawText(zone, Qt.AlignmentFlag.AlignCenter, text)
