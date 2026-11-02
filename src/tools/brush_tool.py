@@ -18,15 +18,13 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.tools.base_tool import BaseTool
+from src.ui.brush_crosshair import CROSSHAIR_GRID_SIZE, CrosshairVariant, crosshair_cursor
+from src.ui.graphics_items.brush_outline import BrushOutline
 from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.stroke_block import StrokeToolPanel
-from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.geometry_utils import closest_point_keeping_angle, closest_point_at_angle_option
 from src.util.visual.text_drawing_utils import left_button_hint_text
-
-CURSOR_PATH_BRUSH_DEFAULT = f'{PROJECT_DIR}/resources/cursors/brush_cursor.svg'
-CURSOR_PATH_BRUSH_MIN = f'{PROJECT_DIR}/resources/cursors/min_cursor.svg'
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.brush_tool'
@@ -40,9 +38,8 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 LINE_HINT = _tr('{modifier_or_modifiers}+{left_mouse_icon}: draw line')
 FIXED_ANGLE_HINT = _tr('{modifier_or_modifiers}: fixed angle')
 
-MAX_CURSOR_SIZE = 128
-MIN_CURSOR_SIZE = 20
-MIN_SMALL_CURSOR_SIZE = 15
+# The brush outline hides at or below this on-screen diameter, where the crosshair alone marks the brush:
+MIN_OUTLINE_DIAMETER = CROSSHAIR_GRID_SIZE
 MIN_LINE_PRESSURE = 0.5
 
 logger = logging.getLogger(__name__)
@@ -81,15 +78,13 @@ class BrushTool(BaseTool):
         assert scene is not None
         self._preview_line = TempDashedLineItem(scene)
 
-        self._small_brush_icon = self.load_cursor_icon(CURSOR_PATH_BRUSH_MIN)
-        self._small_brush_cursor = QCursor(self._small_brush_icon.pixmap(MIN_SMALL_CURSOR_SIZE, MIN_SMALL_CURSOR_SIZE))
-        self._default_scaled_cursor_icon = self.load_cursor_icon(CURSOR_PATH_BRUSH_DEFAULT)
-        self._scaled_icon_cursor: Optional[QIcon] = self._default_scaled_cursor_icon
-        self._scaling_cursor = True
-        image_viewer.scale_changed.connect(self.update_brush_cursor)
+        self._crosshair_variant = CrosshairVariant.PLAIN
+        self._outline = BrushOutline(scene)
 
         self._image_stack = image_stack
         self._image_viewer = image_viewer
+        image_viewer.view_changed.connect(self.update_brush_cursor)
+        image_viewer.cursor_moved.connect(self._cursor_moved_slot)
         self._brush = brush
 
         for key, sign in ((KeyConfig.BRUSH_SIZE_DECREASE, -1), (KeyConfig.BRUSH_SIZE_INCREASE, 1)):
@@ -139,25 +134,30 @@ class BrushTool(BaseTool):
         return (f'{BaseTool.modifier_hint(KeyConfig.LINE_MODIFIER, line_hint)}'
                 f' - {BaseTool.modifier_hint(KeyConfig.FIXED_ANGLE_MODIFIER, FIXED_ANGLE_HINT)}')
 
-    def set_scaling_icon_cursor(self, icon: Optional[QIcon]) -> None:
-        """Sets whether the tool should use a cursor scaled to the brush size.
+    @property
+    def crosshair_variant(self) -> CrosshairVariant:
+        """Returns the crosshair design the tool's cursor uses."""
+        return self._crosshair_variant
 
-        Parameters
-        ----------
-        icon: QIcon, optional
-            Cursor icon to use. If None, dynamic cursor updates will be disabled. If an icon, BrushTool will
-            dynamically scale it to match the brush size, using an alternate instead if it's below MIN_CURSOR_SIZE.
-        """
-        self._scaling_cursor = icon is not None
-        self._scaled_icon_cursor = icon
-        self.update_brush_cursor()
+    @crosshair_variant.setter
+    def crosshair_variant(self, variant: CrosshairVariant) -> None:
+        self._crosshair_variant = variant
+        if self.is_active:
+            self._apply_crosshair()
 
-    def reset_scaling_pixmap_cursor(self) -> None:
-        """Restores the default scaling brush cursor."""
-        if self._scaling_cursor and self._scaled_icon_cursor == self._default_scaled_cursor_icon:
-            return
-        self._scaling_cursor = True
-        self._scaled_icon_cursor = self._default_scaled_cursor_icon
+    @property
+    def brush_outline(self) -> BrushOutline:
+        """Returns the scene item that shows the brush's footprint under the cursor."""
+        return self._outline
+
+    def _apply_crosshair(self) -> None:
+        cursor = crosshair_cursor(self._crosshair_variant, self._image_viewer.devicePixelRatioF())
+        if cursor is not self.cursor:
+            self.cursor = cursor
+
+    def set_disabled_cursor(self, use_disabled_cursor: bool) -> None:
+        """Sets or removes the disabled cursor, hiding the brush outline while it shows."""
+        super().set_disabled_cursor(use_disabled_cursor)
         self.update_brush_cursor()
 
     @property
@@ -247,6 +247,7 @@ class BrushTool(BaseTool):
             self.layer = self._layer  # Re-apply the connection
         else:
             self.layer = self._image_stack.active_layer
+        self._apply_crosshair()
         self.update_brush_cursor()
 
     def _on_deactivate(self) -> None:
@@ -260,6 +261,7 @@ class BrushTool(BaseTool):
             self._tablet_x_tilt = None
             self._tablet_y_tilt = None
         self._preview_line.setVisible(False)
+        self._outline.setVisible(False)
         self._brush.connect_to_layer(None)
 
     # Event handlers:
@@ -431,23 +433,25 @@ class BrushTool(BaseTool):
         return True
 
     def update_brush_cursor(self) -> None:
-        """Recalculates the brush cursor size if using a scaling cursor."""
-        if not self.is_active or self._scaling_cursor is False or self._scaled_icon_cursor is None:
+        """Sizes the brush outline to the brush at the current zoom, and moves it under the cursor.
+
+        The outline shows only while the tool is active, the cursor is over the image viewer, input is enabled, and
+        the brush is wider on screen than MIN_OUTLINE_DIAMETER.
+        """
+        viewer = self._image_viewer
+        cursor_pos = viewer.cursor_pos
+        view_scale = viewer.scene_scale
+        if (not self.is_active or cursor_pos is None or self.cursor_disabled
+                or self.brush_size * view_scale <= MIN_OUTLINE_DIAMETER):
+            self._outline.setVisible(False)
             return
-        pixel_size = self._image_viewer.scene_scale
-        brush_cursor_size = int(self.brush_size * pixel_size)
-        if brush_cursor_size <= MIN_SMALL_CURSOR_SIZE or self.brush_size == 1:
-            self.cursor = self._small_brush_cursor
-        else:
-            icon = self._scaled_icon_cursor if brush_cursor_size > MIN_CURSOR_SIZE else self._small_brush_icon
-            scaled_cursor = icon.pixmap(brush_cursor_size, brush_cursor_size)
-            #scaled_cursor.setDevicePixelRatio(1.0)
-            if brush_cursor_size > MAX_CURSOR_SIZE:
-                self.cursor = scaled_cursor
-            else:
-                self.cursor = QCursor(scaled_cursor,
-                        hotX=round(scaled_cursor.width() / 2 / scaled_cursor.devicePixelRatio()),
-                        hotY=round(scaled_cursor.height() / 2 / scaled_cursor.devicePixelRatio()))
+        self._outline.set_size(self.brush_size, view_scale)
+        self._outline.setPos(viewer.widget_point_to_scene(cursor_pos))
+        self._outline.setVisible(True)
+
+    def _cursor_moved_slot(self, _widget_pos: Optional[QPoint]) -> None:
+        if self.is_active:
+            self.update_brush_cursor()
 
     def wheel_event(self, event: Optional[QWheelEvent]) -> bool:
         """Adjust brush size if scrolling horizontal."""

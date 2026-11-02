@@ -3,13 +3,15 @@ from typing import Optional, Callable
 
 from PySide6.QtCore import Qt, QRect, QRectF, QSize, QPoint, SignalInstance
 from PySide6.QtGui import QCursor, QIcon, QTransform, QMouseEvent
-from PySide6.QtWidgets import QWidget, QSpinBox, QDoubleSpinBox, QApplication
+from PySide6.QtWidgets import QWidget, QSpinBox, QDoubleSpinBox, QApplication, QMenu
 
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
-from src.image.layers.image_stack_utils import top_layer_at_point
+from src.image.layers.image_stack_utils import top_layer_at_point, layers_at_point
+from src.image.layers.image_layer import ImageLayer
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
+from src.image.layers.non_destructive_layer import NonDestructiveLayer
 from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool, ToolGroup
@@ -20,7 +22,7 @@ from src.ui.panel.tool_control_panels.layer_transform_tool_panel import LayerTra
 from src.undo_stack import UndoStack
 from src.util.shared_constants import PROJECT_DIR
 from src.util.signals_blocked import signals_blocked
-from src.util.visual.text_drawing_utils import left_button_hint_text
+from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.layer_transform_tool'
@@ -33,7 +35,8 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 TRANSFORM_LABEL = _tr('Transform layers')
 TRANSFORM_TOOLTIP = _tr('Move, scale, or rotate the active layer.')
-TRANSFORM_CONTROL_HINT = _tr('{left_mouse_icon}: select layer<br/>{left_mouse_icon}, drag: move layer')
+TRANSFORM_CONTROL_HINT = _tr('{left_mouse_icon}: select layer<br/>{left_mouse_icon}, drag: move layer'
+                             '<br/>{right_mouse_icon}: choose from layers under cursor')
 
 ICON_PATH_TRANSFORM_TOOL = f'{PROJECT_DIR}/resources/icons/tools/layer_transform_icon.svg'
 
@@ -60,6 +63,7 @@ class LayerTransformTool(BaseTool):
         assert scene is not None
         scene.addItem(self._transform_outline)
         self.cursor = QCursor(Qt.CursorShape.CrossCursor)
+        self._layer_menu: Optional[QMenu] = None
 
         # prepare control panel:
         self._control_panel = LayerTransformToolPanel(image_stack)
@@ -88,7 +92,8 @@ class LayerTransformTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        transform_hint = TRANSFORM_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
+        transform_hint = TRANSFORM_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
+                                                       right_mouse_icon=right_button_hint_text())
         return f'{transform_hint}<br/>{super().get_input_hint()}'
 
     def restore_aspect_ratio(self) -> None:
@@ -97,18 +102,40 @@ class LayerTransformTool(BaseTool):
         self._transform_outline.transform_scale = (max_scale, max_scale)
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Activate inactive unlocked TransformLayers when they're clicked."""
+        """Left-click activates the top unlocked TransformLayer under the cursor, right-click lists all of them."""
         assert event is not None
-        if event.buttons() == Qt.MouseButton.LeftButton \
-                and QApplication.keyboardModifiers() == Qt.KeyboardModifier.NoModifier:
-
+        if QApplication.keyboardModifiers() != Qt.KeyboardModifier.NoModifier:
+            return False
+        if event.buttons() == Qt.MouseButton.LeftButton:
             clicked_layer = top_layer_at_point(self._image_stack, image_coordinates)
             if clicked_layer is not None and isinstance(clicked_layer, TransformLayer) and clicked_layer != self._layer:
-                if clicked_layer.locked or clicked_layer.parent_locked:
-                    LayerLockAlertItem(clicked_layer, self._image_viewer)
-                self._image_stack.active_layer = clicked_layer
+                self._select_layer(clicked_layer)
+            return True
+        if event.buttons() == Qt.MouseButton.RightButton:
+            layers = layers_at_point(self._image_stack, image_coordinates)
+            if len(layers) > 0:
+                self._show_layer_menu(layers, event.globalPosition().toPoint())
             return True
         return False
+
+    def _select_layer(self, layer: TransformLayer) -> None:
+        if layer.locked or layer.parent_locked:
+            LayerLockAlertItem(layer, self._image_viewer)
+        self._image_stack.active_layer = layer
+
+    def _show_layer_menu(self, layers: list[ImageLayer | NonDestructiveLayer], global_pos: QPoint) -> None:
+        """Opens a non-modal menu naming each layer, topmost first, at the given screen position."""
+        if self._layer_menu is not None:
+            self._layer_menu.close()
+            self._layer_menu.deleteLater()
+        menu = QMenu(self._image_viewer)
+        for layer in layers:
+            action = menu.addAction(layer.name)
+            action.setCheckable(True)
+            action.setChecked(layer == self._layer)
+            action.triggered.connect(lambda _checked=False, target=layer: self._select_layer(target))
+        self._layer_menu = menu
+        menu.popup(global_pos)
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""

@@ -5437,7 +5437,7 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/tools/layer_transform_tool.py"/>
-        <source>{left_mouse_icon}: select layer&lt;br/&gt;{left_mouse_icon}, drag: move layer</source>
+        <source>{left_mouse_icon}: select layer&lt;br/&gt;{left_mouse_icon}, drag: move layer&lt;br/&gt;{right_mouse_icon}: choose from layers under cursor</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -9339,224 +9339,224 @@ Click to pick, or press Esc to cancel</source>
     </message>
 </context>
 <context>
-    <name>util.shared_constants</name>
+    <name>util.shared_text</name>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Generate</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Start AI image generation or modification</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>W:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>H:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>X:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Y:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Width:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Height:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Color:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Size:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Scale:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Zoom in</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Reset zoom</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Keep aspect ratio</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Editing failed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>The selected layer is locked, unlock it or select a different layer.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>The selected layer is in a locked group, unlock it or select a different layer.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>The selected layer is hidden, un-hide it before trying to edit it.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>The selected layer is in the hidden group "{group_name}", un-hide the group before trying to edit it.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>The selected layer is not an image layer, select an image layer first.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Changes are restricted to selected content only, but nothing is selected in this layer. Select layer content or enable changes in unselected areas.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Not authenticated</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Image generator connection</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Enter server URL:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Request timed out</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Server connection failed, enter a new URL or click "OK" to retry</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>The AI image generator is busy creating other images, try again later.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Failed to connect to image generator at "{url}": Login cancelled.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Failed to connect to image generator at "{url}".  Click "Activate" to try again or choose a different address. &lt;br/&gt; Full error text: &lt;br/&gt;&lt;blockquote&gt;{error_text}&lt;/blockquote&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Describe failed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Open or create an image first.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Describing image</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Image generation failed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Nothing was selected in the generation area. Either use the selection tool to mark part of the generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Upscale failure</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Upscaled image content</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>None</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Bilinear</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Nearest</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Hamming</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Bicubic</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Lanczos</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>Box</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/util/shared_constants.py"/>
+        <location filename="../../src/util/shared_text.py"/>
         <source>{modifier_or_modifiers}: pick color</source>
         <translation type="unfinished"></translation>
     </message>

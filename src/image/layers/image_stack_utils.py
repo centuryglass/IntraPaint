@@ -207,6 +207,26 @@ def top_layer_at_point(image_stack: ImageStack,
     return top_transparent
 
 
+def layers_at_point(image_stack: ImageStack, image_coordinates: QPoint) -> list[ImageLayer | NonDestructiveLayer]:
+    """Return every shown image or non-destructive layer whose transformed bounds contain the point.
+
+    Layers with a non-transparent pixel at the point come first, then the rest, each group ordered topmost first.
+    Hidden layers, and layers inside hidden groups, are never returned."""
+    opaque: list[ImageLayer | NonDestructiveLayer] = []
+    transparent: list[ImageLayer | NonDestructiveLayer] = []
+    for layer in image_stack.layer_stack.recursive_child_layers:
+        if not isinstance(layer, (ImageLayer, NonDestructiveLayer)) or not layer.shown:
+            continue
+        layer_point = layer.map_from_image(image_coordinates)
+        if not layer.bounds.contains(layer_point):
+            continue
+        if layer.get_qimage().pixelColor(layer_point).alpha() > 0:
+            opaque.append(layer)
+        else:
+            transparent.append(layer)
+    return opaque + transparent
+
+
 def image_stack_outline_path(image_stack: ImageStack) -> QPainterPath:
     """Gets the outline of all layers in an image stack."""
     polygon = QPolygonF()
