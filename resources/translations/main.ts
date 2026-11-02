@@ -7759,6 +7759,24 @@ Keys: {decrease} / {increase}</source>
         <source>Show or hide the layers in this group</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_row.py"/>
+        <source>{width} x {height} px at ({x}, {y})</source>
+        <comment>layer thumbnail tooltip</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_row.py"/>
+        <source>{width} x {height} px, transformed to cover {cover_w} x {cover_h} at ({x}, {y})</source>
+        <comment>layer thumbnail tooltip</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/layer_ui/layer_row.py"/>
+        <source>Empty group</source>
+        <comment>layer thumbnail tooltip</comment>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ui.panel.mypaint_brush_dynamics</name>
