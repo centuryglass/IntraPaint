@@ -3,6 +3,7 @@ from typing import Any, Optional
 from unittest.mock import patch
 
 from PySide6.QtGui import QImage
+from PySide6.QtWidgets import QBoxLayout
 
 from src.ui.modal.image_filter_modal import ImageFilterModal
 from src.util.async_task import AsyncTask
@@ -43,7 +44,7 @@ class ImageFilterModalPreviewTest(IntraPaintTestCase):
 
     def _set_value(self, value: int) -> None:
         # pylint: disable-next=protected-access
-        self.modal._param_inputs[0].setValue(value)
+        self.modal._param_inputs[0].set_value(value)
 
     def test_initial_preview_is_queued_not_run_inline(self) -> None:
         """Opening the dialog prepares one preview and leaves the render for the worker."""
@@ -81,3 +82,53 @@ class ImageFilterModalPreviewTest(IntraPaintTestCase):
         self.assertIsNotNone(image)
         assert image is not None
         self.assertEqual(4, image.width())
+
+
+class ImageFilterModalLayoutTest(IntraPaintTestCase):
+    """The preview sits beside the controls, fits the screen, and can show the original."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._patch = patch.object(AsyncTask, 'start', lambda task: task.run())
+        self._patch.start()
+        self.big = QImage(4000, 3000, QImage.Format.Format_ARGB32)
+        self.big.fill(0xff00ff00)
+        self.small = QImage(4, 4, QImage.Format.Format_ARGB32)
+        self.small.fill(0xffff0000)
+        self.modal = ImageFilterModal('Blur', 'desc', [Parameter('value', TYPE_INT, 1, 'value', 0, 100, 1)],
+                                      lambda _: (lambda: self.big), lambda _: None,
+                                      prepare_original=lambda: (lambda: self.small))
+
+    def tearDown(self) -> None:
+        self._patch.stop()
+        self.modal.deleteLater()
+        super().tearDown()
+
+    def test_size_hint_ignores_image_size(self) -> None:
+        """A large preview image doesn't enlarge the dialog."""
+        self.assertLess(self.modal.sizeHint().width(), 1200)
+        self.assertLess(self.modal.sizeHint().height(), 900)
+
+    def test_apply_button_names_filter(self) -> None:
+        """The confirm button carries the filter's name."""
+        self.assertIn('Blur', self.modal._apply_button.text())  # pylint: disable=protected-access
+
+    def test_layout_follows_aspect(self) -> None:
+        """Wide windows put the preview left of the controls, tall windows put it above."""
+        body = self.modal._body  # pylint: disable=protected-access
+        self.modal.show()
+        self.modal.resize(900, 500)
+        self.assertEqual(QBoxLayout.Direction.LeftToRight, body.direction())
+        self.modal.resize(500, 900)
+        self.assertEqual(QBoxLayout.Direction.TopToBottom, body.direction())
+        self.modal.resize(900, 500)
+        self.assertEqual(QBoxLayout.Direction.LeftToRight, body.direction())
+
+    def test_compare_button_shows_original(self) -> None:
+        """Holding the compare button shows the original image, and releasing it shows the preview."""
+        preview = self.modal._preview  # pylint: disable=protected-access
+        self.assertIs(preview.shown_image(), self.big)
+        preview.compare_button.pressed.emit()
+        self.assertIs(preview.shown_image(), self.small)
+        preview.compare_button.released.emit()
+        self.assertIs(preview.shown_image(), self.big)
