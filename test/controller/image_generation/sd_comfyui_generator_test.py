@@ -178,6 +178,13 @@ class SDComfyUIGeneratorTest(SdGeneratorTestCase):
         self._set_canny_controlnet_unit()
         self._generate_and_check('txt2img_controlnet')
 
+
+    def test_img2img_flattens_transparent_source(self) -> None:
+        """Transparent source pixels are sent composited over the generation backdrop color."""
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_IMG2IMG)
+        self.clear_source_corner()
+        self._generate_and_check('img2img_transparent_source')
+
     def test_img2img(self) -> None:
         """Image to image uploads the generation area once and loads it in every batch's workflow."""
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_IMG2IMG)

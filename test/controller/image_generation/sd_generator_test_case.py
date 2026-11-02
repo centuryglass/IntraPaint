@@ -106,6 +106,14 @@ class SdGeneratorTestCase(IntraPaintTestCase):
         self.generated_images: dict[int, QImage] = {}
         self.generator: Optional[ImageGenerator] = None
 
+    def clear_source_corner(self) -> None:
+        """Makes the generation area's top-left corner transparent in the source layer."""
+        with self.image_stack.active_layer.borrow_image() as layer_image:
+            painter = QPainter(layer_image)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
+            painter.fillRect(QRect(GENERATION_AREA.topLeft(), QSize(100, 100)), Qt.GlobalColor.black)
+            painter.end()
+
     @staticmethod
     def server_args() -> Namespace:
         """Returns the command line arguments a generator reads its server URL from."""

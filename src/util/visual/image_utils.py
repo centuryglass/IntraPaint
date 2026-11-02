@@ -51,6 +51,19 @@ def create_transparent_image(size: QSize) -> QImage:
     return image
 
 
+def flatten_onto_color(image: QImage, color: QColor) -> QImage:
+    """Returns a copy of `image` composited over an opaque `color`, in ARGB32_Premultiplied with no transparency.
+
+    Opaque pixels are unchanged.
+    """
+    flattened = QImage(image.size(), QImage.Format.Format_ARGB32_Premultiplied)
+    flattened.fill(QColor(color.red(), color.green(), color.blue()))
+    painter = QPainter(flattened)
+    painter.drawImage(0, 0, image)
+    painter.end()
+    return flattened
+
+
 def image_is_fully_transparent(image: QImage | QPixmap | NpAnyArray) -> bool:
     """Returns whether all pixels in the image are 100% transparent."""
     if isinstance(image, (QImage, QPixmap)):

@@ -12,13 +12,14 @@ from PySide6.QtWidgets import QWidget
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.generation_session import GenerationSession
-from src.controller.image_generation.image_generator import ImageGenerator
+from src.controller.image_generation.image_generator import ImageGenerator, GENERATION_BACKDROP_COLOR
 from src.controller.image_generation.test_generator import TestGenerator
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING
 from src.util.async_task import AsyncTask
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
+from src.util.visual.image_utils import image_is_fully_opaque
 from test.base_test_case import IntraPaintTestCase
 
 IMAGE_SIZE = QSize(128, 128)
@@ -98,6 +99,23 @@ class ImageGeneratorTest(IntraPaintTestCase):
 
     def _generated_images(self, count: int = BATCH_COUNT * BATCH_SIZE) -> list[QImage]:
         return [_solid(GENERATION_AREA.size(), GENERATED_COLOR) for _ in range(count)]
+
+    def test_generation_inputs_flatten_transparency_onto_backdrop(self) -> None:
+        """Transparent and partly transparent pixels are composited over the backdrop color; opaque ones are kept."""
+        with self.image_stack.active_layer.borrow_image() as layer_image:
+            assert isinstance(layer_image, QImage)
+            painter = QPainter(layer_image)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+            painter.fillRect(QRect(GENERATION_AREA.topLeft(), QSize(4, 4)), QColor(0, 0, 0, 0))
+            painter.fillRect(QRect(GENERATION_AREA.topLeft() + QPoint(4, 0), QSize(4, 4)), QColor(255, 0, 0, 128))
+            painter.end()
+        image, _ = self.generator.get_generation_inputs()
+        self.assertTrue(image_is_fully_opaque(image))
+        self.assertEqual(image.pixelColor(0, 0), GENERATION_BACKDROP_COLOR)
+        half = image.pixelColor(5, 0)
+        self.assertGreater(half.red(), 128)
+        self.assertLess(half.green(), 128)
+        self.assertEqual(image.pixelColor(10, 10), SOURCE_COLOR)
 
     def test_generate_runs_with_generation_inputs(self) -> None:
         """The task passes the generation area content to `generate`, with no mask outside of inpainting."""
