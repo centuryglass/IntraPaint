@@ -7,7 +7,7 @@ from PySide6.QtCore import Qt, QObject, QPoint, QPointF, QRect, QRectF, QSize, Q
 from PySide6.QtGui import (QPixmap, QImage, QPainter, QPen, QTransform, QResizeEvent, QMouseEvent, QCursor, QWheelEvent,
                            QEnterEvent, QSurfaceFormat, QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent)
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
-from PySide6.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QSizePolicy
+from PySide6.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QSizePolicy
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -16,7 +16,6 @@ from src.util.math_utils import clamp
 from src.util.visual.contrast_color import contrast_color
 from src.util.visual.geometry_utils import get_scaled_placement
 
-CURSOR_ITEM_Z_LEVEL = 9999
 MIN_IMAGE_ZOOM = 0.05
 MAX_IMAGE_ZOOM = 64.0
 ZOOM_FACTOR = 1.1
@@ -43,8 +42,6 @@ class ImageGraphicsView(QGraphicsView):
         self._event_filters: list[ref[QObject]] = []
         self._last_widget_cursor_pos: Optional[QPoint] = None
         self._last_scene_cursor_pos: Optional[QPointF] = None
-        self._cursor_pixmap: Optional[QPixmap] = None
-        self._cursor_pixmap_item: Optional[QGraphicsPixmapItem] = None
         self._centered_on = QPointF(self.width() // 2, self.height() // 2)
         self._mouse_navigation_enabled = True
 
@@ -182,57 +179,23 @@ class ImageGraphicsView(QGraphicsView):
         self._centered_on.setX(int(scene_pt.x()))
         self._centered_on.setY(int(scene_pt.y()))
 
-    def set_cursor(self, new_cursor: QCursor | QPixmap | None):
-        """Sets the cursor over the scene, optionally with custom rendering for large cursors.
+    def set_cursor(self, new_cursor: Optional[QCursor]) -> None:
+        """Sets the cursor over the scene, or restores the default cursor if None."""
+        self.setCursor(QCursor() if new_cursor is None else new_cursor)
 
-        Parameters
-        ----------
-        new_cursor: QCursor or QPixmap or None
-            If a QCursor is given, the cursor will be applied normally.  If None is given, the default cursor will be
-            applied. If a QPixmap is given, a cross cursor will be used, and the pixmap will be drawn over the
-            last mouse coordinates, centered on the mouse pointer. This allows extra large cursors to be used, which
-            can cause problems with some windowing systems if applied normally.
-        """
-        scene = self.scene()
-        assert scene is not None
-        if isinstance(new_cursor, QPixmap):
-            if self._cursor_pixmap_item is None:
-                self._cursor_pixmap_item = QGraphicsPixmapItem(new_cursor)
-                self._cursor_pixmap_item.setZValue(CURSOR_ITEM_Z_LEVEL)
-            else:
-                self._cursor_pixmap_item.setPixmap(new_cursor)
-            if self._cursor_pixmap_item.scene() is None:
-                scene.addItem(self._cursor_pixmap_item)
-            self._cursor_pixmap_item.setScale(1 / self.scene_scale)
-            self._cursor_pixmap_item.setVisible(self._last_widget_cursor_pos is not None)
-            if self._last_widget_cursor_pos is not None:
-                self.set_cursor_pos(self._last_widget_cursor_pos)
-            self.setCursor(QCursor(Qt.CursorShape.CrossCursor))
-        else:
-            if self._cursor_pixmap_item is not None and self._cursor_pixmap_item.scene() is not None:
-                scene.removeItem(self._cursor_pixmap_item)
-                self._cursor_pixmap_item.setVisible(False)
-            if new_cursor is None:
-                new_cursor = QCursor()
-            self.setCursor(new_cursor)
-        self.update()
+    @property
+    def cursor_pos(self) -> Optional[QPoint]:
+        """Returns the last cursor position within the widget, or None if the cursor is outside it."""
+        return self._last_widget_cursor_pos
 
     def set_cursor_pos(self, widget_cursor_pos: Optional[QPoint | QPointF]) -> None:
-        """Updates the last cursor position within the widget so that pixmap cursor rendering stays active."""
+        """Records the cursor position within the widget, or None when it leaves, and emits cursor_moved."""
         if isinstance(widget_cursor_pos, QPointF):
             widget_cursor_pos = widget_cursor_pos.toPoint()
         self._last_widget_cursor_pos = widget_cursor_pos
         scene_cursor_pos = None if widget_cursor_pos is None else self.widget_point_to_scene(widget_cursor_pos)
         self._last_scene_cursor_pos = scene_cursor_pos
         self.cursor_moved.emit(widget_cursor_pos)
-        if self._cursor_pixmap_item is not None and self._cursor_pixmap_item.scene() is not None:
-            self._cursor_pixmap_item.setVisible(widget_cursor_pos is not None)
-            if scene_cursor_pos is None:
-                return
-            self._cursor_pixmap_item.setPos(scene_cursor_pos.x() - self._cursor_pixmap_item.boundingRect().width()
-                                            / 2 / self.scene_scale,
-                                            scene_cursor_pos.y() - self._cursor_pixmap_item.boundingRect().height()
-                                            / 2 / self.scene_scale)
 
     def reset_scale(self) -> None:
         """Resets the scale to fit content in the view and re-centers the scene."""
@@ -372,17 +335,6 @@ class ImageGraphicsView(QGraphicsView):
                             Qt.PenJoinStyle.RoundJoin))
         painter.drawRect(border_rect)
 
-    def drawForeground(self, painter: Optional[QPainter], unused_rect: QRectF) -> None:
-        """Draws cursor pixmap over the scene if one is installed."""
-        if painter is None or self._cursor_pixmap is None or self._last_widget_cursor_pos is None:
-            return
-        center_point = self.mapToScene(self._last_widget_cursor_pos)
-        scale = self.scene_scale
-        pixmap_rect = QRectF(0.0, 0.0, self._cursor_pixmap.width() / scale,
-                             self._cursor_pixmap.height() / scale).toRect()
-        pixmap_rect.moveCenter(center_point.toPoint())
-        painter.drawPixmap(pixmap_rect, self._cursor_pixmap)
-
     def _update_scale_and_transform(self):
         if self.content_size is None:
             raise RuntimeError('ImageGraphicsView implementations must set content_size in __init__ before the ' +
@@ -441,13 +393,6 @@ class ImageGraphicsView(QGraphicsView):
     def _live_event_filters(self) -> list[QObject]:
         return [event_filter for event_filter in (filter_ref() for filter_ref in self._event_filters)
                 if event_filter is not None]
-
-    def _pixmap_cursor_update(self, cursor_point: QPoint) -> None:
-        """If a pixmap cursor is in use, keep last cursor point updated and force a redraw when the mouse moves."""
-        if cursor_point != self._last_widget_cursor_pos:
-            self._last_widget_cursor_pos = cursor_point
-        if self._cursor_pixmap is not None:
-            self.update()
 
     def accepts_mime_data(self, mime_data: Optional[QMimeData]) -> bool:  # pylint: disable=unused-argument
         """Returns whether this view claims a drag with `mime_data` and handles its drop itself.
