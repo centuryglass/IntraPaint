@@ -15,6 +15,7 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qimage, qimage_to_pil
 from src.controller.image_generation.sd_adapters.params_adapter import build_comfy_params, build_upscale_params
+from src.controller.image_generation.image_generator import GENERATION_BACKDROP_COLOR
 from src.controller.image_generation.sd_generator import SDGenerator, SD_BASE_DESCRIPTION, \
     STABLE_DIFFUSION_CONFIG_CATEGORY, GETTING_SD_MODELS, INSTALLATION_STABILITY_MATRIX, MENU_STABLE_DIFFUSION, \
     STABILITY_MATRIX_ICONS
@@ -29,6 +30,7 @@ from src.util.menu_builder import menu_action
 from src.util.parameter import TYPE_LIST, TYPE_STR
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, AUTH_ERROR, \
     GENERATE_ERROR_MESSAGE_EMPTY_MASK, GENERATE_ERROR_TITLE, ERROR_MESSAGE_TIMEOUT, MISC_CONNECTION_ERROR
+from src.util.visual.image_utils import flatten_onto_color
 from src.util.visual.pil_image_utils import pil_image_scaling
 
 logger = logging.getLogger(__name__)
@@ -351,7 +353,8 @@ class SDComfyUIGenerator(SDGenerator):
 
     def get_gen_area_image(self, init_image: Optional[QImage] = None) -> QImage:
         """Gets the contents of the generation area, handling any necessary preprocessing."""
-        image = init_image if init_image is not None else self._image_stack.qimage_generation_area_content()
+        image = init_image if init_image is not None else flatten_onto_color(
+            self._image_stack.qimage_generation_area_content(), GENERATION_BACKDROP_COLOR)
         return self._scale_and_crop_gen_qimage(image)
 
     def get_gen_area_mask(self, init_mask: Optional[QImage] = None) -> QImage:

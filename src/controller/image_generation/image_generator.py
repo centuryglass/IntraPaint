@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, Any
 
 from PySide6.QtCore import QSize, Signal, QTimer, QObject, SignalInstance
-from PySide6.QtGui import QImage
+from PySide6.QtGui import QImage, QColor
 from PySide6.QtWidgets import QWidget
 
 from src.config.cache import Cache
@@ -15,9 +15,15 @@ from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
 from src.util.menu_builder import MenuBuilder
 from src.util.shared_constants import EDIT_MODE_INPAINT, PIL_SCALING_MODES
+from src.util.visual.image_utils import flatten_onto_color
 from src.util.visual.pil_image_utils import pil_image_scaling
 
 logger = logging.getLogger(__name__)
+
+
+# Color that transparent generation area pixels are flattened onto before reaching a backend. Backends otherwise pick
+# their own backdrop (white for the WebUI, whatever RGB is stored under the alpha for ComfyUI).
+GENERATION_BACKDROP_COLOR = QColor(128, 128, 128)
 
 
 class ImageGenerator(MenuBuilder, ABC):
@@ -130,11 +136,11 @@ class ImageGenerator(MenuBuilder, ABC):
     def get_generation_inputs(self) -> tuple[QImage, Optional[QImage]]:
         """Returns the image and inpainting mask that image generation passes to `generate`.
 
-        Both are taken from the generation area and scaled to the generation resolution. The mask is None outside of
-        inpainting mode.
+        Both are taken from the generation area and scaled to the generation resolution. The image is flattened onto
+        `GENERATION_BACKDROP_COLOR`, so it has no transparency. The mask is None outside of inpainting mode.
         """
         generation_resolution = Cache().get(Cache.GENERATION_SIZE)
-        image = self._image_stack.qimage_generation_area_content().copy()
+        image = flatten_onto_color(self._image_stack.qimage_generation_area_content(), GENERATION_BACKDROP_COLOR)
         if image.size() != generation_resolution:
             image = pil_image_scaling(image, generation_resolution)
         if Cache().get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT:

@@ -17,7 +17,7 @@ from sd_backend_client import AuthError, BackendCapabilities, CONTROLNET_MODEL_N
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.controller.image_generation.image_generator import ImageGenerator
+from src.controller.image_generation.image_generator import ImageGenerator, GENERATION_BACKDROP_COLOR
 from src.controller.image_generation.mask_blur import blur_extent_in_image, grow_mask
 from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTROLNET_REUSE_IMAGE_CODE, \
     SavedControlNetUnit
@@ -41,6 +41,7 @@ from src.util.shared_constants import PROJECT_DIR, EDIT_MODE_INPAINT, \
     URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, \
     URL_REQUEST_TITLE, PIL_SCALING_MODES, UPSCALED_LAYER_NAME, UPSCALE_ERROR_TITLE, UPSCALE_OPTION_NONE
 from src.util.visual.geometry_utils import map_rect_precise
+from src.util.visual.image_utils import flatten_onto_color
 from src.util.visual.pil_image_utils import pil_image_scaling
 
 logger = logging.getLogger(__name__)
@@ -404,7 +405,7 @@ class SDGenerator(ImageGenerator, ABC):
         """Gets the contents of the generation area, handling any necessary preprocessing."""
         if init_image is not None:
             return init_image
-        return self._image_stack.qimage_generation_area_content()
+        return flatten_onto_color(self._image_stack.qimage_generation_area_content(), GENERATION_BACKDROP_COLOR)
 
     def get_gen_area_mask(self, init_mask: Optional[QImage] = None) -> QImage:
         """Gets the inpainting mask for the generation area, handling any necessary preprocessing."""
