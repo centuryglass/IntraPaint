@@ -4,6 +4,7 @@ import unittest
 
 from PySide6.QtCore import QPoint, QPointF, QRectF
 from PySide6.QtGui import QImage, QTransform, Qt
+from PySide6.QtWidgets import QMenu
 
 from src.tools.layer_transform_tool import LayerTransformTool
 from src.ui.graphics_items.transform_outline import (TransformOutline, ORIGIN_HANDLE_ID, BR_HANDLE_ID,
@@ -311,6 +312,23 @@ class LayerTransformToolTest(ToolTestCase):
         self.assertTrue(self.outline.preserve_aspect_ratio)
         self.tool.set_width(LAYER_WIDTH * 2.0)
         self.assertAlmostEqual(self.outline.height, LAYER_HEIGHT * 2.0, places=2)
+
+
+    def test_right_click_lists_layers_under_cursor(self) -> None:
+        """Right-click lists the layers under the cursor, topmost first, and choosing one makes it active."""
+        image = QImage(LAYER_WIDTH, LAYER_HEIGHT, QImage.Format.Format_ARGB32_Premultiplied)
+        image.fill(Qt.GlobalColor.blue)
+        upper = self.image_stack.create_layer('upper', image, transform=QTransform.fromTranslate(
+            LAYER_OFFSET.x(), LAYER_OFFSET.y()))
+        self.image_stack.active_layer = upper
+        point = LAYER_OFFSET + QPoint(20, 20)
+        self.mouse_drag([point], Qt.MouseButton.RightButton)
+        menu = self.tool._layer_menu
+        self.assertIsInstance(menu, QMenu)
+        actions = menu.actions()
+        self.assertEqual([action.text() for action in actions], [upper.name, self.layer.name])
+        actions[1].trigger()
+        self.assertIs(self.image_stack.active_layer, self.layer)
 
 
 if __name__ == '__main__':
