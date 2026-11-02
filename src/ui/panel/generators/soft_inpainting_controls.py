@@ -21,6 +21,7 @@ from src.ui.widget.panel_section import PanelSection
 from src.ui.widget.parameter_def_widget import create_parameter_field, create_parameter_widget, \
     is_numeric_field_parameter
 from src.util.parameter_def_labels import parameter_label, parameter_tooltip
+from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.generators.soft_inpainting_controls'
@@ -56,7 +57,7 @@ class SoftInpaintingControls(QWidget):
     def __init__(self) -> None:
         super().__init__()
         cache = Cache()
-        self.checkbox = cache.get_control_widget(Cache.SOFT_INPAINTING)
+        self.checkbox = create_control_widget(cache, Cache.SOFT_INPAINTING)
         self.checkbox.setText(cache.get_label(Cache.SOFT_INPAINTING))
         self.hint = QLabel(HINT_NARROW_BLUR.format(blur=SOFT_INPAINTING_MIN_USEFUL_MASK_BLUR))
         self.hint.setWordWrap(True)

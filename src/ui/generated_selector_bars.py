@@ -16,6 +16,7 @@ from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.ui.button_weight import ButtonWeight, set_button_weight
 from src.ui.input_fields.check_box import CheckBox
+from src.ui.input_fields.field_factory import create_control_widget
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.widget.keycap_badge import KeycapBadge
 from src.ui.widget.option_filmstrip import MAX_DIGIT_KEY
@@ -137,7 +138,7 @@ class SelectorTopBar(QWidget):
             for config_key, label in ((AppConfig.SHOW_SELECTIONS_IN_GENERATION_OPTIONS, SHOW_SELECTION_OUTLINES_LABEL),
                                       (AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED, CHANGE_ZOOM_CHECKBOX_LABEL),
                                       (AppConfig.SHOW_OPTIONS_FULL_RESOLUTION, FULL_RESOLUTION_LABEL)):
-                checkbox = AppConfig().get_control_widget(config_key)
+                checkbox = create_control_widget(AppConfig(), config_key)
                 assert isinstance(checkbox, CheckBox)
                 checkbox.setText(label)
                 container_layout.addWidget(checkbox)

@@ -16,6 +16,7 @@ from src.ui.panel.tool_control_panels.stroke_block import (FIELD_COLUMN_MAX_WIDT
 from src.ui.panel.tool_control_panels.stroke_preview import FilterStrokePreview
 from src.util.parameter import Parameter, ParamType, TYPE_FLOAT, TYPE_INT, TYPE_STR
 from src.util.shared_constants import ICON_SIZE
+from src.ui.input_fields.field_factory import create_control_widget, create_input_widget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.filter_tool_panel'
@@ -54,7 +55,7 @@ class FilterToolPanel(StrokeToolPanel):
                                                                  Cache.FILTER_TOOL_HARDNESS,
                                                                  Cache.FILTER_TOOL_ANTIALIAS)))
         self._strip = False
-        self._filter_dropdown = Cache().get_control_widget(Cache.FILTER_TOOL_SELECTED_FILTER)
+        self._filter_dropdown = create_control_widget(Cache(), Cache.FILTER_TOOL_SELECTED_FILTER)
         self._filter_dropdown.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         for i in range(self._filter_dropdown.count()):
             name = self._filter_dropdown.itemText(i)
@@ -140,7 +141,7 @@ class FilterToolPanel(StrokeToolPanel):
             control = SegmentedControl([Segment(option, option) for option in options],
                                        display_mode=DisplayMode.LABEL, combo_fallback=True)
             return self._labeled(label, control, parameter.description), control.valueChanged, control.set_value
-        widget = parameter.get_input_widget()
+        widget = create_input_widget(parameter)
         if isinstance(widget, CheckBox):
             widget.setText(label)
             return widget, widget.valueChanged, widget.setValue

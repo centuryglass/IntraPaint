@@ -7,6 +7,7 @@ from src.config.cache import Cache
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.panel.generators.stable_diffusion_panel import (AdvancedControls, LabeledRows, config_slider_field,
                                                             group_label, option_combo_box)
+from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.generators.comfyui_advanced_controls'
@@ -38,8 +39,8 @@ class ComfyUIAdvancedControls(AdvancedControls):
         self._model_config_dropdown = option_combo_box(cache, Cache.COMFYUI_MODEL_CONFIG, self)
         layout.addWidget(LabeledRows([(normalize_row_label(cache.get_label(Cache.COMFYUI_MODEL_CONFIG)),
                                        self._model_config_dropdown)]))
-        self._inpainting_model_checkbox = cache.get_control_widget(Cache.COMFYUI_INPAINTING_MODEL)
-        self._tiled_vae_checkbox = cache.get_control_widget(Cache.COMFYUI_TILED_VAE)
+        self._inpainting_model_checkbox = create_control_widget(cache, Cache.COMFYUI_INPAINTING_MODEL)
+        self._tiled_vae_checkbox = create_control_widget(cache, Cache.COMFYUI_TILED_VAE)
         self._tiled_vae_checkbox.setText(LABEL_TILED_VAE)
         self._tile_size_field = config_slider_field(cache, Cache.COMFYUI_TILED_VAE_TILE_SIZE, self, suffix=' px')
 

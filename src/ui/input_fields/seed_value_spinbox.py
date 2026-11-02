@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QWidget, QApplication, QHBoxLayout, QToolButton, Q
 from src.config.cache import Cache
 from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
 from src.util.shared_constants import PROJECT_DIR, SMALL_ICON_SIZE
+from src.ui.input_fields.field_factory import create_control_widget
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = 'ui.input_fields.seed_value_spinbox'
@@ -68,7 +69,7 @@ class SeedValueSpinbox(QWidget):
             tool_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
             tool_button.clicked.connect(on_click)
             self._layout.addWidget(tool_button)
-        self._seed_value_field = cast(BigIntSpinbox, Cache().get_control_widget(seed_cache_key))
+        self._seed_value_field = cast(BigIntSpinbox, create_control_widget(Cache(), seed_cache_key))
         # The spinbox's line edit is otherwise laid out shorter than its own minimum:
         self._seed_value_field.setMinimumHeight(self._seed_value_field.sizeHint().height() + 4)
         self._seed_value_field.setMinimumWidth(self._seed_value_field.fontMetrics().horizontalAdvance('0000') + 24)

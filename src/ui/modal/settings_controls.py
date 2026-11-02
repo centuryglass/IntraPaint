@@ -15,6 +15,7 @@ from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.setting_fields import ColorSettingField, DirectorySettingField, KeybindingField, \
     NumberSettingField, OptionSegmentsField, SizeSettingField, SliderSettingField
 from src.util.parameter import TYPE_BOOL, TYPE_FLOAT, TYPE_INT, TYPE_QSIZE, TYPE_STR
+from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.modal.settings_controls'
@@ -76,7 +77,7 @@ def create_setting_control(config: Config, key: str) -> QWidget:
     elif key in OPTION_LABELS and sorted(_options(config, key)) == sorted(OPTION_LABELS[key]):
         control = OptionSegmentsField(OPTION_LABELS[key])
     elif data_type == TYPE_STR and _options(config, key):
-        return config.get_control_widget(key, False)
+        return create_control_widget(config, key, False)
     elif data_type == TYPE_STR:
         hint = config.get_control_hint(key)
         if hint in (ControlHint.COLOR, ControlHint.COLOR_REQUIRED):

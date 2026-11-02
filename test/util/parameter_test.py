@@ -15,6 +15,7 @@ from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpin
 from src.util.parameter import Parameter, get_parameter_type, TYPE_BOOL, TYPE_INT, TYPE_FLOAT, TYPE_STR, \
     TYPE_QSIZE, TYPE_LIST, TYPE_DICT
 from src.util.shared_constants import INT_MAX
+from src.ui.input_fields.field_factory import create_input_widget
 from test.base_test_case import IntraPaintTestCase
 
 
@@ -171,21 +172,21 @@ class TestParameter(IntraPaintTestCase):
             (three_options, {}, ComboBox, 'b'),
         )
         for param, kwargs, widget_type, expected_value in cases:
-            widget = param.get_input_widget(**kwargs)
+            widget = create_input_widget(param, **kwargs)
             self.assertIsInstance(widget, widget_type, f'{param.name} {kwargs}')
             if expected_value is not None:
                 self.assertEqual(widget.value(), expected_value, f'{param.name} {kwargs}')
 
     def test_input_widget_tooltip(self) -> None:
         """The description becomes the widget tooltip."""
-        widget = Parameter('steps', TYPE_INT, 1, 'Step count').get_input_widget()
+        widget = create_input_widget(Parameter('steps', TYPE_INT, 1, 'Step count'))
         self.assertEqual(widget.toolTip(), 'Step count')
 
     def test_multi_line_input_widget_requires_free_text(self) -> None:
         """multi_line is rejected for non-string parameters and for option lists."""
         with self.assertRaises(ValueError):
-            Parameter('steps', TYPE_INT).get_input_widget(multi_line=True)
+            create_input_widget(Parameter('steps', TYPE_INT), multi_line=True)
         param = Parameter('sampler', TYPE_STR)
         param.set_valid_options(['a', 'b', 'c'])
         with self.assertRaises(ValueError):
-            param.get_input_widget(multi_line=True)
+            create_input_widget(param, multi_line=True)

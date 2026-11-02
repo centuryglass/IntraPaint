@@ -9,6 +9,7 @@ from src.ui.input_fields.seed_value_spinbox import SeedValueSpinbox
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.panel.generators.stable_diffusion_panel import (SUMMARY_ADVANCED_DEFAULT, AdvancedControls, LabeledRows,
                                                             config_slider_field, group_label)
+from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.generators.webui_advanced_controls'
@@ -57,9 +58,9 @@ class WebUIAdvancedControls(AdvancedControls):
         self._strength_field = config_slider_field(cache, Cache.WEBUI_SUBSEED_STRENGTH, self, zero_text=VARIATION_OFF)
         layout.addWidget(self._strength_field)
 
-        self._seed_resize_checkbox = cache.get_control_widget(Cache.WEBUI_SEED_RESIZE_ENABLED)
+        self._seed_resize_checkbox = create_control_widget(cache, Cache.WEBUI_SEED_RESIZE_ENABLED)
         self._seed_resize_checkbox.setText(LABEL_RESIZE_SEED_FROM)
-        self._seed_resize_input = cache.get_control_widget(Cache.WEBUI_SEED_RESIZE)
+        self._seed_resize_input = create_control_widget(cache, Cache.WEBUI_SEED_RESIZE)
         self._seed_resize_input.setToolTip(cache.get_tooltip(Cache.WEBUI_SEED_RESIZE))
 
         def _enable_seed_resize_input(enabled: bool) -> None:
@@ -70,8 +71,8 @@ class WebUIAdvancedControls(AdvancedControls):
         layout.addWidget(self._seed_resize_checkbox)
         layout.addWidget(self._seed_resize_input)
 
-        self._tiling_checkbox = cache.get_control_widget(Cache.WEBUI_TILING)
-        self._face_restore_checkbox = cache.get_control_widget(Cache.WEBUI_RESTORE_FACES)
+        self._tiling_checkbox = create_control_widget(cache, Cache.WEBUI_TILING)
+        self._face_restore_checkbox = create_control_widget(cache, Cache.WEBUI_RESTORE_FACES)
         layout.addWidget(group_label(GROUP_TITLE_OUTPUT))
         layout.addWidget(self._tiling_checkbox)
         layout.addWidget(self._face_restore_checkbox)

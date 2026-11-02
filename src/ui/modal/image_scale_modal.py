@@ -19,9 +19,9 @@ from src.ui.panel.controlnet_panel import CONTROL_END_PARAM, CONTROL_END_FIELD, 
     CONTROL_END_STEP_TITLE, set_unit_value
 from src.ui.widget.parameter_def_widget import create_parameter_widget
 from src.util.parameter_def_labels import parameter_label, parameter_tooltip
-from src.util.parameter import DynamicFieldWidget
 from src.util.shared_constants import APP_ICON_PATH, PIL_SCALING_MODES, UPSCALE_OPTION_NONE
 from src.util.signals_blocked import signals_blocked
+from src.ui.input_fields.field_factory import DynamicFieldWidget, create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.modal.image_scale_modal'
@@ -164,7 +164,7 @@ class ImageScaleModal(QDialog):
 
         self._layer_handling_box: Optional[QComboBox] = None
         if multi_layer:
-            self._layer_handling_box = cast(QComboBox, cache.get_control_widget(Cache.IMAGE_LAYER_SCALING_BEHAVIOR))
+            self._layer_handling_box = cast(QComboBox, create_control_widget(cache, Cache.IMAGE_LAYER_SCALING_BEHAVIOR))
             self._form_layout.addRow(cache.get_label(Cache.IMAGE_LAYER_SCALING_BEHAVIOR), self._layer_handling_box)
 
         # Declare Stable Diffusion upscale controls, load options:
@@ -399,7 +399,7 @@ class ImageScaleModal(QDialog):
 
         assert self._ult_upscale_checkbox is None
         if cache.get(Cache.ULTIMATE_UPSCALE_SCRIPT_AVAILABLE):
-            self._ult_upscale_checkbox = cache.get_control_widget(Cache.USE_ULTIMATE_UPSCALE_SCRIPT)
+            self._ult_upscale_checkbox = create_control_widget(cache, Cache.USE_ULTIMATE_UPSCALE_SCRIPT)
             self._ult_upscale_checkbox.setText('')
             self._form_layout.insertRow(row_insert_idx, cache.get_label(Cache.USE_ULTIMATE_UPSCALE_SCRIPT),
                                         self._ult_upscale_checkbox)
@@ -409,13 +409,13 @@ class ImageScaleModal(QDialog):
             row_insert_idx += 1
 
         assert self._sd_upscale_denoising_slider is None
-        self._sd_upscale_denoising_slider = cache.get_control_widget(Cache.SD_UPSCALING_DENOISING_STRENGTH)
+        self._sd_upscale_denoising_slider = create_control_widget(cache, Cache.SD_UPSCALING_DENOISING_STRENGTH)
         self._form_layout.insertRow(row_insert_idx, cache.get_label(Cache.SD_UPSCALING_DENOISING_STRENGTH),
                                     self._sd_upscale_denoising_slider)
         row_insert_idx += 1
 
         assert self._sd_upscale_step_slider is None
-        self._sd_upscale_step_slider = cache.get_control_widget(Cache.SD_UPSCALING_STEP_COUNT)
+        self._sd_upscale_step_slider = create_control_widget(cache, Cache.SD_UPSCALING_STEP_COUNT)
         self._form_layout.insertRow(row_insert_idx, cache.get_label(Cache.SD_UPSCALING_STEP_COUNT),
                                     self._sd_upscale_step_slider)
         row_insert_idx += 1

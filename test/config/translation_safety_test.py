@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
 from src.ui.input_fields.dual_toggle import DualToggle
+from src.ui.input_fields.field_factory import create_control_widget
 from test.base_test_case import IntraPaintTestCase, PROJECT_ROOT
 
 DEFINITION_FILES = ('a1111_setting', 'application_config', 'cache_value', 'key_config')
@@ -88,7 +89,7 @@ class OptionDisplayTest(IntraPaintTestCase):
     def test_combo_box_displays_translation_and_keeps_stored_value(self) -> None:
         """The dropdown text is translated, and its value and the saved config stay the raw option."""
         cache = Cache()
-        combo_box = cache.get_control_widget(Cache.EDIT_MODE)
+        combo_box = create_control_widget(cache, Cache.EDIT_MODE)
         self.assertEqual(['INPAINT', 'IMAGE TO IMAGE', 'TEXT TO IMAGE'],
                          [combo_box.itemText(i) for i in range(combo_box.count())])
         self.assertEqual('Inpaint', combo_box.value())

@@ -17,6 +17,7 @@ from src.ui.layout.panel_fit import FIELD_MAX_WIDTH, REQUIRED
 from src.ui.panel.generators.generator_panel import GenerateFooterPanel
 from src.ui.panel.generators.stable_diffusion_panel import HonestSizeHints, LabeledRows
 from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
+from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.generators.testing_panel'
@@ -64,7 +65,7 @@ class TestControlPanel(GenerateFooterPanel):
                       lambda mode, *_: self._edit_mode_control.set_value(mode))
         section.add(self._edit_mode_control, REQUIRED)
 
-        self._gen_resolution_input = cache.get_control_widget(Cache.GENERATION_SIZE)
+        self._gen_resolution_input = create_control_widget(cache, Cache.GENERATION_SIZE)
         if isinstance(self._gen_resolution_input, SizeField):
             self._gen_resolution_input.maximum = AppConfig().get(AppConfig.MAX_IMAGE_SIZE).expandedTo(
                 self._gen_resolution_input.value())

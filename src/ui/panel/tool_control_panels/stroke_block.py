@@ -52,6 +52,7 @@ from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.widget.color_pair_widget import ColorPairWidget
 from src.ui.widget.panel_section import PanelSection
 from src.util.layout import layout_contents
+from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.stroke_block'
@@ -156,7 +157,7 @@ def tool_section(title: str, *items: QWidget | QLayout) -> PanelSection:
 
 def build_selection_only_checkbox() -> QWidget:
     """Returns the "Only inside selection" checkbox shared by every tool that paints."""
-    checkbox = Cache().get_control_widget(Cache.PAINT_SELECTION_ONLY)
+    checkbox = create_control_widget(Cache(), Cache.PAINT_SELECTION_ONLY)
     set_signal(checkbox)
     if isinstance(checkbox, QCheckBox):
         checkbox.setText(ONLY_INSIDE_SELECTION_LABEL)
@@ -221,7 +222,7 @@ class StrokeBlock(QWidget):
         self._checks_layout.setContentsMargins(0, 0, 0, 0)
         self._checks_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
         if antialias_key is not None:
-            antialias_checkbox = cache.get_control_widget(antialias_key)
+            antialias_checkbox = create_control_widget(cache, antialias_key)
             if isinstance(antialias_checkbox, QCheckBox):
                 antialias_checkbox.setText(normalize_row_label(cache.get_label(antialias_key)))
             self._checks_layout.addWidget(antialias_checkbox)

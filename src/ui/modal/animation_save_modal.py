@@ -8,6 +8,7 @@ from src.config.cache import Cache
 from src.ui.modal.dialog_footer import DialogFooter
 from src.util.shared_constants import APP_ICON_PATH
 from src.util.visual.image_format_utils import AnimationSaveOptions
+from src.ui.input_fields.field_factory import create_control_widget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.modal.animation_save_modal'
@@ -41,7 +42,7 @@ class AnimationSaveModal(QDialog):
         info_label = QLabel(INFO_LABEL, self)
         info_label.setWordWrap(True)
 
-        self._mode_checkbox = cache.get_control_widget(Cache.ANIMATION_SAVE_AS_ANIMATION)
+        self._mode_checkbox = create_control_widget(cache, Cache.ANIMATION_SAVE_AS_ANIMATION)
         self._mode_checkbox.setText(cache.get_label(Cache.ANIMATION_SAVE_AS_ANIMATION))
         self._mode_checkbox.setToolTip(cache.get_tooltip(Cache.ANIMATION_SAVE_AS_ANIMATION))
         if not allow_flattened:
@@ -49,19 +50,19 @@ class AnimationSaveModal(QDialog):
             self._mode_checkbox.setEnabled(False)
 
         self._duration_label = QLabel(cache.get_label(Cache.ANIMATION_FRAME_DURATION), self)
-        self._duration_field = cache.get_control_widget(Cache.ANIMATION_FRAME_DURATION)
+        self._duration_field = create_control_widget(cache, Cache.ANIMATION_FRAME_DURATION)
         duration_row = QWidget(self)
         duration_row.setToolTip(cache.get_tooltip(Cache.ANIMATION_FRAME_DURATION))
         duration_layout = QHBoxLayout(duration_row)
         duration_layout.addWidget(self._duration_label)
         duration_layout.addWidget(self._duration_field, stretch=1)
 
-        self._loop_forever_checkbox = cache.get_control_widget(Cache.ANIMATION_LOOP_FOREVER)
+        self._loop_forever_checkbox = create_control_widget(cache, Cache.ANIMATION_LOOP_FOREVER)
         self._loop_forever_checkbox.setText(cache.get_label(Cache.ANIMATION_LOOP_FOREVER))
         self._loop_forever_checkbox.setToolTip(cache.get_tooltip(Cache.ANIMATION_LOOP_FOREVER))
 
         self._loop_count_label = QLabel(cache.get_label(Cache.ANIMATION_LOOP_COUNT), self)
-        self._loop_count_field = cache.get_control_widget(Cache.ANIMATION_LOOP_COUNT)
+        self._loop_count_field = create_control_widget(cache, Cache.ANIMATION_LOOP_COUNT)
         self._loop_count_row = QWidget(self)
         self._loop_count_row.setToolTip(cache.get_tooltip(Cache.ANIMATION_LOOP_COUNT))
         loop_count_layout = QHBoxLayout(self._loop_count_row)

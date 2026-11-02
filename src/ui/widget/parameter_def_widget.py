@@ -9,8 +9,9 @@ from sd_backend_client import ParameterDef
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.slider_field import number_field_for_parameter
 from src.util.parameter_def_labels import parameter_label, parameter_tooltip
-from src.util.parameter import Parameter, DynamicFieldWidget, TYPE_BOOL, TYPE_FLOAT, TYPE_INT, TYPE_STR
+from src.util.parameter import Parameter, TYPE_BOOL, TYPE_FLOAT, TYPE_INT, TYPE_STR
 from src.util.shared_constants import INT_MAX, INT_MIN
+from src.ui.input_fields.field_factory import DynamicFieldWidget, create_input_widget
 
 
 def _parameter_and_value(param: ParameterDef, value: Any) -> tuple[Parameter, Any]:
@@ -56,7 +57,7 @@ def create_parameter_widget(param: ParameterDef, value: Any,
         Whether a free-form text parameter uses a multi-line text box.
     """
     parameter, value = _parameter_and_value(param, value)
-    widget = parameter.get_input_widget(multiline and param.option_list is None and parameter.type_name == TYPE_STR)
+    widget = create_input_widget(parameter, multiline and param.option_list is None and parameter.type_name == TYPE_STR)
     widget.setValue(value if parameter.validate(value) else parameter.default_value)  # type: ignore[arg-type]
     widget.valueChanged.connect(on_changed)
     return widget
