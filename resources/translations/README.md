@@ -38,7 +38,9 @@ Wrong or confusing wording in a machine-translated language can be reported as a
    into the main codebase.
 
 Keep every `{name}` and `%1` placeholder of the English text in your translation. IntraPaint fills them in, and the
-build fails on a translation that drops or adds one.
+build fails on a translation that drops or adds one. It also fails on a translation whose HTML tags or line breaks
+differ from the English text, or that loses an `&` accelerator or reuses a letter another entry in the same context
+has. Entries still marked unfinished are not compiled, so they show English.
 
 Option names in the settings and tool panels (for example the edit modes) are shown translated, but IntraPaint always
 saves the original English option, so translating them is safe.

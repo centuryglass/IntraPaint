@@ -20,8 +20,17 @@ Extraction fails, naming the file and line, on calls it can't extract:
 - A `_tr` call with a plural count, which the catalog doesn't support.
 - A `translate` call whose literal context is neither the file's `TR_ID` nor a config definition context.
 
-A translation file fails when it doesn't match a fresh merge, when a translation drops or adds a `{name}` or `%1`
-placeholder of its source, or when its `.qm` file is missing or stale. A `.qm` file with no `.ts` file also fails.
+A translation file fails when it doesn't match a fresh merge, when its `.qm` file is missing or stale, or when a
+finished translation:
+- drops or adds a `{name}` or `%1` placeholder of its source.
+- has different HTML tags, entities or line breaks than its source. Tags and entities may be reordered.
+- has a different number of `&` accelerators than its source, or writes the accelerator in a form its language's
+  glossary style section doesn't allow (`ACCELERATOR_FORMS`).
+- shares an accelerator with another translation in the same context. Which strings share a menu isn't in the
+  catalog, so a context is the closest approximation. Contexts that mix menus are not caught.
+
+A `.qm` file with no `.ts` file also fails. `lrelease` runs with `-nounfinished`, so an unfinished entry falls back to
+English instead of shipping its draft.
 
 `languages.json` needs one entry per translation file, keyed by the file's name without `.ts`, whose
 `machine_translated` value is true or false. The language picker labels a machine-translated language as such
@@ -70,6 +79,16 @@ VANISHED = 'vanished'
 OBSOLETE = 'obsolete'
 
 _PERCENT_PLACEHOLDER = re.compile(r'%(?:\d+|n)')
+_MARKUP = re.compile(r'</?[A-Za-z][^<>]*>|&(?:[A-Za-z]+|#\d+|#x[0-9A-Fa-f]+);|\n')
+_ENTITY = re.compile(r'&(?:[A-Za-z]+|#\d+|#x[0-9A-Fa-f]+);')
+_ACCELERATOR = re.compile(r'&(\w)')
+
+# Where a language puts the `&` accelerator, keyed by language code prefix. A language not listed puts it directly
+# before any letter of the label. The forms come from each language's style section in `doc/translation/`.
+ACCELERATOR_FORMS: dict[str, re.Pattern[str]] = {
+    # Chinese: a bracketed letter at the end, like `滑块(&I)`, optionally followed by an ellipsis or colon.
+    'zh': re.compile(r'\(&\w\)(?:\.\.\.|\u2026)?[:\uff1a]?$'),
+}
 
 
 @dataclass
@@ -362,18 +381,67 @@ def _placeholders(text: str) -> Optional[list[str]]:
     return sorted(found)
 
 
+def _finished(catalog: Catalog) -> list[Message]:
+    """Returns the messages the checks apply to: those with a translation that is not vanished."""
+    return [message for message in catalog.all_messages()
+            if message.translation != '' and message.translation_type != VANISHED]
+
+
 def placeholder_problems(file_name: str, catalog: Catalog) -> list[str]:
     """Reports each translation whose placeholders differ from its source's."""
     problems = []
-    for message in catalog.all_messages():
-        if message.translation == '' or message.translation_type == VANISHED:
-            continue
+    for message in _finished(catalog):
         expected = _placeholders(message.source)
         actual = _placeholders(message.translation)
         if expected is not None and actual != expected:
             found = 'braces that do not parse' if actual is None else f'placeholders {actual}'
             problems.append(f'{file_name}: [{message.context}] {message.source!r}: the translation has {found}, '
                             f'expected {expected}.')
+    return problems
+
+
+def _markup(text: str) -> list[str]:
+    """Returns the sorted HTML tags, entities and line breaks of a string."""
+    return sorted(token.lower() if token != '\n' else '\\n' for token in _MARKUP.findall(text))
+
+
+def markup_problems(file_name: str, catalog: Catalog) -> list[str]:
+    """Reports each translation whose HTML tags, entities or line breaks differ from its source's."""
+    problems = []
+    for message in _finished(catalog):
+        expected, actual = _markup(message.source), _markup(message.translation)
+        if expected != actual:
+            problems.append(f'{file_name}: [{message.context}] {message.source!r}: the translation has markup '
+                            f'{actual}, expected {expected}.')
+    return problems
+
+
+def _accelerators(text: str) -> list[str]:
+    """Returns the lower-cased accelerator letters in a string, ignoring HTML entities and literal `&&`."""
+    return [letter.lower() for letter in _ACCELERATOR.findall(_ENTITY.sub('', text.replace('&&', '')))]
+
+
+def accelerator_problems(file_name: str, language: str, catalog: Catalog) -> list[str]:
+    """Reports translations that lose, add, misplace or duplicate a `&` accelerator."""
+    form = next((pattern for prefix, pattern in ACCELERATOR_FORMS.items() if language.lower().startswith(prefix)), None)
+    problems = []
+    used: dict[tuple[str, str], str] = {}
+    for message in _finished(catalog):
+        expected, actual = _accelerators(message.source), _accelerators(message.translation)
+        if len(expected) != len(actual):
+            problems.append(f'{file_name}: [{message.context}] {message.source!r}: the translation has '
+                            f'{len(actual)} accelerator(s), expected {len(expected)}.')
+            continue
+        if not actual:
+            continue
+        if form is not None and not form.search(message.translation):
+            problems.append(f'{file_name}: [{message.context}] {message.source!r}: the accelerator is not in the '
+                            f'form {form.pattern!r} that the language\'s style section gives.')
+        for letter in actual:
+            other = used.setdefault((message.context, letter), message.source)
+            if other != message.source:
+                problems.append(f'{file_name}: [{message.context}] {message.source!r}: the accelerator &{letter} is '
+                                f'also used by {other!r}.')
     return problems
 
 
@@ -397,7 +465,7 @@ def _find_lrelease() -> str:
 
 def compile_qm(ts_path: str, qm_path: str) -> None:
     """Compiles a `.ts` file into a `.qm` file with lrelease."""
-    subprocess.run([_find_lrelease(), '-silent', ts_path, '-qm', qm_path], check=True)
+    subprocess.run([_find_lrelease(), '-silent', '-nounfinished', ts_path, '-qm', qm_path], check=True)
 
 
 def _read_bytes(path: str) -> Optional[bytes]:
@@ -477,6 +545,8 @@ def build(project_dir: str = PROJECT_DIR, check: bool = False) -> tuple[list[str
             continue
         merged = merge_translations(catalog, existing)
         problems.extend(placeholder_problems(f'{TRANSLATION_DIR}/{file_name}', merged))
+        problems.extend(markup_problems(f'{TRANSLATION_DIR}/{file_name}', merged))
+        problems.extend(accelerator_problems(f'{TRANSLATION_DIR}/{file_name}', language, merged))
         ts_text = write_ts(merged, language)
         _update(file_name, ts_text.encode('utf-8'))
         with tempfile.TemporaryDirectory() as temp_dir:
