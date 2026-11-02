@@ -14,7 +14,8 @@ from src.image.layers.image_stack_utils import scale_all_layers
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
 from src.util.menu_builder import MenuBuilder
-from src.util.shared_constants import EDIT_MODE_INPAINT, PIL_SCALING_MODES
+from src.util.shared_constants import EDIT_MODE_INPAINT
+from src.util.shared_text import PIL_SCALING_MODES
 from src.util.visual.pil_image_utils import pil_image_scaling
 
 logger = logging.getLogger(__name__)

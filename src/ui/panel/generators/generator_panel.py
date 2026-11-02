@@ -8,7 +8,7 @@ from src.ui.ink_style import set_primary_button
 from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.layout.dock_panel import DockPanel
 from src.ui.layout.panel_fit import Orientation
-from src.util.shared_constants import BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENERATE
+from src.util.shared_text import BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENERATE
 
 # The widest the Generate column of a strip grows:
 TRAILING_COLUMN_MAX_WIDTH = 240
