@@ -13,7 +13,7 @@ from src.ui.input_fields.segmented_control import Segment, SegmentedControl
 from src.ui.input_fields.size_field import SizeField
 from src.ui.layout.dock_panel import PanelLayout
 from src.ui.layout.label_column_layout import normalize_row_label
-from src.ui.layout.panel_fit import FIELD_MAX_WIDTH, REQUIRED
+from src.ui.layout.panel_fit import REQUIRED, limit_field_width
 from src.ui.panel.generators.generator_panel import GenerateFooterPanel
 from src.ui.panel.generators.stable_diffusion_panel import HonestSizeHints, LabeledRows
 from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
@@ -70,5 +70,5 @@ class TestControlPanel(GenerateFooterPanel):
             self._gen_resolution_input.maximum = AppConfig().get(AppConfig.MAX_IMAGE_SIZE).expandedTo(
                 self._gen_resolution_input.value())
         holder = HonestSizeHints(self._gen_resolution_input)
-        holder.setMaximumWidth(FIELD_MAX_WIDTH)
+        limit_field_width(holder)
         section.add(LabeledRows([(normalize_row_label(cache.get_label(Cache.GENERATION_SIZE)), holder)]), REQUIRED)

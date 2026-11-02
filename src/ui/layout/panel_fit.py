@@ -1,7 +1,9 @@
 """Orientation and fit planning for panels: what a panel shows, and in which form, from the space its host reports.
 
 A panel never measures the window. Its host reports an `Orientation` and the size the panel fills, and the panel shows
-as much as fits there. Thresholds live in this module, so DPI normalization (issue #13) changes them in one place.
+as much as fits there. Width thresholds live in this module and scale with the application font
+(`strip_section_min_width`, `strip_section_max_width`, `field_max_width`), so a larger `AppConfig.FONT_POINT_SIZE`
+widens them with the text.
 `doc/agents/panel_layout.md` lists what a planned layout has to do.
 
 - Orientation comes from the space a panel fills: a panel taller than wide is a side panel, a wide one is a strip,
@@ -34,7 +36,8 @@ from enum import Enum
 from typing import Callable, Optional, Protocol, Sequence, TypeVar, runtime_checkable
 from weakref import WeakMethod
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QEvent, QObject, QSize, Qt
+from PySide6.QtGui import QFont, QFontMetricsF
 from PySide6.QtWidgets import QApplication, QSizePolicy, QWidget
 
 
@@ -44,19 +47,63 @@ class Orientation(Enum):
     STRIP = 'strip'
 
 
+# Pixel margin against flicker when dragging across a boundary. It doesn't depend on text, so it doesn't scale:
 HYSTERESIS = 6
 
-STRIP_SECTION_MIN_WIDTH = 240
-STRIP_SECTION_MAX_WIDTH = 300
+# Width constants in pixels at the reference font size, where `_font_scale` is 1:
+_REFERENCE_POINT_SIZE = 10.0
+_STRIP_SECTION_MIN_WIDTH = 240
+_STRIP_SECTION_MAX_WIDTH = 300
 
-# The widest an input field is laid out, unless set_field_width_cap gives it its own cap:
-FIELD_MAX_WIDTH = STRIP_SECTION_MAX_WIDTH
+
+def _font_scale() -> float:
+    """Returns the application font's average character width relative to the same font at 10pt, so 10pt gives 1."""
+    font = QApplication.font()
+    reference = QFont(font)
+    reference.setPointSizeF(_REFERENCE_POINT_SIZE)
+    reference_width = QFontMetricsF(reference).averageCharWidth()
+    if reference_width <= 0:
+        return 1.0
+    return QFontMetricsF(font).averageCharWidth() / reference_width
+
+
+def strip_section_min_width() -> int:
+    """Returns the narrowest a strip section is laid out, scaled with the application font."""
+    return round(_STRIP_SECTION_MIN_WIDTH * _font_scale())
+
+
+def strip_section_max_width() -> int:
+    """Returns the widest a strip section is laid out, scaled with the application font."""
+    return round(_STRIP_SECTION_MAX_WIDTH * _font_scale())
+
+
+def field_max_width() -> int:
+    """Returns the widest an input field is laid out, unless `set_field_width_cap` gives it its own cap."""
+    return strip_section_max_width()
+
+
+def limit_field_width(field: QWidget) -> None:
+    """Caps a field's maximum width at `field_max_width()` and keeps it there when the application font changes."""
+    field.setMaximumWidth(field_max_width())
+    field.installEventFilter(_FieldWidthTracker(field))
+
+
+class _FieldWidthTracker(QObject):
+    """Re-applies `field_max_width()` to its parent field on font changes."""
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # pylint: disable=invalid-name
+        """Updates the cap when the field's font changes."""
+        if event.type() == QEvent.Type.FontChange and isinstance(watched, QWidget):
+            watched.setMaximumWidth(field_max_width())
+        return False
+
+
 FIELD_WIDTH_CAP_PROPERTY = 'field_width_cap'
 _UNCAPPED = -1
 
 
 def set_field_width_cap(field: QWidget, cap: Optional[int]) -> None:
-    """Gives an input field its own width cap in place of FIELD_MAX_WIDTH, or lets it stretch with None.
+    """Gives an input field its own width cap in place of `field_max_width()`, or lets it stretch with None.
 
     The cap is what layout checks hold the field to (`find_arrangement_problems` in `test/ui/panel_capture.py`). It
     doesn't resize the field: its maximum width and size policy do that.
@@ -65,11 +112,11 @@ def set_field_width_cap(field: QWidget, cap: Optional[int]) -> None:
 
 
 def field_width_cap(field: QWidget) -> Optional[int]:
-    """Returns the widest a field should be laid out: its `set_field_width_cap` cap, or FIELD_MAX_WIDTH, or None if it
-    may stretch."""
+    """Returns the widest a field should be laid out: its `set_field_width_cap` cap, or `field_max_width()`, or None if
+    it may stretch."""
     cap = field.property(FIELD_WIDTH_CAP_PROPERTY)
     if cap is None:
-        return FIELD_MAX_WIDTH
+        return field_max_width()
     return None if cap == _UNCAPPED else int(cap)
 
 # The priority of items that are always shown:

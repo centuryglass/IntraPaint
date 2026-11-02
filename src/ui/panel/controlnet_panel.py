@@ -40,7 +40,7 @@ from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel, PanelLayout
-from src.ui.layout.panel_fit import FIELD_MAX_WIDTH, REQUIRED, STRIP_SECTION_MIN_WIDTH, FitItem, Orientation
+from src.ui.layout.panel_fit import REQUIRED, FitItem, Orientation, limit_field_width, strip_section_min_width
 from src.ui.modal.modal_utils import open_image_file
 from src.ui.panel.controlnet_widgets import DOT_SIZE, PREVIEW_IMAGE_SIZE, PreviewImage, UnitList
 from src.ui.panel.generators.stable_diffusion_panel import FieldPair, LabeledRows
@@ -227,7 +227,7 @@ def _shrinking_combo_box() -> QComboBox:
     combo_box.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
     combo_box.setMinimumContentsLength(COMBO_MIN_CHARACTERS)
     combo_box.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
-    combo_box.setMaximumWidth(FIELD_MAX_WIDTH)
+    limit_field_width(combo_box)
     return combo_box
 
 
@@ -369,7 +369,7 @@ class ControlNetPanel(DockPanel):
             Segment(SOURCE_GENERATION_AREA_VALUE, SOURCE_GENERATION_AREA, tooltip=SOURCE_GENERATION_AREA_TOOLTIP),
             Segment(SOURCE_IMAGE_FILE_VALUE, SOURCE_IMAGE_FILE, tooltip=SOURCE_IMAGE_FILE_TOOLTIP)
         ], DisplayMode.LABEL, combo_fallback=True)
-        self._image_source.setMaximumWidth(FIELD_MAX_WIDTH)
+        limit_field_width(self._image_source)
         self._image_path_edit = QLineEdit()
         self._image_path_edit.setPlaceholderText(IMAGE_PATH_PLACEHOLDER)
         self._image_path_edit.setMinimumWidth(self._image_path_edit.fontMetrics().averageCharWidth()
@@ -395,7 +395,7 @@ class ControlNetPanel(DockPanel):
         self._preview_button = QPushButton(BUTTON_TEXT_PREVIEW)
         self._preview_button.setToolTip(BUTTON_TOOLTIP_PREVIEW)
         preprocessor_row = _row(self._preprocessor_combobox, self._preview_button)
-        preprocessor_row.setMaximumWidth(FIELD_MAX_WIDTH)
+        limit_field_width(preprocessor_row)
         self._mode_rows = LabeledRows([(LABEL_CONTROL_TYPE, self._control_type_combobox),
                                        (LABEL_PREPROCESSOR, preprocessor_row),
                                        (LABEL_MODEL, self._model_combobox)])
@@ -421,7 +421,7 @@ class ControlNetPanel(DockPanel):
             webui_pair = FieldPair(self._px_perfect_checkbox, self._vram_checkbox)
             for checkbox in (self._px_perfect_checkbox, self._vram_checkbox):
                 webui_pair.layout().setAlignment(checkbox, Qt.AlignmentFlag.AlignLeft)
-            webui_pair.setMaximumWidth(FIELD_MAX_WIDTH)
+            limit_field_width(webui_pair)
             section.add(webui_pair, REQUIRED, webui_pair.forms(self._strip_column_width))
         section.widget.bind_summary(self._preprocessor_summary, self._preprocessor_combobox.currentIndexChanged,
                                     self._model_combobox.currentIndexChanged)
@@ -443,7 +443,7 @@ class ControlNetPanel(DockPanel):
         section.add(self._control_strength_slider, REQUIRED)
         step_pair = FieldPair(self._control_start_slider, self._control_end_slider)
         # The pair lines up with the weight field above it:
-        step_pair.setMaximumWidth(FIELD_MAX_WIDTH)
+        limit_field_width(step_pair)
         section.add(step_pair, REQUIRED, step_pair.forms(self._strip_column_width))
         section.widget.bind_summary(self._strength_summary, self._control_strength_slider.valueChanged,
                                     self._control_start_slider.valueChanged, self._control_end_slider.valueChanged)
@@ -455,7 +455,7 @@ class ControlNetPanel(DockPanel):
                              step=float(param.step_val if param.step_val is not None else 0.01),
                              decimals=STRENGTH_DECIMALS)
         slider.setToolTip(param.description)
-        slider.setMaximumWidth(FIELD_MAX_WIDTH)
+        limit_field_width(slider)
         return slider
 
     def _connect_controls(self) -> None:
@@ -904,7 +904,7 @@ class ControlNetPanel(DockPanel):
                         self._parameter_layout.addWidget(LabeledRows(labeled))
                         labeled = []
                     parameter_widget = create_parameter_field(parameter, value, on_changed)
-                    parameter_widget.setMaximumWidth(FIELD_MAX_WIDTH)
+                    limit_field_width(parameter_widget)
                     self._parameter_layout.addWidget(parameter_widget)
                 else:
                     parameter_widget = create_parameter_widget(parameter, value, on_changed)
@@ -979,12 +979,12 @@ class ControlNetPanel(DockPanel):
         limit: Optional[QSize] = None
         if orientation == Orientation.STRIP and available is not None:
             margins = self.content_margins()
-            limit = QSize(STRIP_SECTION_MIN_WIDTH,
+            limit = QSize(strip_section_min_width(),
                           available.height() - margins.top() - margins.bottom() - self.scroll_bar_extent())
         self._preview_image_widget.set_size_limit(limit)
 
     def _strip_column_width(self) -> Optional[int]:
-        return STRIP_SECTION_MIN_WIDTH if self.orientation == Orientation.STRIP else None
+        return strip_section_min_width() if self.orientation == Orientation.STRIP else None
 
     def _place_preview(self, form: Optional[int]) -> None:
         self._preview_placed = form is not None

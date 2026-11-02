@@ -10,7 +10,7 @@ from PySide6.QtCore import QEvent, QSize
 from PySide6.QtWidgets import QGridLayout, QVBoxLayout, QWidget
 
 from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel
-from src.ui.layout.panel_fit import (STRIP_SECTION_MAX_WIDTH, FitPlanner, Orientation, fresh_minimum_size,
+from src.ui.layout.panel_fit import (strip_section_max_width, FitPlanner, Orientation, fresh_minimum_size,
                                      orientation_for_size)
 
 
@@ -96,9 +96,9 @@ class FitToolPanel(QWidget):
 
     @staticmethod
     def _cap_width(widget: QWidget) -> None:
-        """Caps a section at `STRIP_SECTION_MAX_WIDTH`, or at its minimum width if that is wider."""
+        """Caps a section at `strip_section_max_width()`, or at its minimum width if that is wider."""
         widget.setMaximumWidth(QWIDGETSIZE_MAX)
-        widget.setMaximumWidth(max(STRIP_SECTION_MAX_WIDTH, fresh_minimum_size(widget).width()))
+        widget.setMaximumWidth(max(strip_section_max_width(), fresh_minimum_size(widget).width()))
 
     def event(self, event: QEvent) -> bool:
         """Forgets the host's space when the panel moves to a new parent, and plans for its own size when resized

@@ -16,7 +16,7 @@ from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters.soft_inpainting_adapter import (
     SOFT_INPAINTING_MIN_USEFUL_MASK_BLUR, load_parameter_defs, load_values, save_value)
 from src.ui.ink_style import caution_color
-from src.ui.layout.panel_fit import FIELD_MAX_WIDTH
+from src.ui.layout.panel_fit import limit_field_width
 from src.ui.widget.panel_section import PanelSection
 from src.ui.widget.parameter_def_widget import create_parameter_field, create_parameter_widget, \
     is_numeric_field_parameter
@@ -110,7 +110,7 @@ class SoftInpaintingControls(QWidget):
             on_changed = partial(save_value, parameter.key)
             if is_numeric_field_parameter(parameter):
                 field = create_parameter_field(parameter, value, on_changed)
-                field.setMaximumWidth(FIELD_MAX_WIDTH)
+                limit_field_width(field)
                 self._parameter_layout.addWidget(field)
             else:
                 widget = create_parameter_widget(parameter, value, on_changed)

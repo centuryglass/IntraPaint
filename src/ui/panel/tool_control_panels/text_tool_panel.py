@@ -15,7 +15,7 @@ The panel is a view over one `TextRect`, which it stores in `Cache.TEXT_TOOL_PAR
 
 The panel is a `src.ui.layout.panel_fit.FitContent`, planned in the space the Tools panel gives it:
 - Side: one column, or two where they fit across, with the preview beside the text box. The panel scrolls.
-- Strip: columns of up to `STRIP_SECTION_MAX_WIDTH`: the text box over the preview, Font, Style, then Position and
+- Strip: columns of up to `strip_section_max_width()`: the text box over the preview, Font, Style, then Position and
   size over Advanced. Section headers are optional.
 - Advanced is optional: a plan without room for it moves it to `overflow_content`, which the Tools panel shows in its
   More popover.

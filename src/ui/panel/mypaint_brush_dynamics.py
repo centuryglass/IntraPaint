@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QApplication, QComboBox, QLabel, QSizePolicy, QVBo
 
 from src.image.mypaint.mypaint_brush import BrushSetting, MyPaintBrush
 from src.ui.input_fields.slider_field import SliderField
-from src.ui.layout.panel_fit import FIELD_MAX_WIDTH
+from src.ui.layout.panel_fit import limit_field_width
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.mypaint_brush_dynamics'
@@ -115,7 +115,7 @@ class BrushDynamicsWidget(QWidget):
         self._field = SliderField(VALUE_LABEL, 0.0, 0.0, 1.0, step=0.01, parent=self)
         # The description wraps to whatever width the section gets, and the inputs stop at the field cap:
         for field in (self._setting_combo, self._field):
-            field.setMaximumWidth(FIELD_MAX_WIDTH)
+            limit_field_width(field)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)

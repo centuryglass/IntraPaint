@@ -49,7 +49,7 @@ from src.ui.ink_style import InkStyle
 from src.ui.layout.bordered_widget import DEFAULT_LINE_WIDTH
 from src.ui.layout.column_packing import PackedColumns, pack_columns
 from src.ui.layout.flow_layout import FlowWidget
-from src.ui.layout.panel_fit import (REQUIRED, STRIP_SECTION_MAX_WIDTH, STRIP_SECTION_MIN_WIDTH, FitItem, FitPlanner,
+from src.ui.layout.panel_fit import (REQUIRED, strip_section_max_width, strip_section_min_width, FitItem, FitPlanner,
                                      Orientation, Placement, cross_extent, fresh_minimum_size,
                                      held_weakly, scroll_extent)
 from src.ui.widget.panel_header import PanelHeader, PanelPopover
@@ -641,8 +641,8 @@ class DockPanel(QWidget):
         for section in self._layout_model.sections:
             section.widget.set_summary_below(horizontal and self._packs_columns)
             if horizontal:
-                section.widget.setMinimumWidth(STRIP_SECTION_MIN_WIDTH)
-                section.widget.setMaximumWidth(STRIP_SECTION_MAX_WIDTH)
+                section.widget.setMinimumWidth(strip_section_min_width())
+                section.widget.setMaximumWidth(strip_section_max_width())
                 section.widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
             else:
                 section.widget.setMinimumWidth(0)
@@ -771,7 +771,7 @@ class DockPanel(QWidget):
             if available is not None:
                 others = sum(size.width() + row_spacing for other, size in zip(columns, sizes) if other is not column)
                 room = available.width() - row_spacing - others
-                body_room = body.width() if body.width() <= room - widths[index] else STRIP_SECTION_MIN_WIDTH
+                body_room = body.width() if body.width() <= room - widths[index] else strip_section_min_width()
                 preferred = min(preferred, room - body_room)
             column.scroll.set_preferred_width(preferred + widths[index] - self._fresh_size(column.content).width())
         columns_width = sum(size.width() + row_spacing for size in sizes)
