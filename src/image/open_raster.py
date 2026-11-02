@@ -139,10 +139,10 @@ _COMMON_KNOWN_ATTRIBUTES = frozenset({ATTR_TAG_NAME, ATTR_TAG_COMPOSITE, ATTR_TA
 STACK_KNOWN_ATTRIBUTES = _COMMON_KNOWN_ATTRIBUTES | {STACK_TAG_ISOLATION}
 LAYER_KNOWN_ATTRIBUTES = _COMMON_KNOWN_ATTRIBUTES | {ATTR_TAG_X_POS, ATTR_TAG_Y_POS, LAYER_TAG_SRC}
 
-# Archive members IntraPaint rebuilds on every save, which are never kept as foreign files. Both merged image names
-# are listed: this module writes `MERGED_IMAGE_FILE_NAME`, and the spec and other programs use 'mergedimage.png'.
+# Archive members IntraPaint rebuilds on every save, which are never kept as foreign files. 'mergedimage' is the merged
+# image's name in files from IntraPaint v1.4.0 and earlier.
 _REBUILT_ARCHIVE_FILES = frozenset({MIMETYPE_FILE_NAME, XML_FILE_NAME, EXTENDED_DATA_XML_FILE_NAME,
-                                    MERGED_IMAGE_FILE_NAME, f'{MERGED_IMAGE_FILE_NAME}.png',
+                                    MERGED_IMAGE_FILE_NAME, 'mergedimage', 'mergedimage.png',
                                     f'{THUMBNAIL_DIRECTORY_NAME}/{THUMBNAIL_FILE_NAME}'})
 _PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
 
