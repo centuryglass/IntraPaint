@@ -509,6 +509,14 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: Optional[
 def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
     """Read a .ora file into the image stack, returning metadata."""
     tmpdir = tempfile.mkdtemp()
+    try:
+        return _read_ora_image(image_stack, file_path, tmpdir)
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+def _read_ora_image(image_stack: ImageStack, file_path: str, tmpdir: str) -> Optional[str]:
+    """Extracts a .ora file into `tmpdir` and loads it. Nothing may read from `tmpdir` after this returns."""
     with zipfile.ZipFile(file_path) as zip_file:
         zip_file.extractall(tmpdir)
         archive_entries = {info.filename: info for info in zip_file.infolist() if not info.is_dir()}
