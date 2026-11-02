@@ -221,7 +221,7 @@ class ImageFilter:
         preview_bounds.setHeight(min(bounds.y() + bounds.height() - preview_bounds.y(),
                                      round(change_size.height() * 1.2)))
         if preview_bounds.isEmpty():
-            return lambda: QImage()
+            return QImage
 
         preview_transform = QTransform.fromTranslate(-preview_bounds.x(), -preview_bounds.y())
         preview_image = QImage(preview_bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
