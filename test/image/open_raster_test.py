@@ -133,6 +133,20 @@ class OpenRasterTest(IntraPaintTestCase):
         self.assertEqual(len(self.image_stack.layers), len(self.loaded_stack.layers))
         self._assert_layers_match(self.image_stack.layer_stack, self.loaded_stack.layer_stack)
 
+    def test_read_removes_its_extracted_copy(self) -> None:
+        """Reading a .ora file leaves no extracted copy in the temp directory, whether or not the read succeeds."""
+        self._add_image_layer('layer')
+        with tempfile.TemporaryDirectory() as work_dir, tempfile.TemporaryDirectory() as temp_root:
+            ora_path = os.path.join(work_dir, 'cleanup.ora')
+            save_ora_image(self.image_stack, ora_path, METADATA)
+            with patch.object(tempfile, 'tempdir', temp_root):
+                read_ora_image(self.loaded_stack, ora_path)
+                self.assertEqual([], os.listdir(temp_root), 'a successful read left temp files')
+                with patch('src.image.open_raster.iterparse', side_effect=RuntimeError('bad xml')):
+                    with self.assertRaises(RuntimeError):
+                        read_ora_image(self.loaded_stack, ora_path)
+                self.assertEqual([], os.listdir(temp_root), 'a failed read left temp files')
+
     def test_awkward_names_individually(self) -> None:
         """Each awkward layer name survives a round trip, as a top-level layer and inside a group."""
         for name in AWKWARD_NAMES:
