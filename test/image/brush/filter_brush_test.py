@@ -208,8 +208,6 @@ class FilterBrushTest(BrushTestCase):
         image = self.stroke(zigzag_points())
         self.assert_stroke_matches_golden(image, 'brightness_contrast_opacity_gradient', PIL_TRANSLUCENT_TOLERANCE)
 
-    @pytest.mark.xfail(strict=True, reason='PIL filters average the color of transparent pixels as black: '
-                                           'https://github.com/centuryglass/IntraPaint/issues/161')
     def test_blur_next_to_transparency_keeps_color(self) -> None:
         """Blurring opaque white into transparent pixels lowers alpha without darkening the color."""
         initial_image = create_transparent_image(LAYER_SIZE)
