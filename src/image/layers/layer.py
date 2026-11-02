@@ -4,7 +4,7 @@ import datetime
 from weakref import ref
 from abc import abstractmethod, ABCMeta
 from contextlib import contextmanager
-from typing import Any, Callable, Optional, Generator
+from typing import Any, Callable, Optional, Generator, TYPE_CHECKING
 
 from PySide6.QtCore import QObject, Signal, QRect, QPoint, QSize, QRectF
 from PySide6.QtGui import QImage, QPixmap, QPainter, QTransform, QPainterPath, QPolygonF
@@ -15,6 +15,9 @@ from src.util.cached_data import CachedData
 from src.util.visual.geometry_utils import map_rect_precise, transform_needs_smooth_sampling
 from src.util.visual.image_utils import (create_transparent_image, NpAnyArray, image_data_as_numpy_8bit_readonly,
                                          image_is_fully_transparent)
+
+if TYPE_CHECKING:
+    from src.image.ora_foreign_data import OraForeignLayerData
 
 
 class _LayerMeta(ABCMeta, type(QObject)):
@@ -59,6 +62,8 @@ class Layer(QObject, metaclass=_LayerMeta):
         self._locked = False
         self._z_value = 0
         self._content_change_timestamp = 0.0
+        # Another program's data from the .ora file this layer was loaded from. Only `open_raster` uses it.
+        self.ora_foreign_data: Optional[OraForeignLayerData] = None
         Layer._next_layer_id += 1
 
     # PROPERTY DEFINITIONS:
