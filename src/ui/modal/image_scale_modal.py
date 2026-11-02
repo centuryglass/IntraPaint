@@ -19,7 +19,8 @@ from src.ui.panel.controlnet_panel import CONTROL_END_PARAM, CONTROL_END_FIELD, 
     CONTROL_END_STEP_TITLE, set_unit_value
 from src.ui.widget.parameter_def_widget import create_parameter_widget
 from src.util.parameter_def_labels import parameter_label, parameter_tooltip
-from src.util.shared_constants import APP_ICON_PATH, PIL_SCALING_MODES, UPSCALE_OPTION_NONE
+from src.util.shared_constants import APP_ICON_PATH
+from src.util.shared_text import PIL_SCALING_MODES, UPSCALE_OPTION_NONE
 from src.util.signals_blocked import signals_blocked
 from src.ui.input_fields.field_factory import DynamicFieldWidget, create_control_widget
 

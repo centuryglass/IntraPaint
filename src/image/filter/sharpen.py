@@ -9,7 +9,8 @@ from src.config.key_config import KeyConfig
 from src.image.filter.filter import ImageFilter
 from src.image.layers.image_stack import ImageStack
 from src.util.shared_constants import PROJECT_DIR
-from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image
+from src.util.visual.pil_image_utils import premultiplied_pil_image_to_qimage, \
+    qimage_to_premultiplied_pil_image
 from src.util.parameter import Parameter, TYPE_FLOAT
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -66,9 +67,9 @@ class SharpenFilter(ImageFilter):
     @staticmethod
     def sharpen(image: QImage, factor: float) -> QImage:
         """Sharpens an image."""
-        pil_image = qimage_to_pil_image(image)
+        pil_image = qimage_to_premultiplied_pil_image(image)
         enhancer = ImageEnhance.Sharpness(pil_image)
-        return pil_image_to_qimage(enhancer.enhance(factor))
+        return premultiplied_pil_image_to_qimage(enhancer.enhance(factor))
 
     def get_parameters(self) -> list[Parameter]:
         """Return parameter definitions for the sharpen filter."""

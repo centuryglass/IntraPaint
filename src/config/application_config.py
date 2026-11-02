@@ -7,7 +7,8 @@ from PySide6.QtWidgets import QStyleFactory
 from src.config.config import Config
 from src.ui.theme import THEME_INK, THEME_SYSTEM
 from src.util.optional_import import optional_import
-from src.util.shared_constants import PROJECT_DIR, DATA_DIR, PIL_SCALING_MODES, APP_CONFIG_PATH
+from src.util.shared_constants import PROJECT_DIR, DATA_DIR, APP_CONFIG_PATH
+from src.util.shared_text import PIL_SCALING_MODES
 from src.util.translation import SYSTEM_LANGUAGE, available_languages, language_name
 from src.util.singleton import Singleton
 

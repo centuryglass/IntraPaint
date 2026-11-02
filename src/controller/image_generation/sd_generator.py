@@ -37,9 +37,9 @@ from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_S
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
 from src.util.parameter import TYPE_LIST, TYPE_STR, TYPE_FLOAT, TYPE_DICT
-from src.util.shared_constants import PROJECT_DIR, EDIT_MODE_INPAINT, \
-    URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, \
-    URL_REQUEST_TITLE, PIL_SCALING_MODES, UPSCALED_LAYER_NAME, UPSCALE_ERROR_TITLE, UPSCALE_OPTION_NONE
+from src.util.shared_constants import PROJECT_DIR, EDIT_MODE_INPAINT
+from src.util.shared_text import (URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, URL_REQUEST_TITLE, PIL_SCALING_MODES,
+                                  UPSCALED_LAYER_NAME, UPSCALE_ERROR_TITLE, UPSCALE_OPTION_NONE)
 from src.util.visual.geometry_utils import map_rect_precise
 from src.util.visual.image_utils import flatten_onto_color
 from src.util.visual.pil_image_utils import pil_image_scaling

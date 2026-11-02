@@ -123,7 +123,7 @@ from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, Menu
 from src.util.optional_import import optional_import
 from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.qtexcepthook import QtExceptHook
-from src.util.shared_constants import PIL_SCALING_MODES
+from src.util.shared_text import PIL_SCALING_MODES
 from src.util.system_clipboard import clipboard_has_image, clipboard_image_is_own_copy, get_clipboard_image, \
     set_clipboard_image
 from src.ui.window.window_geometry import restore_window
