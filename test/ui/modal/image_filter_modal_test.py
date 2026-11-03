@@ -1,8 +1,10 @@
 """Tests that `ImageFilterModal` debounces input changes and keeps preview rendering off the calling thread."""
+import sys
 from typing import Any, Optional
 from unittest.mock import patch
 
 from PySide6.QtGui import QImage
+from shiboken6 import delete, isValid
 from PySide6.QtWidgets import QBoxLayout
 
 from src.ui.modal.image_filter_modal import ImageFilterModal
@@ -25,7 +27,8 @@ class ImageFilterModalPreviewTest(IntraPaintTestCase):
 
     def tearDown(self) -> None:
         self._patch.stop()
-        self.modal.deleteLater()
+        if isValid(self.modal):
+            self.modal.deleteLater()
         super().tearDown()
 
     def _prepare(self, values: list[Any]):
@@ -82,6 +85,17 @@ class ImageFilterModalPreviewTest(IntraPaintTestCase):
         self.assertIsNotNone(image)
         assert image is not None
         self.assertEqual(4, image.width())
+
+    def test_render_finishing_after_dialog_deleted_is_ignored(self) -> None:
+        """A render that finishes after its dialog was deleted does not touch the deleted widgets."""
+        task = self.started.pop(0)
+        delete(self.modal)
+        self.assertFalse(isValid(self.modal))
+        errors: list[BaseException] = []
+        # PySide reports an exception raised in a slot through sys.excepthook rather than raising it.
+        with patch.object(sys, 'excepthook', lambda _type, value, _tb: errors.append(value)):
+            task.run()
+        self.assertEqual([], errors)
 
 
 class ImageFilterModalLayoutTest(IntraPaintTestCase):
