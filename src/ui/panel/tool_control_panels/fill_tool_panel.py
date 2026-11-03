@@ -4,6 +4,7 @@ from typing import Optional
 from PySide6.QtWidgets import QApplication, QCheckBox, QVBoxLayout, QWidget
 
 from src.config.cache import Cache
+from src.ui.input_fields.number_field import MAX_WIDTH as NUMBER_FIELD_MAX_WIDTH
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.panel.tool_control_panels.stroke_block import (build_paint_row, build_selection_only_checkbox,
@@ -64,6 +65,8 @@ class FillToolPanel(QWidget):
         layout = QVBoxLayout(self)
         paint_row = build_paint_row(Cache.LAST_BRUSH_COLOR, Cache.FILL_TOOL_BRUSH_PATTERN, self)
         assert paint_row is not None
+        # Keeps the Pattern dropdown's right edge level with the Color threshold slider's:
+        paint_row.setMaximumWidth(NUMBER_FIELD_MAX_WIDTH)
         layout.addWidget(tool_section(PAINT_SECTION_TITLE, paint_row, build_selection_only_checkbox()))
 
         self._threshold_field = build_threshold_field(self)
