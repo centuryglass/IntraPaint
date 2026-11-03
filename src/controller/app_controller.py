@@ -92,8 +92,7 @@ from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.color_panel import ColorControlPanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
-from src.ui.theme import (apply_font_point_size, apply_overlay_scroll_bars, apply_rounded_popups, apply_style,
-                          apply_theme)
+from src.ui.theme import apply_appearance_config
 from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
 from src.ui.window.dock_menu import MENU_MOVE_ALL_TO_EDGE, edge_title
@@ -209,16 +208,7 @@ class AppController(MenuBuilder):
         self._generator_window: Optional[GeneratorSetupWindow] = None
 
         # Apply style and theme before creating widgets, which copy the palette and font when they're created:
-        config.connect(self, AppConfig.OVERLAY_SCROLL_BARS, apply_overlay_scroll_bars)
-        apply_overlay_scroll_bars(config.get(AppConfig.OVERLAY_SCROLL_BARS))
-        config.connect(self, AppConfig.ROUNDED_POPUPS, apply_rounded_popups)
-        apply_rounded_popups(config.get(AppConfig.ROUNDED_POPUPS))
-        config.connect(self, AppConfig.STYLE, apply_style)
-        apply_style(config.get(AppConfig.STYLE))
-        config.connect(self, AppConfig.THEME, apply_theme)
-        apply_theme(config.get(AppConfig.THEME))
-        config.connect(self, AppConfig.FONT_POINT_SIZE, apply_font_point_size)
-        apply_font_point_size(config.get(AppConfig.FONT_POINT_SIZE))
+        apply_appearance_config(config, self)
 
         # Initialize edited image data structures:
         self._generator: Optional[ImageGenerator] = None

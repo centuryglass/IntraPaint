@@ -8,7 +8,7 @@ qt-material themes stay available as config options, and use the configured Qt s
 import json
 import logging
 import os
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from PySide6.QtGui import QColor, QFont, QFontDatabase, QPalette
 from PySide6.QtWidgets import QApplication, QStyleFactory
@@ -17,6 +17,9 @@ from src.ui.ink_style import InkColors, InkStyle
 from src.util.gc_paused import gc_paused
 from src.util.optional_import import optional_import
 from src.util.shared_constants import PROJECT_DIR
+
+if TYPE_CHECKING:
+    from src.config.application_config import AppConfig
 
 qdarktheme = optional_import('qdarktheme')
 qt_material = optional_import('qt_material')
@@ -221,3 +224,21 @@ def apply_font_point_size(font_pt: int) -> None:
     font = app.font()
     font.setPointSize(font_pt)
     app.setFont(font)
+
+
+def apply_appearance_config(config: 'AppConfig', connected_object: Optional[object] = None) -> None:
+    """Applies the config's scroll bar, popup, style, theme and font size options to the application.
+
+    With `connected_object`, each option is also reapplied when it changes, through a config connection owned by that
+    object. Widgets copy the palette and font when they are created, so call this before creating the main window.
+    `src/config/application_config.py` imports this module, so the config is passed in and not imported here.
+    """
+    # The scroll bar, popup and style options come before the theme, so THEME_INK installs InkStyle with them set:
+    for key, apply_fn in ((config.OVERLAY_SCROLL_BARS, apply_overlay_scroll_bars),
+                          (config.ROUNDED_POPUPS, apply_rounded_popups),
+                          (config.STYLE, apply_style),
+                          (config.THEME, apply_theme),
+                          (config.FONT_POINT_SIZE, apply_font_point_size)):
+        if connected_object is not None:
+            config.connect(connected_object, key, apply_fn)
+        apply_fn(config.get(key))
