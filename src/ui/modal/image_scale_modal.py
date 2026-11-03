@@ -8,9 +8,10 @@ another mode leaves the saved ControlNet tile settings alone.
 import logging
 from typing import Any, Optional, cast
 
-from PySide6.QtCore import QSize, QTimer
+from PySide6.QtCore import QSize, Qt, QTimer
 from PySide6.QtGui import QCloseEvent, QIcon
-from PySide6.QtWidgets import QApplication, QComboBox, QDialog, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QBoxLayout, QComboBox, QDialog, QHBoxLayout, QLabel, QSizePolicy, \
+    QVBoxLayout, QWidget
 
 from sd_backend_client import CONTROL_MODE_PARAM_KEY, CONTROLNET_MODEL_NONE, PREPROCESSOR_RES_PARAM_KEY, \
     RESIZE_MODE_PARAM_KEY, ControlNetModel, ControlNetPreprocessor, ParameterDef
@@ -22,7 +23,7 @@ from src.ui.input_fields import geometry_block
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.field_factory import create_control_widget
 from src.ui.input_fields.geometry_block import GeometryBlock
-from src.ui.input_fields.number_field import NumberField
+from src.ui.input_fields.number_field import MAX_WIDTH as NUMBER_FIELD_MAX_WIDTH, NumberField
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.input_fields.slider_field import number_field_for_parameter
 from src.ui.modal.controls_column import ControlsColumn, MAX_SCREEN_FRACTION
@@ -98,13 +99,38 @@ def _plain_label(label: str) -> str:
     return label.rstrip(': ')
 
 
-def _labeled_row(label: str, widget: QWidget, parent: QWidget) -> QWidget:
+def _labeled_row(label: str, widget: QWidget, parent: QWidget, match_fields: bool = False) -> QWidget:
+    """Returns a label and a widget in a row, the widget filling the rest of it.
+
+    With `match_fields`, the label sits on its own line above the widget and the row is no wider than a `NumberField`,
+    so the widget's right edge lines up with the number fields stacked above and below it.
+    """
     row = QWidget(parent)
-    layout = QHBoxLayout(row)
+    layout: QBoxLayout
+    if match_fields:
+        row.setMaximumWidth(NUMBER_FIELD_MAX_WIDTH)
+        layout = QVBoxLayout(row)
+    else:
+        layout = QHBoxLayout(row)
     layout.setContentsMargins(0, 0, 0, 0)
     layout.addWidget(QLabel(label, row))
     layout.addWidget(widget, stretch=1)
     return row
+
+
+def _clamp_combo_boxes(parent: QWidget) -> None:
+    """Keeps every dropdown under `parent` from widening the dialog to fit its longest option.
+
+    Backend-supplied option names (upscale methods, ControlNet models) can be arbitrarily long. A dropdown with an
+    ignored horizontal size policy fills whatever width its row gets and contributes none of its own, so its right edge
+    follows the row's whatever the font or option text. This is the policy `controlnet_panel._shrinking_combo_box`
+    uses. Each option also gets a tooltip with its full name; the popup list is not limited to the dropdown's width.
+    """
+    for combo in parent.findChildren(QComboBox):
+        combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        combo.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+        for index in range(combo.count()):
+            combo.setItemData(index, combo.itemText(index), Qt.ItemDataRole.ToolTipRole)
 
 
 def _clear_layout(layout: QVBoxLayout) -> None:
@@ -239,6 +265,9 @@ class ImageScaleModal(QDialog):
         controls_layout.addStretch(1)
         self._controls = controls
         self._scroll = ControlsColumn(controls, CONTROLS_COLUMN_WIDTH)
+        # No preview sits beside the controls, so the column spans the dialog. A fixed column clips the AI upscaling
+        # controls, which need more than CONTROLS_COLUMN_WIDTH:
+        self._scroll.set_stacked(True)
 
         self._footer = DialogFooter(SCALE_BUTTON_LABEL, self)
         self._footer.accepted.connect(self._confirm)
@@ -355,7 +384,8 @@ class ImageScaleModal(QDialog):
     def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
         """Returns the size that shows every visible control, bounded by the screen."""
         margins = self._layout.contentsMargins()
-        hint = QSize(CONTROLS_COLUMN_WIDTH + margins.left() + margins.right(),
+        hint = QSize(max(CONTROLS_COLUMN_WIDTH, self._controls.minimumSizeHint().width() + self._scroll_extent())
+                     + margins.left() + margins.right(),
                      self._controls.sizeHint().height() + self._footer.sizeHint().height() + self._layout.spacing()
                      + margins.top() + margins.bottom())
         screen = self.screen()
@@ -363,10 +393,19 @@ class ImageScaleModal(QDialog):
             hint.setHeight(min(hint.height(), round(screen.availableGeometry().height() * MAX_SCREEN_FRACTION)))
         return hint.expandedTo(self.minimumSizeHint())
 
+    def _scroll_extent(self) -> int:
+        """Returns the width the vertical scroll bar takes from the controls column."""
+        return self._scroll.verticalScrollBar().sizeHint().width()
+
     def _fit_height(self) -> None:
-        """Resizes an open dialog to the height the current controls need, after a mode change shows or hides some."""
+        """Resizes an open dialog to the controls' height and at least their width, after a mode change or a change
+        to the controls shows or hides some."""
+        _clamp_combo_boxes(self._controls)
+        margins = self._layout.contentsMargins()
+        min_width = self._controls.minimumSizeHint().width() + self._scroll_extent() + margins.left() + margins.right()
+        self.setMinimumWidth(min_width)
         if self.isVisible():
-            self.resize(self.width(), self.sizeHint().height())
+            self.resize(max(self.width(), min_width), self.sizeHint().height())
 
     # -----------------------------------------------------------------------------------------------------------------
     # AI upscaling controls
@@ -415,7 +454,7 @@ class ImageScaleModal(QDialog):
                 self._schedule_controlnet_cache_save()
             self._tile_model_dropdown.currentTextChanged.connect(self._tile_model_update)
             self._ai_layout.addWidget(_labeled_row(CONTROLNET_TILE_MODEL_LABEL, self._tile_model_dropdown,
-                                                   self._ai_body))
+                                                   self._ai_body, match_fields=True))
             self._ai_layout.addLayout(self._tile_layout)
             self._tile_model_update(self._tile_model_dropdown.currentText())
         self._ult_upscale_limit_changed()
@@ -455,7 +494,8 @@ class ImageScaleModal(QDialog):
                     selected_name = preprocessor_names[0]
                 self._tile_preprocessor_dropdown.setCurrentText(selected_name)
                 self._tile_layout.addWidget(_labeled_row(CONTROLNET_TILE_PREPROCESSOR_LABEL,
-                                                         self._tile_preprocessor_dropdown, self._ai_body))
+                                                         self._tile_preprocessor_dropdown, self._ai_body,
+                                                         match_fields=True))
                 self._tile_preprocessor_dropdown.currentTextChanged.connect(self._tile_preprocessor_update)
                 new_preprocessor_name = selected_name
             if new_preprocessor_name is not None:
@@ -493,7 +533,8 @@ class ImageScaleModal(QDialog):
                 control = create_parameter_field(preprocessor_param, current, _changed)
             else:
                 control = _labeled_row(parameter_label(preprocessor_param),
-                                       create_parameter_widget(preprocessor_param, current, _changed), self._ai_body)
+                                       create_parameter_widget(preprocessor_param, current, _changed), self._ai_body,
+                                       match_fields=True)
             control.setToolTip(parameter_tooltip(preprocessor_param))
             self._tile_layout.addWidget(control)
             self._tile_preprocessor_param_controls.append(control)

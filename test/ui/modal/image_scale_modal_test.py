@@ -1,13 +1,15 @@
 """Tests ImageScaleModal's size fields, scaling modes and Stable Diffusion upscaling controls."""
 from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QComboBox
 from sd_backend_client import CONTROLNET_MODEL_NONE, ControlNetModel, ControlNetPreprocessor, ControlNetUnit, \
     PreprocessorParams
 
 from src.controller.image_generation.sd_adapters.controlnet_adapter import SavedControlNetUnit
 from src.config.cache import Cache
 from src.ui.input_fields import geometry_block
+from src.ui.input_fields.number_field import NumberField
 from src.ui.modal.image_scale_modal import ImageScaleModal
-from src.ui.modal.image_scale_modal import MODE_AI, MODE_BASIC, UNIT_PCT
+from src.ui.modal.image_scale_modal import MODE_AI, MODE_BASIC, MODE_GENERATOR, UNIT_PCT
 from test.base_test_case import IntraPaintTestCase
 
 TILE_MODEL = 'control_v11f1e_sd15_tile'
@@ -97,6 +99,49 @@ class ImageScaleModalTest(IntraPaintTestCase):
         self.assertEqual(modal.show_image_modal(), QSize(300, 200))
         modal.reject()
         self.assertIsNone(modal.show_image_modal())
+
+    def test_controls_are_not_clipped_when_the_window_widens(self) -> None:
+        """The controls column spans the dialog, and the dialog is never narrower than the controls need."""
+        modal = ImageScaleModal(512, 512)
+        modal.show()
+        modal.resize(modal.width() + 300, modal.height())
+        self.assertGreaterEqual(modal.minimumWidth(), modal._controls.minimumSizeHint().width())
+        self.assertGreater(modal._scroll.width(), 380)
+        self.assertGreaterEqual(modal._scroll.viewport().width(), modal._controls.minimumSizeHint().width())
+        self.assertEqual(modal._controls.width(), modal._scroll.viewport().width())
+        modal.resize(10, modal.height())
+        self.assertGreaterEqual(modal._scroll.viewport().width(), modal._controls.minimumSizeHint().width())
+        modal.hide()
+
+    def test_long_option_names_do_not_widen_the_dialog(self) -> None:
+        """Dropdowns in every mode stay at their clamped width however long their options are."""
+        long_name = 'control_lora_' + 'very_long_model_name_' * 8 + '.safetensors'
+        cache = Cache()
+        cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_MODELS, [long_name, CONTROLNET_MODEL_NONE])
+        cache.set(Cache.GENERATOR_SCALING_MODES, [long_name, 'short'])
+        reference = ImageScaleModal(512, 512)
+        cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_MODELS, [TILE_MODEL, CONTROLNET_MODEL_NONE])
+        cache.set(Cache.GENERATOR_SCALING_MODES, ['short'])
+        modal = ImageScaleModal(512, 512)
+        for dialog in (reference, modal):
+            dialog.show()
+        assert modal._mode_control is not None and reference._mode_control is not None
+        for mode in (MODE_AI, MODE_GENERATOR, MODE_BASIC, MODE_AI):
+            modal._mode_control.set_value(mode)
+            reference._mode_control.set_value(mode)
+            self.assertEqual(reference.minimumWidth(), modal.minimumWidth(), mode)
+            self.assertLessEqual(modal.minimumWidth(), 380, mode)
+        # The long names don't move any AI dropdown's right edge off the number fields':
+        for dialog in (reference, modal):
+            dialog.resize(dialog.width() + 150, dialog.height())
+            dialog._mode_control.set_value(MODE_AI)
+            body = dialog._ai_body
+            edges = {widget.mapTo(body, widget.rect().topRight()).x()
+                     for kind in (QComboBox, NumberField) for widget in body.findChildren(kind)
+                     if widget.isVisibleTo(body)}
+            self.assertEqual(len(edges), 1, edges)
+        modal.hide()
+        reference.hide()
 
     def test_ai_section_follows_mode(self) -> None:
         """The AI settings show only in AI upscaling mode, and the mode is saved to the cache."""
