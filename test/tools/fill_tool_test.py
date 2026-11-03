@@ -146,21 +146,39 @@ class FillToolTest(ToolTestCase):
         self.assert_images_equal(self.layer.image, initial_image)
         self.assertEqual(UndoStack().undo_count(), 0)
 
-    def test_translucent_region_is_replaced(self) -> None:
-        """Filling partly transparent pixels replaces them with the fill color instead of compositing over them."""
+    def test_opaque_fill_replaces_translucent_region(self) -> None:
+        """An opaque fill color covers partly transparent pixels completely."""
         self.layer.image = solid_image(self.IMAGE_SIZE, QColor(255, 0, 0, 128))
         UndoStack().clear()
         initial_image = self.layer.image
         self.mouse_drag([SEED_POINT])
         self.assert_filled_exactly(self.layer, initial_image, region_mask(self.IMAGE_SIZE, QRect(QPoint(), self.IMAGE_SIZE)))
 
-    def test_translucent_fill_color_is_premultiplied(self) -> None:
-        """A translucent fill color is written premultiplied, replacing the opaque pixels under it."""
+    def test_translucent_fill_composites_over_opaque_content(self) -> None:
+        """A translucent fill color blends with the opaque pixels under it and leaves them opaque."""
+        color_controller.set_foreground(QColor(0, 0, 255, 128))
+        self.layer.image = solid_image(self.IMAGE_SIZE, QColor(255, 0, 0))
+        UndoStack().clear()
+        self.mouse_drag([SEED_POINT])
+        pixels = image_data_as_numpy_8bit_readonly(self.layer.image)
+        blended = QColor(self.layer.image.pixelColor(SEED_POINT))
+        self.assertEqual(blended.alpha(), 255)
+        self.assertAlmostEqual(blended.red(), 127, delta=2)
+        self.assertEqual(blended.green(), 0)
+        self.assertAlmostEqual(blended.blue(), 128, delta=2)
+        self.assertTrue(np.all(pixels[:, :, 3] == 255))
+        self.assert_valid_premultiplied(self.layer.image)
+
+    def test_translucent_fill_over_transparent_region(self) -> None:
+        """A translucent fill color over fully transparent pixels leaves that translucent color."""
         fill_color = QColor(255, 128, 0, 128)
         color_controller.set_foreground(fill_color)
+        self.layer.image = solid_image(self.IMAGE_SIZE, QColor(Qt.GlobalColor.transparent))
+        UndoStack().clear()
         initial_image = self.layer.image
         self.mouse_drag([SEED_POINT])
-        self.assert_filled_exactly(self.layer, initial_image, region_mask(self.IMAGE_SIZE, BASE_RECT), fill_color)
+        self.assert_filled_exactly(self.layer, initial_image, region_mask(self.IMAGE_SIZE, QRect(QPoint(), self.IMAGE_SIZE)),
+                                   fill_color)
         self.assert_valid_premultiplied(self.layer.image)
 
     def test_transparent_region_fills(self) -> None:
