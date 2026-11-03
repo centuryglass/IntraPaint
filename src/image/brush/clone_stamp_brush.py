@@ -11,7 +11,7 @@ from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.layers.image_layer import ImageLayer
 from src.util.math_utils import clamp
 from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit, numpy_bounds_index, \
-    NpAnyArray, numpy_intersect, np_composite_with_mask
+    NpAnyArray, np_composite_with_mask
 
 
 class CloneStampBrush(QtPaintBrush):
@@ -124,17 +124,16 @@ class CloneStampBrush(QtPaintBrush):
         assert layer is not None
         layer_bounds = layer.bounds
         for draw_pt in point_list:
-            pt_bounds = QRect(draw_pt.x() - brush_radius, draw_pt.y() - brush_radius,
-                              brush_radius * 2, brush_radius * 2).intersected(layer_bounds)
+            stamp_bounds = QRect(draw_pt.x() - brush_radius, draw_pt.y() - brush_radius,
+                                 brush_radius * 2, brush_radius * 2)
+            pt_bounds = stamp_bounds.intersected(layer_bounds)
             if pt_bounds.isEmpty():
                 continue
-            np_segment_img_pt: Optional[NpAnyArray] = numpy_bounds_index(np_segment_image, pt_bounds)
-            np_layer_img_pt: Optional[NpAnyArray] = numpy_bounds_index(np_layer_image, pt_bounds)
-            assert np_segment_img_pt is not None and np_layer_img_pt is not None
-            np_segment_img_pt, cropped_np_source = numpy_intersect(np_segment_img_pt, np_source)
-            if np_segment_img_pt is None or cropped_np_source is None:
-                continue
-            np_layer_img_pt, cropped_np_source = numpy_intersect(np_layer_img_pt, cropped_np_source)
-            if np_layer_img_pt is None or cropped_np_source is None:
-                continue
+            np_segment_img_pt = numpy_bounds_index(np_segment_image, pt_bounds)
+            np_layer_img_pt = numpy_bounds_index(np_layer_image, pt_bounds)
+            # The source patch lines up with the unclipped stamp, so clipping at the left or top skips the same
+            # amount of the patch instead of shifting it.
+            src_x = pt_bounds.x() - stamp_bounds.x()
+            src_y = pt_bounds.y() - stamp_bounds.y()
+            cropped_np_source = np_source[src_y:src_y + pt_bounds.height(), src_x:src_x + pt_bounds.width()]
             np_composite_with_mask(cropped_np_source, np_layer_img_pt, np_segment_img_pt)
