@@ -239,6 +239,9 @@ class ImageScaleModal(QDialog):
         controls_layout.addStretch(1)
         self._controls = controls
         self._scroll = ControlsColumn(controls, CONTROLS_COLUMN_WIDTH)
+        # No preview sits beside the controls, so the column spans the dialog. A fixed column clips the AI upscaling
+        # controls, which need more than CONTROLS_COLUMN_WIDTH:
+        self._scroll.set_stacked(True)
 
         self._footer = DialogFooter(SCALE_BUTTON_LABEL, self)
         self._footer.accepted.connect(self._confirm)
@@ -355,7 +358,8 @@ class ImageScaleModal(QDialog):
     def sizeHint(self) -> QSize:  # pylint: disable=invalid-name
         """Returns the size that shows every visible control, bounded by the screen."""
         margins = self._layout.contentsMargins()
-        hint = QSize(CONTROLS_COLUMN_WIDTH + margins.left() + margins.right(),
+        hint = QSize(max(CONTROLS_COLUMN_WIDTH, self._controls.minimumSizeHint().width() + self._scroll_extent())
+                     + margins.left() + margins.right(),
                      self._controls.sizeHint().height() + self._footer.sizeHint().height() + self._layout.spacing()
                      + margins.top() + margins.bottom())
         screen = self.screen()
@@ -363,10 +367,18 @@ class ImageScaleModal(QDialog):
             hint.setHeight(min(hint.height(), round(screen.availableGeometry().height() * MAX_SCREEN_FRACTION)))
         return hint.expandedTo(self.minimumSizeHint())
 
+    def _scroll_extent(self) -> int:
+        """Returns the width the vertical scroll bar takes from the controls column."""
+        return self._scroll.verticalScrollBar().sizeHint().width()
+
     def _fit_height(self) -> None:
-        """Resizes an open dialog to the height the current controls need, after a mode change shows or hides some."""
+        """Resizes an open dialog to the controls' height and at least their width, after a mode change or a change
+        to the controls shows or hides some."""
+        margins = self._layout.contentsMargins()
+        min_width = self._controls.minimumSizeHint().width() + self._scroll_extent() + margins.left() + margins.right()
+        self.setMinimumWidth(min_width)
         if self.isVisible():
-            self.resize(self.width(), self.sizeHint().height())
+            self.resize(max(self.width(), min_width), self.sizeHint().height())
 
     # -----------------------------------------------------------------------------------------------------------------
     # AI upscaling controls

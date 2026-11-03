@@ -98,6 +98,19 @@ class ImageScaleModalTest(IntraPaintTestCase):
         modal.reject()
         self.assertIsNone(modal.show_image_modal())
 
+    def test_controls_are_not_clipped_when_the_window_widens(self) -> None:
+        """The controls column spans the dialog, and the dialog is never narrower than the controls need."""
+        modal = ImageScaleModal(512, 512)
+        modal.show()
+        modal.resize(modal.width() + 300, modal.height())
+        self.assertGreaterEqual(modal.minimumWidth(), modal._controls.minimumSizeHint().width())
+        self.assertGreater(modal._scroll.width(), 380)
+        self.assertGreaterEqual(modal._scroll.viewport().width(), modal._controls.minimumSizeHint().width())
+        self.assertEqual(modal._controls.width(), modal._scroll.viewport().width())
+        modal.resize(10, modal.height())
+        self.assertGreaterEqual(modal._scroll.viewport().width(), modal._controls.minimumSizeHint().width())
+        modal.hide()
+
     def test_ai_section_follows_mode(self) -> None:
         """The AI settings show only in AI upscaling mode, and the mode is saved to the cache."""
         cache = Cache()
