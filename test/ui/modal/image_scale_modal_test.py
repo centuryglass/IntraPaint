@@ -1,11 +1,13 @@
 """Tests ImageScaleModal's size fields, scaling modes and Stable Diffusion upscaling controls."""
 from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QComboBox
 from sd_backend_client import CONTROLNET_MODEL_NONE, ControlNetModel, ControlNetPreprocessor, ControlNetUnit, \
     PreprocessorParams
 
 from src.controller.image_generation.sd_adapters.controlnet_adapter import SavedControlNetUnit
 from src.config.cache import Cache
 from src.ui.input_fields import geometry_block
+from src.ui.input_fields.number_field import NumberField
 from src.ui.modal.image_scale_modal import ImageScaleModal
 from src.ui.modal.image_scale_modal import MODE_AI, MODE_BASIC, MODE_GENERATOR, UNIT_PCT
 from test.base_test_case import IntraPaintTestCase
@@ -129,6 +131,15 @@ class ImageScaleModalTest(IntraPaintTestCase):
             reference._mode_control.set_value(mode)
             self.assertEqual(reference.minimumWidth(), modal.minimumWidth(), mode)
             self.assertLessEqual(modal.minimumWidth(), 380, mode)
+        # The long names don't move any AI dropdown's right edge off the number fields':
+        for dialog in (reference, modal):
+            dialog.resize(dialog.width() + 150, dialog.height())
+            dialog._mode_control.set_value(MODE_AI)
+            body = dialog._ai_body
+            edges = {widget.mapTo(body, widget.rect().topRight()).x()
+                     for kind in (QComboBox, NumberField) for widget in body.findChildren(kind)
+                     if widget.isVisibleTo(body)}
+            self.assertEqual(len(edges), 1, edges)
         modal.hide()
         reference.hide()
 
