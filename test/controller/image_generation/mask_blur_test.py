@@ -2,7 +2,8 @@
 from PySide6.QtCore import QRect, QSize
 from PySide6.QtGui import QColor, QImage, QPainter
 
-from src.controller.image_generation.mask_blur import blur_extent, blur_extent_in_image, grow_mask
+from src.controller.image_generation.mask_blur import (blur_extent, blur_extent_in_image, blurred_mask_estimate, grow_mask,
+                                                             shrink_mask)
 from test.base_test_case import IntraPaintTestCase
 
 
@@ -44,3 +45,23 @@ class MaskBlurTest(IntraPaintTestCase):
         """Without reach the result matches the mask."""
         mask = _mask(QSize(20, 20), QRect(5, 5, 10, 10))
         self.assertEqual(grow_mask(mask, 0, 0), mask)
+
+    def test_shrink_mask_removes_the_reach_from_every_edge(self) -> None:
+        """Shrinking leaves a hard mask smaller by the reach on each side."""
+        mask = _mask(QSize(40, 40), QRect(10, 10, 20, 20))
+        shrunk = shrink_mask(mask, 3)
+        self.assertEqual(shrunk.pixelColor(20, 20).alpha(), 255)
+        self.assertEqual(shrunk.pixelColor(13, 20).alpha(), 255)
+        self.assertEqual(shrunk.pixelColor(12, 20).alpha(), 0)
+
+    def test_shrink_mask_keeps_a_selection_narrower_than_the_reach(self) -> None:
+        """A selection the shrink would erase entirely is returned unchanged."""
+        mask = _mask(QSize(40, 40), QRect(10, 10, 4, 4))
+        self.assertEqual(shrink_mask(mask, 5).pixelColor(11, 11).alpha(), 255)
+
+    def test_blurred_estimate_is_half_at_the_edge(self) -> None:
+        """A blurred hard edge passes through about half alpha and is soft on both sides."""
+        estimate = blurred_mask_estimate(_mask(QSize(40, 40), QRect(0, 0, 20, 40)), 4)
+        self.assertAlmostEqual(estimate.pixelColor(19, 20).alpha(), 128, delta=40)
+        self.assertGreater(estimate.pixelColor(22, 20).alpha(), 0)
+        self.assertEqual(estimate.pixelColor(2, 20).alpha(), 255)

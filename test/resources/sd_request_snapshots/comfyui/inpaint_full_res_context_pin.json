@@ -26,8 +26,8 @@
     "endpoint": "/upload/mask",
     "files": {
       "image": [
-        "mask_244f8af79f3b4c232e98ebb9062436da_6135bc342386fcd954cfbcdee4f184c4.png",
-        "<image 512x512 Format_ARGB32 f2b2cb40ee20a124>",
+        "mask_4f6e9906e663b57de8ac58f0e7ea7fc3_6135bc342386fcd954cfbcdee4f184c4.png",
+        "<image 512x512 Format_ARGB32 1935bc26664b3016>",
         "image/png"
       ]
     },
@@ -167,7 +167,7 @@
           "class_type": "LoadImageMask",
           "inputs": {
             "channel": "alpha",
-            "image": "sd_backend_client/mask_244f8af79f3b4c232e98ebb9062436da_6135bc342386fcd954cfbcdee4f184c4.png",
+            "image": "sd_backend_client/mask_4f6e9906e663b57de8ac58f0e7ea7fc3_6135bc342386fcd954cfbcdee4f184c4.png",
             "upload": "image"
           }
         },
@@ -226,8 +226,8 @@
     "endpoint": "/upload/mask",
     "files": {
       "image": [
-        "mask_244f8af79f3b4c232e98ebb9062436da_6135bc342386fcd954cfbcdee4f184c4.png",
-        "<image 512x512 Format_ARGB32 f2b2cb40ee20a124>",
+        "mask_4f6e9906e663b57de8ac58f0e7ea7fc3_6135bc342386fcd954cfbcdee4f184c4.png",
+        "<image 512x512 Format_ARGB32 1935bc26664b3016>",
         "image/png"
       ]
     },
@@ -367,7 +367,7 @@
           "class_type": "LoadImageMask",
           "inputs": {
             "channel": "alpha",
-            "image": "sd_backend_client/mask_244f8af79f3b4c232e98ebb9062436da_6135bc342386fcd954cfbcdee4f184c4.png",
+            "image": "sd_backend_client/mask_4f6e9906e663b57de8ac58f0e7ea7fc3_6135bc342386fcd954cfbcdee4f184c4.png",
             "upload": "image"
           }
         },

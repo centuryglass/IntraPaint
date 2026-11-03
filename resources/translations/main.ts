@@ -565,6 +565,16 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
+        <source>Blend inpainting past the selection:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Let the soft edge of inpainted content extend past the selection edge. When off, inpainting never changes pixels outside the selection, and the soft edge falls just inside it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
         <source>Mask blur:</source>
         <translation type="unfinished"></translation>
     </message>

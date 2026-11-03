@@ -50,3 +50,40 @@ def grow_mask(mask: QImage, reach_x: int, reach_y: int) -> QImage:
     added = (cv2.dilate(np.ascontiguousarray(pixels[:, :, 3]), kernel) > 0) & (pixels[:, :, 3] == 0)
     pixels[added] = (0, 0, 0, 255)
     return grown
+
+
+def shrink_mask(mask: QImage, reach: int) -> QImage:
+    """Returns a copy of mask with its selected area shrunk by reach pixels, as ARGB32_Premultiplied.
+
+    Selected pixels are the ones with nonzero alpha. Returns the unshrunk mask if shrinking would leave nothing
+    selected, so a selection narrower than the blur band is still inpainted.
+    """
+    shrunk = mask.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+    if reach <= 0 or shrunk.isNull():
+        return shrunk
+    pixels = image_data_as_numpy_8bit(shrunk)
+    alpha = np.ascontiguousarray(pixels[:, :, 3])
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * reach + 1, 2 * reach + 1))
+    # Pixels outside the image count as unselected, so a selection touching the edge shrinks away from it too:
+    eroded = cv2.erode((alpha > 0).astype(np.uint8), kernel, borderType=cv2.BORDER_CONSTANT, borderValue=0)
+    if not eroded.any():
+        return shrunk
+    pixels[:, :, :] = 0
+    pixels[eroded > 0] = (0, 0, 0, 255)
+    return shrunk
+
+
+def blurred_mask_estimate(mask: QImage, mask_blur: float) -> QImage:
+    """Returns the mask's alpha blurred by a Gaussian of `mask_blur` standard deviations, as ARGB32_Premultiplied.
+
+    This approximates the blend weight the backends blur the mask into. The estimate is only a floor for result
+    patches, so the real blur differing from it changes how much of the source a patch removes, not its result.
+    """
+    estimate = mask.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+    if mask_blur <= 0 or estimate.isNull():
+        return estimate
+    pixels = image_data_as_numpy_8bit(estimate)
+    blurred = cv2.GaussianBlur(np.ascontiguousarray(pixels[:, :, 3]), (0, 0), mask_blur)
+    pixels[:, :, :] = 0
+    pixels[:, :, 3] = blurred
+    return estimate

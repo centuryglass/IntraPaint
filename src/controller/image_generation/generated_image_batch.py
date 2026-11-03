@@ -37,6 +37,8 @@ class GeneratedImageBatch:
 
     def __init__(self, image_stack: ImageStack, paste_mask: Optional[QImage] = None) -> None:
         self.option_images: list[QImage] = [image_stack.qimage_generation_area_content()]
+        # Inpainting results as patches over the image sent to the backend, by option index. See `make_result_patch`:
+        self.patches: dict[int, QImage] = {}
         self.generation_area = image_stack.generation_area
         self.selection_polys = image_stack.selection_layer.outline
         self.mask_image = paste_mask if paste_mask is not None else image_stack.selection_layer.mask_image
@@ -54,7 +56,11 @@ class GeneratedImageBatch:
         self.loading_image.fill(Qt.GlobalColor.black)
 
     def edit_image(self, option_index: int) -> QImage:
-        """Returns option `option_index` at the resolution it is applied at."""
+        """Returns what applying option `option_index` draws, at the resolution it is applied at: the option's patch
+        if it has one, and the option image otherwise."""
+        patch = self.patches.get(option_index)
+        if patch is not None:
+            return generation_area_size_image(patch)
         return generation_area_size_image(self.option_images[option_index])
 
     def full_image(self, option_index: int) -> QImage:
@@ -69,4 +75,5 @@ class GeneratedImageBatch:
         """Removes loading placeholders from `option_images`, returning the indices of the images that remain."""
         kept = [i for i, image in enumerate(self.option_images) if image is not self.loading_image]
         self.option_images = [self.option_images[i] for i in kept]
+        self.patches = {new: self.patches[old] for new, old in enumerate(kept) if old in self.patches}
         return kept

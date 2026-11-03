@@ -12,6 +12,7 @@ from sd_backend_client import A1111Webservice, ParameterDef
 from sd_backend_client.api.a1111_webservice import ULTIMATE_UPSCALE_SCRIPT
 from sd_backend_client.api.webui.controlnet_webui_utils import get_all_preprocessors
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters.soft_inpainting_adapter import save_parameter_defs, save_value
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator
@@ -179,8 +180,18 @@ class SDWebUIGeneratorTest(SdGeneratorTestCase):
         self._set_canny_controlnet_unit()
         self._generate_and_check('inpaint_controlnet')
 
+    def test_paste_mask_is_the_selection_by_default(self) -> None:
+        """Without the blend-past-selection option the paste mask is the selection, so nothing outside it changes."""
+        mask = self.generator.get_paste_mask()
+        selection = SELECTION_BOUNDS.translated(-GENERATION_AREA.topLeft())
+        middle_y = selection.center().y()
+        self.assertEqual(mask.pixelColor(selection.left(), middle_y).alpha(), 255)
+        self.assertEqual(mask.pixelColor(selection.left() - 1, middle_y).alpha(), 0)
+
     def test_paste_mask_covers_blur_reach(self) -> None:
-        """The paste mask is the selection grown by the blur band's reach at the generation area's scale, hard-edged."""
+        """With the blend-past-selection option the paste mask is the selection grown by the blur band's reach at the
+        generation area's scale, hard-edged."""
+        AppConfig().set(AppConfig.INPAINT_BLEND_PAST_SELECTION, True)
         # Blur 4 reaches 10 generation px, ceil(10 * 300 / 512) = 6 image px:
         mask = self.generator.get_paste_mask()
         selection = SELECTION_BOUNDS.translated(-GENERATION_AREA.topLeft())

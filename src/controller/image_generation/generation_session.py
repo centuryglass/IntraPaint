@@ -14,11 +14,13 @@ from src.config.cache import Cache
 
 from src.controller.image_generation.apply_option import apply_generated_image, ApplyOutcome
 from src.controller.image_generation.generated_image_batch import GeneratedImageBatch
+from src.controller.image_generation.result_patch import make_result_patch
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
 from src.util.async_task import AsyncTask
 from src.util.visual.image_format_utils import save_image
+from src.util.visual.pil_image_utils import pil_image_scaling
 
 GenerateAction = Callable[[SignalInstance, QImage, Optional[QImage]], None]
 """The backend's `ImageGenerator.generate`: takes a status signal, the source image and the inpainting mask."""
@@ -71,6 +73,8 @@ class GenerationSession(QObject):
         self._stopped = False
         self._failed = False
         self._results: list[QImage] = []
+        # Patches for the results of the last task, by result index. See `make_result_patch`:
+        self._patches: dict[int, QImage] = {}
         image_stack.size_changed.connect(self._on_image_stack_resized)
         image_stack.document_changed.connect(self._on_document_changed)
 
@@ -117,29 +121,33 @@ class GenerationSession(QObject):
             self.stop_requested.emit()
 
     def generate(self, action: GenerateAction, image: QImage, mask: Optional[QImage],
-                 paste_mask: Optional[QImage]) -> bool:
+                 paste_mask: Optional[QImage], blend_estimate: Optional[QImage] = None,
+                 source_alpha: Optional[QImage] = None) -> bool:
         """Runs `action(status_signal, image, mask)` in a background task and reports through the session's signals.
 
         `action` passes each image it produces to `store_result` from the worker thread, then `deliver_result` on the
-        main thread. In inpainting mode, `paste_mask` clips the previews shown and the options applied. Returns False
-        without starting anything if a task is already running.
+        main thread. In inpainting mode, `paste_mask` clips the previews shown and the options applied, and each
+        result becomes a patch over `image` (see `make_result_patch`, which explains `blend_estimate` and
+        `source_alpha`). Returns False without starting anything if a task is already running.
         """
         if self._generating:
             logger.error('Caught and ignored duplicate image generation request.')
             return False
         self._results.clear()
+        self._patches.clear()
         self._generating = True
         self._stopped = False
         self._failed = False
 
-        # Previews show the unscaled source outside the mask that clips them when applied, so they match the result.
-        composite_base: Optional[QImage] = None
+        # Previews show the patch over the current content, clipped by the mask that clips it when applied:
+        preview_base: Optional[QImage] = None
+        clip_mask: Optional[QImage] = None
         if mask is not None and paste_mask is not None:
-            composite_base = image.copy()
-            base_painter = QPainter(composite_base)
-            base_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
-            base_painter.drawImage(QRect(QPoint(), composite_base.size()), paste_mask)
-            base_painter.end()
+            preview_base = self._image_stack.qimage_generation_area_content()
+            if preview_base.size() != image.size():
+                preview_base = pil_image_scaling(preview_base, image.size())
+            preview_base = preview_base.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+            clip_mask = paste_mask
 
         class _AsyncInpaintTask(AsyncTask):
             status_signal = Signal(dict)
@@ -174,10 +182,10 @@ class GenerationSession(QObject):
             for idx, result in enumerate(self._results):
                 if result.isNull() or idx >= expected_count:
                     continue
-                if composite_base is not None and composite_base.size() == result.size():
-                    painter = QPainter(result)
-                    painter.drawImage(QPoint(), composite_base)
-                    painter.end()
+                if preview_base is not None and clip_mask is not None and preview_base.size() == result.size():
+                    patch = make_result_patch(result, image, blend_estimate, source_alpha)
+                    self._patches[idx] = patch
+                    result = self._preview_with_patch(preview_base, patch, clip_mask)
                 self.image_ready.emit(result, idx)
             self.generation_ended.emit()
 
@@ -189,6 +197,20 @@ class GenerationSession(QObject):
         AppStateTracker.set_app_state(APP_STATE_LOADING)
         inpaint_task.start()
         return True
+
+    @staticmethod
+    def _preview_with_patch(base: QImage, patch: QImage, clip_mask: QImage) -> QImage:
+        """Returns a copy of `base` with `patch` drawn over it, clipped by `clip_mask`."""
+        clipped = patch.copy()
+        clip_painter = QPainter(clipped)
+        clip_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+        clip_painter.drawImage(QRect(QPoint(), clipped.size()), clip_mask)
+        clip_painter.end()
+        preview = base.copy()
+        painter = QPainter(preview)
+        painter.drawImage(QPoint(), clipped)
+        painter.end()
+        return preview
 
     def store_result(self, image: QImage, index: int) -> None:
         """Stores a generated image at `index`, padding skipped indices with null images. Safe on any thread."""
@@ -237,6 +259,11 @@ class GenerationSession(QObject):
             return False
         batch = self.current
         slot = idx + 1  # Original image gets index zero
+        patch = self._patches.get(idx)
+        if patch is not None:
+            batch.patches[slot] = patch
+        else:
+            batch.patches.pop(slot, None)
         if slot == len(batch.option_images):
             batch.option_images.append(image)
         else:
