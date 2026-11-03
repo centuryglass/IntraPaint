@@ -224,24 +224,24 @@ class CompositeMode(StrEnum):
         final_hls = blending_op(top_hls, base_hls)
         blended_rgb = cv2.cvtColor(final_hls, cv2.COLOR_HLS2BGR)
 
-        # calculate final alpha, skip compositing in areas with full transparency:
+        # calculate final alpha, skip compositing wherever the top layer is transparent so the base stays exact:
         alpha_top = np_top[:, :, 3] * INV_255 * opacity
         alpha_base = np_base[:, :, 3] * INV_255
         alpha_combined = np.clip(alpha_top + alpha_base * (1 - alpha_top), 0, 1)
-        alpha_nonzero = alpha_combined > 0
+        alpha_nonzero = (alpha_combined > 0) & (alpha_top > 0)
         at = alpha_top[alpha_nonzero]
         ab = alpha_base[alpha_nonzero]
         ac = alpha_combined[alpha_nonzero]
 
         # final compositing of RGB channels onto the base image:
         for c in range(3):
-            np_base[alpha_nonzero, c] = (
+            np_base[alpha_nonzero, c] = np.rint(
                     (blended_rgb[alpha_nonzero, c] * at
                      + np_base[alpha_nonzero, c] * ab * (1 - at)) / ac
             )
 
-        # Update alpha channel:
-        np_base[:, :, 3] = (alpha_combined * 255).astype(np.uint8)
+        # Update alpha channel where the top layer contributes:
+        np_base[alpha_nonzero, 3] = np.rint(alpha_combined[alpha_nonzero] * 255)
 
         # Index areas in the base where alpha is 0 and top is not, directly copy the top layer into these areas. Note
         # that this is in parity with Krita, but *not* with GIMP.

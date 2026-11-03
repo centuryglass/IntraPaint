@@ -11,7 +11,6 @@ import unittest
 from typing import Optional
 
 import numpy as np
-import pytest
 from PySide6.QtCore import QPoint, QRect, QSize
 from PySide6.QtGui import QImage, QPainter, QTransform
 from PySide6.QtWidgets import QApplication
@@ -38,9 +37,6 @@ OPAQUE = 255
 
 QT_MODES = tuple(mode for mode in CompositeMode if mode.qt_composite_mode() is not None)
 HSL_MODES = tuple(mode for mode in CompositeMode if mode.qt_composite_mode() is None)
-
-ISSUE_151 = ('https://github.com/centuryglass/IntraPaint/issues/151: HSL blend modes change base pixels outside the '
-             'layer')
 
 
 def _noise_image(size: QSize, seed: int, min_alpha: int = PARTIAL_ALPHA) -> QImage:
@@ -248,8 +244,6 @@ class GroupModeTest(GroupRenderTestCase):
         """An isolated group composites in every mode QPainter supports."""
         self.check_isolated_group_modes(QT_MODES, True)
 
-    # No subtests in the expected failures: a failed subtest fails the test outright instead of counting as one.
-    @pytest.mark.xfail(strict=True, reason=ISSUE_151)
     def test_isolated_group_in_hsl_modes(self) -> None:
         """An isolated group composites in every mode with custom compositing."""
         self.check_isolated_group_modes(HSL_MODES, False)
