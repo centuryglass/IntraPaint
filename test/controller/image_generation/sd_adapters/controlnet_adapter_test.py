@@ -15,7 +15,7 @@ from sd_backend_client import ControlNetModel, ControlNetPreprocessor, ControlNe
 from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters import controlnet_adapter
 from src.controller.image_generation.sd_adapters.controlnet_adapter import SavedControlNetUnit, to_request_unit, \
-    load_request_units, count_enabled_units, CONTROLNET_REUSE_IMAGE_CODE
+    load_request_units, count_enabled_units, needs_inpainting_mask, CONTROLNET_REUSE_IMAGE_CODE
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
 
 UNIT_DIR = os.path.join(TEST_RESOURCE_DIR, 'controlnet_units')
@@ -33,9 +33,9 @@ def _source_image() -> QImage:
 
 
 def _saved_unit(image_string: str = CONTROLNET_REUSE_IMAGE_CODE, model: bool = True,
-                model_free: bool = False) -> SavedControlNetUnit:
+                model_free: bool = False, preprocessor: str = 'canny') -> SavedControlNetUnit:
     """Returns an enabled saved unit with a preprocessor and, optionally, a model."""
-    typedef = ControlNetPreprocessor(name='canny', model_free=model_free,
+    typedef = ControlNetPreprocessor(name=preprocessor, model_free=model_free,
                                      parameters=[ParameterDef(key='threshold_a', default_value=100)])
     unit = ControlNetUnit(preprocessor=PreprocessorParams(typedef=typedef, parameter_values={}),
                           model=ControlNetModel('control_canny') if model else None)
@@ -154,9 +154,42 @@ class ControlNetAdapterTest(IntraPaintTestCase):
             units = load_request_units([Cache.CONTROLNET_ARGS_0_WEBUI], _source_image(), True)
         self.assertEqual(units, [])
 
+    def test_needs_inpainting_mask(self) -> None:
+        """WebUI and ComfyUI inpainting preprocessors need the mask. Other preprocessors and no preprocessor don't."""
+        for name in ('inpaint_only+lama', 'inpaint_global_harmonious', 'InpaintPreprocessor'):
+            self.assertTrue(needs_inpainting_mask(_saved_unit(preprocessor=name).unit), name)
+        self.assertFalse(needs_inpainting_mask(_saved_unit().unit))
+        self.assertFalse(needs_inpainting_mask(ControlNetUnit()))
+
+    def test_skips_inpainting_units_outside_inpainting(self) -> None:
+        """An inpainting unit is sent only with an inpainting request. Other units are sent either way."""
+        inpaint = _saved_unit(preprocessor='InpaintPreprocessor')
+        self.assertIsNotNone(to_request_unit(inpaint, _source_image(), True, inpainting=True))
+        self.assertIsNone(to_request_unit(inpaint, _source_image(), True, inpainting=False))
+        self.assertIsNone(to_request_unit(inpaint, _source_image(), False, inpainting=False))
+        self.assertIsNotNone(to_request_unit(_saved_unit(), _source_image(), True, inpainting=False))
+
+    def test_load_request_units_skips_inpainting_units_outside_inpainting(self) -> None:
+        """Outside inpainting, the other units still load."""
+        cache = Cache()
+        cache.set(Cache.CONTROLNET_ARGS_0_COMFYUI, _saved_unit(preprocessor='InpaintPreprocessor').to_json())
+        cache.set(Cache.CONTROLNET_ARGS_1_COMFYUI, _saved_unit().to_json())
+        keys = [Cache.CONTROLNET_ARGS_0_COMFYUI, Cache.CONTROLNET_ARGS_1_COMFYUI]
+        units = load_request_units(keys, _source_image(), True, inpainting=False)
+        self.assertEqual([unit.preprocessor.typedef.name for unit in units if unit.preprocessor is not None],
+                         ['canny'])
+        self.assertEqual(len(load_request_units(keys, _source_image(), True, inpainting=True)), 2)
+
     def test_count_enabled_units(self) -> None:
-        """Only parseable units with `enabled` set are counted."""
+        """Only parseable units with `enabled` set are counted, and enabled inpainting units count as skipped outside
+        inpainting."""
         on = SavedControlNetUnit(True, '', ControlNetUnit()).to_json()
         off = SavedControlNetUnit(False, '', ControlNetUnit()).to_json()
-        self.assertEqual(count_enabled_units([on, off, on, 'not json', '']), 2)
-        self.assertEqual(count_enabled_units([]), 0)
+        inpaint_on = _saved_unit(preprocessor='inpaint_only').to_json()
+        inpaint_off_unit = _saved_unit(preprocessor='inpaint_only')
+        inpaint_off_unit.enabled = False
+        inpaint_off = inpaint_off_unit.to_json()
+        self.assertEqual(count_enabled_units([on, off, on, 'not json', '']), (2, 0))
+        self.assertEqual(count_enabled_units([]), (0, 0))
+        self.assertEqual(count_enabled_units([on, inpaint_on, inpaint_off]), (2, 0))
+        self.assertEqual(count_enabled_units([on, inpaint_on, inpaint_off], inpainting=False), (2, 1))

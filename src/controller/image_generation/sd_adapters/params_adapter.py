@@ -72,7 +72,8 @@ def _shared_params(params: DiffusionParams, edit_mode: str, source_image: Option
         if cache.get(Cache.SOFT_INPAINTING) and cache.get(Cache.SOFT_INPAINTING_AVAILABLE):
             params.soft_inpainting = True
             params.soft_inpainting_params = request_values(load_parameter_defs())
-    params.controlnet_units = load_request_units(control_keys, source_image, uses_init_image)
+    params.controlnet_units = load_request_units(control_keys, source_image, uses_init_image,
+                                                 edit_mode == EDIT_MODE_INPAINT)
 
 
 def build_comfy_params(edit_mode: str, source_image: Optional[QImage] = None, mask: Optional[QImage] = None,

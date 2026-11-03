@@ -3563,6 +3563,12 @@
     </message>
     <message>
         <location filename="../../src/controller/app_controller.py"/>
+        <source>ControlNet: {count} of {enabled} units on are skipped. Inpainting units only apply in Inpaint mode.</source>
+        <comment>Tooltip of the ControlNet rail button</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
         <source>File</source>
         <translation type="unfinished"></translation>
     </message>
@@ -6757,6 +6763,21 @@ Keys: {decrease} / {increase}</source>
     <message>
         <location filename="../../src/ui/panel/controlnet_panel.py"/>
         <source>Unit {unit_number}: off</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Unit {unit_number}: on, skipped outside Inpaint mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>Skipped outside Inpaint mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/controlnet_panel.py"/>
+        <source>This preprocessor needs the inpainting mask, so requests skip the unit in other edit modes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

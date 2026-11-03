@@ -8,6 +8,8 @@ saved values are edited.
   are kept per unit for the session, and aren't saved.
 - Each tab shows the unit's number, its control type and a dot that fills while the unit is on. A strip has no room
   for a row of tabs, so it shows the same titles in a vertical unit list (`UnitList`) instead.
+- Outside Inpaint mode, requests skip units that `needs_inpainting_mask`. Such a unit's dot fills with the caution
+  color while it is on, and a caution note under Enabled says why while it is selected.
 - A unit that is off and has settings other than the defaults shows a summary of them in place of its sections.
   "Edit settings" opens the sections with live controls, and editing them doesn't turn the unit on.
 - The control image is the generation area or an image file. The two map to `CONTROLNET_REUSE_IMAGE_CODE` and the
@@ -27,14 +29,15 @@ from typing import Any, Optional
 from PySide6.QtCore import QEvent, QFileInfo, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QIcon, QImage, QPainter, QPalette, QPixmap
 from PySide6.QtWidgets import (QApplication, QComboBox, QFrame, QHBoxLayout, QLineEdit, QPushButton, QSizePolicy,
-                               QTabBar, QVBoxLayout, QWidget)
+                               QLabel, QTabBar, QVBoxLayout, QWidget)
 
 from sd_backend_client import CONTROLNET_MODEL_NONE, PREPROCESSOR_NONE, PREPROCESSOR_RES_PARAM_KEY, ControlNetModel, \
     ControlNetPreprocessor, ControlNetUnit, ControlTypeDef, ParameterDef, PreprocessorParams
 
 from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTROLNET_REUSE_IMAGE_CODE, \
-    SavedControlNetUnit, select_preprocessor
+    SavedControlNetUnit, needs_inpainting_mask, select_preprocessor
+from src.ui.ink_style import caution_color
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
@@ -48,6 +51,7 @@ from src.ui.widget.elided_label import ElidedLabel
 from src.ui.widget.parameter_def_widget import create_parameter_field, create_parameter_widget, \
     is_numeric_field_parameter
 from src.util.parameter_def_labels import parameter_label, parameter_tooltip
+from src.util.shared_constants import EDIT_MODE_INPAINT
 from src.util.signals_blocked import signals_blocked
 
 logger = logging.getLogger(__name__)
@@ -69,6 +73,9 @@ TOOLTIP_RESET_UNIT = _tr('Reset this unit to its default settings')
 TAB_TITLE = _tr('{unit_number} {control_type}', 'ControlNet unit tab title')
 TAB_TOOLTIP_ON = _tr('Unit {unit_number}: on')
 TAB_TOOLTIP_OFF = _tr('Unit {unit_number}: off')
+TAB_TOOLTIP_SKIPPED = _tr('Unit {unit_number}: on, skipped outside Inpaint mode')
+NOTE_SKIPPED = _tr('Skipped outside Inpaint mode')
+NOTE_SKIPPED_TOOLTIP = _tr('This preprocessor needs the inpainting mask, so requests skip the unit in other edit modes')
 ENABLED_CHECKBOX_LABEL = _tr('Enabled')
 ENABLED_CHECKBOX_TOOLTIP = _tr('Apply this ControlNet unit when generating images')
 BUTTON_TEXT_EDIT_SETTINGS = _tr('Edit settings')
@@ -343,6 +350,10 @@ class ControlNetPanel(DockPanel):
         self._enabled_checkbox = CheckBox()
         self._enabled_checkbox.setText(ENABLED_CHECKBOX_LABEL)
         self._enabled_checkbox.setToolTip(ENABLED_CHECKBOX_TOOLTIP)
+        self._skipped_note = QLabel(NOTE_SKIPPED)
+        self._skipped_note.setWordWrap(True)
+        self._skipped_note.setToolTip(NOTE_SKIPPED_TOOLTIP)
+        self._skipped_note.hide()
 
         # An off unit's settings, shown in place of the sections:
         self._off_summary = QFrame()
@@ -358,8 +369,8 @@ class ControlNetPanel(DockPanel):
         self._edit_settings_row = _row(self._edit_settings_button, stretch_first=False)
         self._edit_settings_row.layout().addStretch()
 
-        self._unit_block, _ = _column(self._tab_bar, self._unit_list, self._enabled_checkbox, self._off_summary,
-                                      self._edit_settings_row)
+        self._unit_block, _ = _column(self._tab_bar, self._unit_list, self._enabled_checkbox, self._skipped_note,
+                                      self._off_summary, self._edit_settings_row)
         section.add(self._unit_block, REQUIRED)
 
     def _build_control_image_section(self, ui: PanelLayout) -> None:
@@ -478,6 +489,7 @@ class ControlNetPanel(DockPanel):
             self._vram_checkbox.valueChanged.connect(self._update_low_vram)
         if self._px_perfect_checkbox is not None:
             self._px_perfect_checkbox.valueChanged.connect(self._update_px_perfect)
+        Cache().connect(self, Cache.EDIT_MODE, self._edit_mode_changed)
 
     # ---------------------------------------------------------------------------------------------------------------
     # Units
@@ -634,22 +646,47 @@ class ControlNetPanel(DockPanel):
         for label, text in zip(self._off_summary_lines, lines):
             label.set_full_text(text)
 
+    @staticmethod
+    def _is_skipped(state: _UnitState) -> bool:
+        """Returns whether requests skip a unit that is on, since it needs the mask and the mode isn't Inpaint."""
+        return state.saved.enabled and Cache().get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT \
+            and needs_inpainting_mask(state.saved.unit)
+
+    def _edit_mode_changed(self, *_args) -> None:
+        for index in range(len(self._units)):
+            self._update_tab(index)
+
     def _update_tab(self, index: int) -> None:
-        """Sets a unit's title, tooltip and on/off dot, on its tab and its unit list row."""
+        """Sets a unit's title, tooltip and on/off dot, on its tab and its unit list row, and the skipped unit note
+        when the unit is selected."""
         state = self._units[index]
         control_type = unit_control_type(state.saved.unit, self._control_types)
         number = str(index + 1)
         named = control_type != '' and (state.saved.enabled or not self._is_default(state))
         title = TAB_TITLE.format(unit_number=number, control_type=control_type) if named else number
-        tooltip = (TAB_TOOLTIP_ON if state.saved.enabled else TAB_TOOLTIP_OFF).format(unit_number=number)
-        icon = self._dot_icon(state.saved.enabled)
+        skipped = self._is_skipped(state)
+        if skipped:
+            tooltip = TAB_TOOLTIP_SKIPPED.format(unit_number=number)
+        else:
+            tooltip = (TAB_TOOLTIP_ON if state.saved.enabled else TAB_TOOLTIP_OFF).format(unit_number=number)
+        icon = self._dot_icon(state.saved.enabled, skipped)
         self._tab_bar.setTabText(index, title)
         self._tab_bar.setTabToolTip(index, tooltip)
         self._tab_bar.setTabIcon(index, icon)
         self._unit_list.set_row(index, title, tooltip, icon)
+        if index == self._index:
+            note_palette = QPalette()
+            color = caution_color()
+            if color is not None:
+                note_palette.setColor(QPalette.ColorRole.WindowText, color)
+            self._skipped_note.setPalette(note_palette)
+            if self._skipped_note.isHidden() == skipped:
+                self._skipped_note.setVisible(skipped)
+                self.refit()
 
-    def _dot_icon(self, on: bool) -> QIcon:
-        """Returns a tab's dot: filled with the highlight color while the unit is on, and an outline while it's off."""
+    def _dot_icon(self, on: bool, skipped: bool = False) -> QIcon:
+        """Returns a tab's dot: filled with the highlight color while the unit is on, or with the caution color while
+        requests skip it, and an outline while it's off."""
         ratio = self.devicePixelRatioF()
         pixmap = QPixmap(round(DOT_SIZE * ratio), round(DOT_SIZE * ratio))
         pixmap.setDevicePixelRatio(ratio)
@@ -657,9 +694,10 @@ class ControlNetPanel(DockPanel):
         painter = QPainter(pixmap)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         palette = self.palette()
+        caution = caution_color() if skipped else None
         if on:
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(palette.color(QPalette.ColorRole.Highlight))
+            painter.setBrush(caution if caution is not None else palette.color(QPalette.ColorRole.Highlight))
         else:
             outline = QColor(palette.color(QPalette.ColorRole.PlaceholderText))
             painter.setPen(outline)

@@ -27,7 +27,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.tool_controller import ToolController
 from src.tools.base_tool import BaseTool
-from src.ui.ink_style import set_primary_button
+from src.ui.ink_style import caution_color, set_primary_button
 from src.ui.layout.panel_fit import held_weakly
 from src.ui.widget.shortcut_tooltip import set_shortcut_tooltip
 from src.ui.widget.tool_button import ToolButton
@@ -277,7 +277,8 @@ class RailButton(QToolButton):
         painter.end()
 
     def _draw_badge(self, painter: QPainter, icon_rect: QRect, accent: QColor) -> None:
-        """Draws `badge_text` in an accent pill over the icon's upper right corner, if there is any."""
+        """Draws `badge_text` in a pill over the icon's upper right corner, if there is any. The pill takes the accent
+        color, or the caution color for a caution badge when the style has one."""
         text = self.badge_text
         if text == '':
             return
@@ -289,10 +290,17 @@ class RailButton(QToolButton):
         right = min(icon_rect.right() + BADGE_OVERHANG, self.width() - 1)
         bounds = QRectF(right - width + 1, max(0, icon_rect.top() - BADGE_OVERHANG), width, BADGE_SIZE)
         palette = self.palette()
+        fill = accent
+        text_color = palette.color(QPalette.ColorRole.HighlightedText)
+        caution = caution_color() if self._dock.badge_caution else None
+        if caution is not None:
+            # The caution color is a text color on the window background, so the window color reads on it:
+            fill = caution
+            text_color = palette.color(QPalette.ColorRole.Window)
         painter.setPen(QPen(palette.color(QPalette.ColorRole.Window), 1))
-        painter.setBrush(accent)
+        painter.setBrush(fill)
         painter.drawRoundedRect(bounds, BADGE_SIZE / 2, BADGE_SIZE / 2)
-        painter.setPen(palette.color(QPalette.ColorRole.HighlightedText))
+        painter.setPen(text_color)
         painter.setFont(font)
         painter.drawText(bounds, Qt.AlignmentFlag.AlignCenter, text)
 
