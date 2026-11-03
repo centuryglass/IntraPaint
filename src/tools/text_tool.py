@@ -127,7 +127,7 @@ class TextTool(BaseTool):
         if self._dragging:
             new_bounds = self._selection_handler.end_selection(image_coordinates).boundingRect().toAlignedRect()
             self._dragging = False
-            if new_bounds.width() > MIN_DRAG_SIZE or new_bounds.height() > MIN_DRAG_SIZE:
+            if new_bounds.width() > MIN_DRAG_SIZE and new_bounds.height() > MIN_DRAG_SIZE:
                 if self._text_layer is not None:
                     self._disconnect_text_layer()
                 self._control_panel.offset = new_bounds.topLeft()
