@@ -8,6 +8,7 @@ ImageIO owns opening and saving image files for the application.
 
 `AppController` keeps the File menu actions and delegates each one to the matching method here.
 """
+import base64
 import copy
 import json
 import logging
@@ -120,9 +121,12 @@ NO_COLOR_SAVE_MESSAGE = _tr('The {file_format} format saves the image without co
 class _MetadataEncoder(json.JSONEncoder):
 
     def default(self, o):
-        """Convert byte strings to ASCII when serializing."""
+        """Serializes bytes as text, or as base64 when they aren't valid UTF-8 (e.g. an ICC profile)."""
         if isinstance(o, bytes):
-            return o.decode()
+            try:
+                return o.decode()
+            except UnicodeDecodeError:
+                return base64.b64encode(o).decode('ascii')
         return super().default(o)
 
 
