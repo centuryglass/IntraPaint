@@ -401,7 +401,7 @@
     "inpaint_blend_past_selection": {
         "label": "Blend inpainting past the selection:",
         "category": "Stable Diffusion",
-        "description": "Let the soft edge of inpainted content extend past the selection edge. When off, inpainting never changes pixels outside the selection, and the soft edge falls just inside it.",
+        "description": "Let the soft edge of inpainted content extend past the selection edge, by the reach of the mask blur. When off, inpainting never changes pixels outside the selection.",
         "type": "bool",
         "default": false,
         "saved": true

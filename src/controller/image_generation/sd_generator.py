@@ -18,8 +18,7 @@ from sd_backend_client import AuthError, BackendCapabilities, CONTROLNET_MODEL_N
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.image_generator import ImageGenerator, GENERATION_BACKDROP_COLOR
-from src.controller.image_generation.mask_blur import (blur_extent, blur_extent_in_image,
-                                                             blurred_mask_estimate, grow_mask, shrink_mask)
+from src.controller.image_generation.mask_blur import blur_extent_in_image, blurred_mask_estimate, grow_mask
 from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTROLNET_REUSE_IMAGE_CODE, \
     SavedControlNetUnit
 from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qimage, qimage_to_pil
@@ -443,14 +442,6 @@ class SDGenerator(ImageGenerator, ABC):
     @staticmethod
     def _blend_past_selection() -> bool:
         return AppConfig().get(AppConfig.INPAINT_BLEND_PAST_SELECTION)
-
-    def get_generation_inputs(self) -> tuple[QImage, Optional[QImage]]:
-        """Extends the base inputs by shrinking the mask by the blur band's reach unless
-        `AppConfig.INPAINT_BLEND_PAST_SELECTION` is set, so the blend ends at the selection edge."""
-        image, mask = super().get_generation_inputs()
-        if mask is not None and not self._blend_past_selection():
-            mask = shrink_mask(mask, blur_extent(AppConfig().get(AppConfig.MASK_BLUR)))
-        return image, mask
 
     def get_blend_estimate(self, mask: QImage) -> Optional[QImage]:
         """Returns the mask blurred as the backends blur it."""

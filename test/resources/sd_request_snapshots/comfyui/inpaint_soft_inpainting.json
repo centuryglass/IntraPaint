@@ -26,8 +26,8 @@
     "endpoint": "/upload/mask",
     "files": {
       "image": [
-        "mask_8bfb8be58713ef39b0ec1814dd1dc33d_67ead36a115777da664d19d3f4791c6a.png",
-        "<image 512x512 Format_ARGB32 7629bff7e4b33a1d>",
+        "mask_9c6263e5bc70585c3fa6e234dba3de88_67ead36a115777da664d19d3f4791c6a.png",
+        "<image 512x512 Format_ARGB32 1ac480c24e5e4754>",
         "image/png"
       ]
     },
@@ -177,7 +177,7 @@
           "class_type": "LoadImageMask",
           "inputs": {
             "channel": "alpha",
-            "image": "sd_backend_client/mask_8bfb8be58713ef39b0ec1814dd1dc33d_67ead36a115777da664d19d3f4791c6a.png",
+            "image": "sd_backend_client/mask_9c6263e5bc70585c3fa6e234dba3de88_67ead36a115777da664d19d3f4791c6a.png",
             "upload": "image"
           }
         },
@@ -236,8 +236,8 @@
     "endpoint": "/upload/mask",
     "files": {
       "image": [
-        "mask_8bfb8be58713ef39b0ec1814dd1dc33d_67ead36a115777da664d19d3f4791c6a.png",
-        "<image 512x512 Format_ARGB32 7629bff7e4b33a1d>",
+        "mask_9c6263e5bc70585c3fa6e234dba3de88_67ead36a115777da664d19d3f4791c6a.png",
+        "<image 512x512 Format_ARGB32 1ac480c24e5e4754>",
         "image/png"
       ]
     },
@@ -387,7 +387,7 @@
           "class_type": "LoadImageMask",
           "inputs": {
             "channel": "alpha",
-            "image": "sd_backend_client/mask_8bfb8be58713ef39b0ec1814dd1dc33d_67ead36a115777da664d19d3f4791c6a.png",
+            "image": "sd_backend_client/mask_9c6263e5bc70585c3fa6e234dba3de88_67ead36a115777da664d19d3f4791c6a.png",
             "upload": "image"
           }
         },
