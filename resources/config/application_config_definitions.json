@@ -597,5 +597,39 @@
         "type": "string",
         "default": "",
         "saved": true
+    },
+    "autosave_enabled": {
+        "label": "Autosave a recovery copy:",
+        "category": "Files",
+        "description": "Periodically save a copy of the open image, and offer to restore it if IntraPaint closes without quitting normally. The copy is deleted when you quit, save, or open another image.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "autosave_idle_seconds": {
+        "label": "Autosave after idle seconds:",
+        "category": "Files",
+        "description": "Seconds without changes before the recovery copy is updated.",
+        "type": "int",
+        "default": 5,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 600,
+            "step": 1
+        }
+    },
+    "autosave_max_interval_seconds": {
+        "label": "Autosave at least every N seconds:",
+        "category": "Files",
+        "description": "Longest time between recovery copy updates while you keep editing without a pause. Updates still wait for the current brush stroke or image generation to finish.",
+        "type": "int",
+        "default": 120,
+        "saved": true,
+        "range_options": {
+            "min": 10,
+            "max": 3600,
+            "step": 1
+        }
     }
 }

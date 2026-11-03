@@ -8,7 +8,8 @@ import traceback
 from typing import Optional
 
 from PIL import UnidentifiedImageError
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QDateTime, QLocale, QSize
+from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle, QApplication
 
 from src.config.application_config import AppConfig
@@ -44,6 +45,23 @@ CHECKBOX_MESSAGE_REMEMBER_CHOICE = _tr('Remember my choice')
 REMEMBER_OPTION_NONE = 'always_ask'
 REMEMBER_OPTION_CONFIRM = 'confirm'
 REMEMBER_OPTION_CANCEL = 'cancel'
+
+TITLE_RESTORE_RECOVERY = _tr('Restore unsaved work?')
+MESSAGE_RESTORE_RECOVERY_FILE = _tr('IntraPaint closed without quitting normally while editing "{file_path}". A'
+                                    ' recovery copy was saved at {saved_time}.')
+MESSAGE_RESTORE_RECOVERY_UNSAVED = _tr('IntraPaint closed without quitting normally while editing an image that was'
+                                       ' never saved. A recovery copy was saved at {saved_time}.')
+MESSAGE_RESTORE_RECOVERY_CHOICES = _tr('Restore opens the copy. Discard deletes it. Later keeps it and asks again'
+                                       ' the next time IntraPaint starts.')
+BUTTON_RESTORE_RECOVERY = _tr('Restore')
+BUTTON_DISCARD_RECOVERY = _tr('Discard')
+BUTTON_LATER_RECOVERY = _tr('Later')
+
+# `request_recovery_choice` results:
+RECOVERY_RESTORE = 'restore'
+RECOVERY_DISCARD = 'discard'
+RECOVERY_LATER = 'later'
+RECOVERY_THUMBNAIL_SIZE = QSize(128, 128)
 
 
 def _extension_set_to_filter_string(str_set: set[str]) -> str:
@@ -107,6 +125,41 @@ def show_error_dialog(parent: Optional[QWidget], title: str, error: str | BaseEx
         assert ok_button is not None
         set_signal(ok_button)
     messagebox.exec()
+
+
+def request_recovery_choice(parent: Optional[QWidget], original_path: str, saved_at: float,
+                            thumbnail: Optional[QImage]) -> str:
+    """Asks what to do with a crashed session's recovery copy.
+
+    Returns `RECOVERY_RESTORE`, `RECOVERY_DISCARD` or `RECOVERY_LATER`. Closing the box counts as Later.
+    """
+    saved_time = QLocale().toString(QDateTime.fromSecsSinceEpoch(int(saved_at)), QLocale.FormatType.ShortFormat)
+    if original_path == '':
+        message = MESSAGE_RESTORE_RECOVERY_UNSAVED.format(saved_time=saved_time)
+    else:
+        message = MESSAGE_RESTORE_RECOVERY_FILE.format(file_path=original_path, saved_time=saved_time)
+    message_box = _new_message_box(parent)
+    _set_title_and_message(message_box, TITLE_RESTORE_RECOVERY, f'{message}\n\n{MESSAGE_RESTORE_RECOVERY_CHOICES}')
+    message_box.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxQuestion, parent))
+    if thumbnail is not None:
+        message_box.setIconPixmap(QPixmap.fromImage(thumbnail.scaled(RECOVERY_THUMBNAIL_SIZE,
+                                                                     Qt.AspectRatioMode.KeepAspectRatio,
+                                                                     Qt.TransformationMode.SmoothTransformation)))
+    else:
+        message_box.setIcon(QMessageBox.Icon.Question)
+    restore_button = message_box.addButton(BUTTON_RESTORE_RECOVERY, QMessageBox.ButtonRole.AcceptRole)
+    discard_button = message_box.addButton(BUTTON_DISCARD_RECOVERY, QMessageBox.ButtonRole.DestructiveRole)
+    later_button = message_box.addButton(BUTTON_LATER_RECOVERY, QMessageBox.ButtonRole.RejectRole)
+    set_signal(discard_button)
+    message_box.setDefaultButton(restore_button)
+    message_box.setEscapeButton(later_button)
+    message_box.exec()
+    clicked = message_box.clickedButton()
+    if clicked is restore_button:
+        return RECOVERY_RESTORE
+    if clicked is discard_button:
+        return RECOVERY_DISCARD
+    return RECOVERY_LATER
 
 
 def show_warning_dialog(parent: Optional[QWidget], title: str, message: str,

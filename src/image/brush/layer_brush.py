@@ -1,6 +1,7 @@
 """Interface for performing drawing operations on an image layer."""
 import time
 from typing import Optional, TypeVar, Callable
+from weakref import WeakSet
 
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QColor, QImage
@@ -41,6 +42,14 @@ def draw_buffered_input(input_buffer: list[InputT], count_per_draw: int, stroke_
 
 class LayerBrush:
     """Draws content to an image layer."""
+
+    # Brushes between `start_stroke` and `end_stroke`. A stroke's content isn't in its layer's image until it ends.
+    _drawing_brushes: WeakSet['LayerBrush'] = WeakSet()
+
+    @staticmethod
+    def any_stroke_in_progress() -> bool:
+        """Returns whether any brush is in the middle of a stroke."""
+        return len(LayerBrush._drawing_brushes) > 0
 
     def __init__(self, layer: Optional[ImageLayer] = None) -> None:
         self._layer: Optional[ImageLayer] = None
@@ -117,6 +126,7 @@ class LayerBrush:
         if self._drawing:
             self.end_stroke()
         self._drawing = True
+        LayerBrush._drawing_brushes.add(self)
 
     def stroke_to(self, x: float, y: float, pressure: Optional[float], x_tilt: Optional[float],
                   y_tilt: Optional[float]) -> None:
@@ -146,6 +156,7 @@ class LayerBrush:
     def end_stroke(self) -> None:
         """Finishes a brush stroke, copying it back to the layer."""
         self._drawing = False
+        LayerBrush._drawing_brushes.discard(self)
 
     def set_input_mask(self, mask_image: Optional[QImage]) -> None:
         """Sets a mask image, restricting brush changes to areas covered by non-transparent mask areas"""
