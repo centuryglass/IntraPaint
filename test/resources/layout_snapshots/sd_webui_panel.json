@@ -11,23 +11,25 @@
   },
   "narrow": {
     "problems": [
-      "squeezed: QWidget[2] is 182x175, minimum 110x184",
-      "squeezed: QWidget[2]/QWidget is 182x175, minimum 110x184",
-      "squeezed: QWidget[2]/QWidget/FieldPair[0] is 182x49, minimum 110x54",
-      "clipped: QWidget[2]/QWidget/FieldPair[0]/SliderField[1] shows 182x21 of 182x24",
-      "squeezed: QWidget[2]/QWidget/FieldPair[1] is 182x50, minimum 110x54",
-      "clipped: QWidget[2]/QWidget/FieldPair[1]/ToggledSliderField shows 150x22 of 150x24"
+      "overlap: QWidget[2]/QWidget/FieldPair[0]/SliderField[0] and QWidget[2]/QWidget/FieldPair[0]/SliderField[1] share 182x1",
+      "overlap: QWidget[2]/QWidget/FieldPair[1]/SliderField and QWidget[2]/QWidget/FieldPair[1]/ToggledSliderField share 150x1",
+      "squeezed: QWidget[2] is 182x154, minimum 110x184",
+      "squeezed: QWidget[2]/QWidget is 182x154, minimum 110x184",
+      "squeezed: QWidget[2]/QWidget/FieldPair[0] is 182x39, minimum 110x54",
+      "clipped: QWidget[2]/QWidget/FieldPair[0]/SliderField[1] shows 182x16 of 182x24",
+      "squeezed: QWidget[2]/QWidget/FieldPair[1] is 182x39, minimum 110x54",
+      "clipped: QWidget[2]/QWidget/FieldPair[1]/ToggledSliderField shows 150x16 of 150x24"
     ],
     "size": [
       204,
-      319
+      298
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      748,
-      319
+      754,
+      298
     ]
   },
   "short": {
@@ -37,22 +39,22 @@
       "clipped: QWidget[1]/_PinnedScrollArea/QWidget[0] shows 150x81 of 150x184"
     ],
     "size": [
-      748,
+      754,
       103
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      748,
+      754,
       1200
     ]
   },
   "wide": {
     "problems": [],
     "size": [
-      2244,
-      319
+      2262,
+      298
     ]
   }
 }

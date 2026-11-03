@@ -13,39 +13,39 @@
     "problems": [],
     "size": [
       83,
-      366
+      383
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      743,
-      366
+      497,
+      383
     ]
   },
   "short": {
     "problems": [
       "squeezed: QWidget is 155x18, minimum 84x59",
       "squeezed: QWidget/_PinnedScrollArea is 155x18, minimum 59x59",
-      "squeezed: QScrollArea is 553x18, minimum 59x59"
+      "squeezed: QScrollArea is 307x18, minimum 59x59"
     ],
     "size": [
-      743,
+      497,
       40
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      743,
+      497,
       1200
     ]
   },
   "wide": {
     "problems": [],
     "size": [
-      2229,
-      366
+      1600,
+      383
     ]
   }
 }
