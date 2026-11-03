@@ -19,7 +19,6 @@ from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.field_factory import create_control_widget
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.widget.keycap_badge import KeycapBadge
-from src.ui.widget.option_filmstrip import MAX_DIGIT_KEY
 from src.ui.widget.panel_header import PanelPopover
 from src.util.visual.text_drawing_utils import get_key_display_string, left_button_hint_text, \
     middle_button_hint_text, rich_text_key_hint, rich_text_key_hints, vertical_scroll_hint_text
@@ -346,9 +345,8 @@ def _control_hint(single_view: bool, option_count: int) -> str:
                                           down_key=_keys(KeyConfig.MOVE_DOWN),
                                           v_scroll_icon=vertical_scroll_hint_text(),
                                           **shared)
-    last_digit = max(min(option_count - 1, MAX_DIGIT_KEY), 0)
     return GRID_CONTROL_HINT.format(first_key=rich_text_key_hint('0'),
-                                    last_key=rich_text_key_hint(str(last_digit)),
+                                    last_key=rich_text_key_hint(str(max(option_count - 1, 0))),
                                     up_key=_keys(KeyConfig.MOVE_UP),
                                     zoom_in_key=_keys(KeyConfig.ZOOM_IN),
                                     zoom_out_key=_keys(KeyConfig.ZOOM_OUT),

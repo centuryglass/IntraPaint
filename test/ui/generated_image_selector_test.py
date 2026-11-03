@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QImage, QKeyEvent, QMouseEvent, QWheelEvent
-from PySide6.QtWidgets import QApplication, QMenu
+from PySide6.QtWidgets import QApplication, QLabel, QMenu
 
 from src.config.cache import Cache
 from src.controller.image_generation.generation_session import GenerationSession
@@ -17,13 +17,14 @@ from src.ui.generated_image_selector import GeneratedImageSelector, LABEL_TEXT_I
     SCROLL_DEBOUNCE_MS
 from src.ui.generated_option_view import CAPTION_HEIGHT
 from src.ui.generated_selector_bars import CANCEL_BUTTON_TEXT, CLOSE_BUTTON_TEXT, USE_OPTION_BUTTON_TEXT, VIEW_GRID, \
-    VIEW_SINGLE
+    VIEW_SINGLE, _control_hint
 from src.ui.window.main_window import MainWindow
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_SELECTION
 from src.util.async_task import AsyncTask
 from src.util.shared_constants import EDIT_MODE_IMG2IMG
-from test.base_test_case import IntraPaintTestCase
+from src.util.visual.text_drawing_utils import rich_text_key_hint
+from test.base_test_case import IntraPaintTestCase, press_key
 from test.image.layers.image_stack_state import select_rect
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -923,6 +924,72 @@ class GeneratedImageSelectorInputTest(_RunScreenTestCase):
         open_file.assert_not_called()
         self.selector._send_to_new_layer(2)
         self.assertEqual(len(self.image_stack.layers), layer_count)
+
+
+class GeneratedImageSelectorTypedNumberTest(_RunScreenTestCase):
+    """Tests typing option numbers of more than one digit, and number keys reaching the selector through the window."""
+
+    BATCH = 14
+
+    def setUp(self) -> None:
+        super().setUp()
+        # A dock without content ignores its shortcut, so the panel docks get content:
+        for dock in (self.window.tools_dock, self.window.generation_dock):
+            dock.set_content(QLabel(dock.windowTitle()))
+
+        def _action() -> None:
+            for idx in range(self.BATCH):
+                self._deliver(idx)
+        self._run(_action)
+        self.selector.resize(400, 300)
+
+    def _type(self, *keys: Qt.Key) -> None:
+        for key in keys:
+            self.selector.eventFilter(self.selector._view, QKeyEvent(QEvent.Type.KeyPress, key,
+                                                                     Qt.KeyboardModifier.NoModifier))
+
+    def test_digits_extend_the_typed_number(self) -> None:
+        """Each digit focuses its option at once, and the next digit extends the number while it names an option."""
+        self._type(Qt.Key.Key_1)
+        self.assertEqual(self.selector._zoom_index, 1)
+        self._type(Qt.Key.Key_2)
+        self.assertEqual(self.selector._zoom_index, 12)
+        self._type(Qt.Key.Key_0)
+        self.assertEqual(self.selector._zoom_index, 0, '120 names no option, so 0 starts a new number')
+        self._type(Qt.Key.Key_1, Qt.Key.Key_4)
+        self.assertEqual(self.selector._zoom_index, 14)
+
+    def test_digit_past_the_last_option_starts_a_new_number(self) -> None:
+        """A digit that would name a missing option focuses the option it names alone."""
+        self._type(Qt.Key.Key_1, Qt.Key.Key_9)
+        self.assertEqual(self.selector._zoom_index, 9)
+
+    def test_pause_starts_a_new_number(self) -> None:
+        """Once the timer runs out, the next digit starts a new number."""
+        self._type(Qt.Key.Key_1)
+        self.assertTrue(self.selector._typed_number_timer.isActive())
+        self.selector._typed_number_timer.timeout.emit()
+        self._type(Qt.Key.Key_2)
+        self.assertEqual(self.selector._zoom_index, 2)
+
+    def test_other_keys_start_a_new_number(self) -> None:
+        """A key that isn't a digit or a modifier ends the typed number."""
+        self._type(Qt.Key.Key_1, Qt.Key.Key_Alt, Qt.Key.Key_1)
+        self.assertEqual(self.selector._zoom_index, 11, 'a modifier keeps the typed number')
+        self._type(Qt.Key.Key_A, Qt.Key.Key_3)
+        self.assertEqual(self.selector._zoom_index, 3)
+
+    def test_grid_hint_names_the_last_option(self) -> None:
+        """The grid's key hint runs to the last option's number, past 9."""
+        self.assertIn(rich_text_key_hint(str(self.BATCH)), _control_hint(False, self.BATCH + 1))
+
+    def test_panel_shortcut_keys_reach_the_selector(self) -> None:
+        """The digits bound to panel shortcuts focus options instead of opening the hidden panels."""
+        press_key(self.window, Qt.Key.Key_1)
+        self.assertEqual(self.selector._zoom_index, 1)
+        press_key(self.window, Qt.Key.Key_2)
+        self.assertEqual(self.selector._zoom_index, 12)
+        self.assertTrue(all(dock.isHidden() for dock in self.window.docks))
 
 
 class GeneratedImageSelectorGridLayoutTest(IntraPaintTestCase):
