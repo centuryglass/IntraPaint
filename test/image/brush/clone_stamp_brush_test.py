@@ -170,6 +170,25 @@ class CloneStampBrushTest(BrushTestCase):
         self.assertFalse(np.any(changed[:52]) or np.any(changed[68:]) or np.any(changed[:, :32])
                          or np.any(changed[:, 48:]))
 
+    def test_fixed_source_clipped_at_left_edge_keeps_alignment(self) -> None:
+        """A stamp clipped by the layer's left edge copies the matching part of the source patch, unshifted."""
+        self.brush.source_pos = QPoint(60, 60)
+        initial_image = brush_test_pattern()
+        image = self.stroke([(3, 40)])
+        np_image = image_data_as_numpy_8bit(image)
+        np_initial = image_data_as_numpy_8bit(initial_image)
+        # The stamp covers x -5..10, y 32..47 and samples x 52..67, y 52..67:
+        np.testing.assert_array_equal(np_image[40, 0:11], np_initial[60, 57:68])
+
+    def test_fixed_source_clipped_at_top_edge_keeps_alignment(self) -> None:
+        """A stamp clipped by the layer's top edge copies the matching part of the source patch, unshifted."""
+        self.brush.source_pos = QPoint(60, 60)
+        initial_image = brush_test_pattern()
+        image = self.stroke([(40, 3)])
+        np_image = image_data_as_numpy_8bit(image)
+        np_initial = image_data_as_numpy_8bit(initial_image)
+        np.testing.assert_array_equal(np_image[0:11, 40], np_initial[57:68, 60])
+
     @pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/114: fixed-source '
                                           'interpolation excludes each segment\'s end point, so the final input point '
                                           'of a stroke is never stamped')
