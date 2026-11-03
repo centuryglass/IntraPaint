@@ -1,4 +1,6 @@
 """Tests for ImageIO: opening and saving image files, animations and the open file's metadata."""
+import base64
+import json
 import os
 import sys
 import tempfile
@@ -114,6 +116,13 @@ class TestImageIO(ImageIOTestCase):
             self.image_io.wait_for_pending_save()
             self.assertTrue(os.path.isfile(save_path))
             self.assertEqual(save_path, Cache().get(Cache.LAST_FILE_PATH))
+
+    def test_metadata_json_handles_binary_metadata(self):
+        """Binary metadata values such as an ICC profile serialize instead of raising."""
+        self.image_io.metadata = {'icc_profile': b'\x00\x00\x01\xe0mntrRGB', 'text': b'plain', 'dpi': (96.0, 96.0)}
+        loaded = json.loads(self.image_io.metadata_json())
+        self.assertEqual(base64.b64encode(b'\x00\x00\x01\xe0mntrRGB').decode(), loaded['icc_profile'])
+        self.assertEqual('plain', loaded['text'])
 
 
 class TestOpenAnimation(ImageIOTestCase):
