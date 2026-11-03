@@ -1457,6 +1457,7 @@ class ImageStack(QObject):
             self._layer_stack.set_visible(layer_stack.visible)
             self._layer_stack.set_composition_mode(layer_stack.composition_mode)
             self._layer_stack.set_opacity(layer_stack.opacity)
+            self._layer_stack.set_isolate(layer_stack.isolate)
             self.size = new_size
             for new_layer in new_layers:
                 self._insert_layer_internal(new_layer, self._layer_stack, self._layer_stack.count)

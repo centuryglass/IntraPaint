@@ -164,6 +164,14 @@ class ImageStackTest(IntraPaintTestCase):
         self.image_stack.load_layer_stack(new_stack, QImage(INIT_IMAGE).size())
         self.assertTrue(self.image_stack.selection_layer.transform.isIdentity())
 
+    def test_load_layer_stack_keeps_root_isolate(self) -> None:
+        """Loading a layer stack copies the root group's isolate flag."""
+        new_stack = LayerGroup('loaded')
+        new_stack.set_isolate(True)
+        new_stack.insert_layer(ImageLayer(QImage(INIT_IMAGE), 'loaded layer'), 0)
+        self.image_stack.load_layer_stack(new_stack, QImage(INIT_IMAGE).size())
+        self.assertTrue(self.image_stack.layer_stack.isolate)
+
     def test_layer_create(self) -> None:
         """Test creating new layers and layer groups"""
 
