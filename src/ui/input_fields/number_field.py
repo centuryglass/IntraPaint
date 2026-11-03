@@ -218,6 +218,11 @@ class NumberField(QWidget):
         self._suffix = suffix
         self._value_changed()
 
+    def set_display_scale(self, display_scale: float) -> None:
+        """Changes the factor between the stored value and the value shown and typed, such as 100 for a percentage."""
+        self._display_scale = display_scale
+        self._value_changed()
+
     def value_text(self, value: Optional[int | float] = None) -> str:
         """Returns the text shown for a value (the current value by default), including the suffix."""
         if value is None:

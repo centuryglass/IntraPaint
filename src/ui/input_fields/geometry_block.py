@@ -9,6 +9,8 @@ step keys with `bind_step_keys`.
   the X/Y row keeps an empty slot of the lock's width so the columns line up.
 - Each field fills over a "scrub range" (X and Y from minus one image width to two, W and H from 0 to two) but accepts
   any typed value within its limits.
+- `show_position=False` leaves out X and Y. `unit_switch=True` adds Scale X and Scale Y in place of W and H while
+  `set_percent_mode(True)`, shown as percentages, for a dialog that sizes by pixels or by percent.
 - The lock keeps W:H, and Scale X:Scale Y, at the ratio they had when the lock engaged or when the owner last set a
   value. Holding the fixed-aspect modifier engages it temporarily without changing the stored setting.
 """
@@ -51,6 +53,7 @@ STEP_KEYS_TOOLTIP = _tr('{description}\nKeys: {decrease} / {increase}')
 PIXEL_SUFFIX = _tr(' px')
 DEGREE_SUFFIX = _tr(' deg')
 SCALE_SUFFIX = _tr('x')
+PERCENT_SUFFIX = _tr('%')
 
 # Field names, which `valueChanged` reports and `set_value` accepts:
 X = 'x'
@@ -64,6 +67,8 @@ FIELD_NAMES = (X, Y, WIDTH, HEIGHT, SCALE_X, SCALE_Y, ANGLE)
 
 DEFAULT_IMAGE_SIZE = QSize(512, 512)
 SCALE_STEP = 0.05
+# The percent switch steps by whole percents:
+PERCENT_STEP = 0.01
 SCALE_SCRUB_MAX = 4.0
 ANGLE_SCRUB_RANGE = 360.0
 FLOAT_PIXEL_STEP = 0.01
@@ -167,6 +172,11 @@ class GeometryBlock(QWidget):
         Adds an Angle row.
     integer: bool
         Whole-number fields for position and size. Otherwise they take fractional pixels.
+    show_position: bool
+        Shows the X and Y fields. Without them the block is the size row alone.
+    unit_switch: bool
+        Creates Scale X and Scale Y for `set_percent_mode`, which shows them in place of W and H. The scale rows of
+        `show_scale` are separate and may not be combined with this.
     parent: Optional[QWidget]
         Optional parent widget.
     """
@@ -176,9 +186,14 @@ class GeometryBlock(QWidget):
     temporaryLockToggled = Signal(bool)
 
     def __init__(self, show_scale: bool = False, show_angle: bool = False, integer: bool = True,
-                 parent: Optional[QWidget] = None) -> None:
+                 show_position: bool = True, unit_switch: bool = False, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
+        if unit_switch and show_scale:
+            raise ValueError('unit_switch replaces the size row and cannot be combined with show_scale')
         self._integer = integer
+        self._show_position = show_position
+        self._unit_switch = unit_switch
+        self._percent = False
         self._image_size = DEFAULT_IMAGE_SIZE
         self._horizontal = False
         self._temporary_lock = False
@@ -206,10 +221,11 @@ class GeometryBlock(QWidget):
                         PIXEL_SUFFIX)
         self._show_scale = show_scale
         self._show_angle = show_angle
-        if show_scale:
-            self._add_field(SCALE_X, SCALE_X_LABEL, SCALE_X_TOOLTIP, 1.0, FLOAT_MIN, FLOAT_MAX, SCALE_STEP,
+        if show_scale or unit_switch:
+            scale_step = PERCENT_STEP if unit_switch else SCALE_STEP
+            self._add_field(SCALE_X, SCALE_X_LABEL, SCALE_X_TOOLTIP, 1.0, FLOAT_MIN, FLOAT_MAX, scale_step,
                             SCALE_SUFFIX, decimals=2)
-            self._add_field(SCALE_Y, SCALE_Y_LABEL, SCALE_Y_TOOLTIP, 1.0, FLOAT_MIN, FLOAT_MAX, SCALE_STEP,
+            self._add_field(SCALE_Y, SCALE_Y_LABEL, SCALE_Y_TOOLTIP, 1.0, FLOAT_MIN, FLOAT_MAX, scale_step,
                             SCALE_SUFFIX, decimals=2)
         if show_angle:
             self._add_field(ANGLE, ANGLE_LABEL, ANGLE_TOOLTIP, 0.0, FLOAT_MIN, FLOAT_MAX, 1.0, DEGREE_SUFFIX,
@@ -402,33 +418,66 @@ class GeometryBlock(QWidget):
             self._horizontal = horizontal
             self._arrange()
 
+    def percent_mode(self) -> bool:
+        """Returns whether Scale X and Scale Y stand in for W and H."""
+        return self._percent
+
+    def set_percent_mode(self, percent: bool) -> None:
+        """Shows Scale X and Scale Y as percentages in place of W and H, or the reverse. Needs `unit_switch`."""
+        if not self._unit_switch:
+            raise RuntimeError('set_percent_mode needs unit_switch=True')
+        if percent == self._percent:
+            return
+        self._percent = percent
+        for name in (SCALE_X, SCALE_Y):
+            self._fields[name].set_display_scale(100.0 if percent else 1.0)
+            self._fields[name].set_suffix(PERCENT_SUFFIX if percent else SCALE_SUFFIX)
+        self._capture_ratios()
+        self._arrange()
+
     def _arrange(self) -> None:
         while self._grid.count() > 0:
             self._grid.takeAt(0)
         for column in range(self._grid.columnCount() + 1):
             self._grid.setColumnStretch(column, 0)
         grid = self._grid
+        first, second = (SCALE_X, SCALE_Y) if self._percent else (WIDTH, HEIGHT)
+        shown = {first, second}
+        if self._show_position:
+            shown.update((X, Y))
+        if self._show_scale:
+            shown.update((SCALE_X, SCALE_Y))
+        if self._show_angle:
+            shown.add(ANGLE)
+        for name, field in self._fields.items():
+            field.setVisible(name in shown)
         if self._horizontal:
-            grid.addWidget(self._fields[X], 0, 0)
-            grid.addWidget(self._fields[Y], 0, 1)
-            grid.addWidget(self._fields[WIDTH], 0, 2)
-            grid.addWidget(self._lock, 0, 3)
-            grid.addWidget(self._fields[HEIGHT], 0, 4)
+            column = 0
+            if self._show_position:
+                grid.addWidget(self._fields[X], 0, 0)
+                grid.addWidget(self._fields[Y], 0, 1)
+                column = 2
+            grid.addWidget(self._fields[first], 0, column)
+            grid.addWidget(self._lock, 0, column + 1)
+            grid.addWidget(self._fields[second], 0, column + 2)
             self._spacer.hide()
-            for column in (0, 1, 2, 4):
-                grid.setColumnStretch(column, 1)
+            for stretch_column in (*range(column), column, column + 2):
+                grid.setColumnStretch(stretch_column, 1)
             next_row = 1
         else:
-            grid.addWidget(self._fields[X], 0, 0)
-            grid.addWidget(self._spacer, 0, 1)
-            grid.addWidget(self._fields[Y], 0, 2)
-            grid.addWidget(self._fields[WIDTH], 1, 0)
-            grid.addWidget(self._lock, 1, 1)
-            grid.addWidget(self._fields[HEIGHT], 1, 2)
-            self._spacer.show()
+            next_row = 0
+            if self._show_position:
+                grid.addWidget(self._fields[X], 0, 0)
+                grid.addWidget(self._spacer, 0, 1)
+                grid.addWidget(self._fields[Y], 0, 2)
+                next_row = 1
+            grid.addWidget(self._fields[first], next_row, 0)
+            grid.addWidget(self._lock, next_row, 1)
+            grid.addWidget(self._fields[second], next_row, 2)
+            self._spacer.setVisible(self._show_position)
             for column in (0, 2):
                 grid.setColumnStretch(column, 1)
-            next_row = 2
+            next_row += 1
         if self._show_scale:
             grid.addWidget(self._fields[SCALE_X], next_row, 0)
             grid.addWidget(self._fields[SCALE_Y], next_row, 2 if not self._horizontal else 1)

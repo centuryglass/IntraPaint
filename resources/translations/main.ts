@@ -6027,6 +6027,11 @@ Keys: {decrease} / {increase}</source>
         <source>x</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../src/ui/input_fields/geometry_block.py"/>
+        <source>%</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ui.input_fields.number_field</name>
@@ -6293,22 +6298,32 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/image_scale_modal.py"/>
-        <source>Image scaling mode:</source>
+        <source>Basic</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/image_scale_modal.py"/>
-        <source>Basic image scaling</source>
+        <source>Scale with a basic image scaling algorithm.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/image_scale_modal.py"/>
-        <source>Image generator scaling modes</source>
+        <source>Generator</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/image_scale_modal.py"/>
-        <source>Advanced AI upscaling</source>
+        <source>Scale with one of the image generator's scaling modes.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>AI upscaling</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/image_scale_modal.py"/>
+        <source>Upscale with Stable Diffusion, adding detail while scaling.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6328,47 +6343,37 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/image_scale_modal.py"/>
-        <source>Width:</source>
+        <source>Size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/image_scale_modal.py"/>
-        <source>New image width in pixels</source>
+        <source>AI upscaling settings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/image_scale_modal.py"/>
-        <source>Height:</source>
+        <source>Pixels</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/image_scale_modal.py"/>
-        <source>New image height in pixels</source>
+        <source>Enter the new size in pixels.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/image_scale_modal.py"/>
-        <source>Width scale:</source>
+        <source>Percent</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/image_scale_modal.py"/>
-        <source>New image width (as multiplier)</source>
+        <source>Enter the new size as a percentage of the current size.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/image_scale_modal.py"/>
-        <source>Height scale:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/modal/image_scale_modal.py"/>
-        <source>New image height (as multiplier)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/modal/image_scale_modal.py"/>
-        <source>Cancel</source>
+        <source>New size: {width} x {height} px</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

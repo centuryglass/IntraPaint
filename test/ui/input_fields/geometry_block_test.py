@@ -41,6 +41,29 @@ class GeometryBlockTest(IntraPaintTestCase):
         full = GeometryBlock(show_scale=True, show_angle=True, integer=False)
         self.assertTrue(full.has_field(SCALE_X) and full.has_field(SCALE_Y) and full.has_field(ANGLE))
 
+    def test_position_and_unit_switch(self) -> None:
+        """Without a position the X and Y fields are hidden, and percent mode shows the scale fields in place of W and
+        H as percentages."""
+        block = GeometryBlock(show_position=False, unit_switch=True)
+        block.show()
+        self.assertFalse(block.field(X).isVisible() or block.field(Y).isVisible())
+        self.assertTrue(block.field(WIDTH).isVisible() and block.field(HEIGHT).isVisible())
+        self.assertFalse(block.field(SCALE_X).isVisible())
+        block.set_percent_mode(True)
+        self.assertFalse(block.field(WIDTH).isVisible() or block.field(HEIGHT).isVisible())
+        self.assertTrue(block.field(SCALE_X).isVisible() and block.field(SCALE_Y).isVisible())
+        block.set_value(SCALE_X, 1.5)
+        self.assertEqual(block.field(SCALE_X).value_text(), '150%')
+        block.set_percent_mode(False)
+        self.assertEqual(block.field(SCALE_X).value_text(), '1.5x')
+
+    def test_unit_switch_excludes_scale_rows(self) -> None:
+        """The percent switch and the separate scale rows can't be combined."""
+        with self.assertRaises(ValueError):
+            GeometryBlock(show_scale=True, unit_switch=True)
+        with self.assertRaises(RuntimeError):
+            GeometryBlock().set_percent_mode(True)
+
     def test_values_show_units(self) -> None:
         """Whole pixels show no decimals, and angle and scale carry their units."""
         block = GeometryBlock(show_scale=True, show_angle=True, integer=False)
