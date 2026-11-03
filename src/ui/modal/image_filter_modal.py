@@ -21,6 +21,7 @@ from src.ui.ink_style import set_signal
 from src.ui.layout.label_column_layout import normalize_row_label
 from src.ui.modal.controls_column import ControlsColumn, fit_dialog_to_screen, stack_body_for_size
 from src.ui.modal.dialog_footer import DialogFooter
+from src.ui.modal.modal_parent import modal_parent
 from src.ui.widget.panel_section import PanelSection
 from src.util.async_task import AsyncTask
 from src.util.parameter import Parameter, TYPE_FLOAT, TYPE_INT, TYPE_STR
@@ -202,8 +203,9 @@ class ImageFilterModal(QDialog):
                  apply_filter: FilterFunction,
                  filter_selection_only_default: bool = True,
                  filter_active_layer_only_default: bool = True,
-                 prepare_original: Optional[OriginalPreparer] = None) -> None:
-        super().__init__()
+                 prepare_original: Optional[OriginalPreparer] = None,
+                 parent: Optional[QWidget] = None) -> None:
+        super().__init__(modal_parent(parent))
         self.setModal(True)
         self.setWindowIcon(QIcon(APP_ICON_PATH))
         self.setWindowTitle(title)

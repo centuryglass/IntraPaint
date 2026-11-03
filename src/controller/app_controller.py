@@ -306,6 +306,7 @@ class AppController(MenuBuilder):
                 modal = filter_instance.get_filter_modal()
                 self._set_alt_window_centered_bounds(modal)
                 modal.exec()
+                modal.deleteLater()
 
             config_key = image_filter.get_config_key()
             action = self.add_menu_action(MENU_FILTERS,

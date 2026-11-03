@@ -7,7 +7,7 @@ import re
 from typing import Optional
 
 from PySide6.QtCore import Qt, QSize, Signal
-from PySide6.QtGui import QImage, QMouseEvent, QIcon, QPainter, QPalette, QColor
+from PySide6.QtGui import QHideEvent, QImage, QMouseEvent, QIcon, QPainter, QPalette, QColor, QShowEvent
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget, QScrollArea, \
     QApplication, QSizePolicy
 
@@ -95,7 +95,10 @@ def _placeholder_image(size: QSize, palette: QPalette) -> QImage:
 
 
 class ExtraNetworkWindow(QDialog):
-    """Search available extra networks and add them to or remove them from the prompt."""
+    """Search available extra networks and add them to or remove them from the prompt.
+
+    The window is not modal. It follows prompt edits made in the main window while it is shown.
+    """
 
     def __init__(self, loras: list[dict[str, str]], images: dict[str, Optional[QImage]]) -> None:
         super().__init__()
@@ -143,6 +146,20 @@ class ExtraNetworkWindow(QDialog):
         close_button = QPushButton(CLOSE_BUTTON_LABEL)
         close_button.clicked.connect(self.close)
         footer.addWidget(close_button)
+        self._refresh_marks()
+
+    def showEvent(self, event: Optional[QShowEvent]) -> None:  # pylint: disable=invalid-name
+        """Starts following prompt edits made elsewhere while the window is open."""
+        Cache().connect(self, Cache.PROMPT, self._prompt_changed)
+        self._refresh_marks()
+        super().showEvent(event)
+
+    def hideEvent(self, event: Optional[QHideEvent]) -> None:  # pylint: disable=invalid-name
+        """Stops following prompt edits, so the Cache doesn't keep the hidden window alive."""
+        Cache().disconnect(self, Cache.PROMPT)
+        super().hideEvent(event)
+
+    def _prompt_changed(self, _prompt: str) -> None:
         self._refresh_marks()
 
     def sizeHint(self) -> QSize:  # pylint: disable=invalid-name

@@ -18,6 +18,7 @@ from src.ui.input_fields import geometry_block
 from src.ui.input_fields.geometry_block import GeometryBlock
 from src.ui.modal.color_dialog import ColorDialog
 from src.ui.modal.dialog_footer import DialogFooter
+from src.ui.modal.modal_parent import modal_parent
 from src.ui.widget.panel_section import PanelSection
 from src.util.shared_constants import APP_ICON_PATH
 from src.util.visual.image_utils import get_color_icon
@@ -64,8 +65,8 @@ class NewImageModal(QDialog):
     """
 
     def __init__(self, default_width: int, default_height: int, generation_area_size: Optional[QSize] = None,
-                 clipboard_size: Optional[QSize] = None) -> None:
-        super().__init__()
+                 clipboard_size: Optional[QSize] = None, parent: Optional[QWidget] = None) -> None:
+        super().__init__(modal_parent(parent))
         self.setWindowIcon(QIcon(APP_ICON_PATH))
         self.setModal(True)
         self.setWindowTitle(CREATE_IMAGE_TITLE)
@@ -219,4 +220,6 @@ class NewImageModal(QDialog):
     def show_image_modal(self) -> Optional[QSize]:
         """Shows the modal, then returns the user-entered size when closed."""
         self.exec()
-        return self.new_size() if self._create else None
+        new_size = self.new_size() if self._create else None
+        self.deleteLater()
+        return new_size

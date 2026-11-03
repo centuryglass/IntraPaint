@@ -4,9 +4,11 @@ from typing import Callable, Optional
 
 import requests
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import (QDialog, QFormLayout, QLabel, QLineEdit, QApplication, QSizePolicy)
+from PySide6.QtWidgets import (QDialog, QFormLayout, QLabel, QLineEdit, QApplication, QSizePolicy,
+                               QWidget)
 
 from src.ui.modal.dialog_footer import DialogFooter
+from src.ui.modal.modal_parent import modal_parent
 from src.util.shared_constants import APP_ICON_PATH
 
 # The QCoreApplication.translate context for strings in this file
@@ -30,8 +32,9 @@ ERROR_UNKNOWN = _tr('Unknown error, try again.')
 class LoginModal(QDialog):
     """Popup modal window used for entering login information."""
 
-    def __init__(self, try_login: Callable[[str, str], Optional[requests.Response]]) -> None:
-        super().__init__()
+    def __init__(self, try_login: Callable[[str, str], Optional[requests.Response]],
+                 parent: Optional[QWidget] = None) -> None:
+        super().__init__(modal_parent(parent))
         self.setWindowIcon(QIcon(APP_ICON_PATH))
         self.user: Optional[str] = None
         self.pw: Optional[str] = None
