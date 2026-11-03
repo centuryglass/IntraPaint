@@ -1258,6 +1258,7 @@
         "type": "string",
         "default": "http://localhost:7860",
         "saved": true,
+        "pinned": true,
         "translate": false
     },
     "sd_comfyui_server_url": {
@@ -1268,6 +1269,7 @@
         "type": "string",
         "default": "http://localhost:8188",
         "saved": true,
+        "pinned": true,
         "translate": false
     },
     "glid_server_url": {
