@@ -162,6 +162,9 @@ class GeneratedImageSelector(QWidget):
         self._base_option_scale = 0.0
         self._option_scale_ratio = 1.0
         self._option_pos_offset = QPointF(0.0, 0.0)
+        # The viewport center, in scene coordinates, right after the fitted view of the option showing was applied.
+        # None when no manual view is live:
+        self._base_option_center: Optional[QPointF] = None
 
         self._loading_designs = loading_designs if loading_designs is not None else default_loading_designs()
         self._loading_design = self._loading_designs[0]
@@ -186,8 +189,6 @@ class GeneratedImageSelector(QWidget):
         # Setup main option view widget:
         self._view = GeneratedOptionView()
         self._view.set_options(self._option_items)
-        self._view.scale_changed.connect(self._scale_change_slot)
-        self._view.offset_changed.connect(self._offset_change_slot)
         self._view.setMouseTracking(True)
         self._view.installEventFilter(self)
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -749,21 +750,26 @@ class GeneratedImageSelector(QWidget):
             self._hover_index = idx
             self._update_overlay()
 
-    def _offset_change_slot(self, offset: QPointF) -> None:
-        if not self._zoomed_in:
-            return
-        self._option_pos_offset = QPointF(offset) - QPointF(self._base_option_offset)
+    def _view_center(self) -> QPointF:
+        """Returns the scene point at the center of the view."""
+        return self._view.widget_point_to_scene(self._view.rect().center())
 
-    def _scale_change_slot(self, scale: float) -> None:
-        if not self._zoomed_in:
+    def _capture_manual_view(self) -> None:
+        """Records the pan and zoom the user made since the option showing was fitted.
+
+        Read from where the view actually is: zooming around the cursor moves the view without updating
+        `ImageGraphicsView.offset`, so the offset can't be trusted to describe the pan.
+        """
+        if self._base_option_center is None or self._base_option_scale <= 0:
             return
-        if self._base_option_scale > 0:
-            self._option_scale_ratio = scale / self._base_option_scale
+        self._option_pos_offset = self._view_center() - self._base_option_center
+        self._option_scale_ratio = self._view.scene_scale / self._base_option_scale
 
     def _clear_manual_view(self) -> None:
         """Discards the manual pan and zoom, which are only meaningful in the frame they were made in."""
         self._option_pos_offset = QPointF(0.0, 0.0)
         self._option_scale_ratio = 1.0
+        self._base_option_center = None
 
     def _warn_if_blocked(self, outcome: ApplyOutcome, requested_layer: Layer, new_layer_name: str) -> None:
         """Warns that an option went to a new layer because `requested_layer` couldn't take it."""
@@ -801,8 +807,7 @@ class GeneratedImageSelector(QWidget):
             self._zoomed_in = True
         if option_index is not None:
             self._zoom_index = option_index
-        self._view.scale_changed.disconnect(self._scale_change_slot)
-        self._view.offset_changed.disconnect(self._offset_change_slot)
+        self._capture_manual_view()
         if self._zoom_to_changes and self._change_bounds is not None:
             bounds = QRect(self._change_bounds)
             offset = self._option_items[self._zoom_index].bounds.topLeft()
@@ -812,6 +817,8 @@ class GeneratedImageSelector(QWidget):
         self._view.zoom_to_bounds(bounds)
         self._base_option_offset = self._view.offset
         self._base_option_scale = self._view.scene_scale
+        fitted_center = self._view_center()
+        self._base_option_center = fitted_center
         self._view.offset = self._base_option_offset + self._option_pos_offset
         self._view.scale_without_fixed_scene_point(self._base_option_scale * self._option_scale_ratio)
         if not self._view.visible_scene_bounds.intersects(QRectF(bounds)):
@@ -819,8 +826,7 @@ class GeneratedImageSelector(QWidget):
             self._clear_manual_view()
             self._view.offset = self._base_option_offset
             self._view.scale_without_fixed_scene_point(self._base_option_scale)
-        self._view.scale_changed.connect(self._scale_change_slot)
-        self._view.offset_changed.connect(self._offset_change_slot)
+            self._base_option_center = fitted_center
         for i, option in enumerate(self._option_items):
             option.setOpacity(1.0 if not self._zoomed_in or i == self._zoom_index else 0.5)
         # A held compare modifier keeps comparing on the newly focused option:
