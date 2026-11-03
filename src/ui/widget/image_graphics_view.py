@@ -375,6 +375,11 @@ class ImageGraphicsView(QGraphicsView):
         super().resizeEvent(event)
         self._update_scale_and_transform()
 
+    @property
+    def border_size(self) -> int:
+        """Returns the empty margin in pixels that the default scale leaves around the content."""
+        return self._border_size()
+
     def _border_size(self) -> int:
         return (min(self.width(), self.height()) // 40) + 1
 
