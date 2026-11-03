@@ -12,7 +12,7 @@ from src.config.key_config import KeyConfig
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.ui.widget.color_picker.gradient_slider import GradientSlider
 from src.ui.widget.key_hint_label import KeyHintLabel
-from src.util.key_code_utils import get_modifiers, get_modifier_string, get_key_string, get_key_with_modifiers
+from src.util.key_code_utils import get_modifiers, get_modifier_string, get_key_with_modifiers
 
 logger = logging.getLogger(__name__)
 
@@ -136,18 +136,11 @@ class HotkeyFilter(QObject):
         """
         new_bindings: list[tuple[Qt.Key, 'HotkeyFilter.KeyBinding']] = []
         # noinspection PyUnresolvedReferences
-        for key in (keys[i] for i in range(keys.count())):
-            key = key.key()
+        for combination in (keys[i] for i in range(keys.count())):
+            key = combination.key()
             assert key != Qt.Key.Key_unknown, 'Invalid keybinding'
-            key_string = get_key_string(key)
-            key_modifiers = modifiers
-            if '+' in key_string:  # Divide out any modifiers passed in via the key parameter
-                if key_modifiers is None:
-                    key_modifiers = Qt.KeyboardModifier.NoModifier
-                key_strings = key_string.split('+')
-                key_modifiers = key_modifiers | get_modifiers(key_strings[:-1])
-                # noinspection PyUnresolvedReferences
-                key = QKeySequence(key_strings[-1])[0]
+            # Modifiers written into the key sequence, as in 'Shift+Z', add to the `modifiers` parameter:
+            key_modifiers = modifiers | combination.keyboardModifiers()
 
             keybinding = HotkeyFilter.KeyBinding(str_id, action, key, key_modifiers)
             if key not in self._bindings:
