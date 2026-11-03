@@ -6616,52 +6616,22 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>Width:</source>
+        <source>Size and position</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>New image width in pixels</source>
+        <source>Layers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>Height:</source>
+        <source>X and Y: distance from the left and top edges of the resized canvas to the current image content. Drag the preview to move the image.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>New image height in pixels</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>X offset:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>Distance in pixels from the left edge of the resized canvas to the left edge of the current image content</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>Y offset:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>Distance in pixels from the top edge of the resized canvas to the top edge of the current image content</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>Center</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
-        <source>Cancel</source>
+        <source>New size: {width} x {height} ({width_change} x {height_change})</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -8653,6 +8623,14 @@ Turns red when the text does not fit.</source>
     <message>
         <location filename="../../src/ui/panel/tool_panel.py"/>
         <source>Pressure curve...</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.widget.anchor_grid</name>
+    <message>
+        <location filename="../../src/ui/widget/anchor_grid.py"/>
+        <source>Place the current image at this corner, edge or the center of the new canvas</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
