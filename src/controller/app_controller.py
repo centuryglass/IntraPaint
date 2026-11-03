@@ -791,7 +791,10 @@ class AppController(MenuBuilder):
         """Open a new image creation modal."""
         self.wait_for_pending_save()
         default_size = AppConfig().get(AppConfig.DEFAULT_IMAGE_SIZE)
-        image_modal = NewImageModal(default_size.width(), default_size.height())
+        generation_area_size = self._image_stack.generation_area.size() if self._image_stack.has_image else None
+        clipboard_image = get_clipboard_image()
+        image_modal = NewImageModal(default_size.width(), default_size.height(), generation_area_size,
+                                    None if clipboard_image is None else clipboard_image.size())
         image_size = image_modal.show_image_modal()
         if image_size and (not self._image_stack.has_image or request_confirmation(self._window,
                                                                                    NEW_IMAGE_CONFIRMATION_TITLE,
