@@ -3659,6 +3659,16 @@
     </message>
     <message>
         <location filename="../../src/controller/app_controller.py"/>
+        <source>Open Recent</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Clear recent files</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
         <source>Move</source>
         <translation type="unfinished"></translation>
     </message>

@@ -35,6 +35,7 @@ User settings:
 - Applies changes to config whenever the settings modal closes.
 """
 import logging
+import os
 import sys
 import webbrowser
 from argparse import Namespace
@@ -43,7 +44,7 @@ from weakref import WeakSet
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage, Qt, QTransform
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication, QMenu, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -106,6 +107,7 @@ from src.util.active_text_field_tracker import ActiveTextFieldTracker
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
     APP_STATE_SELECTION
 from src.util.math_utils import clamp
+from src.util.recent_files import recent_files, clear_recent_files
 from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, MenuData
 from src.util.optional_import import optional_import
 from src.util.pyinstaller import is_pyinstaller_bundle
@@ -166,6 +168,8 @@ MENU_LAYERS = _tr('Layers')
 MENU_FILTERS = _tr('Filters')
 MENU_HELP = _tr('Help')
 
+SUBMENU_RECENT_FILES = _tr('Open Recent')
+MENU_ACTION_CLEAR_RECENT = _tr('Clear recent files')
 SUBMENU_MOVE = _tr('Move')
 SUBMENU_SELECT = _tr('Select')
 SUBMENU_TRANSFORM = _tr('Transform')
@@ -223,6 +227,7 @@ class AppController(MenuBuilder):
 
         # Initialize main window:
         self._window = MainWindow(self._image_stack)
+        self._recent_files_menu: Optional[QMenu] = None
         self.menu_window = self._window
         self._image_io = ImageIO(self._window, self._image_stack, lambda: self._generator)
         self._autosave = AutosaveController(self._image_stack, self._image_io, self._window)
@@ -278,6 +283,8 @@ class AppController(MenuBuilder):
         self.build_menus()
         self.insert_menu_actions(MENU_VIEW_PANELS, self._window.dock_toggle_actions())
         self.get_menu(MENU_VIEW_LAYOUTS).aboutToShow.connect(self._update_layout_menu)
+        self._build_recent_files_menu()
+        self._window.files_dropped.connect(self.open_dropped_files)
         for edge in DockEdge:
             self.add_menu_action(MENU_VIEW_MOVE_ALL_PANELS, lambda e=edge: self._window.move_all_docks_to_edge(e),
                                  title=edge_title(edge))
@@ -840,6 +847,45 @@ class AppController(MenuBuilder):
     def load_image_layers(self) -> None:
         """Open one or more images as layers."""
         self._image_io.load_layers()
+
+    def _build_recent_files_menu(self) -> None:
+        """Adds the Open Recent submenu below File > Open as layers, filled each time it opens."""
+        file_menu = self.get_menu(MENU_FILE)
+        reload_action = self.get_action_for_method(self.reload_image)
+        self._recent_files_menu = QMenu(SUBMENU_RECENT_FILES, file_menu)
+        file_menu.insertMenu(reload_action, self._recent_files_menu)
+        self._recent_files_menu.aboutToShow.connect(self._update_recent_files_menu)
+
+    def _update_recent_files_menu(self) -> None:
+        """Lists the remembered files, newest first. Entries whose file no longer exists are disabled."""
+        menu = self._recent_files_menu
+        assert menu is not None
+        menu.clear()
+        paths = recent_files()
+        can_open = AppStateTracker.app_state() in (APP_STATE_EDITING, APP_STATE_NO_IMAGE)
+        for path in paths:
+            action = menu.addAction(os.path.basename(path).replace('&', '&&'))
+            assert action is not None
+            action.setToolTip(path)
+            action.setEnabled(can_open and os.path.isfile(path))
+            action.triggered.connect(lambda _=False, file_path=path: self.load_image(file_path))
+        if len(paths) > 0:
+            menu.addSeparator()
+        clear_action = menu.addAction(MENU_ACTION_CLEAR_RECENT)
+        assert clear_action is not None
+        clear_action.setEnabled(len(paths) > 0)
+        clear_action.triggered.connect(clear_recent_files)
+
+    def open_dropped_files(self, file_paths: list[str]) -> None:
+        """Opens image files dropped on the window, adding them as layers if an image is already open."""
+        if AppStateTracker.app_state() not in (APP_STATE_EDITING, APP_STATE_NO_IMAGE) or len(file_paths) == 0:
+            return
+        if self._image_stack.has_image:
+            self._image_io.add_layers_from_files(file_paths)
+        else:
+            self.load_image(file_paths[0])
+            if len(file_paths) > 1:
+                self._image_io.add_layers_from_files(file_paths[1:])
 
     @menu_action(MENU_FILE, 'reload_shortcut', 5, valid_app_states=[APP_STATE_EDITING])
     def reload_image(self) -> None:
