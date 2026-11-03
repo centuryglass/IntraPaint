@@ -72,3 +72,16 @@ class HotkeyFilterTest(IntraPaintTestCase):
                 patch.object(QWidget, 'activateWindow') as activate:
             self.assertTrue(hotkeys.eventFilter(field, escape))
         activate.assert_called_once()
+
+    def test_modifiers_in_key_sequence_are_required(self) -> None:
+        """A binding registered as 'Shift+Z' runs only while Shift is held, and leaves plain Z unbound."""
+        action = MagicMock(return_value=True)
+        hotkeys = HotkeyFilter.instance()
+        hotkeys.register_keybinding('hotkey_filter_test_shift_z', action, QKeySequence('Shift+Z'))
+        z_press = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Z, Qt.KeyboardModifier.NoModifier)
+        for held, expect_handled in ((Qt.KeyboardModifier.NoModifier, False),
+                                     (Qt.KeyboardModifier.ShiftModifier, True)):
+            # Offscreen key events don't update the application's modifier state, so report it directly.
+            with patch.object(QApplication, 'keyboardModifiers', new=staticmethod(lambda mods=held: mods)):
+                self.assertEqual(hotkeys.eventFilter(self.window, z_press), expect_handled)
+        action.assert_called_once()
