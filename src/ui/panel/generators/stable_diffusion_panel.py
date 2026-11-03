@@ -106,8 +106,9 @@ SUMMARY_ADVANCED_DEFAULT = _tr('defaults')
 
 # The widest the pinned prompt column of a strip grows:
 PROMPT_COLUMN_MAX_WIDTH = 300
-# The widest the action block grows as a strip's trailing column:
-ACTION_COLUMN_MAX_WIDTH = 240
+# The widest the action block grows as a strip's trailing column. The block stacks its field pairs there, so each field
+# takes the column's full width:
+ACTION_COLUMN_MAX_WIDTH = 170
 
 # The prompt box is never narrower than this many average characters. A strip with no room for that beside the other
 # columns plans as a side panel:
@@ -714,8 +715,9 @@ class StableDiffusionPanel(DockPanel):
         self.set_trailing_scrolls(False)
 
     def _apply_pair_form(self, form: Optional[int]) -> None:
+        stacked = form == PAIR_FORM_STACKED or self.orientation == Orientation.STRIP
         for pair in (self._sampling_pair, self._action_pair):
-            pair.set_stacked(form == PAIR_FORM_STACKED)
+            pair.set_stacked(stacked)
 
     def _update_tiling_button(self, *_) -> None:
         self._tiling_button.setVisible(self._webui and Cache().tiling_in_effect())
