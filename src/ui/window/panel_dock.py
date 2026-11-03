@@ -13,7 +13,8 @@
   (`DockNotch`) drags it. A floating dock shows the title bar set with
   `set_floating_title_bar`, or Qt's without one, and is dragged by it. `show_title_bar_for_drag` shows Qt's title bar
   while docked, so a rail button or notch drag can hand off to Qt's own dock drag (see `src.ui.window.qt_dock_drag`).
-- The dock's owner can set a badge (`set_badge`), a short text its rail buttons draw while the dock is not showing.
+- The dock's owner can set a badge (`set_badge`), a short text its rail buttons draw while the dock is not showing. A
+  caution badge marks settings that won't apply as set.
 - A `DockPanel`'s title note (`DockPanel.set_title_note`) is the dock's `title_note`, which its floating title bar
   shows. The dock re-emits the panel's `title_note_changed`, and emits it when its content changes.
 - The dock's key (`shortcut_config_key`) opens and focuses the dock, or closes it if it is already open.
@@ -93,6 +94,7 @@ class PanelDock(QDockWidget):
         self._showing = False
         self._badge_text = ''
         self._badge_tooltip = ''
+        self._badge_caution = False
         # The orientation last reported to content with `set_orientation`:
         self._orientation: Optional[Orientation] = None
         self._no_title_bar = _NoTitleBar()
@@ -159,11 +161,17 @@ class PanelDock(QDockWidget):
         """Tooltip line describing the badge, or '' for none."""
         return self._badge_tooltip
 
-    def set_badge(self, text: str, tooltip: str = '') -> None:
-        """Sets the badge text and its tooltip line. Empty text removes the badge."""
-        if text != self._badge_text or tooltip != self._badge_tooltip:
+    @property
+    def badge_caution(self) -> bool:
+        """Whether the badge marks settings that won't apply as set, and takes the caution color."""
+        return self._badge_caution
+
+    def set_badge(self, text: str, tooltip: str = '', caution: bool = False) -> None:
+        """Sets the badge text, its tooltip line and whether it is a caution badge. Empty text removes the badge."""
+        if text != self._badge_text or tooltip != self._badge_tooltip or caution != self._badge_caution:
             self._badge_text = text
             self._badge_tooltip = tooltip
+            self._badge_caution = caution
             self.badge_changed.emit()
 
     @property

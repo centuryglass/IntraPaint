@@ -11,9 +11,11 @@ from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTR
     SavedControlNetUnit, to_request_unit
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.panel_fit import Orientation
-from src.ui.panel.controlnet_panel import ControlNetPanel, SOURCE_GENERATION_AREA_VALUE, SOURCE_IMAGE_FILE_VALUE
+from src.ui.panel.controlnet_panel import ControlNetPanel, SOURCE_GENERATION_AREA_VALUE, SOURCE_IMAGE_FILE_VALUE, \
+    preprocessor_display_name
 from src.ui.widget.parameter_def_widget import create_parameter_field, create_parameter_widget, parameter_label, \
     parameter_tooltip
+from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT
 from test.base_test_case import IntraPaintTestCase, TEST_RESOURCE_DIR
 from test.ui.panel_capture import PanelHost
 
@@ -21,6 +23,7 @@ CANNY = 'canny'
 CANNY_MODEL = 'control_canny'
 DEPTH = 'depth'
 DEPTH_MODEL = 'control_depth'
+INPAINT = 'InpaintPreprocessor'
 # A strip with room for the preview's column, the size the strip layout issue showed:
 STRIP_SIZE = QSize(1021, 314)
 CACHE_KEYS = [Cache.CONTROLNET_ARGS_0_COMFYUI, Cache.CONTROLNET_ARGS_1_COMFYUI, Cache.CONTROLNET_ARGS_2_COMFYUI]
@@ -34,11 +37,12 @@ def _preprocessors() -> list[ControlNetPreprocessor]:
                              min_val=64, max_val=2048, step_val=8),
                 ParameterDef(key='low_threshold', default_value=100, description='Lower bound',
                              min_val=0, max_val=255, step_val=1)]),
-            ControlNetPreprocessor(name=DEPTH)]
+            ControlNetPreprocessor(name=DEPTH),
+            ControlNetPreprocessor(name=INPAINT, model_free=True)]
 
 
 def _control_types() -> dict[str, Any]:
-    return {'All': {'module_list': [PREPROCESSOR_NONE, CANNY, DEPTH],
+    return {'All': {'module_list': [PREPROCESSOR_NONE, CANNY, DEPTH, INPAINT],
                     'model_list': [CONTROLNET_MODEL_NONE, CANNY_MODEL, DEPTH_MODEL],
                     'default_option': CANNY, 'default_model': CANNY_MODEL},
             'Canny': {'module_list': [PREPROCESSOR_NONE, CANNY], 'model_list': [CONTROLNET_MODEL_NONE, CANNY_MODEL],
@@ -281,6 +285,27 @@ class ControlNetPanelTest(IntraPaintTestCase):
         self.assertEqual(panel.tab_bar.tabText(0), '1 Canny')
         self.assertEqual(panel.tab_bar.tabToolTip(0), 'Unit 1: on')
         self.assertEqual(panel.tab_bar.tabToolTip(1), 'Unit 2: off')
+
+    def test_inpainting_unit_marked_skipped_outside_inpaint_mode(self) -> None:
+        """An inpainting unit that is on gets the skipped tooltip and note while the edit mode isn't Inpaint."""
+        panel = self._panel()
+        panel._preprocessor_combobox.setCurrentIndex(panel._preprocessor_combobox.findText(preprocessor_display_name(INPAINT)))
+        panel._enabled_checkbox.setChecked(True)
+        self.assertEqual(panel.tab_bar.tabToolTip(0), 'Unit 1: on')
+        self.assertTrue(panel._skipped_note.isHidden())
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_IMG2IMG)
+        self.assertEqual(panel.tab_bar.tabToolTip(0), 'Unit 1: on, skipped outside Inpaint mode')
+        self.assertFalse(panel._skipped_note.isHidden())
+        panel.tab_bar.setCurrentIndex(1)
+        self.assertTrue(panel._skipped_note.isHidden(), 'The note follows the selected unit')
+        panel.tab_bar.setCurrentIndex(0)
+        panel._enabled_checkbox.setChecked(False)
+        self.assertEqual(panel.tab_bar.tabToolTip(0), 'Unit 1: off')
+        self.assertTrue(panel._skipped_note.isHidden())
+        panel._enabled_checkbox.setChecked(True)
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
+        self.assertEqual(panel.tab_bar.tabToolTip(0), 'Unit 1: on')
+        self.assertTrue(panel._skipped_note.isHidden())
 
     def test_switching_tabs_saves_and_loads_units(self) -> None:
         """Choosing another tab saves the first unit's pending edits and loads the other unit's settings."""

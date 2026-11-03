@@ -10,7 +10,7 @@ from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.controller.tool_controller import ToolController
 from src.image.layers.image_stack import ImageStack
-from src.ui.ink_style import PRIMARY_BUTTON_PROPERTY
+from src.ui.ink_style import PRIMARY_BUTTON_PROPERTY, caution_color
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.ui.widget.tool_button import ToolButton
 from src.ui.window.dock_rail import RAIL_SPACING, RULE_SPACE, SIDE_RAIL_WIDTH
@@ -267,3 +267,23 @@ class DockRailTest(IntraPaintTestCase):
         dock.set_badge('')
         self.assertEqual(button.badge_text, '')
         self.assertNotIn('2 units on', button.toolTip())
+
+    def test_caution_badge_takes_the_caution_color(self) -> None:
+        """A caution badge draws its pill in the caution color, and an ordinary badge doesn't."""
+        dock = self.window.generation_dock
+        button = self._button(dock)
+        self.window.tools_dock.open_in_group()
+        caution = caution_color()
+        assert caution is not None
+
+        def _has_caution_pixel() -> bool:
+            image = button.grab().toImage()
+            return any(image.pixelColor(x, y).rgb() == caution.rgb()
+                       for x in range(image.width()) for y in range(image.height()))
+
+        dock.set_badge('1', 'ControlNet: 1 unit on')
+        self.assertFalse(_has_caution_pixel())
+        dock.set_badge('!', 'ControlNet: 1 of 1 units on are skipped.', caution=True)
+        self.assertTrue(dock.badge_caution)
+        self.assertTrue(_has_caution_pixel())
+        self.assertIn('skipped', button.toolTip())

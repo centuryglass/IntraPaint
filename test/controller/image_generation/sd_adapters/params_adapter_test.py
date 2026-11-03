@@ -3,10 +3,13 @@ import os
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage, QColor
-from sd_backend_client import ComfyUIDiffusionParams, DiffusionRequestBody, InpaintFillOption
+from sd_backend_client import ComfyUIDiffusionParams, ControlNetPreprocessor, ControlNetUnit, DiffusionRequestBody, \
+    InpaintFillOption, PreprocessorParams
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.controller.image_generation.sd_adapters.controlnet_adapter import CONTROLNET_REUSE_IMAGE_CODE, \
+    SavedControlNetUnit
 from src.controller.image_generation.sd_adapters.params_adapter import build_comfy_params, build_webui_body, \
     build_upscale_params, WEBUI_SEAM_FIX_PADDING
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT
@@ -89,6 +92,21 @@ class ParamsAdapterTest(IntraPaintTestCase):
             build_comfy_params(EDIT_MODE_IMG2IMG)
         with self.assertRaises(ValueError):
             build_webui_body(EDIT_MODE_INPAINT, self.source)
+
+    def test_inpainting_controlnet_units_only_apply_when_inpainting(self) -> None:
+        """Both backends drop an inpainting preprocessor's unit from txt2img and img2img requests."""
+        preprocessor = PreprocessorParams(typedef=ControlNetPreprocessor(name='InpaintPreprocessor', model_free=True),
+                                          parameter_values={})
+        unit_json = SavedControlNetUnit(True, CONTROLNET_REUSE_IMAGE_CODE,
+                                        ControlNetUnit(preprocessor=preprocessor)).to_json()
+        cache = Cache()
+        cache.set(Cache.CONTROLNET_ARGS_0_COMFYUI, unit_json)
+        cache.set(Cache.CONTROLNET_ARGS_0_WEBUI, unit_json)
+        mask = _image(QColor(255, 255, 255))
+        for build in (build_comfy_params, build_webui_body):
+            self.assertEqual(build(EDIT_MODE_TXT2IMG, self.source).controlnet_units, [], build.__name__)
+            self.assertEqual(build(EDIT_MODE_IMG2IMG, self.source).controlnet_units, [], build.__name__)
+            self.assertEqual(len(build(EDIT_MODE_INPAINT, self.source, mask).controlnet_units), 1, build.__name__)
 
     def test_controlnet_units_use_backend_cache_keys(self) -> None:
         """Each backend reads its own cached units, and the generation area is the control image only for txt2img."""

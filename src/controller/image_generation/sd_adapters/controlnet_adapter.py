@@ -11,6 +11,7 @@
 import json
 import logging
 import os
+import re
 from dataclasses import dataclass
 from typing import Any, Optional, Sequence
 
@@ -18,6 +19,7 @@ from PIL import Image
 from PySide6.QtGui import QImage
 from sd_backend_client import CONTROLNET_MODEL_NONE, PREPROCESSOR_NONE, ControlNetModel, ControlNetPreprocessor, \
     ControlNetUnit, ParameterDef, PreprocessorParams
+from sd_backend_client.api.shared_data.controlnet.controlnet_constants import STATIC_CONTROL_TYPE_DEFS
 
 from src.config.cache import Cache
 from src.controller.image_generation.sd_adapters.image_adapter import qimage_to_pil
@@ -27,6 +29,9 @@ logger = logging.getLogger(__name__)
 
 # Image string meaning "use the generation area content".
 CONTROLNET_REUSE_IMAGE_CODE = 'SELECTION'
+
+# Matches the names of preprocessors that need the inpainting mask, the library's "Inpaint" control type:
+INPAINT_PREPROCESSOR_PATTERN = re.compile(STATIC_CONTROL_TYPE_DEFS['Inpaint']['preprocessor_pattern'])
 
 # Keys of the format `SavedControlNetUnit.to_json` writes:
 ENABLED_KEY = 'enabled'
@@ -154,8 +159,17 @@ def select_preprocessor(typedef: ControlNetPreprocessor, previous: Optional[Prep
         return PreprocessorParams(typedef=typedef, parameter_values={})
 
 
+def needs_inpainting_mask(unit: ControlNetUnit) -> bool:
+    """Returns whether a unit's preprocessor needs the inpainting mask, so the unit only works when inpainting.
+
+    Without the mask, ComfyUI rejects the whole workflow and the WebUI ignores the unit.
+    """
+    return unit.preprocessor is not None and INPAINT_PREPROCESSOR_PATTERN.search(unit.preprocessor.typedef.name) \
+        is not None
+
+
 def to_request_unit(saved: SavedControlNetUnit, source_image: Optional[QImage],
-                    source_is_init_image: bool) -> Optional[ControlNetUnit]:
+                    source_is_init_image: bool, inpainting: bool = True) -> Optional[ControlNetUnit]:
     """Returns the library unit to send for a saved unit, or None if the unit is disabled or unusable.
 
     A unit is unusable when it has neither a model nor a preprocessor, when it has no model and its preprocessor needs
@@ -171,10 +185,15 @@ def to_request_unit(saved: SavedControlNetUnit, source_image: Optional[QImage],
         Whether the request already sends `source_image` as its init image. `CONTROLNET_REUSE_IMAGE_CODE` then leaves
         the unit's image unset, so both backends reuse the init image and, when inpainting, its mask. Inpainting
         preprocessors fail server-side without that mask.
+    inpainting: bool
+        Whether the request inpaints. Without inpainting, units that `needs_inpainting_mask` are skipped.
     """
     if not saved.enabled:
         return None
     unit = saved.unit
+    if not inpainting and needs_inpainting_mask(unit):
+        logger.info('Skipping ControlNet unit: its inpainting preprocessor needs the inpainting mask.')
+        return None
     if unit.model is None and (unit.preprocessor is None or not unit.preprocessor.typedef.model_free):
         logger.info('Skipping ControlNet unit: no model is set, and its preprocessor needs one.')
         return None
@@ -198,7 +217,7 @@ def to_request_unit(saved: SavedControlNetUnit, source_image: Optional[QImage],
 
 
 def load_request_units(cache_keys: list[str], source_image: Optional[QImage],
-                       source_is_init_image: bool) -> list[ControlNetUnit]:
+                       source_is_init_image: bool, inpainting: bool = True) -> list[ControlNetUnit]:
     """Returns the library units to send for the saved units under a list of cache keys, skipping unusable units.
 
     An empty cached value, the default for a unit the user never configured, is skipped without logging an error. See
@@ -215,19 +234,24 @@ def load_request_units(cache_keys: list[str], source_image: Optional[QImage],
         except (KeyError, ValueError) as err:
             logger.error(f'Skipping invalid ControlNet unit "{cache_key}": {err}')
             continue
-        request_unit = to_request_unit(saved, source_image, source_is_init_image)
+        request_unit = to_request_unit(saved, source_image, source_is_init_image, inpainting)
         if request_unit is not None:
             units.append(request_unit)
     return units
 
 
-def count_enabled_units(saved_units: Sequence[str]) -> int:
-    """Returns how many saved units have `enabled` set. Units that fail to parse count as off."""
-    count = 0
+def count_enabled_units(saved_units: Sequence[str], inpainting: bool = True) -> tuple[int, int]:
+    """Returns how many saved units have `enabled` set, and how many of those are skipped because they need the
+    inpainting mask and `inpainting` is False. Units that fail to parse count as off."""
+    enabled = 0
+    skipped = 0
     for data in saved_units:
         try:
-            if SavedControlNetUnit.from_json(data).enabled:
-                count += 1
+            saved = SavedControlNetUnit.from_json(data)
         except ValueError:
             continue
-    return count
+        if saved.enabled:
+            enabled += 1
+            if not inpainting and needs_inpainting_mask(saved.unit):
+                skipped += 1
+    return enabled, skipped

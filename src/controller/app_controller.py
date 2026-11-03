@@ -109,6 +109,7 @@ from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, Menu
 from src.util.optional_import import optional_import
 from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.qtexcepthook import QtExceptHook
+from src.util.shared_constants import EDIT_MODE_INPAINT
 from src.util.shared_text import PIL_SCALING_MODES
 from src.util.system_clipboard import clipboard_has_image, clipboard_image_is_own_copy, get_clipboard_image, \
     set_clipboard_image
@@ -145,6 +146,9 @@ GENERATION_MODE_AUTO = 'auto'
 
 CONTROLNET_BADGE_TOOLTIP_ONE = _tr('ControlNet: 1 unit on', 'Tooltip of the ControlNet rail button')
 CONTROLNET_BADGE_TOOLTIP_MANY = _tr('ControlNet: {count} units on', 'Tooltip of the ControlNet rail button')
+CONTROLNET_BADGE_SKIPPED = '!'
+CONTROLNET_BADGE_TOOLTIP_SKIPPED = _tr('ControlNet: {count} of {enabled} units on are skipped. Inpainting units only '
+                                       'apply in Inpaint mode.', 'Tooltip of the ControlNet rail button')
 MENU_FILE = _tr('File')
 MENU_EDIT = _tr('Edit')
 MENU_IMAGE = _tr('Image')
@@ -482,7 +486,8 @@ class AppController(MenuBuilder):
             config.save_pending_changes()
 
     def _watch_controlnet_badge(self) -> None:
-        """Shows the number of enabled ControlNet units as the ControlNet dock's badge, and keeps it current."""
+        """Shows the number of enabled ControlNet units as the ControlNet dock's badge, and keeps it current. Outside
+        Inpaint mode, enabled inpainting units make it a caution badge, since requests skip them."""
         dock = self._window.controlnet_dock
         generator = self._generator
         keys = generator.get_controlnet_unit_cache_keys() if isinstance(generator, SDGenerator) \
@@ -490,14 +495,18 @@ class AppController(MenuBuilder):
         cache = Cache()
 
         def _update(*_args) -> None:
-            enabled = count_enabled_units([cache.get(key) for key in keys])
+            inpainting = cache.get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT
+            enabled, skipped = count_enabled_units([cache.get(key) for key in keys], inpainting)
             if enabled == 0:
                 dock.set_badge('')
+            elif skipped > 0:
+                dock.set_badge(CONTROLNET_BADGE_SKIPPED,
+                               CONTROLNET_BADGE_TOOLTIP_SKIPPED.format(count=skipped, enabled=enabled), caution=True)
             else:
                 dock.set_badge(str(enabled), CONTROLNET_BADGE_TOOLTIP_ONE if enabled == 1
                                else CONTROLNET_BADGE_TOOLTIP_MANY.format(count=enabled))
 
-        for key in keys:
+        for key in [*keys, Cache.EDIT_MODE]:
             cache.connect(dock, key, _update)
         _update()
 
