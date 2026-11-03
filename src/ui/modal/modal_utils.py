@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle, QApplic
 from src.config.application_config import AppConfig
 from src.ui.ink_style import set_signal
 from src.ui.input_fields.check_box import CheckBox
+from src.ui.modal.modal_parent import modal_parent
 from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.visual.display_size import get_screen_size
 from src.util.visual.image_format_utils import IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, OPENRASTER_FORMAT
@@ -91,9 +92,10 @@ SAVE_IMAGE_MODE = 'save'
 def _new_message_box(parent: Optional[QWidget]) -> QMessageBox:
     """Creates a message box that Qt draws itself, so the application style and `set_signal` marks apply.
 
-    Platform themes may otherwise show message boxes through a native dialog, which ignores both.
+    Platform themes may otherwise show message boxes through a native dialog, which ignores both. A missing `parent`
+    defaults to `modal_parent`. The caller deletes the box with `deleteLater` once it has read the result.
     """
-    message_box = QMessageBox(parent)
+    message_box = QMessageBox(modal_parent(parent))
     message_box.setOption(QMessageBox.Option.DontUseNativeDialog, True)
     return message_box
 
@@ -125,6 +127,7 @@ def show_error_dialog(parent: Optional[QWidget], title: str, error: str | BaseEx
         assert ok_button is not None
         set_signal(ok_button)
     messagebox.exec()
+    messagebox.deleteLater()
 
 
 def request_recovery_choice(parent: Optional[QWidget], original_path: str, saved_at: float,
@@ -155,6 +158,7 @@ def request_recovery_choice(parent: Optional[QWidget], original_path: str, saved
     message_box.setEscapeButton(later_button)
     message_box.exec()
     clicked = message_box.clickedButton()
+    message_box.deleteLater()
     if clicked is restore_button:
         return RECOVERY_RESTORE
     if clicked is discard_button:
@@ -178,6 +182,7 @@ def show_warning_dialog(parent: Optional[QWidget], title: str, message: str,
         messagebox.setCheckBox(checkbox)
     messagebox.setStandardButtons(QMessageBox.StandardButton.Ok)
     messagebox.exec()
+    messagebox.deleteLater()
 
 
 def request_confirmation(parent: Optional[QWidget], title: str, message: str,
@@ -216,7 +221,9 @@ def request_confirmation(parent: Optional[QWidget], title: str, message: str,
         confirm_box.setCheckBox(checkbox)
     response = confirm_box.exec()
     confirmed_action = bool(response == confirm_option)
-    if checkbox is not None and checkbox.isChecked():
+    remember = checkbox is not None and checkbox.isChecked()
+    confirm_box.deleteLater()
+    if remember:
         assert reminder_config_key is not None
         AppConfig().set(reminder_config_key, REMEMBER_OPTION_CONFIRM if confirmed_action else REMEMBER_OPTION_CANCEL)
     return confirmed_action

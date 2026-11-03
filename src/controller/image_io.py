@@ -30,6 +30,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.open_raster import capture_ora_image, write_ora_snapshot, read_ora_image, ORA_FILE_EXTENSION
 from src.image.recovery_files import RestoredDocument
 from src.ui.modal.animation_save_modal import AnimationSaveModal, saved_animation_options
+from src.ui.modal.modal_parent import modal_parent
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers, \
     show_warning_dialog
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING
@@ -646,8 +647,9 @@ class ImageIO:
         exif_tags = self.exif.get_ifd(IFD.Exif)
         exif_tags[ExifTags.Base.ImageDescription.value] = params
         if show_messagebox:
-            message_box = QMessageBox()
+            message_box = QMessageBox(modal_parent())
             message_box.setWindowTitle(METADATA_UPDATE_TITLE)
             message_box.setText(METADATA_UPDATE_MESSAGE)
             message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
             message_box.exec()
+            message_box.deleteLater()

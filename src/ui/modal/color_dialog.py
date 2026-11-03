@@ -2,9 +2,10 @@
 from typing import Optional
 
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QApplication, QDialogButtonBox
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QApplication, QDialogButtonBox, QWidget
 
 from src.ui.widget.color_picker.color_comparison import ColorComparison
+from src.ui.modal.modal_parent import modal_parent
 from src.ui.widget.color_picker.tabbed_color_picker import TabbedColorPicker, ColorPickerLayout
 
 
@@ -23,8 +24,8 @@ COLOR_DIALOG_TITLE = _tr('Select Color')
 class ColorDialog(QDialog):
     """A color dialog built on TabbedColorPicker, comparing the new color with the starting one."""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
+        super().__init__(modal_parent(parent))
         self.setWindowTitle(COLOR_DIALOG_TITLE)
 
         self._comparison = ColorComparison()
@@ -79,6 +80,6 @@ class ColorDialog(QDialog):
         dialog.comparison.set_original(initial_color)
         dialog.comparison.set_color(initial_color)
         dialog.exec()
-        if dialog.result() == QDialog.DialogCode.Accepted:
-            return dialog.selected_color
-        return None
+        selection = dialog.selected_color if dialog.result() == QDialog.DialogCode.Accepted else None
+        dialog.deleteLater()
+        return selection
