@@ -10,7 +10,8 @@ from typing import Any, Optional, cast
 
 from PySide6.QtCore import QSize, Qt, QTimer
 from PySide6.QtGui import QCloseEvent, QIcon
-from PySide6.QtWidgets import QApplication, QComboBox, QDialog, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QBoxLayout, QComboBox, QDialog, QHBoxLayout, QLabel, QSizePolicy, \
+    QVBoxLayout, QWidget
 
 from sd_backend_client import CONTROL_MODE_PARAM_KEY, CONTROLNET_MODEL_NONE, PREPROCESSOR_RES_PARAM_KEY, \
     RESIZE_MODE_PARAM_KEY, ControlNetModel, ControlNetPreprocessor, ParameterDef
@@ -101,13 +102,16 @@ def _plain_label(label: str) -> str:
 def _labeled_row(label: str, widget: QWidget, parent: QWidget, match_fields: bool = False) -> QWidget:
     """Returns a label and a widget in a row, the widget filling the rest of it.
 
-    With `match_fields`, the row is no wider than a `NumberField`, so the widget's right edge lines up with the number
-    fields stacked above and below it.
+    With `match_fields`, the label sits on its own line above the widget and the row is no wider than a `NumberField`,
+    so the widget's right edge lines up with the number fields stacked above and below it.
     """
     row = QWidget(parent)
+    layout: QBoxLayout
     if match_fields:
         row.setMaximumWidth(NUMBER_FIELD_MAX_WIDTH)
-    layout = QHBoxLayout(row)
+        layout = QVBoxLayout(row)
+    else:
+        layout = QHBoxLayout(row)
     layout.setContentsMargins(0, 0, 0, 0)
     layout.addWidget(QLabel(label, row))
     layout.addWidget(widget, stretch=1)
