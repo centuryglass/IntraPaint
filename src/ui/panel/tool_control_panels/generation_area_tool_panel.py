@@ -276,7 +276,7 @@ class GenerationAreaToolPanel(FitToolPanel):
 
     @property
     def edit_resolution_button(self) -> QPushButton:
-        """The button that asks to open the Image generation panel."""
+        """The button that asks to edit the resolution in the Image generation panel."""
         return self._edit_button
 
     def set_resolution_shown(self, shown: bool) -> None:

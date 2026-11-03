@@ -613,6 +613,10 @@ class StableDiffusionPanel(DockPanel):
         self._gen_resolution_input.orientation = orientation
         self._gen_resolution_holder.updateGeometry()
 
+    def reveal_resolution(self) -> None:
+        """Shows the resolution field and focuses it, for editing the resolution from another panel."""
+        self.reveal_control(self._size_section, self._gen_resolution_input)
+
     def _build_advanced_section(self, ui: PanelLayout, cache: Cache) -> None:
         section = ui.section(SECTION_TITLE_ADVANCED, collapsible=True, priority=ADVANCED_PRIORITY)
         self._advanced_section = section
@@ -908,6 +912,11 @@ class StableDiffusionPanel(DockPanel):
     def edit_mode_control(self) -> QComboBox:
         """The edit mode selector."""
         return self._edit_mode_combobox
+
+    @property
+    def resolution_input(self) -> QWidget:
+        """The resolution field in the Size and batch section."""
+        return self._gen_resolution_input
 
     @property
     def generate_button(self) -> QPushButton:

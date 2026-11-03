@@ -323,6 +323,26 @@ class DockPanelTest(IntraPaintTestCase):
         finally:
             host.release()
 
+    def test_reveal_control_scrolls_it_into_view(self) -> None:
+        """Revealing a control below a scrolling panel's viewport scrolls to it and focuses it."""
+        panel = OversizedPanel()
+        host = PanelHost(panel)
+        try:
+            size = QSize(400, 120)
+            tell_orientation(panel, SIDE, size)
+            host.capture(size)
+            section = panel.sections[-1]
+            button = section.widgets[0]
+            scroll_area = panel.findChild(QScrollArea)
+            self.assertEqual(scroll_area.verticalScrollBar().value(), 0)
+            panel.reveal_control(section, button)
+            viewport = scroll_area.viewport()
+            self.assertGreater(scroll_area.verticalScrollBar().value(), 0)
+            self.assertTrue(viewport.rect().contains(button.rect().translated(button.mapTo(viewport, QPoint(0, 0)))))
+            self.assertIs(panel.focusWidget(), button)
+        finally:
+            host.release()
+
     def test_minimum_size_stops_where_content_would_escape(self) -> None:
         """A panel the content overflows across raises its minimum size to the extent that content needs."""
         panel = OversizedPanel()
@@ -559,6 +579,26 @@ class CollapsibleSectionTest(IntraPaintTestCase):
         self.assertIs(self.panel.block.parentWidget(), widget.body)
         self.assertTrue(widget.is_collapsed())
         self.assertFalse(self.panel.block.isVisibleTo(self.panel))
+
+    def test_reveal_control_expands_a_section_the_user_collapsed(self) -> None:
+        """Revealing a control in a section the user collapsed expands it and focuses the control."""
+        self._host(QSize(300, 900))
+        self.panel.sampling.widget.set_expanded(False)
+        self.panel.reveal_control(self.panel.sampling, self.panel.block)
+        self.assertFalse(self.panel.sampling.widget.is_collapsed())
+        self.assertTrue(self.panel.block.isVisible())
+        self.assertIs(self.panel.focusWidget(), self.panel.block)
+
+    def test_reveal_control_opens_a_section_without_room_in_its_popover(self) -> None:
+        """Revealing a control in a section the plan collapsed shows its body in the popover and focuses the
+        control."""
+        self._host(QSize(300, 200))
+        self.panel.reveal_control(self.panel.sampling, self.panel.block)
+        popover = self.panel._section_popover  # pylint: disable=protected-access
+        self.assertTrue(popover.isVisible())
+        self.assertIs(popover.content, self.panel.sampling.widget.body)
+        self.assertIs(popover.focusWidget(), self.panel.block)
+        popover.hide()
 
     def test_expanding_closes_the_popover(self) -> None:
         """Planning that expands the section closes its popover and puts the body back."""
