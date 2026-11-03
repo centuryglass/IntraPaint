@@ -77,6 +77,40 @@ English text; native-speaking reviewers read the target-language text.
 
 Per-language glossaries live beside the English glossary as `doc/translation/<language code>.md`.
 
+#### Glossary format
+
+A script reads the glossaries to check that translations use the chosen renderings
+([#674](https://github.com/centuryglass/IntraPaint/issues/674)), so the parts it reads follow a fixed format. It reads
+only these:
+
+- the English glossary's **Term** column;
+- a per-language glossary's **English term** and **Chosen rendering** columns;
+- the comma-separated names after the label of each "Names kept as they are" bullet. The label ends at the first
+  colon. A per-language list names the names its language keeps.
+
+Every other column and section is free-form prose for people.
+
+A Term, English term or Chosen rendering cell is a list of items:
+
+| Syntax | Meaning | Example |
+| --- | --- | --- |
+| `A, B, C` | Separate terms, each its own item. | `Lock, transparency lock` |
+| `A / B` | Spellings of one term in the English cells, or accepted renderings in a Chosen rendering cell. Any one matches. | `Vertex / vertices`, `CFG Scale / CFG` |
+| `"A"` | Matches only a UI string that is A as a whole, once its `&` accelerator, trailing colon and ellipsis are removed, with case significant. Commas and slashes inside the quotes are part of A. | `"Box"`, `"fill"`, `"Match area, upscale small areas"` |
+| `(label)` at the end | A label for the whole cell, not matched. English cells only. | `Isolation (layer group)`, `"Miter", "Bevel", "Round" (line join styles)` |
+
+- **Each per-language row joins one English row.** Its English term cell is a copy of the English Term cell, and
+  every English row has exactly one per-language row.
+- **A Chosen rendering cell has one item, or one per term.** One item renders every term in the row
+  (`Model, checkpoint` is `模型`). Otherwise the items match the terms by position.
+- **A term needing two renderings is split in the English glossary.** When a language renders one English term two
+  ways, the English row gets a term for each sense, and every language renders each. Neither cell holds a free-form
+  explanation or an empty marker such as `—`; those go in Notes.
+- **Values a UI shows as a list get their own row of quoted terms,** such as the blend modes, so each value has a
+  rendering. Quoting keeps an option value like "Round" from matching other strings that use the word.
+- **Unquoted terms match words, not whole strings.** Matching ignores case and accepts the regular English endings
+  (-s, -es, -ed, -ing). An irregular form, abbreviation or short label is added as a `/` spelling.
+
 ### 3. Glossary review
 
 A model from a different family than the one that wrote the glossary reviews it, following "Reviewing as a model"

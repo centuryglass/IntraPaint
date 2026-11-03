@@ -26,13 +26,14 @@ General vocabulary shared with Photoshop, GIMP and Krita; per-language glossarie
 | Scale (verb) | 缩放 | 翻译 translate | [kk-images] | 高 high | — |
 | Crop | 裁剪 | 翻译 translate | [kk-images] | 高 high | 其他软件亦作「裁切」「剪裁」/ other apps also use 裁切 and 剪裁. |
 | Selection | 选区 | 翻译 translate | [kk-sel] | 高 high | GIMP 中文同样作「选区」/ same term in GIMP zh. |
-| Add, Subtract, Replace, Intersect | 添加, 减去, 替换, 相交 | 翻译 translate | [kk-sel] | 高 high | Krita 中文手册列出这四种模式 / Krita zh lists exactly these four. |
+| "Add", "Subtract", "Replace", "Intersect" (selection modes) | "添加", "减去", "替换", "相交" | 翻译 translate | [kk-sel] | 高 high | Krita 中文手册列出这四种模式 / Krita zh lists exactly these four. |
 | Opacity | 不透明度 | 翻译 translate | [kk-images] | 高 high | GIMP 和 dtlnor 汉化包同样作「不透明度」；diffus-me 汉化包简作「透明度」/ GIMP and the dtlnor pack also use 不透明度; the diffus-me pack shortens it to 透明度. |
 | Hardness | 硬度 | 翻译 translate | [comfy-zh] | 高 high | — |
 | Pen pressure | 笔压 | 翻译 translate | — | 低 low | 未找到使用「笔压」的可链接来源；Photoshop 中文帮助作「钢笔压力」([ps-pressure])，GIMP 中文界面作「压力」/ no linkable source found for 笔压; the Photoshop zh help uses 钢笔压力 ([ps-pressure]) and GIMP's zh UI uses 压力. |
 | Antialiasing | 抗锯齿 | 翻译 translate | [a1-diffus] | 高 high | 汉化包中已验证 / confirmed in the A1111 zh pack. |
-| Blend mode | 混合模式 | 翻译 translate | [kk-layers] | 高 high | 模式名按 Photoshop 中文帮助 ([ps-blend])：Multiply 正片叠底、Screen 滤色、Color Dodge 颜色减淡；Qt 合成名 Source Atop、Destination Out 保留英文 / named modes follow the Photoshop zh help ([ps-blend]); Qt composition names stay English. |
-| Foreground / background color | 前景色 / 背景色 | 翻译 translate | [kk-sel] | 高 high | 来源页有「填充前景色」/ 填充前景色 appears in the source page. |
+| Blend mode | 混合模式 | 翻译 translate | [kk-layers] | 高 high | — |
+| "Normal", "Multiply", "Screen", "Overlay", "Darken", "Lighten", "Color Dodge", "Color Burn", "Hard Light", "Soft Light", "Difference", "Color", "Luminosity", "Hue", "Saturation", "Plus", "Destination In", "Destination Out", "Source Atop", "Destination Atop" (blend modes) | "正常", "正片叠底", "滤色", "叠加", "变暗", "变亮", "颜色减淡", "颜色加深", "强光", "柔光", "差值", "颜色", "明度", "色相", "饱和度", "Plus", "Destination In", "Destination Out", "Source Atop", "Destination Atop" | 翻译 translate | [ps-blend] | 中 medium | 前 15 个模式名按 Photoshop 中文帮助；Plus 及其后的 Qt 合成名保留英文；Plus 的近似模式在 Photoshop 中作「线性减淡(添加)」，含义不完全相同 / the first 15 names follow the Photoshop zh help; Plus and the Qt composition names after it stay English; Photoshop's nearest mode is 线性减淡(添加), which is not quite the same operation. |
+| Foreground color, background color | 前景色, 背景色 | 翻译 translate | [kk-sel] | 高 high | 来源页有「填充前景色」/ 填充前景色 appears in the source page. |
 | Color picker | 取色器 | 翻译 translate | [comfy-zh] | 中 medium | Photoshop 的工具叫「吸管」([ps-eyedropper])，GIMP 中文界面作「颜色拾取」；「取色器」更通用 / PS calls the tool 吸管 ([ps-eyedropper]) and GIMP's zh UI uses 颜色拾取; 取色器 is the generic label. |
 | Fill | 填充 | 翻译 translate | [kk-sel] | 高 high | GIMP 中文作「油漆桶填充」/ same concept in GIMP zh. |
 | Threshold | 阈值 | 翻译 translate | [gimp-fuzzy] | 高 high | — |
@@ -41,9 +42,10 @@ General vocabulary shared with Photoshop, GIMP and Krita; per-language glossarie
 | Clone stamp, source | 仿制图章, 源 | 翻译 translate | [ps-clone] | 中 medium | Photoshop 中文帮助作「仿制图章工具」和「克隆源」面板；GIMP 中文作「克隆」与「源」([gimp-clone]) / the Photoshop zh help uses 仿制图章工具 and the 克隆源 panel; GIMP zh uses 克隆 and 源 ([gimp-clone]). |
 | Filter | 滤镜 | 翻译 translate | [kk-layers] | 高 high | — |
 | Posterize | 色调分离 | 翻译 translate | — | 低 low | Photoshop 中文用词，未找到可链接的来源；GIMP 中文界面作「色相分离」，字面上指色相，含义不准 / the PS zh term, with no linkable source found; GIMP's zh UI uses 色相分离, which literally names hue and misdescribes the filter. |
-| Scaling algorithms | Nearest 最邻近, Bilinear 双线性, Bicubic 双三次 | 翻译 translate | [a1-dtlnor] | 中 medium | dtlnor 汉化包作「最邻近」「双线性」「双立方」；「双三次」是数学文献中更常见的叫法，需母语者确认；Lanczos、Hamming、Box 是专名，保留拉丁字母 / the dtlnor pack uses 最邻近, 双线性 and 双立方; 双三次 is the more common term in technical writing and needs a native check; Lanczos, Hamming and Box are names and stay Latin. |
-| Line join | 接合 | 翻译 translate | [gimp-po] | 中 medium | 跟随 GIMP 中文界面「接合样式」「斜接」「倒角连接」：Miter 斜接、Bevel 倒角、Round 圆角 / follows GIMP's zh UI (接合样式, 斜接, 倒角连接): Miter 斜接, Bevel 倒角, Round 圆角. |
-| Vertex | 顶点 | 翻译 translate | — | 低 low | 常见几何学术语，「Vertex count」作「顶点数」/ standard geometry term; Vertex count = 顶点数. |
+| "Nearest", "Bilinear", "Bicubic", "Lanczos", "Hamming", "Box" (scaling algorithms) | "最邻近", "双线性", "双三次", "Lanczos", "Hamming", "Box" | 翻译 translate | [a1-dtlnor] | 中 medium | dtlnor 汉化包作「最邻近」「双线性」「双立方」；「双三次」是数学文献中更常见的叫法，需母语者确认；Lanczos、Hamming、Box 是专名，保留拉丁字母 / the dtlnor pack uses 最邻近, 双线性 and 双立方; 双三次 is the more common term in technical writing and needs a native check; Lanczos, Hamming and Box are names and stay Latin. |
+| Line join / "Join" | 接合 | 翻译 translate | [gimp-po] | 中 medium | 跟随 GIMP 中文界面「接合样式」/ follows GIMP's zh UI (接合样式). |
+| "Miter", "Bevel", "Round" (line join styles) | "斜接", "倒角", "圆角" | 翻译 translate | [gimp-po] | 中 medium | GIMP 中文界面作「斜接」「倒角连接」；「圆角」是通用说法 / GIMP's zh UI uses 斜接 and 倒角连接; 圆角 is the common term. |
+| Vertex / vertices | 顶点 | 翻译 translate | — | 低 low | 常见几何学术语，「Vertex count」作「顶点数」/ standard geometry term; Vertex count = 顶点数. |
 | Kerning | 字距调整 | 翻译 translate | [kk-text] | 高 high | Krita 中文手册「字距调整(Kerning)」/ exactly this in Krita zh. |
 
 ## Stable Diffusion 术语 / Stable Diffusion terms
@@ -59,16 +61,16 @@ Vocabulary from the Stable Diffusion community and the A1111 WebUI and ComfyUI i
 | Image to image, text to image | 图生图, 文生图 | 翻译 translate | [a1-terms] | 高 high | 两个汉化包一致 / both zh packs agree. |
 | Mask | 蒙版 | 翻译 translate | [a1-dtlnor] | 高 high | 两个 A1111 汉化包、Photoshop 和 Krita 都用「蒙版」；ComfyUI 中文界面以「遮罩」为主（编辑器标题作「遮罩编辑器」），也混用「蒙版编辑器」/ both A1111 packs, Photoshop and Krita use 蒙版; ComfyUI's zh UI is predominantly 遮罩 (its editor is titled 遮罩编辑器), mixing in 蒙版编辑器 strings. |
 | Masked content | 蒙版内容 | 翻译 translate | — | 低 low | 由 diffus-me 的「蒙版蒙住的内容」缩短而来，两个汉化包都没有「蒙版内容」；dtlnor 作「重绘参考内容」/ shortened from diffus-me's 蒙版蒙住的内容, so neither pack uses 蒙版内容 itself; dtlnor uses 重绘参考内容. |
-| Masked content option values: fill, original, latent noise, latent nothing | 填充, 原图, 潜空间噪声, 空白潜空间 | 翻译 translate | [a1-diffus], [a1-dtlnor] | 中 medium | 「填充」「原图」取自 diffus-me，「潜空间噪声」「空白潜空间」取自 dtlnor；配置文件仍保存英文值，只翻译显示文字 / 填充 and 原图 come from diffus-me, 潜空间噪声 and 空白潜空间 from dtlnor; config files keep the English value, and only the displayed text is translated. |
+| "fill", "original", "latent noise", "latent nothing" (masked content values) | "填充", "原图", "潜空间噪声", "空白潜空间" | 翻译 translate | [a1-diffus], [a1-dtlnor] | 中 medium | 「填充」「原图」取自 diffus-me，「潜空间噪声」「空白潜空间」取自 dtlnor；配置文件仍保存英文值，只翻译显示文字 / 填充 and 原图 come from diffus-me, 潜空间噪声 and 空白潜空间 from dtlnor; config files keep the English value, and only the displayed text is translated. |
 | Prompt | 提示词 | 翻译 translate | [a1-dtlnor] | 高 high | — |
-| Negative prompt | 负面提示词 | 翻译 translate | [a1-dtlnor], [kad-zh] | 高 high | dtlnor 汉化包和 krita-ai-diffusion 中文界面都作「负面提示词」，教程与术语站多用同词；diffus-me 作「反向提示词」/ the dtlnor pack and krita-ai-diffusion's zh UI both use 负面提示词, as do most tutorials and glossaries; diffus-me uses 反向提示词. |
-| Prompt style | 风格模板 | 翻译 translate | [a1-dtlnor] | 中 medium | dtlnor 汉化包作「风格模版」，diffus-me 作「模板风格」；「模板」是规范写法 / the dtlnor pack writes 风格模版 and diffus-me 模板风格; 模板 is the standard spelling of the 模版 variant. |
-| CFG scale | CFG Scale | 保留 keep | [a1-dtlnor] | 高 high | 社区常见译法「提示词相关性(CFG Scale)」；紧凑标签保留英文 / community renders it 提示词相关性(CFG Scale); keep the acronym in the compact label. |
+| Negative prompt / "Negative" | 负面提示词 | 翻译 translate | [a1-dtlnor], [kad-zh] | 高 high | dtlnor 汉化包和 krita-ai-diffusion 中文界面都作「负面提示词」，教程与术语站多用同词；diffus-me 作「反向提示词」/ the dtlnor pack and krita-ai-diffusion's zh UI both use 负面提示词, as do most tutorials and glossaries; diffus-me uses 反向提示词. |
+| Prompt style / "Styles" | 风格模板 | 翻译 translate | [a1-dtlnor] | 中 medium | dtlnor 汉化包作「风格模版」，diffus-me 作「模板风格」；「模板」是规范写法；单独的「Styles」标签同样作「风格模板」/ the dtlnor pack writes 风格模版 and diffus-me 模板风格; 模板 is the standard spelling of the 模版 variant; the bare "Styles" label is also 风格模板. |
+| CFG scale / CFG | CFG Scale / CFG | 保留 keep | [a1-dtlnor] | 高 high | 社区常见译法「提示词相关性(CFG Scale)」；紧凑标签保留英文 / community renders it 提示词相关性(CFG Scale); keep the acronym in the compact label. |
 | Steps | 采样步数 | 翻译 translate | [a1-dtlnor] | 中 medium | 汉化包作「采样迭代步数(Steps)」/ packs use 采样迭代步数(Steps). |
-| Sampler, sampling method | 采样器, 采样方法 | 翻译 translate | [a1-dtlnor] | 高 high | ComfyUI 中文数据类别同样作「采样器」/ also 采样器 in ComfyUI zh. |
+| Sampler / "Sampling", sampling method | 采样器 / 采样, 采样方法 | 翻译 translate | [a1-dtlnor] | 高 high | ComfyUI 中文数据类别同样作「采样器」；「Sampling」分区标题作「采样」/ also 采样器 in ComfyUI zh; the "Sampling" section title is 采样. |
 | Scheduler | 调度器 | 翻译 translate | [a1-dtlnor] | 高 high | ComfyUI 中文类别同样作「调度器」/ also 调度器 in ComfyUI zh. |
 | Seed | 随机种子 | 翻译 translate | [a1-dtlnor] | 高 high | 「Use a random seed」作「使用随机种子」/ "Use a random seed" = 使用随机种子. |
-| Variation seed, variation strength | 差异种子, 差异强度 | 翻译 translate | [a1-dtlnor] | 中 medium | 汉化包作「差异随机种子」/ pack uses 差异随机种子. |
+| Variation seed / seed variation, variation strength | 差异种子, 差异强度 | 翻译 translate | [a1-dtlnor] | 中 medium | 汉化包作「差异随机种子」/ pack uses 差异随机种子. |
 | Denoising strength | 重绘幅度 | 翻译 translate | [a1-dtlnor] | 高 high | 两个包一致；字面「去噪强度」较少见 / both packs agree; literal 去噪强度 is uncommon. |
 | Batch size, batch count | 每批数量, 生成批次 | 翻译 translate | [a1-dtlnor], [a1-diffus] | 高 high | 两个汉化包一致，正是 WebUI 中文用户现在读到的搭配；ComfyUI 中文作「批次数量」，教程亦见「批次数」/ both packs agree, which is the pairing WebUI zh users read today; ComfyUI zh uses 批次数量 and tutorials also write 批次数. |
 | Model, checkpoint | 模型 | 翻译 translate | [a1-dtlnor] | 高 high | dtlnor 作「主模型」；字面「检查点」会误导 / dtlnor: 主模型; avoid literal 检查点. |
@@ -78,8 +80,7 @@ Vocabulary from the Stable Diffusion community and the A1111 WebUI and ComfyUI i
 | ControlNet | ControlNet | 保留 keep | [comfy-zh] | 高 high | — |
 | ControlNet unit | 控制单元 | 翻译 translate | [a1-dtlnor] | 高 high | 汉化包把「ControlNet Unit 0」译作「控制单元 0」/ the pack renders "ControlNet Unit 0" as 控制单元 0. |
 | Preprocessor | 预处理器 | 翻译 translate | [a1-dtlnor] | 高 high | — |
-| Control weight | 控制强度 | 翻译 translate | [a1-dtlnor] | 中 medium | 亦作「权重」「控制权重」/ also 权重 or 控制权重. |
-| Control step | 控制介入时机, 控制结束时机 | 翻译 translate | [a1-dtlnor] | 中 medium | 汉化包用词；该值是步数的比例而非步数，「时机」比「步数」更贴切 / the pack's terms; the value is a fraction of the steps, not a step count, so 时机 (timing) fits better than 步数. |
+| Control weight, starting control step, ending control step | 控制强度, 控制介入时机, 控制结束时机 | 翻译 translate | [a1-dtlnor] | 中 medium | 汉化包用词；强度亦作「权重」「控制权重」；起止值是步数的比例而非步数，「时机」比「步数」更贴切 / the pack's terms; weight is also rendered 权重 or 控制权重; the start and end values are fractions of the steps, not step counts, so 时机 (timing) fits better than 步数. |
 | Describe | 反推提示词 | 翻译 translate | [a1-diffus] | 中 medium | diffus-me 作「反推提示词」，dtlnor 作「提示词反推」；「Describe」这个改名只针对英文，中文沿用社区熟悉的「反推」/ diffus-me uses 反推提示词 and dtlnor 提示词反推; the "Describe" rename is English-specific, so Chinese keeps the community's familiar 反推 term. |
 | CLIP skip | CLIP 跳过层 | 翻译 translate | [a1-diffus] | 高 high | — |
 | Upscale | 放大 | 翻译 translate | [a1-diffus] | 高 high | Upscaler 作「放大算法」，方法标签作「放大方法」/ upscaler = 放大算法; method = 放大方法. |
@@ -94,9 +95,10 @@ Words IntraPaint gives its own meaning. No other program's localization covers t
 
 | English term | 选定译法 Chosen rendering | 决定 Decision | 来源 Source | 置信度 Confidence | 说明 Notes |
 | --- | --- | --- | --- | --- | --- |
-| Generation area | 生成区域 | 翻译 translate | — | 低 low | IntraPaint 专有；备选「生成范围」/ IntraPaint-specific; alternative 生成范围. |
+| Generation area / gen. area | 生成区域 | 翻译 translate | — | 低 low | IntraPaint 专有；备选「生成范围」/ IntraPaint-specific; alternative 生成范围. |
 | Generation resolution | 生成分辨率 | 翻译 translate | — | 低 low | — |
-| Resolution rule | 分辨率规则 | 翻译 translate | — | 低 low | 选项「Match area 匹配区域、Match area, upscale small areas 匹配区域并放大小区域、Manual 手动」；配置文件仍保存英文值，只翻译显示文字 / options: Match area 匹配区域, Match area, upscale small areas 匹配区域并放大小区域, Manual 手动; config files keep the English value, and only the displayed text is translated. |
+| Resolution rule | 分辨率规则 | 翻译 translate | — | 低 low | — |
+| "Match area", "Match area, upscale small areas", "Manual" (resolution rules) | "匹配区域", "匹配区域并放大小区域", "手动" | 翻译 translate | — | 低 low | 配置文件仍保存英文值，只翻译显示文字 / config files keep the English value, and only the displayed text is translated. |
 | Context | 周边范围 | 翻译 translate | — | 低 low | 局部重绘时生成器看到的选区周边图像，滑块以「whole area」收尾；「上下文」偏文字语境，也与本文件「需要上下文才能翻译的字符串」撞词；WebUI「Only masked padding」的汉化「预留像素」（两个汉化包一致）只指边距，盖不住整档 / the image around the selection that the generator sees while inpainting, with the slider ending at "whole area"; 上下文 reads as textual context and collides with this file's own "strings that need context" wording, and the WebUI packs' 预留像素 for "Only masked padding" names only the pixel margin, not the whole range. |
 | Context pin | 周边范围锚点 | 翻译 translate | — | 低 low | 「锚点」是图形软件常见词（如 Photoshop 的锚点工具），「固定点」少见 / 锚点 (anchor point) is a common graphics term (Photoshop's anchor-point tools, for example); 固定点 is not. |
 | Generated image options | 生成图像选项 | 翻译 translate | — | 低 low | — |
@@ -115,10 +117,13 @@ Words IntraPaint gives its own meaning. No other program's localization covers t
 
 These product, format, model and color-model names stay in Latin script.
 
-- 产品与后端 / Products and backends: IntraPaint, Stable Diffusion, ComfyUI, WebUI, Automatic1111 (A1111), Forge, GLID-3-XL, MyPaint, libmypaint, Qt.
+- 产品与后端 / Products and backends: IntraPaint, Stable Diffusion, ComfyUI, WebUI, Automatic1111, A1111, Forge, GLID-3-XL, MyPaint, libmypaint, Qt.
 - 模型与技术名 / Model and technique names: CLIP, BERT, VAE, LoRA, LCM, CFG, ControlNet, Ultimate SD Upscale.
-- 格式与色彩模型 / Formats and color models: OpenRaster (`.ora`), PNG, RGB, RGBA, HSV, OKLCH, sRGB.
-- 界面主题名 / Interface theme names: 例如「IntraPaint Ink」/ for example "IntraPaint Ink".
+- 格式与色彩模型 / Formats and color models: OpenRaster, .ora, PNG, RGB, RGBA, HSV, OKLCH, sRGB.
+
+界面主题名（例如「IntraPaint Ink」）同样保留原文。
+
+Interface theme names, such as "IntraPaint Ink", are also kept.
 
 ## 需要上下文才能翻译的字符串 / Strings that need context
 
