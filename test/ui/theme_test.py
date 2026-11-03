@@ -5,9 +5,10 @@ import sys
 from PySide6.QtGui import QColor, QFont, QFontInfo, QImage, QPainter, QPalette
 from PySide6.QtWidgets import QApplication, QPushButton, QStyle, QStyleOption
 
+from src.config.application_config import AppConfig
 from src.ui.ink_style import InkColors, InkStyle, STICKER_OFFSET, set_primary_button
-from src.ui.theme import (INK_THEME_PATH, THEME_INK, THEME_SYSTEM, apply_overlay_scroll_bars, apply_rounded_popups,
-                          apply_style, apply_theme, load_theme_palette)
+from src.ui.theme import (INK_THEME_PATH, THEME_INK, THEME_SYSTEM, apply_appearance_config, apply_font_point_size,
+                          apply_overlay_scroll_bars, apply_rounded_popups, apply_style, apply_theme, load_theme_palette)
 from src.util.gc_paused import gc_paused
 from test.base_test_case import IntraPaintTestCase
 
@@ -116,6 +117,29 @@ class ThemeTest(IntraPaintTestCase):
         self.assertFalse(app.style().styleHint(transient))
         apply_overlay_scroll_bars(True)
         self.assertTrue(app.style().styleHint(transient))
+
+    def test_appearance_config_follows_connected_options(self):
+        """With an owner, the config's theme and font size options reapply when they change."""
+        config = AppConfig()
+        owner = object()
+        original_size = config.get(AppConfig.FONT_POINT_SIZE)
+        apply_appearance_config(config, owner)
+        try:
+            self.assertEqual(original_size, app.font().pointSize())
+            self.assertIsInstance(app.style(), InkStyle)
+            config.set(AppConfig.FONT_POINT_SIZE, original_size + 2)
+            self.assertEqual(original_size + 2, app.font().pointSize())
+            config.set(AppConfig.THEME, THEME_SYSTEM)
+            self.assertNotIsInstance(app.style(), InkStyle)
+        finally:
+            config.disconnect_all(owner)
+            apply_font_point_size(original_size)
+
+    def test_appearance_config_without_owner_does_not_connect(self):
+        config = AppConfig()
+        apply_appearance_config(config)
+        config.set(AppConfig.THEME, THEME_SYSTEM)
+        self.assertIsInstance(app.style(), InkStyle)
 
     def test_ink_style_colors_parsed(self):
         colors = InkColors.from_theme_data(_load_theme_data()['style_colors'])

@@ -34,8 +34,7 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
-from src.ui.theme import apply_font_point_size, apply_overlay_scroll_bars, apply_rounded_popups, apply_style, \
-    apply_theme
+from src.ui.theme import apply_appearance_config
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker
 from src.util.singleton import Singleton
@@ -55,12 +54,7 @@ COMPARISON_FORMAT = QImage.Format.Format_ARGB32_Premultiplied
 
 def apply_fixture_appearance() -> None:
     """Applies the style, theme and font size from the app config fixture to the application."""
-    app_config = AppConfig()
-    apply_overlay_scroll_bars(app_config.get(AppConfig.OVERLAY_SCROLL_BARS))
-    apply_rounded_popups(app_config.get(AppConfig.ROUNDED_POPUPS))
-    apply_style(app_config.get(AppConfig.STYLE))
-    apply_theme(app_config.get(AppConfig.THEME))
-    apply_font_point_size(app_config.get(AppConfig.FONT_POINT_SIZE))
+    apply_appearance_config(AppConfig())
 
 
 def app_appearance() -> dict[str, Any]:
