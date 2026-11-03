@@ -2,10 +2,11 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon, QPainter, QColor, QBrush, QPainterPath, QPen, QPainterPathStroker, QPolygonF
+from PySide6.QtGui import QIcon, QPainter, QBrush, QPainterPath, QPen, QPainterPathStroker, QPolygonF
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
+from src.controller import color_controller
 from src.config.key_config import KeyConfig
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
@@ -69,7 +70,7 @@ class ShapeTool(ShapeDragTool):
             self._brush.setStyle(FillStyleComboBox.get_style(cache.get(Cache.SHAPE_TOOL_FILL_PATTERN)))
         except KeyError:
             self._brush.setStyle(Qt.BrushStyle.SolidPattern)
-        self._brush.setColor(cache.get_color(Cache.SHAPE_TOOL_FILL_COLOR, Qt.GlobalColor.white))
+        self._brush.setColor(color_controller.shape_fill_color())
         self._selection_handler.set_brush(self._brush)
 
         # load pen:
@@ -78,7 +79,7 @@ class ShapeTool(ShapeDragTool):
             self._pen.setStyle(PenStyleComboBox.get_pen_style(cache.get(Cache.SHAPE_TOOL_LINE_STYLE)))
         except KeyError:
             self._pen.setStyle(Qt.PenStyle.SolidLine)
-        self._pen.setColor(cache.get_color(Cache.SHAPE_TOOL_LINE_COLOR, Qt.GlobalColor.black))
+        self._pen.setColor(color_controller.shape_line_color())
         self._pen.setWidth(cache.get(Cache.SHAPE_TOOL_LINE_WIDTH))
         if self._pen.style() == Qt.PenStyle.CustomDashLine:
             dash_pattern = _parse_dash_pattern(cache.get(Cache.SHAPE_TOOL_DASH_PATTERN))
@@ -95,22 +96,17 @@ class ShapeTool(ShapeDragTool):
                              (Cache.SHAPE_TOOL_STAR_INNER_POINT_FRACTION,
                               self._shape_mode_inner_radius_fraction_update_slot),
                              (Cache.SHAPE_TOOL_LINE_COLOR, self._line_color_update_slot),
+                             (Cache.SHAPE_TOOL_LINE_SOURCE, self._line_color_update_slot),
+                             (Cache.LAST_BRUSH_COLOR, self._foreground_update_slot),
+                             (Cache.BACKGROUND_COLOR, self._background_update_slot),
                              (Cache.SHAPE_TOOL_LINE_STYLE, self._line_style_update_slot),
                              (Cache.SHAPE_TOOL_LINE_JOIN_STYLE, self._line_join_style_update_slot),
                              (Cache.SHAPE_TOOL_DASH_PATTERN, self._dash_pattern_update_slot),
                              (Cache.SHAPE_TOOL_LINE_WIDTH, self._line_width_update_slot),
                              (Cache.SHAPE_TOOL_FILL_PATTERN, self._fill_pattern_update_slot),
-                             (Cache.SHAPE_TOOL_FILL_COLOR, self._fill_color_update_slot)):
+                             (Cache.SHAPE_TOOL_FILL_COLOR, self._fill_color_update_slot),
+                             (Cache.SHAPE_TOOL_FILL_SOURCE, self._fill_color_update_slot)):
             cache.connect(self, key, handler)
-
-        # When the tool is active, changes to the primary brush color will propagate to the last shape mode tool that
-        # changes.
-        self._last_color_changed = Cache.SHAPE_TOOL_FILL_COLOR
-
-        def _update_last_color(color_str: str) -> None:
-            if self.is_active and QColor(color_str).isValid():
-                cache.set(self._last_color_changed, color_str)
-        cache.connect(self, Cache.LAST_BRUSH_COLOR, _update_last_color)
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
@@ -177,14 +173,21 @@ class ShapeTool(ShapeDragTool):
     def _shape_mode_inner_radius_fraction_update_slot(self, radius_fraction: float) -> None:
         self._selection_handler.inner_radius_fraction = radius_fraction
 
-    def _line_color_update_slot(self, color_str: str) -> None:
-        self._last_color_changed = Cache.SHAPE_TOOL_LINE_COLOR
-        if QColor(color_str).isValid():
-            color = QColor(color_str)
-            if self._pen.color() == color:
-                return
-            self._pen.setColor(color)
-            self._selection_handler.set_pen(self._pen)
+    def _line_color_update_slot(self, _=None) -> None:
+        color = color_controller.shape_line_color()
+        if self._pen.color() == color:
+            return
+        self._pen.setColor(color)
+        self._selection_handler.set_pen(self._pen)
+
+    def _foreground_update_slot(self, _=None) -> None:
+        self._line_color_update_slot()
+        if Cache().get(Cache.SHAPE_TOOL_FILL_SOURCE) == color_controller.SOURCE_FOREGROUND:
+            self._fill_color_update_slot()
+
+    def _background_update_slot(self, _=None) -> None:
+        if Cache().get(Cache.SHAPE_TOOL_FILL_SOURCE) == color_controller.SOURCE_BACKGROUND:
+            self._fill_color_update_slot()
 
     def _line_style_update_slot(self, style_str: str) -> None:
         try:
@@ -234,11 +237,8 @@ class ShapeTool(ShapeDragTool):
         self._brush.setStyle(fill_pattern)
         self._selection_handler.set_brush(self._brush)
 
-    def _fill_color_update_slot(self, color_str: str) -> None:
-        self._last_color_changed = Cache.SHAPE_TOOL_FILL_COLOR
-        if not QColor(color_str).isValid():
-            return
-        color = QColor(color_str)
+    def _fill_color_update_slot(self, _=None) -> None:
+        color = color_controller.shape_fill_color()
         if color == self._brush.color():
             return
         self._brush.setColor(color)

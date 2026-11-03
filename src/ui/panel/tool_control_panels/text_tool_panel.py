@@ -31,6 +31,7 @@ from PySide6.QtWidgets import (QApplication, QComboBox, QCompleter, QGridLayout,
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.controller import color_controller
 from src.hotkey_filter import HotkeyFilter
 from src.image.text_rect import SCALE_MODE_BOUNDS_TO_TEXT, SCALE_MODE_NONE, SCALE_MODE_TEXT_TO_BOUNDS, TextRect
 from src.ui.ink_style import signal_color
@@ -47,8 +48,9 @@ from src.ui.panel.tool_control_panels.text_preview import TextPreview, text_over
 from src.ui.widget.color_button import ColorButton
 from src.ui.widget.panel_section import PanelSection
 from src.undo_stack import UndoStack
-from src.util.shared_constants import PROJECT_DIR
+from src.util.shared_constants import PROJECT_DIR, SMALL_ICON_SIZE
 from src.util.signals_blocked import signals_blocked
+from src.util.visual.image_utils import get_color_icon
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.text_panel'
@@ -93,6 +95,8 @@ BACKGROUND_COLOR_LABEL = _tr('Background')
 TEXT_COLOR_NOTE = _tr('Same as brush color')
 TEXT_COLOR_TOOLTIP = _tr('Text color. It is the same color the brush uses.')
 BACKGROUND_COLOR_TOOLTIP = _tr('Background color, drawn behind the text while "Fill behind text" is on')
+USE_BACKGROUND_COLOR_LABEL = _tr('Use background color')
+USE_BACKGROUND_COLOR_TOOLTIP = _tr('Set the text box fill color to the current background color')
 FILL_BACKGROUND_LABEL = _tr('Fill behind text')
 FILL_BACKGROUND_TOOLTIP = _tr('Fill the text box with the background color')
 BOX_FIT_LABEL = _tr('Box fit')
@@ -377,6 +381,16 @@ class TextToolPanel(FitToolPanel):
         self._background_color_label = QLabel(BACKGROUND_COLOR_LABEL, self)
         self._background_color_button = self._swatch(Cache.TEXT_BACKGROUND_COLOR, BACKGROUND_COLOR_TOOLTIP)
         self._background_color_label.setBuddy(self._background_color_button)
+        # Shows the current background color as its icon, so the button reads as "paste this color in":
+        self._use_background_button = QToolButton(self)
+        self._use_background_button.setToolTip(USE_BACKGROUND_COLOR_TOOLTIP)
+        self._use_background_button.setAccessibleName(USE_BACKGROUND_COLOR_LABEL)
+        self._use_background_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self._use_background_button.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
+        self._update_use_background_icon()
+        Cache().connect(self, Cache.BACKGROUND_COLOR, lambda *_: self._update_use_background_icon())
+        self._use_background_button.clicked.connect(
+            lambda: Cache().set_color(Cache.TEXT_BACKGROUND_COLOR, color_controller.background()))
         self._fill_checkbox = CheckBox(self)
         self._fill_checkbox.setText(FILL_BACKGROUND_LABEL)
         self._fill_checkbox.setToolTip(FILL_BACKGROUND_TOOLTIP)
@@ -407,6 +421,9 @@ class TextToolPanel(FitToolPanel):
             row_layout.setContentsMargins(0, 0, 0, 0)
         self._style_section = PanelSection(STYLE_SECTION_TITLE, self._style_body, parent=self)
         self._style_section.bind_summary(self._style_summary, self._values_shown)
+
+    def _update_use_background_icon(self) -> None:
+        self._use_background_button.setIcon(get_color_icon(color_controller.background()))
 
     def _swatch(self, key: str, tooltip: str) -> ColorButton:
         button = ColorButton(key, self)
@@ -777,7 +794,8 @@ class TextToolPanel(FitToolPanel):
         layout = self._style_layout
         widgets = (*self._style_toggles, self._alignment_control, self._text_color_label, self._text_color_button,
                    self._text_color_note, self._background_color_label, self._background_color_button,
-                   self._fill_checkbox, self._box_fit_label, self._box_fit_control, self._overflow_badge)
+                   self._use_background_button, self._fill_checkbox, self._box_fit_label, self._box_fit_control,
+                   self._overflow_badge)
         self._clear(layout, widgets)
         for row_layout in self._row_layouts:
             while row_layout.count() > 0:
@@ -799,7 +817,8 @@ class TextToolPanel(FitToolPanel):
             layout.addWidget(self._text_color_label, 1, 0, 1, 2)
             self._add_row(next(rows), 1, 2, width - 2, (self._text_color_button, self._text_color_note))
             layout.addWidget(self._background_color_label, 2, 0, 1, 2)
-            self._add_row(next(rows), 2, 2, width - 2, (self._background_color_button, self._fill_checkbox))
+            self._add_row(next(rows), 2, 2, width - 2, (self._background_color_button, self._use_background_button,
+                                                      self._fill_checkbox))
             layout.addWidget(self._box_fit_label, 3, 0, 1, 2)
             layout.addWidget(self._box_fit_control, 3, 2, 1, width - 2)
             layout.addWidget(self._overflow_badge, 4, 2, 1, width - 2)
@@ -807,12 +826,13 @@ class TextToolPanel(FitToolPanel):
             layout.addWidget(self._alignment_control, 0, end)
             self._add_row(next(rows), 1, 0, width, (self._text_color_button, self._text_color_label,
                                                     self._background_color_button, self._background_color_label,
-                                                    self._fill_checkbox))
+                                                    self._use_background_button, self._fill_checkbox))
             self._add_row(next(rows), 2, 0, width, (self._box_fit_control, self._overflow_badge))
         else:
             layout.addWidget(self._alignment_control, 0, end)
             self._add_row(next(rows), 1, 0, width, (self._text_color_button, self._text_color_label,
-                                                    self._background_color_button, self._background_color_label))
+                                                    self._background_color_button, self._background_color_label,
+                                                    self._use_background_button))
             self._add_row(next(rows), 2, 0, width, (self._box_fit_control, self._fill_checkbox))
             layout.addWidget(self._overflow_badge, 3, 0, 1, width)
         layout.setColumnStretch(spare, 1)

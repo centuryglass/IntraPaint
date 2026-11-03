@@ -16,6 +16,11 @@ from PySide6.QtGui import QColor
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 
+# `Cache.SHAPE_TOOL_LINE_SOURCE` and `Cache.SHAPE_TOOL_FILL_SOURCE` option values.
+SOURCE_FOREGROUND = 'From foreground'
+SOURCE_BACKGROUND = 'From background'
+SOURCE_CUSTOM = 'Custom color'
+
 MAX_RECENT_COLORS = 16
 MAX_SAVED_COLORS = 64
 DEFAULT_FOREGROUND = QColor(Qt.GlobalColor.black)
@@ -30,6 +35,34 @@ def foreground() -> QColor:
 def background() -> QColor:
     """Returns the background color."""
     return Cache().get_color(Cache.BACKGROUND_COLOR, DEFAULT_BACKGROUND)
+
+
+def shape_line_color() -> QColor:
+    """Returns the shape tool's outline color: the foreground color, or the custom line color."""
+    cache = Cache()
+    if cache.get(Cache.SHAPE_TOOL_LINE_SOURCE) == SOURCE_CUSTOM:
+        return cache.get_color(Cache.SHAPE_TOOL_LINE_COLOR, DEFAULT_FOREGROUND)
+    return foreground()
+
+
+def shape_fill_color() -> QColor:
+    """Returns the shape tool's fill color: the background color, the foreground color, or the custom fill color."""
+    cache = Cache()
+    source = cache.get(Cache.SHAPE_TOOL_FILL_SOURCE)
+    if source == SOURCE_CUSTOM:
+        return cache.get_color(Cache.SHAPE_TOOL_FILL_COLOR, DEFAULT_BACKGROUND)
+    if source == SOURCE_FOREGROUND:
+        return foreground()
+    return background()
+
+
+def new_image_color() -> QColor:
+    """Returns the fill color for a new image: the background color if the New Image dialog last chose it, or else the
+    dialog's last chosen color."""
+    cache = Cache()
+    if cache.get(Cache.NEW_IMAGE_USES_BACKGROUND_COLOR):
+        return background()
+    return cache.get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, DEFAULT_BACKGROUND)
 
 
 def set_foreground(color: QColor, commit: bool = True) -> None:

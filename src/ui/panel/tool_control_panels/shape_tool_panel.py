@@ -2,8 +2,11 @@
 
 The panel is a view over the shape tool's `Cache` values:
 - Shape: the shape type as a `SegmentedControl`, with Vertices and Inner radius under it for the shapes that use them.
-- Outline: Width, the line color with the line style, Dash pattern with its hint while the style is custom, then Join.
-- Fill: the fill color with the fill pattern.
+- Outline: Width, the line color source with the line style, Dash pattern with its hint while the style is custom,
+  then Join.
+- Fill: the fill color source with the fill pattern.
+  A color source is a dropdown (foreground, background or custom), with the custom color's swatch beside it only
+  while the source is custom.
 - Antialiasing: at the bottom of a side panel, and in the Shape column of a strip.
 
 The shape type and join controls save untranslated names in `Cache` (`ShapeMode.name` and the `JOIN_STYLE_*`
@@ -22,9 +25,11 @@ from typing import Optional
 
 from PySide6.QtCore import QEvent, QRegularExpression, Qt
 from PySide6.QtGui import QBrush, QColor, QIcon, QPalette, QPen, QRegularExpressionValidator
-from PySide6.QtWidgets import QApplication, QCheckBox, QGridLayout, QLabel, QLineEdit, QSizePolicy, QWidget
+from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
+                               QSizePolicy, QWidget)
 
 from src.config.cache import Cache
+from src.controller import color_controller
 from src.ui.ink_style import signal_color
 from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.input_fields.number_field import NumberField
@@ -59,6 +64,7 @@ VERTICES_LABEL = _tr('Vertices')
 INNER_RADIUS_LABEL = _tr('Inner radius')
 WIDTH_LABEL = _tr('Width')
 COLOR_LABEL = _tr('Color')
+MIN_SOURCE_COMBO_CHARACTERS = 4
 DASH_LABEL = _tr('Dash')
 JOIN_LABEL = _tr('Join')
 NO_LINE_TEXT = _tr('none')
@@ -113,6 +119,37 @@ def build_dash_pattern_validator(parent: Optional[QWidget] = None) -> QRegularEx
     return QRegularExpressionValidator(QRegularExpression(DASH_PATTERN_REGEX), parent)
 
 
+class _ColorSourceControl(QWidget):
+    """A dropdown choosing where a shape color comes from, with the custom color's swatch beside it while the source
+    is custom."""
+
+    def __init__(self, source_key: str, swatch: ColorButton, parent: QWidget) -> None:
+        super().__init__(parent)
+        cache = Cache()
+        self.swatch = swatch
+        self.swatch.setParent(self)
+        self.combo = QComboBox(self)
+        self.combo.setToolTip(cache.get_tooltip(source_key))
+        self.combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self.combo.setMinimumContentsLength(MIN_SOURCE_COMBO_CHARACTERS)
+        for option in cache.get_options(source_key):
+            self.combo.addItem(cache.get_option_display(option), option)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.combo)
+        layout.addWidget(self.swatch)
+
+        def _source_changed(source: str) -> None:
+            index = self.combo.findData(source)
+            if index >= 0 and self.combo.currentIndex() != index:
+                self.combo.setCurrentIndex(index)
+            self.swatch.setVisible(source == color_controller.SOURCE_CUSTOM)
+
+        self.combo.activated.connect(lambda index: cache.set(source_key, self.combo.itemData(index)))
+        cache.connect(self, source_key, _source_changed)
+        _source_changed(cache.get(source_key))
+
+
 class ShapeToolPanel(FitToolPanel):
     """Shape tool control panel. Sets shape type, outline properties, and fill properties.
 
@@ -151,10 +188,11 @@ class ShapeToolPanel(FitToolPanel):
         self._width_field = self._bound_field(Cache.SHAPE_TOOL_LINE_WIDTH, WIDTH_LABEL, suffix=PIXEL_SUFFIX,
                                               zero_text=NO_LINE_TEXT)
         self._line_color_label = QLabel(COLOR_LABEL, self)
-        self._line_color_button = self._swatch(Cache.SHAPE_TOOL_LINE_COLOR)
+        self._line_color_source = self._source_control(Cache.SHAPE_TOOL_LINE_SOURCE, Cache.SHAPE_TOOL_LINE_COLOR)
+        self._line_color_button = self._line_color_source.swatch
         self._pen_style_dropdown = PenStyleComboBox(Cache.SHAPE_TOOL_LINE_STYLE, self)
         self._fit_combo(self._pen_style_dropdown)
-        self._line_color_label.setBuddy(self._line_color_button)
+        self._line_color_label.setBuddy(self._line_color_source.combo)
         self._dash_label = QLabel(DASH_LABEL, self)
         self._dash_textbox = create_control_widget(cache, Cache.SHAPE_TOOL_DASH_PATTERN)
         assert isinstance(self._dash_textbox, QLineEdit)
@@ -181,8 +219,9 @@ class ShapeToolPanel(FitToolPanel):
 
         # Fill section:
         self._fill_color_label = QLabel(COLOR_LABEL, self)
-        self._fill_color_button = self._swatch(Cache.SHAPE_TOOL_FILL_COLOR)
-        self._fill_color_label.setBuddy(self._fill_color_button)
+        self._fill_color_source = self._source_control(Cache.SHAPE_TOOL_FILL_SOURCE, Cache.SHAPE_TOOL_FILL_COLOR)
+        self._fill_color_button = self._fill_color_source.swatch
+        self._fill_color_label.setBuddy(self._fill_color_source.combo)
         self._fill_style_dropdown = FillStyleComboBox(Cache.SHAPE_TOOL_FILL_PATTERN, True, self)
         self._fit_combo(self._fill_style_dropdown)
         self._fill_body = QWidget(self)
@@ -201,10 +240,13 @@ class ShapeToolPanel(FitToolPanel):
         self._pen_style_dropdown.currentTextChanged.connect(self._line_style_changed)
         for cache_key in (Cache.SHAPE_TOOL_VERTEX_COUNT, Cache.SHAPE_TOOL_STAR_INNER_POINT_FRACTION):
             cache.connect(self._shape_control, cache_key, self._update_shape_icons)
-        cache.connect(self._fill_style_dropdown, Cache.SHAPE_TOOL_FILL_COLOR, self._update_fill_icons)
-        cache.connect(self._pen_style_dropdown, Cache.SHAPE_TOOL_LINE_COLOR, self._update_line_icons)
-        self._update_fill_icons(cache.get(Cache.SHAPE_TOOL_FILL_COLOR))
-        self._update_line_icons(cache.get(Cache.SHAPE_TOOL_LINE_COLOR))
+        for key in (Cache.SHAPE_TOOL_FILL_COLOR, Cache.SHAPE_TOOL_FILL_SOURCE, Cache.LAST_BRUSH_COLOR,
+                    Cache.BACKGROUND_COLOR):
+            cache.connect(self._fill_style_dropdown, key, self._update_fill_icons)
+        for key in (Cache.SHAPE_TOOL_LINE_COLOR, Cache.SHAPE_TOOL_LINE_SOURCE, Cache.LAST_BRUSH_COLOR):
+            cache.connect(self._pen_style_dropdown, key, self._update_line_icons)
+        self._update_fill_icons()
+        self._update_line_icons()
         self._join_style_changed(cache.get(Cache.SHAPE_TOOL_LINE_JOIN_STYLE))
         self._shape_mode_changed(cache.get(Cache.SHAPE_TOOL_MODE), refit=False)
         self._line_style_changed(self._pen_style_dropdown.currentText(), refit=False)
@@ -271,6 +313,10 @@ class ShapeToolPanel(FitToolPanel):
         cache.connect(field, key, lambda value, *_: field.set_value(value))
         return field
 
+    def _source_control(self, source_key: str, color_key: str) -> '_ColorSourceControl':
+        """Returns a color source dropdown with the custom color's swatch, shown while the source is custom."""
+        return _ColorSourceControl(source_key, self._swatch(color_key), self)
+
     def _swatch(self, key: str) -> ColorButton:
         button = ColorButton(key, self)
         button.setText('')
@@ -303,13 +349,11 @@ class ShapeToolPanel(FitToolPanel):
             icon = PenJoinStyleComboBox.draw_icon(join_style, line_color, Qt.GlobalColor.transparent)
             self._join_control.set_segment_icon(name, QIcon(icon))
 
-    def _update_fill_icons(self, color_str: str) -> None:
-        if QColor(color_str).isValid():
-            self._fill_style_dropdown.set_icon_colors(QColor(color_str))
+    def _update_fill_icons(self, *_) -> None:
+        self._fill_style_dropdown.set_icon_colors(color_controller.shape_fill_color())
 
-    def _update_line_icons(self, color_str: str) -> None:
-        if QColor(color_str).isValid():
-            self._pen_style_dropdown.set_icon_colors(QColor(color_str))
+    def _update_line_icons(self, *_) -> None:
+        self._pen_style_dropdown.set_icon_colors(color_controller.shape_line_color())
 
     def _shape_mode_changed(self, mode_text: str, refit: bool = True) -> None:
         mode = _shape_mode(mode_text)
@@ -433,7 +477,7 @@ class ShapeToolPanel(FitToolPanel):
         beside Join, or beside Dash pattern with Join under them while the style is custom."""
         self._paired = paired
         layout = self._outline_layout
-        widgets = (self._width_field, self._line_color_label, self._line_color_button, self._pen_style_dropdown,
+        widgets = (self._width_field, self._line_color_label, self._line_color_source, self._pen_style_dropdown,
                    self._dash_label, self._dash_textbox, self._dash_hint, self._join_label, self._join_control)
         self._clear(layout, widgets)
         if join_shown:
@@ -446,7 +490,7 @@ class ShapeToolPanel(FitToolPanel):
         self._join_control.show()
         if paired:
             layout.addWidget(self._width_field, 0, 0)
-            layout.addWidget(self._line_color_button, 0, 1)
+            layout.addWidget(self._line_color_source, 0, 1)
             layout.addWidget(self._pen_style_dropdown, 1, 0)
             custom = self._custom_dash()
             if custom:
@@ -460,7 +504,7 @@ class ShapeToolPanel(FitToolPanel):
             return
         layout.addWidget(self._width_field, 0, 0, 1, 3)
         layout.addWidget(self._line_color_label, 1, 0)
-        layout.addWidget(self._line_color_button, 1, 1)
+        layout.addWidget(self._line_color_source, 1, 1)
         layout.addWidget(self._pen_style_dropdown, 1, 2)
         layout.addWidget(self._dash_label, 2, 0)
         layout.addWidget(self._dash_textbox, 2, 1, 1, 2)
@@ -474,9 +518,9 @@ class ShapeToolPanel(FitToolPanel):
 
     def _arrange_fill(self) -> None:
         layout = self._fill_layout
-        self._clear(layout, (self._fill_color_label, self._fill_color_button, self._fill_style_dropdown))
+        self._clear(layout, (self._fill_color_label, self._fill_color_source, self._fill_style_dropdown))
         layout.addWidget(self._fill_color_label, 0, 0)
-        layout.addWidget(self._fill_color_button, 0, 1)
+        layout.addWidget(self._fill_color_source, 0, 1)
         layout.addWidget(self._fill_style_dropdown, 0, 2)
         layout.setColumnStretch(2, 1)
 
