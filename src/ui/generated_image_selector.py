@@ -11,7 +11,8 @@ import sys
 import time
 from typing import Callable, Optional, cast
 
-from PySide6.QtCore import Qt, QRect, QSizeF, QRectF, QEvent, Signal, QPointF, QObject, QPoint, QVariantAnimation
+from PySide6.QtCore import Qt, QRect, QSizeF, QRectF, QEvent, Signal, QPointF, QObject, QPoint, QTimer, \
+    QVariantAnimation
 from PySide6.QtGui import QImage, QResizeEvent, QPixmap, QWheelEvent, QMouseEvent, QKeyEvent, QPolygonF, \
     QSinglePointEvent, QAction
 from PySide6.QtWidgets import QApplication, QMenu, QGraphicsItem, QWidget, QGraphicsPixmapItem, QVBoxLayout
@@ -74,6 +75,8 @@ WARNING_MESSAGE_2_CREATED_NEW = _tr('Image content was added as new layer "{new_
 VIEW_MARGIN = 6
 IMAGE_MARGIN_FRACTION = 1 / 6
 SCROLL_DEBOUNCE_MS = 100
+# After this long without a digit key, the next digit starts a new option number:
+TYPED_NUMBER_TIMEOUT_MS = 1000
 # Viewport pixels kept clear under the grid for the bottom row's captions, and their padding:
 GRID_CAPTION_RESERVE = CAPTION_HEIGHT + 8
 FILMSTRIP_SMALL_THUMB_SIZE = 44
@@ -85,6 +88,19 @@ _MODIFIER_KEYS = {Qt.KeyboardModifier.AltModifier: Qt.Key.Key_Alt,
                   Qt.KeyboardModifier.ControlModifier: Qt.Key.Key_Control,
                   Qt.KeyboardModifier.ShiftModifier: Qt.Key.Key_Shift,
                   Qt.KeyboardModifier.MetaModifier: Qt.Key.Key_Meta}
+
+
+def _typed_digit(event: QKeyEvent) -> Optional[int]:
+    """Returns the digit a key press types, or None if it types something else.
+
+    The key code covers events without text. The text covers layouts that type digits with Shift held.
+    """
+    text = event.text()
+    if len(text) == 1 and text in '0123456789':
+        return int(text)
+    if Qt.Key.Key_0 <= event.key() <= Qt.Key.Key_9:
+        return event.key() - Qt.Key.Key_0
+    return None
 
 
 class GeneratedImageSelector(QWidget):
@@ -135,6 +151,12 @@ class GeneratedImageSelector(QWidget):
         self._change_bounds: Optional[QRect] = None
         self._last_scroll_time = time.time() * 1000
         self._toast_message: Optional[ToastMessageItem] = None
+        # Digits typed so far toward an option number, see `_type_digit`:
+        self._typed_number = ''
+        self._typed_number_timer = QTimer(self)
+        self._typed_number_timer.setSingleShot(True)
+        self._typed_number_timer.setInterval(TYPED_NUMBER_TIMEOUT_MS)
+        self._typed_number_timer.timeout.connect(self._clear_typed_number)
 
         self._base_option_offset = QPointF(0.0, 0.0)
         self._base_option_scale = 0.0
@@ -250,6 +272,7 @@ class GeneratedImageSelector(QWidget):
             self._loading_design = pick_design(self._loading_designs, self._loading_design)
             self._loading_design.next_loop()
         self._progress_text = ''
+        self._clear_typed_number()
 
         # Every showing starts on the full view of all options, focused on the original so the first step forward
         # opens option 1:
@@ -618,6 +641,29 @@ class GeneratedImageSelector(QWidget):
             self._set_comparing(KeyConfig.modifier_held(KeyConfig.COMPARE_ORIGINAL_MODIFIER,
                                                         held_modifiers=event.modifiers()))
 
+    def _type_digit(self, digit: int) -> bool:
+        """Focuses the option numbered by the digits typed so far, and returns whether the digit was used.
+
+        Each digit focuses its option right away. A digit extends the typed number when the result still names an
+        option, so 1 then 2 focuses option 12. Otherwise it starts a new number, as does any digit typed after a
+        `TYPED_NUMBER_TIMEOUT_MS` pause.
+        """
+        number = int(self._typed_number + str(digit)) if self._typed_number != '' else digit
+        if number >= len(self._option_items):
+            number = digit
+        if number >= len(self._option_items):
+            self._clear_typed_number()
+            return False
+        self._typed_number = str(number)
+        self._typed_number_timer.start()
+        self._zoom_to_option(number, True)
+        return True
+
+    def _clear_typed_number(self) -> None:
+        """Makes the next digit key start a new option number."""
+        self._typed_number = ''
+        self._typed_number_timer.stop()
+
     def _option_at(self, view_pos: QPoint) -> Optional[int]:
         scene_pos = self._view.widget_point_to_scene(view_pos).toPoint()
         for i, option in enumerate(self._option_items):
@@ -657,14 +703,12 @@ class GeneratedImageSelector(QWidget):
                 if self._is_ready(self._zoom_index):
                     self._select_option_and_close(self._zoom_index)
             else:
-                try:
-                    num_value = int(event.text())
-                    if 0 <= num_value < len(self._option_items):
-                        self._zoom_to_option(num_value, True)
-                        return True
-                    return False
-                except ValueError:
-                    return False
+                digit = _typed_digit(event)
+                if digit is not None:
+                    return self._type_digit(digit)
+                if event.key() not in _MODIFIER_KEYS.values():
+                    self._clear_typed_number()
+                return False
             return True
         if event.type() == QEvent.Type.MouseButtonPress:
             event = cast(QMouseEvent, event)

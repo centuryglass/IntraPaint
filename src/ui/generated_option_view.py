@@ -18,7 +18,6 @@ from src.ui.ink_style import ink_colors
 from src.ui.loading.halftone_press import HalftonePress
 from src.ui.loading.loading_design import LoadingDesign, MESSAGE_ZONE
 from src.ui.widget.image_graphics_view import ImageGraphicsView
-from src.ui.widget.option_filmstrip import MAX_DIGIT_KEY
 from src.util.visual.image_utils import get_transparency_tile_pixmap
 from src.util.visual.keycap import KEYCAP_DEPTH, draw_keycap, keycap_colors, keycap_font, keycap_size
 from src.util.visual.pil_image_utils import pil_image_scaling
@@ -276,24 +275,23 @@ class GeneratedOptionView(ImageGraphicsView):
     @staticmethod
     def _paint_caption(painter: QPainter, caption: QRect, index: int, label: str, highlighted: bool,
                        font: QFont) -> None:
-        """Draws a caption bar with the option's digit key, if it has one, and its label."""
+        """Draws a caption bar with the option's number key, when it fits, and its label."""
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(_accent_wash() if highlighted else CAPTION_BACKGROUND)
         painter.drawRect(caption)
         text_left = caption.left() + CAPTION_PADDING
-        if index <= MAX_DIGIT_KEY:
-            key_font = keycap_font(font)
-            key_metrics = QFontMetrics(key_font)
-            cap_size = keycap_size(QSize(key_metrics.horizontalAdvance(str(index)), key_metrics.height()))
-            cap_rect = QRectF(text_left, caption.center().y() - cap_size.height() / 2 + 1, cap_size.width(),
-                              cap_size.height())
-            if cap_rect.right() < caption.right():
-                fill, outline, text_color = keycap_colors(QApplication.palette())
-                draw_keycap(painter, cap_rect, fill, outline)
-                painter.setPen(text_color)
-                painter.setFont(key_font)
-                painter.drawText(cap_rect.adjusted(0, 0, 0, -KEYCAP_DEPTH), Qt.AlignmentFlag.AlignCenter, str(index))
-                text_left = int(cap_rect.right()) + CAPTION_PADDING
+        key_font = keycap_font(font)
+        key_metrics = QFontMetrics(key_font)
+        cap_size = keycap_size(QSize(key_metrics.horizontalAdvance(str(index)), key_metrics.height()))
+        cap_rect = QRectF(text_left, caption.center().y() - cap_size.height() / 2 + 1, cap_size.width(),
+                          cap_size.height())
+        if cap_rect.right() < caption.right():
+            fill, outline, text_color = keycap_colors(QApplication.palette())
+            draw_keycap(painter, cap_rect, fill, outline)
+            painter.setPen(text_color)
+            painter.setFont(key_font)
+            painter.drawText(cap_rect.adjusted(0, 0, 0, -KEYCAP_DEPTH), Qt.AlignmentFlag.AlignCenter, str(index))
+            text_left = int(cap_rect.right()) + CAPTION_PADDING
         painter.setFont(font)
         painter.setPen(CAPTION_DIM_TEXT if index == 0 else CAPTION_TEXT)
         text_rect = QRect(text_left, caption.top(), caption.right() - text_left - CAPTION_PADDING, caption.height())

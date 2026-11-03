@@ -6,8 +6,9 @@ from PySide6.QtGui import QColor
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.controller import color_controller
 from src.ui.modal.new_image_modal import NewImageModal, BACKGROUND_COLOR_OPTION_CUSTOM, \
-    BACKGROUND_COLOR_OPTION_BLACK, BACKGROUND_COLOR_OPTION_WHITE
+    BACKGROUND_COLOR_OPTION_BLACK, BACKGROUND_COLOR_OPTION_WHITE, BACKGROUND_COLOR_OPTION_BACKGROUND
 from test.base_test_case import IntraPaintTestCase
 
 
@@ -71,3 +72,23 @@ class NewImageModalTest(IntraPaintTestCase):
         modal = NewImageModal(512, 512, QSize(max_size.width() + 100, 64))
         modal._preset_buttons[-1].click()
         self.assertEqual(modal.new_size(), QSize(max_size.width(), 64))
+
+    def test_background_color_swatch(self) -> None:
+        """The background color swatch fills with the current background color, and is remembered separately from the
+        custom color."""
+        color_controller.set_background(QColor('#ff102030'), commit=False)
+        Cache().set(Cache.NEW_IMAGE_BACKGROUND_COLOR, '#ff123456')
+        modal = NewImageModal(512, 512)
+        modal._swatches[BACKGROUND_COLOR_OPTION_BACKGROUND].click()
+        self.assertEqual(modal.background_color(), QColor('#ff102030'))
+        modal._confirm()
+        self.assertTrue(Cache().get(Cache.NEW_IMAGE_USES_BACKGROUND_COLOR))
+        self.assertEqual(Cache().get(Cache.NEW_IMAGE_BACKGROUND_COLOR), '#ff123456')
+        self.assertEqual(color_controller.new_image_color(), QColor('#ff102030'))
+
+        reopened = NewImageModal(512, 512)
+        self.assertTrue(reopened._swatches[BACKGROUND_COLOR_OPTION_BACKGROUND].isChecked())
+        reopened._swatches[BACKGROUND_COLOR_OPTION_BLACK].click()
+        reopened._confirm()
+        self.assertFalse(Cache().get(Cache.NEW_IMAGE_USES_BACKGROUND_COLOR))
+        self.assertEqual(color_controller.new_image_color(), QColor('black'))

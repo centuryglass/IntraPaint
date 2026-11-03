@@ -1,7 +1,8 @@
 """Popup modal window used for creating a new image at an arbitrary size.
 
 The size sits in a `GeometryBlock` with an aspect lock, above a list of size presets that fill it in. The background
-color is a row of swatches, where the custom swatch opens the color dialog.
+color is a row of swatches, including one for the current background color, where the custom swatch opens the
+color dialog.
 """
 from typing import Optional, cast
 
@@ -12,6 +13,7 @@ from PySide6.QtWidgets import QApplication, QButtonGroup, QDialog, QHBoxLayout, 
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.controller import color_controller
 from src.ui.input_fields import geometry_block
 from src.ui.input_fields.geometry_block import GeometryBlock
 from src.ui.modal.color_dialog import ColorDialog
@@ -47,6 +49,7 @@ PRESET_CLIPBOARD_TOOLTIP = _tr('Use the size of the image on the clipboard.')
 BACKGROUND_COLOR_OPTION_TRANSPARENT = _tr('Transparent')
 BACKGROUND_COLOR_OPTION_WHITE = _tr('White')
 BACKGROUND_COLOR_OPTION_BLACK = _tr('Black')
+BACKGROUND_COLOR_OPTION_BACKGROUND = _tr('Background color')
 BACKGROUND_COLOR_OPTION_CUSTOM = _tr('Custom color...')
 
 MIN_PX_VALUE = 1
@@ -113,6 +116,7 @@ class NewImageModal(QDialog):
         for name, label in ((BACKGROUND_COLOR_OPTION_TRANSPARENT, BACKGROUND_COLOR_OPTION_TRANSPARENT),
                             (BACKGROUND_COLOR_OPTION_WHITE, BACKGROUND_COLOR_OPTION_WHITE),
                             (BACKGROUND_COLOR_OPTION_BLACK, BACKGROUND_COLOR_OPTION_BLACK),
+                            (BACKGROUND_COLOR_OPTION_BACKGROUND, BACKGROUND_COLOR_OPTION_BACKGROUND),
                             (BACKGROUND_COLOR_OPTION_CUSTOM, BACKGROUND_COLOR_OPTION_CUSTOM)):
             button = QToolButton(swatch_body)
             button.setCheckable(True)
@@ -126,8 +130,14 @@ class NewImageModal(QDialog):
         self._swatches[BACKGROUND_COLOR_OPTION_TRANSPARENT].setIcon(get_color_icon(Qt.GlobalColor.transparent))
         self._swatches[BACKGROUND_COLOR_OPTION_WHITE].setIcon(get_color_icon(Qt.GlobalColor.white))
         self._swatches[BACKGROUND_COLOR_OPTION_BLACK].setIcon(get_color_icon(Qt.GlobalColor.black))
+        self._swatches[BACKGROUND_COLOR_OPTION_BACKGROUND].setIcon(get_color_icon(color_controller.background()))
         self._selected_swatch = BACKGROUND_COLOR_OPTION_WHITE
-        self._select_swatch_for_color(self._color)
+        if Cache().get(Cache.NEW_IMAGE_USES_BACKGROUND_COLOR):
+            self._select_swatch_for_color(self._color)
+            self._selected_swatch = BACKGROUND_COLOR_OPTION_BACKGROUND
+            self._swatches[BACKGROUND_COLOR_OPTION_BACKGROUND].setChecked(True)
+        else:
+            self._select_swatch_for_color(self._color)
         for name, button in self._swatches.items():
             button.clicked.connect(lambda _=False, swatch=name: self._swatch_clicked(swatch))
 
@@ -186,11 +196,16 @@ class NewImageModal(QDialog):
             return QColor(Qt.GlobalColor.white)
         if self._selected_swatch == BACKGROUND_COLOR_OPTION_BLACK:
             return QColor(Qt.GlobalColor.black)
+        if self._selected_swatch == BACKGROUND_COLOR_OPTION_BACKGROUND:
+            return color_controller.background()
         return QColor(self._custom_color)
 
     def _confirm(self) -> None:
         self._create = True
-        Cache().set_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, self.background_color())
+        uses_background = self._selected_swatch == BACKGROUND_COLOR_OPTION_BACKGROUND
+        Cache().set(Cache.NEW_IMAGE_USES_BACKGROUND_COLOR, uses_background)
+        if not uses_background:
+            Cache().set_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, self.background_color())
         self.hide()
 
     def _cancel(self) -> None:

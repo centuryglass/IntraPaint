@@ -43,7 +43,7 @@ from typing import Optional, Callable
 from weakref import WeakSet
 
 from PySide6.QtCore import QSize
-from PySide6.QtGui import QImage, Qt, QTransform
+from PySide6.QtGui import QImage, QTransform
 from PySide6.QtWidgets import QApplication, QMenu, QWidget
 
 from src.config.application_config import AppConfig
@@ -51,18 +51,18 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller import color_controller
 from src.controller.autosave_controller import AutosaveController
-from src.controller.image_io import ImageIO
 from src.controller.generation_area_controller import GenerationAreaController
 from src.controller.image_generation.glid3_webservice_generator import Glid3WebserviceGenerator, DEFAULT_GLID_URL
 from src.controller.image_generation.glid3_xl_generator import Glid3XLGenerator
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.controller.image_generation.null_generator import NullGenerator
-from src.controller.image_generation.sd_comfyui_generator import SDComfyUIGenerator, DEFAULT_COMFYUI_URL
 from src.controller.image_generation.sd_adapters.controlnet_adapter import count_enabled_units
+from src.controller.image_generation.sd_comfyui_generator import SDComfyUIGenerator, DEFAULT_COMFYUI_URL
 from src.controller.image_generation.sd_generator import MENU_STABLE_DIFFUSION, STABLE_DIFFUSION_CONFIG_CATEGORY, \
     SDGenerator
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator, DEFAULT_WEBUI_URL
 from src.controller.image_generation.test_generator import TestGenerator
+from src.controller.image_io import ImageIO
 from src.controller.tool_controller import ToolController
 from src.hotkey_filter import HotkeyFilter
 from src.image.filter.blur import BlurFilter
@@ -92,31 +92,31 @@ from src.ui.modal.new_image_modal import NewImageModal
 from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.color_panel import ColorControlPanel
+from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
 from src.ui.theme import apply_appearance_config
-from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
-from src.ui.window.generator_setup_window import GeneratorSetupWindow
+from src.ui.window import saved_layouts
 from src.ui.window.dock_menu import MENU_MOVE_ALL_TO_EDGE, edge_title
 from src.ui.window.dock_placement import DockEdge
-from src.ui.window import saved_layouts
+from src.ui.window.generator_setup_window import GeneratorSetupWindow
 from src.ui.window.main_window import MainWindow
 from src.ui.window.navigation_window import NavigationWindow
+from src.ui.window.window_geometry import restore_window
 from src.undo_stack import UndoStack
 from src.util.active_text_field_tracker import ActiveTextFieldTracker
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
     APP_STATE_SELECTION
 from src.util.math_utils import clamp
-from src.util.recent_files import recent_files, clear_recent_files
 from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, MenuData
 from src.util.optional_import import optional_import
 from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.qtexcepthook import QtExceptHook
+from src.util.recent_files import recent_files, clear_recent_files
 from src.util.shared_constants import EDIT_MODE_INPAINT
 from src.util.shared_text import PIL_SCALING_MODES
 from src.util.system_clipboard import clipboard_has_image, clipboard_image_is_own_copy, get_clipboard_image, \
     set_clipboard_image
-from src.ui.window.window_geometry import restore_window
 from src.util.visual.display_size import get_screen_size
 
 # Optional spacenav support:
@@ -247,7 +247,7 @@ class AppController(MenuBuilder):
             self.load_image(file_path=args.init_image)
         if not self._image_stack.has_image:
             image = QImage(config.get(AppConfig.DEFAULT_IMAGE_SIZE), QImage.Format.Format_ARGB32_Premultiplied)
-            image.fill(Cache().get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, Qt.GlobalColor.white))
+            image.fill(color_controller.new_image_color())
             self._image_stack.load_image(image)
 
         # Set up menus in the expected order, so menus don't need to be shown in the order they're initialized:
@@ -814,7 +814,7 @@ class AppController(MenuBuilder):
                                                                                    confirm_label=
                                                                                    NEW_IMAGE_CONFIRMATION_BUTTON)):
             new_image = QImage(image_size, QImage.Format.Format_ARGB32_Premultiplied)
-            new_image.fill(Cache().get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, Qt.GlobalColor.white))
+            new_image.fill(color_controller.new_image_color())
             Cache().set(Cache.LAST_FILE_PATH, '')
             self._image_stack.load_image(new_image)
             self._image_io.clear_metadata()

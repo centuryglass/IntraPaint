@@ -1,4 +1,4 @@
-"""A row of thumbnails of a batch's generated options, each labeled with the digit key that opens it.
+"""A row of thumbnails of a batch's generated options, each labeled with the number key that opens it.
 
 The generated image selector shows it under its single view. It draws from the images it is given and holds no batch
 state.
@@ -14,14 +14,12 @@ from src.util.visual.keycap import KEYCAP_DEPTH, draw_keycap, keycap_colors, key
 
 THUMB_SIZE = 64
 SPACING = 8
-# Options past this index have no digit key:
-MAX_DIGIT_KEY = 9
 BACKGROUND = QColor(8, 9, 10)
 PLACEHOLDER_FILL = QColor(36, 38, 42)
 
 
 class OptionFilmstrip(QWidget):
-    """A row of thumbnails of every option, each with its digit key, under the single view. Clicking one focuses it.
+    """A row of thumbnails of every option, each with its number key, under the single view. Clicking one focuses it.
 
     When the thumbnails don't fit the width, the row scrolls with the mouse wheel and follows the focused option.
     """
@@ -124,7 +122,7 @@ class OptionFilmstrip(QWidget):
         event.accept()
 
     def paintEvent(self, _event: Optional[QPaintEvent]) -> None:  # pylint: disable=invalid-name
-        """Draws each thumbnail, its digit key, and the focus ring."""
+        """Draws each thumbnail, its number key, and the focus ring."""
         painter = QPainter(self)
         painter.fillRect(self.rect(), BACKGROUND)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -142,14 +140,13 @@ class OptionFilmstrip(QWidget):
                 painter.drawPixmap(rect, cached[1])
             else:
                 painter.fillRect(rect, PLACEHOLDER_FILL)
-            if i <= MAX_DIGIT_KEY:
-                cap_size = keycap_size(QSize(metrics.horizontalAdvance(str(i)), metrics.height()))
-                cap = QRectF(rect.left() + 2, rect.bottom() - cap_size.height() - 1, cap_size.width(),
-                             cap_size.height())
-                draw_keycap(painter, cap, fill, outline)
-                painter.setPen(text_color)
-                painter.setFont(font)
-                painter.drawText(cap.adjusted(0, 0, 0, -KEYCAP_DEPTH), Qt.AlignmentFlag.AlignCenter, str(i))
+            cap_size = keycap_size(QSize(metrics.horizontalAdvance(str(i)), metrics.height()))
+            cap = QRectF(rect.left() + 2, rect.bottom() - cap_size.height() - 1, cap_size.width(),
+                         cap_size.height())
+            draw_keycap(painter, cap, fill, outline)
+            painter.setPen(text_color)
+            painter.setFont(font)
+            painter.drawText(cap.adjusted(0, 0, 0, -KEYCAP_DEPTH), Qt.AlignmentFlag.AlignCenter, str(i))
             if i == self._focus:
                 painter.setPen(QPen(self.palette().color(QPalette.ColorRole.Highlight), 2))
                 painter.setBrush(Qt.BrushStyle.NoBrush)

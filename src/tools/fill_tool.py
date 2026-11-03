@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QRect
-from PySide6.QtGui import QIcon, QCursor, QMouseEvent, QColor, QPainter, QTransform, QBrush
+from PySide6.QtGui import QImage, QIcon, QCursor, QMouseEvent, QColor, QPainter, QTransform, QBrush
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
@@ -122,12 +122,17 @@ class FillTool(BaseTool):
                     mask_painter.fillRect(QRect(QPoint(), mask.size()), fill_brush)
                 mask_painter.end()
 
-            np_image = image_data_as_numpy_8bit(layer_image)
+            # Any mask coverage fills fully; the color is composited over the layer, so translucent colors blend.
             np_mask = image_data_as_numpy_8bit(mask)
-            masked_pixels = np_mask[:, :, 3] > 0
-            alpha_mult = self._color.alpha() / 255.0
-            np_image[masked_pixels] = [self._color.blue() * alpha_mult, self._color.green() * alpha_mult,
-                                       self._color.red() * alpha_mult, self._color.alpha()]
+            fill_layer = create_transparent_image(layer_image.size())
+            color_pixel = QImage(1, 1, QImage.Format.Format_ARGB32_Premultiplied)
+            color_pixel.fill(self._color)
+            premultiplied_color = image_data_as_numpy_8bit(color_pixel)[0, 0].copy()
+            image_data_as_numpy_8bit(fill_layer)[np_mask[:, :, 3] > 0] = premultiplied_color
+            painter = QPainter(layer_image)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+            painter.drawImage(0, 0, fill_layer)
+            painter.end()
             layer.image = layer_image
             return True
         return False

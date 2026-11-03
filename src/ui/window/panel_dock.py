@@ -38,6 +38,7 @@ from src.ui.window.dock_notch import DockNotch
 from src.ui.window.dock_state import SavedGroup, move_dock_in_tab_group, read_dock_groups
 from src.ui.window.floating_edge import FloatingEdge
 from src.ui.window.qt_dock_drag import start_qt_dock_drag
+from src.util.application_state import APP_STATE_SELECTION, AppStateTracker
 
 
 def qt_orientation(orientation: Orientation) -> Qt.Orientation:
@@ -301,8 +302,11 @@ class PanelDock(QDockWidget):
 
     def toggle_from_key(self) -> bool:
         """Closes the dock if it is showing, or opens it in its group and focuses it. Returns whether the key was
-        used."""
-        if self._content is None:
+        used.
+
+        The key is left unused while the generated image selector hides every dock, so the selector receives it.
+        """
+        if self._content is None or AppStateTracker.app_state() == APP_STATE_SELECTION:
             return False
         if self._showing and not self.isHidden():
             self.hide()

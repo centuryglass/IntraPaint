@@ -963,6 +963,16 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
+        <source>New image uses the background color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Whether new images are filled with the current background color instead of the last new image background color.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
         <source>Text background color:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1393,12 +1403,32 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Line color</source>
+        <source>Line color source:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Shape outline color.</source>
+        <source>Where the shape outline color comes from: the foreground color, or the custom line color.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>From foreground</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Custom color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Custom line color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Shape outline color when the line color source is custom.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1448,12 +1478,27 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Fill color</source>
+        <source>Fill color source:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Shape fill color.</source>
+        <source>Where the shape fill color comes from: the background color, the foreground color, or the custom fill color.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>From background</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Custom fill color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/cache_value_definitions.json"/>
+        <source>Shape fill color when the fill color source is custom.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6722,6 +6767,11 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>Background color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
         <source>Custom color...</source>
         <translation type="unfinished"></translation>
     </message>
@@ -8648,6 +8698,16 @@ Keys: {decrease} / {increase}</source>
     <message>
         <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
         <source>Background color, drawn behind the text while "Fill behind text" is on</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Use background color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py"/>
+        <source>Set the text box fill color to the current background color</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

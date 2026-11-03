@@ -81,15 +81,13 @@ class ImageGraphicsView(QGraphicsView):
 
         if use_keybindings:
             # Bind directional navigation and generation area keys:
-            zoom_key = KeyConfig().get_keycodes(KeyConfig.ZOOM_TOGGLE)
-
             def _toggle_zoom_if_visible() -> bool:
                 if not self.isVisible():
                     return False
                 self.toggle_zoom()
                 return True
-            HotkeyFilter.instance().register_keybinding('ImageGraphicsView._toggle_zoom_if_visible',
-                                                        _toggle_zoom_if_visible, zoom_key)
+            HotkeyFilter.instance().register_config_keybinding(f'ImageGraphicsView_{id(self)}_toggle_zoom',
+                                                               _toggle_zoom_if_visible, KeyConfig.ZOOM_TOGGLE)
             for pan_key, scroll_key, offset in ((KeyConfig.PAN_LEFT, KeyConfig.MOVE_LEFT, (-1.0, 0.0)),
                                                 (KeyConfig.PAN_RIGHT, KeyConfig.MOVE_RIGHT, (1.0, 0.0)),
                                                 (KeyConfig.PAN_UP, KeyConfig.MOVE_UP, (0.0, -1.0)),

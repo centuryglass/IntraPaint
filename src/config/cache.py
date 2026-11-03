@@ -200,6 +200,7 @@ class Cache(Config, metaclass=Singleton):
     MYPAINT_BRUSH: str
     NEGATIVE_PROMPT: str
     NEW_IMAGE_BACKGROUND_COLOR: str
+    NEW_IMAGE_USES_BACKGROUND_COLOR: bool
     PAINT_SELECTION_ONLY: str
     PAINT_TOOL_BRUSH_SIZE: str
     PROMPT: str
@@ -237,8 +238,10 @@ class Cache(Config, metaclass=Singleton):
     SHAPE_TOOL_DASH_PATTERN: str
     SHAPE_TOOL_FILL_COLOR: str
     SHAPE_TOOL_FILL_PATTERN: str
+    SHAPE_TOOL_FILL_SOURCE: str
     SHAPE_TOOL_LINE_COLOR: str
     SHAPE_TOOL_LINE_JOIN_STYLE: str
+    SHAPE_TOOL_LINE_SOURCE: str
     SHAPE_TOOL_LINE_STYLE: str
     SHAPE_TOOL_LINE_WIDTH: str
     SHAPE_TOOL_MODE: str

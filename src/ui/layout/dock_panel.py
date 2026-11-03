@@ -277,6 +277,7 @@ class DockPanel(QWidget):
         self._pack_reserve = 0
         # The room the scroll bar takes across the scrolled body, while the content scrolls:
         self._scroll_bar_room = 0
+        self._measuring_final = False
         self._packed_columns = PackedColumns()
         # Shows a collapsed section's body when its header is clicked, and the section it shows:
         self._section_popover: Optional[PanelPopover] = None
@@ -570,7 +571,11 @@ class DockPanel(QWidget):
         self._floor_inputs = (orientation, QSize(available))
         plan_orientation = self._orientation
         scroll = scroll_extent(available, plan_orientation)
-        need = cross_extent(self.measure(), plan_orientation)
+        self._measuring_final = True
+        try:
+            need = cross_extent(self.measure(), plan_orientation)
+        finally:
+            self._measuring_final = False
         if need > cross_extent(available, plan_orientation):
             floor = (plan_orientation, scroll, need + 2 * self._inset)
         elif self._cross_floor is not None and self._cross_floor[:2] == (plan_orientation, scroll):
@@ -736,6 +741,10 @@ class DockPanel(QWidget):
         Each column's content scrolls on its own, so it adds only its scroll area's minimum height. It gets a scroll bar
         when it is taller than the room it has under the header and over its footer, if it has one. A trailing column
         set not to scroll adds its content's minimum height instead.
+
+        The scroll bar's width is part of a scrolling column's minimum width whenever the content is taller than the
+        column's room at the shown height or at the body's minimum height, so the minimum width does not depend on
+        the height the panel was last shown at.
         """
         available = self.available_size
         row_spacing = max(self._scroll_row.spacing(), 0)
@@ -748,6 +757,11 @@ class DockPanel(QWidget):
             assert self._footer_divider is not None
             footer = QSize(footer.width(), footer.height() + self._footer_divider.height())
         columns = [column for column in (self._pinned, self._trailing) if column is not None and column.shown]
+        # The row height the panel can shrink to, as the layout reports it. It is smaller than the arranged body's
+        # minimum when the body scrolls:
+        min_row_height = QWIDGETSIZE_MAX
+        if self._measuring_final:
+            min_row_height = self.layout().minimumSize().height() - 2 * self._inset - header_height
         widths: list[int] = []
         sizes: list[QSize] = []
         for column in columns:
@@ -756,8 +770,12 @@ class DockPanel(QWidget):
             content = self._fresh_size(column.content)
             width = content.width() + column.scroll.frameWidth() * 2
             scrolls = column is not self._trailing or self._trailing_scrolls
-            if available is not None and scrolls:
-                room = available.height() - column_footer.height() - column_spacing - header_height
+            if scrolls:
+                # The scroll bar is counted when the column overflows at the height it is shown at, or at the smallest
+                # height the panel reports, so the minimum size holds at its own height:
+                room = min(body.height(), min_row_height) - column_footer.height() - column_spacing
+                if available is not None:
+                    room = min(room, available.height() - column_footer.height() - column_spacing - header_height)
                 if content.height() > room:
                     width += column.scroll.verticalScrollBar().sizeHint().width()
             column.scroll.setMinimumWidth(width)
