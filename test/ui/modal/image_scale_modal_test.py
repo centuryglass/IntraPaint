@@ -7,7 +7,7 @@ from src.controller.image_generation.sd_adapters.controlnet_adapter import Saved
 from src.config.cache import Cache
 from src.ui.input_fields import geometry_block
 from src.ui.modal.image_scale_modal import ImageScaleModal
-from src.ui.modal.image_scale_modal import MODE_AI, MODE_BASIC, UNIT_PCT
+from src.ui.modal.image_scale_modal import MODE_AI, MODE_BASIC, MODE_GENERATOR, UNIT_PCT
 from test.base_test_case import IntraPaintTestCase
 
 TILE_MODEL = 'control_v11f1e_sd15_tile'
@@ -110,6 +110,27 @@ class ImageScaleModalTest(IntraPaintTestCase):
         modal.resize(10, modal.height())
         self.assertGreaterEqual(modal._scroll.viewport().width(), modal._controls.minimumSizeHint().width())
         modal.hide()
+
+    def test_long_option_names_do_not_widen_the_dialog(self) -> None:
+        """Dropdowns in every mode stay at their clamped width however long their options are."""
+        long_name = 'control_lora_' + 'very_long_model_name_' * 8 + '.safetensors'
+        cache = Cache()
+        cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_MODELS, [long_name, CONTROLNET_MODEL_NONE])
+        cache.set(Cache.GENERATOR_SCALING_MODES, [long_name, 'short'])
+        reference = ImageScaleModal(512, 512)
+        cache.set(Cache.SD_UPSCALING_CONTROLNET_TILE_MODELS, [TILE_MODEL, CONTROLNET_MODEL_NONE])
+        cache.set(Cache.GENERATOR_SCALING_MODES, ['short'])
+        modal = ImageScaleModal(512, 512)
+        for dialog in (reference, modal):
+            dialog.show()
+        assert modal._mode_control is not None and reference._mode_control is not None
+        for mode in (MODE_AI, MODE_GENERATOR, MODE_BASIC, MODE_AI):
+            modal._mode_control.set_value(mode)
+            reference._mode_control.set_value(mode)
+            self.assertEqual(reference.minimumWidth(), modal.minimumWidth(), mode)
+            self.assertLessEqual(modal.minimumWidth(), 380, mode)
+        modal.hide()
+        reference.hide()
 
     def test_ai_section_follows_mode(self) -> None:
         """The AI settings show only in AI upscaling mode, and the mode is saved to the cache."""

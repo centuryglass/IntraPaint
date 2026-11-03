@@ -8,7 +8,7 @@ another mode leaves the saved ControlNet tile settings alone.
 import logging
 from typing import Any, Optional, cast
 
-from PySide6.QtCore import QSize, QTimer
+from PySide6.QtCore import QSize, Qt, QTimer
 from PySide6.QtGui import QCloseEvent, QIcon
 from PySide6.QtWidgets import QApplication, QComboBox, QDialog, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
@@ -78,6 +78,8 @@ MIN_PX_VALUE = 8
 MIN_PERCENT_SCALE = 0.01
 CONTROLNET_CACHE_TIMER_MS = 100
 CONTROLS_COLUMN_WIDTH = 380
+# A dropdown's preferred width, in characters, whatever its longest option is:
+COMBO_MIN_CHARACTERS = 12
 MIN_WINDOW_HEIGHT = 200
 # The Ultimate SD Upscale script limits the scale factor:
 ULTIMATE_UPSCALE_MAX_FACTOR = 4
@@ -105,6 +107,19 @@ def _labeled_row(label: str, widget: QWidget, parent: QWidget) -> QWidget:
     layout.addWidget(QLabel(label, row))
     layout.addWidget(widget, stretch=1)
     return row
+
+
+def _clamp_combo_boxes(parent: QWidget) -> None:
+    """Stops every dropdown under `parent` from widening to fit its longest option.
+
+    Backend-supplied option names (upscale methods, ControlNet models) can be arbitrarily long, and a dropdown that
+    sizes to them stretches the whole dialog. Each option also gets a tooltip with its full name.
+    """
+    for combo in parent.findChildren(QComboBox):
+        combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        combo.setMinimumContentsLength(COMBO_MIN_CHARACTERS)
+        for index in range(combo.count()):
+            combo.setItemData(index, combo.itemText(index), Qt.ItemDataRole.ToolTipRole)
 
 
 def _clear_layout(layout: QVBoxLayout) -> None:
@@ -374,6 +389,7 @@ class ImageScaleModal(QDialog):
     def _fit_height(self) -> None:
         """Resizes an open dialog to the controls' height and at least their width, after a mode change or a change
         to the controls shows or hides some."""
+        _clamp_combo_boxes(self._controls)
         margins = self._layout.contentsMargins()
         min_width = self._controls.minimumSizeHint().width() + self._scroll_extent() + margins.left() + margins.right()
         self.setMinimumWidth(min_width)
