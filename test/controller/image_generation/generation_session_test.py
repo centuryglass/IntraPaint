@@ -237,12 +237,30 @@ class GenerationSessionGenerateTest(IntraPaintTestCase):
         self.assertEqual(Cache().get(Cache.WEBUI_LAST_SUBSEED), '3')
         self.assertEqual(progress, ['step 1'])
 
-    def test_inpaint_previews_restore_source_pixels_outside_the_paste_mask(self) -> None:
-        """With a mask, delivered images show the source where the paste mask is transparent."""
-        source = _solid(QColor(1, 2, 3))
+    def test_inpaint_previews_restore_document_pixels_outside_the_paste_mask(self) -> None:
+        """With a mask, delivered images show the document content where the paste mask is transparent."""
+        sent = _solid(QColor(1, 2, 3))
         paste_mask = _solid(QColor(0, 0, 0, 0))
         delivered: list[QImage] = []
         self.session.image_ready.connect(lambda image, _idx: delivered.append(image))
         self.session.generate(lambda *_args: self.session.store_result(_solid(QColor(9, 9, 9)), 0),
-                              source, _solid(QColor(0, 0, 0)), paste_mask)
-        self.assertEqual(delivered[0].pixelColor(5, 5), QColor(1, 2, 3))
+                              sent, _solid(QColor(0, 0, 0)), paste_mask)
+        self.assertEqual(delivered[0].pixelColor(5, 5), QColor(200, 10, 10))
+
+    def test_inpaint_results_are_stored_as_patches(self) -> None:
+        """Inside the paste mask, a result is drawn as a patch that gives the result over the sent image, and the batch
+        keeps the patch for applying."""
+        sent = _solid(QColor(200, 10, 10))
+        result = _solid(QColor(0, 255, 0))
+        delivered: list[QImage] = []
+        self.session.image_ready.connect(lambda image, _idx: delivered.append(image))
+        self.session.generate(lambda *_args: self.session.store_result(result, 0),
+                              sent, _solid(QColor(0, 0, 0)), _solid(QColor(0, 0, 0)))
+        self.assertEqual(delivered[0].pixelColor(5, 5), QColor(0, 255, 0))
+        self.session.begin()
+        self.session.current.option_images.append(self.session.current.loading_image)
+        self.session.add_image(delivered[0], 0)
+        patch = self.session.current.patches[1]
+        self.assertEqual(patch.size(), IMAGE_SIZE)
+        self.assertEqual(self.session.current.edit_image(1).pixelColor(5, 5), patch.pixelColor(5, 5))
+

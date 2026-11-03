@@ -107,6 +107,7 @@ class AppConfig(Config, metaclass=Singleton):
     GENERATION_RESOLUTION_MIN_SIDE: str
     GLID_MODEL_PATH: str
     GLID_VAE_MODEL_PATH: str
+    INPAINT_BLEND_PAST_SELECTION: str
     INTERROGATE_MODEL: str
     KEY_HINT_FONT_SIZE: str
     LANGUAGE: str

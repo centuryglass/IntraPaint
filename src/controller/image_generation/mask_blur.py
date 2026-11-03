@@ -50,3 +50,19 @@ def grow_mask(mask: QImage, reach_x: int, reach_y: int) -> QImage:
     added = (cv2.dilate(np.ascontiguousarray(pixels[:, :, 3]), kernel) > 0) & (pixels[:, :, 3] == 0)
     pixels[added] = (0, 0, 0, 255)
     return grown
+
+
+def blurred_mask_estimate(mask: QImage, mask_blur: float) -> QImage:
+    """Returns the mask's alpha blurred by a Gaussian of `mask_blur` standard deviations, as ARGB32_Premultiplied.
+
+    This approximates the blend weight the backends blur the mask into. The estimate is only a floor for result
+    patches, so the real blur differing from it changes how much of the source a patch removes, not its result.
+    """
+    estimate = mask.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+    if mask_blur <= 0 or estimate.isNull():
+        return estimate
+    pixels = image_data_as_numpy_8bit(estimate)
+    blurred = cv2.GaussianBlur(np.ascontiguousarray(pixels[:, :, 3]), (0, 0), mask_blur)
+    pixels[:, :, :] = 0
+    pixels[:, :, 3] = blurred
+    return estimate

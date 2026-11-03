@@ -7,6 +7,7 @@ from PySide6.QtGui import QColor, QImage
 
 from src.config.application_config import AppConfig
 from src.controller.image_generation.apply_option import apply_generated_image, ApplyResult
+from src.controller.image_generation.result_patch import make_result_patch
 from src.image.layers.image_stack import ImageStack
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 from test.base_test_case import IntraPaintTestCase
@@ -104,3 +105,30 @@ class ApplyOptionTest(IntraPaintTestCase):
                     AppConfig().set(AppConfig.CLEAR_CONTEXT_PINS_AFTER_GENERATING, configured)
                     self._apply(clear_context_pins=requested)
                     self.assertEqual(clear_pins.called, configured and requested)
+
+
+class ApplyPatchTest(IntraPaintTestCase):
+    """Applying a result patch to an empty layer adds only what the result changed."""
+
+    def test_patch_on_empty_layer_leaves_unchanged_pixels_transparent(self) -> None:
+        """The composite shows the result, and the new layer holds nothing where the result equals the source."""
+        stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(10240, 10240))
+        stack.create_layer('source', _solid(IMAGE_SIZE, SOURCE_COLOR))
+        stack.generation_area = GENERATION_AREA
+        stack.flush_render()
+        sent = stack.qimage_generation_area_content()
+        result = sent.copy()
+        for x in range(MASK_BOUNDS.left(), MASK_BOUNDS.right() + 1):
+            for y in range(MASK_BOUNDS.top(), MASK_BOUNDS.bottom() + 1):
+                result.setPixelColor(x, y, GENERATED_COLOR)
+        patch = make_result_patch(result, sent, None)
+        new_layer = stack.create_layer('patched')
+        apply_generated_image(stack, patch, new_layer, GENERATION_AREA, EDIT_MODE_INPAINT, _mask(), 'fallback')
+        stack.flush_render()
+        layer_content = new_layer.image  # type: ignore
+        self.assertEqual(layer_content.pixelColor(GENERATION_AREA.left() + 40, GENERATION_AREA.top() + 40).alpha(), 0)
+        self.assertGreater(layer_content.pixelColor(GENERATION_AREA.left() + 20,
+                                                    GENERATION_AREA.top() + 20).alpha(), 0)
+        composite = stack.qimage_generation_area_content()
+        self.assertEqual(composite.pixelColor(20, 20), GENERATED_COLOR)
+        self.assertEqual(composite.pixelColor(40, 40), SOURCE_COLOR)

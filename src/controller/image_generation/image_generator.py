@@ -158,7 +158,19 @@ class ImageGenerator(MenuBuilder, ABC):
             return
         image, mask = self.get_generation_inputs()
         paste_mask = self.get_paste_mask() if mask is not None else None
-        self._session.generate(self.generate, image, mask, paste_mask)
+        blend_estimate = self.get_blend_estimate(mask) if mask is not None else None
+        source_alpha = self._source_alpha(image.size()) if mask is not None else None
+        self._session.generate(self.generate, image, mask, paste_mask, blend_estimate, source_alpha)
+
+    def _source_alpha(self, size: QSize) -> QImage:
+        """Returns the generation area content's transparency, scaled to `size`, before it was flattened."""
+        content = self._image_stack.qimage_generation_area_content()
+        return pil_image_scaling(content, size) if content.size() != size else content
+
+    def get_blend_estimate(self, mask: QImage) -> Optional[QImage]:  # pylint: disable=unused-argument,useless-return
+        """Returns an estimate of the weight the backend gives generated content in its result, as the alpha of an
+        image the size of `mask`, or None if the generator has none. See `make_result_patch`."""
+        return None
 
     def get_paste_mask(self) -> QImage:
         """Returns the generation-area mask whose alpha clips a generated image when it is applied.

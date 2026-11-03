@@ -2,7 +2,7 @@
 from PySide6.QtCore import QRect, QSize
 from PySide6.QtGui import QColor, QImage, QPainter
 
-from src.controller.image_generation.mask_blur import blur_extent, blur_extent_in_image, grow_mask
+from src.controller.image_generation.mask_blur import blur_extent, blur_extent_in_image, blurred_mask_estimate, grow_mask
 from test.base_test_case import IntraPaintTestCase
 
 
@@ -44,3 +44,10 @@ class MaskBlurTest(IntraPaintTestCase):
         """Without reach the result matches the mask."""
         mask = _mask(QSize(20, 20), QRect(5, 5, 10, 10))
         self.assertEqual(grow_mask(mask, 0, 0), mask)
+
+    def test_blurred_estimate_is_half_at_the_edge(self) -> None:
+        """A blurred hard edge passes through about half alpha and is soft on both sides."""
+        estimate = blurred_mask_estimate(_mask(QSize(40, 40), QRect(0, 0, 20, 40)), 4)
+        self.assertAlmostEqual(estimate.pixelColor(19, 20).alpha(), 128, delta=40)
+        self.assertGreater(estimate.pixelColor(22, 20).alpha(), 0)
+        self.assertEqual(estimate.pixelColor(2, 20).alpha(), 255)
