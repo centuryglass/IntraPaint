@@ -393,6 +393,9 @@ class QtPaintBrush(LayerBrush):
                               bounds: QRect) -> None:
         """Handles the final drawing operation that copies an input segment to the layer image."""
         if self.eraser:
+            if self.layer is not None and self.layer.alpha_locked:
+                # Erasing only lowers alpha, which the lock would restore, and the round trip shifts color.
+                return
             layer_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
         layer_painter.drawImage(bounds, segment_image, bounds)
 
