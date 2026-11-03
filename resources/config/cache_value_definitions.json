@@ -100,6 +100,14 @@
         "default": "#ffffffff",
         "saved": true
     },
+    "new_image_uses_background_color": {
+        "label": "New image uses the background color",
+        "category": "Cache",
+        "description": "Whether new images are filled with the current background color instead of the last new image background color.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
     "text_background_color": {
         "label": "Text background color:",
         "category": "Cache",
@@ -732,11 +740,25 @@
             "step": 0.05
         }
     },
-    "shape_tool_line_color": {
-        "label": "Line color",
+    "shape_tool_line_source": {
+        "label": "Line color source:",
         "category": "Cache",
         "subcategory": "Shape Tool",
-        "description": "Shape outline color.",
+        "description": "Where the shape outline color comes from: the foreground color, or the custom line color.",
+        "type": "string",
+        "default": "From foreground",
+        "options": [
+            "From foreground",
+            "Custom color"
+        ],
+        "saved": true,
+        "translate": false
+    },
+    "shape_tool_line_color": {
+        "label": "Custom line color",
+        "category": "Cache",
+        "subcategory": "Shape Tool",
+        "description": "Shape outline color when the line color source is custom.",
         "type": "string",
         "default": "#FF000000",
         "saved": true
@@ -791,11 +813,26 @@
         "default": "",
         "saved": true
     },
-    "shape_tool_fill_color": {
-        "label": "Fill color",
+    "shape_tool_fill_source": {
+        "label": "Fill color source:",
         "category": "Cache",
         "subcategory": "Shape Tool",
-        "description": "Shape fill color.",
+        "description": "Where the shape fill color comes from: the background color, the foreground color, or the custom fill color.",
+        "type": "string",
+        "default": "From background",
+        "options": [
+            "From background",
+            "From foreground",
+            "Custom color"
+        ],
+        "saved": true,
+        "translate": false
+    },
+    "shape_tool_fill_color": {
+        "label": "Custom fill color",
+        "category": "Cache",
+        "subcategory": "Shape Tool",
+        "description": "Shape fill color when the fill color source is custom.",
         "type": "string",
         "default": "#FFFFFFFF",
         "saved": true

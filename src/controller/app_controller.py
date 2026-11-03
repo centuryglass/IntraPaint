@@ -42,7 +42,7 @@ from typing import Optional, Callable
 from weakref import WeakSet
 
 from PySide6.QtCore import QSize
-from PySide6.QtGui import QImage, Qt, QTransform
+from PySide6.QtGui import QImage, QTransform
 from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.application_config import AppConfig
@@ -242,7 +242,7 @@ class AppController(MenuBuilder):
             self.load_image(file_path=args.init_image)
         if not self._image_stack.has_image:
             image = QImage(config.get(AppConfig.DEFAULT_IMAGE_SIZE), QImage.Format.Format_ARGB32_Premultiplied)
-            image.fill(Cache().get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, Qt.GlobalColor.white))
+            image.fill(color_controller.new_image_color())
             self._image_stack.load_image(image)
 
         # Set up menus in the expected order, so menus don't need to be shown in the order they're initialized:
@@ -807,7 +807,7 @@ class AppController(MenuBuilder):
                                                                                    confirm_label=
                                                                                    NEW_IMAGE_CONFIRMATION_BUTTON)):
             new_image = QImage(image_size, QImage.Format.Format_ARGB32_Premultiplied)
-            new_image.fill(Cache().get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, Qt.GlobalColor.white))
+            new_image.fill(color_controller.new_image_color())
             Cache().set(Cache.LAST_FILE_PATH, '')
             self._image_stack.load_image(new_image)
             self._image_io.clear_metadata()
