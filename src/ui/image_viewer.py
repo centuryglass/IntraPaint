@@ -58,9 +58,6 @@ class ImageViewer(ImageGraphicsView):
 
     def __init__(self, parent: Optional[QWidget], image_stack: ImageStack, use_keybindings=True) -> None:
         super().__init__(parent, use_keybindings)
-        # Drops pass to the parent window, see MainWindow.dropEvent.
-        self.setAcceptDrops(False)
-        self.viewport().setAcceptDrops(False)
         hotkey_filter = HotkeyFilter.instance()
         if hotkey_filter.default_focus() is None:
             hotkey_filter.set_default_focus(self)

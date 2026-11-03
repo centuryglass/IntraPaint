@@ -11,8 +11,8 @@ The primary image editing window: the canvas in the center, with every other pan
 - Icon rails along the window edges (`DockRails`) hold each dock's button, the recent tools and Generate. Dragging a
   button moves its dock (`RailDrag`).
 - Right-clicking a dock's title area or rail button opens its menu (`build_dock_menu`).
-- Dropping local image files on the window emits `files_dropped`. The canvas viewer doesn't accept drops itself, so
-  they always reach the window.
+- Dropping local image files on the window emits `files_dropped`. The canvas viewer ignores drags that its scene
+  doesn't accept, so they reach the window.
 - While the generated image selector replaces the canvas, every dock and rail hides, and the layout from before comes
   back when it closes.
 """
