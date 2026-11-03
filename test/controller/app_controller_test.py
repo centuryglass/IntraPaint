@@ -345,7 +345,7 @@ class TestAppController(IntraPaintTestCase):
         Cache().set(Cache.LAST_FILE_PATH, '')
         dialog_threads = []
         with tempfile.TemporaryDirectory() as save_dir, \
-                patch('src.controller.app_controller.show_error_dialog',
+                patch('src.controller.image_io.show_error_dialog',
                       side_effect=lambda *_: dialog_threads.append(is_main_thread())) as error_dialog:
             for extension in ('png', 'ora'):
                 self.controller.save_image_as(os.path.join(save_dir, 'missing', f'bad.{extension}'))
@@ -404,8 +404,8 @@ class TestOpenAnimation(AnimationControllerTestCase):
         assert self.controller._image_io.metadata is not None
         self.assertEqual(self.controller._image_io.metadata.get('loop'), 0)
 
-    @patch('src.controller.app_controller.request_confirmation', return_value=False)
-    @patch('src.controller.app_controller.LARGE_ANIMATION_BYTES', 16)
+    @patch('src.controller.image_io.request_confirmation', return_value=False)
+    @patch('src.controller.image_io.LARGE_ANIMATION_BYTES', 16)
     def test_open_large_animation_first_frame_only(self, mock_confirm) -> None:
         """Declining to open every frame of a large animation opens only its first frame."""
         self.controller.load_image(self.gif_path)
@@ -415,7 +415,7 @@ class TestOpenAnimation(AnimationControllerTestCase):
         assert isinstance(first_frame, ImageLayer)
         self.assertEqual(first_frame.image.pixelColor(8, 8), QColor(255, 0, 0))
 
-    @patch('src.controller.app_controller.open_image_layers')
+    @patch('src.controller.image_io.open_image_layers')
     def test_open_animation_as_layers(self, mock_open_layers) -> None:
         """Opening an animated GIF as layers adds one layer per frame, named after the file."""
         self.image_stack.load_image(QImage(QSize(16, 16), QImage.Format.Format_ARGB32_Premultiplied))
@@ -508,13 +508,13 @@ class TestRestorePreviousChoicesAction(IntraPaintTestCase):
 class TestSaveAnimation(AnimationControllerTestCase):
     """Tests saving one layer per frame as an animated image."""
 
-    SAVE_MODAL = 'src.controller.app_controller.AnimationSaveModal.show_animation_save_modal'
+    SAVE_MODAL = 'src.controller.image_io.AnimationSaveModal.show_animation_save_modal'
 
     def setUp(self) -> None:
         super().setUp()
         # Decline the metadata prompt and hide the data loss warnings, which would block offscreen:
         for target, return_value in (('request_confirmation', False), ('show_warning_dialog', None)):
-            patcher = patch(f'src.controller.app_controller.{target}', return_value=return_value)
+            patcher = patch(f'src.controller.image_io.{target}', return_value=return_value)
             patcher.start()
             self.addCleanup(patcher.stop)
 
@@ -528,7 +528,7 @@ class TestSaveAnimation(AnimationControllerTestCase):
             with self.subTest(extension=extension), patch(
                     self.SAVE_MODAL, return_value=(True, AnimationSaveOptions(75, 0))) as mock_modal:
                 path = os.path.join(self.temp_dir.name, f'saved.{extension}')
-                with patch('src.controller.app_controller.open_image_file', return_value=path):
+                with patch('src.controller.image_io.open_image_file', return_value=path):
                     self.controller.save_image_as()
                     self.controller.wait_for_pending_save()
                 mock_modal.assert_called_once()
@@ -542,7 +542,7 @@ class TestSaveAnimation(AnimationControllerTestCase):
         self.controller.load_image(self.gif_path)
         path = os.path.join(self.temp_dir.name, 'flat.webp')
         with patch(self.SAVE_MODAL, return_value=(True, None)), \
-                patch('src.controller.app_controller.open_image_file', return_value=path):
+                patch('src.controller.image_io.open_image_file', return_value=path):
             self.controller.save_image_as()
             self.controller.wait_for_pending_save()
         self.assertEqual(count_image_frames(path), 1)
@@ -552,7 +552,7 @@ class TestSaveAnimation(AnimationControllerTestCase):
         self.controller.load_image(self.gif_path)
         path = os.path.join(self.temp_dir.name, 'canceled.gif')
         with patch(self.SAVE_MODAL, return_value=(False, None)), \
-                patch('src.controller.app_controller.open_image_file', return_value=path):
+                patch('src.controller.image_io.open_image_file', return_value=path):
             self.controller.save_image_as()
         self.assertFalse(os.path.exists(path))
 
