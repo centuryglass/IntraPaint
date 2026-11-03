@@ -210,6 +210,46 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         self.assertTrue(self.panel.context_field.pressure_link_available())
         self.assertTrue(self.panel.action_block.isAncestorOf(self.panel.context_field))
 
+    def test_reveal_resolution_expands_size_and_focuses_the_field(self) -> None:
+        """Revealing the resolution in a tall side panel expands the collapsed Size and batch section and focuses the
+        width box."""
+        self.panel.show()
+        _host(self.panel, SIDE, QSize(360, 1400))
+        size_section = self._section(SECTION_TITLE_SIZE)
+        self.assertTrue(size_section.is_collapsed())
+        self.panel.reveal_resolution()
+        field = self.panel.resolution_input
+        self.assertFalse(size_section.is_collapsed())
+        self.assertTrue(field.isVisible())
+        self.assertIs(self.panel.focusWidget(), field.focusProxy())
+
+    def test_reveal_resolution_in_a_short_side_panel_uses_the_popover(self) -> None:
+        """A side panel with no room for the Size and batch section once it expands opens the section's body in its
+        popover."""
+        self.panel.show()
+        _host(self.panel, SIDE, QSize(360, 400))
+        self.panel.reveal_resolution()
+        popover = self.panel._section_popover  # pylint: disable=protected-access
+        self.assertTrue(popover.isVisible())
+        self.assertIs(popover.focusWidget(), self.panel.resolution_input.focusProxy())
+        popover.hide()
+
+    def test_reveal_resolution_opens_a_section_without_room_in_its_popover(self) -> None:
+        """In a strip with no room for the Size and batch section's body, revealing the resolution opens the body in
+        the section's popover and focuses the field there."""
+        self.panel.show()
+        _host(self.panel, STRIP, QSize(700, 260))
+        self.panel.reveal_resolution()
+        size_section = self._section(SECTION_TITLE_SIZE)
+        self.assertTrue(size_section.is_collapsed())
+        popover = self.panel._section_popover  # pylint: disable=protected-access
+        self.assertTrue(popover.isVisible())
+        field = self.panel.resolution_input
+        self.assertTrue(popover.isAncestorOf(field))
+        self.assertIs(popover.focusWidget(), field.focusProxy())
+        popover.hide()
+        self.assertTrue(size_section.body.isAncestorOf(field))
+
     def test_negative_prompt_folds_to_a_line_showing_its_text(self) -> None:
         """The negative prompt starts folded, with its text as the fold's summary on one line."""
         fold = self.panel._negative_fold

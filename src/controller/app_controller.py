@@ -357,7 +357,7 @@ class AppController(MenuBuilder):
         self._tool_controller = ToolController(self._image_stack, self._image_viewer)
         self._tool_panel = ToolPanel()
         self._generation_area_tool = GenerationAreaTool(self._image_stack, self._image_viewer)
-        self._generation_area_tool.control_panel.edit_resolution_requested.connect(self.show_generation_panel)
+        self._generation_area_tool.control_panel.edit_resolution_requested.connect(self.edit_generation_resolution)
         self._last_active_tool: Optional[BaseTool] = None
 
         # Fill the lower dock group:
@@ -561,9 +561,11 @@ class AppController(MenuBuilder):
         generate_action.setEnabled(self._generator is not None and not isinstance(self._generator, NullGenerator))
         self._update_enabled_actions()
 
-    def show_generation_panel(self) -> None:
-        """Opens the Image generation dock in its tab group."""
+    def edit_generation_resolution(self) -> None:
+        """Opens the Image generation dock in its tab group, and focuses its resolution field."""
         self._window.generation_dock.set_open(True)
+        if isinstance(self._generator_control_panel, StableDiffusionPanel):
+            self._generator_control_panel.reveal_resolution()
 
     def init_settings(self, settings_modal: SettingsModal) -> None:
         """Load application settings into a SettingsModal"""

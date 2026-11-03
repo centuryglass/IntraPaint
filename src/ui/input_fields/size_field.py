@@ -62,6 +62,8 @@ class SizeField(QWidget):
         self._max_height = INT_MAX
         self._width_box.setRange(self._min_width, self._max_width)
         self._height_box.setRange(self._min_height, self._max_height)
+        # Focusing the field focuses its width box:
+        self.setFocusProxy(self._width_box)
         self._build_layout()
 
     def _build_layout(self) -> None:

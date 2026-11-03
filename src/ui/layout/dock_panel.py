@@ -36,6 +36,8 @@ their state survives.
 - A title note (`set_title_note`) is short text a floating dock's title bar shows beside the dock's name.
 - Call `refit` after a change to the content's size that no resize reports, such as a control appearing.
 """
+# pylint: disable=too-many-lines
+# One panel class: planning, sections, their popover and the scroll area share its state.
 from dataclasses import dataclass, field
 from functools import partial
 from typing import Callable, Optional, Sequence
@@ -928,6 +930,24 @@ class DockPanel(QWidget):
         self._popover_section = section
         self._section_popover.set_content(section.widget.detach_body())
         self._section_popover.popup_below(section.widget.header_button, align_left=True)
+
+    def reveal_control(self, section: DockSection, widget: QWidget) -> None:
+        """Shows a control placed in a section and gives it keyboard focus.
+
+        The section expands. If the panel has no room for its body, the body opens in the section's popover, and
+        otherwise the control scrolls into view. The control must be one the plan keeps in the section, not one in
+        More.
+        """
+        panel_section = section.widget
+        panel_section.set_expanded(True)
+        # Planning for the expanded section decides whether it fits, and where the control sits:
+        self.refit()
+        if panel_section.is_collapsed():
+            self._open_section_popover(section)
+        else:
+            self._scroll.ensureWidgetVisible(widget)
+        # Tab focus selects a field's text, so typing replaces the value:
+        widget.setFocus(Qt.FocusReason.TabFocusReason)
 
     def _close_section_popover(self) -> None:
         if self._section_popover is not None:
