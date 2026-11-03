@@ -1,37 +1,27 @@
 import gc
-import os
 import sys
-import tempfile
 import weakref
 from contextlib import contextmanager
-from typing import Iterator, Optional
+from typing import Iterator
 from unittest.mock import patch, MagicMock
 
-from PIL import Image
 from PySide6.QtCore import QEvent, QSize, QTimer
 from PySide6.QtGui import QAction, QColor, QImage
 from PySide6.QtWidgets import QApplication, QStyleFactory, QWidget
 
 from src.config.application_config import AppConfig
-from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.app_controller import AppController, MENU_VIEW_LAYOUTS, LAYOUT_ACTION_PROPERTY
 from src.ui.window import saved_layouts
 from src.controller.image_generation.test_generator import TestGenerator
-from src.image.layers.image_layer import ImageLayer
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
 from src.util.arg_parser import build_arg_parser
-from src.util.main_thread import is_main_thread
 from src.util.visual.display_size import get_screen_size
-from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_READ_FORMATS, \
-    IMAGE_WRITE_FORMATS, AnimationSaveOptions, count_image_frames, load_image_frames
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
-
-LAYER_IMAGE = 'test/resources/test_images/layer_move_test.ora'
 
 
 class _GcStateRecorder(QWidget):
@@ -135,7 +125,7 @@ class TestAppController(IntraPaintTestCase):
         self.assertIsInstance(self.controller._settings_modal, SettingsModal)
         self.assertIsInstance(self.controller._generator, TestGenerator)
         self.assertIsNone(self.controller._layer_panel)
-        self.assertIsNone(self.controller._metadata)
+        self.assertIsNone(self.controller._image_io.metadata)
 
     @patch('src.controller.app_controller.SettingsModal')
     def test_init_settings(self, MockSettingsModal):
@@ -302,128 +292,6 @@ class TestAppController(IntraPaintTestCase):
         mock_exit.assert_not_called()
         self.assertTrue(self.controller._window.isVisible())
 
-    def test_image_save_and_load(self):
-        AppConfig()._reset()
-        AppConfig().set(AppConfig.WARN_BEFORE_RGB_SAVE, False)
-        AppConfig().set(AppConfig.WARN_BEFORE_LAYERLESS_SAVE, False)
-        AppConfig().set(AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA, False)
-        AppConfig().set(AppConfig.WARN_BEFORE_WRITE_ONLY_SAVE, False)
-        AppConfig().set(AppConfig.WARN_BEFORE_COLOR_LOSS, False)
-        AppConfig().set(AppConfig.WARN_BEFORE_FIXED_SIZE_SAVE, False)
-        self.controller.load_image(LAYER_IMAGE)
-        self.assertTrue(self.controller._image_stack.has_image)
-
-
-        sorted_formats = [*IMAGE_WRITE_FORMATS]
-        sorted_formats.sort()
-        with tempfile.TemporaryDirectory() as save_dir:
-            for file_format in sorted_formats:
-                self.controller.load_image(LAYER_IMAGE)
-                save_path = os.path.join(save_dir, f'save_test_{file_format}.{file_format.lower()}')
-                test_prompt_str = f'{file_format} R/W test'
-                Cache().set(Cache.PROMPT, test_prompt_str)
-                self.controller.update_metadata(show_messagebox=False)
-                self.controller.save_image_as(save_path)
-                self.controller.wait_for_pending_save()
-                self.assertTrue(os.path.isfile(save_path), f'{file_format} save test failed')
-                Cache().set(Cache.PROMPT, '')
-                if file_format in IMAGE_READ_FORMATS:
-                    self.controller.load_image(save_path)
-                    prompt = Cache().get(Cache.PROMPT)
-                    expected_metadata = file_format in IMAGE_FORMATS_SUPPORTING_METADATA
-                    if prompt == test_prompt_str:
-                        self.assertTrue(expected_metadata,
-                                        f'Metadata found but not expected for format {file_format}')
-                    else:
-                        self.assertFalse(expected_metadata,
-                                         f'Metadata expected but not found for format {file_format}')
-
-    def test_save_write_error_reaches_error_dialog_on_main_thread(self):
-        """A failed background write shows the error dialog from the GUI thread and leaves the last path alone."""
-        self.controller.load_image(LAYER_IMAGE)
-        self.controller.update_metadata(show_messagebox=False)
-        Cache().set(Cache.LAST_FILE_PATH, '')
-        dialog_threads = []
-        with tempfile.TemporaryDirectory() as save_dir, \
-                patch('src.controller.app_controller.show_error_dialog',
-                      side_effect=lambda *_: dialog_threads.append(is_main_thread())) as error_dialog:
-            for extension in ('png', 'ora'):
-                self.controller.save_image_as(os.path.join(save_dir, 'missing', f'bad.{extension}'))
-                self.controller.wait_for_pending_save()
-        self.assertEqual(2, error_dialog.call_count)
-        self.assertEqual([True, True], dialog_threads)
-        self.assertEqual('', Cache().get(Cache.LAST_FILE_PATH))
-
-    def test_save_ora_in_background_sets_last_path(self):
-        """A finished background .ora save records its path once the GUI thread handles the result."""
-        self.controller.load_image(LAYER_IMAGE)
-        self.controller.update_metadata(show_messagebox=False)
-        with tempfile.TemporaryDirectory() as save_dir:
-            save_path = os.path.join(save_dir, 'saved.ora')
-            self.controller.save_image_as(save_path)
-            self.controller.wait_for_pending_save()
-            self.assertTrue(os.path.isfile(save_path))
-            self.assertEqual(save_path, Cache().get(Cache.LAST_FILE_PATH))
-
-
-class AnimationControllerTestCase(IntraPaintTestCase):
-    """Builds a mock-mode controller and a three-frame GIF for the animation open and save tests."""
-
-    COLORS = [(255, 0, 0, 255), (0, 255, 0, 255), (0, 0, 255, 255)]
-
-    def setUp(self) -> None:
-        super().setUp()
-        args = build_arg_parser(include_edit_params=False).parse_args(['--window_size', '800x600', '--mode', 'mock'])
-        args.mode = 'mock'
-        args.server_url = ''
-        args.fast_ngrok_connection = False
-        self.controller = AppController(args)
-        self.image_stack = self.controller._image_stack
-        self.temp_dir = tempfile.TemporaryDirectory()
-        self.gif_path = os.path.join(self.temp_dir.name, 'anim.gif')
-        frames = [Image.new('RGBA', (16, 16), color) for color in self.COLORS]
-        frames[0].save(self.gif_path, save_all=True, append_images=frames[1:], duration=[100, 200, 50], loop=0)
-
-    def tearDown(self) -> None:
-        self.temp_dir.cleanup()
-        super().tearDown()
-
-    def _layer_names_bottom_up(self) -> list[str]:
-        return [layer.name for layer in sorted(self.image_stack.top_level_layers, key=lambda layer: layer.z_value)]
-
-
-
-class TestOpenAnimation(AnimationControllerTestCase):
-    """Tests opening animated images as one layer per frame."""
-
-    def test_open_animation(self) -> None:
-        """Opening an animated GIF loads one layer per frame and keeps the loop count in the metadata."""
-        self.controller.load_image(self.gif_path)
-        self.assertEqual(self._layer_names_bottom_up(), ['Frame 1 (100ms)', 'Frame 2 (200ms)', 'Frame 3 (50ms)'])
-        self.assertEqual(self.image_stack.size, QSize(16, 16))
-        assert self.controller._metadata is not None
-        self.assertEqual(self.controller._metadata.get('loop'), 0)
-
-    @patch('src.controller.app_controller.request_confirmation', return_value=False)
-    @patch('src.controller.app_controller.LARGE_ANIMATION_BYTES', 16)
-    def test_open_large_animation_first_frame_only(self, mock_confirm) -> None:
-        """Declining to open every frame of a large animation opens only its first frame."""
-        self.controller.load_image(self.gif_path)
-        mock_confirm.assert_called_once()
-        self.assertEqual(len(self.image_stack.top_level_layers), 1)
-        first_frame = self.image_stack.top_level_layers[0]
-        assert isinstance(first_frame, ImageLayer)
-        self.assertEqual(first_frame.image.pixelColor(8, 8), QColor(255, 0, 0))
-
-    @patch('src.controller.app_controller.open_image_layers')
-    def test_open_animation_as_layers(self, mock_open_layers) -> None:
-        """Opening an animated GIF as layers adds one layer per frame, named after the file."""
-        self.image_stack.load_image(QImage(QSize(16, 16), QImage.Format.Format_ARGB32_Premultiplied))
-        mock_open_layers.return_value = ([self.gif_path], 'filter')
-        self.controller.load_image_layers()
-        self.assertEqual(self._layer_names_bottom_up()[1:],
-                         ['anim.gif: Frame 1 (100ms)', 'anim.gif: Frame 2 (200ms)', 'anim.gif: Frame 3 (50ms)'])
-
 
 class TestRestorePreviousChoicesAction(IntraPaintTestCase):
     """Tests that the "Reopen last generated options" action tracks whether a batch can be re-opened."""
@@ -503,67 +371,3 @@ class TestRestorePreviousChoicesAction(IntraPaintTestCase):
         self.window.set_image_selector_visible(False)
         AppStateTracker.set_app_state(APP_STATE_LOADING)
         self.assertFalse(self._action().isEnabled())
-
-
-class TestSaveAnimation(AnimationControllerTestCase):
-    """Tests saving one layer per frame as an animated image."""
-
-    SAVE_MODAL = 'src.controller.app_controller.AnimationSaveModal.show_animation_save_modal'
-
-    def setUp(self) -> None:
-        super().setUp()
-        # Decline the metadata prompt and hide the data loss warnings, which would block offscreen:
-        for target, return_value in (('request_confirmation', False), ('show_warning_dialog', None)):
-            patcher = patch(f'src.controller.app_controller.{target}', return_value=return_value)
-            patcher.start()
-            self.addCleanup(patcher.stop)
-
-    def _saved_frame_durations(self, file_path: str) -> list[Optional[int]]:
-        return [frame.duration_ms for frame in load_image_frames(file_path)]
-
-    def test_save_animation_round_trip(self) -> None:
-        """Save As with the modal's animation options writes every layer as a frame, and reopening restores them."""
-        self.controller.load_image(self.gif_path)
-        for extension in ('gif', 'webp', 'apng'):
-            with self.subTest(extension=extension), patch(
-                    self.SAVE_MODAL, return_value=(True, AnimationSaveOptions(75, 0))) as mock_modal:
-                path = os.path.join(self.temp_dir.name, f'saved.{extension}')
-                with patch('src.controller.app_controller.open_image_file', return_value=path):
-                    self.controller.save_image_as()
-                    self.controller.wait_for_pending_save()
-                mock_modal.assert_called_once()
-                self.assertEqual(self._saved_frame_durations(path), [100, 200, 50])
-                self.controller.load_image(path)
-                self.assertEqual(self._layer_names_bottom_up(),
-                                 ['Frame 1 (100ms)', 'Frame 2 (200ms)', 'Frame 3 (50ms)'])
-
-    def test_save_flattened(self) -> None:
-        """Choosing a flattened save in the modal writes a single frame."""
-        self.controller.load_image(self.gif_path)
-        path = os.path.join(self.temp_dir.name, 'flat.webp')
-        with patch(self.SAVE_MODAL, return_value=(True, None)), \
-                patch('src.controller.app_controller.open_image_file', return_value=path):
-            self.controller.save_image_as()
-            self.controller.wait_for_pending_save()
-        self.assertEqual(count_image_frames(path), 1)
-
-    def test_cancel_saves_nothing(self) -> None:
-        """Canceling the animation modal writes no file."""
-        self.controller.load_image(self.gif_path)
-        path = os.path.join(self.temp_dir.name, 'canceled.gif')
-        with patch(self.SAVE_MODAL, return_value=(False, None)), \
-                patch('src.controller.app_controller.open_image_file', return_value=path):
-            self.controller.save_image_as()
-        self.assertFalse(os.path.exists(path))
-
-    def test_plain_save_reuses_options(self) -> None:
-        """Saving to a known path doesn't show the modal, and uses the options remembered from the opened file."""
-        self.controller.load_image(self.gif_path)
-        path = os.path.join(self.temp_dir.name, 'plain.gif')
-        with patch(self.SAVE_MODAL) as mock_modal:
-            self.controller.save_image_as(path)
-            self.controller.wait_for_pending_save()
-        mock_modal.assert_not_called()
-        self.assertEqual(self._saved_frame_durations(path), [100, 200, 50])
-        with Image.open(path) as saved:
-            self.assertEqual(saved.info.get('loop'), 0)

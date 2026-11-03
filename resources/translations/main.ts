@@ -3676,173 +3676,6 @@
         <source>Discard and create</source>
         <translation type="unfinished"></translation>
     </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Save failed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Open failed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Saving as "{file_path}" failed due to an unknown error, try saving in a different format or to a different disk.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Saving files with the  "{extension}" extension is not supported, try again with a supported image file format.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Tried to save with no file extension as "{file_path}", add a valid image file extension and try again.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Reload failed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Image path "{file_path}" is not a valid image file.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Enter an image path or click "Open Image" first.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Reload image?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Discard and reload</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Metadata updated</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>On save, current image generation parameters will be stored within the image</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Opening layers failed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Could not open the following images: </source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Open every frame?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>{file_name} has {frame_count} frames. Opening each one as a layer will use about {size_gb:.1f} GB of memory.
-
-Choose "No" to open only the first frame.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Open all frames</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Save image generation metadata?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>No image metadata is cached, would you like to save image generation parameters to this image?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Update image generation metadata?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Image generation parameters have changed, would you like this image to be saved with the most recent values?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Image saved without layer data</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>To save layer data, images must be saved in .ora format. To save each layer as an animation frame, use one of the following formats: {animation_formats}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Image saved without full transparency</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>To preserve transparency, save using one of the following file formats: {alpha_formats}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Image saved without image generation metadata</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>To preserve image generation metadata, save using one of the following file formats: {metadata_formats}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Image saved in a write-only format</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>IntraPaint can write images in the {file_format} format, but cannot load them. Use another file format if you want to be able to load this image in IntraPaint again.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Image saved in a format that changes size</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>The image is {width_px}x{height_px}, but the {file_format} format saves all images at {saved_width_px}x{saved_height_px} resolution. Use another file format if you want to preserve the original image size.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Image saved without color</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>The {file_format} format saves the image without color. Use another format if you want to preserve image colors.</source>
-        <translation type="unfinished"></translation>
-    </message>
 </context>
 <context>
     <name>controller.image_generation.glid3_webservice_generator</name>
@@ -4600,6 +4433,181 @@ Choose "No" to open only the first frame.</source>
     <message>
         <location filename="../../src/controller/image_generation/test_generator.py"/>
         <source>No setup required.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>controller.image_io</name>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Save failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Open failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Saving as "{file_path}" failed due to an unknown error, try saving in a different format or to a different disk.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Saving files with the  "{extension}" extension is not supported, try again with a supported image file format.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Tried to save with no file extension as "{file_path}", add a valid image file extension and try again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Reload failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Image path "{file_path}" is not a valid image file.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Enter an image path or click "Open Image" first.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Reload image?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>This will discard all unsaved changes.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Discard and reload</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Metadata updated</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>On save, current image generation parameters will be stored within the image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Opening layers failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Could not open the following images: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Open every frame?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>{file_name} has {frame_count} frames. Opening each one as a layer will use about {size_gb:.1f} GB of memory.
+
+Choose "No" to open only the first frame.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Open all frames</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Save image generation metadata?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>No image metadata is cached, would you like to save image generation parameters to this image?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Update image generation metadata?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Image generation parameters have changed, would you like this image to be saved with the most recent values?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Image saved without layer data</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>To save layer data, images must be saved in .ora format. To save each layer as an animation frame, use one of the following formats: {animation_formats}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Image saved without full transparency</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>To preserve transparency, save using one of the following file formats: {alpha_formats}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Image saved without image generation metadata</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>To preserve image generation metadata, save using one of the following file formats: {metadata_formats}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Image saved in a write-only format</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>IntraPaint can write images in the {file_format} format, but cannot load them. Use another file format if you want to be able to load this image in IntraPaint again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Image saved in a format that changes size</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>The image is {width_px}x{height_px}, but the {file_format} format saves all images at {saved_width_px}x{saved_height_px} resolution. Use another file format if you want to preserve the original image size.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>Image saved without color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_io.py"/>
+        <source>The {file_format} format saves the image without color. Use another format if you want to preserve image colors.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

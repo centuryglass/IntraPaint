@@ -132,7 +132,7 @@ def _error_box(_controller: 'AppController') -> QWidget:
 def _warning_box(_controller: 'AppController') -> QWidget:
     # pylint: disable=import-outside-toplevel
     from src.config.application_config import AppConfig
-    from src.controller.app_controller import ALPHA_NOT_SAVED_MESSAGE, ALPHA_NOT_SAVED_TITLE
+    from src.controller.image_io import ALPHA_NOT_SAVED_MESSAGE, ALPHA_NOT_SAVED_TITLE
     from src.ui.modal.modal_utils import show_warning_dialog
     message = ALPHA_NOT_SAVED_MESSAGE.format(alpha_formats='PNG, WEBP, ORA, TIFF')
     return _message_box(lambda: show_warning_dialog(None, ALPHA_NOT_SAVED_TITLE, message,
@@ -141,7 +141,7 @@ def _warning_box(_controller: 'AppController') -> QWidget:
 
 def _confirm_box(_controller: 'AppController') -> QWidget:
     # pylint: disable=import-outside-toplevel
-    from src.controller.app_controller import LARGE_ANIMATION_BUTTON, LARGE_ANIMATION_MESSAGE, LARGE_ANIMATION_TITLE
+    from src.controller.image_io import LARGE_ANIMATION_BUTTON, LARGE_ANIMATION_MESSAGE, LARGE_ANIMATION_TITLE
     from src.ui.modal.modal_utils import request_confirmation
     message = LARGE_ANIMATION_MESSAGE.format(file_name='walk_cycle.gif', frame_count=480, size_gb=1.4)
     return _message_box(lambda: request_confirmation(None, LARGE_ANIMATION_TITLE, message, None,
@@ -152,7 +152,7 @@ def _confirm_box(_controller: 'AppController') -> QWidget:
 def _confirm_remember_box(_controller: 'AppController') -> QWidget:
     # pylint: disable=import-outside-toplevel
     from src.config.application_config import AppConfig
-    from src.controller.app_controller import MESSAGE_CONFIRM_METADATA_INIT, TITLE_CONFIRM_METADATA_INIT
+    from src.controller.image_io import MESSAGE_CONFIRM_METADATA_INIT, TITLE_CONFIRM_METADATA_INIT
     from src.ui.modal.modal_utils import request_confirmation
     return _message_box(lambda: request_confirmation(None, TITLE_CONFIRM_METADATA_INIT, MESSAGE_CONFIRM_METADATA_INIT,
                                                      AppConfig.ALWAYS_INIT_METADATA_ON_SAVE,
