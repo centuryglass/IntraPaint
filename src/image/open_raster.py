@@ -11,6 +11,7 @@ is carried through a load and save by `src/image/ora_foreign_data.py`'s records.
 ElementTree, which doesn't fetch external entities or DTDs, and foreign XML is copied back without being evaluated.
 """
 import copy
+import io
 import logging
 import os.path
 import re
@@ -18,7 +19,7 @@ import shutil
 import tempfile
 import zipfile
 from dataclasses import dataclass
-from typing import Optional, Any
+from typing import Optional, Any, Callable
 from xml.etree.ElementTree import ElementTree, Element, iterparse, register_namespace
 
 from PySide6.QtCore import QSize
@@ -146,6 +147,10 @@ _REBUILT_ARCHIVE_FILES = frozenset({MIMETYPE_FILE_NAME, XML_FILE_NAME, EXTENDED_
                                     f'{THUMBNAIL_DIRECTORY_NAME}/{THUMBNAIL_FILE_NAME}'})
 _PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
 
+# `OraSnapshot.layer_image_owners` roles: a layer's flattened image, and its untransformed image when it has one.
+LAYER_IMAGE_FLATTENED = 'flattened'
+LAYER_IMAGE_UNTRANSFORMED = 'untransformed'
+
 # Layer names become part of the layer's in-archive file name, so characters outside this set are replaced:
 _FILE_NAME_UNSAFE_CHARS = re.compile(r'[^\w .-]')
 _MAX_FILE_NAME_LENGTH = 50
@@ -261,11 +266,15 @@ class OraSnapshot:
     extended_data: dict[str, dict[str, str]]
     metadata: Optional[str]
     layer_images: dict[str, QImage]
+    """Layer PNGs by archive path. A path in `layer_image_owners` is missing when `capture_pixels` skipped it."""
     extension_payloads: dict[str, str]
     extension_files: dict[str, bytes]
-    merged_image: QImage
+    merged_image: Optional[QImage]
+    """None when captured without it, which `write_ora_snapshot` can't write."""
     foreign_files: dict[str, OraArchiveFile]
     """Other programs' archive files, written as stored. See `src/image/ora_foreign_data.py`."""
+    layer_image_owners: dict[str, tuple[int, str]]
+    """The layer id and role (`LAYER_IMAGE_FLATTENED` or `LAYER_IMAGE_UNTRANSFORMED`) of every layer image path."""
 
 
 def _get_transform_str(transform: QTransform) -> str:
@@ -274,11 +283,17 @@ def _get_transform_str(transform: QTransform) -> str:
             f'{transform.m31()},{transform.m32()},{transform.m33()}')
 
 
-def capture_ora_image(image_stack: ImageStack, file_path: str, metadata: Optional[str]) -> OraSnapshot:
+def capture_ora_image(image_stack: ImageStack, file_path: str, metadata: Optional[str],
+                      capture_pixels: Optional[Callable[[Layer], bool]] = None,
+                      include_merged_image: bool = True) -> OraSnapshot:
     """Reads everything an .ora file needs from the image stack, for `write_ora_snapshot`.
 
     Runs on the GUI thread, and not while a brush stroke is in progress, since that stroke's content isn't in its
     layer's image until it ends. Raises ValueError or TypeError if a layer can't be saved.
+
+    `capture_pixels`, when set, decides per layer whether to copy its images. A skipped layer's paths stay in
+    `OraSnapshot.layer_image_owners` but not in `layer_images`, so the caller supplies them. A snapshot that skips
+    pixels or the merged image is only for `src/image/recovery_files.py`.
     """
     image_stack.flush_render()
 
@@ -296,6 +311,7 @@ def capture_ora_image(image_stack: ImageStack, file_path: str, metadata: Optiona
 
     extended_data: dict[str, dict[str, str]] = {}
     layer_images: dict[str, QImage] = {}
+    layer_image_owners: dict[str, tuple[int, str]] = {}
     write_context = OraWriteContext()
 
     def encode_image_layer(layer: ImageLayer | NonDestructiveLayer) -> dict[str, Any]:
@@ -318,7 +334,14 @@ def capture_ora_image(image_stack: ImageStack, file_path: str, metadata: Optiona
             image_path = foreign_plan.src
         else:
             image_path = _unique_archive_path(_layer_file_stem(layer), '.png', claimed_paths)
-        flattened_image, offset_transform = layer.transformed_image()
+        copy_pixels = capture_pixels is None or capture_pixels(layer)
+        flattened_image: Optional[QImage] = None
+        if copy_pixels:
+            flattened_image, offset_transform = layer.transformed_image()
+        else:
+            # The translation `transformed_image` returns, without rendering the image:
+            offset = layer.transformed_bounds.topLeft()
+            offset_transform = QTransform.fromTranslate(offset.x(), offset.y())
         layer_data[ATTR_TAG_X_POS] = round(offset_transform.dx())
         layer_data[ATTR_TAG_Y_POS] = round(offset_transform.dy())
         layer_data[LAYER_TAG_SRC] = image_path
@@ -328,7 +351,9 @@ def capture_ora_image(image_stack: ImageStack, file_path: str, metadata: Optiona
         if source is not None:
             foreign_files[image_path] = source
         else:
-            layer_images[image_path] = flattened_image  # Already unshared: `transformed_image` returns a copy.
+            layer_image_owners[image_path] = (layer.id, LAYER_IMAGE_FLATTENED)
+            if flattened_image is not None:
+                layer_images[image_path] = flattened_image  # Already unshared: `transformed_image` returns a copy.
 
         # Store untransformed images and transformations in a separate extended data section:
         layer_transform = layer.transform
@@ -344,7 +369,9 @@ def capture_ora_image(image_stack: ImageStack, file_path: str, metadata: Optiona
             if layer_transform != offset_transform:
                 layer_untransformed_path = _unique_archive_path(_layer_file_stem(layer), '-untransformed.png',
                                                                 claimed_paths)
-                layer_images[layer_untransformed_path] = layer.image
+                layer_image_owners[layer_untransformed_path] = (layer.id, LAYER_IMAGE_UNTRANSFORMED)
+                if copy_pixels:
+                    layer_images[layer_untransformed_path] = layer.image
                 extended_layer_data[TRANSFORM_SRC_TAG] = layer_untransformed_path
                 extended_layer_data[TRANSFORM_TAG] = _get_transform_str(layer_transform)
             extended_data[image_path] = extended_layer_data
@@ -411,8 +438,9 @@ def capture_ora_image(image_stack: ImageStack, file_path: str, metadata: Optiona
         payload = extension.save(image_stack, write_context.for_extension(extension_name))
         if payload is not None:
             extension_payloads[extension_name] = payload
+    merged_image = image_stack.qimage(True).copy() if include_merged_image else None
     return OraSnapshot(file_path, image_data, extended_data, metadata, layer_images, extension_payloads,
-                       dict(write_context.files), image_stack.qimage(True).copy(), foreign_files)
+                       dict(write_context.files), merged_image, foreign_files, layer_image_owners)
 
 
 def _create_element(data_dict: dict[str, Any]) -> Element:
@@ -433,11 +461,42 @@ def _create_element(data_dict: dict[str, Any]) -> Element:
     return new_element
 
 
-def write_ora_snapshot(snapshot: OraSnapshot) -> None:
-    """Writes a captured document to its .ora file, through a temporary file that replaces the target on success.
+def ora_xml_files(snapshot: OraSnapshot) -> dict[str, bytes]:
+    """Returns the contents of a snapshot's `stack.xml` and `extended_data.xml`, keyed by archive path.
 
     Touches no `Layer` or Qt widget objects, so it is safe to run on a worker thread.
     """
+    extended_xml_root = Element(STACK_ELEMENT)
+    for image_file_path, layer_extended_data in snapshot.extended_data.items():
+        extended_layer = Element(LAYER_ELEMENT)
+        extended_layer.set(LAYER_TAG_SRC, image_file_path)
+        for extension_tag, extension_value in layer_extended_data.items():
+            extended_layer.set(extension_tag, extension_value)
+        extended_xml_root.append(extended_layer)
+    if snapshot.metadata is not None:
+        extended_xml_root.set(METADATA_TAG, snapshot.metadata)
+    for extension_name, payload in snapshot.extension_payloads.items():
+        extension_element = Element(EXTENSION_ELEMENT)
+        extension_element.set(EXTENSION_TAG_NAME, extension_name)
+        extension_element.text = payload
+        extended_xml_root.append(extension_element)
+    xml_files: dict[str, bytes] = {}
+    for archive_path, root in ((XML_FILE_NAME, _create_element(snapshot.image_data)),
+                               (EXTENDED_DATA_XML_FILE_NAME, extended_xml_root)):
+        buffer = io.BytesIO()
+        ElementTree(root).write(buffer)
+        xml_files[archive_path] = buffer.getvalue()
+    return xml_files
+
+
+def write_ora_snapshot(snapshot: OraSnapshot) -> None:
+    """Writes a captured document to its .ora file, through a temporary file that replaces the target on success.
+
+    Touches no `Layer` or Qt widget objects, so it is safe to run on a worker thread. The snapshot must hold its
+    merged image and every layer image.
+    """
+    if snapshot.merged_image is None or not set(snapshot.layer_image_owners).issubset(snapshot.layer_images):
+        raise ValueError('Snapshot was captured without the merged image or some layer images')
     tmpdir = tempfile.mkdtemp()
     tmp_save_path = snapshot.file_path + '.tmp'
     try:
@@ -449,23 +508,8 @@ def write_ora_snapshot(snapshot: OraSnapshot) -> None:
             if not layer_image.save(full_path, 'PNG'):
                 raise IOError(f'failed to write to {full_path}')
 
-        # Write non-standard layer info (transformations, untransformed layers) to a different xml file:
-        ElementTree(_create_element(snapshot.image_data)).write(os.path.join(tmpdir, XML_FILE_NAME))
-        extended_xml_root = Element(STACK_ELEMENT)
-        for image_file_path, layer_extended_data in snapshot.extended_data.items():
-            extended_layer = Element(LAYER_ELEMENT)
-            extended_layer.set(LAYER_TAG_SRC, image_file_path)
-            for extension_tag, extension_value in layer_extended_data.items():
-                extended_layer.set(extension_tag, extension_value)
-            extended_xml_root.append(extended_layer)
-        if snapshot.metadata is not None:
-            extended_xml_root.set(METADATA_TAG, snapshot.metadata)
-        for extension_name, payload in snapshot.extension_payloads.items():
-            extension_element = Element(EXTENSION_ELEMENT)
-            extension_element.set(EXTENSION_TAG_NAME, extension_name)
-            extension_element.text = payload
-            extended_xml_root.append(extension_element)
-        ElementTree(extended_xml_root).write(os.path.join(tmpdir, EXTENDED_DATA_XML_FILE_NAME))
+        # Non-standard layer info (transformations, untransformed layers) goes in a different xml file:
+        xml_files = ora_xml_files(snapshot)
 
         # Archive as .ora:
         with zipfile.ZipFile(tmp_save_path, 'w', compression=zipfile.ZIP_STORED) as zip_file:
@@ -484,8 +528,8 @@ def write_ora_snapshot(snapshot: OraSnapshot) -> None:
             thumbnail.save(tmp_thumbnail_path)
             zip_file.write(tmp_thumbnail_path, _archive_path(THUMBNAIL_DIRECTORY_NAME, THUMBNAIL_FILE_NAME))
 
-            zip_file.write(os.path.join(tmpdir, XML_FILE_NAME), XML_FILE_NAME)
-            zip_file.write(os.path.join(tmpdir, EXTENDED_DATA_XML_FILE_NAME), EXTENDED_DATA_XML_FILE_NAME)
+            for xml_path, xml_data in xml_files.items():
+                zip_file.writestr(xml_path, xml_data)
             for layer_file_path in snapshot.layer_images:
                 zip_file.write(os.path.join(tmpdir, *layer_file_path.split('/')), layer_file_path)
             for extension_file_path, extension_file_data in snapshot.extension_files.items():

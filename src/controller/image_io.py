@@ -28,6 +28,7 @@ from src.controller.image_generation.null_generator import NullGenerator
 from src.image.animation import load_frames_as_image, add_frame_layers, render_frames
 from src.image.layers.image_stack import ImageStack
 from src.image.open_raster import capture_ora_image, write_ora_snapshot, read_ora_image, ORA_FILE_EXTENSION
+from src.image.recovery_files import RestoredDocument
 from src.ui.modal.animation_save_modal import AnimationSaveModal, saved_animation_options
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers, \
     show_warning_dialog
@@ -115,6 +116,15 @@ NO_COLOR_SAVE_MESSAGE = _tr('The {file_format} format saves the image without co
                             ' to preserve image colors.')
 
 
+class _MetadataEncoder(json.JSONEncoder):
+
+    def default(self, o):
+        """Convert byte strings to ASCII when serializing."""
+        if isinstance(o, bytes):
+            return o.decode()
+        return super().default(o)
+
+
 class ImageIO:
     """Opens and saves image files, and tracks the metadata of the open file.
 
@@ -142,11 +152,33 @@ class ImageIO:
         self.exif: Optional[Image.Exif] = None
         self._pending_save: Optional[AsyncTask] = None
         self._save_wait_loop: Optional[QEventLoop] = None
+        self.on_save_started: Optional[Callable[[], Callable[[], None]]] = None
+        """Called just before a save reads the document. A save that succeeds then calls the function it returned."""
 
     def clear_metadata(self) -> None:
         """Forgets the metadata and EXIF data of the previously open file."""
         self.metadata = None
         self.exif = None
+
+    def metadata_json(self) -> str:
+        """Returns the metadata as the JSON that .ora files store."""
+        return json.dumps(self.metadata, cls=_MetadataEncoder)
+
+    def exif_bytes(self) -> Optional[bytes]:
+        """Returns the EXIF data of the open file, encoded, or None if there is none."""
+        return None if self.exif is None else self.exif.tobytes()
+
+    def apply_restored_document(self, restored: RestoredDocument) -> None:
+        """Takes the metadata, EXIF data and file path of a document restored from a recovery copy.
+
+        Save then writes to the path the document came from.
+        """
+        self.metadata = None if restored.metadata is None else json.loads(restored.metadata)
+        self.exif = Image.Exif()
+        if restored.exif is not None:
+            self.exif.load(restored.exif)
+        Cache().set(Cache.LAST_FILE_PATH, restored.original_path)
+        AppStateTracker.set_app_state(APP_STATE_EDITING)
 
     def save(self) -> None:
         """Saves the edited image, only opening the save dialog if no previous image path is cached."""
@@ -164,12 +196,13 @@ class ImageIO:
         loop.exec()
         self._save_wait_loop = None
 
-    def _start_save(self, file_path: str, write: Callable[[], None],
+    def _start_save(self, file_path: str, write: Callable[[], None], on_saved: Optional[Callable[[], None]],
                     on_success: Optional[Callable[[], None]] = None) -> None:
         """Runs `write` on a worker thread, then reports the result on the GUI thread.
 
         `write` may only use data captured beforehand, never `Layer`, `ImageStack` or widget objects. On success,
-        `file_path` becomes the last saved path and `on_success` runs. Failure shows an error dialog.
+        `file_path` becomes the last saved path, then `on_saved` (from `on_save_started`) and `on_success` run.
+        Failure shows an error dialog.
         """
         self.wait_for_pending_save()
         errors: list[Exception] = []
@@ -188,6 +221,8 @@ class ImageIO:
                 self._pending_save = None
             if len(errors) == 0 and os.path.isfile(file_path):
                 Cache().set(Cache.LAST_FILE_PATH, file_path)
+                if on_saved is not None:
+                    on_saved()
                 if on_success is not None:
                     on_success()
             else:
@@ -262,18 +297,10 @@ class ImageIO:
                 if update_metadata:
                     self.update_metadata(False)
 
+            on_saved = None if self.on_save_started is None else self.on_save_started()
             if file_path.lower().endswith(ORA_FILE_EXTENSION):
-
-                class _Encoder(json.JSONEncoder):
-
-                    def default(self, o):
-                        """Convert byte strings to ASCII when serializing."""
-                        if isinstance(o, bytes):
-                            return o.decode()
-                        return super().default(o)
-
-                snapshot = capture_ora_image(self._image_stack, file_path, json.dumps(self.metadata, cls=_Encoder))
-                self._start_save(snapshot.file_path, lambda: write_ora_snapshot(snapshot))
+                snapshot = capture_ora_image(self._image_stack, file_path, self.metadata_json())
+                self._start_save(snapshot.file_path, lambda: write_ora_snapshot(snapshot), on_saved)
                 error_handled = True  # The write's own handler reports any failure.
                 return
             image = self._image_stack.qimage()
@@ -377,7 +404,7 @@ class ImageIO:
                     if loss_condition:
                         show_warning_dialog(self._window, title, message, warn_on_save_config_key)
 
-            self._start_save(file_path, _write_flat_image, _show_data_loss_warnings)
+            self._start_save(file_path, _write_flat_image, on_saved, _show_data_loss_warnings)
             error_handled = True  # The write's own handler reports any failure.
         except (IOError, TypeError, ValueError, RuntimeError) as save_err:
             error_handled = True

@@ -49,6 +49,7 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller import color_controller
+from src.controller.autosave_controller import AutosaveController
 from src.controller.image_io import ImageIO
 from src.controller.generation_area_controller import GenerationAreaController
 from src.controller.image_generation.glid3_webservice_generator import Glid3WebserviceGenerator, DEFAULT_GLID_URL
@@ -224,6 +225,7 @@ class AppController(MenuBuilder):
         self._window = MainWindow(self._image_stack)
         self.menu_window = self._window
         self._image_io = ImageIO(self._window, self._image_stack, lambda: self._generator)
+        self._autosave = AutosaveController(self._image_stack, self._image_io, self._window)
         self._image_viewer = self._window.image_panel.image_viewer
         self._window.generate_signal.connect(self.start_and_manage_inpainting)
         self._window.confirm_close = self._confirm_quit
@@ -475,12 +477,14 @@ class AppController(MenuBuilder):
             QtExceptHook().enable()
         self._window.show()
         self._update_enabled_actions()
+        self._autosave.offer_recovery()
 
         # Discard anything saved to the undo stack during the setup process:
         UndoStack().clear()
 
         AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
         app.exec()
+        self._autosave.shutdown()
         # Saves scheduled in the last moments before exit never got an event loop to run them:
         for config in (AppConfig(), Cache(), KeyConfig()):
             config.save_pending_changes()

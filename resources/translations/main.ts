@@ -808,6 +808,36 @@
         <source>Directory to search for libmypaint library files if unable to load default libraries</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Autosave a recovery copy:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Periodically save a copy of the open image, and offer to restore it if IntraPaint closes without quitting normally. The copy is deleted when you quit, save, or open another image.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Autosave after idle seconds:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Seconds without changes before the recovery copy is updated.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Autosave at least every N seconds:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Longest time between recovery copy updates while you keep editing without a pause. Updates still wait for the current brush stroke or image generation to finish.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>config.cache</name>
@@ -3684,6 +3714,19 @@
     </message>
 </context>
 <context>
+    <name>controller.autosave_controller</name>
+    <message>
+        <location filename="../../src/controller/autosave_controller.py"/>
+        <source>Restore failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/autosave_controller.py"/>
+        <source>The recovery copy could not be opened: {error}</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>controller.image_generation.glid3_webservice_generator</name>
     <message>
         <location filename="../../src/controller/image_generation/glid3_webservice_generator.py"/>
@@ -6547,6 +6590,41 @@ Keys: {decrease} / {increase}</source>
     <message>
         <location filename="../../src/ui/modal/modal_utils.py"/>
         <source>Remember my choice</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>Restore unsaved work?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>IntraPaint closed without quitting normally while editing "{file_path}". A recovery copy was saved at {saved_time}.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>IntraPaint closed without quitting normally while editing an image that was never saved. A recovery copy was saved at {saved_time}.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>Restore opens the copy. Discard deletes it. Later keeps it and asks again the next time IntraPaint starts.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>Restore</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>Discard</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>Later</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
