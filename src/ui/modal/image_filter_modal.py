@@ -8,7 +8,7 @@ from typing import Callable, Optional, TypeAlias, Any
 
 from PySide6.QtCore import QEvent, QRect, QSize, Signal, QTimer
 from PySide6.QtGui import QImage, QIcon, QKeyEvent, QPainter, QPaintEvent, QResizeEvent, Qt
-from PySide6.QtWidgets import (QApplication, QBoxLayout, QDialog, QLabel, QPushButton, QScrollArea,
+from PySide6.QtWidgets import (QApplication, QBoxLayout, QDialog, QLabel, QPushButton,
                                QSizePolicy, QVBoxLayout, QWidget)
 
 from src.config.key_config import KeyConfig
@@ -18,6 +18,7 @@ from src.ui.input_fields.segmented_control import DisplayMode, MAX_SEGMENTS, Seg
 from src.ui.input_fields.slider_field import number_field_for_parameter
 from src.ui.ink_style import set_signal
 from src.ui.layout.label_column_layout import normalize_row_label
+from src.ui.modal.controls_column import ControlsColumn, fit_dialog_to_screen, stack_body_for_size
 from src.ui.modal.dialog_footer import DialogFooter
 from src.ui.widget.panel_section import PanelSection
 from src.util.async_task import AsyncTask
@@ -45,9 +46,6 @@ COMPARE_BUTTON_TOOLTIP_WITH_KEY = _tr('Hold to show the original image. Holding 
 MIN_PREVIEW_SIZE = 240
 PREFERRED_PREVIEW_SIZE = QSize(520, 420)
 CONTROLS_COLUMN_WIDTH = 300
-# The dialog opens no larger than this fraction of the screen:
-MAX_SCREEN_FRACTION = 0.8
-QWIDGETSIZE_MAX = 16777215
 # Delay after the last input change before a preview render starts, so slider drags don't queue a render per tick.
 PREVIEW_DEBOUNCE_MS = 100
 COMPARE_BUTTON_MARGIN = 8
@@ -254,13 +252,7 @@ class ImageFilterModal(QDialog):
         controls_layout.addWidget(PanelSection(SCOPE_SECTION_TITLE, scope_body))
         controls_layout.addStretch(1)
 
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setWidget(controls)
-        scroll.setFixedWidth(CONTROLS_COLUMN_WIDTH)
-        scroll.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
+        scroll = ControlsColumn(controls, CONTROLS_COLUMN_WIDTH)
         self._controls_scroll = scroll
 
         self._footer = DialogFooter(APPLY_BUTTON_TEXT.format(filter_name=title), self)
@@ -285,13 +277,7 @@ class ImageFilterModal(QDialog):
 
     def _fit_to_screen(self) -> None:
         """Opens the dialog no larger than a fraction of the available screen."""
-        screen = self.screen()
-        size = self.sizeHint()
-        if screen is not None:
-            available = screen.availableGeometry().size()
-            size = size.boundedTo(QSize(round(available.width() * MAX_SCREEN_FRACTION),
-                                        round(available.height() * MAX_SCREEN_FRACTION)))
-        self.resize(size.expandedTo(self.minimumSizeHint()))
+        fit_dialog_to_screen(self, self.sizeHint())
 
     def _update_compare_hint(self, *_) -> None:
         key_text = get_key_display_string(KeyConfig().get(KeyConfig.COMPARE_ORIGINAL_MODIFIER), rich_text=False)
@@ -301,16 +287,7 @@ class ImageFilterModal(QDialog):
     def resizeEvent(self, event: QResizeEvent) -> None:  # pylint: disable=invalid-name
         """Stacks the preview over the controls while the window is taller than it is wide."""
         super().resizeEvent(event)
-        direction = (QBoxLayout.Direction.TopToBottom if event.size().height() > event.size().width()
-                     else QBoxLayout.Direction.LeftToRight)
-        if self._body.direction() != direction:
-            self._body.setDirection(direction)
-            stacked = direction == QBoxLayout.Direction.TopToBottom
-            self._controls_scroll.setMinimumWidth(0 if stacked else CONTROLS_COLUMN_WIDTH)
-            self._controls_scroll.setMaximumWidth(QWIDGETSIZE_MAX if stacked else CONTROLS_COLUMN_WIDTH)
-            self._controls_scroll.setSizePolicy(
-                QSizePolicy.Policy.Expanding if stacked else QSizePolicy.Policy.Fixed,
-                QSizePolicy.Policy.Preferred if stacked else QSizePolicy.Policy.Expanding)
+        stack_body_for_size(self._body, self._controls_scroll, event.size().width(), event.size().height())
 
     def _compare_from_modifiers(self, modifiers: Qt.KeyboardModifier) -> None:
         held = KeyConfig.modifier_held(KeyConfig.COMPARE_ORIGINAL_MODIFIER, held_modifiers=modifiers)
