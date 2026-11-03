@@ -3,14 +3,15 @@ import json
 import logging
 from typing import Optional, TypeAlias
 
-from PySide6.QtCore import Signal, SignalInstance
-from PySide6.QtGui import QIcon
+from PySide6.QtCore import Signal
+from PySide6.QtGui import QIcon, QColor, QPalette, QSyntaxHighlighter, QTextCharFormat, QTextDocument
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QListWidget, QListWidgetItem, QLabel, QPushButton, \
     QVBoxLayout, QApplication
 
 from src.config.cache import Cache
 from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
+from src.ui.modal.dialog_footer import DialogFooter
 from src.util.shared_constants import APP_ICON_PATH
 
 logger = logging.getLogger(__name__)
@@ -33,10 +34,38 @@ REPLACE_BUTTON_LABEL = _tr('Replace prompt')
 SAVE_BUTTON_LABEL = _tr('Save changes')
 CLOSE_BUTTON_LABEL = _tr('Close')
 
+PLACEHOLDER = '{prompt}'
+PLACEHOLDER_ALPHA = 90
+
 NAME_KEY = 'name'
 PROMPT_KEY = 'prompt'
 NEGATIVE_KEY = 'negative_prompt'
 TextField: TypeAlias = PlainTextEdit | LineEdit
+
+
+class PlaceholderHighlighter(QSyntaxHighlighter):
+    """Marks each `{prompt}` placeholder in a style's text, where WebUI inserts the user's prompt."""
+
+    def __init__(self, document: QTextDocument) -> None:
+        super().__init__(document)
+        self._format = QTextCharFormat()
+        self._refresh_colors()
+
+    def _refresh_colors(self) -> None:
+        """Takes the placeholder color from the application palette."""
+        color = QColor(QApplication.palette().color(QPalette.ColorRole.Highlight))
+        color.setAlpha(PLACEHOLDER_ALPHA)
+        self._format.setBackground(color)
+        self._format.setFontWeight(700)
+
+    def highlightBlock(self, text: Optional[str]) -> None:  # pylint: disable=invalid-name
+        """Applies the placeholder format to every placeholder in the block."""
+        if not text:
+            return
+        start = text.find(PLACEHOLDER)
+        while start >= 0:
+            self.setFormat(start, len(PLACEHOLDER), self._format)
+            start = text.find(PLACEHOLDER, start + len(PLACEHOLDER))
 
 
 class PromptStyleWindow(QDialog):
@@ -64,10 +93,24 @@ class PromptStyleWindow(QDialog):
         self._style_list = QListWidget()
         self._style_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
         self._style_list.itemSelectionChanged.connect(self._update_preview)
-        self._layout.addWidget(self._style_list)
         for style in self._style_options:
             assert isinstance(style, dict)
             QListWidgetItem(style[NAME_KEY], self._style_list)
+
+        list_row = QHBoxLayout()
+        self._layout.addLayout(list_row)
+        list_row.addWidget(self._style_list, stretch=1)
+        action_column = QVBoxLayout()
+        list_row.addLayout(action_column)
+        self._append_button = QPushButton(ADD_BUTTON_LABEL)
+        self._append_button.clicked.connect(self._append_prompt)
+        self._append_button.setEnabled(False)
+        action_column.addWidget(self._append_button)
+        self._replace_button = QPushButton(REPLACE_BUTTON_LABEL)
+        self._replace_button.clicked.connect(self._replace_prompt)
+        self._replace_button.setEnabled(False)
+        action_column.addWidget(self._replace_button)
+        action_column.addStretch(1)
 
         name_row = QHBoxLayout()
         self._layout.addLayout(name_row)
@@ -85,42 +128,29 @@ class PromptStyleWindow(QDialog):
         self._negative_box.setReadOnly(not save_enabled)
         self._layout.addWidget(self._negative_box)
 
-        button_layout = QHBoxLayout()
-        self._layout.addLayout(button_layout)
-        self._append_button = QPushButton()
-        self._append_button.setText(ADD_BUTTON_LABEL)
-        self._append_button.clicked.connect(self._append_prompt)
-        self._append_button.setEnabled(False)
-        button_layout.addWidget(self._append_button, stretch=1)
-
-        self._replace_button = QPushButton()
-        self._replace_button.setText(REPLACE_BUTTON_LABEL)
-        self._replace_button.clicked.connect(self._replace_prompt)
-        self._replace_button.setEnabled(False)
-        button_layout.addWidget(self._replace_button, stretch=1)
+        self._highlighters = [PlaceholderHighlighter(self._prompt_box.document()),
+                              PlaceholderHighlighter(self._negative_box.document())]
 
         text_fields: list[TextField] = [self._name_box, self._prompt_box, self._negative_box]
         for text_field in text_fields:
             text_field.valueChanged.connect(self._update_cached_styles)
 
+        self._save_button: Optional[QPushButton]
         if save_enabled:
-            self._save_button: Optional[QPushButton] = QPushButton()
+            footer = DialogFooter(SAVE_BUTTON_LABEL, self, cancel_text=CLOSE_BUTTON_LABEL)
+            self._save_button = footer.confirm_button
             self._save_button.setEnabled(False)
-            self._save_button.setText(SAVE_BUTTON_LABEL)
-            assert isinstance(self._save_button.clicked, SignalInstance)
-            self._save_button.clicked.connect(lambda: self.should_save_changes.emit(self._style_options))
-            button_layout.addWidget(self._save_button, stretch=1)
+            footer.accepted.connect(lambda: self.should_save_changes.emit(self._style_options))
         else:
+            footer = DialogFooter(CLOSE_BUTTON_LABEL, self, cancel_text=None)
             self._save_button = None
-
-        close_button = QPushButton()
-        close_button.setText(CLOSE_BUTTON_LABEL)
-        close_button.clicked.connect(self.close)
-        button_layout.addWidget(close_button, stretch=1)
+            footer.accepted.connect(self.close)
+        footer.rejected.connect(self.close)
+        self._layout.addWidget(footer)
 
     def _get_selected_style(self) -> Optional[dict[str, str]]:
         index = self._style_list.currentRow()
-        if index is None:
+        if index < 0:
             return None
         return self._style_options[index]
 
