@@ -6252,12 +6252,27 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/image_filter_modal.py"/>
-        <source>Cancel</source>
+        <source>Scope</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/image_filter_modal.py"/>
-        <source>Apply</source>
+        <source>Apply {filter_name}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/image_filter_modal.py"/>
+        <source>Hold to compare</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/image_filter_modal.py"/>
+        <source>Hold to show the original image.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/image_filter_modal.py"/>
+        <source>Hold to show the original image. Holding {key} does the same.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

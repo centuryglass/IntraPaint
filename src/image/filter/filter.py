@@ -84,7 +84,8 @@ class ImageFilter:
                                  self.prepare_preview,
                                  self.apply_filter,
                                  self.selection_only,
-                                 self.active_layer_only)
+                                 self.active_layer_only,
+                                 self.prepare_original_preview)
 
         def _set_active_only(active_only: bool) -> None:
             self.active_layer_only = active_only
@@ -200,6 +201,14 @@ class ImageFilter:
         Set up a filter preview on the main thread, returning a function that renders it and is safe to run on a
         worker thread. Anything that needs a QPixmap or reads UI state happens here, not in the returned function.
         """
+        return self._prepare_render(filter_param_values)
+
+    def prepare_original_preview(self) -> Callable[[], QImage]:
+        """Like `prepare_preview`, for the same region with no filter applied."""
+        return self._prepare_render(None)
+
+    def _prepare_render(self, filter_param_values: Optional[list[Any]]) -> Callable[[], QImage]:
+        """Prepares a preview render, filtered with the given values or, with None, unfiltered."""
         bounds = self._image_stack.layer_stack.bounds
         preview_bounds = QRect(bounds)
         if self.active_layer_only:
@@ -232,7 +241,8 @@ class ImageFilter:
 
         def apply_filter(layer: Layer, layer_image: QImage) -> QImage:
             """Apply the filter to each layer image as an intermediate step."""
-            self._filter_layer_image(filter_param_values, layer.id, layer_image)
+            if filter_param_values is not None:
+                self._filter_layer_image(filter_param_values, layer.id, layer_image)
             return layer_image
 
         def _render_preview() -> QImage:

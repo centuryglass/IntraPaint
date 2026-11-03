@@ -154,7 +154,7 @@ class MenuFilterTest(IntraPaintTestCase):
         modal = image_filter.get_filter_modal()
         # pylint: disable-next=protected-access
         for field_widget, value in zip(modal._param_inputs, parameter_values, strict=True):
-            field_widget.setValue(value)
+            field_widget.set_value(value)
         with patch.object(AsyncTask, 'start', AsyncTask.run):
             modal._apply_button.click()  # pylint: disable=protected-access
         modal.deleteLater()
