@@ -10,7 +10,6 @@ from typing import Optional
 from PySide6.QtCore import Qt, QPoint, QPointF
 from PySide6.QtGui import QMouseEvent
 
-from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.ui.graphics_items.context_pin_item import marker_screen_bounds
 from src.ui.image_viewer import ImageViewer
@@ -63,7 +62,7 @@ class ContextPinDragger:
         return self._pin_drag is not None
 
     def press(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Starts a drag if the right button alone was pressed without the pan modifier. Returns whether one started.
+        """Starts a drag if the right button alone was pressed. Returns whether one started.
 
         Pressing a pin's marker grabs that pin. Pressing anywhere else in the image adds a pin there and grabs it.
         """
@@ -71,7 +70,7 @@ class ContextPinDragger:
             return False
         if self._pin_drag is not None:
             self._finish_drag(False)
-        if not self._image_stack.has_image or KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True):
+        if not self._image_stack.has_image:
             return False
         selection_layer = self._image_stack.selection_layer
         press_position = QPointF(event.position())

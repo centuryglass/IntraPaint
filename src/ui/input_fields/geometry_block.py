@@ -487,12 +487,16 @@ class GeometryBlock(QWidget):
         self.updateGeometry()
 
 
+# Key steps taken by the "move more" keys.
+MORE_KEY_STEPS = 10
+
+
 def bind_step_keys(block: GeometryBlock, hotkey_filter, key_config, predicate: Callable[[], bool]) -> None:
     """Binds the step keys to a block's fields and lists them in the tooltips.
 
     Every user gets one direction: Move Left/Right step X, Move Up/Down step Y, Pan Left/Right step W, Pan Up/Down step
-    H, and the rotate keys step the angle, each with the speed modifier's multiplier. `predicate` says whether the
-    owning panel should react, usually whether it is visible and enabled.
+    H, and the rotate keys step the angle. The Move more keys step X and Y by `MORE_KEY_STEPS`. `predicate` says
+    whether the owning panel should react, usually whether it is visible and enabled.
 
     Parameters
     ----------
@@ -512,17 +516,24 @@ def bind_step_keys(block: GeometryBlock, hotkey_filter, key_config, predicate: C
         'h': (key_config.PAN_DOWN, key_config.PAN_UP),
         'angle': (key_config.ROTATE_CCW_KEY, key_config.ROTATE_CW_KEY),
     }
+    more_bindings = {
+        'x': (key_config.MOVE_LEFT_MORE, key_config.MOVE_RIGHT_MORE),
+        'y': (key_config.MOVE_UP_MORE, key_config.MOVE_DOWN_MORE),
+    }
     for name, (decrease_key, increase_key) in bindings.items():
         if not block.has_field(name):
             continue
-        for key, sign in ((decrease_key, -1), (increase_key, 1)):
-            def _binding(multiplier: int, field_name=name, direction=sign) -> bool:
+        key_steps = [(decrease_key, -1), (increase_key, 1)]
+        key_steps += [(more_key, sign * MORE_KEY_STEPS) for more_key, sign in
+                      zip(more_bindings.get(name, ()), (-1, 1))]
+        for key, steps in key_steps:
+            def _binding(field_name=name, change=steps) -> bool:
                 if not predicate():
                     return False
-                block.step_field(field_name, direction * multiplier)
+                block.step_field(field_name, change)
                 return True
 
-            hotkey_filter.register_speed_modified_keybinding(f'_GeometryBlock_{id(block)}_{name}_{key}', _binding, key)
+            hotkey_filter.register_config_keybinding(f'_GeometryBlock_{id(block)}_{name}_{key}', _binding, key)
         block.set_step_key_tooltip(name, key_config().get(decrease_key), key_config().get(increase_key))
     modifier = key_config().get(key_config.FIXED_ASPECT_MODIFIER)
     block.lock_button().setToolTip(LOCK_TEMPORARY_TOOLTIP.format(modifier=modifier))

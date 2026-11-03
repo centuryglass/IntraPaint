@@ -45,9 +45,11 @@ class FreeSelectionToolTest(ContextPinGestureTests, SelectionToolTestCase):
         for point in points:
             self.mouse_drag([point])
 
-    def _press_key(self, key: Qt.Key) -> None:
-        """Sends a key press through the application, where HotkeyFilter handles the tool's keys."""
-        press_key(self.image_viewer, key)
+    def _press_key(self, key: Qt.Key, modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier) -> None:
+        """Sends a key press through the application, where HotkeyFilter handles the tool's keys. HotkeyFilter reads
+        the held modifiers from the application, so they are reported there too."""
+        with mock.patch.object(QApplication, 'keyboardModifiers', return_value=modifiers):
+            press_key(self.image_viewer, key, modifiers)
 
     def _set_deselect_mode(self) -> None:
         """Switches the tool to deselecting through the shared selection mode."""
@@ -151,17 +153,17 @@ class FreeSelectionToolTest(ContextPinGestureTests, SelectionToolTestCase):
         self.assert_one_undo_step(existing, existing & ~rect_mask(self.IMAGE_SIZE, RECT_AREA))
 
     def test_tool_action_hotkey_cycles_modes(self) -> None:
-        """The tool action hotkey (Q) steps through the mode bar's order, Replace, Add, Subtract and Intersect, then
+        """The tool action hotkey (Shift+Q) steps through the mode bar's order, Replace, Add, Subtract and Intersect, then
            wraps around."""
         for expected in (SelectionMode.SUBTRACT, SelectionMode.INTERSECT, SelectionMode.REPLACE, SelectionMode.ADD):
-            self._press_key(Qt.Key.Key_Q)
+            self._press_key(Qt.Key.Key_Q, Qt.KeyboardModifier.ShiftModifier)
             self.assertEqual(Cache().get(Cache.SELECTION_MODE), expected.value)
 
     def test_tool_action_hotkey_toggles_deselect(self) -> None:
-        """The tool action hotkey (Q) switches from the default add mode to subtract, so the next polygon subtracts."""
+        """The tool action hotkey (Shift+Q) switches from the default add mode to subtract, so the next polygon subtracts."""
         existing = rect_mask(self.IMAGE_SIZE, QRect(0, 0, 32, 24))
         self.set_selection_outside_history(existing)
-        self._press_key(Qt.Key.Key_Q)
+        self._press_key(Qt.Key.Key_Q, Qt.KeyboardModifier.ShiftModifier)
         self._click_points(RECT_POINTS)
         self._press_key(Qt.Key.Key_Return)
         self.assert_selection(existing & ~rect_mask(self.IMAGE_SIZE, RECT_AREA))

@@ -1029,6 +1029,11 @@ class AppController(MenuBuilder):
         """Zoom out from the image view by one step."""
         self._image_viewer.zoom_out()
 
+    @menu_action(MENU_VIEW, 'zoom_actual_size_shortcut', 191, valid_app_states=[APP_STATE_EDITING])
+    def zoom_to_actual_size(self) -> None:
+        """Show the image at 100% scale."""
+        self._image_viewer.zoom_to_actual_size()
+
     @menu_action(MENU_VIEW, 'reset_view_shortcut', 192, valid_app_states=[APP_STATE_EDITING])
     def reset_view(self) -> None:
         """Fit the whole image in the view."""

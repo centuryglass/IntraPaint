@@ -24,11 +24,22 @@ def get_key_string(key: Qt.Key) -> str:
     return QKeySequence(key).toString()
 
 
+def key_alternatives(key_string: str) -> list[str]:
+    """Splits a config key string into its comma-separated alternative bindings, dropping empty entries."""
+    return [alternative.strip() for alternative in key_string.split(',') if alternative.strip() != '']
+
+
 def get_key_with_modifiers(key_string: str) -> tuple[Optional[Qt.Key], Qt.KeyboardModifier]:
-    """Converts a key string to a key code and a set of key modifiers."""
+    """Converts a key string to a key code and a set of key modifiers. A trailing `+` is the plus key itself, as in
+       `+` or `Ctrl++`."""
     assert ',' not in key_string, f'Expected single key with possible modifiers, got key list {key_string}'
     modifiers = Qt.KeyboardModifier.NoModifier
-    keys = key_string.split('+')
+    if key_string == '+':
+        keys = ['+']
+    elif key_string.endswith('++'):
+        keys = [*key_string[:-2].split('+'), '+']
+    else:
+        keys = key_string.split('+')
     if len(keys) > 1:
         modifiers = get_modifiers(keys[:-1])
     try:

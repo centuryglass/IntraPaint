@@ -1,13 +1,4 @@
 {
-    "speed_modifier": {
-        "label": "Key speed modifier:",
-        "category": "Keybindings",
-        "subcategory": "Modifiers",
-        "description": "If this key is held, movement/zoom/pan/scroll/etc. operations will go faster. (avoid changing, Shift and Ctrl are the only other working options and those cause various conflicts.)",
-        "type": "string",
-        "default": "Alt",
-        "saved": true
-    },
     "line_modifier": {
         "label": "Line drawing modifier:",
         "category": "Keybindings",
@@ -26,13 +17,13 @@
         "default": "Alt",
         "saved": true
     },
-    "pan_view_modifier": {
-        "label": "Pan view modifier:",
+    "pan_view_key": {
+        "label": "Pan view key:",
         "category": "Keybindings",
-        "subcategory": "Modifiers",
-        "description": "When held, click and drag to pan the image view",
+        "subcategory": "Navigation",
+        "description": "While held, click and drag with the left mouse button to pan the image view. Ignored while a text field has focus.",
         "type": "string",
-        "default": "Ctrl",
+        "default": "Space",
         "saved": true
     },
     "selection_add_modifier": {
@@ -72,7 +63,7 @@
         "saved": true
     },
     "eyedropper_override_modifier": {
-        "label" : "Color picker override modifier:",
+        "label": "Color picker override modifier:",
         "category": "Keybindings",
         "subcategory": "Modifiers",
         "description": "When held, temporarily switch from the brush or fill tool to the color picker.",
@@ -104,7 +95,7 @@
         "subcategory": "Navigation",
         "description": "Zoom in on image content",
         "type": "string",
-        "default": "PgUp",
+        "default": "+,=",
         "saved": true
     },
     "zoom_out": {
@@ -113,7 +104,7 @@
         "subcategory": "Navigation",
         "description": "Zoom out on image content",
         "type": "string",
-        "default": "PgDown",
+        "default": "-",
         "saved": true
     },
     "zoom_toggle": {
@@ -170,6 +161,15 @@
         "default": "Left",
         "saved": true
     },
+    "move_left_more": {
+        "label": "Move left more:",
+        "category": "Keybindings",
+        "subcategory": "Navigation",
+        "description": "Same as \"Move left\", but in steps of 10 pixels.",
+        "type": "string",
+        "default": "Shift+Left",
+        "saved": true
+    },
     "move_right": {
         "label": "Move right:",
         "category": "Keybindings",
@@ -177,6 +177,15 @@
         "description": "Move the generation area right, move active layer right, or view next generated image option",
         "type": "string",
         "default": "Right",
+        "saved": true
+    },
+    "move_right_more": {
+        "label": "Move right more:",
+        "category": "Keybindings",
+        "subcategory": "Navigation",
+        "description": "Same as \"Move right\", but in steps of 10 pixels.",
+        "type": "string",
+        "default": "Shift+Right",
         "saved": true
     },
     "move_up": {
@@ -188,6 +197,15 @@
         "default": "Up",
         "saved": true
     },
+    "move_up_more": {
+        "label": "Move up more:",
+        "category": "Keybindings",
+        "subcategory": "Navigation",
+        "description": "Same as \"Move up\", but in steps of 10 pixels.",
+        "type": "string",
+        "default": "Shift+Up",
+        "saved": true
+    },
     "move_down": {
         "label": "Move down:",
         "category": "Keybindings",
@@ -197,13 +215,22 @@
         "default": "Down",
         "saved": true
     },
+    "move_down_more": {
+        "label": "Move down more:",
+        "category": "Keybindings",
+        "subcategory": "Navigation",
+        "description": "Same as \"Move down\", but in steps of 10 pixels.",
+        "type": "string",
+        "default": "Shift+Down",
+        "saved": true
+    },
     "select_tool_tab": {
         "label": "Show/hide Tools panel:",
         "category": "Keybindings",
         "subcategory": "Navigation",
         "description": "Show and focus the Tools panel, or hide it if it is showing",
         "type": "string",
-        "default": "1",
+        "default": "F5",
         "saved": true
     },
     "select_generator_tab": {
@@ -212,7 +239,7 @@
         "subcategory": "Navigation",
         "description": "Show and focus the Image Generation panel, or hide it if it is showing",
         "type": "string",
-        "default": "2",
+        "default": "F8",
         "saved": true
     },
     "select_ControlNet_tab": {
@@ -221,7 +248,7 @@
         "subcategory": "Navigation",
         "description": "Show and focus the ControlNet panel, or hide it if it is showing",
         "type": "string",
-        "default": "3",
+        "default": "F9",
         "saved": true
     },
     "draw_tool_key": {
@@ -230,7 +257,7 @@
         "subcategory": "Tool Selection",
         "description": "Activate the draw tool to draw into the image.",
         "type": "string",
-        "default": "D",
+        "default": "Shift+B",
         "saved": true
     },
     "eraser_tool_key": {
@@ -248,7 +275,7 @@
         "subcategory": "Tool Selection",
         "description": "Activate the filter tool to apply image filters to brush strokes.",
         "type": "string",
-        "default": "I",
+        "default": "Shift+U",
         "saved": true
     },
     "smudge_tool_key": {
@@ -257,7 +284,7 @@
         "subcategory": "Tool Selection",
         "description": "Activate the smudge tool to smudge image content.",
         "type": "string",
-        "default": "M",
+        "default": "Shift+S",
         "saved": true
     },
     "clone_stamp_tool_key": {
@@ -266,7 +293,7 @@
         "subcategory": "Tool Selection",
         "description": "Activate the clone stamp tool to copy image content.",
         "type": "string",
-        "default": "N",
+        "default": "S",
         "saved": true
     },
     "eyedropper_tool_key": {
@@ -275,7 +302,7 @@
         "subcategory": "Tool Selection",
         "description": "Activate the color picker tool to change the brush color.",
         "type": "string",
-        "default": "C",
+        "default": "I",
         "saved": true
     },
     "transform_tool_key": {
@@ -284,7 +311,7 @@
         "subcategory": "Tool Selection",
         "description": "Activate the layer transformation tool to move, scale, or rotate layers.",
         "type": "string",
-        "default": "T",
+        "default": "V,Ctrl+T",
         "saved": true
     },
     "selection_brush_tool_key": {
@@ -293,7 +320,7 @@
         "subcategory": "Tool Selection",
         "description": "Activate the selection brush tool to mark areas for editing.",
         "type": "string",
-        "default": "S",
+        "default": "Q",
         "saved": true
     },
     "selection_fill_tool_key": {
@@ -302,7 +329,7 @@
         "subcategory": "Tool Selection",
         "description": "Activate the magic wand tool to select areas of similar color.",
         "type": "string",
-        "default": "A",
+        "default": "W",
         "saved": true
     },
     "shape_selection_tool_key": {
@@ -311,7 +338,7 @@
         "subcategory": "Tool Selection",
         "description": "Activate the shape selection tool to mark areas for editing.",
         "type": "string",
-        "default": "R",
+        "default": "M",
         "saved": true
     },
     "free_selection_tool_key": {
@@ -338,7 +365,7 @@
         "subcategory": "Tool Selection",
         "description": "Activate the text tool.",
         "type": "string",
-        "default": "X",
+        "default": "T",
         "saved": true
     },
     "shape_tool_key": {
@@ -347,7 +374,7 @@
         "subcategory": "Tool Selection",
         "description": "Activate the shape drawing tool.",
         "type": "string",
-        "default": "Shift+S",
+        "default": "U",
         "saved": true
     },
     "generation_area_tool_key": {
@@ -356,7 +383,7 @@
         "subcategory": "Tool Selection",
         "description": "Activate the generation area tool to pick an image area for AI image generation.",
         "type": "string",
-        "default": "G",
+        "default": "C",
         "saved": true
     },
     "previous_generation_frame_key": {
@@ -365,7 +392,7 @@
         "subcategory": "Navigation",
         "description": "Switch the generation area back to the size used before the current one. Pressing it again switches back.",
         "type": "string",
-        "default": "Shift+G",
+        "default": "Shift+C",
         "saved": true
     },
     "brush_tool_key": {
@@ -413,6 +440,96 @@
         "default": ">",
         "saved": true
     },
+    "brush_opacity_10": {
+        "label": "Set brush opacity to 10%:",
+        "category": "Keybindings",
+        "subcategory": "Tool Shortcuts",
+        "description": "Set the opacity of the active brush to 10%.",
+        "type": "string",
+        "default": "1",
+        "saved": true
+    },
+    "brush_opacity_20": {
+        "label": "Set brush opacity to 20%:",
+        "category": "Keybindings",
+        "subcategory": "Tool Shortcuts",
+        "description": "Set the opacity of the active brush to 20%.",
+        "type": "string",
+        "default": "2",
+        "saved": true
+    },
+    "brush_opacity_30": {
+        "label": "Set brush opacity to 30%:",
+        "category": "Keybindings",
+        "subcategory": "Tool Shortcuts",
+        "description": "Set the opacity of the active brush to 30%.",
+        "type": "string",
+        "default": "3",
+        "saved": true
+    },
+    "brush_opacity_40": {
+        "label": "Set brush opacity to 40%:",
+        "category": "Keybindings",
+        "subcategory": "Tool Shortcuts",
+        "description": "Set the opacity of the active brush to 40%.",
+        "type": "string",
+        "default": "4",
+        "saved": true
+    },
+    "brush_opacity_50": {
+        "label": "Set brush opacity to 50%:",
+        "category": "Keybindings",
+        "subcategory": "Tool Shortcuts",
+        "description": "Set the opacity of the active brush to 50%.",
+        "type": "string",
+        "default": "5",
+        "saved": true
+    },
+    "brush_opacity_60": {
+        "label": "Set brush opacity to 60%:",
+        "category": "Keybindings",
+        "subcategory": "Tool Shortcuts",
+        "description": "Set the opacity of the active brush to 60%.",
+        "type": "string",
+        "default": "6",
+        "saved": true
+    },
+    "brush_opacity_70": {
+        "label": "Set brush opacity to 70%:",
+        "category": "Keybindings",
+        "subcategory": "Tool Shortcuts",
+        "description": "Set the opacity of the active brush to 70%.",
+        "type": "string",
+        "default": "7",
+        "saved": true
+    },
+    "brush_opacity_80": {
+        "label": "Set brush opacity to 80%:",
+        "category": "Keybindings",
+        "subcategory": "Tool Shortcuts",
+        "description": "Set the opacity of the active brush to 80%.",
+        "type": "string",
+        "default": "8",
+        "saved": true
+    },
+    "brush_opacity_90": {
+        "label": "Set brush opacity to 90%:",
+        "category": "Keybindings",
+        "subcategory": "Tool Shortcuts",
+        "description": "Set the opacity of the active brush to 90%.",
+        "type": "string",
+        "default": "9",
+        "saved": true
+    },
+    "brush_opacity_100": {
+        "label": "Set brush opacity to 100%:",
+        "category": "Keybindings",
+        "subcategory": "Tool Shortcuts",
+        "description": "Set the opacity of the active brush to 100%.",
+        "type": "string",
+        "default": "0",
+        "saved": true
+    },
     "brush_hardness_decrease": {
         "label": "Decrease brush hardness:",
         "category": "Keybindings",
@@ -455,7 +572,7 @@
         "subcategory": "Tool Shortcuts",
         "description": "Steps the selection mode through Replace, Add, Subtract and Intersect while a selection tool is active.",
         "type": "string",
-        "default": "q",
+        "default": "Shift+Q",
         "saved": true
     },
     "toggle_sample_merged_hotkey": {
@@ -473,7 +590,7 @@
         "subcategory": "Tool Shortcuts",
         "description": "Switches between rectangle and ellipse while the shape selection tool is active. Pressing the shape selection tool's own key again does the same. Unbound by default.",
         "type": "string",
-        "default": "",
+        "default": "Shift+M",
         "saved": true
     },
     "new_image_shortcut": {
@@ -500,7 +617,7 @@
         "subcategory": "File Menu",
         "description": "Save current image as .png or .inpt at a new file path.",
         "type": "string",
-        "default": "Ctrl+Alt+S",
+        "default": "Ctrl+Shift+S,Ctrl+Alt+S",
         "saved": true
     },
     "load_shortcut": {
@@ -518,7 +635,7 @@
         "subcategory": "File Menu",
         "description": "Open images as new layers.",
         "type": "string",
-        "default": "Ctrl+Shift+O",
+        "default": "Ctrl+Alt+O,Ctrl+Shift+O",
         "saved": true
     },
     "reload_shortcut": {
@@ -527,7 +644,7 @@
         "subcategory": "File Menu",
         "description": "Reload the image from its file.",
         "type": "string",
-        "default": "F5",
+        "default": "F12",
         "saved": true
     },
     "quit_shortcut": {
@@ -599,7 +716,7 @@
         "subcategory": "Edit Menu",
         "description": "Swap the foreground and background colors.",
         "type": "string",
-        "default": "Shift+X",
+        "default": "X",
         "saved": true
     },
     "reset_colors_shortcut": {
@@ -608,7 +725,7 @@
         "subcategory": "Edit Menu",
         "description": "Set the foreground color to black and the background color to white.",
         "type": "string",
-        "default": "Shift+D",
+        "default": "D",
         "saved": true
     },
     "settings_shortcut": {
@@ -617,7 +734,7 @@
         "subcategory": "Edit Menu",
         "description": "Open the application settings window.",
         "type": "string",
-        "default": "F9",
+        "default": "Ctrl+K",
         "saved": true
     },
     "zoom_in_shortcut": {
@@ -626,7 +743,7 @@
         "subcategory": "View Menu",
         "description": "Zoom in on image content.",
         "type": "string",
-        "default": "Ctrl+Shift+=",
+        "default": "Ctrl+=,Ctrl+Shift+=",
         "saved": true
     },
     "zoom_out_shortcut": {
@@ -635,7 +752,16 @@
         "subcategory": "View Menu",
         "description": "Zoom out from image content.",
         "type": "string",
-        "default": "Ctrl+Shift+-",
+        "default": "Ctrl+-,Ctrl+Shift+-",
+        "saved": true
+    },
+    "zoom_actual_size_shortcut": {
+        "label": "Zoom to 100%",
+        "category": "Menu Shortcuts",
+        "subcategory": "View Menu",
+        "description": "Show the image at its actual size.",
+        "type": "string",
+        "default": "Ctrl+1,Ctrl+Alt+0",
         "saved": true
     },
     "reset_view_shortcut": {
@@ -644,7 +770,7 @@
         "subcategory": "View Menu",
         "description": "Fit the whole image in the view and center it.",
         "type": "string",
-        "default": "Ctrl+Alt+0",
+        "default": "Ctrl+0",
         "saved": true
     },
     "zoom_to_gen_area_shortcut": {
@@ -653,7 +779,7 @@
         "subcategory": "View Menu",
         "description": "Center the view on the generation area and zoom to fit it.",
         "type": "string",
-        "default": "Ctrl+Alt+Z",
+        "default": "Alt+Shift+Z",
         "saved": true
     },
     "toggle_control_hints_shortcut": {
@@ -707,7 +833,7 @@
         "subcategory": "View Menu",
         "description": "Show or hide the rulers beside the image.",
         "type": "string",
-        "default": "Ctrl+Alt+Shift+R",
+        "default": "Ctrl+R,Ctrl+Alt+Shift+R",
         "saved": true
     },
     "resize_canvas_shortcut": {
@@ -716,7 +842,7 @@
         "subcategory": "Image Menu",
         "description": "Change the image size without scaling layers.",
         "type": "string",
-        "default": "Shift+F2",
+        "default": "Ctrl+Alt+C,Shift+F2",
         "saved": true
     },
     "scale_image_shortcut": {
@@ -725,7 +851,7 @@
         "subcategory": "Image Menu",
         "description": "Scale image content to a new size.",
         "type": "string",
-        "default": "F3",
+        "default": "Ctrl+Alt+I,F3",
         "saved": true
     },
     "crop_image_shortcut": {
@@ -734,7 +860,7 @@
         "subcategory": "Image Menu",
         "description": "Crop the image to fit the current selected area.",
         "type": "string",
-        "default": "Ctrl+Alt+C",
+        "default": "Ctrl+Alt+Shift+C",
         "saved": true
     },
     "crop_image_to_gen_shortcut": {
@@ -761,7 +887,7 @@
         "subcategory": "Image Menu",
         "description": "Update image metadata that will be saved with the file.",
         "type": "string",
-        "default": "Ctrl+Alt+D",
+        "default": "Ctrl+Alt+Shift+I,Ctrl+Alt+D",
         "saved": true
     },
     "generator_select_shortcut": {
@@ -788,7 +914,7 @@
         "subcategory": "Image Menu",
         "description": "Reopens the last batch of generated images so another option can be chosen.",
         "type": "string",
-        "default": "Ctrl+G",
+        "default": "Shift+F4",
         "saved": true
     },
     "select_all_shortcut": {
@@ -815,7 +941,7 @@
         "subcategory": "Selection Menu",
         "description": "Swap selected and unselected areas",
         "type": "string",
-        "default": "Ctrl+I",
+        "default": "Ctrl+Shift+I",
         "saved": true
     },
     "select_layer_content_shortcut": {
@@ -833,7 +959,7 @@
         "subcategory": "Selection Menu",
         "description": "Expand the selection bounds",
         "type": "string",
-        "default": "Ctrl+=",
+        "default": "Ctrl+Alt+=",
         "saved": true
     },
     "shrink_selection_shortcut": {
@@ -842,7 +968,7 @@
         "subcategory": "Selection Menu",
         "description": "Shrink the selection bounds",
         "type": "string",
-        "default": "Ctrl+-",
+        "default": "Ctrl+Alt+-",
         "saved": true
     },
     "clear_context_pins_shortcut": {
@@ -887,7 +1013,7 @@
         "subcategory": "Layer Menu",
         "description": "Create a duplicate of the active layer.",
         "type": "string",
-        "default": "Ctrl+Shift+C",
+        "default": "Ctrl+J,Ctrl+Shift+C",
         "saved": true
     },
     "rename_layer_shortcut": {
@@ -905,7 +1031,7 @@
         "subcategory": "Layer Menu",
         "description": "Delete the active layer.",
         "type": "string",
-        "default": "Ctrl+Shift+D",
+        "default": "Shift+Delete",
         "saved": true
     },
     "select_previous_layer_shortcut": {
@@ -914,7 +1040,7 @@
         "subcategory": "Layer Menu",
         "description": "Switch to the next layer up.",
         "type": "string",
-        "default": "Ctrl+PgUp",
+        "default": "Alt+],Ctrl+PgUp",
         "saved": true
     },
     "select_next_layer_shortcut": {
@@ -923,7 +1049,7 @@
         "subcategory": "Layer Menu",
         "description": "Switch to the next layer down.",
         "type": "string",
-        "default": "Ctrl+PgDown",
+        "default": "Alt+[,Ctrl+PgDown",
         "saved": true
     },
     "move_layer_up_shortcut": {
@@ -932,7 +1058,7 @@
         "subcategory": "Layer Menu",
         "description": "Move the active layer up",
         "type": "string",
-        "default": "Ctrl+Home",
+        "default": "Ctrl+],Ctrl+Home",
         "saved": true
     },
     "move_layer_down_shortcut": {
@@ -941,7 +1067,7 @@
         "subcategory": "Layer Menu",
         "description": "Move the active layer down",
         "type": "string",
-        "default": "Ctrl+End",
+        "default": "Ctrl+[,Ctrl+End",
         "saved": true
     },
     "move_layer_to_top_shortcut": {
@@ -950,7 +1076,7 @@
         "subcategory": "Layer Menu",
         "description": "Move the active layer above all others",
         "type": "string",
-        "default": "Ctrl+Shift+Home",
+        "default": "Ctrl+Shift+],Ctrl+Shift+Home",
         "saved": true
     },
     "merge_layer_down_shortcut": {
@@ -959,7 +1085,7 @@
         "subcategory": "Layer Menu",
         "description": "Merge the active layer with the one below it",
         "type": "string",
-        "default": "Ctrl+Shift+M",
+        "default": "Ctrl+E,Ctrl+Shift+M",
         "saved": true
     },
     "merge_group_shortcut": {
@@ -977,7 +1103,7 @@
         "subcategory": "Layer Menu",
         "description": "Merge all visible layers into a single image layer",
         "type": "string",
-        "default": "Ctrl+Shift+Alt+M",
+        "default": "Ctrl+Shift+E,Ctrl+Shift+Alt+M",
         "saved": true
     },
     "flatten_layer_shortcut": {
@@ -995,7 +1121,7 @@
         "subcategory": "Layer Menu",
         "description": "Expand or crop the active layer to match the image bounds.",
         "type": "string",
-        "default": "Ctrl+Shift+I",
+        "default": "Ctrl+Alt+Shift+F",
         "saved": true
     },
     "crop_layer_to_selection_shortcut": {
@@ -1004,7 +1130,7 @@
         "subcategory": "Layer Menu",
         "description": "Crop the layer to fit the current selected area.",
         "type": "string",
-        "default": "Ctrl+Shift+E",
+        "default": "Ctrl+Alt+Shift+X",
         "saved": true
     },
     "crop_to_content_shortcut": {
@@ -1024,7 +1150,8 @@
         "type": "string",
         "default": "Ctrl+Shift+H",
         "saved": true
-    },"layer_mirror_vertical_shortcut": {
+    },
+    "layer_mirror_vertical_shortcut": {
         "label": "Mirror layer vertically",
         "category": "Menu Shortcuts",
         "subcategory": "Layer Menu",
@@ -1032,7 +1159,8 @@
         "type": "string",
         "default": "Ctrl+Shift+V",
         "saved": true
-    },"layer_rotate_cw_shortcut": {
+    },
+    "layer_rotate_cw_shortcut": {
         "label": "Rotate layer 90° CW",
         "category": "Menu Shortcuts",
         "subcategory": "Layer Menu",
@@ -1040,7 +1168,8 @@
         "type": "string",
         "default": "Ctrl+Shift+R",
         "saved": true
-    },"layer_rotate_ccw_shortcut": {
+    },
+    "layer_rotate_ccw_shortcut": {
         "label": "Rotate layer 90° CCW",
         "category": "Menu Shortcuts",
         "subcategory": "Layer Menu",
@@ -1055,7 +1184,7 @@
         "subcategory": "Filter Menu",
         "description": "Adjust RGBA color channels",
         "type": "string",
-        "default": "Ctrl+1",
+        "default": "Ctrl+B",
         "saved": true
     },
     "brightness_contrast_shortcut": {
@@ -1100,7 +1229,7 @@
         "subcategory": "Filter Menu",
         "description": "Adjust image color saturation",
         "type": "string",
-        "default": "Ctrl+6",
+        "default": "Ctrl+U,Ctrl+6",
         "saved": true
     },
     "invert_shortcut": {
@@ -1109,7 +1238,7 @@
         "subcategory": "Filter Menu",
         "description": "Invert image colors",
         "type": "string",
-        "default": "Ctrl+7",
+        "default": "Ctrl+I,Ctrl+7",
         "saved": true
     },
     "prompt_style_shortcut": {

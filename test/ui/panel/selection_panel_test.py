@@ -1,6 +1,6 @@
 """Tests SelectionPanel's clear context pins button."""
 import sys
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtWidgets import QApplication, QCheckBox, QLabel, QSpinBox
@@ -104,8 +104,9 @@ class SelectionPanelsTest(IntraPaintTestCase):
             'shape': ShapeSelectionPanel(self.layer, self.tools['shape'])
         }
 
-    def _press(self, key: Qt.Key) -> None:
-        press_key(self.panels['free'], key)
+    def _press(self, key: Qt.Key, modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier) -> None:
+        with patch.object(QApplication, 'keyboardModifiers', return_value=modifiers):
+            press_key(self.panels['free'], key, modifiers)
 
     def test_mode_section_comes_first(self) -> None:
         """Every panel starts with the Mode section, and ends with the Selection section."""
@@ -121,7 +122,7 @@ class SelectionPanelsTest(IntraPaintTestCase):
         for panel in self.panels.values():
             self.assertEqual(panel.findChildren(PanelSection)[0].title, 'Mode: Subtract')
 
-    def test_q_cycles_mode_in_every_tool(self) -> None:
+    def test_shift_q_cycles_mode_in_every_tool(self) -> None:
         """The tool action key steps through Replace, Add, Subtract and Intersect for each panel's active tool, then
            wraps."""
         order = [SelectionMode.REPLACE, SelectionMode.ADD, SelectionMode.SUBTRACT, SelectionMode.INTERSECT]
@@ -129,7 +130,7 @@ class SelectionPanelsTest(IntraPaintTestCase):
             Cache().set(Cache.SELECTION_MODE, SelectionMode.REPLACE.value)
             tool.is_active = True
             for expected in order[1:] + order[:1]:
-                self._press(Qt.Key.Key_Q)
+                self._press(Qt.Key.Key_Q, Qt.KeyboardModifier.ShiftModifier)
                 self.assertEqual(Cache().get(Cache.SELECTION_MODE), expected.value, name)
             tool.is_active = False
 

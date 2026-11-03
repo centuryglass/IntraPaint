@@ -19,6 +19,8 @@ from src.util.visual.geometry_utils import get_scaled_placement
 MIN_IMAGE_ZOOM = 0.05
 MAX_IMAGE_ZOOM = 64.0
 ZOOM_FACTOR = 1.1
+# Pixels moved by the "move more" keys:
+MOVE_MORE_STEPS = 10
 
 
 class ImageGraphicsView(QGraphicsView):
@@ -49,6 +51,11 @@ class ImageGraphicsView(QGraphicsView):
         self._content_scale_adjustment = 0.0
         self._offset = QPointF(0.0, 0.0)
         self._widget_drag_point: Optional[QPoint] = None
+        # Space-held panning: whether the pan key is down, whether a left-button drag started while it was, and the
+        # cursor to restore when the hold ends:
+        self._pan_key_held = False
+        self._key_pan_drag = False
+        self._cursor_before_pan: Optional[QCursor] = None
 
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -78,6 +85,7 @@ class ImageGraphicsView(QGraphicsView):
 
         self.setScene(self._scene)
         self.installEventFilter(self)
+        self._register_pan_key()
 
         if use_keybindings:
             # Bind directional navigation and generation area keys:
@@ -88,39 +96,60 @@ class ImageGraphicsView(QGraphicsView):
                 return True
             HotkeyFilter.instance().register_config_keybinding(f'ImageGraphicsView_{id(self)}_toggle_zoom',
                                                                _toggle_zoom_if_visible, KeyConfig.ZOOM_TOGGLE)
-            for pan_key, scroll_key, offset in ((KeyConfig.PAN_LEFT, KeyConfig.MOVE_LEFT, (-1.0, 0.0)),
-                                                (KeyConfig.PAN_RIGHT, KeyConfig.MOVE_RIGHT, (1.0, 0.0)),
-                                                (KeyConfig.PAN_UP, KeyConfig.MOVE_UP, (0.0, -1.0)),
-                                                (KeyConfig.PAN_DOWN, KeyConfig.MOVE_DOWN, (0.0, 1.0))):
+            for pan_key, scroll_key, scroll_more_key, offset in (
+                    (KeyConfig.PAN_LEFT, KeyConfig.MOVE_LEFT, KeyConfig.MOVE_LEFT_MORE, (-1.0, 0.0)),
+                    (KeyConfig.PAN_RIGHT, KeyConfig.MOVE_RIGHT, KeyConfig.MOVE_RIGHT_MORE, (1.0, 0.0)),
+                    (KeyConfig.PAN_UP, KeyConfig.MOVE_UP, KeyConfig.MOVE_UP_MORE, (0.0, -1.0)),
+                    (KeyConfig.PAN_DOWN, KeyConfig.MOVE_DOWN, KeyConfig.MOVE_DOWN_MORE, (0.0, 1.0))):
                 dx, dy = offset
                 # Bind view panning:
 
-                def _pan(mult, x=dx, y=dy) -> bool:
+                def _pan(x=dx, y=dy) -> bool:
                     if not self.isVisible():
                         return False
-                    self.offset = QPointF(self.offset.x() + x * mult, self.offset.y() + y * mult)
+                    self.offset = QPointF(self.offset.x() + x, self.offset.y() + y)
                     self.resizeEvent(None)
                     return True
                 binding_id = f'ImageGraphicsView_{id(self)}_{pan_key}'
-                HotkeyFilter.instance().register_speed_modified_keybinding(binding_id, _pan, pan_key)
+                HotkeyFilter.instance().register_config_keybinding(binding_id, _pan, pan_key)
 
                 # Bind to abstract content scrolling method:
-                def _scroll(mult, x=dx, y=dy) -> bool:
-                    if not self.isVisible():
-                        return False
-                    return self.scroll_content(x * mult, y * mult)
-                binding_id = f'ImageGraphicsView_{id(self)}_{scroll_key}'
-                HotkeyFilter.instance().register_speed_modified_keybinding(binding_id, _scroll, scroll_key)
+                for config_key, steps in ((scroll_key, 1), (scroll_more_key, MOVE_MORE_STEPS)):
+                    def _scroll(x=dx * steps, y=dy * steps) -> bool:
+                        if not self.isVisible():
+                            return False
+                        return self.scroll_content(x, y)
+                    binding_id = f'ImageGraphicsView_{id(self)}_{config_key}'
+                    HotkeyFilter.instance().register_config_keybinding(binding_id, _scroll, config_key)
 
             # Bind zoom keys:
             for config_key, multiplier in ((KeyConfig.ZOOM_IN, ZOOM_FACTOR), (KeyConfig.ZOOM_OUT, 1.0 / ZOOM_FACTOR)):
-                def _zoom(mult, change=multiplier) -> bool:
+                def _zoom(change=multiplier) -> bool:
                     if not self.isVisible():
                         return False
-                    self._zoom_step(change * mult)
+                    self._zoom_step(change)
                     return True
                 binding_id = f'ImageGraphicsView_{id(self)}_{config_key}'
-                HotkeyFilter.instance().register_speed_modified_keybinding(binding_id, _zoom, config_key)
+                HotkeyFilter.instance().register_config_keybinding(binding_id, _zoom, config_key)
+
+
+    def _register_pan_key(self) -> None:
+        """Tracks the pan key, which pans on left-button drags while it is held. Every view does this, including the
+        ones without keybindings, so Space pans in the navigation window too. The binding holds the view weakly, and
+        goes away with it."""
+        view_ref = ref(self)
+
+        def _set_held(held: bool) -> None:
+            view = view_ref()
+            if view is not None:
+                view.set_pan_key_held(held)
+
+        def _is_visible() -> bool:
+            view = view_ref()
+            return view is not None and view.isVisible()
+        binding_id = f'ImageGraphicsView_{id(self)}_pan_key'
+        HotkeyFilter.instance().register_held_key(binding_id, _set_held, KeyConfig.PAN_VIEW_KEY, _is_visible)
+        self.destroyed.connect(lambda: HotkeyFilter.instance().remove_keybinding(binding_id))
 
     @property
     def mouse_navigation_enabled(self) -> bool:
@@ -178,8 +207,37 @@ class ImageGraphicsView(QGraphicsView):
         self._centered_on.setY(int(scene_pt.y()))
 
     def set_cursor(self, new_cursor: Optional[QCursor]) -> None:
-        """Sets the cursor over the scene, or restores the default cursor if None."""
-        self.setCursor(QCursor() if new_cursor is None else new_cursor)
+        """Sets the cursor over the scene, or restores the default cursor if None. While the pan key is held, the hand
+        cursor stays and the new cursor takes effect when the hold ends."""
+        cursor = QCursor() if new_cursor is None else new_cursor
+        if self._pan_key_held:
+            self._cursor_before_pan = cursor
+        else:
+            self.setCursor(cursor)
+
+    @property
+    def pan_key_held(self) -> bool:
+        """Returns whether the pan key is held, so that a left-button drag pans the view."""
+        return self._pan_key_held
+
+    def set_pan_key_held(self, held: bool) -> None:
+        """Starts or ends a pan key hold, showing an open hand cursor while it lasts. The pan key binding calls this. A
+        hold that ends mid-drag lets the drag finish."""
+        if held == self._pan_key_held:
+            return
+        self._pan_key_held = held
+        if held:
+            if self._cursor_before_pan is None:
+                self._cursor_before_pan = self.cursor()
+            self.setCursor(Qt.CursorShape.ClosedHandCursor if self._key_pan_drag else Qt.CursorShape.OpenHandCursor)
+        elif not self._key_pan_drag:
+            self._restore_cursor_after_pan()
+
+    def _restore_cursor_after_pan(self) -> None:
+        cursor = self._cursor_before_pan
+        self._cursor_before_pan = None
+        if cursor is not None:
+            self.setCursor(cursor)
 
     @property
     def cursor_pos(self) -> Optional[QPoint]:
@@ -204,6 +262,10 @@ class ImageGraphicsView(QGraphicsView):
         self._update_scale_and_transform()
         if scale_will_change:
             self.scale_changed.emit(self.scene_scale)
+
+    def zoom_to_actual_size(self) -> None:
+        """Shows the content at 100% scale."""
+        self.scene_scale = 1.0
 
     @property
     def is_at_default_view(self) -> bool:
@@ -443,15 +505,20 @@ class ImageGraphicsView(QGraphicsView):
 
     def mousePressEvent(self, event: Optional[QMouseEvent], get_result=False) -> Optional[bool]:
         """Custom mousePress handler to deal with QGraphicsView oddities. Child classes must call this implementation
-           first with get_result=True, then exit without further action if it returns true."""
+           first with get_result=True, then exit without further action if it returns true.
+
+        A left press while the pan key is held starts a pan drag, and no scene item or event filter sees it."""
         assert event is not None
         self.set_cursor_pos(self._view_event(event).position())
+        if self._mouse_navigation_enabled and self._pan_key_held and event.buttons() == Qt.MouseButton.LeftButton:
+            self._key_pan_drag = True
+            self._widget_drag_point = event.position().toPoint()
+            self.setCursor(Qt.CursorShape.ClosedHandCursor)
+            event.accept()
+            return True if get_result else None
         super().mousePressEvent(event)
-        if event.buttons() == Qt.MouseButton.MiddleButton or (event.buttons() == Qt.MouseButton.LeftButton
-                                                              and KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER,
-                                                                                          True)):
-            if self._mouse_navigation_enabled:
-                self._widget_drag_point = event.position().toPoint()
+        if event.buttons() == Qt.MouseButton.MiddleButton and self._mouse_navigation_enabled:
+            self._widget_drag_point = event.position().toPoint()
         # A press accepted by a scene item belongs to that item, so filters only see presses the scene ignored.
         handled = False if event.isAccepted() else self._forward_to_event_filters(event)
         return handled if get_result else None
@@ -461,30 +528,53 @@ class ImageGraphicsView(QGraphicsView):
            first with get_result=True, then exit without further action if it returns true."""
         assert event is not None
         self.set_cursor_pos(self._view_event(event).position())
+        if self._key_pan_drag:
+            if event.buttons() == Qt.MouseButton.LeftButton:
+                self._pan_to(event.position().toPoint())
+                event.accept()
+                return True if get_result else None
+            self._end_key_pan_drag()
         super().mouseMoveEvent(event)
         if self._mouse_navigation_enabled and self._widget_drag_point is not None and event is not None:
-            if (event.buttons() == Qt.MouseButton.MiddleButton or
-                    (event.buttons() == Qt.MouseButton.LeftButton
-                     and KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER))):
-                mouse_pt = event.position().toPoint()
-                scale = self.scene_scale
-                x_off = (self._widget_drag_point.x() - mouse_pt.x()) / scale
-                y_off = (self._widget_drag_point.y() - mouse_pt.y()) / scale
-                distance = math.sqrt(x_off**2 + y_off**2)
-                if distance < 1:
+            if event.buttons() == Qt.MouseButton.MiddleButton:
+                if not self._pan_to(event.position().toPoint()):
                     return None
-                self.offset = QPointF(self.offset.x() + x_off, self.offset.y() + y_off)
-                self._widget_drag_point = mouse_pt
             else:
                 self._widget_drag_point = None
         handled = self._forward_to_event_filters(event)
         return handled if get_result else None
+
+    def _pan_to(self, mouse_pt: QPoint) -> bool:
+        """Pans by the distance the mouse has moved since the last pan step, returning whether the view moved."""
+        assert self._widget_drag_point is not None
+        scale = self.scene_scale
+        x_off = (self._widget_drag_point.x() - mouse_pt.x()) / scale
+        y_off = (self._widget_drag_point.y() - mouse_pt.y()) / scale
+        distance = math.sqrt(x_off**2 + y_off**2)
+        if distance < 1:
+            return False
+        self.offset = QPointF(self.offset.x() + x_off, self.offset.y() + y_off)
+        self._widget_drag_point = mouse_pt
+        return True
+
+    def _end_key_pan_drag(self) -> None:
+        """Ends a pan drag started with the pan key, restoring the cursor unless the key is still held."""
+        self._key_pan_drag = False
+        self._widget_drag_point = None
+        if self._pan_key_held:
+            self.setCursor(Qt.CursorShape.OpenHandCursor)
+        else:
+            self._restore_cursor_after_pan()
 
     def mouseReleaseEvent(self, event: Optional[QMouseEvent], get_result=False) -> Optional[bool]:
         """Custom mouseRelease handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
         assert event is not None
         self.set_cursor_pos(self._view_event(event).position())
+        if self._key_pan_drag:
+            self._end_key_pan_drag()
+            event.accept()
+            return True if get_result else None
         super().mouseReleaseEvent(event)
         handled = self._forward_to_event_filters(event)
         return handled if get_result else None
@@ -574,14 +664,10 @@ class ImageGraphicsView(QGraphicsView):
             event = cast(QWheelEvent, event)
             if event.angleDelta().y() == 0:
                 return False
-            if KeyConfig.modifier_held(KeyConfig.SPEED_MODIFIER):
-                speed_multiplier = AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
-            else:
-                speed_multiplier = 1.0
             if event.angleDelta().y() > 0:
-                self.zoom_in(speed_multiplier)
+                self.zoom_in()
             elif event.angleDelta().y() < 0 and self.scene_scale > MIN_IMAGE_ZOOM:
-                self.zoom_out(speed_multiplier)
+                self.zoom_out()
             self._update_scale_and_transform()
         return False
 

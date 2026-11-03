@@ -1,6 +1,6 @@
 # IntraPaint Tools
 
-This guide covers the editing tools found within the "Tools" panel. and the extra options found under the "Tools" menu. All hotkeys can be changed in settings (F9) under the keybindings tab.
+This guide covers the editing tools found within the "Tools" panel. and the extra options found under the "Tools" menu. All hotkeys can be changed in settings (Ctrl+K) under the keybindings tab.
 
 ---
 
@@ -9,22 +9,22 @@ This guide covers the editing tools found within the "Tools" panel. and the extr
 1. [Shared controls](#shared-controls)
 2. [Image editing tools](#image-editing-tools)
    - [Brush tool](#-brush-tool-b)
-   - [Draw tool](#-draw-tool-d)
+   - [Draw tool](#-draw-tool-shiftb)
    - [Eraser tool](#-eraser-tool-e)
    - [Fill tool](#-fill-tool-f)
-   - [Filter brush tool](#-filter-brush-tool-i)
-   - [Smudge tool](#-smudge-tool-m)
-   - [Clone stamp tool](#-clone-stamp-tool-n)
-   - [Color picker tool](#-color-picker-tool-c)
-   - [Text tool](#-text-tool-x)
+   - [Filter brush tool](#-filter-brush-tool-shiftu)
+   - [Smudge tool](#-smudge-tool-shifts)
+   - [Clone stamp tool](#-clone-stamp-tool-s)
+   - [Color picker tool](#-color-picker-tool-i)
+   - [Text tool](#-text-tool-t)
    - [Shape tool](#-shape-tool-shifts)
-   - [Transform layer tool](#-transform-layer-tool-t)
+   - [Transform layer tool](#-transform-layer-tool-v)
 3. [Selection Tools](#selection-tools)
    - [Free selection tool](#-free-selection-tool-l)
-   - [Selection brush tool](#-selection-brush-tool-s)
-   - [Rectangle/Ellipse selection tool](#-rectangleellipse-selection-r)
-   - [Magic wand tool](#-magic-wand-tool-a)
-4. [Generation area tool](#-generation-area-tool-g)
+   - [Selection brush tool](#-selection-brush-tool-q)
+   - [Rectangle/Ellipse selection tool](#-rectangleellipse-selection-m)
+   - [Magic wand tool](#-magic-wand-tool-w)
+4. [Generation area tool](#-generation-area-tool-c)
 
 ---
 
@@ -32,15 +32,15 @@ This guide covers the editing tools found within the "Tools" panel. and the extr
 
 All tools share the same set of basic controls for adjusting the image viewport.
 
-- **Middle-click and drag, or Ctrl + left-click and drag**: Pan image content.
-- **Mouse scroll wheel, Page Up, or Page Down**: Zoom in or zoom out.
+- **Middle-click and drag, or Space + left-click and drag**: Pan image content. Space is ignored while a text field has keyboard focus.
+- **Mouse scroll wheel, +, =, or -**: Zoom in or zoom out. Ctrl+= and Ctrl+- from the View menu also zoom.
+- **Ctrl+1**: Show the image at 100%. **Ctrl+0** fits the whole image in the view.
 - **Shift+Z**: Zoom in on the generation area, or reset the zoom level.
-- **Hold Alt**: Speed up key or mouse wheel inputs.
 - **Escape, while any input has keyboard focus**: Return keyboard focus to the image.
 
 The following controls are shared by most tools, but certain tools will override them:
 
-- **Arrow keys**: Move the generation area. This is ignored if Stable Diffusion AI image generation is inactive.
+- **Arrow keys**: Move the generation area. This is ignored if Stable Diffusion AI image generation is inactive. **Shift + arrow keys** move it ten pixels at a time.
 - **Ctrl + arrow keys**: Pan image content.
 
 Each tool also has a key assigned to it that will activate that tool, active whenever you're not entering text.  These keys are configurable in settings under "Keybindings", and are shown in the bottom right corner of each tool icon.
@@ -58,9 +58,9 @@ Draw, paint, blur, smudge, or erase within the image using the [MyPaint](https:/
 - **Left-click**: Draw within the image.
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
-- **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size. **Hold shift** to change size faster.
+- **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size. The step grows with the brush size.
+- **Number keys 1 to 0**: Set the brush opacity to 10% through 100%.
 - **Hold Ctrl**: temporarily switch to the color picker tool.
-- **Hold Alt**: Increase speed when changing brush size using keyboard keys.
 
 #### User interface
 
@@ -82,7 +82,7 @@ Draw, paint, blur, smudge, or erase within the image using the [MyPaint](https:/
 
 ---
 
-### ![Draw tool icon](./tool_icons/pen_icon.png) Draw tool (D)
+### ![Draw tool icon](./tool_icons/pen_icon.png) Draw tool (Shift+B)
 
 A basic brush tool with easily adjustable properties.
 
@@ -92,9 +92,8 @@ A basic brush tool with easily adjustable properties.
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size.
-- **"<" and ">" keys**: Change the brush opacity.
+- **"<" and ">" keys**: Change the brush opacity. **Number keys 1 to 0** set it to 10% through 100%.
 - **"{" and "}"keys**: Change the brush hardness.
-- **Hold Alt**: Increase speed when changing size, opacity, or hardness using keyboard keys.
 - **Hold Ctrl**: Temporarily switch to the color picker tool.
 
 #### User interface
@@ -123,9 +122,8 @@ Erase image content.
 - **Hold shift and left-click**: Erase a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the eraser to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the eraser size.
-- **"<" and ">" keys**: Change the eraser opacity.
+- **"<" and ">" keys**: Change the eraser opacity. **Number keys 1 to 0** set it to 10% through 100%.
 - **"{" and "}"keys**: Change the eraser hardness.
-- **Hold Alt**: Increase speed when changing size, opacity, or hardness using keyboard keys.
 
 #### User interface
 
@@ -163,7 +161,7 @@ Fill connected image areas with solid colors or basic patterns.
 
 ---
 
-### ![Filter brush tool icon](./tool_icons/filter_icon.png) Filter brush tool (I)
+### ![Filter brush tool icon](./tool_icons/filter_icon.png) Filter brush tool (Shift+U)
 
 Apply any image filter to the image using brush strokes.
 
@@ -175,9 +173,8 @@ This tool uses the same filters that are found in the Filters menu.  See [Filter
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size.
-- **"<" and ">" keys**: Change the brush opacity.
+- **"<" and ">" keys**: Change the brush opacity. **Number keys 1 to 0** set it to 10% through 100%.
 - **"{" and "}"keys**: Change the brush hardness.
-- **Hold Alt**: Increase speed when changing size, opacity, or hardness using keyboard keys.
 
 #### User interface
 
@@ -202,7 +199,7 @@ This tool uses the same filters that are found in the Filters menu.  See [Filter
 
 ---
 
-### ![Smudge tool icon](./tool_icons/smudge_icon.png) Smudge tool (M)
+### ![Smudge tool icon](./tool_icons/smudge_icon.png) Smudge tool (Shift+S)
 
 Smudge image content to adjust the placement of image elements and smooth away unwanted details.
 
@@ -212,9 +209,8 @@ Smudge image content to adjust the placement of image elements and smooth away u
 - **Hold shift and left-click**: Smudge a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the cursor to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the cursor size.
-- **"<" and ">" keys**: Adjust smudge tool opacity.
+- **"<" and ">" keys**: Adjust smudge tool opacity. **Number keys 1 to 0** set it to 10% through 100%.
 - **"{" and "}"keys**: Adjust smudge tool hardness.
-- **Hold Alt**: Increase speed when changing size, opacity, or hardness.
 
 #### User interface
 
@@ -230,7 +226,7 @@ Smudge image content to adjust the placement of image elements and smooth away u
 
 ---
 
-### ![Clone stamp tool icon](./tool_icons/stamp_icon.png) Clone stamp tool (N)
+### ![Clone stamp tool icon](./tool_icons/stamp_icon.png) Clone stamp tool (S)
 
 Copy image content from one area to another using a brush.
 
@@ -241,9 +237,8 @@ Copy image content from one area to another using a brush.
 - **Hold shift and left-click**: Draw a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size.
-- **"<" and ">" keys**: Change the brush opacity.
+- **"<" and ">" keys**: Change the brush opacity. **Number keys 1 to 0** set it to 10% through 100%.
 - **"{" and "}"keys**: Change the brush hardness.
-- **Hold Alt**: Increase speed when changing size, opacity, or hardness using keyboard keys.
 
 #### User interface
 
@@ -265,7 +260,7 @@ Copy image content from one area to another using a brush.
 
 ---
 
-### ![Color picker tool icon](./tool_icons/eyedropper_icon.png) Color picker tool (C)
+### ![Color picker tool icon](./tool_icons/eyedropper_icon.png) Color picker tool (I)
 
 Selects the color used by the brush, draw, and fill tools.  **Left-click** any spot within the image to copy the color at that spot.
 
@@ -295,7 +290,7 @@ mouse, enter a hex code, click a swatch or pick a screen color.
 
 ---
 
-### ![Text tool icon](./tool_icons/text_icon.png) Text tool (X)
+### ![Text tool icon](./tool_icons/text_icon.png) Text tool (T)
 
 Create and edit text within the image.  Each piece of text remains within its own layer, and can be edited with the text tool until explicitly converted to an image layer. Saving and re-opening the image, even in the layered .ora format, converts all text layers to image layers.
 
@@ -305,10 +300,9 @@ Create and edit text within the image.  Each piece of text remains within its ow
 - **Left-click and drag active text layer corners**:  Resize the text layer, unless "Resize Bounds to Text" is checked.
 - **Left-click and drag outsize of an active text layer**:  Create a new text layer.
 - **Left-click an inactive text layer**: Switch to the clicked text layer.
-- **Arrow keys**: move the active text layer.
+- **Arrow keys**: move the active text layer. **Shift + arrow keys** move it ten pixels at a time.
 - **Ctrl + arrow keys**: resize the active text layer.
 - **"O", "P"**: Increase or decrease the text size, unless "Resize Font to Bounds" is checked.
-- **Hold Alt**: Increase speed when changing text size or placement using keyboard keys.
 
 #### User interface, first page:
 
@@ -365,7 +359,7 @@ Draws geometric shapes within the image.
 
 ---
 
-### ![Transform layer tool icon](./tool_icons/layer_transform_icon.png) Transform layer tool (T)
+### ![Transform layer tool icon](./tool_icons/layer_transform_icon.png) Transform layer tool (V)
 
 Move, scale, or rotate image layers or layer groups. Transformations are lossless when editing, or when saving in the .ora file format.
 
@@ -376,11 +370,10 @@ Move, scale, or rotate image layers or layer groups. Transformations are lossles
 - **Double-click the active layer**: Switch between scaling and rotation modes.
 - **Left-click and drag layer corners**: Either scale or rotate the layer, depending on whether you're in scaling mode or rotation mode.
 - **Left-click and drag the center origin point**: Adjusts the point within the layer that the layer will rotate around.
-- **Arrow keys**: Move the layer within the image.
+- **Arrow keys**: Move the layer within the image. **Shift + arrow keys** move it ten pixels at a time.
 - **Ctrl + arrow keys**: Resize the layer.
 - **"O", "P" keys**: Rotate the layer counter-clockwise or clockwise.
 - **Hold Shift**: When resizing the layer using the corner points, keep the layer's aspect ratio the same.
-- **Hold Alt**: Increase speed when changing layer scale, position, or rotation using keyboard keys.
 
 #### User interface
 
@@ -400,13 +393,13 @@ Move, scale, or rotate image layers or layer groups. Transformations are lossles
 
 ## Selection tools:
 
-Selected content is marked with an animated outline and a transparent red overlay.  Outline animation and selection color can be changed in the Settings (F9) under the interface tab.
+Selected content is marked with an animated outline and a transparent red overlay.  Outline animation and selection color can be changed in the Settings (Ctrl+K) under the interface tab.
 
 ### Selection properties:
 
 - In the **Edit menu**, the **cut, copy, paste, and clear** options act on selected content.
 - The **Selection menu** provides tools for editing the selection bounds.
-- The [brush](#-brush-tool-b), [draw](#-draw-tool-d), [eraser](#-eraser-tool-e), [fill](#-fill-tool-f), [filter brush](#-filter-brush-tool-i), [smudge](#-smudge-tool-m) and [clone stamp](#-clone-stamp-tool-n) can all be set to only make changes within selected areas.
+- The [brush](#-brush-tool-b), [draw](#-draw-tool-shiftb), [eraser](#-eraser-tool-e), [fill](#-fill-tool-f), [filter brush](#-filter-brush-tool-shiftu), [smudge](#-smudge-tool-shifts) and [clone stamp](#-clone-stamp-tool-s) can all be set to only make changes within selected areas.
 - All image filters can be restricted to only act on selected content.
 - When the image generation mode is set to "Inpaint" (the default), image generation will only affect selected areas.
 
@@ -426,7 +419,7 @@ Holding a modifier key when a selection starts overrides the toggle for that one
 - **Hold Shift+Alt**: Intersect.
 - **Hold Ctrl+Shift**: Replace.
 
-The rectangle/ellipse and free selection tools and the magic wand tool use all four. The selection brush uses only Alt to subtract, because Shift already draws lines there; use the toggle or the "Q" key for the other modes. The modifiers can be changed in the Settings (F9) under the "Keybindings" tab.
+The rectangle/ellipse and free selection tools and the magic wand tool use all four. The selection brush uses only Alt to subtract, because Shift already draws lines there; use the toggle or the "Shift+Q" key for the other modes. The modifiers can be changed in the Settings (Ctrl+K) under the "Keybindings" tab.
 
 **On Linux, Alt+drag may move the window instead.** Many window managers (including XFCE, Cinnamon, MATE and KDE Plasma 5) use Alt+drag to move windows, and IntraPaint never sees the press. Either change the window manager's window-move key to Super, or bind IntraPaint's **Selection Subtract Modifier** to a different key such as Meta. The same applies to the other Alt shortcuts, such as the fixed-angle drawing modifier.
 
@@ -442,7 +435,7 @@ Select areas by outlining them.
 - **Return key, or click the first point**: Close the outline and apply it to the selection using the current [selection mode](#selection-modes), as long as there are at least two other points in the outline. The selection modifiers only count when held while clicking the first point.
 - **Click and drag any other point**: Points within the outline can be adjusted until the selection is closed.
 - **Escape key**: Cancel the selection, removing any pending selection points.
-- **"Q" key**: Cycle through the selection modes: Add, Subtract, Replace, then Intersect.
+- **"Shift+Q" key**: Cycle through the selection modes: Add, Subtract, Replace, then Intersect.
 
 #### User interface
 
@@ -450,7 +443,7 @@ Select areas by outlining them.
 
 1. **Selection mode toggle**: Choose the [selection mode](#selection-modes).
 2. **Clear button**: Remove all selections.
-3. **Select All button**: Select all image content. In inpainting mode, a **Clear Context Pins** button follows it, removing every [context pin](#-selection-brush-tool-s).
+3. **Select All button**: Select all image content. In inpainting mode, a **Clear Context Pins** button follows it, removing every [context pin](#-selection-brush-tool-q).
 4. **"Limit context to the selection" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
 5. **"Context:" slider**: Only visible when the Stable Diffusion AI image generator is active and "Limit context to the selection" is checked.  Controls how much extra context is included around selected content when inpainting.
 6. An in-progress selection.
@@ -458,7 +451,7 @@ Select areas by outlining them.
 
 ---
 
-### ![Selection brush tool icon](./tool_icons/selection_icon.png) Selection brush tool (S)
+### ![Selection brush tool icon](./tool_icons/selection_icon.png) Selection brush tool (Q)
 
 Select content by drawing over it in the image, similar to the brush tool.  If using a pressure sensitive drawing tablet, the brush size will scale down with pen pressure.
 
@@ -470,9 +463,8 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 - **Hold Alt before pressing**: Subtract the stroke from the selection, whatever the mode is.
 - **Hold shift and left-click**: Select a line from the last place you clicked, using the current mode. Hold Alt too to keep the line at a fixed angle.
 - **Press Alt while drawing**: Force the brush to follow a fixed angle. If Alt was already held when the stroke started, release it and press it again.
-- **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size. **Hold shift** to change size faster.
-- **Hold Alt**: Increase speed when changing brush size using keyboard keys.
-- **"Q" key**: Cycle through the selection modes: Add, Subtract, Replace, then Intersect.
+- **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size. The step grows with the brush size.
+- **"Shift+Q" key**: Cycle through the selection modes: Add, Subtract, Replace, then Intersect.
 
 #### User interface
 
@@ -482,7 +474,7 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 2. **Selection mode toggle**: Choose the [selection mode](#selection-modes).
 3. **Clear button**: Remove all selections.
 4. **Select All button**: Select all image content.
-5. **Clear Context Pins button**: Only visible in inpainting mode.  Removes every [context pin](#-selection-brush-tool-s).
+5. **Clear Context Pins button**: Only visible in inpainting mode.  Removes every [context pin](#-selection-brush-tool-q).
 6. Selected content, under the selection brush cursor. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Limit context to the selection" is checked.
 7. A context pin. The cropped bounds stretch to include it, but the pinned spot isn't selected for inpainting.
 
@@ -493,7 +485,7 @@ When the Stable Diffusion AI image generator is active, the panel also shows the
 
 ---
 
-### ![Rectangle/Ellipse Selection tool icon](./tool_icons/shape_selection_icon.png) Rectangle/ellipse selection (R)
+### ![Rectangle/Ellipse Selection tool icon](./tool_icons/shape_selection_icon.png) Rectangle/ellipse selection (M)
 
 Select or deselect rectangular or elliptical regions in the image.
 
@@ -501,7 +493,7 @@ Select or deselect rectangular or elliptical regions in the image.
 
 - **Left-click and drag**: Apply a region to the selection using the current [selection mode](#selection-modes).
 - **Hold Shift, Alt or Ctrl+Shift before pressing**: Add to the selection, subtract from it, or replace it, whatever the mode is. Shift and Alt together intersect.
-- **"Q" key**: Toggle between rectangle and ellipse selection.
+- **"M" key again, or "Shift+M"**: Toggle between rectangle and ellipse selection.
 - **Press Shift while dragging**: Restricts new selections to a 1:1 aspect ratio. Shift held before pressing only adds; release it and press it again during the drag to also fix the aspect ratio.
 
 #### User interface
@@ -512,14 +504,14 @@ Select or deselect rectangular or elliptical regions in the image.
 2. **Rectangle/ellipse toggle**: Switch between rectangular and elliptical regions.
    - **"Fixed 1:1 aspect ratio" checkbox**: When checked, every new selection is a square or circle.
 3. **Clear button**: Remove all selections.
-4. **Select All button**: Select all image content. In inpainting mode, a **Clear Context Pins** button follows it, removing every [context pin](#-selection-brush-tool-s).
+4. **Select All button**: Select all image content. In inpainting mode, a **Clear Context Pins** button follows it, removing every [context pin](#-selection-brush-tool-q).
 5. **"Limit context to the selection" checkbox**: Only visible when the Stable Diffusion AI image generator is active.  When checked, the generation area scales down to remove unselected content. See the [inpainting guide](./inpainting_guide.md) for more details.
 6. **"Context:" slider**: Only visible when the Stable Diffusion AI image generator is active and "Limit context to the selection" is checked.  Controls how much extra context is included around selected content when inpainting.
 7. Selected content. The rectangle around this area shows the cropped bounds used for inpainting selected content when "Limit context to the selection" is checked.
 
 ---
 
-### ![Magic wand tool icon](./tool_icons/magic_wand_icon.png) Magic wand tool (A)
+### ![Magic wand tool icon](./tool_icons/magic_wand_icon.png) Magic wand tool (W)
 
 Select content based on connected regions and color similarity.
 
@@ -543,7 +535,7 @@ Select content based on connected regions and color similarity.
 
 ---
 
-## ![Generation area tool icon](./tool_icons/gen_area_icon.png) Generation area tool (G)
+## ![Generation area tool icon](./tool_icons/gen_area_icon.png) Generation area tool (C)
 
 Controls the area of the image in use for AI image generation. AI generators are restricted to certain resolutions, but this tool lets you use them with images of any size.  When you click "Generate", the AI generator will only act on the area selected by this tool, and only content within this area will influence generated imagery.  See the [inpainting guide](./inpainting_guide.md) for more details.
 
@@ -554,15 +546,14 @@ Controls the area of the image in use for AI image generation. AI generators are
 - **Left-click and drag a handle**: Resize the generation area. While this tool is active, the area's outline has eight square handles. Corner handles keep the area's aspect ratio, and edge handles move one side.
 - **Hold Shift while dragging a corner handle**: Resize freely, without keeping the aspect ratio. This is the reverse of Shift's usual meaning, because keeping the aspect ratio is the safer default here.
 - **Right-click**: Resize the generation area, without changing its position.  Hold Shift to keep the generation resolution's aspect ratio.
-- **Arrow keys**: Move the generation area.
-- **Hold Alt**: Increase speed when moving the generation area using keyboard keys.
+- **Arrow keys**: Move the generation area. **Shift + arrow keys** move it ten pixels at a time.
 - **Shift + scroll wheel**: Change the inpaint context. This works with any tool, over the image or the navigation window.
 
 Each drag is one undo step. Resizing applies the resolution rule as the size changes, and adds the finished size to the recent area sizes.
 
 ### Following the selection
 
-In inpainting mode, the generation area moves after you change the selection or its context pins, so that it contains them along with the inpaint context. It moves only as far as needed, never changes size, and centers on a selection too large to fit. Undo and redo never move it, and moving it by hand isn't overridden until the selection changes again. Change this with **"Generation area follows selection"** in [settings](./menu_options.md#settings-f9) under the **"Editing"** category: **"Minimal move"** (default), **"Center on selection"**, or **"Off"**.
+In inpainting mode, the generation area moves after you change the selection or its context pins, so that it contains them along with the inpaint context. It moves only as far as needed, never changes size, and centers on a selection too large to fit. Undo and redo never move it, and moving it by hand isn't overridden until the selection changes again. Change this with **"Generation area follows selection"** in [settings](./menu_options.md#settings-ctrlk) under the **"Editing"** category: **"Minimal move"** (default), **"Center on selection"**, or **"Off"**.
 
 ### User interface
 

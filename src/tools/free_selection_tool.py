@@ -119,8 +119,6 @@ class FreeSelectionTool(BaseTool):
         assert event is not None
         if event.buttons() == Qt.MouseButton.RightButton:
             return self._pin_dragger.press(event, image_coordinates)
-        if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True):
-            return False
         point_idx = self._path_item.get_point_index(QPointF(image_coordinates))
         if event.buttons() == Qt.MouseButton.LeftButton and point_idx == 0 and self._path_item.count > 2:
             self._close_and_select()

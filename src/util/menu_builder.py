@@ -5,11 +5,12 @@ from functools import wraps
 from inspect import signature
 from typing import Callable, Any, Optional, TypeVar
 
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import QMainWindow, QMenu, QMenuBar
 
 from src.config.key_config import KeyConfig
 from src.util.application_state import AppStateTracker
+from src.util.key_code_utils import key_alternatives
 from src.util.shared_constants import INT_MAX
 
 GenericFn = TypeVar('GenericFn', bound=Callable[..., Any])
@@ -18,6 +19,11 @@ IS_MENU_ACTION_ATTR = '_is_menu_action'
 MENU_DATA_ATTR = '_menu_data'
 
 logger = logging.getLogger(__name__)
+
+
+def _key_sequences(key_str: str) -> list[QKeySequence]:
+    """Returns one key sequence for each comma-separated alternative binding in a config key string."""
+    return [QKeySequence(alternative) for alternative in key_alternatives(key_str)]
 
 
 def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
@@ -134,10 +140,10 @@ class MenuBuilder:
         if tooltip is not None and tooltip != '':
             action.setToolTip(tooltip)
         if keybinding is not None and keybinding != '':
-            action.setShortcut(keybinding)
+            action.setShortcuts(_key_sequences(keybinding))
         action.triggered.connect(lambda: new_action())
         if config_key is not None and config_key != '':
-            KeyConfig().connect(self, config_key, lambda key_str: action.setShortcut(key_str))
+            KeyConfig().connect(self, config_key, lambda key_str: action.setShortcuts(_key_sequences(key_str)))
         menu.addAction(action)
         return action
 

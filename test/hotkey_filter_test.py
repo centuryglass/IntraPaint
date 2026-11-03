@@ -5,6 +5,7 @@ from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QGuiApplication, QKeyEvent, QKeySequence
 from PySide6.QtWidgets import QApplication, QLineEdit, QVBoxLayout, QWidget
 
+from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from test.base_test_case import IntraPaintTestCase
 
@@ -85,3 +86,106 @@ class HotkeyFilterTest(IntraPaintTestCase):
             with patch.object(QApplication, 'keyboardModifiers', new=staticmethod(lambda mods=held: mods)):
                 self.assertEqual(hotkeys.eventFilter(self.window, z_press), expect_handled)
         action.assert_called_once()
+
+
+class HotkeyFilterZoomKeyTest(IntraPaintTestCase):
+    """Tests that the bare zoom keys, which are also typed characters, don't fire while a text field has focus."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.zoom_out = MagicMock(return_value=True)
+        self.zoom_in = MagicMock(return_value=True)
+        hotkeys = HotkeyFilter.instance()
+        hotkeys.register_config_keybinding('zoom_key_test_out', self.zoom_out, KeyConfig.ZOOM_OUT)
+        hotkeys.register_config_keybinding('zoom_key_test_in', self.zoom_in, KeyConfig.ZOOM_IN)
+        self.widget = QWidget()
+        self.field = QLineEdit(self.widget)
+        self.widget.show()
+        window = self.widget.windowHandle()
+        assert window is not None
+        self.window = window
+
+    def _press(self, key: Qt.Key, modifiers: Qt.KeyboardModifier, focused: QWidget | None) -> None:
+        # Offscreen key events don't update the application's focus or modifier state, so report them directly.
+        with patch.object(QApplication, 'keyboardModifiers', new=staticmethod(lambda: modifiers)), \
+                patch.object(QApplication, 'focusWidget', new=staticmethod(lambda: focused)):
+            HotkeyFilter.instance().eventFilter(self.window, QKeyEvent(QEvent.Type.KeyPress, key, modifiers))
+
+    def test_minus_zooms_out_unless_typing(self) -> None:
+        """Minus zooms out with no text field focused, and types into the focused field otherwise."""
+        self._press(Qt.Key.Key_Minus, Qt.KeyboardModifier.NoModifier, self.field)
+        self.zoom_out.assert_not_called()
+        self._press(Qt.Key.Key_Minus, Qt.KeyboardModifier.NoModifier, None)
+        self.zoom_out.assert_called_once()
+
+    def test_plus_and_equals_zoom_in_unless_typing(self) -> None:
+        """Both the plus key, which needs Shift, and the equals key zoom in with no text field focused."""
+        for key, modifiers in ((Qt.Key.Key_Plus, Qt.KeyboardModifier.ShiftModifier),
+                               (Qt.Key.Key_Equal, Qt.KeyboardModifier.NoModifier)):
+            with self.subTest(key=key):
+                self.zoom_in.reset_mock()
+                self._press(key, modifiers, self.field)
+                self.zoom_in.assert_not_called()
+                self._press(key, modifiers, None)
+                self.zoom_in.assert_called_once()
+
+
+class HotkeyFilterHeldKeyTest(IntraPaintTestCase):
+    """Tests tracking of a key that is held down, as the pan key is."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.changes: list[bool] = []
+        self.filter = HotkeyFilter.instance()
+        self.filter.register_held_key('held_key_test', self.changes.append, KeyConfig.PAN_VIEW_KEY)
+        self.widget = QWidget()
+        self.widget.winId()  # Creates the QWindow.
+        window = self.widget.windowHandle()
+        assert window is not None
+        self.window = window
+        self.filter.watch_window(window)
+
+    def tearDown(self) -> None:
+        self.filter.remove_keybinding('held_key_test')
+        super().tearDown()
+
+    def _send(self, event_type: QEvent.Type, auto_repeat: bool = False) -> None:
+        QApplication.sendEvent(self.window, QKeyEvent(event_type, Qt.Key.Key_Space, Qt.KeyboardModifier.NoModifier,
+                                                      '', auto_repeat))
+
+    def test_press_and_release_report_the_hold(self) -> None:
+        """The hold starts at the press and ends at the release, and key repeats change nothing."""
+        self._send(QEvent.Type.KeyPress)
+        self._send(QEvent.Type.KeyPress, auto_repeat=True)
+        self._send(QEvent.Type.KeyRelease, auto_repeat=True)
+        self.assertEqual([True], self.changes)
+        self._send(QEvent.Type.KeyRelease)
+        self.assertEqual([True, False], self.changes)
+
+    def test_focused_text_field_keeps_the_key(self) -> None:
+        """Space typed into a text field doesn't start a hold."""
+        field = QLineEdit(self.widget)
+        self.widget.show()
+        with patch.object(QApplication, 'focusWidget', new=staticmethod(lambda: field)):
+            self._send(QEvent.Type.KeyPress)
+        self.assertEqual([], self.changes)
+
+    def test_losing_window_focus_ends_the_hold(self) -> None:
+        """A key that is released in another window can't leave the hold stuck."""
+        self._send(QEvent.Type.KeyPress)
+        self.filter.watch_window(None)
+        self.assertEqual([True, False], self.changes)
+
+    def test_removing_the_binding_ends_the_hold(self) -> None:
+        """Removing the binding releases the key."""
+        self._send(QEvent.Type.KeyPress)
+        self.filter.remove_keybinding('held_key_test')
+        self.assertEqual([True, False], self.changes)
+        self._send(QEvent.Type.KeyPress)
+        self.assertEqual([True, False], self.changes)
+
+    def test_key_is_not_consumed(self) -> None:
+        """The press still reaches other handlers, such as a focused button."""
+        press = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Space, Qt.KeyboardModifier.NoModifier)
+        self.assertFalse(self.filter.eventFilter(self.window, press))
+        self.assertEqual([True], self.changes)
