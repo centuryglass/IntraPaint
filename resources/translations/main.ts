@@ -9098,22 +9098,37 @@ Click to pick, or press Esc to cancel</source>
     </message>
     <message>
         <location filename="../../src/ui/window/extra_network_window.py"/>
-        <source>Add to prompt</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/extra_network_window.py"/>
-        <source>Remove from prompt</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/window/extra_network_window.py"/>
         <source>Close</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/window/extra_network_window.py"/>
         <source>LoRA</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/extra_network_window.py"/>
+        <source>Search LoRA models</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/extra_network_window.py"/>
+        <source>Weight</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/extra_network_window.py"/>
+        <source>Weight of the selected LoRA in the prompt. Add the LoRA to the prompt to change it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/extra_network_window.py"/>
+        <source>In prompt</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/extra_network_window.py"/>
+        <source>No LoRA models match the search.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
