@@ -29,6 +29,15 @@
         "saved": true,
         "translate": false
     },
+    "recent_files": {
+        "label": "Recent files:",
+        "category": "Cache",
+        "description": "Image files opened or saved most recently, newest first, as absolute paths",
+        "type": "list",
+        "default": [],
+        "saved": true,
+        "translate": false
+    },
     "recent_generation_area_sizes": {
         "label": "Recent generation area sizes:",
         "category": "Cache",

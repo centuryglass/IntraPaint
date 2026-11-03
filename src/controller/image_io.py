@@ -34,6 +34,7 @@ from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, op
     show_warning_dialog
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING
 from src.util.async_task import AsyncTask
+from src.util.recent_files import add_recent_file
 from src.util.visual.image_format_utils import save_image_with_metadata, save_image, load_image, \
     IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_FORMATS_SUPPORTING_ALPHA, IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA, \
     METADATA_PARAMETER_KEY, IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, IMAGE_FORMATS_WITH_FIXED_SIZE, \
@@ -221,6 +222,7 @@ class ImageIO:
                 self._pending_save = None
             if len(errors) == 0 and os.path.isfile(file_path):
                 Cache().set(Cache.LAST_FILE_PATH, file_path)
+                add_recent_file(file_path)
                 if on_saved is not None:
                     on_saved()
                 if on_success is not None:
@@ -476,6 +478,7 @@ class ImageIO:
                 else:
                     self._image_stack.load_image(image)
             cache.set(Cache.LAST_FILE_PATH, file_path)
+            add_recent_file(file_path)
 
             # File loaded, attempt to apply metadata:
             if self.metadata is not None and METADATA_PARAMETER_KEY in self.metadata:
@@ -526,6 +529,10 @@ class ImageIO:
         layer_paths, layers_selected = open_image_layers(self._window)
         if not layers_selected or not layer_paths or len(layer_paths) == 0:
             return
+        self.add_layers_from_files(layer_paths)
+
+    def add_layers_from_files(self, layer_paths: list[str]) -> None:
+        """Adds image files as new layers, creating a blank image to hold them if none is open."""
         layers: list[tuple[QImage, str, Optional[list[ImageFrame]]]] = []
         errors: list[str] = []
         for layer_path in layer_paths:

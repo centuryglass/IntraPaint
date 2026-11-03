@@ -11,18 +11,21 @@ The primary image editing window: the canvas in the center, with every other pan
 - Icon rails along the window edges (`DockRails`) hold each dock's button, the recent tools and Generate. Dragging a
   button moves its dock (`RailDrag`).
 - Right-clicking a dock's title area or rail button opens its menu (`build_dock_menu`).
+- Dropping local image files on the window emits `files_dropped`. The canvas viewer ignores drags that its scene
+  doesn't accept, so they reach the window.
 - While the generated image selector replaces the canvas, every dock and rail hides, and the layout from before comes
   back when it closes.
 """
 import logging
+import os
 import sys
 from enum import StrEnum
 from functools import partial
 from typing import Callable, Optional
 
-from PySide6.QtCore import Qt, QPoint, QRect, QSize, QObject, QTimer, Signal, QByteArray
+from PySide6.QtCore import Qt, QPoint, QRect, QSize, QObject, QTimer, Signal, QByteArray, QMimeData
 from PySide6.QtGui import QContextMenuEvent, QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, \
-    QAction, QMoveEvent, QScreen, QShowEvent
+    QDragEnterEvent, QDropEvent, QAction, QMoveEvent, QScreen, QShowEvent
 from PySide6.QtWidgets import QMainWindow, QStackedWidget, QApplication, QSizePolicy, QMenu, \
     QWidget
 
@@ -54,6 +57,7 @@ from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_S
 from src.util.visual.display_size import get_screen_size
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, APP_ICON_PATH, PROJECT_DIR
 from src.util.validation import layout_debug
+from src.util.visual.image_format_utils import IMAGE_READ_FORMATS
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +122,7 @@ class MainWindow(QMainWindow):
     """Main user interface for inpainting."""
 
     generate_signal = Signal()
+    files_dropped = Signal(list)  # Local file paths with a readable image extension.
     cancel_generation = Signal()
     previous_options_available = Signal(bool)
     """Emitted when `can_restore_previous_options` changes."""
@@ -132,6 +137,7 @@ class MainWindow(QMainWindow):
         # Called on every close request; returning False keeps the window open. None closes without asking.
         self.confirm_close: Optional[Callable[[], bool]] = None
         self.setWindowIcon(QIcon(APP_ICON_PATH))
+        self.setAcceptDrops(True)
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
         self.setMinimumSize(QSize(0, 0))
         # One coalesced re-clamp for every move, resize and display change:
@@ -670,6 +676,29 @@ class MainWindow(QMainWindow):
         """Suppresses mouse events when the loading spinner is active."""
         if not self._is_loading:
             super().mousePressEvent(event)
+
+    @staticmethod
+    def _dropped_image_paths(mime_data: Optional[QMimeData]) -> list[str]:
+        """Returns the local files in dropped data that have a supported image extension."""
+        if mime_data is None or not mime_data.hasUrls():
+            return []
+        paths = [url.toLocalFile() for url in mime_data.urls() if url.isLocalFile()]
+        return [path for path in paths if os.path.splitext(path)[1][1:].upper() in IMAGE_READ_FORMATS
+                and os.path.isfile(path)]
+
+    def dragEnterEvent(self, event: Optional[QDragEnterEvent]) -> None:
+        """Accepts drags that carry at least one openable image file."""
+        if event is not None and len(self._dropped_image_paths(event.mimeData())) > 0:
+            event.acceptProposedAction()
+
+    def dropEvent(self, event: Optional[QDropEvent]) -> None:
+        """Reports the dropped image files through `files_dropped`."""
+        if event is None:
+            return
+        paths = self._dropped_image_paths(event.mimeData())
+        if len(paths) > 0:
+            event.acceptProposedAction()
+            self.files_dropped.emit(paths)
 
     def closeEvent(self, event: Optional[QCloseEvent]) -> None:
         """Asks `confirm_close` for permission, then closes the application. Ignores the event if it declines."""

@@ -206,6 +206,7 @@ class Cache(Config, metaclass=Singleton):
     PROMPT: str
     RECENT_COLORS: str
     RECENT_GENERATION_AREA_SIZES: str
+    RECENT_FILES: str
     RECENT_TOOLS: str
     SAMPLE_MERGED: str
     SAMPLING_METHOD: str
