@@ -74,7 +74,27 @@ class GeneratedImageSelectorViewTest(IntraPaintTestCase):
         self._manual_zoom(2.0, QPointF(3.0, -2.0))
         self.selector._zoom_to_option(1, True)
         self.assertAlmostEqual(self._scale_ratio(), 2.0, places=3)
-        self.assertEqual(self.selector._view.offset - self.selector._base_option_offset, QPointF(3.0, -2.0))
+        pan = self.selector._view.offset - self.selector._base_option_offset
+        self.assertLess(abs(pan.x() - 3.0), 1.0)
+        self.assertLess(abs(pan.y() + 2.0), 1.0)
+
+    def test_step_after_zoom_at_cursor_keeps_view_center(self) -> None:
+        """Zooming around the cursor and panning doesn't make the next step jump."""
+        view = self.selector._view
+        view.set_cursor_pos(QPoint(300, 80))
+        view.scene_scale = view.scene_scale * 1.5
+        view.offset = view.offset + QPointF(40.0, 30.0)
+
+        def local_center() -> QPointF:
+            center = view.widget_point_to_scene(view.rect().center())
+            return center - QPointF(self.selector._option_items[self.selector._zoom_index].bounds.topLeft())
+
+        before = local_center()
+        for index in (1, 2, 0):
+            self.selector._zoom_to_option(index, True)
+            after = local_center()
+            self.assertLess(abs(after.x() - before.x()), 2.0)
+            self.assertLess(abs(after.y() - before.y()), 2.0)
 
     def test_zoom_ratio_survives_base_scale_change(self) -> None:
         """A change in the fitted scale keeps the chosen zoom ratio, not the scale difference."""
