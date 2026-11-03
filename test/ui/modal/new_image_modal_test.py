@@ -1,8 +1,13 @@
 """Tests NewImageModal."""
+from unittest.mock import patch
+
+from PySide6.QtCore import QSize
 from PySide6.QtGui import QColor
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.ui.modal.new_image_modal import NewImageModal, BACKGROUND_COLOR_OPTION_CUSTOM
+from src.ui.modal.new_image_modal import NewImageModal, BACKGROUND_COLOR_OPTION_CUSTOM, \
+    BACKGROUND_COLOR_OPTION_BLACK, BACKGROUND_COLOR_OPTION_WHITE
 from test.base_test_case import IntraPaintTestCase
 
 
@@ -14,8 +19,8 @@ class NewImageModalTest(IntraPaintTestCase):
         brush_color = Cache().get(Cache.LAST_BRUSH_COLOR)
         Cache().set(Cache.NEW_IMAGE_BACKGROUND_COLOR, '#ff123456')
         modal = NewImageModal(512, 512)
-        self.assertEqual(modal._color_dropdown.currentText(), BACKGROUND_COLOR_OPTION_CUSTOM)
-        self.assertEqual(modal._color_button.color, QColor('#ff123456'))
+        self.assertEqual(modal.background_color(), QColor('#ff123456'))
+        self.assertTrue(modal._swatches[BACKGROUND_COLOR_OPTION_CUSTOM].isChecked())
         self.assertEqual(Cache().get(Cache.LAST_BRUSH_COLOR), brush_color)
         modal._cancel()
         self.assertEqual(Cache().get(Cache.LAST_BRUSH_COLOR), brush_color)
@@ -28,3 +33,41 @@ class NewImageModalTest(IntraPaintTestCase):
         modal._confirm()
         self.assertEqual(Cache().get(Cache.NEW_IMAGE_BACKGROUND_COLOR), '#ff123456')
         self.assertEqual(Cache().get(Cache.LAST_BRUSH_COLOR), brush_color)
+
+    def test_swatches_pick_background(self) -> None:
+        """Clicking a swatch selects that background color."""
+        modal = NewImageModal(512, 512)
+        modal._swatches[BACKGROUND_COLOR_OPTION_BLACK].click()
+        self.assertEqual(modal.background_color(), QColor('black'))
+        modal._swatches[BACKGROUND_COLOR_OPTION_WHITE].click()
+        self.assertEqual(modal.background_color(), QColor('white'))
+
+    def test_custom_swatch_opens_color_dialog(self) -> None:
+        """The custom swatch takes the color dialog's result, and keeps the old selection if the dialog is canceled."""
+        modal = NewImageModal(512, 512)
+        with patch('src.ui.modal.new_image_modal.ColorDialog.show_color_dialog', return_value=QColor('#ff102030')):
+            modal._swatches[BACKGROUND_COLOR_OPTION_CUSTOM].click()
+        self.assertEqual(modal.background_color(), QColor('#ff102030'))
+        modal._swatches[BACKGROUND_COLOR_OPTION_BLACK].click()
+        with patch('src.ui.modal.new_image_modal.ColorDialog.show_color_dialog', return_value=None):
+            modal._swatches[BACKGROUND_COLOR_OPTION_CUSTOM].click()
+        self.assertEqual(modal.background_color(), QColor('black'))
+        self.assertTrue(modal._swatches[BACKGROUND_COLOR_OPTION_BLACK].isChecked())
+
+    def test_size_presets(self) -> None:
+        """Presets fill in the size, repeated sizes are left out, and optional ones appear only when given."""
+        Cache().set(Cache.GENERATION_SIZE, QSize(768, 768))
+        modal = NewImageModal(512, 512, QSize(300, 200), QSize(768, 768))
+        self.assertEqual(len(modal._preset_buttons), 3)
+        modal._preset_buttons[2].click()
+        self.assertEqual(modal.new_size(), QSize(300, 200))
+        modal._preset_buttons[0].click()
+        self.assertEqual(modal.new_size(), QSize(512, 512))
+        self.assertEqual(len(NewImageModal(512, 512)._preset_buttons), 2)
+
+    def test_size_limits(self) -> None:
+        """Presets larger than the maximum image size are clamped."""
+        max_size = AppConfig().get(AppConfig.MAX_IMAGE_SIZE)
+        modal = NewImageModal(512, 512, QSize(max_size.width() + 100, 64))
+        modal._preset_buttons[-1].click()
+        self.assertEqual(modal.new_size(), QSize(max_size.width(), 64))

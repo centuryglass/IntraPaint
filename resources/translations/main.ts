@@ -6559,62 +6559,82 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/new_image_modal.py"/>
-        <source>Width:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/modal/new_image_modal.py"/>
-        <source>New image width in pixels</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/modal/new_image_modal.py"/>
-        <source>Height:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/modal/new_image_modal.py"/>
-        <source>New image height in pixels</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/modal/new_image_modal.py"/>
         <source>Create</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/new_image_modal.py"/>
-        <source>Cancel</source>
+        <source>Size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/new_image_modal.py"/>
-        <source>Background color:</source>
+        <source>Size presets</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/new_image_modal.py"/>
-        <source>transparent</source>
+        <source>Background</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/new_image_modal.py"/>
-        <source>white</source>
+        <source>Default image size ({width} x {height})</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/new_image_modal.py"/>
-        <source>black</source>
+        <source>Use the default image size from the application settings.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/new_image_modal.py"/>
-        <source>custom</source>
+        <source>Generation resolution ({width} x {height})</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/new_image_modal.py"/>
-        <source>Select background color</source>
+        <source>Use the size that images are generated at.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>Generation area ({width} x {height})</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>Use the size of the current image generation area.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>Clipboard image ({width} x {height})</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>Use the size of the image on the clipboard.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>Transparent</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>White</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>Black</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/new_image_modal.py"/>
+        <source>Custom color...</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
