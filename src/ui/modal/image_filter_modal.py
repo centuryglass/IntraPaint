@@ -6,6 +6,7 @@ it is wide stacks them instead. Holding the compare button, or the compare modif
 from dataclasses import dataclass
 from typing import Callable, Optional, TypeAlias, Any
 
+from shiboken6 import isValid
 from PySide6.QtCore import QEvent, QRect, QSize, Signal, QTimer
 from PySide6.QtGui import QImage, QIcon, QKeyEvent, QPainter, QPaintEvent, QResizeEvent, Qt
 from PySide6.QtWidgets import (QApplication, QBoxLayout, QDialog, QLabel, QPushButton,
@@ -338,6 +339,8 @@ class ImageFilterModal(QDialog):
 
         # _finish must not reference task: the task's connection holds _finish, so that would leave a reference cycle.
         def _finish() -> None:
+            if not isValid(self):  # The dialog was deleted while the render ran.
+                return
             self._preview_task = None
             if result and result[0] is not None:
                 self._preview.image = result[0]
