@@ -228,7 +228,8 @@
         "description": "Use OpenGL to accelerate image rendering.  Currently somewhat buggy, breaks several layer rendering modes.",
         "type": "bool",
         "default": false,
-        "saved": true
+        "saved": true,
+        "pinned": true
     },
     "default_image_size": {
         "label": "Default image size:",
