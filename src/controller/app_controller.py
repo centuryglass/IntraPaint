@@ -934,7 +934,7 @@ class AppController(MenuBuilder):
         else:
             UndoStack().redo()
 
-    @menu_action(MENU_EDIT, 'cut_shortcut', 102, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_EDIT, 'cut_shortcut', 102, valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def cut(self) -> None:
         """Cut selected content from the active image layer, or selected text in an active text field."""
         if self._active_text_field_tracker.focused_can_cut_or_clear():
@@ -997,7 +997,7 @@ class AppController(MenuBuilder):
         else:
             self._image_stack.clear_selected()
 
-    @menu_action(MENU_EDIT, 'swap_colors_shortcut', 106)
+    @menu_action(MENU_EDIT, 'swap_colors_shortcut', 106, separator_before=True)
     def swap_colors(self) -> None:
         """Swap the foreground and background colors."""
         color_controller.swap()
@@ -1007,7 +1007,7 @@ class AppController(MenuBuilder):
         """Set the foreground color to black and the background color to white."""
         color_controller.reset()
 
-    @menu_action(MENU_EDIT, 'settings_shortcut', 108)
+    @menu_action(MENU_EDIT, 'settings_shortcut', 108, separator_before=True)
     def show_settings(self, category: Optional[str] = None) -> None:
         """Show the settings window, on the tab named `category` if one is given."""
         if self._settings_modal is None:
