@@ -41,7 +41,7 @@
     "protected-access": 10
   },
   "src/util/menu_builder.py": {
-    "unnecessary-lambda": 2
+    "unnecessary-lambda": 1
   },
   "src/util/optional_import.py": {
     "broad-exception-caught": 1

@@ -14,6 +14,7 @@ from src.image.layers.image_stack_utils import crop_layer_to_selection
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.transform_layer import TransformLayer
+from src.util.key_code_utils import key_alternatives
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.palette_icon import palette_icon
 
@@ -69,7 +70,7 @@ def _add_key_hint(action: QAction, config_key: Optional[str]) -> None:
         return
     if isinstance(keys, str) and keys != '':
         action.setShortcutContext(Qt.ShortcutContext.WidgetShortcut)
-        action.setShortcut(QKeySequence(keys))
+        action.setShortcuts([QKeySequence(alternative) for alternative in key_alternatives(keys)])
 
 
 def build_layer_menu(layer: Layer, image_stack: ImageStack, rename: Callable[[], None]) -> QMenu:

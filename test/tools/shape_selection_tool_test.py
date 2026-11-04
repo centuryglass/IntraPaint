@@ -112,13 +112,6 @@ class ShapeSelectionToolTest(ContextPinGestureTests, SelectionToolTestCase):
         self.mouse_drag([QPoint(10, 8), QPoint(25, 12), QPoint(40, 16)])
         self.assert_square_from(QPoint(10, 8))
 
-    def test_pan_modifier_ignores_drag(self) -> None:
-        """With the pan view modifier (Ctrl) held, a drag changes nothing."""
-        with mock.patch.object(QApplication, 'keyboardModifiers', return_value=CTRL):
-            self.mouse_drag([QPoint(10, 8), QPoint(30, 20)], modifiers=CTRL)
-        self.assert_selection(self.empty)
-        self.assertEqual(UndoStack().undo_count(), 0)
-
     def test_ellipse_drag_selects(self) -> None:
         """In ellipse mode, a drag selects the ellipse inscribed in the dragged rectangle, as one undo step."""
         self._set_ellipse_mode()
@@ -166,14 +159,15 @@ class ShapeSelectionToolTest(ContextPinGestureTests, SelectionToolTestCase):
         self.assert_selection(first)
 
     def test_tool_action_hotkey_cycles_selection_mode(self) -> None:
-        """The tool action hotkey (Q) steps through Replace, Add, Subtract and Intersect, as in every selection tool."""
+        """The tool action hotkey (Shift+Q) steps through Replace, Add, Subtract and Intersect, as in every selection tool."""
         self.set_selection_mode(SelectionMode.REPLACE)
         for expected in (SelectionMode.ADD, SelectionMode.SUBTRACT, SelectionMode.INTERSECT, SelectionMode.REPLACE):
-            self._press_key(Qt.Key.Key_Q)
+            self._press_key(Qt.Key.Key_Q, SHIFT)
             self.assertEqual(Cache().get(Cache.SELECTION_MODE), expected.value)
 
-    def _press_key(self, key: Qt.Key) -> None:
-        press_key(self.image_viewer, key)
+    def _press_key(self, key: Qt.Key, modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier) -> None:
+        with mock.patch.object(QApplication, 'keyboardModifiers', return_value=modifiers):
+            press_key(self.image_viewer, key, modifiers)
 
     def test_repeating_the_tool_key_toggles_the_shape(self) -> None:
         """Pressing the shape selection tool's key while the tool is active switches between rectangle and
@@ -181,14 +175,14 @@ class ShapeSelectionToolTest(ContextPinGestureTests, SelectionToolTestCase):
         panel = self.tool.get_control_panel()
         assert isinstance(panel, ShapeSelectionPanel)
         self.assertEqual(panel.shape_control.value(), ShapeMode.RECTANGLE.name)
-        self._press_key(Qt.Key.Key_R)
+        self._press_key(Qt.Key.Key_M)
         self.assertEqual(panel.shape_control.value(), ShapeMode.ELLIPSE.name)
-        self._press_key(Qt.Key.Key_R)
+        self._press_key(Qt.Key.Key_M)
         self.assertEqual(panel.shape_control.value(), ShapeMode.RECTANGLE.name)
 
     def test_repeating_the_tool_key_toggles_the_drawn_shape(self) -> None:
         """After the tool key is pressed again, a drag selects an ellipse, not a rectangle."""
-        self._press_key(Qt.Key.Key_R)
+        self._press_key(Qt.Key.Key_M)
         rect = QRect(8, 6, 40, 30)
         self.mouse_drag([rect.topLeft(), rect.topLeft() + QPoint(rect.width(), rect.height())])
         mask = self.selection_mask()

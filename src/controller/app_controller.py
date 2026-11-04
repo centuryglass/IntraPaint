@@ -306,6 +306,7 @@ class AppController(MenuBuilder):
                 modal = filter_instance.get_filter_modal()
                 self._set_alt_window_centered_bounds(modal)
                 modal.exec()
+                modal.deleteLater()
 
             config_key = image_filter.get_config_key()
             action = self.add_menu_action(MENU_FILTERS,
@@ -1028,6 +1029,11 @@ class AppController(MenuBuilder):
     def zoom_out(self) -> None:
         """Zoom out from the image view by one step."""
         self._image_viewer.zoom_out()
+
+    @menu_action(MENU_VIEW, 'zoom_actual_size_shortcut', 191, valid_app_states=[APP_STATE_EDITING])
+    def zoom_to_actual_size(self) -> None:
+        """Show the image at 100% scale."""
+        self._image_viewer.zoom_to_actual_size()
 
     @menu_action(MENU_VIEW, 'reset_view_shortcut', 192, valid_app_states=[APP_STATE_EDITING])
     def reset_view(self) -> None:

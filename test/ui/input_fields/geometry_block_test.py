@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.key_config import KeyConfig
 from src.ui.input_fields.geometry_block import (ANGLE, GeometryBlock, HEIGHT, SCALE_X, SCALE_Y, WIDTH, X, Y,
-                                                bind_step_keys)
+                                                bind_step_keys, MORE_KEY_STEPS)
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -22,9 +22,9 @@ class _FakeHotkeyFilter(QObject):
 
     def __init__(self) -> None:
         super().__init__()
-        self.registered: dict[str, Callable[[int], bool]] = {}
+        self.registered: dict[str, Callable[[], bool]] = {}
 
-    def register_speed_modified_keybinding(self, _id: str, action: Callable[[int], bool], key: str) -> None:
+    def register_config_keybinding(self, _id: str, action: Callable[[], bool], key: str) -> None:
         """Records the action for a key."""
         self.registered.setdefault(key, action)
 
@@ -171,8 +171,8 @@ class GeometryBlockTest(IntraPaintTestCase):
         self.assertFalse(block.lock_button().temporary())
 
     def test_step_keys_move_the_right_field_in_the_right_direction(self) -> None:
-        """Move keys step X and Y, pan keys step W and H, rotate keys step the angle, and the speed multiplier scales
-        the step."""
+        """Move keys step X and Y, pan keys step W and H, rotate keys step the angle, and the move more keys step X and
+        Y by `MORE_KEY_STEPS`."""
         block = GeometryBlock(show_angle=True, integer=False)
         block.set_values(x=10, y=10, w=100, h=100, angle=0)
         hotkey_filter = _FakeHotkeyFilter()
@@ -182,13 +182,15 @@ class GeometryBlockTest(IntraPaintTestCase):
         expectations = [(KeyConfig.MOVE_LEFT, X, -1), (KeyConfig.MOVE_RIGHT, X, 1), (KeyConfig.MOVE_UP, Y, -1),
                         (KeyConfig.MOVE_DOWN, Y, 1), (KeyConfig.PAN_LEFT, WIDTH, -1), (KeyConfig.PAN_RIGHT, WIDTH, 1),
                         (KeyConfig.PAN_DOWN, HEIGHT, -1), (KeyConfig.PAN_UP, HEIGHT, 1),
-                        (KeyConfig.ROTATE_CCW_KEY, ANGLE, -1), (KeyConfig.ROTATE_CW_KEY, ANGLE, 1)]
-        for key, name, sign in expectations:
+                        (KeyConfig.ROTATE_CCW_KEY, ANGLE, -1), (KeyConfig.ROTATE_CW_KEY, ANGLE, 1),
+                        (KeyConfig.MOVE_LEFT_MORE, X, -MORE_KEY_STEPS), (KeyConfig.MOVE_RIGHT_MORE, X, MORE_KEY_STEPS),
+                        (KeyConfig.MOVE_UP_MORE, Y, -MORE_KEY_STEPS), (KeyConfig.MOVE_DOWN_MORE, Y, MORE_KEY_STEPS)]
+        for key, name, steps in expectations:
             with self.subTest(key=key):
                 before = {other: block.value(other) for other in (X, Y, WIDTH, HEIGHT, ANGLE)}
-                self.assertTrue(registered[key](3))
+                self.assertTrue(registered[key]())
                 for other, old in before.items():
-                    expected = old + sign * 3 * block.key_step(name) if other == name else old
+                    expected = old + steps * block.key_step(name) if other == name else old
                     self.assertAlmostEqual(block.value(other), expected)
 
     def test_step_keys_respect_predicate_and_list_in_tooltips(self) -> None:
@@ -198,7 +200,7 @@ class GeometryBlockTest(IntraPaintTestCase):
         registered = hotkey_filter.registered
         KeyConfig()
         bind_step_keys(block, hotkey_filter, KeyConfig, lambda: False)
-        self.assertFalse(registered[KeyConfig.MOVE_RIGHT](1))
+        self.assertFalse(registered[KeyConfig.MOVE_RIGHT]())
         self.assertEqual(block.value(X), 0)
         self.assertIn(KeyConfig().get(KeyConfig.MOVE_RIGHT), block.field(X).toolTip())
 

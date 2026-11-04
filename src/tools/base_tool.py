@@ -38,7 +38,8 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
     return QApplication.translate(TR_ID, key, disambiguation, n)
 
 
-PAN_HINT = _tr('{modifier_or_modifiers}+{left_mouse_icon} or {middle_mouse_icon}, drag: pan view')
+PAN_HINT = _tr('{pan_key}+{left_mouse_icon} or {middle_mouse_icon}, drag: pan view')
+MIDDLE_PAN_HINT = _tr('{middle_mouse_icon}, drag: pan view')
 ZOOM_HINT = _tr('{v_scroll_icon}: zoom')
 FIXED_ASPECT_HINT = _tr('{modifier_or_modifiers}: Fixed aspect ratio')
 DEBUG_CURSOR_FILE_PREFIX = 'debug_'
@@ -213,11 +214,14 @@ class BaseTool(QObject):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        pan_hint = PAN_HINT.format(left_mouse_icon=left_button_hint_text(),
-                                   middle_mouse_icon=middle_button_hint_text(),
-                                   modifier_or_modifiers='{modifier_or_modifiers}')
+        pan_key = rich_text_key_hints(KeyConfig().get(KeyConfig.PAN_VIEW_KEY))
+        if pan_key == '':
+            pan_hint = MIDDLE_PAN_HINT.format(middle_mouse_icon=middle_button_hint_text())
+        else:
+            pan_hint = PAN_HINT.format(pan_key=pan_key, left_mouse_icon=left_button_hint_text(),
+                                       middle_mouse_icon=middle_button_hint_text())
         zoom_hint = ZOOM_HINT.format(v_scroll_icon=vertical_scroll_hint_text())
-        return f'{BaseTool.modifier_hint(KeyConfig.PAN_VIEW_MODIFIER, pan_hint)} - {zoom_hint}'
+        return f'{pan_hint} - {zoom_hint}'
 
     @property
     def label(self) -> str:

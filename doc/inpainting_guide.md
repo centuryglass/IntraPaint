@@ -37,7 +37,7 @@ These concepts and controls are specific to AI inpainting, understanding them wi
 ## Generation Area
 
 The section of an image where the AI can make changes. In IntraPaint, the Generation Area is shown as a dotted
-rectangle within the image, and you can use the [Generation Area tool](./tool_guide.md#-generation-area-tool-g) to
+rectangle within the image, and you can use the [Generation Area tool](./tool_guide.md#-generation-area-tool-c) to
 change its size and placement.
 
 The way the generation area is used varies depending on the image editing mode:
@@ -75,7 +75,7 @@ unchecked.  When active, the context rectangle will be drawn within the generati
 To change context without opening the selection tool controls, hold Shift and use the scroll wheel over the image or
 the navigation window. This works with any tool, and raising the context above zero turns on "Limit context to the selection".
 Hold Alt as well to change it faster. The modifier key is the "Context scroll modifier" option in the
-[settings](./menu_options.md#settings-f9) "Keybindings" tab.
+[settings](./menu_options.md#settings-ctrlk) "Keybindings" tab.
 
 ---
 

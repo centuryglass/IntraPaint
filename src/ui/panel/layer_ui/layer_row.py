@@ -213,24 +213,28 @@ class LayerThumbnail(QWidget):
     def paintEvent(self, _event: Optional[QPaintEvent]) -> None:  # pylint: disable=invalid-name
         """Draws the preview inside an outlined square."""
         painter = QPainter(self)
-        frame = QRect(QPoint(), self.size()).adjusted(0, 0, -1, -1)
-        assert LayerThumbnail._transparency_background is not None
-        painter.drawTiledPixmap(frame, LayerThumbnail._transparency_background)
-        if not self._layer_image.isNull() and not self._layer_image.size().isEmpty():
-            bounds = get_scaled_placement(frame, self._layer_image.size(), 1)
-            painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
-            scale = bounds.width() / self._layer_image.width()
-            painter.save()
-            painter.setTransform(QTransform.fromScale(scale, scale).translate(bounds.x() / scale, bounds.y() / scale))
-            painter.drawImage(QPoint(), self._layer_image)
-            painter.restore()
-        if self._layer is not None and not self._layer.shown:
-            painter.fillRect(frame, HIDDEN_LAYER_SHADE)
-        painter.setPen(QPen(self.palette().color(QPalette.ColorRole.Mid), 1))
-        painter.drawRect(frame)
-        if isinstance(self._layer, TextLayer):
-            self._paint_text_mark(painter, frame)
-        painter.end()
+        try:
+            frame = QRect(QPoint(), self.size()).adjusted(0, 0, -1, -1)
+            assert LayerThumbnail._transparency_background is not None
+            painter.drawTiledPixmap(frame, LayerThumbnail._transparency_background)
+            if not self._layer_image.isNull() and not self._layer_image.size().isEmpty():
+                bounds = get_scaled_placement(frame, self._layer_image.size(), 1)
+                if bounds.width() > 0 and bounds.height() > 0:
+                    painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+                    scale = bounds.width() / self._layer_image.width()
+                    painter.save()
+                    painter.setTransform(QTransform.fromScale(scale, scale).translate(bounds.x() / scale,
+                                                                                        bounds.y() / scale))
+                    painter.drawImage(QPoint(), self._layer_image)
+                    painter.restore()
+            if self._layer is not None and not self._layer.shown:
+                painter.fillRect(frame, HIDDEN_LAYER_SHADE)
+            painter.setPen(QPen(self.palette().color(QPalette.ColorRole.Mid), 1))
+            painter.drawRect(frame)
+            if isinstance(self._layer, TextLayer):
+                self._paint_text_mark(painter, frame)
+        finally:
+            painter.end()
 
     def _paint_text_mark(self, painter: QPainter, frame: QRect) -> None:
         font = QFont(self.font())

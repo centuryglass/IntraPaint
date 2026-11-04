@@ -76,6 +76,13 @@ class TextToolTest(ToolTestCase):
         self.assertEqual(self.image_stack.text_layers, [])
         self.assertEqual(UndoStack().undo_count(), 0)
 
+    def test_thin_drag_creates_nothing(self) -> None:
+        """A drag that is wide or tall but not both, leaving zero width or height, creates no layer."""
+        self.mouse_drag([DRAG_START, DRAG_START + QPoint(100, 0)])
+        self.mouse_drag([DRAG_START, DRAG_START + QPoint(0, 100)])
+        self.assertEqual(self.image_stack.text_layers, [])
+        self.assertEqual(UndoStack().undo_count(), 0)
+
     def test_click_selects_layer(self) -> None:
         """Clicking an inactive text layer makes it active and loads it into the panel without editing either layer."""
         first = self._add_text_layer(QRect(20, 20, 80, 40), 'First')

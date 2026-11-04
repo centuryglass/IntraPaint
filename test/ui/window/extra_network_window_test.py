@@ -78,3 +78,17 @@ class ExtraNetworkWindowTest(IntraPaintTestCase):
         self.window._search.setText('')
         self.assertTrue(all(not card.isHidden() for card in self.window._cards))
         self.assertTrue(self.window._no_matches.isHidden())
+
+    def test_follows_prompt_edits_made_elsewhere(self) -> None:
+        """Marks update when the prompt changes outside the window, and stop updating after it hides."""
+        Cache().set(Cache.PROMPT, '<lora:add_detail:1.0>')
+        self.assertTrue(self.window._cards[0].in_prompt)
+        Cache().set(Cache.PROMPT, '')
+        self.assertFalse(self.window._cards[0].in_prompt)
+        self.window.hide()
+        Cache().set(Cache.PROMPT, '<lora:add_detail:1.0>')
+        self.assertFalse(self.window._cards[0].in_prompt)
+
+    def test_is_not_modal(self) -> None:
+        """The main window stays usable while the window is open."""
+        self.assertFalse(self.window.isModal())

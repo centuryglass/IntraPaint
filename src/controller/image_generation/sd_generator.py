@@ -243,6 +243,7 @@ class SDGenerator(ImageGenerator, ABC):
         self._server_url = args.server_url if args.server_url != '' else Cache().get(url_cache_key)
         self._url_cache_key = url_cache_key
         self._lora_images: Optional[dict[str, Optional[QImage]]] = None
+        self._lora_window: Optional[ExtraNetworkWindow] = None
         self._connected = False
         self._control_panel: Optional[StableDiffusionPanel] = None
         self._preview = QImage(SD_PREVIEW_IMAGE)
@@ -662,6 +663,10 @@ class SDGenerator(ImageGenerator, ABC):
         cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, False)
 
         # Clear cached webservice data:
+        if self._lora_window is not None:
+            self._lora_window.close()
+            self._lora_window.deleteLater()
+            self._lora_window = None
         if self._lora_images is not None:
             self._lora_images.clear()
             self._lora_images = None
@@ -863,16 +868,26 @@ class SDGenerator(ImageGenerator, ABC):
                 assert self._window is not None
                 task.status.disconnect(self._window.set_loading_message)
                 task.finish_signal.disconnect(_resume_and_show)
-                delayed_lora_window = ExtraNetworkWindow(loras, self._lora_images)
-                delayed_lora_window.exec()
+                self._open_lora_window(loras)
 
             assert self._window is not None
             task.status.connect(self._window.set_loading_message)
             task.finish_signal.connect(_resume_and_show)
             task.start()
         else:
-            lora_window = ExtraNetworkWindow(loras, self._lora_images)
-            lora_window.exec()
+            self._open_lora_window(loras)
+
+    def _open_lora_window(self, loras: list[dict[str, str]]) -> None:
+        """Shows the LoRA window without blocking the main window, or raises it if it is already open."""
+        assert self._lora_images is not None
+        if self._lora_window is not None:
+            if self._lora_window.isVisible():
+                self._lora_window.raise_()
+                self._lora_window.activateWindow()
+                return
+            self._lora_window.deleteLater()
+        self._lora_window = ExtraNetworkWindow(loras, self._lora_images)
+        self._lora_window.show()
 
     @menu_action(MENU_STABLE_DIFFUSION, 'lcm_mode_shortcut', 210, condition_check=_check_lcm_mode_available)
     def set_lcm_mode(self) -> None:

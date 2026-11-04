@@ -65,10 +65,10 @@ HINT_BUTTON_TOOLTIP = _tr('Controls')
 ENTER_KEY_NAME = _tr('Enter')
 
 GRID_CONTROL_HINT = _tr('{left_key}{right_key} browse &nbsp; {first_key}-{last_key} open option &nbsp; '
-                        '{up_key} single view &nbsp; {pan_modifier}+{left_mouse_icon} or {middle_mouse_icon} pan '
+                        '{up_key} single view &nbsp; {pan_key}+{left_mouse_icon} or {middle_mouse_icon} pan '
                         '&nbsp; {zoom_in_key}{zoom_out_key} zoom')
 SINGLE_CONTROL_HINT = _tr('{compare_key} hold: original &nbsp; {left_key}{right_key} browse &nbsp; '
-                          '{down_key} back to grid &nbsp; {pan_modifier}+{left_mouse_icon} or {middle_mouse_icon} pan '
+                          '{down_key} back to grid &nbsp; {pan_key}+{left_mouse_icon} or {middle_mouse_icon} pan '
                           '&nbsp; {v_scroll_icon} zoom')
 
 VIEW_GRID = 'grid'
@@ -337,7 +337,7 @@ def _control_hint(single_view: bool, option_count: int) -> str:
 
     shared = {'left_key': _keys(KeyConfig.MOVE_LEFT),
               'right_key': _keys(KeyConfig.MOVE_RIGHT),
-              'pan_modifier': _keys(KeyConfig.PAN_VIEW_MODIFIER),
+              'pan_key': _keys(KeyConfig.PAN_VIEW_KEY),
               'left_mouse_icon': left_button_hint_text(),
               'middle_mouse_icon': middle_button_hint_text()}
     if single_view:

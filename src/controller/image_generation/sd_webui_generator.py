@@ -219,6 +219,7 @@ class SDWebUIGenerator(SDGenerator):
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
         super().__init__(window, image_stack, args, Cache.SD_WEBUI_SERVER_URL, Cache.WEBUI_CACHED_SCALING_MODE, True)
         self._webservice: Optional[A1111Webservice] = create_webservice(self.server_url)
+        self._style_window: Optional[PromptStyleWindow] = None
 
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
@@ -688,8 +689,14 @@ class SDWebUIGenerator(SDGenerator):
     @menu_action(MENU_STABLE_DIFFUSION, 'prompt_style_shortcut', 200, [APP_STATE_EDITING],
                  condition_check=_check_prompt_styles_available)
     def show_style_window(self) -> None:
-        """Show the saved prompt style window."""
-        style_window = PromptStyleWindow()
+        """Show the saved prompt style window without blocking the main window, or raise it if it is already open."""
+        if self._style_window is not None:
+            if self._style_window.isVisible():
+                self._style_window.raise_()
+                self._style_window.activateWindow()
+                return
+            self._style_window.deleteLater()
+        self._style_window = PromptStyleWindow()
         # TODO: update after the prompt style endpoint gets POST support
-        # style_window.should_save_changes.connect(self._update_styles)
-        style_window.exec()
+        # self._style_window.should_save_changes.connect(self._update_styles)
+        self._style_window.show()

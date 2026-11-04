@@ -17,6 +17,7 @@ from src.ui.input_fields.field_factory import create_control_widget
 from src.ui.input_fields.geometry_block import GeometryBlock
 from src.ui.modal.controls_column import ControlsColumn, fit_dialog_to_screen, stack_body_for_size
 from src.ui.modal.dialog_footer import DialogFooter
+from src.ui.modal.modal_parent import modal_parent
 from src.ui.widget.anchor_grid import AnchorGrid, GRID_SIDE
 from src.ui.widget.canvas_change_preview_widget import CanvasChangePreviewWidget
 from src.ui.widget.panel_section import PanelSection
@@ -51,8 +52,8 @@ def _signed(value: int) -> str:
 class ResizeCanvasModal(QDialog):
     """Popup modal window used for cropping or extending the edited image without scaling its contents."""
 
-    def __init__(self, image_stack: ImageStack) -> None:
-        super().__init__()
+    def __init__(self, image_stack: ImageStack, parent: Optional[QWidget] = None) -> None:
+        super().__init__(modal_parent(parent))
         self.setWindowIcon(QIcon(APP_ICON_PATH))
         self._image_size = image_stack.size
         self._resize = False
@@ -204,6 +205,8 @@ class ResizeCanvasModal(QDialog):
     def show_resize_modal(self) -> tuple[QSize, QPoint] | tuple[None, None]:
         """Show this modal, returning QSize new_size and QPoint offset if changes are confirmed."""
         self.exec()
+        result: tuple[QSize, QPoint] | tuple[None, None] = (None, None)
         if self._resize:
-            return self._new_size(), self._offset()
-        return None, None
+            result = (self._new_size(), self._offset())
+        self.deleteLater()
+        return result
