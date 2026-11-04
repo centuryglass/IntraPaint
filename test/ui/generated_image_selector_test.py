@@ -96,6 +96,17 @@ class GeneratedImageSelectorViewTest(IntraPaintTestCase):
             self.assertLess(abs(after.x() - before.x()), 2.0)
             self.assertLess(abs(after.y() - before.y()), 2.0)
 
+    def test_stepping_through_options_does_not_drift(self) -> None:
+        """Stepping around the options without touching the view leaves the carried-over pan and zoom unchanged."""
+        self._manual_zoom(2.7, QPointF(3.0, -2.0))
+        self.selector._zoom_to_option(1, True)
+        pan = QPointF(self.selector._option_pos_offset)
+        ratio = self.selector._option_scale_ratio
+        for step in range(40):
+            self.selector._zoom_to_option(step % len(self.selector._option_items), True)
+        self.assertEqual(self.selector._option_pos_offset, pan)
+        self.assertEqual(self.selector._option_scale_ratio, ratio)
+
     def test_zoom_ratio_survives_base_scale_change(self) -> None:
         """A change in the fitted scale keeps the chosen zoom ratio, not the scale difference."""
         self._manual_zoom(2.0, QPointF(0.0, 0.0))
