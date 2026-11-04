@@ -96,7 +96,8 @@ class MenuBuilder:
                         config_key: Optional[str] = None,
                         title: Optional[str] = None,
                         tooltip: Optional[str] = None,
-                        keybinding: Optional[str] = None) -> Optional[QAction]:
+                        keybinding: Optional[str] = None,
+                        priority: Optional[int] = None) -> Optional[QAction]:
         """Adds a new menu action to a window, or return an existing action with the same name.
 
         Parameters
@@ -115,6 +116,9 @@ class MenuBuilder:
             Tooltip to display over the new menu option.
         keybinding: str, optional
             A hotkey that should trigger this menu option.
+        priority: int, optional
+            If provided, the new action is placed before the first action in the menu with a higher priority, so
+            actions added by different builders end up in one order. Otherwise it goes at the end of the menu.
         """
         assert self._menu_window is not None, 'Assign a window before adding menu actions'
         menu = self._find_or_add_menu(menu_name)
@@ -148,8 +152,34 @@ class MenuBuilder:
         action.triggered.connect(lambda: new_action())
         if config_key is not None and config_key != '':
             KeyConfig().connect(self, config_key, lambda key_str: action.setShortcuts(_key_sequences(key_str)))
-        menu.addAction(action)
+        self._add_by_priority(menu, action, priority)
         return action
+
+    def add_menu_separator(self, menu_name: str, priority: int) -> None:
+        """Adds a separator that sits among other prioritized actions according to `priority`.
+
+        Menus collapse separators that touch each other or the menu's ends, so a separator between two groups of
+        optional actions only shows while both groups have visible actions.
+        """
+        menu = self._find_or_add_menu(menu_name)
+        assert menu is not None
+        separator = QAction(menu)
+        separator.setSeparator(True)
+        self._add_by_priority(menu, separator, priority)
+
+    @staticmethod
+    def _add_by_priority(menu: QMenu, action: QAction, priority: Optional[int]) -> None:
+        """Adds an action to a menu, stores its priority on it and puts it before the first action with a higher one."""
+        if priority is None:
+            menu.addAction(action)
+            return
+        action.setData(priority)
+        for existing in menu.actions():
+            existing_priority = existing.data()
+            if isinstance(existing_priority, int) and existing_priority > priority:
+                menu.insertAction(existing, action)
+                return
+        menu.addAction(action)
 
     def get_menu(self, menu_name: str) -> QMenu:
         """Returns the `QMenu` for a menu name, creating it if needed. Nested menus are named "menu.submenu"."""
@@ -202,7 +232,7 @@ class MenuBuilder:
             action.setEnabled(False)
             action.setVisible(False)
             AppStateTracker.disconnect_from_state(action)
-        if len([act for act in menu.actions() if act.isEnabled()]) == 0:
+        if len([act for act in menu.actions() if act.isEnabled() and not act.isSeparator()]) == 0:
             _menu_set_visible(menu, False)
 
     # noinspection PyUnresolvedReferences
@@ -227,11 +257,12 @@ class MenuBuilder:
 
             # Condition check passed, add or restore menu item:
             is_new = self._find_action(menu_name, title) is None
-            action = self.add_menu_action(menu_name, menu_action_method, key)
+            action = self.add_menu_action(menu_name, menu_action_method, key, priority=menu_data.priority)
             if is_new and action is not None and menu_data.separator_before:
                 menu = self._find_or_add_menu(menu_name, False)
                 if menu is not None and len(menu.actions()) > 1:
-                    menu.insertSeparator(action)
+                    separator = menu.insertSeparator(action)
+                    separator.setData(menu_data.priority)
             if action is not None and menu_data.valid_app_states is not None:
                 AppStateTracker.set_enabled_states(action, menu_data.valid_app_states)
 
@@ -332,7 +363,7 @@ def _action_has_title(action: Optional[QAction | QMenu], title: str) -> bool:
     else:
         assert isinstance(action, QMenu)
         action_title = action.title()
-    return action_title.replace('&', '') == title
+    return action_title.replace('&', '') == title.replace('&', '')
 
 
 class MenuData:

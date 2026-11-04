@@ -17,7 +17,7 @@ from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qim
 from src.controller.image_generation.sd_adapters.params_adapter import build_comfy_params, build_upscale_params
 from src.controller.image_generation.image_generator import GENERATION_BACKDROP_COLOR
 from src.controller.image_generation.sd_generator import SDGenerator, SD_BASE_DESCRIPTION, \
-    STABLE_DIFFUSION_CONFIG_CATEGORY, GETTING_SD_MODELS, INSTALLATION_STABILITY_MATRIX, MENU_STABLE_DIFFUSION, \
+    STABLE_DIFFUSION_CONFIG_CATEGORY, GETTING_SD_MODELS, INSTALLATION_STABILITY_MATRIX, MENU_GENERATION, \
     STABILITY_MATRIX_ICONS
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
@@ -409,7 +409,7 @@ class SDComfyUIGenerator(SDGenerator):
         """Unloads this generator's settings from the settings modal."""
         settings_modal.remove_category(AppConfig(), STABLE_DIFFUSION_CONFIG_CATEGORY)
 
-    @menu_action(MENU_STABLE_DIFFUSION, 'clear_memory_shortcut', 211, [APP_STATE_EDITING])
+    @menu_action(MENU_GENERATION, 'clear_memory_shortcut', 513, [APP_STATE_EDITING])
     def clear_comfyui_memory(self) -> None:
         """Removes cached models from GPU memory within ComfyUI."""
         assert self._webservice is not None

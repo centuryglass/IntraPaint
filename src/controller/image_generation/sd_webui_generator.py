@@ -20,7 +20,7 @@ from src.controller.image_generation.sd_adapters.image_adapter import pil_to_qim
 from src.controller.image_generation.sd_adapters.params_adapter import build_webui_body, build_upscale_params
 from src.controller.image_generation.sd_generator import SD_BASE_DESCRIPTION, STABLE_DIFFUSION_CONFIG_CATEGORY, \
     SDGenerator, INSTALLATION_STABILITY_MATRIX, GETTING_SD_MODELS, IMAGE_PREVIEW_STABILITY_MATRIX_PACKAGES, \
-    MENU_STABLE_DIFFUSION, STABILITY_MATRIX_ICONS
+    MENU_GENERATION, STABILITY_MATRIX_ICONS
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
@@ -686,7 +686,7 @@ class SDWebUIGenerator(SDGenerator):
             raise RuntimeError(GENERATE_ERROR_TITLE)
         image_signal.emit(pil_to_qimage(result.images[-1]))
 
-    @menu_action(MENU_STABLE_DIFFUSION, 'prompt_style_shortcut', 200, [APP_STATE_EDITING],
+    @menu_action(MENU_GENERATION, 'prompt_style_shortcut', 510, [APP_STATE_EDITING],
                  condition_check=_check_prompt_styles_available)
     def show_style_window(self) -> None:
         """Show the saved prompt style window without blocking the main window, or raise it if it is already open."""

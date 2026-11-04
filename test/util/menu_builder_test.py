@@ -1,6 +1,7 @@
 """Tests the @menu_action decorator and MenuBuilder."""
 from PySide6.QtWidgets import QMainWindow
 
+from src.config.key_config import KeyConfig
 from src.util.menu_builder import MenuBuilder, menu_action
 from test.base_test_case import IntraPaintTestCase
 
@@ -49,3 +50,29 @@ class MenuBuilderTest(IntraPaintTestCase):
         builder.menu_window = window
         builder.build_menus()
         self.assertEqual([action.isSeparator() for action in builder.menu_actions(MENU)], [False])
+
+    def test_priority_order_across_builders(self) -> None:
+        """Actions from a second builder slot in by priority, and leave and return without leaving stray entries."""
+        class _Late(MenuBuilder):
+            @menu_action(MENU, 'paste_shortcut', 1)
+            def late(self) -> None:
+                """Sorts between the first builder's first two items."""
+        window = QMainWindow()
+        main = _Builder()
+        main.menu_window = window
+        main.build_menus()
+        main.add_menu_separator(MENU, 10)
+        late = _Late()
+        late.menu_window = window
+        late.build_menus()
+        def _names() -> list[str]:
+            return [action.text() if not action.isSeparator() else '----' for action in main.menu_actions(MENU)
+                    if action.isVisible()]
+        first, second, third, fourth = (KeyConfig().get_label(key) for key in
+                                        ('undo_shortcut', 'redo_shortcut', 'cut_shortcut', 'copy_shortcut'))
+        late_label = KeyConfig().get_label('paste_shortcut')
+        self.assertEqual(_names(), [first, second, late_label, '----', third, fourth, '----'])
+        late.clear_menus()
+        self.assertEqual(_names(), [first, second, '----', third, fourth, '----'])
+        late.build_menus()
+        self.assertEqual(_names(), [first, second, late_label, '----', third, fourth, '----'])

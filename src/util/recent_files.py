@@ -1,4 +1,4 @@
-"""Keeps the File > Open Recent list in `Cache.RECENT_FILES`: newest first, without duplicates, capped in length."""
+"""Keeps the File > Open recent list in `Cache.RECENT_FILES`: newest first, without duplicates, capped in length."""
 import os
 
 from src.config.cache import Cache

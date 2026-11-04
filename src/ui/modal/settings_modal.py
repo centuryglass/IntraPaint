@@ -1,4 +1,4 @@
-"""The settings window (Edit > Settings): a category sidebar, a search field, and a page of sections per category.
+"""The settings window (Edit > Preferences): a category sidebar, a search field, and a page of sections per category.
 
 - The controller fills it from `Config` objects with `load_from_config`, and generators add and remove their own
   categories. Controls are standalone: edits collect in a dict that `changes_saved` emits when Save is clicked, and

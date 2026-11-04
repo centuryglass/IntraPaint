@@ -2928,7 +2928,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>New image</source>
+        <source>New...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2958,7 +2958,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Save as</source>
+        <source>Save as...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2968,7 +2968,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Load image</source>
+        <source>Open...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2978,7 +2978,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Open as layers</source>
+        <source>Open as layers...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2988,7 +2988,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Reload</source>
+        <source>Revert</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3093,7 +3093,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Settings</source>
+        <source>Preferences...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3128,7 +3128,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Zoom to 100%</source>
+        <source>Actual size (100%)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3138,7 +3138,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Reset view</source>
+        <source>Fit image in window</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3158,7 +3158,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Show/hide tool control hints</source>
+        <source>Tool control hints</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3174,6 +3174,11 @@
     <message>
         <location filename="../config/key_config_definitions.json"/>
         <source>Put every panel back where it starts on first run, and open it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Window Menu</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3198,7 +3203,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Show/hide rulers</source>
+        <source>Rulers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3208,7 +3213,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Resize canvas</source>
+        <source>Canvas size...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3223,7 +3228,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Scale image</source>
+        <source>Scale image...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3233,7 +3238,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Crop image to selection</source>
+        <source>Crop to selection</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3243,7 +3248,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Crop image to generation area</source>
+        <source>Crop to generation area</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3253,7 +3258,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Resize image to content</source>
+        <source>Fit canvas to layers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3263,7 +3268,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Update metadata</source>
+        <source>Image metadata...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3273,12 +3278,17 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Select image generator</source>
+        <source>Select image generator...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
         <source>Selects an AI image generator</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Generation Menu</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3313,7 +3323,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Selection Menu</source>
+        <source>Select Menu</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3348,7 +3358,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Expand selection</source>
+        <source>Grow selection</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3413,7 +3423,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Rename layer</source>
+        <source>Rename layer...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3503,7 +3513,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Merge all visible</source>
+        <source>Merge visible</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3543,7 +3553,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Crop layer to contents</source>
+        <source>Crop layer to content</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3593,7 +3603,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>RGBA color balance</source>
+        <source>RGBA color balance...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3603,12 +3613,12 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Filter Menu</source>
+        <source>Filters Menu</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Brightness/contrast</source>
+        <source>Brightness/contrast...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3618,7 +3628,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Blur</source>
+        <source>Blur...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3628,7 +3638,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Sharpen</source>
+        <source>Sharpen...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3638,7 +3648,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Posterize</source>
+        <source>Posterize...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3648,7 +3658,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Saturation</source>
+        <source>Saturation...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3658,7 +3668,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Invert</source>
+        <source>Invert...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3668,7 +3678,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>View saved prompt styles</source>
+        <source>View saved prompt styles...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3678,12 +3688,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Stable Diffusion Menu</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/key_config_definitions.json"/>
-        <source>View LoRA models</source>
+        <source>View LoRA models...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3713,7 +3718,7 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Open IntraPaint help pages</source>
+        <source>IntraPaint help</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3759,27 +3764,47 @@
     </message>
     <message>
         <location filename="../../src/controller/app_controller.py"/>
-        <source>File</source>
+        <source>&amp;File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/controller/app_controller.py"/>
-        <source>Edit</source>
+        <source>&amp;Edit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/controller/app_controller.py"/>
-        <source>Image</source>
+        <source>&amp;View</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/controller/app_controller.py"/>
-        <source>View</source>
+        <source>&amp;Image</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/controller/app_controller.py"/>
-        <source>Panels</source>
+        <source>&amp;Layer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>&amp;Select</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>Fil&amp;ters</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>&amp;Window</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/app_controller.py"/>
+        <source>&amp;Help</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3799,27 +3824,7 @@
     </message>
     <message>
         <location filename="../../src/controller/app_controller.py"/>
-        <source>Selection</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Layers</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Filters</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Help</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Open Recent</source>
+        <source>Open recent</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3829,12 +3834,7 @@
     </message>
     <message>
         <location filename="../../src/controller/app_controller.py"/>
-        <source>Move</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Select</source>
+        <source>Stack</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4456,6 +4456,11 @@
     <message>
         <location filename="../../src/controller/image_generation/sd_generator.py"/>
         <source>Loading ControlNet preprocessor preview failed: {err}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/controller/image_generation/sd_generator.py"/>
+        <source>&amp;Generation</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

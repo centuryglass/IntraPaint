@@ -1,0 +1,145 @@
+{
+  "menu_order": [
+    "&File",
+    "&Edit",
+    "&View",
+    "&Image",
+    "&Layer",
+    "&Select",
+    "Fil&ters",
+    "&Generation",
+    "&Window",
+    "&Help"
+  ],
+  "menus": {
+    "&Edit": [
+      "Undo",
+      "Redo",
+      "----",
+      "Cut",
+      "Copy",
+      "Paste",
+      "Clear",
+      "----",
+      "Preferences..."
+    ],
+    "&File": [
+      "New...",
+      "Open...",
+      {
+        "Open recent": []
+      },
+      "Open as layers...",
+      "----",
+      "Save",
+      "Save as...",
+      "Revert",
+      "----",
+      "Quit"
+    ],
+    "&Generation": [
+      "Generate",
+      "Reopen last generated options",
+      "----",
+      "Select image generator..."
+    ],
+    "&Help": [
+      "IntraPaint help"
+    ],
+    "&Image": [
+      "Canvas size...",
+      "Scale image...",
+      "----",
+      "Crop to selection",
+      "Crop to generation area",
+      "Fit canvas to layers",
+      "----",
+      "Image metadata..."
+    ],
+    "&Layer": [
+      "New layer",
+      "New layer group",
+      "Duplicate layer",
+      "Delete layer",
+      "----",
+      "Rename layer...",
+      {
+        "Stack": [
+          "Select previous layer",
+          "Select next layer",
+          "----",
+          "Move layer up",
+          "Move layer down",
+          "Move layer to top"
+        ]
+      },
+      {
+        "Transform": [
+          "Mirror layer horizontally",
+          "Mirror layer vertically",
+          "Rotate layer 90\u00b0 CW",
+          "Rotate layer 90\u00b0 CCW"
+        ]
+      },
+      "----",
+      "Merge layer down",
+      "Merge group",
+      "Merge visible",
+      "Flatten layer",
+      "----",
+      "Layer to image size",
+      "Crop layer to selection",
+      "Crop layer to content"
+    ],
+    "&Select": [
+      "Select all",
+      "Deselect all",
+      "Invert selection",
+      "----",
+      "Select layer content",
+      "----",
+      "Grow selection",
+      "Shrink selection",
+      "----",
+      "Clear context pins"
+    ],
+    "&View": [
+      "Zoom in",
+      "Zoom out",
+      "Fit image in window",
+      "Actual size (100%)",
+      "Zoom to generation area",
+      "----",
+      "Rulers [checkable]",
+      "Tool control hints [checkable]"
+    ],
+    "&Window": [
+      "Tools [checkable]",
+      "Image Generation [checkable]",
+      "Layers [checkable]",
+      "Color [checkable]",
+      "Navigation [checkable]",
+      "----",
+      {
+        "Layouts": [
+          "Save current layout...",
+          "Manage layouts..."
+        ]
+      },
+      "Reset panel layout",
+      {
+        "Move all panels to edge": []
+      }
+    ],
+    "Fil&ters": [
+      "RGBA color balance...",
+      "Brightness/contrast...",
+      "Saturation...",
+      "Posterize...",
+      "Invert...",
+      "----",
+      "Blur...",
+      "Sharpen..."
+    ]
+  }
+}
