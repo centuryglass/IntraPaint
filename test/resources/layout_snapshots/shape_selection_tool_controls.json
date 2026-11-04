@@ -35,10 +35,10 @@
   "short": {
     "problems": [
       "squeezed: PanelSection[0] is 190x33, minimum 128x50",
-      "squeezed: PanelSection[0]/_HeaderButton 'Mode: Add' is 166x17, minimum 16x26",
+      "squeezed: PanelSection[0]/_HeaderButton 'Mode: Add' is 172x17, minimum 16x26",
       "squeezed: PanelSection[0]/QWidget is 190x16, minimum 128x24",
       "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 190x16, minimum 128x24",
-      "squeezed: PanelSection[0]/KeyHintLabel 'Q' is 20x17, minimum 20x23",
+      "squeezed: PanelSection[0]/KeyHintLabel 'Q' is 14x17, minimum 14x21",
       "squeezed: PanelSection[1] is 190x32, minimum 182x56",
       "squeezed: PanelSection[1]/_HeaderButton 'Selection' is 186x16, minimum 16x26",
       "squeezed: PanelSection[1]/QWidget is 190x16, minimum 182x30",
@@ -80,7 +80,7 @@
       "squeezed: PanelSection[0]/_HeaderButton 'Mode: Add' is 13x26, minimum 16x26",
       "squeezed: PanelSection[0]/QWidget is 25x39, minimum 128x24",
       "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 25x24, minimum 128x24",
-      "squeezed: PanelSection[0]/KeyHintLabel 'Q' is 8x39, minimum 20x23",
+      "squeezed: PanelSection[0]/KeyHintLabel 'Q' is 8x39, minimum 14x21",
       "squeezed: PanelSection[1] is 24x78, minimum 182x56",
       "squeezed: PanelSection[1]/QWidget is 24x52, minimum 182x30",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 9x30, minimum 96x30",

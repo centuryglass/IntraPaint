@@ -111,7 +111,7 @@ class ToolButtonKeyHintTest(IntraPaintTestCase):
 
     def test_key_hint_too_wide_even_with_symbols_stays_hidden(self) -> None:
         """A key hint still too wide with modifier symbols is hidden."""
-        KeyConfig().set(KeyConfig.TEXT_TOOL_KEY, 'Ctrl+Shift+PgDown')
+        KeyConfig().set(KeyConfig.TEXT_TOOL_KEY, 'Ctrl+Alt+Shift+PgDown')
         button = self._button(KeyConfig.TEXT_TOOL_KEY)
         button.set_edge_length(40, show_key_hint=True)
         self.assertFalse(button._key_hint.isVisibleTo(button))  # pylint: disable=protected-access

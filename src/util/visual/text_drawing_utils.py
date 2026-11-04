@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QApplication
 from src.util.visual.display_size import logger
 from src.util.visual.geometry_utils import align_inner_bounds
 from src.util.visual.image_utils import create_transparent_image, temp_rich_text_image
-from src.util.visual.keycap import KEYCAP_PADDING, draw_keycap, keycap_colors, keycap_font, keycap_size
+from src.util.visual.keycap import draw_keycap, draw_keycap_text, keycap_colors, keycap_font, keycap_size
 from src.util.visual.palette_icon import palette_rich_text_image
 from src.util.shared_constants import PROJECT_DIR
 
@@ -142,10 +142,7 @@ def rich_text_key_hint(key_str: str) -> str:
         painter = QPainter(image)
         bounds = QRectF(0, 0, image.width(), image.height())
         draw_keycap(painter, bounds, fill, outline)
-        painter.setFont(font)
-        painter.setPen(text_color)
-        text_bounds = QRectF(KEYCAP_PADDING.left(), KEYCAP_PADDING.top(), text_size.width(), text_size.height())
-        painter.drawText(text_bounds, Qt.AlignmentFlag.AlignCenter, key_str)
+        draw_keycap_text(painter, bounds, text_size, font, key_str, text_color)
         painter.end()
         return image
 
