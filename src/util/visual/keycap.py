@@ -1,16 +1,16 @@
 """Draws keycaps: rounded `WindowText`-filled plates with `Shadow` text and outline, and a hard depth edge below.
 
-`KeyHintLabel` draws its keycap with `draw_keycap`, and `rich_text_key_hint` renders the same plate into inline
-images, so the two stay in step with each other and with the theme.
+`KeyHintLabel` draws its keycap with `draw_keycap` and `draw_keycap_text`, and `rich_text_key_hint` renders the same
+plate and text into inline images, so the two stay in step with each other and with the theme.
 """
-from PySide6.QtCore import QMargins, QRectF, QSize
+from PySide6.QtCore import QMargins, QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QFont, QPainter, QPalette, QPen
 
 KEYCAP_RADIUS = 3.0
 # The keycap's ink shadow drops this far below it:
 KEYCAP_DEPTH = 2
 # Space between the key text and the keycap's outline. The bottom margin excludes `KEYCAP_DEPTH`:
-KEYCAP_PADDING = QMargins(5, 3, 5, 2)
+KEYCAP_PADDING = QMargins(2, 2, 2, 1)
 
 
 def keycap_font(base_font: QFont) -> QFont:
@@ -46,4 +46,20 @@ def draw_keycap(painter: QPainter, bounds: QRectF, fill: QColor, outline: QColor
     painter.drawRoundedRect(cap.translated(0, KEYCAP_DEPTH), KEYCAP_RADIUS, KEYCAP_RADIUS)
     painter.setBrush(fill)
     painter.drawRoundedRect(cap, KEYCAP_RADIUS, KEYCAP_RADIUS)
+    painter.restore()
+
+
+def draw_keycap_text(painter: QPainter, bounds: QRectF, text_size: QSize, font: QFont, text: str,
+                     color: QColor) -> None:
+    """Draws `text` on a keycap filling `bounds`, the same `bounds` passed to `draw_keycap`.
+
+    The text is positioned `KEYCAP_PADDING.left()`/`.top()` in from `bounds`' top-left corner, in a box sized to
+    `text_size`, so the gap on each side of the text matches `KEYCAP_PADDING` exactly.
+    """
+    painter.save()
+    painter.setFont(font)
+    painter.setPen(color)
+    text_rect = QRectF(bounds.left() + KEYCAP_PADDING.left(), bounds.top() + KEYCAP_PADDING.top(),
+                       text_size.width(), text_size.height())
+    painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, text)
     painter.restore()

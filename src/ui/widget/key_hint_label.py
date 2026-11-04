@@ -8,8 +8,7 @@ from PySide6.QtWidgets import QLabel, QWidget
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.util.key_code_utils import get_key_with_modifiers, get_modifier_string, KEY_REQUIRES_SHIFT
-from src.util.visual.keycap import (KEYCAP_PADDING, KEYCAP_DEPTH, draw_keycap, keycap_colors, keycap_font,
-                                    keycap_size)
+from src.util.visual.keycap import draw_keycap, draw_keycap_text, keycap_colors, keycap_font, keycap_size
 from src.util.visual.text_drawing_utils import find_text_size, get_key_display_string
 
 # Modifier names and the symbols that replace them in compact key text, in the order they are tried:
@@ -53,8 +52,6 @@ class KeyHintLabel(QLabel):
         font.setPointSize(self._default_size)
         self.setFont(font)
         self.setTextFormat(Qt.TextFormat.RichText)
-        self.setContentsMargins(KEYCAP_PADDING.left(), KEYCAP_PADDING.top(), KEYCAP_PADDING.right(),
-                                KEYCAP_PADDING.bottom() + KEYCAP_DEPTH)
         self._saved_size: Optional[QSize] = None
         self._compact = False
         self._key_codes: Optional[QKeySequence | Qt.KeyboardModifier | str] = None
@@ -106,12 +103,13 @@ class KeyHintLabel(QLabel):
         super().setFont(font)
 
     def paintEvent(self, event: Optional[QPaintEvent]):
-        """Draw the keycap behind the key text."""
+        """Draw the keycap and its key text."""
         if self._base_text == '':
             super().paintEvent(event)
             return
         own_bounds = QRect(QPoint(), self.size())
-        text_bounds = QRect(QPoint(), keycap_size(find_text_size(self._base_text, self._key_font(), exact=False)))
+        text_size = find_text_size(self._base_text, self._key_font(), exact=False)
+        text_bounds = QRect(QPoint(), keycap_size(text_size))
         alignment = self.alignment()
         if alignment & Qt.AlignmentFlag.AlignHCenter == Qt.AlignmentFlag.AlignHCenter:
             text_bounds.moveLeft((own_bounds.width() - text_bounds.width()) // 2)
@@ -122,11 +120,11 @@ class KeyHintLabel(QLabel):
         elif alignment & Qt.AlignmentFlag.AlignBottom == Qt.AlignmentFlag.AlignBottom:
             text_bounds.moveTop(own_bounds.height() - text_bounds.height())
         text_bounds = text_bounds.intersected(own_bounds)
-        fill, outline, _ = keycap_colors(self.palette())
+        fill, outline, text_color = keycap_colors(self.palette())
         painter = QPainter(self)
         draw_keycap(painter, QRectF(text_bounds), fill, outline)
+        draw_keycap_text(painter, QRectF(text_bounds), text_size, self._key_font(), self._base_text, text_color)
         painter.end()
-        super().paintEvent(event)
 
     @staticmethod
     def _validate_and_format_keys(key_str: str) -> str:
