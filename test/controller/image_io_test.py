@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QApplication, QWidget
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_io import ImageIO
+from src.ui.modal.save_loss_modal import SAVE_ANYWAY, SAVE_ORA, CANCEL
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.util.main_thread import is_main_thread
@@ -97,6 +98,7 @@ class TestImageIO(ImageIOTestCase):
         Cache().set(Cache.LAST_FILE_PATH, '')
         dialog_threads = []
         with tempfile.TemporaryDirectory() as save_dir, \
+                patch('src.controller.image_io.request_save_loss_choice', return_value=SAVE_ANYWAY), \
                 patch('src.controller.image_io.show_error_dialog',
                       side_effect=lambda *_: dialog_threads.append(is_main_thread())) as error_dialog:
             for extension in ('png', 'ora'):
@@ -123,6 +125,68 @@ class TestImageIO(ImageIOTestCase):
         loaded = json.loads(self.image_io.metadata_json())
         self.assertEqual(base64.b64encode(b'\x00\x00\x01\xe0mntrRGB').decode(), loaded['icc_profile'])
         self.assertEqual('plain', loaded['text'])
+
+
+class TestSaveLossWarning(ImageIOTestCase):
+    """Tests the dialog shown before a save that loses data."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        AppConfig()._reset()
+        self.image_io.load(LAYER_IMAGE)
+        Cache().set(Cache.LAST_FILE_PATH, '')
+
+    def _save_png(self, choice: str) -> tuple[str, list]:
+        """Saves to a .png with the dialog answering `choice`, returning the path and the dialog's loss lists."""
+        calls: list = []
+
+        def _answer(_parent, losses, offer_ora):
+            calls.append((losses, offer_ora))
+            return choice
+
+        path = os.path.join(self.temp_dir.name, 'out.png')
+        with patch('src.controller.image_io.request_save_loss_choice', side_effect=_answer):
+            self.image_io.save_as(path)
+            self.image_io.wait_for_pending_save()
+        return path, calls
+
+    def test_cancel_writes_nothing(self) -> None:
+        """Canceling the dialog writes no file and leaves the last saved path alone."""
+        path, calls = self._save_png(CANCEL)
+        self.assertEqual(1, len(calls))
+        self.assertFalse(os.path.exists(path))
+        self.assertEqual('', Cache().get(Cache.LAST_FILE_PATH))
+
+    def test_save_anyway_flattens(self) -> None:
+        """Save anyway writes the flat file, after the dialog listed the layers loss."""
+        path, calls = self._save_png(SAVE_ANYWAY)
+        self.assertTrue(os.path.isfile(path))
+        losses, offer_ora = calls[0]
+        self.assertTrue(offer_ora)
+        self.assertIn(AppConfig.WARN_BEFORE_LAYERLESS_SAVE, [loss.config_key for loss in losses])
+        self.assertEqual(path, Cache().get(Cache.LAST_FILE_PATH))
+
+    def test_save_as_ora_writes_ora(self) -> None:
+        """Save as .ora writes an .ora beside the chosen path, and no flat file."""
+        path, _ = self._save_png(SAVE_ORA)
+        self.assertFalse(os.path.exists(path))
+        ora_path = os.path.join(self.temp_dir.name, 'out.ora')
+        self.assertTrue(os.path.isfile(ora_path))
+        self.assertEqual(ora_path, Cache().get(Cache.LAST_FILE_PATH))
+
+    def test_disabled_warning_is_not_listed(self) -> None:
+        """A loss whose warning is disabled is left out of the dialog's list."""
+        AppConfig().set(AppConfig.WARN_BEFORE_LAYERLESS_SAVE, False)
+        _, calls = self._save_png(SAVE_ANYWAY)
+        keys = [loss.config_key for loss in calls[0][0]]
+        self.assertNotIn(AppConfig.WARN_BEFORE_LAYERLESS_SAVE, keys)
+
+    def test_ora_save_has_no_dialog(self) -> None:
+        """.ora saves lose nothing, so they never ask."""
+        with patch('src.controller.image_io.request_save_loss_choice') as dialog:
+            self.image_io.save_as(os.path.join(self.temp_dir.name, 'out.ora'))
+            self.image_io.wait_for_pending_save()
+        dialog.assert_not_called()
 
 
 class TestOpenAnimation(ImageIOTestCase):
@@ -194,6 +258,7 @@ class TestSaveAnimation(ImageIOTestCase):
         self.image_io.load(self.gif_path)
         path = os.path.join(self.temp_dir.name, 'flat.webp')
         with patch(self.SAVE_MODAL, return_value=(True, None)), \
+                patch('src.controller.image_io.request_save_loss_choice', return_value=SAVE_ANYWAY), \
                 patch('src.controller.image_io.open_image_file', return_value=path):
             self.image_io.save_as()
             self.image_io.wait_for_pending_save()

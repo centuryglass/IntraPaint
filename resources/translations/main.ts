@@ -4781,7 +4781,7 @@ Choose "No" to open only the first frame.</source>
     </message>
     <message>
         <location filename="../../src/controller/image_io.py"/>
-        <source>Image saved without layer data</source>
+        <source>Layers will not be saved</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4791,7 +4791,7 @@ Choose "No" to open only the first frame.</source>
     </message>
     <message>
         <location filename="../../src/controller/image_io.py"/>
-        <source>Image saved without full transparency</source>
+        <source>Transparency will not be fully saved</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4801,7 +4801,7 @@ Choose "No" to open only the first frame.</source>
     </message>
     <message>
         <location filename="../../src/controller/image_io.py"/>
-        <source>Image saved without image generation metadata</source>
+        <source>Image generation metadata will not be saved</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4811,7 +4811,7 @@ Choose "No" to open only the first frame.</source>
     </message>
     <message>
         <location filename="../../src/controller/image_io.py"/>
-        <source>Image saved in a write-only format</source>
+        <source>This format cannot be opened again</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4821,7 +4821,7 @@ Choose "No" to open only the first frame.</source>
     </message>
     <message>
         <location filename="../../src/controller/image_io.py"/>
-        <source>Image saved in a format that changes size</source>
+        <source>This format will change the image size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4831,7 +4831,7 @@ Choose "No" to open only the first frame.</source>
     </message>
     <message>
         <location filename="../../src/controller/image_io.py"/>
-        <source>Image saved without color</source>
+        <source>Color will not be saved</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6931,6 +6931,39 @@ Keys: {decrease} / {increase}</source>
     <message>
         <location filename="../../src/ui/modal/resize_canvas_modal.py"/>
         <source>New size: {width} x {height} ({width_change} x {height_change})</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.modal.save_loss_modal</name>
+    <message>
+        <location filename="../../src/ui/modal/save_loss_modal.py"/>
+        <source>Save will lose data</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/save_loss_modal.py"/>
+        <source>Saving in this format will lose the following:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/save_loss_modal.py"/>
+        <source>Don't warn about this again</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/save_loss_modal.py"/>
+        <source>Save as .ora</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/save_loss_modal.py"/>
+        <source>Save anyway</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/save_loss_modal.py"/>
+        <source>Cancel</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

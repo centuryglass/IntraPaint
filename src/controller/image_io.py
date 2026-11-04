@@ -32,6 +32,7 @@ from src.image.open_raster import capture_ora_image, write_ora_snapshot, read_or
 from src.image.recovery_files import RestoredDocument
 from src.ui.modal.animation_save_modal import AnimationSaveModal, saved_animation_options
 from src.ui.modal.modal_parent import modal_parent
+from src.ui.modal.save_loss_modal import SaveLoss, request_save_loss_choice, SAVE_ORA, CANCEL
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers, \
     show_warning_dialog
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING
@@ -92,31 +93,39 @@ MESSAGE_CONFIRM_METADATA_UPDATE = _tr('Image generation parameters have changed,
 ANIMATION_MAX_FRAME_MS = 60000
 ANIMATION_MAX_LOOP_COUNT = 65535
 
-# Warnings when saving images cause data loss:
-LAYERS_NOT_SAVED_TITLE = _tr('Image saved without layer data')
+# Data loss warnings, shown before a save that would lose the data:
+LAYERS_NOT_SAVED_TITLE = _tr('Layers will not be saved')
 LAYERS_NOT_SAVED_MESSAGE = _tr('To save layer data, images must be saved in .ora format. To save each layer as an'
                                ' animation frame, use one of the following formats: {animation_formats}')
 
-ALPHA_NOT_SAVED_TITLE = _tr('Image saved without full transparency')
+ALPHA_NOT_SAVED_TITLE = _tr('Transparency will not be fully saved')
 ALPHA_NOT_SAVED_MESSAGE = _tr('To preserve transparency, save using one of the following file formats:'
                               ' {alpha_formats}')
 
-METADATA_NOT_SAVED_TITLE = _tr('Image saved without image generation metadata')
+METADATA_NOT_SAVED_TITLE = _tr('Image generation metadata will not be saved')
 METADATA_NOT_SAVED_MESSAGE = _tr('To preserve image generation metadata, save using one of the following file formats:'
                                  ' {metadata_formats}')
 
-WRITE_ONLY_SAVE_TITLE = _tr('Image saved in a write-only format')
+WRITE_ONLY_SAVE_TITLE = _tr('This format cannot be opened again')
 WRITE_ONLY_SAVE_MESSAGE = _tr('IntraPaint can write images in the {file_format} format, but cannot load them. Use '
                               'another file format if you want to be able to load this image in IntraPaint again.')
 
-FIXED_SIZE_SAVE_TITLE = _tr('Image saved in a format that changes size')
+FIXED_SIZE_SAVE_TITLE = _tr('This format will change the image size')
 FIXED_SIZE_SAVE_MESSAGE = _tr('The image is {width_px}x{height_px}, but the {file_format} format saves all images at'
                               ' {saved_width_px}x{saved_height_px} resolution. Use another file format if you want'
                               ' to preserve the original image size.')
 
-NO_COLOR_SAVE_TITLE = _tr('Image saved without color')
+NO_COLOR_SAVE_TITLE = _tr('Color will not be saved')
 NO_COLOR_SAVE_MESSAGE = _tr('The {file_format} format saves the image without color. Use another format if you want'
                             ' to preserve image colors.')
+
+
+def _extension_str(extensions: tuple[str, ...]) -> str:
+    return ', '.join((f'.{ext.lower()}' for ext in extensions))
+
+
+def _metadata_loss_message() -> str:
+    return METADATA_NOT_SAVED_MESSAGE.format(metadata_formats=_extension_str(tuple(IMAGE_FORMATS_SUPPORTING_METADATA)))
 
 
 class _MetadataEncoder(json.JSONEncoder):
@@ -244,10 +253,55 @@ class ImageIO:
         task.start()
 
 
+    def _ora_save_path(self, file_path: str) -> Optional[str]:
+        """Returns the .ora path that replaces `file_path` in "Save as .ora", asking where if that file exists."""
+        ora_path = os.path.splitext(file_path)[0] + ORA_FILE_EXTENSION
+        if not os.path.exists(ora_path):
+            return ora_path
+        selected_path = open_image_file(self._window, mode='save', selected_file=ora_path)
+        return selected_path if isinstance(selected_path, str) else None
+
+    def _save_losses(self, file_format: str, image: QImage, saved_images: list[QImage],
+                     is_animation: bool) -> list[SaveLoss]:
+        """Lists what saving as `file_format` loses, for the losses whose warning is enabled."""
+        config = AppConfig()
+        format_str = f'.{file_format.lower()}'
+        losses: list[SaveLoss] = []
+        if (config.get(AppConfig.WARN_BEFORE_LAYERLESS_SAVE) and not is_animation
+                and self._image_stack.layer_stack.count > 1):
+            losses.append(SaveLoss(LAYERS_NOT_SAVED_TITLE, LAYERS_NOT_SAVED_MESSAGE.format(
+                animation_formats=_extension_str(tuple(sorted(ANIMATION_WRITE_FORMATS)))),
+                AppConfig.WARN_BEFORE_LAYERLESS_SAVE))
+        if (config.get(AppConfig.WARN_BEFORE_RGB_SAVE)
+                and ((file_format not in IMAGE_FORMATS_SUPPORTING_ALPHA
+                      and not all(image_is_fully_opaque(saved) for saved in saved_images))
+                     or (file_format in IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA
+                         and any(image_has_partial_alpha(saved) for saved in saved_images)))):
+            losses.append(SaveLoss(ALPHA_NOT_SAVED_TITLE, ALPHA_NOT_SAVED_MESSAGE.format(
+                alpha_formats=_extension_str(IMAGE_FORMATS_SUPPORTING_ALPHA)), AppConfig.WARN_BEFORE_RGB_SAVE))
+        if (config.get(AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA) and self.metadata is not None
+                and METADATA_PARAMETER_KEY in self.metadata and file_format not in IMAGE_FORMATS_SUPPORTING_METADATA):
+            losses.append(SaveLoss(METADATA_NOT_SAVED_TITLE, _metadata_loss_message(),
+                                   AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA))
+        if (config.get(AppConfig.WARN_BEFORE_WRITE_ONLY_SAVE) and file_format in IMAGE_WRITE_FORMATS
+                and file_format not in IMAGE_READ_FORMATS):
+            losses.append(SaveLoss(WRITE_ONLY_SAVE_TITLE, WRITE_ONLY_SAVE_MESSAGE.format(file_format=format_str),
+                                   AppConfig.WARN_BEFORE_WRITE_ONLY_SAVE))
+        if (config.get(AppConfig.WARN_BEFORE_FIXED_SIZE_SAVE) and file_format in IMAGE_FORMATS_WITH_FIXED_SIZE
+                and image.size() != IMAGE_FORMATS_WITH_FIXED_SIZE[file_format]):
+            final_size = IMAGE_FORMATS_WITH_FIXED_SIZE[file_format]
+            losses.append(SaveLoss(FIXED_SIZE_SAVE_TITLE, FIXED_SIZE_SAVE_MESSAGE.format(
+                width_px=image.width(), height_px=image.height(), file_format=format_str,
+                saved_width_px=final_size.width(), saved_height_px=final_size.height()),
+                AppConfig.WARN_BEFORE_FIXED_SIZE_SAVE))
+        if config.get(AppConfig.WARN_BEFORE_COLOR_LOSS) and file_format in GREYSCALE_IMAGE_FORMATS:
+            losses.append(SaveLoss(NO_COLOR_SAVE_TITLE, NO_COLOR_SAVE_MESSAGE.format(file_format=format_str),
+                                   AppConfig.WARN_BEFORE_COLOR_LOSS))
+        return losses
+
     def save_as(self, file_path: Optional[str] = None) -> None:
         """Open a save dialog, and save the edited image to disk, preserving any metadata."""
         cache = Cache()
-        config = AppConfig()
         error_handled = False
         # Plain saves reuse the remembered animation options, Save As asks:
         ask_about_animation = not isinstance(file_path, str)
@@ -304,40 +358,32 @@ class ImageIO:
                 if update_metadata:
                     self.update_metadata(False)
 
+            is_ora = file_path.lower().endswith(ORA_FILE_EXTENSION)
+            image = QImage()
+            animation_frames: Optional[list[ImageFrame]] = None
+            if not is_ora:
+                image = self._image_stack.qimage()
+                if animation_options is not None:
+                    animation_frames = render_frames(self._image_stack)
+                saved_images = [image] if animation_frames is None else [frame.image for frame in animation_frames]
+                losses = self._save_losses(file_format, image, saved_images, animation_options is not None)
+                choice = request_save_loss_choice(self._window, losses, offer_ora=animation_options is None)
+                if choice == CANCEL:
+                    error_handled = True  # Nothing was written, and canceling isn't an error.
+                    return
+                if choice == SAVE_ORA:
+                    error_handled = True  # The nested save reports its own failures.
+                    ora_path = self._ora_save_path(file_path)
+                    if ora_path is not None:
+                        self.save_as(ora_path)
+                    return
+
             on_saved = None if self.on_save_started is None else self.on_save_started()
-            if file_path.lower().endswith(ORA_FILE_EXTENSION):
+            if is_ora:
                 snapshot = capture_ora_image(self._image_stack, file_path, self.metadata_json())
                 self._start_save(snapshot.file_path, lambda: write_ora_snapshot(snapshot), on_saved)
                 error_handled = True  # The write's own handler reports any failure.
                 return
-            image = self._image_stack.qimage()
-            animation_frames: Optional[list[ImageFrame]] = None
-            if animation_options is not None:
-                animation_frames = render_frames(self._image_stack)
-            saved_images = [image] if animation_frames is None else [frame.image for frame in animation_frames]
-
-            # Check for data loss conditions that should be mentioned:
-            warn_save_discards_layers = (config.get(AppConfig.WARN_BEFORE_LAYERLESS_SAVE)
-                                         and animation_options is None
-                                         and self._image_stack.layer_stack.count > 1)
-            warn_save_discards_alpha = (config.get(AppConfig.WARN_BEFORE_RGB_SAVE)
-                                        and ((file_format not in IMAGE_FORMATS_SUPPORTING_ALPHA
-                                              and not all(image_is_fully_opaque(saved) for saved in saved_images))
-                                             or (file_format in IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA
-                                                 and any(image_has_partial_alpha(saved)
-                                                         for saved in saved_images))))
-            warn_save_discards_metadata = (config.get(AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA)
-                                           and self.metadata is not None
-                                           and METADATA_PARAMETER_KEY in self.metadata
-                                           and file_format not in IMAGE_FORMATS_SUPPORTING_METADATA)
-            warn_save_is_write_only = (config.get(AppConfig.WARN_BEFORE_WRITE_ONLY_SAVE)
-                                       and file_format in IMAGE_WRITE_FORMATS
-                                       and file_format not in IMAGE_READ_FORMATS)
-            warn_save_changes_size = (config.get(AppConfig.WARN_BEFORE_FIXED_SIZE_SAVE)
-                                      and file_format in IMAGE_FORMATS_WITH_FIXED_SIZE
-                                      and image.size() != IMAGE_FORMATS_WITH_FIXED_SIZE[file_format])
-            warn_save_removes_color = (config.get(AppConfig.WARN_BEFORE_COLOR_LOSS)
-                                       and file_format in GREYSCALE_IMAGE_FORMATS)
             # The worker writes from copies, so edits made while it runs don't reach the file:
             saved_image = image.copy()
             saved_metadata = copy.deepcopy(self.metadata)
@@ -359,59 +405,13 @@ class ImageIO:
                 else:
                     save_image(saved_image, file_path, saved_exif)
 
-            def _show_data_loss_warnings() -> None:
-                """Shows the data loss warnings that apply to the finished save, unless disabled."""
-                nonlocal warn_save_discards_metadata
+            def _warn_if_metadata_fallback_used() -> None:
+                """Warns after the write about metadata loss that only the write itself can discover."""
                 if len(metadata_fallback_used) > 0:
-                    warn_save_discards_metadata = config.get(AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA)
-                alpha_loss_message = ALPHA_NOT_SAVED_MESSAGE
-                metadata_loss_message = METADATA_NOT_SAVED_MESSAGE
-                fixed_size_message = FIXED_SIZE_SAVE_MESSAGE
-                color_loss_message = NO_COLOR_SAVE_MESSAGE
-                write_only_message = WRITE_ONLY_SAVE_MESSAGE
+                    show_warning_dialog(self._window, METADATA_NOT_SAVED_TITLE, _metadata_loss_message(),
+                                        AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA)
 
-                def _extension_str(extensions: tuple[str, ...]) -> str:
-                    return ', '.join((f'.{ext.lower()}' for ext in extensions))
-
-                format_str = f'.{file_format.lower()}'
-                layers_loss_message = LAYERS_NOT_SAVED_MESSAGE.format(
-                    animation_formats=_extension_str(tuple(sorted(ANIMATION_WRITE_FORMATS))))
-
-                if warn_save_discards_alpha:
-                    alpha_loss_message = alpha_loss_message.format(
-                        alpha_formats=_extension_str(IMAGE_FORMATS_SUPPORTING_ALPHA))
-                if warn_save_discards_metadata:
-                    metadata_loss_message = metadata_loss_message.format(
-                        metadata_formats=_extension_str(IMAGE_FORMATS_SUPPORTING_METADATA))
-                if warn_save_changes_size:
-                    final_size = IMAGE_FORMATS_WITH_FIXED_SIZE[file_format]
-                    fixed_size_message = fixed_size_message.format(width_px=image.width(),
-                                                                   height_px=image.height(),
-                                                                   file_format=format_str,
-                                                                   saved_width_px=final_size.width(),
-                                                                   saved_height_px=final_size.height())
-                if warn_save_is_write_only:
-                    write_only_message = write_only_message.format(file_format=format_str)
-                if warn_save_removes_color:
-                    color_loss_message = color_loss_message.format(file_format=format_str)
-
-                for loss_condition, warn_on_save_config_key, title, message in (
-                        (warn_save_discards_layers, AppConfig.WARN_BEFORE_LAYERLESS_SAVE, LAYERS_NOT_SAVED_TITLE,
-                         layers_loss_message),
-                        (warn_save_discards_alpha, AppConfig.WARN_BEFORE_RGB_SAVE, ALPHA_NOT_SAVED_TITLE,
-                         alpha_loss_message),
-                        (warn_save_discards_metadata, AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA,
-                         METADATA_NOT_SAVED_TITLE, metadata_loss_message),
-                        (warn_save_is_write_only, AppConfig.WARN_BEFORE_WRITE_ONLY_SAVE, WRITE_ONLY_SAVE_TITLE,
-                         write_only_message),
-                        (warn_save_changes_size, AppConfig.WARN_BEFORE_FIXED_SIZE_SAVE, FIXED_SIZE_SAVE_TITLE,
-                         fixed_size_message),
-                        (warn_save_removes_color, AppConfig.WARN_BEFORE_COLOR_LOSS, NO_COLOR_SAVE_TITLE,
-                         color_loss_message)):
-                    if loss_condition:
-                        show_warning_dialog(self._window, title, message, warn_on_save_config_key)
-
-            self._start_save(file_path, _write_flat_image, on_saved, _show_data_loss_warnings)
+            self._start_save(file_path, _write_flat_image, on_saved, _warn_if_metadata_fallback_used)
             error_handled = True  # The write's own handler reports any failure.
         except (IOError, TypeError, ValueError, RuntimeError) as save_err:
             error_handled = True
