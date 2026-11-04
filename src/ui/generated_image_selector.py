@@ -162,9 +162,10 @@ class GeneratedImageSelector(QWidget):
         self._base_option_scale = 0.0
         self._option_scale_ratio = 1.0
         self._option_pos_offset = QPointF(0.0, 0.0)
-        # The viewport center, in scene coordinates, right after the fitted view of the option showing was applied.
-        # None when no manual view is live:
-        self._base_option_center: Optional[QPointF] = None
+        # The viewport center and scale as read back right after the option showing was displayed, including any
+        # carried-over manual view. None when nothing has been displayed:
+        self._applied_center: Optional[QPointF] = None
+        self._applied_scale = 0.0
 
         self._loading_designs = loading_designs if loading_designs is not None else default_loading_designs()
         self._loading_design = self._loading_designs[0]
@@ -755,21 +756,25 @@ class GeneratedImageSelector(QWidget):
         return self._view.widget_point_to_scene(self._view.rect().center())
 
     def _capture_manual_view(self) -> None:
-        """Records the pan and zoom the user made since the option showing was fitted.
+        """Adds the pan and zoom the user made since the option showing was displayed to the manual view.
 
         Read from where the view actually is: zooming around the cursor moves the view without updating
-        `ImageGraphicsView.offset`, so the offset can't be trusted to describe the pan.
+        `ImageGraphicsView.offset`, so the offset can't be trusted to describe the pan. Only the change from the
+        view as last read back is added, because the view's integer scroll positions make an absolute reading differ
+        from the value applied, and re-deriving the manual view from absolute readings would compound that error on
+        every step.
         """
-        if self._base_option_center is None or self._base_option_scale <= 0:
+        if self._applied_center is None or self._applied_scale <= 0:
             return
-        self._option_pos_offset = self._view_center() - self._base_option_center
-        self._option_scale_ratio = self._view.scene_scale / self._base_option_scale
+        self._option_pos_offset += self._view_center() - self._applied_center
+        self._option_scale_ratio *= self._view.scene_scale / self._applied_scale
 
     def _clear_manual_view(self) -> None:
         """Discards the manual pan and zoom, which are only meaningful in the frame they were made in."""
         self._option_pos_offset = QPointF(0.0, 0.0)
         self._option_scale_ratio = 1.0
-        self._base_option_center = None
+        self._applied_center = None
+        self._applied_scale = 0.0
 
     def _warn_if_blocked(self, outcome: ApplyOutcome, requested_layer: Layer, new_layer_name: str) -> None:
         """Warns that an option went to a new layer because `requested_layer` couldn't take it."""
@@ -817,8 +822,6 @@ class GeneratedImageSelector(QWidget):
         self._view.zoom_to_bounds(bounds)
         self._base_option_offset = self._view.offset
         self._base_option_scale = self._view.scene_scale
-        fitted_center = self._view_center()
-        self._base_option_center = fitted_center
         self._view.offset = self._base_option_offset + self._option_pos_offset
         self._view.scale_without_fixed_scene_point(self._base_option_scale * self._option_scale_ratio)
         if not self._view.visible_scene_bounds.intersects(QRectF(bounds)):
@@ -826,7 +829,8 @@ class GeneratedImageSelector(QWidget):
             self._clear_manual_view()
             self._view.offset = self._base_option_offset
             self._view.scale_without_fixed_scene_point(self._base_option_scale)
-            self._base_option_center = fitted_center
+        self._applied_center = self._view_center()
+        self._applied_scale = self._view.scene_scale
         for i, option in enumerate(self._option_items):
             option.setOpacity(1.0 if not self._zoomed_in or i == self._zoom_index else 0.5)
         # A held compare modifier keeps comparing on the newly focused option:
