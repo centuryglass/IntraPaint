@@ -3,9 +3,10 @@
 image_utils_test covers round trips of the committed test images and base64 loading.
 """
 import gc
+import io
 
 from PIL import Image
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QBuffer, QIODevice, QSize
 from PySide6.QtGui import QImage, QColor
 
 from src.config.application_config import AppConfig
@@ -67,6 +68,26 @@ class TestPilImageUtils(IntraPaintTestCase):
         converted = qimage_to_pil_image(image)
         self.assertEqual(converted.mode, 'RGB')
         self.assertEqual(converted.getpixel((0, 0)), (10, 20, 30))
+
+    def test_qimage_to_pil_matches_png_round_trip(self) -> None:
+        """Every format converted straight from its pixel buffer gives the mode and pixels of a PNG round trip, in
+        an image whose rows are padded."""
+        image = QImage(37, 5, QImage.Format.Format_ARGB32)
+        for y in range(image.height()):
+            for x in range(image.width()):
+                image.setPixelColor(x, y, QColor((x * 7) % 256, (y * 50) % 256, (x * y) % 256, (x * 29 + y) % 256))
+        for image_format in (QImage.Format.Format_ARGB32, QImage.Format.Format_ARGB32_Premultiplied,
+                             QImage.Format.Format_RGBA8888, QImage.Format.Format_RGBA8888_Premultiplied,
+                             QImage.Format.Format_RGB32, QImage.Format.Format_RGB888):
+            with self.subTest(image_format=image_format):
+                converted_image = image.convertToFormat(image_format)
+                png_buffer = QBuffer()
+                png_buffer.open(QIODevice.OpenModeFlag.WriteOnly)
+                self.assertTrue(converted_image.save(png_buffer, 'PNG'))
+                expected = Image.open(io.BytesIO(png_buffer.data().data()))
+                converted = qimage_to_pil_image(converted_image)
+                self.assertEqual(converted.mode, expected.mode)
+                self.assertEqual(converted.tobytes(), expected.tobytes())
 
     def test_pil_qsize(self) -> None:
         """PIL image dimensions convert to a QSize."""

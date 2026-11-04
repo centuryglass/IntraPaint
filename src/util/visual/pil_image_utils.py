@@ -51,11 +51,32 @@ def pil_image_to_qimage(pil_image: Image.Image) -> QImage:
     return image
 
 
+# QImage formats that `qimage_to_pil_image` reads straight from the pixel buffer, with the PIL mode and the format the
+# pixels are converted to first. Other formats go through Qt's PNG writer.
+_DIRECT_PIL_FORMATS = {
+    QImage.Format.Format_ARGB32: ('RGBA', QImage.Format.Format_RGBA8888),
+    QImage.Format.Format_ARGB32_Premultiplied: ('RGBA', QImage.Format.Format_RGBA8888),
+    QImage.Format.Format_RGBA8888: ('RGBA', QImage.Format.Format_RGBA8888),
+    QImage.Format.Format_RGBA8888_Premultiplied: ('RGBA', QImage.Format.Format_RGBA8888),
+    QImage.Format.Format_RGB32: ('RGB', QImage.Format.Format_RGB888),
+    QImage.Format.Format_RGB888: ('RGB', QImage.Format.Format_RGB888),
+}
+
+
 def qimage_to_pil_image(qimage: QImage) -> Image.Image:
-    """Convert a Qt6 QImage to a PIL image, in PNG format."""
+    """Convert a Qt6 QImage to a PIL image with straight (not premultiplied) alpha, in the mode a PNG of the image
+    would open in: 'RGBA' for images with alpha, 'RGB' for opaque ones."""
     if not isinstance(qimage, QImage):
         raise TypeError('Invalid QImage parameter.')
-    return ImageQt.fromqimage(qimage)
+    direct_format = _DIRECT_PIL_FORMATS.get(qimage.format())
+    if direct_format is None:
+        return ImageQt.fromqimage(qimage)
+    mode, qt_format = direct_format
+    converted = qimage.convertToFormat(qt_format)
+    # frombuffer reads bytesPerLine() as the stride, so padded rows are handled. The copy detaches the PIL image from
+    # the QImage's buffer.
+    return Image.frombuffer(mode, (converted.width(), converted.height()), bytes(converted.constBits()),
+                            'raw', mode, converted.bytesPerLine(), 1).copy()
 
 
 def qimage_to_premultiplied_pil_image(qimage: QImage) -> Image.Image:
