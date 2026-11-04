@@ -500,16 +500,6 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
-        <source>'Speed modifier' key multiplier:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/application_config_definitions.json"/>
-        <source>Controls how much faster keyboard and mouse wheel changes happen when the 'speed modifier' key is held down</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/application_config_definitions.json"/>
         <source>Saved colors:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2218,11 +2208,6 @@
     </message>
     <message>
         <location filename="../../src/config/key_config.py"/>
-        <source>Invalid key for speed_modifier option: found {speed_modifier}, expected {modifiers}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/config/key_config.py"/>
         <source>"{key_binding_name}" should be a modifier key (Ctrl, Alt, Shift), found "{key_value}"</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2238,42 +2223,12 @@
     </message>
     <message>
         <location filename="../../src/config/key_config.py"/>
-        <source>"{key_binding_name}" is set to {key_value}, but {speed_modifier} is the speed modifier key. This will cause {key_str} to always operate at 10x speed.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/config/key_config.py"/>
         <source>{key_binding_name} is not set</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/config/key_config.py"/>
         <source>Key "{key_str}" is shared between options {key_names}, some keys may not work.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/config/key_config.py"/>
-        <source>{key_binding_name} (with speed modifier)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/key_config_definitions.json"/>
-        <source>Key speed modifier:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/key_config_definitions.json"/>
-        <source>If this key is held, movement/zoom/pan/scroll/etc. operations will go faster. (avoid changing, Shift and Ctrl are the only other working options and those cause various conflicts.)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/key_config_definitions.json"/>
-        <source>Keybindings</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/key_config_definitions.json"/>
-        <source>Modifiers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2288,6 +2243,16 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
+        <source>Keybindings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Modifiers</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
         <source>Fixed angle modifier:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2298,12 +2263,17 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Pan view modifier:</source>
+        <source>Pan view key:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>When held, click and drag to pan the image view</source>
+        <source>While held, click and drag with the left mouse button to pan the image view. Ignored while a text field has focus.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Navigation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2388,11 +2358,6 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Navigation</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/key_config_definitions.json"/>
         <source>Zoom out:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2463,12 +2428,32 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
+        <source>Move left more:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Same as "Move left", but in steps of 10 pixels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
         <source>Move right:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
         <source>Move the generation area right, move active layer right, or view next generated image option</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move right more:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Same as "Move right", but in steps of 10 pixels.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2483,12 +2468,32 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
+        <source>Move up more:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Same as "Move up", but in steps of 10 pixels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
         <source>Move down:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
         <source>Move the generation area down, move active layer down, or zoom to show all generated image options</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Move down more:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Same as "Move down", but in steps of 10 pixels.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2739,6 +2744,106 @@
     <message>
         <location filename="../config/key_config_definitions.json"/>
         <source>Increase the opacity of the active brush</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set brush opacity to 10%:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set the opacity of the active brush to 10%.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set brush opacity to 20%:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set the opacity of the active brush to 20%.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set brush opacity to 30%:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set the opacity of the active brush to 30%.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set brush opacity to 40%:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set the opacity of the active brush to 40%.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set brush opacity to 50%:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set the opacity of the active brush to 50%.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set brush opacity to 60%:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set the opacity of the active brush to 60%.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set brush opacity to 70%:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set the opacity of the active brush to 70%.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set brush opacity to 80%:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set the opacity of the active brush to 80%.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set brush opacity to 90%:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set the opacity of the active brush to 90%.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set brush opacity to 100%:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Set the opacity of the active brush to 100%.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3009,6 +3114,16 @@
     <message>
         <location filename="../config/key_config_definitions.json"/>
         <source>Zoom out from image content.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Zoom to 100%</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show the image at its actual size.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5334,7 +5449,12 @@ Please remember to include the traceback from the Details expander.</source>
     <name>tools.base_tool</name>
     <message>
         <location filename="../../src/tools/base_tool.py"/>
-        <source>{modifier_or_modifiers}+{left_mouse_icon} or {middle_mouse_icon}, drag: pan view</source>
+        <source>{pan_key}+{left_mouse_icon} or {middle_mouse_icon}, drag: pan view</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/tools/base_tool.py"/>
+        <source>{middle_mouse_icon}, drag: pan view</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5951,12 +6071,12 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
-        <source>{left_key}{right_key} browse &amp;nbsp; {first_key}-{last_key} open option &amp;nbsp; {up_key} single view &amp;nbsp; {pan_modifier}+{left_mouse_icon} or {middle_mouse_icon} pan &amp;nbsp; {zoom_in_key}{zoom_out_key} zoom</source>
+        <source>{left_key}{right_key} browse &amp;nbsp; {first_key}-{last_key} open option &amp;nbsp; {up_key} single view &amp;nbsp; {pan_key}+{left_mouse_icon} or {middle_mouse_icon} pan &amp;nbsp; {zoom_in_key}{zoom_out_key} zoom</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
-        <source>{compare_key} hold: original &amp;nbsp; {left_key}{right_key} browse &amp;nbsp; {down_key} back to grid &amp;nbsp; {pan_modifier}+{left_mouse_icon} or {middle_mouse_icon} pan &amp;nbsp; {v_scroll_icon} zoom</source>
+        <source>{compare_key} hold: original &amp;nbsp; {left_key}{right_key} browse &amp;nbsp; {down_key} back to grid &amp;nbsp; {pan_key}+{left_mouse_icon} or {middle_mouse_icon} pan &amp;nbsp; {v_scroll_icon} zoom</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

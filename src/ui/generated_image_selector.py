@@ -718,8 +718,8 @@ class GeneratedImageSelector(QWidget):
             else:
                 view_pos = QPoint(self._view.x() + event.pos().x(), self._view.y() + event.pos().y())
             self._view.set_cursor_pos(view_pos)
-            if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER):
-                return False  # Ctrl+click is for panning, don't select options
+            if self._view.pan_key_held:
+                return False  # A click with the pan key held is for panning, don't select options
             if event.button() not in (Qt.MouseButton.LeftButton, Qt.MouseButton.RightButton):
                 return False
             idx = self._option_at(view_pos)

@@ -4,7 +4,6 @@ from typing import Optional
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QIcon, QMouseEvent, QCursor, QPolygonF
 
-from src.config.key_config import KeyConfig
 from src.tools.base_tool import BaseTool
 from src.ui.graphics_items.click_and_drag_selection import ClickAndDragSelection
 from src.ui.image_viewer import ImageViewer
@@ -40,8 +39,7 @@ class ShapeDragTool(BaseTool):
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Starts a drag on left-click."""
         assert event is not None
-        if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True) \
-                or event.buttons() != Qt.MouseButton.LeftButton or not self._can_start_drag():
+        if event.buttons() != Qt.MouseButton.LeftButton or not self._can_start_drag():
             return False
         self._prepare_drag()
         self._selection_handler.start_selection(image_coordinates)

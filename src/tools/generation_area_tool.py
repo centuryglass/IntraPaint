@@ -277,7 +277,9 @@ class GenerationAreaTool(BaseTool):
         """Move generation area with arrow keys."""
         assert event is not None
         translation = QPoint(0, 0)
-        multiplier = 10 if KeyConfig().modifier_held(KeyConfig.SPEED_MODIFIER) else 1
+        multiplier = 10 if any(KeyConfig.event_matches(event, more_key) for more_key in (
+            KeyConfig.MOVE_LEFT_MORE, KeyConfig.MOVE_RIGHT_MORE, KeyConfig.MOVE_UP_MORE,
+            KeyConfig.MOVE_DOWN_MORE)) else 1
         match event.key():
             case Qt.Key.Key_Left:
                 translation.setX(-1 * multiplier)

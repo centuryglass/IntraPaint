@@ -349,14 +349,6 @@
         "default": 30,
         "saved": true
     },
-    "speed_modifier_multiplier": {
-        "label": "'Speed modifier' key multiplier:",
-        "category": "Editing",
-        "description": "Controls how much faster keyboard and mouse wheel changes happen when the 'speed modifier' key is held down",
-        "type": "int",
-        "default": 5,
-        "saved": true
-    },
     "saved_colors": {
         "label": "Saved colors:",
         "category": "Editing",

@@ -105,7 +105,6 @@ Words IntraPaint gives its own meaning. No other program's localization covers t
 | Image generator | 图像生成器 | 翻译 translate | — | 低 low | — |
 | Panel, rail, dock, float | 面板, 面板栏, 停靠, 浮动 | 翻译 translate | — | 低 low | Qt 中文用「停靠」「浮动」；rail 无通用译法，「面板栏」沿用「菜单栏」「工具栏」「状态栏」的构词，与 VS Code 中文给边缘条起的「活动栏」同类 / Qt zh uses 停靠 and 浮动; rail has no standard term, and 面板栏 follows the 菜单栏/工具栏/状态栏 word family, like VS Code zh's 活动栏 for its edge strip. |
 | Tool control hints | 工具控制提示 | 翻译 translate | — | 低 low | — |
-| Speed modifier | 加速修饰键 | 翻译 translate | — | 低 low | 指按住后使调整更快的修饰键 / a held key that speeds up adjustments. |
 | Selection brush | 选区画笔 | 翻译 translate | — | 低 low | — |
 | Magic wand | 魔棒 | 翻译 translate | [kk-sel] | 高 high | Krita 中文手册提到某些软件称「魔棒」/ Krita zh mentions 魔棒. |
 | Fit box, fit font | 适应框, 适应字号 | 翻译 translate | — | 低 low | 文字工具专用 / text tool specific. |

@@ -78,11 +78,14 @@ class QtPaintBrushTool(BrushTool):
                     return False
                 self.opacity = float(clamp(self.opacity + offset, 0.0, 1.0))
                 return True
-            key_filter.register_speed_modified_keybinding(down_id,
-                                                          lambda offset: _update_opacity_offset(-offset),
-                                                          KeyConfig.BRUSH_OPACITY_DECREASE)
-            key_filter.register_speed_modified_keybinding(up_id, _update_opacity_offset,
-                                                          KeyConfig.BRUSH_OPACITY_INCREASE)
+            key_filter.register_config_keybinding(down_id, lambda: _update_opacity_offset(-1),
+                                                  KeyConfig.BRUSH_OPACITY_DECREASE)
+            key_filter.register_config_keybinding(up_id, lambda: _update_opacity_offset(1),
+                                                  KeyConfig.BRUSH_OPACITY_INCREASE)
+
+            def _set_opacity(opacity: float) -> None:
+                self.opacity = opacity
+            self._bind_opacity_preset_keys(_set_opacity)
 
         if pressure_opacity_key is not None:
             def _update_pressure_opacity(pressure: bool) -> None:
@@ -108,11 +111,10 @@ class QtPaintBrushTool(BrushTool):
                     return False
                 self.hardness = float(clamp(self.hardness + offset, 0.0, 1.0))
                 return True
-            key_filter.register_speed_modified_keybinding(down_id,
-                                                          lambda offset: _update_hardness_offset(-offset),
-                                                          KeyConfig.BRUSH_HARDNESS_DECREASE)
-            key_filter.register_speed_modified_keybinding(up_id, _update_hardness_offset,
-                                                          KeyConfig.BRUSH_HARDNESS_INCREASE)
+            key_filter.register_config_keybinding(down_id, lambda: _update_hardness_offset(-1),
+                                                  KeyConfig.BRUSH_HARDNESS_DECREASE)
+            key_filter.register_config_keybinding(up_id, lambda: _update_hardness_offset(1),
+                                                  KeyConfig.BRUSH_HARDNESS_INCREASE)
 
         if pressure_hardness_key is not None:
             def _update_pressure_hardness(pressure: bool) -> None:

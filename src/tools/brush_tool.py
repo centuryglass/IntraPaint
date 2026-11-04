@@ -2,7 +2,7 @@
 import datetime
 import logging
 import math
-from typing import Optional
+from typing import Optional, Callable
 
 from PySide6.QtCore import Qt, QPoint, QLineF, QPointF, QEvent, QRect
 from PySide6.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QWheelEvent, QPointingDevice
@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.config.key_config import KeyConfig
+from src.config.key_config import KeyConfig, BRUSH_OPACITY_PRESETS
 from src.hotkey_filter import HotkeyFilter
 from src.image.brush.layer_brush import LayerBrush
 from src.image.layers.image_layer import ImageLayer
@@ -41,6 +41,12 @@ FIXED_ANGLE_HINT = _tr('{modifier_or_modifiers}: fixed angle')
 # The brush outline hides at or below this on-screen diameter, where the crosshair alone marks the brush:
 MIN_OUTLINE_DIAMETER = CROSSHAIR_GRID_SIZE
 MIN_LINE_PRESSURE = 0.5
+
+
+def brush_size_step(size: int) -> int:
+    """Returns how much one size step changes a brush of `size` pixels: 1 for small brushes, a tenth of the size for
+       larger ones."""
+    return max(1, size // 10)
 
 logger = logging.getLogger(__name__)
 
@@ -88,14 +94,14 @@ class BrushTool(BaseTool):
         self._brush = brush
 
         for key, sign in ((KeyConfig.BRUSH_SIZE_DECREASE, -1), (KeyConfig.BRUSH_SIZE_INCREASE, 1)):
-            def _size_change(mult, step=sign) -> bool:
+            def _size_change(steps=sign) -> bool:
                 if not self.is_active:
                     return False
-                self.set_brush_size(self.brush_size + step * mult)
+                self.adjust_brush_size(steps)
                 return True
 
             binding_id = f'BrushTool_{id(self)}_{key}'
-            HotkeyFilter.instance().register_speed_modified_keybinding(binding_id, _size_change, key)
+            HotkeyFilter.instance().register_config_keybinding(binding_id, _size_change, key)
 
         if enable_selection_restrictions:
             # Handle restricting changes to selection:
@@ -220,11 +226,24 @@ class BrushTool(BaseTool):
         self.set_brush_size(new_size)
         self.update_brush_cursor()
 
-    def adjust_brush_size(self, offset: int) -> None:
-        """Change brush size by some offset amount, multiplying offset if the speed modifier is held."""
-        if KeyConfig.modifier_held(KeyConfig.SPEED_MODIFIER):
-            offset *= AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
-        self.set_brush_size(max(self._brush.brush_size + offset, 1))
+    def adjust_brush_size(self, steps: int) -> None:
+        """Changes the brush size by some number of size steps, each of `brush_size_step` pixels."""
+        size = self._brush.brush_size
+        self.set_brush_size(max(size + steps * brush_size_step(size), 1))
+
+    def _bind_opacity_preset_keys(self, set_opacity: Callable[[float], None]) -> None:
+        """Binds the keys that set the opacity directly, active while this tool's controls are enabled and the canvas
+           is showing."""
+        def _preset(opacity: float) -> bool:
+            control_panel = self.get_control_panel()  # pylint: disable=assignment-from-none  # Subclasses override it.
+            if not self.is_active or control_panel is None or not control_panel.isEnabled() \
+                    or not self._image_viewer.isVisible():
+                return False
+            set_opacity(opacity)
+            return True
+        for config_key, preset_opacity in BRUSH_OPACITY_PRESETS.items():
+            HotkeyFilter.instance().register_config_keybinding(f'BrushTool_{id(self)}_{config_key}',
+                                                               lambda value=preset_opacity: _preset(value), config_key)
 
     def set_brush_size(self, new_size: int) -> None:
         """Update the brush size."""
@@ -314,7 +333,6 @@ class BrushTool(BaseTool):
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Starts drawing when the mouse is clicked in the scene."""
         if event is None or event.buttons() != Qt.MouseButton.LeftButton or not self._image_stack.has_image \
-                or KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True) \
                 or not self.validate_layer(self._layer, image_stack=self._image_stack):
             return False
         if self._drawing:
@@ -332,8 +350,7 @@ class BrushTool(BaseTool):
 
     def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Receives a mouse move event, returning whether the tool consumed the event."""
-        if self._layer is None or event is None or not self._image_stack.has_image \
-                or (KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER) and not self._drawing):
+        if self._layer is None or event is None or not self._image_stack.has_image:
             return False
 
         if KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER) and self._last_pos is not None:
@@ -464,8 +481,6 @@ class BrushTool(BaseTool):
         elif event.angleDelta().x() > 0:
             offset += 1
         if offset != 0:
-            if KeyConfig.modifier_held(KeyConfig.SPEED_MODIFIER):
-                offset *= AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
             self.adjust_brush_size(offset)
             return True
         return False

@@ -74,7 +74,6 @@
         "tanda/acrylic-04-with-water"
     ],
     "max_undo": 30,
-    "speed_modifier_multiplier": 5,
     "saved_colors": [],
     "pil_upscale_mode": "Lanczos",
     "pil_downscale_mode": "Lanczos",

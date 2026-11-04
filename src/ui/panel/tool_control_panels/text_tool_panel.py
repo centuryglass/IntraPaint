@@ -245,12 +245,12 @@ class TextToolPanel(FitToolPanel):
         key_filter = HotkeyFilter.instance()
         bind_step_keys(self._geometry, key_filter, KeyConfig, _key_predicate)
         for key, sign in ((KeyConfig.ROTATE_CCW_KEY, -1), (KeyConfig.ROTATE_CW_KEY, 1)):
-            def _step_size(multiplier: int, direction=sign) -> bool:
+            def _step_size(direction=sign) -> bool:
                 if not _key_predicate():
                     return False
-                self._size_field.set_value(self._size_field.value() + direction * multiplier)
+                self._size_field.set_value(self._size_field.value() + direction)
                 return True
-            key_filter.register_speed_modified_keybinding(f'_TextToolPanel_{id(self)}_size_{key}', _step_size, key)
+            key_filter.register_config_keybinding(f'_TextToolPanel_{id(self)}_size_{key}', _step_size, key)
         keys = KeyConfig()
         self._size_field.setToolTip(SIZE_KEYS_TOOLTIP.format(description=SIZE_TOOLTIP,
                                                              decrease=keys.get(KeyConfig.ROTATE_CCW_KEY),

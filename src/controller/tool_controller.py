@@ -300,8 +300,8 @@ class ToolController(QObject):
         """Changes inpaint context while the context scroll modifier is held, returning whether the event was
            consumed.
 
-        Each notch moves context as far as scrolling the context slider does, multiplied while the speed modifier is
-        held. Either wheel axis counts, because some platforms turn modifier + vertical scroll into horizontal scroll.
+        Each notch moves context as far as scrolling the context slider does. Either wheel axis counts, because some
+        platforms turn modifier + vertical scroll into horizontal scroll.
         Raising context above zero turns on the limit to the selection.
         """
         if not KeyConfig.modifier_held(KeyConfig.PADDING_SCROLL_MODIFIER, held_modifiers=event.modifiers()):
@@ -317,8 +317,6 @@ class ToolController(QObject):
         self._context_scroll_remainder -= notches * WHEEL_NOTCH_DELTA
         cache = Cache()
         step = cache.get(Cache.INPAINT_FULL_RES_PADDING, RangeKey.STEP) * QApplication.wheelScrollLines()
-        if KeyConfig.modifier_held(KeyConfig.SPEED_MODIFIER, held_modifiers=event.modifiers()):
-            step *= AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
         context = clamp(cache.get(Cache.INPAINT_FULL_RES_PADDING) + notches * step,
                         cache.get(Cache.INPAINT_FULL_RES_PADDING, RangeKey.MIN),
                         cache.get(Cache.INPAINT_FULL_RES_PADDING, RangeKey.MAX))

@@ -165,14 +165,6 @@ class ContextScrollTest(ToolTestCase):
         self._send_wheel(QPoint(0, WHEEL_NOTCH_DELTA // 2))
         self.assertEqual(Cache().get(Cache.INPAINT_FULL_RES_PADDING), 32 + self.context_step)
 
-    def test_speed_modifier_multiplies_step(self) -> None:
-        """Holding the speed modifier too multiplies the context step."""
-        Cache().set(Cache.INPAINT_FULL_RES_PADDING, 32)
-        self._send_wheel(QPoint(0, WHEEL_NOTCH_DELTA),
-                         Qt.KeyboardModifier.ShiftModifier | Qt.KeyboardModifier.AltModifier)
-        multiplier = AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
-        self.assertEqual(Cache().get(Cache.INPAINT_FULL_RES_PADDING), 32 + self.context_step * multiplier)
-
     def test_context_clamps_to_range(self) -> None:
         """Context stays within its configured range."""
         Cache().set(Cache.INPAINT_FULL_RES_PADDING, 1)
