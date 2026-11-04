@@ -73,7 +73,7 @@ slider is located beside the "Limit context to the selection" checkbox, and read
 unchecked.  When active, the context rectangle will be drawn within the generation area around selected content.
 
 To change context without opening the selection tool controls, hold Shift and use the scroll wheel over the image or
-the navigation window. This works with any tool, and raising the context above zero turns on "Limit context to the selection".
+the Navigation panel. This works with any tool, and raising the context above zero turns on "Limit context to the selection".
 Hold Alt as well to change it faster. The modifier key is the "Context scroll modifier" option in the
 [settings](./menu_options.md#settings-ctrlk) "Keybindings" tab.
 

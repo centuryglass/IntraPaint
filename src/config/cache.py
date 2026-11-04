@@ -212,10 +212,8 @@ class Cache(Config, metaclass=Singleton):
     SAMPLING_METHOD: str
     SAMPLING_STEPS: str
     SAVED_LAYOUTS: str
-    SAVED_LAYER_WINDOW_POS: str
     SAVED_MAIN_WINDOW_GEOMETRY: str
     SAVED_MAIN_WINDOW_STATE: str
-    SAVED_NAVIGATION_WINDOW_POS: str
     SCALING_MODE: str
     SCHEDULER: str
     SCRIPTS_IMG2IMG: str

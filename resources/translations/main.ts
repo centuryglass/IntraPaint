@@ -1568,16 +1568,6 @@
     </message>
     <message>
         <location filename="../config/cache_value_definitions.json"/>
-        <source>Saved layer window placement</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/cache_value_definitions.json"/>
-        <source>display, position, and size where the layer window last was.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/cache_value_definitions.json"/>
         <source>Prompt:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2498,6 +2488,26 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
+        <source>Show/hide Layers panel:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show and focus the Layers panel, or hide it if it is showing</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show/hide Navigation panel:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show and focus the Navigation panel, or hide it if it is showing</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
         <source>Show/hide Tools panel:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3158,16 +3168,6 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Show navigation window</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/key_config_definitions.json"/>
-        <source>Open a navigation window showing the entire edited image.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/key_config_definitions.json"/>
         <source>Reset panel layout</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3378,27 +3378,17 @@
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
-        <source>Show layer window</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/key_config_definitions.json"/>
-        <source>Open the image layer panel in a new window.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/key_config_definitions.json"/>
-        <source>Layer Menu</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../config/key_config_definitions.json"/>
         <source>New layer</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../config/key_config_definitions.json"/>
         <source>Create a new layer above the active layer.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Layer Menu</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -8034,11 +8024,6 @@ Keys: {decrease} / {increase}</source>
     <message>
         <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
         <source>Select next layer</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/panel/layer_ui/layer_panel.py"/>
-        <source>Show layer window</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

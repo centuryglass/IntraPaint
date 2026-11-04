@@ -892,25 +892,7 @@
         "saved": true,
         "translate": false
     },
-    "saved_layer_window_pos": {
-        "label": "Saved layer window placement",
-        "category": "Cache",
-        "subcategory": "Window placement",
-        "description": "display, position, and size where the layer window last was.",
-        "type": "string",
-        "default": "",
-        "saved": true
-    },
-    "saved_navigation_window_pos": {
-        "label": "Saved navigation window placement",
-        "category": "Cache",
-        "subcategory": "Window placement",
-        "description": "display, position, and size where the navigation window was last.",
-        "type": "string",
-        "default": "",
-        "saved": true,
-        "translate": false
-    },"prompt": {
+    "prompt": {
         "label": "Prompt:",
         "category": "Cache",
         "subcategory": "Image generation",

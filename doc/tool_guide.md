@@ -547,7 +547,7 @@ Controls the area of the image in use for AI image generation. AI generators are
 - **Hold Shift while dragging a corner handle**: Resize freely, without keeping the aspect ratio. This is the reverse of Shift's usual meaning, because keeping the aspect ratio is the safer default here.
 - **Right-click**: Resize the generation area, without changing its position.  Hold Shift to keep the generation resolution's aspect ratio.
 - **Arrow keys**: Move the generation area. **Shift + arrow keys** move it ten pixels at a time.
-- **Shift + scroll wheel**: Change the inpaint context. This works with any tool, over the image or the navigation window.
+- **Shift + scroll wheel**: Change the inpaint context. This works with any tool, over the image or the Navigation panel.
 
 Each drag is one undo step. Resizing applies the resolution rule as the size changes, and adds the finished size to the recent area sizes.
 
