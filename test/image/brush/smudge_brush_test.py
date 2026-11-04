@@ -164,8 +164,6 @@ class SmudgeBrushTest(BrushTestCase):
         self.assert_valid_premultiplied(image)
         self.assertLessEqual(self.gradient_color_error(image, GRADIENT_MIN_SOURCE_ALPHA), GRADIENT_COLOR_TOLERANCE)
 
-    @pytest.mark.xfail(strict=True, reason='https://github.com/centuryglass/IntraPaint/issues/203: smudging '
-                                          'builds alpha from nearly transparent pixels whose 8-bit color is lost')
     def test_smudge_keeps_color_built_from_nearly_transparent_pixels(self) -> None:
         """Smudging a single color doesn't change it where the stroke builds opacity from nearly transparent
            pixels."""
