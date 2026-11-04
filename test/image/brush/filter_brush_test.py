@@ -234,15 +234,16 @@ class FilterBrushTest(BrushTestCase):
         self.assertEqual(self.brush._filter_bounds(bounds), bounds)  # pylint: disable=protected-access
 
     def test_radius_filter_bounds_are_padded_and_clipped_to_layer(self) -> None:
-        """A radius filter pads the segment bounds by its radius, clipped to the layer."""
+        """A radius filter pads the segment bounds by its radius, clipped to the layer. A Gaussian blur reads three times
+           its radius parameter."""
         self.use_filter(BlurFilter(self.image_stack), [MODE_GAUSSIAN, 6.0])
         self.assertFalse(self.brush.image_filter.is_local())
         # pylint: disable=protected-access
-        self.assertEqual(self.brush._filter_bounds(QRect(50, 40, 20, 20)), QRect(44, 34, 32, 32))
-        self.assertEqual(self.brush._filter_bounds(QRect(2, 3, 20, 20)), QRect(0, 0, 28, 29))
+        self.assertEqual(self.brush._filter_bounds(QRect(50, 40, 20, 20)), QRect(32, 22, 56, 56))
+        self.assertEqual(self.brush._filter_bounds(QRect(2, 3, 20, 20)), QRect(0, 0, 40, 41))
         width, height = LAYER_SIZE.width(), LAYER_SIZE.height()
         self.assertEqual(self.brush._filter_bounds(QRect(width - 22, height - 21, 20, 20)),
-                         QRect(width - 28, height - 27, 28, 27))
+                         QRect(width - 40, height - 39, 40, 39))
 
     def test_radius_filter_near_layer_edge(self) -> None:
         """A blur stroke along the layer edges, where the padded filter bounds are clipped to the layer."""

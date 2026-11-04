@@ -72,6 +72,9 @@ class BlurFilter(ImageFilter):
         radius = cast(float, parameter_values[1])
         if mode == MODE_SIMPLE:
             return 5.0
+        if mode == MODE_GAUSSIAN:
+            # PIL approximates a Gaussian with box blurs, so its weights reach about three standard deviations out.
+            return radius * 3
         return radius
 
     @staticmethod

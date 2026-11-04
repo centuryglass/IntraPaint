@@ -1,4 +1,4 @@
-"""Benchmark for the smudge, draw, eraser and MyPaint brushes: times long, fast strokes on a large layer.
+"""Benchmark for the smudge, filter, draw, eraser and MyPaint brushes: times long, fast strokes on a large layer.
 
 The test suite never measures wall-clock time, so brush performance is checked here instead. Each case draws one
 stroke whose input points are far apart, as a fast mouse drag produces. Input arrives every INPUT_INTERVAL_SECONDS,
@@ -6,13 +6,13 @@ and the Qt event loop runs in between, so the brush's buffer timer fires as it w
 brush's buffer timer is its surface's timer for writing changed tiles to the layer. The report covers:
 - draw ms: time spent in brush calls (stroke_to, the buffer timer's slot and end_stroke) for the whole stroke.
 - per unit us: draw time divided by the stroke's work units. A smudge stroke's unit is one one-pixel smudge step, and
-  a draw, eraser or MyPaint stroke's unit is one input event.
+  a filter, draw, eraser or MyPaint stroke's unit is one input event.
 - worst call: the longest single brush call. Qt can't repaint the window or take input while one runs, so this is the
   lag a user sees.
 
 Run it before and after a change to a brush, on the same machine, and compare.
 
-Usage: python scripts/benchmark_brush.py [--brush {smudge,draw,eraser,mypaint,all}] [--repeats N]
+Usage: python scripts/benchmark_brush.py [--brush {smudge,filter,draw,eraser,mypaint,all}] [--repeats N]
 """
 import argparse
 import os
@@ -33,10 +33,13 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.image.brush.layer_brush import LayerBrush
+from src.image.brush.filter_brush import FilterBrush
 from src.image.brush.mypaint_layer_brush import MyPaintLayerBrush
 from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.brush.smudge_brush import SmudgeBrush
+from src.image.filter.blur import BlurFilter
 from src.image.layers.image_layer import ImageLayer
+from src.image.layers.image_stack import ImageStack
 from src.undo_stack import UndoStack
 from test.image.brush.brush_test_case import brush_test_pattern, line_points
 
@@ -71,6 +74,12 @@ class BrushBenchmark(NamedTuple):
 
 def _smudge_steps(case: Case, _event_count: int) -> int:
     return max(abs(case.end.x() - case.start.x()), abs(case.end.y() - case.start.y()))
+
+
+def _create_filter_brush(layer: ImageLayer) -> LayerBrush:
+    # Filters only use the image stack when applied from the menu:
+    image_stack = ImageStack(layer.size, layer.size, QSize(8, 8), QSize(1024, 1024))
+    return FilterBrush(BlurFilter(image_stack), layer)
 
 
 def _create_draw_brush(layer: ImageLayer) -> LayerBrush:
@@ -128,6 +137,12 @@ BENCHMARKS = {
         Case('hard, size 150', 150, 1.0, True, QPoint(100, 600), QPoint(2300, 600), 30),
         Case('soft, size 150, diagonal', 150, 0.5, False, QPoint(100, 100), QPoint(2300, 1100), 40),
         Case('soft, size 300', 300, 0.5, True, QPoint(100, 600), QPoint(2300, 600), 60),
+    ]),
+    'filter': BrushBenchmark(QSize(1600, 800), _create_filter_brush, _configure_qt_brush(1.0), _qt_buffer_timer,
+                             _event_count, [
+        Case('blur, hard, size 40', 40, 1.0, False, QPoint(100, 400), QPoint(1500, 400), 8),
+        Case('blur, soft, size 40', 40, 0.4, True, QPoint(100, 400), QPoint(1500, 400), 8),
+        Case('blur, soft, size 150', 150, 0.4, True, QPoint(100, 400), QPoint(1500, 400), 8),
     ]),
     'draw': BrushBenchmark(QSize(1600, 800), _create_draw_brush, _configure_qt_brush(0.8), _qt_buffer_timer,
                            _event_count, [
