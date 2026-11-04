@@ -224,6 +224,24 @@
         "default": "Shift+Down",
         "saved": true
     },
+    "show_layer_menu_shortcut": {
+        "label": "Show/hide Layers panel:",
+        "category": "Keybindings",
+        "subcategory": "Navigation",
+        "description": "Show and focus the Layers panel, or hide it if it is showing",
+        "type": "string",
+        "default": "F7",
+        "saved": true
+    },
+    "navigation_window_shortcut": {
+        "label": "Show/hide Navigation panel:",
+        "category": "Keybindings",
+        "subcategory": "Navigation",
+        "description": "Show and focus the Navigation panel, or hide it if it is showing",
+        "type": "string",
+        "default": "Ctrl+Alt+W",
+        "saved": true
+    },
     "select_tool_tab": {
         "label": "Show/hide Tools panel:",
         "category": "Keybindings",
@@ -791,15 +809,6 @@
         "default": "Ctrl+Alt+H",
         "saved": true
     },
-    "navigation_window_shortcut": {
-        "label": "Show navigation window",
-        "category": "Menu Shortcuts",
-        "subcategory": "View Menu",
-        "description": "Open a navigation window showing the entire edited image.",
-        "type": "string",
-        "default": "Ctrl+Alt+W",
-        "saved": true
-    },
     "reset_dock_layout_shortcut": {
         "label": "Reset panel layout",
         "category": "Menu Shortcuts",
@@ -978,15 +987,6 @@
         "description": "Remove all context pins",
         "type": "string",
         "default": "Ctrl+Alt+P",
-        "saved": true
-    },
-    "show_layer_menu_shortcut": {
-        "label": "Show layer window",
-        "category": "Menu Shortcuts",
-        "subcategory": "Layer Menu",
-        "description": "Open the image layer panel in a new window.",
-        "type": "string",
-        "default": "F7",
         "saved": true
     },
     "new_layer_shortcut": {

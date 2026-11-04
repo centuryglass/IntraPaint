@@ -46,9 +46,11 @@ class MainWindowTest(IntraPaintTestCase):
             self.assertLessEqual(window.frameGeometry().width(), screen.width())
             self.assertLessEqual(window.frameGeometry().height(), screen.height())
             self.assertEqual(window.size(), screen - frame_margins)
-            with patch.object(window, 'resize') as resize:
+            # A plain function records the calls, since a mock would sit in a reference cycle holding the window:
+            resizes: list[tuple] = []
+            with patch.object(window, 'resize', new=lambda *args: resizes.append(args)):
                 window._clamp_to_screen()  # pylint: disable=protected-access
-            resize.assert_not_called()
+            self.assertEqual(resizes, [])
 
     @patch('src.ui.window.main_window.QApplication.exit')
     def test_close_without_confirmation_handler_exits(self, mock_exit) -> None:

@@ -356,6 +356,8 @@ class DockMenuTest(IntraPaintTestCase):
         with patch.object(MainWindow, '_show_dock_menu') as show_menu:
             QApplication.sendEvent(button, event)
         show_menu.assert_called_once_with(window.layers_dock, button.mapToGlobal(center))
+        # A mock sits in a reference cycle, so the dock in its recorded call would be left in one too:
+        show_menu.reset_mock()
 
     def test_dock_at_finds_no_docked_title(self) -> None:
         """A docked dock has no title area, so right-click lookup finds no dock at its top edge or over its content.

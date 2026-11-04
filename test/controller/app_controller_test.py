@@ -124,7 +124,6 @@ class TestAppController(IntraPaintTestCase):
         self.assertIsInstance(self.controller._window, MainWindow)
         self.assertIsInstance(self.controller._settings_modal, SettingsModal)
         self.assertIsInstance(self.controller._generator, TestGenerator)
-        self.assertIsNone(self.controller._layer_panel)
         self.assertIsNone(self.controller._image_io.metadata)
 
     @patch('src.controller.app_controller.SettingsModal')

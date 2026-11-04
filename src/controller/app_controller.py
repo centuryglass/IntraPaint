@@ -212,7 +212,6 @@ class AppController(MenuBuilder):
         config = AppConfig()
         cache = Cache()
         cache.apply_args(args)
-        self._layer_panel: Optional[LayerPanel] = None
         self._layer_dock_panel: Optional[LayerPanel] = None
         self._generator_window: Optional[GeneratorSetupWindow] = None
 
@@ -379,7 +378,7 @@ class AppController(MenuBuilder):
                                                              include_zoom_controls=False, use_keybindings=False)
         self._tool_panel_navigation_panel.mouse_navigation_enabled = False
         self._tool_panel_color_picker = ColorControlPanel()
-        self._layer_dock_panel = LayerPanel(self._image_stack, show_window=self.show_layer_panel)
+        self._layer_dock_panel = LayerPanel(self._image_stack)
         self._window.layers_dock.set_content(self._layer_dock_panel)
         self._window.color_dock.set_content(self._tool_panel_color_picker)
         self._window.navigation_dock.set_content(self._tool_panel_navigation_panel)
@@ -571,7 +570,7 @@ class AppController(MenuBuilder):
             self._tool_controller.remove_tool(gen_area_tool)
         elif gen_area_tool is None and show_image_gen_controls:
             self._tool_controller.add_tool(self._generation_area_tool)
-        image_panels = (self._window.image_panel, self._tool_panel_navigation_panel, self._window.navigation_window)
+        image_panels = (self._window.image_panel, self._tool_panel_navigation_panel)
         for image_panel in image_panels:
             image_panel.set_image_generation_controls_visible(show_image_gen_controls)
         self._generation_area_controller.generation_area_visible = show_image_gen_controls
@@ -934,7 +933,7 @@ class AppController(MenuBuilder):
         else:
             UndoStack().redo()
 
-    @menu_action(MENU_EDIT, 'cut_shortcut', 102, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_EDIT, 'cut_shortcut', 102, valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def cut(self) -> None:
         """Cut selected content from the active image layer, or selected text in an active text field."""
         if self._active_text_field_tracker.focused_can_cut_or_clear():
@@ -997,7 +996,7 @@ class AppController(MenuBuilder):
         else:
             self._image_stack.clear_selected()
 
-    @menu_action(MENU_EDIT, 'swap_colors_shortcut', 106)
+    @menu_action(MENU_EDIT, 'swap_colors_shortcut', 106, separator_before=True)
     def swap_colors(self) -> None:
         """Swap the foreground and background colors."""
         color_controller.swap()
@@ -1007,7 +1006,7 @@ class AppController(MenuBuilder):
         """Set the foreground color to black and the background color to white."""
         color_controller.reset()
 
-    @menu_action(MENU_EDIT, 'settings_shortcut', 108)
+    @menu_action(MENU_EDIT, 'settings_shortcut', 108, separator_before=True)
     def show_settings(self, category: Optional[str] = None) -> None:
         """Show the settings window, on the tab named `category` if one is given."""
         if self._settings_modal is None:
@@ -1107,11 +1106,6 @@ class AppController(MenuBuilder):
     def toggle_rulers(self) -> None:
         """Show or hide the rulers beside the image."""
         AppConfig().set(AppConfig.SHOW_RULERS, not AppConfig().get(AppConfig.SHOW_RULERS))
-
-    @menu_action(MENU_VIEW, 'navigation_window_shortcut', 199)
-    def show_navigation_window(self) -> None:
-        """Show the image preview window."""
-        self._window.show_navigation_window()
 
     # Image menu:
 
@@ -1245,31 +1239,12 @@ class AppController(MenuBuilder):
         self._image_stack.selection_layer.clear_context_pins()
 
     # Layer menu:
-    @menu_action(MENU_LAYERS, 'show_layer_menu_shortcut', 399)
-    def show_layer_panel(self) -> None:
-        """Opens the layer panel window"""
-        if self._layer_panel is None:
-            self._layer_panel = LayerPanel(self._image_stack)
-            if not Cache().load_bounds(Cache.SAVED_LAYER_WINDOW_POS, self._layer_panel):
-                width = int(self._layer_panel.sizeHint().width() * 1.5)
-                height = self._window.height() // 3
-                x = self._window.x() + self._window.width() - int(width * 1.5)
-                y = self._window.y() + height
-                Cache().set(Cache.SAVED_LAYER_WINDOW_POS, f'{x},{y},{width},{height}')
-                Cache().load_bounds(Cache.SAVED_LAYER_WINDOW_POS, self._layer_panel)
-        self._layer_panel.show()
-        self._layer_panel.raise_()
-
     @menu_action(MENU_LAYERS, 'rename_layer_shortcut', 398, valid_app_states=[APP_STATE_EDITING])
     def rename_layer(self) -> None:
-        """Edit the active layer's name in the layer panel. The layer window takes it while that window is the active
-        one, and otherwise the docked panel does, opening its dock if it is closed."""
+        """Edit the active layer's name in the layer panel, opening its dock if it is closed."""
         panel = self._layer_dock_panel
-        if self._layer_panel is not None and self._layer_panel.isVisible() and self._layer_panel.isActiveWindow():
-            panel = self._layer_panel
-        elif panel is not None:
-            self._window.layers_dock.open_in_group()
         if panel is not None:
+            self._window.layers_dock.open_in_group()
             panel.start_rename()
 
     @menu_action(f'{MENU_LAYERS}.{SUBMENU_SELECT}', 'select_previous_layer_shortcut', 400,

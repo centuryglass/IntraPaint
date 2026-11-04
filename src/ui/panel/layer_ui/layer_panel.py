@@ -80,7 +80,6 @@ DELETE_BUTTON_LABEL = _tr('Delete')
 THUMBNAIL_SIZE_LABEL = _tr('Thumbnails:')
 SELECT_PREVIOUS_LABEL = _tr('Select previous layer')
 SELECT_NEXT_LABEL = _tr('Select next layer')
-SHOW_WINDOW_LABEL = _tr('Show layer window')
 
 ICON_PATH_PANEL = f'{PROJECT_DIR}/resources/icons/tabs/layers.svg'
 ICON_PATH_ADD_BUTTON = f'{PROJECT_DIR}/resources/icons/layer/plus_icon.svg'
@@ -119,12 +118,9 @@ BAR_FORMS = (BarForm(SMALL_ICON_SIZE, labeled=True), BarForm(SMALL_ICON_SIZE), B
 class LayerPanel(DockPanel):
     """Shows the image's layers, and edits the active layer. See the module docstring."""
 
-    def __init__(self, image_stack: ImageStack, parent: Optional[QWidget] = None,
-                 show_window: Optional[Callable[[], None]] = None) -> None:
-        """Connects to the ImageStack and builds the panel. `show_window` opens the separate layer window, which the
-        More popover offers when it is given."""
+    def __init__(self, image_stack: ImageStack, parent: Optional[QWidget] = None) -> None:
+        """Connects to the ImageStack and builds the panel."""
         self._image_stack = image_stack
-        self._show_window = show_window
         # Whether the large form applies, which sets the thumbnail size while it is on Auto:
         self._large_form = False
         # Whether the panel's dock floats, which hides the header:
@@ -253,10 +249,6 @@ class LayerPanel(DockPanel):
             SELECT_PREVIOUS_LABEL, KeyConfig.SELECT_PREVIOUS_LAYER_SHORTCUT, lambda: self._select_offset(-1), layout)
         self._select_next_button = self._add_more_button(
             SELECT_NEXT_LABEL, KeyConfig.SELECT_NEXT_LAYER_SHORTCUT, lambda: self._select_offset(1), layout)
-        self._show_window_button: Optional[QPushButton] = None
-        if self._show_window is not None:
-            self._show_window_button = self._add_more_button(SHOW_WINDOW_LABEL, KeyConfig.SHOW_LAYER_MENU_SHORTCUT,
-                                                             self._show_window, layout)
 
     def _add_more_button(self, text: str, key_config_key: str, action: Callable[[], None],
                          layout: QVBoxLayout) -> QPushButton:
@@ -381,12 +373,6 @@ class LayerPanel(DockPanel):
         self._apply_thumbnail_size()
         if self.available_size is not None:
             self.refit()
-
-    def resizeEvent(self, event) -> None:  # pylint: disable=invalid-name
-        """Plans for the new size, and saves the panel's bounds when it's a separate window."""
-        super().resizeEvent(event)
-        if self.isVisible() and self.isWindow():
-            Cache().save_bounds(Cache.SAVED_LAYER_WINDOW_POS, self)
 
     # Layer state:
 

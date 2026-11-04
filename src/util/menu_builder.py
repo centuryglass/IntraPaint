@@ -28,7 +28,8 @@ def _key_sequences(key_str: str) -> list[QKeySequence]:
 
 def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
                 valid_app_states: Optional[list[str]] = None,
-                condition_check: Optional[Callable[[Any], bool]] = None) -> Callable[[GenericFn], GenericFn]:
+                condition_check: Optional[Callable[[Any], bool]] = None,
+                separator_before: bool = False) -> Callable[[GenericFn], GenericFn]:
     """Decorator used to associate a class method with a menu item and optionally disable it when busy.
 
     Parameters
@@ -44,6 +45,9 @@ def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
     condition_check: Optional function returning bool
         If not none, this function will be evaluated when the menu is initialized, and the menu option will not
         be added unless it returns true. The parameter passed in will be object initializing the menus.
+    separator_before: bool, default=False
+        If true, a separator is placed above this item when it is first added, unless it is the first item in its
+        menu. Mark the first item of each group, and the separator follows that item through reordering.
     """
 
     def _decorator(func):
@@ -58,7 +62,7 @@ def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
                 num_positional_params += 1
             args = args[:num_positional_params]
             return func(*args, **kwargs)
-        menu_data = MenuData(menu_name, config_key, priority, valid_app_states, condition_check)
+        menu_data = MenuData(menu_name, config_key, priority, valid_app_states, condition_check, separator_before)
         setattr(_wrapper, IS_MENU_ACTION_ATTR, True)
         setattr(_wrapper, MENU_DATA_ATTR, menu_data)
         return _wrapper
@@ -222,7 +226,12 @@ class MenuBuilder:
                 continue
 
             # Condition check passed, add or restore menu item:
+            is_new = self._find_action(menu_name, title) is None
             action = self.add_menu_action(menu_name, menu_action_method, key)
+            if is_new and action is not None and menu_data.separator_before:
+                menu = self._find_or_add_menu(menu_name, False)
+                if menu is not None and len(menu.actions()) > 1:
+                    menu.insertSeparator(action)
             if action is not None and menu_data.valid_app_states is not None:
                 AppStateTracker.set_enabled_states(action, menu_data.valid_app_states)
 
@@ -334,9 +343,11 @@ class MenuData:
                  config_key: str,
                  priority: int,
                  valid_app_states: Optional[list[str]],
-                 condition_check: Optional[Callable[[Any], bool]]):
+                 condition_check: Optional[Callable[[Any], bool]],
+                 separator_before: bool = False):
         self.menu_name = menu_name
         self.config_key = config_key
         self.priority = priority
         self.valid_app_states = valid_app_states
         self.condition_check = condition_check
+        self.separator_before = separator_before

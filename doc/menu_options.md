@@ -27,8 +27,8 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
 3. [View menu](#view-menu)
    - [Zoom and view](#zoom-and-view)
    - [Panels](#panels)
-   - [Show navigation window](#show-navigation-window-ctrlaltw)
-     - [Navigation window](#navigation-window)
+   - [Navigation panel](#navigation-panel-ctrlaltw)
+     - [Navigation panel controls](#navigation-panel-controls)
 4. [Image menu](#image-menu)
    - [Resize canvas](#resize-canvas-ctrlaltc)
      - [Resize image canvas window](#resize-image-canvas-window)
@@ -50,8 +50,8 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Shrink selection](#shrink-selection-ctrlalt-)
    - [Clear context pins](#clear-context-pins-ctrlaltp)
 6. [Layers menu](#layers-menu)
-   - [Show layer window](#show-layer-window-f7)
-     - [Layer window](#layer-window)
+   - [Layers panel](#layers-panel-f7)
+     - [Layers panel controls](#layers-panel-controls)
    - [Select](#select)
      - [Select previous layer](#select-previous-layer-alt)
      - [Select next layer](#select-next-layer-alt)
@@ -154,13 +154,13 @@ Restore an action that was previously reversed using undo.
 
 ### Cut (Ctrl+X)
 
-When an unlocked, visible [layer](#show-layer-window-f7) is active, and part of that layer is [selected](./tool_guide.md#selection-tools), choosing cut will replace the selected areas with transparency, and cache the removed image data for [pasting](#paste-ctrlv) until something else gets cut or copied.
+When an unlocked, visible [layer](#layers-panel-f7) is active, and part of that layer is [selected](./tool_guide.md#selection-tools), choosing cut will replace the selected areas with transparency, and cache the removed image data for [pasting](#paste-ctrlv) until something else gets cut or copied.
 
 When text is selected and focused, this will instead clear the selected text and place it in the system clipboard.
 
 ### Copy (Ctrl+C)
 
-When a visible [layer](#show-layer-window-f7) is active, and part of that layer is [selected](./tool_guide.md#selection-tools), choosing copy will cache the selected areas so that they can be duplicated using [paste](#paste-ctrlv).  Copy and cut only act on the active layer, and will not affect other layers.  If you want to copy across all visible layers, select the main layer group (the top item) in the layer panel.
+When a visible [layer](#layers-panel-f7) is active, and part of that layer is [selected](./tool_guide.md#selection-tools), choosing copy will cache the selected areas so that they can be duplicated using [paste](#paste-ctrlv).  Copy and cut only act on the active layer, and will not affect other layers.  If you want to copy across all visible layers, select the main layer group (the top item) in the layer panel.
 
 When text is selected and focused, this will instead copy that text into the system clipboard.
 
@@ -221,13 +221,13 @@ Puts every panel back where it starts on first run, in two tabbed groups on the 
 
 Stacks every panel in one group along the chosen window edge: Left, Right, Top, or Bottom. The first open panel stays open, and the others are closed until you open them from their icons.
 
-### Show navigation window (Ctrl+Alt+W)
+### Navigation panel (Ctrl+Alt+W)
 
-Opens another window with a view of the entire edited image. This can be used to adjust the image viewport within the main window, and to move the generation area.  The Navigation tab on the tool panel behaves identically to this window.
+Shows a view of the entire edited image, or hides it if it is already showing. This can be used to adjust the image viewport within the main window, and to move the generation area.  The key and the navigation button below the image open the Navigation panel, which can be docked or floated like any other panel.
 
 ### Basic controls
 
-The navigation window uses the same basic mouse controls as the main window:
+The Navigation panel uses the same basic mouse controls as the main window:
 
 - **Middle-click and drag, or Space + left-click and drag**: Pan image content.
 - **Mouse scroll wheel**: Zoom in or zoom out.
@@ -244,18 +244,18 @@ When **"Move gen. area"** is active, mouse controls match the [generation area t
 - **Right-click**: Resize the generation area, without changing its position.
 - **Shift + scroll wheel**: Change the inpaint context.
 
-#### Navigation window
+#### Navigation panel controls
 
-<img src="./labeled_screenshots/navigation.png" alt="Screenshot of the navigation window, with specific elements numbered."/>
+<img src="./labeled_screenshots/navigation.png" alt="Screenshot of the Navigation panel, with specific elements numbered."/>
 
-1. **Image scale slider**: Set the scale the image is drawn within the navigation window.
-2. **"Reset view" button**: Resets the navigation window to the default view, centering image content.
-3. **Mode toggle: "Move gen. area"**: Switches to generation area tool mode, where clicking within the navigation window adjusts the generation area.
-4. **Mode toggle: "Move view"**: Switches to move view mode, where clicking within the navigation window adjusts the main window image viewport.
+1. **Image scale slider**: Set the scale the image is drawn within the Navigation panel.
+2. **"Reset view" button**: Resets the Navigation panel to the default view, centering image content.
+3. **Mode toggle: "Move gen. area"**: Switches to generation area tool mode, where clicking within the Navigation panel adjusts the generation area.
+4. **Mode toggle: "Move view"**: Switches to move view mode, where clicking within the Navigation panel adjusts the main window image viewport.
 5. **Main window viewport outline**: The solid rectangle outlines the portion of the image currently visible within the main window.
 6. **Generation area outline**: The dotted rectangle shows the area within the image selected for AI image generation.  This won't be shown if AI image generation is inactive.
 7. **Context outline**: This inner rectangle shows the reduced area within the generation area that will be used for inpainting if "Limit context to the selection" is checked.  This won't be visible if nothing is selected, if "Limit context to the selection" is unchecked, or if AI image generation is unavailable.
-8. **Selected image content**: All selected areas are also visible within the navigation window.
+8. **Selected image content**: All selected areas are also visible within the Navigation panel.
 
 ## Image menu
 
@@ -403,7 +403,7 @@ Removes every context pin. Context pins are added and removed by right-clicking 
 
 ## Layers menu
 
-Like most image editors, IntraPaint represents the image as a set of layers.  Layers are arranged in a stack, with each being drawn above the one below it to create the final image.  Only one layer is active at a time; most tools and layer menu options are applied to the active layer.  The active layer can be changed by clicking any layer in the [layer window](#layer-window), or with the [select previous](#select-previous-layer-alt)/[select next](#select-next-layer-alt) layer menu options.
+Like most image editors, IntraPaint represents the image as a set of layers.  Layers are arranged in a stack, with each being drawn above the one below it to create the final image.  Only one layer is active at a time; most tools and layer menu options are applied to the active layer.  The active layer can be changed by clicking any layer in the [layers panel](#layers-panel-controls), or with the [select previous](#select-previous-layer-alt)/[select next](#select-next-layer-alt) layer menu options.
 
 IntraPaint supports three types of layers:
 
@@ -413,15 +413,15 @@ IntraPaint supports three types of layers:
 
 The entire image itself is treated as a layer group, which can be selected and edited.  This group can't be locked, deleted, moved, copied, or have isolation enabled, but it can otherwise be edited like any other layer group.
 
-### Show layer window (F7)
+### Layers panel (F7)
 
-This opens a window you can use to manage image layers.  Layer controls are also available as one of the options on the tool tab under the [tool control panel](./controls.md#main-view).
+Shows the panel you can use to manage image layers, or hides it if it is already showing.  Layer controls are also available as one of the options on the tool tab under the [tool control panel](./controls.md#main-view).
 
-#### Layer window
+#### Layers panel controls
 
-<img src="./labeled_screenshots/layers.png" alt="Screenshot of the layer window, with specific elements numbered."/>
+<img src="./labeled_screenshots/layers.png" alt="Screenshot of the layers panel, with specific elements numbered."/>
 
-Click and drag any layer to move it within the list.  Right-click a layer to select it and show more options for editing it, grouped by purpose, with each command's key binding beside it.  Dragging a layer shows where it will land: the label at the marker's right end names the spot, a group it will enter is outlined, and a locked group is outlined in red and refuses the drop.  Press [F2](#rename-layer-f2) to rename the active layer.  The panel's **More** button holds the thumbnail size (Auto, Small, Medium or Large), the commands that select the previous or next layer, and, in the docked panel, a button that opens this window.
+Click and drag any layer to move it within the list.  Right-click a layer to select it and show more options for editing it, grouped by purpose, with each command's key binding beside it.  Dragging a layer shows where it will land: the label at the marker's right end names the spot, a group it will enter is outlined, and a locked group is outlined in red and refuses the drop.  Press [F2](#rename-layer-f2) to rename the active layer.  The panel's **More** button holds the thumbnail size (Auto, Small, Medium or Large), the commands that select the previous or next layer.
 
 1. **Opacity slider**: Controls the opacity of the active layer.
 2. **Layer mode**:  Sets the blending/compositing mode of the active layer, controlling how its content is rendered into the image.  See the [W3 Compositing and Blending Standard](https://www.w3.org/TR/compositing-1/) for in-depth descriptions and example images of the available modes.

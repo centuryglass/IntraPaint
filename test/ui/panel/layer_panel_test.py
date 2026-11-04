@@ -33,7 +33,7 @@ from src.ui.panel.layer_ui.layer_menu import MENU_OPTION_MOVE_UP, MENU_OPTION_MO
     MENU_OPTION_SELECT_CONTENT, MENU_OPTION_LAYER_TO_IMAGE_SIZE, MENU_OPTION_CROP_TO_CONTENT, \
     MENU_OPTION_ROTATE_CW, MENU_OPTION_ROTATE_CCW, SUBMENU_CROP_AND_RESIZE, SUBMENU_MIRROR_AND_ROTATE
 from src.ui.panel.layer_ui.layer_panel import LayerPanel, ADD_BUTTON_TITLE, MERGE_DOWN_BUTTON_TITLE, \
-    DELETE_BUTTON_TITLE, DUPLICATE_BUTTON_TITLE, SELECT_NEXT_LABEL, SELECT_PREVIOUS_LABEL, SHOW_WINDOW_LABEL
+    DELETE_BUTTON_TITLE, DUPLICATE_BUTTON_TITLE, SELECT_NEXT_LABEL, SELECT_PREVIOUS_LABEL
 from src.ui.panel.layer_ui.layer_row import (EMPTY_GROUP_TOOLTIP, INDENT, LARGE_THUMBNAIL_SIZE,
                                              MEDIUM_THUMBNAIL_SIZE, SMALL_THUMBNAIL_SIZE, LayerRow, layer_meta_text,
                                              layer_size_text, refused_drop_color, selection_stripe_color)
@@ -1204,7 +1204,7 @@ class LayerPanelTest(IntraPaintTestCase):
         self.assertEqual(self.row(self.bottom).thumbnail.width(), MEDIUM_THUMBNAIL_SIZE)
 
     def test_more_popover_selects_neighbor_layers(self) -> None:
-        """The popover's select buttons move the active layer, and the window button appears only with a callback."""
+        """The popover's select buttons move the active layer."""
         content = self.panel.more_content()
         assert content is not None
         buttons = {button.text().split(' (')[0]: button for button in content.findChildren(QPushButton)}
@@ -1212,15 +1212,6 @@ class LayerPanelTest(IntraPaintTestCase):
         self.image_stack.active_layer = self.inner_bottom
         buttons[SELECT_PREVIOUS_LABEL].click()
         self.assertIsNot(self.image_stack.active_layer, self.inner_bottom)
-        shown: list[bool] = []
-        panel = LayerPanel(self.image_stack, show_window=lambda: shown.append(True))
-        window_content = panel.more_content()
-        assert window_content is not None
-        window_button = next(button for button in window_content.findChildren(QPushButton)
-                             if button.text().startswith(SHOW_WINDOW_LABEL))
-        window_button.click()
-        self.assertEqual(shown, [True])
-        panel.close()
 
     def test_labeled_bar_does_not_keep_the_panel_wide(self) -> None:
         """A dock can shrink the panel after the labeled action bar form applied, and the bar drops back to icons."""

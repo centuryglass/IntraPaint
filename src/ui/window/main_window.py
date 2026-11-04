@@ -39,7 +39,6 @@ from src.ui.graphics_items.toast_message import ToastMessageItem
 from src.ui.layout.panel_fit import held_weakly
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.panel.image_panel import ImagePanel
-from src.ui.panel.layer_ui.layer_panel import LayerPanel
 
 from src.controller.tool_controller import ToolController
 from src.ui.widget.loading_widget import LoadingWidget
@@ -48,7 +47,6 @@ from src.ui.window.dock_placement import DockEdge, move_all_to_edge
 from src.ui.window.dock_rail import DockRails
 from src.ui.window.dock_groups import close_background_docks, hide_dock_tab_bars
 from src.ui.window.floating_title_bar import FloatingTitleBar
-from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.rail_drag import RailDrag
 from src.ui.window.panel_dock import PanelDock
 from src.ui.window.window_geometry import capture_geometry
@@ -213,10 +211,11 @@ class MainWindow(QMainWindow):
                                           QIcon(ICON_PATH_GENERATION_DOCK), KeyConfig.SELECT_GENERATOR_TAB)
         self._controlnet_dock = PanelDock(CONTROLNET_DOCK_TITLE, DockID.CONTROLNET, self,
                                           QIcon(ICON_PATH_CONTROLNET_DOCK), KeyConfig.SELECT_CONTROLNET_TAB)
-        self._layers_dock = PanelDock(LAYERS_DOCK_TITLE, DockID.LAYERS, self, QIcon(ICON_PATH_LAYERS_DOCK))
+        self._layers_dock = PanelDock(LAYERS_DOCK_TITLE, DockID.LAYERS, self, QIcon(ICON_PATH_LAYERS_DOCK),
+                                       KeyConfig.SHOW_LAYER_MENU_SHORTCUT)
         self._color_dock = PanelDock(COLOR_DOCK_TITLE, DockID.COLOR, self, QIcon(ICON_PATH_COLOR_DOCK))
         self._navigation_dock = PanelDock(NAVIGATION_DOCK_TITLE, DockID.NAVIGATION, self,
-                                          QIcon(ICON_PATH_NAVIGATION_DOCK))
+                                          QIcon(ICON_PATH_NAVIGATION_DOCK), KeyConfig.NAVIGATION_WINDOW_SHORTCUT)
         self._rails = DockRails(self)
         self._rail_drag = RailDrag(self, self._rails, self._rails.sync)
         for dock in self.docks:
@@ -239,10 +238,7 @@ class MainWindow(QMainWindow):
         self._rails.generate_button.clicked.connect(self.generate_signal)
         self.reset_dock_layout()
 
-        # Optional extra windows:
-        self._layer_panel: Optional[LayerPanel] = None
-        self._navigation_window = NavigationWindow(image_stack, self._image_panel.image_viewer)
-        self._image_panel.navigation_window_requested.connect(self.show_navigation_window)
+        self._image_panel.navigation_window_requested.connect(self._show_navigation_dock)
 
         AppStateTracker.set_enabled_states(self._image_panel, [APP_STATE_EDITING])
         self.resizeEvent(None)
@@ -305,6 +301,10 @@ class MainWindow(QMainWindow):
     def rails(self) -> DockRails:
         """Returns the icon rails along the window edges."""
         return self._rails
+
+    def _show_navigation_dock(self) -> None:
+        """Opens the Navigation dock in front of its group."""
+        self._navigation_dock.set_open(True)
 
     def dock_toggle_actions(self) -> list[QAction]:
         """Returns each dock's show/hide action, for the menu. An action is hidden while its dock has no content."""
@@ -448,18 +448,6 @@ class MainWindow(QMainWindow):
         for dock in waiting:
             dock.hide()
         return state
-
-    @property
-    def navigation_window(self) -> NavigationWindow:
-        """Access the navigation window."""
-        return self._navigation_window
-
-    def show_navigation_window(self) -> None:
-        """Show or raise the navigation window."""
-        if not self._navigation_window.isVisible():
-            Cache().load_bounds(Cache.SAVED_NAVIGATION_WINDOW_POS, self._navigation_window)
-            self._navigation_window.show()
-            self._navigation_window.raise_()
 
     @property
     def generation_session(self) -> GenerationSession:
