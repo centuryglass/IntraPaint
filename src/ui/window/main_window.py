@@ -238,7 +238,7 @@ class MainWindow(QMainWindow):
         self._rails.generate_button.clicked.connect(self.generate_signal)
         self.reset_dock_layout()
 
-        self._image_panel.navigation_window_requested.connect(lambda: self._navigation_dock.set_open(True))
+        self._image_panel.navigation_window_requested.connect(self._show_navigation_dock)
 
         AppStateTracker.set_enabled_states(self._image_panel, [APP_STATE_EDITING])
         self.resizeEvent(None)
@@ -301,6 +301,10 @@ class MainWindow(QMainWindow):
     def rails(self) -> DockRails:
         """Returns the icon rails along the window edges."""
         return self._rails
+
+    def _show_navigation_dock(self) -> None:
+        """Opens the Navigation dock in front of its group."""
+        self._navigation_dock.set_open(True)
 
     def dock_toggle_actions(self) -> list[QAction]:
         """Returns each dock's show/hide action, for the menu. An action is hidden while its dock has no content."""
