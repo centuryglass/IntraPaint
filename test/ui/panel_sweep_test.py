@@ -33,7 +33,6 @@ def _each(kinds: tuple[str, ...], *issues: int) -> dict[str, tuple[int, ...]]:
 
 # Scene name -> {problem kind: the open issues that track it}:
 KNOWN_PROBLEMS: dict[str, dict[str, tuple[int, ...]]] = {
-    'tools_panel_fill_tool': _each(('clipped', 'squeezed'), 426),
 }
 
 

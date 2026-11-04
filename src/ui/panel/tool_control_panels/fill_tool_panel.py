@@ -1,12 +1,14 @@
 """Control panel for the fill/paint bucket tool."""
 from typing import Optional
 
+from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QApplication, QCheckBox, QVBoxLayout, QWidget
 
 from src.config.cache import Cache
 from src.ui.input_fields.number_field import MAX_WIDTH as NUMBER_FIELD_MAX_WIDTH
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.label_column_layout import normalize_row_label
+from src.ui.layout.panel_fit import Orientation, fresh_minimum_size
 from src.ui.panel.tool_control_panels.stroke_block import (build_paint_row, build_selection_only_checkbox,
                                                            tool_section)
 from src.ui.input_fields.field_factory import create_control_widget
@@ -58,7 +60,11 @@ def build_sample_merged_checkbox() -> QCheckBox:
 
 
 class FillToolPanel(QWidget):
-    """Control panel for the fill/paint bucket tool: a Paint section, then a Region section."""
+    """Control panel for the fill/paint bucket tool: a Paint section, then a Region section.
+
+    It is a `src.ui.layout.panel_fit.FitContent` with a single arrangement, so the Tools panel counts its minimum width
+    and scrolls instead of squeezing it.
+    """
 
     def __init__(self):
         super().__init__()
@@ -73,6 +79,18 @@ class FillToolPanel(QWidget):
         sample_merged_checkbox = build_sample_merged_checkbox()
         layout.addWidget(tool_section(REGION_SECTION_TITLE, self._threshold_field, sample_merged_checkbox))
         layout.addStretch(1)
+        self._overflow = QWidget()
+
+    def fit_base_size(self, _orientation: Orientation) -> QSize:
+        """Returns the panel's minimum size. Both sections always show."""
+        return fresh_minimum_size(self)
+
+    def set_fit_space(self, orientation: Orientation, size: QSize) -> None:
+        """Does nothing, since the arrangement doesn't depend on the space."""
+
+    def overflow_content(self) -> QWidget:
+        """Returns an empty widget, since no control is ever left out."""
+        return self._overflow
 
     @property
     def threshold_field(self) -> SliderField:
