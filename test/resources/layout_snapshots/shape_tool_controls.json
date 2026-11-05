@@ -2,181 +2,151 @@
   "minimum": {
     "problems": [],
     "size": [
-      460,
-      202
+      455,
+      233
     ]
   },
   "narrow": {
     "problems": [
-      "overlap: PanelSection[1]/QWidget/SliderField and PanelSection[1]/QWidget/QLabel 'Color' share 31x6",
-      "overlap: PanelSection[1]/QWidget/SliderField and PanelSection[1]/QWidget/_ColorSourceControl share 79x6",
-      "overlap: PanelSection[1]/QWidget/SliderField and PanelSection[1]/QWidget/PenStyleComboBox share 108x6",
-      "squeezed: PanelSection[1] is 230x56, minimum 225x118",
-      "squeezed: PanelSection[1]/QWidget is 230x30, minimum 225x92",
-      "squeezed: PanelSection[1]/QWidget/QLabel 'Color' is 31x6, minimum 31x17",
-      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl is 79x6, minimum 79x25",
-      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl/QComboBox is 79x6, minimum 79x25",
-      "squeezed: PanelSection[1]/QWidget/PenStyleComboBox is 108x6, minimum 103x32",
-      "squeezed: PanelSection[1]/QWidget/QLabel 'Join' is 31x6, minimum 25x17",
-      "squeezed: PanelSection[1]/QWidget/SegmentedControl is 193x6, minimum 162x24",
-      "squeezed: PanelSection[2] is 230x56, minimum 225x58",
-      "squeezed: PanelSection[2]/QWidget is 230x30, minimum 225x32",
-      "squeezed: PanelSection[2]/QWidget/FillStyleComboBox is 108x30, minimum 103x32"
+      "overlap: PanelSection[1]/QWidget/SliderField and PanelSection[1]/QWidget/QLabel 'Color' share 56x7",
+      "overlap: PanelSection[1]/QWidget/SliderField and PanelSection[1]/QWidget/_ColorSourceControl share 165x7",
+      "squeezed: PanelSection[1] is 227x71, minimum 229x149",
+      "squeezed: PanelSection[1]/QWidget is 227x45, minimum 229x123",
+      "squeezed: PanelSection[1]/QWidget/QLabel 'Color' is 56x7, minimum 31x17",
+      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl is 165x7, minimum 167x25",
+      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl/QComboBox is 165x7, minimum 167x25",
+      "squeezed: PanelSection[1]/QWidget/QLabel 'Line style' is 56x7, minimum 56x17",
+      "squeezed: PanelSection[1]/QWidget/PenStyleComboBox is 165x7, minimum 103x32",
+      "clipped: PanelSection[1]/QWidget/QLabel 'Join' shows 56x6 of 56x7",
+      "squeezed: PanelSection[1]/QWidget/QLabel 'Join' is 56x7, minimum 25x17",
+      "clipped: PanelSection[1]/QWidget/SegmentedControl shows 165x6 of 165x7",
+      "squeezed: PanelSection[1]/QWidget/SegmentedControl is 165x7, minimum 162x24",
+      "squeezed: PanelSection[2] is 227x72, minimum 216x89",
+      "squeezed: PanelSection[2]/QWidget is 227x46, minimum 216x63",
+      "squeezed: PanelSection[2]/QWidget/_ColorSourceControl is 178x20, minimum 167x25",
+      "squeezed: PanelSection[2]/QWidget/_ColorSourceControl/QComboBox is 178x20, minimum 167x25",
+      "squeezed: PanelSection[2]/QWidget/FillStyleComboBox is 178x20, minimum 103x32"
     ],
     "size": [
-      230,
-      202
+      227,
+      233
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
-      460,
-      202
+      455,
+      233
     ]
   },
   "short": {
     "problems": [
-      "overlap: PanelSection[1]/QWidget/SliderField and PanelSection[1]/QWidget/QLabel 'Color' share 31x2",
-      "overlap: PanelSection[1]/QWidget/SliderField and PanelSection[1]/QWidget/_ColorSourceControl share 79x2",
-      "overlap: PanelSection[1]/QWidget/SliderField and PanelSection[1]/QWidget/PenStyleComboBox share 178x2",
-      "squeezed: CheckBox 'Antialiasing' is 300x20, minimum 93x22",
-      "squeezed: PanelSection[0] is 300x21, minimum 300x50",
-      "squeezed: PanelSection[0]/_HeaderButton 'Shape' is 296x11, minimum 16x26",
-      "squeezed: PanelSection[0]/QWidget is 300x10, minimum 300x24",
-      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 300x10, minimum 300x24",
-      "squeezed: PanelSection[1] is 300x21, minimum 225x88",
-      "squeezed: PanelSection[1]/_HeaderButton 'Outline' is 296x11, minimum 16x26",
-      "squeezed: PanelSection[1]/QWidget is 300x10, minimum 225x62",
-      "clipped: PanelSection[1]/QWidget/SliderField shows 300x10 of 300x24",
-      "squeezed: PanelSection[1]/QWidget/QLabel 'Color' is 31x2, minimum 31x17",
-      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl is 79x2, minimum 79x25",
-      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl/QComboBox is 79x2, minimum 79x25",
-      "squeezed: PanelSection[1]/QWidget/PenStyleComboBox is 178x2, minimum 103x32",
-      "squeezed: PanelSection[2] is 300x21, minimum 225x58",
-      "squeezed: PanelSection[2]/_HeaderButton 'Fill' is 296x11, minimum 16x26",
-      "squeezed: PanelSection[2]/QWidget is 300x10, minimum 225x32",
-      "squeezed: PanelSection[2]/QWidget/QLabel 'Color' is 31x10, minimum 31x17",
-      "squeezed: PanelSection[2]/QWidget/_ColorSourceControl is 79x10, minimum 79x25",
-      "squeezed: PanelSection[2]/QWidget/_ColorSourceControl/QComboBox is 79x10, minimum 79x25",
-      "squeezed: PanelSection[2]/QWidget/FillStyleComboBox is 178x10, minimum 103x32"
+      "squeezed: PanelSection[0] is 300x26, minimum 300x50",
+      "squeezed: PanelSection[0]/_HeaderButton 'Shape' is 296x13, minimum 16x26",
+      "squeezed: PanelSection[0]/QWidget is 300x13, minimum 300x24",
+      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 300x13, minimum 300x24",
+      "squeezed: PanelSection[1] is 300x25, minimum 229x119",
+      "squeezed: PanelSection[1]/_HeaderButton 'Outline' is 296x13, minimum 16x26",
+      "squeezed: PanelSection[1]/QWidget is 300x12, minimum 229x93",
+      "clipped: PanelSection[1]/QWidget/SliderField shows 300x12 of 300x24",
+      "squeezed: PanelSection[1]/QWidget/QLabel 'Color' is 56x0, minimum 31x17",
+      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl is 238x0, minimum 167x25",
+      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl/QComboBox is 238x0, minimum 167x25",
+      "squeezed: PanelSection[1]/QWidget/QLabel 'Line style' is 56x0, minimum 56x17",
+      "squeezed: PanelSection[1]/QWidget/PenStyleComboBox is 238x0, minimum 103x32",
+      "squeezed: PanelSection[2] is 300x25, minimum 216x89",
+      "squeezed: PanelSection[2]/_HeaderButton 'Fill' is 296x13, minimum 16x26",
+      "squeezed: PanelSection[2]/QWidget is 300x12, minimum 216x63",
+      "squeezed: PanelSection[2]/QWidget/QLabel 'Color' is 43x3, minimum 31x17",
+      "squeezed: PanelSection[2]/QWidget/_ColorSourceControl is 251x3, minimum 167x25",
+      "squeezed: PanelSection[2]/QWidget/_ColorSourceControl/QComboBox is 251x3, minimum 167x25",
+      "squeezed: PanelSection[2]/QWidget/QLabel 'Pattern' is 43x3, minimum 43x17",
+      "squeezed: PanelSection[2]/QWidget/FillStyleComboBox is 251x3, minimum 103x32"
     ],
     "size": [
-      460,
-      101
+      455,
+      116
     ]
   },
   "strip_minimum": {
     "problems": [
-      "squeezed: PanelSection[0] is 147x52, minimum 300x52",
-      "squeezed: PanelSection[0]/QWidget is 147x52, minimum 300x52",
-      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 147x24, minimum 300x24",
-      "squeezed: PanelSection[1] is 147x92, minimum 225x92",
-      "squeezed: PanelSection[1]/QWidget is 147x92, minimum 225x92",
-      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl is 52x32, minimum 79x25",
-      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl/QComboBox is 52x25, minimum 79x25",
-      "squeezed: PanelSection[1]/QWidget/PenStyleComboBox is 52x32, minimum 103x32",
-      "squeezed: PanelSection[1]/QWidget/SegmentedControl is 110x24, minimum 162x24",
-      "squeezed: PanelSection[2] is 146x32, minimum 212x32",
-      "squeezed: PanelSection[2]/QWidget is 146x32, minimum 212x32",
-      "squeezed: PanelSection[2]/QWidget/_ColorSourceControl is 58x32, minimum 79x25",
-      "squeezed: PanelSection[2]/QWidget/_ColorSourceControl/QComboBox is 58x25, minimum 79x25",
-      "squeezed: PanelSection[2]/QWidget/FillStyleComboBox is 58x32, minimum 103x32"
+      "squeezed: QWidget[0] is 229x181, minimum 300x181",
+      "squeezed: QWidget[0]/PanelSection[0] is 229x52, minimum 300x52",
+      "squeezed: QWidget[0]/PanelSection[0]/QWidget is 229x52, minimum 300x52",
+      "squeezed: QWidget[0]/PanelSection[0]/QWidget/SegmentedControl is 229x24, minimum 300x24"
     ],
     "size": [
-      460,
-      202
+      455,
+      233
     ]
   },
   "strip_narrow": {
     "problems": [
-      "squeezed: PanelSection[0] is 70x52, minimum 300x52",
-      "squeezed: PanelSection[0]/QWidget is 70x52, minimum 300x52",
-      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 70x24, minimum 300x24",
-      "squeezed: PanelSection[0]/QWidget/CheckBox 'Antialiasing' is 70x22, minimum 93x22",
-      "squeezed: PanelSection[1] is 70x92, minimum 225x92",
-      "squeezed: PanelSection[1]/QWidget is 70x92, minimum 225x92",
-      "clipped: PanelSection[1]/QWidget/SliderField shows 70x24 of 110x24",
-      "squeezed: PanelSection[1]/QWidget/QLabel 'Color' is 20x32, minimum 31x17",
-      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl is 19x32, minimum 79x25",
-      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl/QComboBox is 19x25, minimum 79x25",
-      "squeezed: PanelSection[1]/QWidget/PenStyleComboBox is 19x32, minimum 103x32",
-      "squeezed: PanelSection[1]/QWidget/QLabel 'Join' is 20x24, minimum 25x17",
-      "squeezed: PanelSection[1]/QWidget/SegmentedControl is 44x24, minimum 162x24",
-      "squeezed: PanelSection[2] is 70x32, minimum 212x32",
-      "squeezed: PanelSection[2]/QWidget is 70x32, minimum 212x32",
-      "squeezed: PanelSection[2]/QWidget/_ColorSourceControl is 20x32, minimum 79x25",
-      "squeezed: PanelSection[2]/QWidget/_ColorSourceControl/QComboBox is 20x25, minimum 79x25",
-      "squeezed: PanelSection[2]/QWidget/FillStyleComboBox is 20x32, minimum 103x32"
+      "squeezed: QWidget[0] is 109x181, minimum 300x181",
+      "squeezed: QWidget[0]/PanelSection[0] is 109x52, minimum 300x52",
+      "squeezed: QWidget[0]/PanelSection[0]/QWidget is 109x52, minimum 300x52",
+      "squeezed: QWidget[0]/PanelSection[0]/QWidget/SegmentedControl is 109x24, minimum 300x24",
+      "squeezed: QWidget[0]/PanelSection[1] is 109x123, minimum 229x123",
+      "squeezed: QWidget[0]/PanelSection[1]/QWidget is 109x123, minimum 229x123",
+      "clipped: QWidget[0]/PanelSection[1]/QWidget/SliderField shows 109x24 of 110x24",
+      "squeezed: QWidget[0]/PanelSection[1]/QWidget/_ColorSourceControl is 51x25, minimum 167x25",
+      "squeezed: QWidget[0]/PanelSection[1]/QWidget/_ColorSourceControl/QComboBox is 51x25, minimum 167x25",
+      "squeezed: QWidget[0]/PanelSection[1]/QWidget/QLabel 'Line style' is 52x32, minimum 56x17",
+      "squeezed: QWidget[0]/PanelSection[1]/QWidget/PenStyleComboBox is 51x32, minimum 103x32",
+      "squeezed: QWidget[0]/PanelSection[1]/QWidget/SegmentedControl is 51x24, minimum 162x24",
+      "squeezed: QWidget[1] is 108x63, minimum 216x63",
+      "squeezed: QWidget[1]/PanelSection is 108x63, minimum 216x63",
+      "squeezed: QWidget[1]/PanelSection/QWidget is 108x63, minimum 216x63",
+      "squeezed: QWidget[1]/PanelSection/QWidget/_ColorSourceControl is 59x25, minimum 167x25",
+      "squeezed: QWidget[1]/PanelSection/QWidget/_ColorSourceControl/QComboBox is 59x25, minimum 167x25",
+      "squeezed: QWidget[1]/PanelSection/QWidget/FillStyleComboBox is 59x32, minimum 103x32"
     ],
     "size": [
-      230,
-      202
+      227,
+      233
     ]
   },
   "strip_preferred": {
     "problems": [
-      "squeezed: PanelSection[0] is 147x52, minimum 300x52",
-      "squeezed: PanelSection[0]/QWidget is 147x52, minimum 300x52",
-      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 147x24, minimum 300x24",
-      "squeezed: PanelSection[1] is 147x92, minimum 225x92",
-      "squeezed: PanelSection[1]/QWidget is 147x92, minimum 225x92",
-      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl is 52x32, minimum 79x25",
-      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl/QComboBox is 52x25, minimum 79x25",
-      "squeezed: PanelSection[1]/QWidget/PenStyleComboBox is 52x32, minimum 103x32",
-      "squeezed: PanelSection[1]/QWidget/SegmentedControl is 110x24, minimum 162x24",
-      "squeezed: PanelSection[2] is 146x32, minimum 212x32",
-      "squeezed: PanelSection[2]/QWidget is 146x32, minimum 212x32",
-      "squeezed: PanelSection[2]/QWidget/_ColorSourceControl is 58x32, minimum 79x25",
-      "squeezed: PanelSection[2]/QWidget/_ColorSourceControl/QComboBox is 58x25, minimum 79x25",
-      "squeezed: PanelSection[2]/QWidget/FillStyleComboBox is 58x32, minimum 103x32"
+      "squeezed: QWidget[0] is 229x181, minimum 300x181",
+      "squeezed: QWidget[0]/PanelSection[0] is 229x52, minimum 300x52",
+      "squeezed: QWidget[0]/PanelSection[0]/QWidget is 229x52, minimum 300x52",
+      "squeezed: QWidget[0]/PanelSection[0]/QWidget/SegmentedControl is 229x24, minimum 300x24"
     ],
     "size": [
-      460,
-      202
+      455,
+      233
     ]
   },
   "strip_short": {
     "problems": [
-      "squeezed: PanelSection[0] is 147x52, minimum 300x52",
-      "squeezed: PanelSection[0]/QWidget is 147x52, minimum 300x52",
-      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 147x24, minimum 300x24",
-      "squeezed: PanelSection[1] is 147x92, minimum 225x92",
-      "squeezed: PanelSection[1]/QWidget is 147x92, minimum 225x92",
-      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl is 52x32, minimum 79x25",
-      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl/QComboBox is 52x25, minimum 79x25",
-      "squeezed: PanelSection[1]/QWidget/PenStyleComboBox is 52x32, minimum 103x32",
-      "squeezed: PanelSection[1]/QWidget/SegmentedControl is 110x24, minimum 162x24",
-      "squeezed: PanelSection[2] is 146x32, minimum 212x32",
-      "squeezed: PanelSection[2]/QWidget is 146x32, minimum 212x32",
-      "squeezed: PanelSection[2]/QWidget/_ColorSourceControl is 58x32, minimum 79x25",
-      "squeezed: PanelSection[2]/QWidget/_ColorSourceControl/QComboBox is 58x25, minimum 79x25",
-      "squeezed: PanelSection[2]/QWidget/FillStyleComboBox is 58x32, minimum 103x32"
+      "squeezed: QWidget[0] is 145x52, minimum 300x52",
+      "squeezed: QWidget[0]/PanelSection is 145x52, minimum 300x52",
+      "squeezed: QWidget[0]/PanelSection/QWidget is 145x52, minimum 300x52",
+      "squeezed: QWidget[0]/PanelSection/QWidget/SegmentedControl is 145x24, minimum 300x24",
+      "squeezed: QWidget[1] is 145x116, minimum 229x123",
+      "squeezed: QWidget[1]/PanelSection is 145x116, minimum 229x123",
+      "squeezed: QWidget[1]/PanelSection/QWidget is 145x116, minimum 229x123",
+      "squeezed: QWidget[1]/PanelSection/QWidget/_ColorSourceControl is 83x25, minimum 167x25",
+      "squeezed: QWidget[1]/PanelSection/QWidget/_ColorSourceControl/QComboBox is 83x25, minimum 167x25",
+      "squeezed: QWidget[1]/PanelSection/QWidget/PenStyleComboBox is 83x25, minimum 103x32",
+      "squeezed: QWidget[1]/PanelSection/QWidget/SegmentedControl is 83x24, minimum 162x24",
+      "squeezed: QWidget[2] is 145x63, minimum 216x63",
+      "squeezed: QWidget[2]/PanelSection is 145x63, minimum 216x63",
+      "squeezed: QWidget[2]/PanelSection/QWidget is 145x63, minimum 216x63",
+      "squeezed: QWidget[2]/PanelSection/QWidget/_ColorSourceControl is 96x25, minimum 167x25",
+      "squeezed: QWidget[2]/PanelSection/QWidget/_ColorSourceControl/QComboBox is 96x25, minimum 167x25",
+      "squeezed: QWidget[2]/PanelSection/QWidget/FillStyleComboBox is 96x32, minimum 103x32"
     ],
     "size": [
-      460,
-      101
+      455,
+      116
     ]
   },
   "strip_tall": {
-    "problems": [
-      "squeezed: PanelSection[0] is 147x52, minimum 300x52",
-      "squeezed: PanelSection[0]/QWidget is 147x52, minimum 300x52",
-      "squeezed: PanelSection[0]/QWidget/SegmentedControl is 147x24, minimum 300x24",
-      "squeezed: PanelSection[1] is 147x92, minimum 225x92",
-      "squeezed: PanelSection[1]/QWidget is 147x92, minimum 225x92",
-      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl is 52x32, minimum 79x25",
-      "squeezed: PanelSection[1]/QWidget/_ColorSourceControl/QComboBox is 52x25, minimum 79x25",
-      "squeezed: PanelSection[1]/QWidget/PenStyleComboBox is 52x32, minimum 103x32",
-      "squeezed: PanelSection[1]/QWidget/SegmentedControl is 110x24, minimum 162x24",
-      "squeezed: PanelSection[2] is 146x32, minimum 212x32",
-      "squeezed: PanelSection[2]/QWidget is 146x32, minimum 212x32",
-      "squeezed: PanelSection[2]/QWidget/_ColorSourceControl is 58x32, minimum 79x25",
-      "squeezed: PanelSection[2]/QWidget/_ColorSourceControl/QComboBox is 58x25, minimum 79x25",
-      "squeezed: PanelSection[2]/QWidget/FillStyleComboBox is 58x32, minimum 103x32"
-    ],
+    "problems": [],
     "size": [
-      460,
+      455,
       1200
     ]
   },
@@ -184,13 +154,13 @@
     "problems": [],
     "size": [
       1600,
-      202
+      233
     ]
   },
   "tall": {
     "problems": [],
     "size": [
-      460,
+      455,
       1200
     ]
   },
@@ -198,7 +168,7 @@
     "problems": [],
     "size": [
       1600,
-      202
+      233
     ]
   }
 }

@@ -18,6 +18,7 @@ from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.input_fields.pen_join_style_combo_box import PenJoinStyleComboBox
 from src.ui.input_fields.pen_style_combo_box import PenStyleComboBox
+from src.ui.panel.tool_control_panels.shape_preview import parse_dash_pattern
 from src.ui.panel.tool_control_panels.shape_tool_panel import ShapeToolPanel
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.shape_mode import ShapeMode
@@ -82,7 +83,7 @@ class ShapeTool(ShapeDragTool):
         self._pen.setColor(color_controller.shape_line_color())
         self._pen.setWidth(cache.get(Cache.SHAPE_TOOL_LINE_WIDTH))
         if self._pen.style() == Qt.PenStyle.CustomDashLine:
-            dash_pattern = _parse_dash_pattern(cache.get(Cache.SHAPE_TOOL_DASH_PATTERN))
+            dash_pattern = parse_dash_pattern(cache.get(Cache.SHAPE_TOOL_DASH_PATTERN))
             if len(dash_pattern) > 0 and (len(dash_pattern) % 2) == 0:
                 self._pen.setDashPattern(dash_pattern)
         try:
@@ -198,7 +199,7 @@ class ShapeTool(ShapeDragTool):
             return
         self._pen.setStyle(pen_style)
         if self._pen.style() == Qt.PenStyle.CustomDashLine:
-            dash_pattern = _parse_dash_pattern(Cache().get(Cache.SHAPE_TOOL_DASH_PATTERN))
+            dash_pattern = parse_dash_pattern(Cache().get(Cache.SHAPE_TOOL_DASH_PATTERN))
             if len(dash_pattern) > 0 and (len(dash_pattern) % 2) == 0:
                 self._pen.setDashPattern(dash_pattern)
         self._selection_handler.set_pen(self._pen)
@@ -216,7 +217,7 @@ class ShapeTool(ShapeDragTool):
     def _dash_pattern_update_slot(self, pattern_str: str) -> None:
         if self._pen.style() != Qt.PenStyle.CustomDashLine:
             return
-        dash_pattern = _parse_dash_pattern(pattern_str)
+        dash_pattern = parse_dash_pattern(pattern_str)
         if len(dash_pattern) > 0 and (len(dash_pattern) % 2) == 0 and dash_pattern != self._pen.dashPattern():
             self._pen.setDashPattern(dash_pattern)
             self._selection_handler.set_pen(self._pen)
@@ -266,7 +267,3 @@ class ShapeTool(ShapeDragTool):
             self._control_panel.setEnabled(not locked and isinstance(self._layer, ImageLayer))
         if locked:
             self._cancel_drag()
-
-
-def _parse_dash_pattern(pattern_str) -> list[float]:
-    return [float(num) for num in pattern_str.split(' ') if num.isnumeric()]

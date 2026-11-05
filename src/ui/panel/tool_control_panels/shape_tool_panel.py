@@ -2,12 +2,13 @@
 
 The panel is a view over the shape tool's `Cache` values:
 - Shape: the shape type as a `SegmentedControl`, with Vertices and Inner radius under it for the shapes that use them.
-- Outline: Width, the line color source with the line style, Dash pattern with its hint while the style is custom,
-  then Join.
-- Fill: the fill color source with the fill pattern.
-  A color source is a dropdown (foreground, background or custom), with the custom color's swatch beside it only
-  while the source is custom.
+- Outline: Width, the line color source, the line style, Dash pattern with its hint while the style is custom, then
+  Join.
+- Fill: the fill color source, then the fill pattern.
+  A color source is a dropdown (foreground, background or custom) on a line of its own, wide enough for its longest
+  option, with the custom color's swatch beside it only while the source is custom.
 - Antialiasing: at the bottom of a side panel, and in the Shape column of a strip.
+- A preview of the shape drawn with these settings (`ShapePreview`).
 
 The shape type and join controls save untranslated names in `Cache` (`ShapeMode.name` and the `JOIN_STYLE_*`
 constants), which the shape tool reads. Their segment values are the `ShapeMode` and `_JOIN_STYLES` names.
@@ -15,15 +16,20 @@ constants), which the shape tool reads. Their segment values are the `ShapeMode`
 The panel is a `src.ui.layout.panel_fit.FitContent`, planned in the space the Tools panel gives it:
 - Side: one column. The roomy arrangement puts Outline and Fill side by side, the compact one stacks them. The shape
   type and join show labels, or icons where labels don't fit across. Section headers always show.
-- Strip: Shape, Outline and Fill are columns of up to `strip_section_max_width()`. The roomy arrangement gives each
-  control its own row. The compact one pairs them into two rows per column, with icon-only shape types. Section headers
-  are optional, and Width is labeled "Outline" and the fill row "Fill" while they are hidden.
+- Strip: Shape, Outline and Fill are columns of up to `strip_section_max_width()`. A column stacks sections top to
+  bottom while they fit the strip's height (`src.ui.layout.column_packing`), so a collapsed section lets the next one
+  move up beneath it. The roomy arrangement gives each control its own row. The compact one pairs Width with the line
+  style and uses icon-only shape types. Section headers are optional, and Width is labeled "Outline" and the fill row
+  "Fill" while they are hidden.
+- The preview is decorative and optional. A side panel prefers it below the sections, where it takes the column's
+  width, and goes beside them only when below doesn't fit. A strip puts it in a column after the sections. Without
+  room it hides.
 - Join is optional: a plan without room for it moves it to `overflow_content`, which the Tools panel shows in its More
   popover.
 """
 from typing import Optional
 
-from PySide6.QtCore import QEvent, QRegularExpression, Qt
+from PySide6.QtCore import QEvent, QRegularExpression, QSize, Qt
 from PySide6.QtGui import QBrush, QColor, QIcon, QPalette, QPen, QRegularExpressionValidator
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
                                QSizePolicy, QWidget)
@@ -40,9 +46,11 @@ from src.ui.input_fields.pen_style_combo_box import PenStyleComboBox
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.input_fields.shape_mode_combo_box import ShapeModeComboBox
 from src.ui.input_fields.slider_field import SliderField
+from src.ui.layout.column_packing import PackedColumns, pack_columns
 from src.ui.layout.label_column_layout import normalize_row_label
-from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement
+from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement, fresh_minimum_size
 from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
+from src.ui.panel.tool_control_panels.shape_preview import ShapePreview
 from src.ui.widget.color_button import ColorButton
 from src.ui.widget.panel_section import PanelSection
 from src.util.visual.shape_mode import ShapeMode
@@ -64,7 +72,6 @@ VERTICES_LABEL = _tr('Vertices')
 INNER_RADIUS_LABEL = _tr('Inner radius')
 WIDTH_LABEL = _tr('Width')
 COLOR_LABEL = _tr('Color')
-MIN_SOURCE_COMBO_CHARACTERS = 4
 DASH_LABEL = _tr('Dash')
 JOIN_LABEL = _tr('Join')
 NO_LINE_TEXT = _tr('none')
@@ -78,7 +85,12 @@ OUTLINE_SUMMARY = _tr('{width} {style}')
 DASH_PATTERN_REGEX = r'\s*(\d+\s+\d+\s*)+'
 MIN_COMBO_CHARACTERS = 6
 SECTION_SPACING = 10
+STACK_SPACING = 6
 SEGMENT_ICON_LINE_WIDTH = 6
+# Capped columns share width until they reach their caps, and a spare column after them takes what is left, so the
+# layout doesn't center each capped column in a wider cell:
+CONTENT_COLUMN_STRETCH = 100
+SPARE_COLUMN_STRETCH = 1
 
 _JOIN_STYLES = {
     'ROUND': (JOIN_STYLE_ROUND, Qt.PenJoinStyle.RoundJoin),
@@ -91,12 +103,18 @@ SHAPE_TYPE_ITEM = FitItem(REQUIRED, 2)
 ARRANGEMENT_ITEM = FitItem(REQUIRED, 2)
 JOIN_ITEM = FitItem(1, 2)
 HEADERS_ITEM = FitItem(2)
+PREVIEW_ITEM = FitItem(3, 2)
 # Forms of the shape type and join items:
 LABELS = 0
 ICONS = 1
 # Forms of the arrangement item:
 ROOMY = 0
 COMPACT = 1
+# Forms of the preview item, tried in order. A side panel prefers below the sections and a strip prefers a column after
+# them, where below isn't available:
+BELOW = 0
+BESIDE = 1
+_PREVIEW_FORMS = {Orientation.SIDE: (BELOW, BESIDE), Orientation.STRIP: (BESIDE, BESIDE)}
 
 
 def _shape_mode(mode_text: str) -> Optional[ShapeMode]:
@@ -131,9 +149,11 @@ class _ColorSourceControl(QWidget):
         self.combo = QComboBox(self)
         self.combo.setToolTip(cache.get_tooltip(source_key))
         self.combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-        self.combo.setMinimumContentsLength(MIN_SOURCE_COMBO_CHARACTERS)
         for option in cache.get_options(source_key):
             self.combo.addItem(cache.get_option_display(option), option)
+        # The source has a line to itself, so it is wide enough for its longest option:
+        self.combo.setMinimumContentsLength(max((len(self.combo.itemText(index))
+                                                 for index in range(self.combo.count())), default=0))
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.combo)
@@ -161,6 +181,9 @@ class ShapeToolPanel(FitToolPanel):
         cache = Cache()
         # Whether the Outline rows are paired, which drops the dash pattern's label and hint:
         self._paired = False
+        # Overrides the strip's column height while measuring the base size, which must not depend on earlier plans:
+        self._budget_override: Optional[int] = None
+        self._packed = PackedColumns()
         if _shape_mode(cache.get(Cache.SHAPE_TOOL_MODE)) is None:
             cache.set(Cache.SHAPE_TOOL_MODE, ShapeMode.ELLIPSE.name)
 
@@ -193,6 +216,8 @@ class ShapeToolPanel(FitToolPanel):
         self._pen_style_dropdown = PenStyleComboBox(Cache.SHAPE_TOOL_LINE_STYLE, self)
         self._fit_combo(self._pen_style_dropdown)
         self._line_color_label.setBuddy(self._line_color_source.combo)
+        self._line_style_label = QLabel(normalize_row_label(cache.get_label(Cache.SHAPE_TOOL_LINE_STYLE)), self)
+        self._line_style_label.setBuddy(self._pen_style_dropdown)
         self._dash_label = QLabel(DASH_LABEL, self)
         self._dash_textbox = create_control_widget(cache, Cache.SHAPE_TOOL_DASH_PATTERN)
         assert isinstance(self._dash_textbox, QLineEdit)
@@ -224,16 +249,22 @@ class ShapeToolPanel(FitToolPanel):
         self._fill_color_label.setBuddy(self._fill_color_source.combo)
         self._fill_style_dropdown = FillStyleComboBox(Cache.SHAPE_TOOL_FILL_PATTERN, True, self)
         self._fit_combo(self._fill_style_dropdown)
+        self._fill_style_label = QLabel(normalize_row_label(cache.get_label(Cache.SHAPE_TOOL_FILL_PATTERN)), self)
+        self._fill_style_label.setBuddy(self._fill_style_dropdown)
         self._fill_body = QWidget(self)
         self._fill_layout = self._body_grid(self._fill_body)
         self._fill_section = PanelSection(FILL_SECTION_TITLE, self._fill_body, parent=self)
         self._fill_section.bind_summary(self._fill_style_dropdown.currentText,
                                         self._fill_style_dropdown.currentTextChanged)
 
+        self._preview = ShapePreview(self)
         self._grid = QGridLayout(self)
         self._grid.setContentsMargins(0, 0, 0, 0)
         self._grid.setHorizontalSpacing(SECTION_SPACING)
+        self._grid.setVerticalSpacing(STACK_SPACING)
         self._sections = (self._shape_section, self._outline_section, self._fill_section)
+        for section in self._sections:
+            section.expanded_changed.connect(self._section_toggled)
 
         cache.connect(self, Cache.SHAPE_TOOL_MODE, self._shape_mode_changed)
         cache.connect(self, Cache.SHAPE_TOOL_LINE_JOIN_STYLE, self._join_style_changed)
@@ -251,9 +282,9 @@ class ShapeToolPanel(FitToolPanel):
         self._shape_mode_changed(cache.get(Cache.SHAPE_TOOL_MODE), refit=False)
         self._line_style_changed(self._pen_style_dropdown.currentText(), refit=False)
 
-        self._planner = FitPlanner([SHAPE_TYPE_ITEM, ARRANGEMENT_ITEM, JOIN_ITEM, HEADERS_ITEM], self._apply_fit,
-                                   self._measure_fit)
-        self._apply_fit(Orientation.SIDE, (LABELS, ROOMY, LABELS, 0))
+        self._planner = FitPlanner([SHAPE_TYPE_ITEM, ARRANGEMENT_ITEM, JOIN_ITEM, HEADERS_ITEM, PREVIEW_ITEM],
+                                   self._apply_fit, self._measure_fit)
+        self._apply_fit(Orientation.SIDE, (LABELS, ROOMY, LABELS, 0, None))
 
     # -----------------------------------------------------------------------------------------------------------------
     # Controls
@@ -430,11 +461,39 @@ class ShapeToolPanel(FitToolPanel):
     # Layout
     # -----------------------------------------------------------------------------------------------------------------
 
+    @property
+    def preview(self) -> ShapePreview:
+        """The shape preview."""
+        return self._preview
+
+    def fit_base_size(self, orientation: Orientation) -> QSize:
+        """Returns the minimum size with required items in their smallest forms, and every strip section in a column of
+        its own, so the size doesn't depend on earlier plans."""
+        self._budget_override = 0
+        try:
+            return super().fit_base_size(orientation)
+        finally:
+            self._budget_override = None
+
+    def _column_budget(self) -> int:
+        """Returns the height a strip's columns stack sections within: the planned space's, or zero before the first
+        plan, which gives every section its own column."""
+        if self._budget_override is not None:
+            return self._budget_override
+        space = self._planner.available
+        return 0 if space is None else space.height()
+
+    def _section_toggled(self, _expanded: bool) -> None:
+        """Plans again after a section opens or closes in a strip, since its height decides the columns."""
+        if self._orientation == Orientation.STRIP:
+            self._refit()
+
     def _apply_fit(self, orientation: Orientation, placement: Placement) -> None:
-        shape_form, arrangement, join_form, headers = placement
+        shape_form, arrangement, join_form, headers, preview_form = placement
         self._orientation = orientation
         strip = orientation == Orientation.STRIP
         compact = arrangement == COMPACT
+        preview = None if preview_form is None else _PREVIEW_FORMS[orientation][preview_form]
         # A strip plans by height, where both shape type forms are the same, so its compact form picks the icons:
         shape_icons = compact if strip else shape_form == ICONS
         self._shape_control.set_display_mode(DisplayMode.ICON if shape_icons else DisplayMode.LABEL)
@@ -445,14 +504,17 @@ class ShapeToolPanel(FitToolPanel):
         show_headers = not strip or headers is not None
         for section in self._sections:
             section.set_header_visible(show_headers)
+            # A collapsed section in a packed column is too narrow for a one-line summary:
+            section.set_summary_below(strip)
         self._width_field.set_label(WIDTH_LABEL if show_headers else OUTLINE_SECTION_TITLE)
         self._fill_color_label.setText(COLOR_LABEL if show_headers else FILL_SECTION_TITLE)
         self._arrange_shape(strip, strip and compact)
         self._arrange_outline(strip and compact, join_form is not None)
         self._arrange_fill()
-        self._arrange_sections(strip, not strip and not compact)
+        self._arrange_sections(strip, not strip and not compact, preview)
         # Moving between the Shape section and the panel reparents the checkbox, which hides it:
         self._antialias_checkbox.show()
+        self._preview.setVisible(preview is not None)
 
     def _arrange_shape(self, strip: bool, paired: bool) -> None:
         """Puts the shape type over the Vertices and Inner radius row, with Antialiasing beside the shape type in a
@@ -473,12 +535,14 @@ class ShapeToolPanel(FitToolPanel):
         layout.setColumnStretch(1, 1)
 
     def _arrange_outline(self, paired: bool, join_shown: bool) -> None:
-        """Lays out the Outline rows: labeled rows, or in a paired strip Width beside the color, then the line style
-        beside Join, or beside Dash pattern with Join under them while the style is custom."""
+        """Lays out the Outline rows: labeled rows, or in a paired strip Width beside the line style, then the color
+        source on a line of its own, the dash pattern while the style is custom, and Join. The color source and the
+        line style never share a line."""
         self._paired = paired
         layout = self._outline_layout
-        widgets = (self._width_field, self._line_color_label, self._line_color_source, self._pen_style_dropdown,
-                   self._dash_label, self._dash_textbox, self._dash_hint, self._join_label, self._join_control)
+        widgets = (self._width_field, self._line_color_label, self._line_color_source, self._line_style_label,
+                   self._pen_style_dropdown, self._dash_label, self._dash_textbox, self._dash_hint, self._join_label,
+                   self._join_control)
         self._clear(layout, widgets)
         if join_shown:
             self._overflow_layout.removeWidget(self._join_label)
@@ -490,64 +554,112 @@ class ShapeToolPanel(FitToolPanel):
         self._join_control.show()
         if paired:
             layout.addWidget(self._width_field, 0, 0)
-            layout.addWidget(self._line_color_source, 0, 1)
-            layout.addWidget(self._pen_style_dropdown, 1, 0)
-            custom = self._custom_dash()
-            if custom:
-                layout.addWidget(self._dash_textbox, 1, 1)
+            layout.addWidget(self._pen_style_dropdown, 0, 1)
+            layout.addWidget(self._line_color_source, 1, 0, 1, 2)
+            row = 2
+            if self._custom_dash():
+                layout.addWidget(self._dash_textbox, row, 0, 1, 2)
+                row += 1
             if join_shown:
-                layout.addWidget(self._join_control, 2 if custom else 1, 0 if custom else 1, 1, 2 if custom else 1)
+                layout.addWidget(self._join_control, row, 0, 1, 2)
                 self._join_label.hide()
             layout.setColumnStretch(0, 1)
+            layout.setColumnStretch(1, 1)
             self._line_color_label.hide()
+            self._line_style_label.hide()
             self._line_style_changed(self._pen_style_dropdown.currentText(), refit=False)
             return
-        layout.addWidget(self._width_field, 0, 0, 1, 3)
+        layout.addWidget(self._width_field, 0, 0, 1, 2)
         layout.addWidget(self._line_color_label, 1, 0)
         layout.addWidget(self._line_color_source, 1, 1)
-        layout.addWidget(self._pen_style_dropdown, 1, 2)
-        layout.addWidget(self._dash_label, 2, 0)
-        layout.addWidget(self._dash_textbox, 2, 1, 1, 2)
-        layout.addWidget(self._dash_hint, 3, 1, 1, 2)
+        layout.addWidget(self._line_style_label, 2, 0)
+        layout.addWidget(self._pen_style_dropdown, 2, 1)
+        layout.addWidget(self._dash_label, 3, 0)
+        layout.addWidget(self._dash_textbox, 3, 1)
+        layout.addWidget(self._dash_hint, 4, 1)
         if join_shown:
-            layout.addWidget(self._join_label, 4, 0)
-            layout.addWidget(self._join_control, 4, 1, 1, 2)
-        layout.setColumnStretch(2, 1)
+            layout.addWidget(self._join_label, 5, 0)
+            layout.addWidget(self._join_control, 5, 1)
+        layout.setColumnStretch(1, 1)
         self._line_color_label.show()
+        self._line_style_label.show()
         self._line_style_changed(self._pen_style_dropdown.currentText(), refit=False)
 
     def _arrange_fill(self) -> None:
+        """Puts the fill color source and the fill pattern on separate labeled lines."""
         layout = self._fill_layout
-        self._clear(layout, (self._fill_color_label, self._fill_color_source, self._fill_style_dropdown))
+        self._clear(layout, (self._fill_color_label, self._fill_color_source, self._fill_style_label,
+                             self._fill_style_dropdown))
         layout.addWidget(self._fill_color_label, 0, 0)
         layout.addWidget(self._fill_color_source, 0, 1)
-        layout.addWidget(self._fill_style_dropdown, 0, 2)
-        layout.setColumnStretch(2, 1)
+        layout.addWidget(self._fill_style_label, 1, 0)
+        layout.addWidget(self._fill_style_dropdown, 1, 1)
+        layout.setColumnStretch(1, 1)
 
-    def _arrange_sections(self, strip: bool, beside: bool) -> None:
-        """Places the sections in strip columns, side by side under Shape, or stacked, with spare room after them."""
+    def _arrange_sections(self, strip: bool, beside: bool, preview: Optional[int]) -> None:
+        """Places the sections in strip columns, side by side under Shape, or stacked, with the preview after them or
+        below them, and spare room last."""
         grid = self._grid
-        self._clear(grid, (*self._sections, self._antialias_checkbox))
-        top = Qt.AlignmentFlag.AlignTop
+        released = [section for section in self._sections if self._packed.holds(section)]
+        shown = [section for section in released if not section.isHidden()]
+        if not strip:
+            self._packed.release(released)
+        self._clear(grid, (*self._sections, self._antialias_checkbox, self._preview, *self._packed.columns))
+        for section in self._sections:
+            self._cap_width(section)
         if strip:
-            for column, section in enumerate(self._sections):
-                grid.addWidget(section, 0, column, top)
-            spare_column = len(self._sections)
+            columns = self._place_columns()
+            used_rows = 2
+            if preview is not None:
+                grid.addWidget(self._preview, 0, columns, 2, 1)
+                columns += 1
             grid.setRowStretch(1, 1)
-        elif beside:
+        else:
+            columns, used_rows = self._place_stacked(beside)
+            if preview == BELOW:
+                grid.addWidget(self._preview, used_rows, 0, 1, columns)
+                grid.setRowStretch(used_rows, 1)
+                used_rows += 1
+            elif preview == BESIDE:
+                grid.addWidget(self._preview, 0, columns, used_rows, 1)
+                columns += 1
+            if preview != BELOW:
+                grid.setRowStretch(used_rows, 1)
+            # Leaving a packed column hid the sections that were shown:
+            for section in shown:
+                section.show()
+        for column in range(columns):
+            grid.setColumnStretch(column, CONTENT_COLUMN_STRETCH)
+        grid.setColumnStretch(columns, SPARE_COLUMN_STRETCH)
+
+    def _place_stacked(self, beside: bool) -> tuple[int, int]:
+        """Places a side panel's sections, with Outline beside Fill if `beside`. Returns the columns and rows used."""
+        grid = self._grid
+        top = Qt.AlignmentFlag.AlignTop
+        if beside:
             grid.addWidget(self._shape_section, 0, 0, 1, 2, top)
             grid.addWidget(self._outline_section, 1, 0, top)
             grid.addWidget(self._fill_section, 1, 1, top)
             grid.addWidget(self._antialias_checkbox, 2, 0, 1, 2, top)
-            spare_column = 2
-            grid.setRowStretch(3, 1)
-        else:
-            for row, widget in enumerate((*self._sections, self._antialias_checkbox)):
-                grid.addWidget(widget, row, 0, top)
-            spare_column = 1
-            grid.setRowStretch(4, 1)
-        for column in range(spare_column):
-            grid.setColumnStretch(column, 1)
-        grid.setColumnStretch(spare_column, 0)
-        for section in self._sections:
-            self._cap_width(section)
+            return 2, 3
+        for row, widget in enumerate((*self._sections, self._antialias_checkbox)):
+            grid.addWidget(widget, row, 0, top)
+        return 1, 4
+
+    def _place_columns(self) -> int:
+        """Packs a strip's sections into columns that stack them within the column budget, and adds the columns to the
+        grid. Returns the number of columns."""
+        grid = self._grid
+        heights = [fresh_minimum_size(section).height() for section in self._sections]
+        plan = [tuple(self._sections[index] for index in column)
+                for column in pack_columns(heights, self._column_budget(), STACK_SPACING)]
+        added = 0
+
+        def _add_column(column: QWidget) -> None:
+            nonlocal added
+            column.setMaximumWidth(max(section.maximumWidth() for section in plan[added]))
+            grid.addWidget(column, 0, added, Qt.AlignmentFlag.AlignTop)
+            added += 1
+
+        self._packed.fill(plan, STACK_SPACING, _add_column)
+        return added
