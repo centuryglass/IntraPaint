@@ -1148,7 +1148,15 @@ class ImageStack(QObject):
             offset = base_bounds.topLeft() - merged_bounds.topLeft()
             base_paint_transform = QTransform.fromTranslate(offset.x(), offset.y())
             painter.setTransform(base_paint_transform, False)
+            # The base layer's opacity is baked into its pixels, and the merged layer is set to full opacity, so the
+            # base opacity doesn't also apply to the merged top content.
+            painter.setOpacity(base_layer.opacity)
             painter.drawImage(QRect(QPoint(), base_layer.size), base_layer.image)
+            if base_layer.alpha_locked:
+                painter.end()
+                locked_alpha = image_data_as_numpy_8bit_readonly(merged_image)[:, :, 3].copy()
+                painter.begin(merged_image)
+                painter.setRenderHint(QPainter.RenderHint.LosslessImageRendering)
 
             painter.setTransform(top_to_base_transform * base_paint_transform)
             painter.setOpacity(top_layer.opacity)
@@ -1164,13 +1172,10 @@ class ImageStack(QObject):
                              map_rect_precise(top_layer.bounds, painter.transform()).toAlignedRect())
             painter.end()
             if base_layer.alpha_locked:
-                # Alpha is copied rather than composited: base alpha inside its old bounds, transparent outside.
+                # Alpha is copied rather than composited: the base's alpha at its opacity inside its old bounds,
+                # transparent outside.
                 straight_image = merged_image.convertToFormat(QImage.Format.Format_ARGB32)
-                merged_alpha = image_data_as_numpy_8bit(straight_image)[:, :, 3]
-                merged_alpha[:, :] = 0
-                base_alpha = image_data_as_numpy_8bit_readonly(base_layer.image)[:, :, 3]
-                x, y = offset.x(), offset.y()
-                merged_alpha[y:y + base_alpha.shape[0], x:x + base_alpha.shape[1]] = base_alpha
+                image_data_as_numpy_8bit(straight_image)[:, :, 3] = locked_alpha
                 merged_image = straight_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
 
             final_transform = QTransform.fromTranslate(-offset.x(), -offset.y()) * base_layer.transform
@@ -1181,6 +1186,7 @@ class ImageStack(QObject):
                 with base.with_alpha_lock_disabled():
                     base.set_image(img)
                 base.set_transform(matrix)
+                base.set_opacity(1.0)
                 if removed.shown != base.shown:
                     self._emit_content_changed()
                 if update_active:
