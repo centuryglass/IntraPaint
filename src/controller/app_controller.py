@@ -1297,40 +1297,42 @@ class AppController(MenuBuilder):
         """Move the active layer to the top of the layer stack."""
         self._image_stack.move_layer(self._image_stack.active_layer, self._image_stack.layer_stack, 0)
 
-    def _get_active_transform_layer(self) -> TransformLayer:
+    def _transform_active_layer(self, change: Callable[[TransformLayer], None]) -> None:
+        """Applies a transformation to the active layer, or to every layer in the active layer group."""
         active_layer = self._image_stack.active_layer
         if isinstance(active_layer, TransformLayer):
-            return active_layer
+            change(active_layer)
+            return
         assert isinstance(active_layer, LayerGroup)
-        return TransformGroup(active_layer)
+        transform_group = TransformGroup(active_layer)
+        try:
+            change(transform_group)
+        finally:
+            transform_group.remove_all()
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_TRANSFORM}', 'layer_mirror_horizontal_shortcut', 430,
                  valid_app_states=[APP_STATE_EDITING])
     def layer_mirror_horizontal(self) -> None:
         """Flip the active layer horizontally."""
-        layer = self._get_active_transform_layer()
-        layer.flip_horizontal()
+        self._transform_active_layer(lambda layer: layer.flip_horizontal())
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_TRANSFORM}', 'layer_mirror_vertical_shortcut', 431,
                  valid_app_states=[APP_STATE_EDITING])
     def layer_mirror_vertical(self) -> None:
         """Flip the active layer vertically."""
-        layer = self._get_active_transform_layer()
-        layer.flip_vertical()
+        self._transform_active_layer(lambda layer: layer.flip_vertical())
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_TRANSFORM}', 'layer_rotate_cw_shortcut', 432,
                  valid_app_states=[APP_STATE_EDITING])
     def layer_rotate_cw(self) -> None:
         """Rotate the active layer 90 degrees clockwise."""
-        layer = self._get_active_transform_layer()
-        layer.rotate(90)
+        self._transform_active_layer(lambda layer: layer.rotate(90))
 
     @menu_action(f'{MENU_LAYER}.{SUBMENU_TRANSFORM}', 'layer_rotate_ccw_shortcut', 433,
                  valid_app_states=[APP_STATE_EDITING])
     def layer_rotate_ccw(self) -> None:
         """Rotate the active layer 90 degrees counter-clockwise."""
-        layer = self._get_active_transform_layer()
-        layer.rotate(-90)
+        self._transform_active_layer(lambda layer: layer.rotate(-90))
 
     @menu_action(MENU_LAYER, 'new_layer_shortcut', 400,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])

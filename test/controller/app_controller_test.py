@@ -6,7 +6,7 @@ from typing import Iterator
 from unittest.mock import patch, MagicMock
 
 from PySide6.QtCore import QEvent, QSize, QTimer
-from PySide6.QtGui import QAction, QColor, QImage
+from PySide6.QtGui import QAction, QColor, QImage, QTransform
 from PySide6.QtWidgets import QApplication, QStyleFactory, QWidget
 from shiboken6 import delete, isValid
 
@@ -377,3 +377,36 @@ class TestRestorePreviousChoicesAction(IntraPaintTestCase):
         self.window.set_image_selector_visible(False)
         AppStateTracker.set_app_state(APP_STATE_LOADING)
         self.assertFalse(self._action().isEnabled())
+
+
+class TestLayerGroupTransformMenu(IntraPaintTestCase):
+    """Tests the Layers > Transform menu actions on a layer group."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        args = build_arg_parser(include_edit_params=False).parse_args(['--window_size', '800x600', '--mode', 'mock'])
+        args.mode = 'mock'
+        args.server_url = ''
+        args.fast_ngrok_connection = False
+        self.controller = AppController(args)
+        self.image_stack = self.controller._image_stack
+        self.group = self.image_stack.create_layer_group('group')
+        self.child = self.image_stack.create_layer('child', layer_parent=self.group, layer_index=0)
+        self.child.set_size(QSize(40, 20))
+        # Content past the canvas edge starts ImageStack's selection bounds timer, which would outlive the test:
+        self.child.set_transform(QTransform.fromTranslate(100, 100))
+        self.image_stack.active_layer = self.group
+
+    def test_mirror_reaches_children_only_once(self) -> None:
+        """Mirroring a group mirrors its layers, and a layer added to the group afterwards keeps its transform."""
+        self.controller.layer_mirror_horizontal()
+        self.assertEqual(self.child.transform.m11(), -1.0)
+        added = self.image_stack.create_layer('added', layer_parent=self.group, layer_index=0)
+        self.assertEqual(added.transform, QTransform())
+
+    def test_rotate_leaves_layers_moved_out_unchanged(self) -> None:
+        """A layer moved out of a group after a menu rotation keeps the rotation."""
+        self.controller.layer_rotate_cw()
+        rotated = self.child.transform
+        self.image_stack.move_layer(self.child, self.image_stack.layer_stack, 0)
+        self.assertEqual(self.child.transform, rotated)

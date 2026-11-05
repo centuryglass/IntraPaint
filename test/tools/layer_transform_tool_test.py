@@ -255,6 +255,23 @@ class LayerTransformToolTest(ToolTestCase):
         UndoStack().undo()
         self.assert_points_equal(self._scene_point_of(QPointF()), QPointF(40.0, LAYER_OFFSET.y()))
 
+    def test_group_transform_ends_with_selection(self) -> None:
+        """Transforming a layer group moves its layers, and once another layer is active, a layer added to the group
+        keeps its own transform."""
+        group = self.image_stack.create_layer_group('group')
+        self.image_stack.move_layer(self.layer, group, 0)
+        self.image_stack.active_layer = group
+        UndoStack().clear()
+        self.panel.geometry_block.field(X).set_value(40.0)
+        self.assert_points_equal(self._scene_point_of(QPointF()), QPointF(40.0, LAYER_OFFSET.y()))
+        self.image_stack.active_layer = self.layer
+        added = self.image_stack.create_layer('added', layer_parent=group, layer_index=0)
+        self.assertEqual(added.transform, QTransform())
+        UndoStack().undo()  # The layer creation
+        UndoStack().undo()  # The active layer change
+        UndoStack().undo()  # The group transform
+        self.assert_points_equal(self._scene_point_of(QPointF()), QPointF(LAYER_OFFSET))
+
     def test_layer_click_activates_layer(self) -> None:
         """Clicking another layer on the canvas, outside the active layer's outline, makes it active."""
         other_image = QImage(50, 50, QImage.Format.Format_ARGB32_Premultiplied)
