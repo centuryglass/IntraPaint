@@ -8516,6 +8516,31 @@ Keys: {decrease} / {increase}</source>
         <source>Hold {subtract_keys} to subtract.</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
+        <source>Position: {x}, {y}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
+        <source>Size: {width} x {height}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
+        <source>-</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
+        <source>{width} x {height} at {x}, {y}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/tool_control_panels/selection_panel.py"/>
+        <source>Nothing selected</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ui.panel.tool_control_panels.shape_selection_panel</name>

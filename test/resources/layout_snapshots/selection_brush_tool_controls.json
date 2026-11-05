@@ -3,7 +3,7 @@
     "problems": [],
     "size": [
       200,
-      226
+      272
     ]
   },
   "narrow": {
@@ -11,8 +11,8 @@
       "squeezed: PanelSection[0] is 82x50, minimum 128x50",
       "squeezed: PanelSection[0]/QWidget is 82x24, minimum 128x24",
       "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 82x24, minimum 128x24",
-      "squeezed: PanelSection[1] is 82x96, minimum 96x92",
-      "squeezed: PanelSection[1]/QWidget is 82x70, minimum 96x66",
+      "squeezed: PanelSection[1] is 82x142, minimum 96x92",
+      "squeezed: PanelSection[1]/QWidget is 82x116, minimum 96x66",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 82x30, minimum 96x30",
       "squeezed: PanelSection[2] is 82x50, minimum 110x50",
       "squeezed: PanelSection[2]/QWidget is 82x24, minimum 110x24",
@@ -20,127 +20,142 @@
     ],
     "size": [
       100,
-      226
+      272
     ]
   },
   "preferred": {
     "problems": [],
     "size": [
       200,
-      226
+      272
     ]
   },
   "short": {
     "problems": [
-      "squeezed: PanelSection[0] is 182x28, minimum 128x50",
-      "squeezed: PanelSection[0]/_HeaderButton 'Mode: Add' is 133x14, minimum 16x26",
-      "squeezed: PanelSection[0]/QWidget is 182x14, minimum 128x24",
-      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 182x14, minimum 128x24",
-      "squeezed: PanelSection[0]/KeyHintLabel 'Shift+Q' is 45x14, minimum 45x21",
-      "squeezed: PanelSection[1] is 182x27, minimum 96x92",
-      "squeezed: PanelSection[1]/_HeaderButton 'Selection' is 178x14, minimum 16x26",
-      "squeezed: PanelSection[1]/QWidget is 182x13, minimum 96x66",
-      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 182x4, minimum 96x30",
-      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 182x3, minimum 80x30",
-      "squeezed: PanelSection[2] is 182x28, minimum 110x50",
-      "squeezed: PanelSection[2]/_HeaderButton 'Brush' is 178x14, minimum 16x26",
-      "squeezed: PanelSection[2]/QWidget is 182x14, minimum 110x24",
-      "clipped: PanelSection[2]/QWidget/SliderField shows 182x14 of 182x24"
+      "squeezed: PanelSection[0] is 182x36, minimum 128x50",
+      "squeezed: PanelSection[0]/_HeaderButton 'Mode: Add' is 133x18, minimum 16x26",
+      "squeezed: PanelSection[0]/QWidget is 182x18, minimum 128x24",
+      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 182x18, minimum 128x24",
+      "squeezed: PanelSection[0]/KeyHintLabel 'Shift+Q' is 45x18, minimum 45x21",
+      "squeezed: PanelSection[1] is 182x35, minimum 96x92",
+      "squeezed: PanelSection[1]/_HeaderButton 'Selection' is 178x18, minimum 16x26",
+      "squeezed: PanelSection[1]/QWidget is 182x17, minimum 96x66",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 182x6, minimum 96x30",
+      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 182x5, minimum 80x30",
+      "squeezed: PanelSection[2] is 182x35, minimum 110x50",
+      "squeezed: PanelSection[2]/_HeaderButton 'Brush' is 178x18, minimum 16x26",
+      "squeezed: PanelSection[2]/QWidget is 182x17, minimum 110x24",
+      "clipped: PanelSection[2]/QWidget/SliderField shows 182x17 of 182x24"
     ],
     "size": [
       200,
-      113
+      136
     ]
   },
   "strip_minimum": {
     "problems": [
-      "squeezed: PanelSection[0] is 57x56, minimum 128x50",
-      "squeezed: PanelSection[0]/QWidget is 57x28, minimum 128x24",
+      "squeezed: PanelSection[0] is 57x102, minimum 128x50",
+      "squeezed: PanelSection[0]/QWidget is 57x51, minimum 128x24",
       "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 57x24, minimum 128x24",
-      "squeezed: PanelSection[0]/KeyHintLabel 'Shift+Q' is 37x28, minimum 45x21",
-      "squeezed: PanelSection[1] is 56x56, minimum 182x56",
-      "squeezed: PanelSection[1]/QWidget is 56x30, minimum 182x30",
+      "squeezed: PanelSection[0]/KeyHintLabel 'Shift+Q' is 37x51, minimum 45x21",
+      "squeezed: PanelSection[1] is 56x102, minimum 182x102",
+      "squeezed: PanelSection[1]/QWidget is 56x76, minimum 182x76",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 25x30, minimum 96x30",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 25x30, minimum 80x30",
-      "squeezed: PanelSection[2] is 57x56, minimum 110x50",
-      "squeezed: PanelSection[2]/QWidget is 57x30, minimum 110x24",
+      "squeezed: PanelSection[1]/QWidget/QWidget is 56x40, minimum 133x40",
+      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Position: -, -' shows 56x17 of 133x17",
+      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Size: - x -' shows 56x17 of 133x17",
+      "squeezed: PanelSection[2] is 57x102, minimum 110x50",
+      "squeezed: PanelSection[2]/QWidget is 57x76, minimum 110x24",
       "clipped: PanelSection[2]/QWidget/SliderField shows 57x24 of 110x24"
     ],
     "size": [
       200,
-      226
+      272
     ]
   },
   "strip_narrow": {
     "problems": [
-      "squeezed: PanelSection[0] is 24x56, minimum 128x50",
+      "squeezed: PanelSection[0] is 24x102, minimum 128x50",
       "squeezed: PanelSection[0]/_HeaderButton 'Mode: Add' is 12x26, minimum 16x26",
-      "squeezed: PanelSection[0]/QWidget is 24x28, minimum 128x24",
+      "squeezed: PanelSection[0]/QWidget is 24x51, minimum 128x24",
       "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 24x24, minimum 128x24",
-      "squeezed: PanelSection[0]/KeyHintLabel 'Shift+Q' is 8x28, minimum 45x21",
-      "squeezed: PanelSection[1] is 23x56, minimum 182x56",
-      "squeezed: PanelSection[1]/QWidget is 23x30, minimum 182x30",
+      "squeezed: PanelSection[0]/KeyHintLabel 'Shift+Q' is 8x51, minimum 45x21",
+      "squeezed: PanelSection[1] is 23x102, minimum 182x102",
+      "squeezed: PanelSection[1]/QWidget is 23x76, minimum 182x76",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 9x30, minimum 96x30",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 8x30, minimum 80x30",
-      "squeezed: PanelSection[2] is 23x56, minimum 110x50",
-      "squeezed: PanelSection[2]/QWidget is 23x30, minimum 110x24",
+      "squeezed: PanelSection[1]/QWidget/QWidget is 23x40, minimum 133x40",
+      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Position: -, -' shows 23x17 of 133x17",
+      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Size: - x -' shows 23x17 of 133x17",
+      "squeezed: PanelSection[2] is 23x102, minimum 110x50",
+      "squeezed: PanelSection[2]/QWidget is 23x76, minimum 110x24",
       "clipped: PanelSection[2]/QWidget/SliderField shows 23x24 of 110x24"
     ],
     "size": [
       100,
-      226
+      272
     ]
   },
   "strip_preferred": {
     "problems": [
-      "squeezed: PanelSection[0] is 57x56, minimum 128x50",
-      "squeezed: PanelSection[0]/QWidget is 57x28, minimum 128x24",
+      "squeezed: PanelSection[0] is 57x102, minimum 128x50",
+      "squeezed: PanelSection[0]/QWidget is 57x51, minimum 128x24",
       "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 57x24, minimum 128x24",
-      "squeezed: PanelSection[0]/KeyHintLabel 'Shift+Q' is 37x28, minimum 45x21",
-      "squeezed: PanelSection[1] is 56x56, minimum 182x56",
-      "squeezed: PanelSection[1]/QWidget is 56x30, minimum 182x30",
+      "squeezed: PanelSection[0]/KeyHintLabel 'Shift+Q' is 37x51, minimum 45x21",
+      "squeezed: PanelSection[1] is 56x102, minimum 182x102",
+      "squeezed: PanelSection[1]/QWidget is 56x76, minimum 182x76",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 25x30, minimum 96x30",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 25x30, minimum 80x30",
-      "squeezed: PanelSection[2] is 57x56, minimum 110x50",
-      "squeezed: PanelSection[2]/QWidget is 57x30, minimum 110x24",
+      "squeezed: PanelSection[1]/QWidget/QWidget is 56x40, minimum 133x40",
+      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Position: -, -' shows 56x17 of 133x17",
+      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Size: - x -' shows 56x17 of 133x17",
+      "squeezed: PanelSection[2] is 57x102, minimum 110x50",
+      "squeezed: PanelSection[2]/QWidget is 57x76, minimum 110x24",
       "clipped: PanelSection[2]/QWidget/SliderField shows 57x24 of 110x24"
     ],
     "size": [
       200,
-      226
+      272
     ]
   },
   "strip_short": {
     "problems": [
-      "squeezed: PanelSection[0] is 57x56, minimum 128x50",
-      "squeezed: PanelSection[0]/QWidget is 57x28, minimum 128x24",
+      "squeezed: PanelSection[0] is 57x102, minimum 128x50",
+      "squeezed: PanelSection[0]/QWidget is 57x51, minimum 128x24",
       "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 57x24, minimum 128x24",
-      "squeezed: PanelSection[0]/KeyHintLabel 'Shift+Q' is 37x28, minimum 45x21",
-      "squeezed: PanelSection[1] is 56x56, minimum 182x56",
-      "squeezed: PanelSection[1]/QWidget is 56x30, minimum 182x30",
+      "squeezed: PanelSection[0]/KeyHintLabel 'Shift+Q' is 37x51, minimum 45x21",
+      "squeezed: PanelSection[1] is 56x102, minimum 182x102",
+      "squeezed: PanelSection[1]/QWidget is 56x76, minimum 182x76",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 25x30, minimum 96x30",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 25x30, minimum 80x30",
-      "squeezed: PanelSection[2] is 57x56, minimum 110x50",
-      "squeezed: PanelSection[2]/QWidget is 57x30, minimum 110x24",
+      "squeezed: PanelSection[1]/QWidget/QWidget is 56x40, minimum 133x40",
+      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Position: -, -' shows 56x17 of 133x17",
+      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Size: - x -' shows 56x17 of 133x17",
+      "squeezed: PanelSection[2] is 57x102, minimum 110x50",
+      "squeezed: PanelSection[2]/QWidget is 57x76, minimum 110x24",
       "clipped: PanelSection[2]/QWidget/SliderField shows 57x24 of 110x24"
     ],
     "size": [
       200,
-      113
+      136
     ]
   },
   "strip_tall": {
     "problems": [
-      "squeezed: PanelSection[0] is 57x56, minimum 128x50",
-      "squeezed: PanelSection[0]/QWidget is 57x28, minimum 128x24",
+      "squeezed: PanelSection[0] is 57x102, minimum 128x50",
+      "squeezed: PanelSection[0]/QWidget is 57x51, minimum 128x24",
       "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 57x24, minimum 128x24",
-      "squeezed: PanelSection[0]/KeyHintLabel 'Shift+Q' is 37x28, minimum 45x21",
-      "squeezed: PanelSection[1] is 56x56, minimum 182x56",
-      "squeezed: PanelSection[1]/QWidget is 56x30, minimum 182x30",
+      "squeezed: PanelSection[0]/KeyHintLabel 'Shift+Q' is 37x51, minimum 45x21",
+      "squeezed: PanelSection[1] is 56x102, minimum 182x102",
+      "squeezed: PanelSection[1]/QWidget is 56x76, minimum 182x76",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 25x30, minimum 96x30",
       "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 25x30, minimum 80x30",
-      "squeezed: PanelSection[2] is 57x56, minimum 110x50",
-      "squeezed: PanelSection[2]/QWidget is 57x30, minimum 110x24",
+      "squeezed: PanelSection[1]/QWidget/QWidget is 56x40, minimum 133x40",
+      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Position: -, -' shows 56x17 of 133x17",
+      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Size: - x -' shows 56x17 of 133x17",
+      "squeezed: PanelSection[2] is 57x102, minimum 110x50",
+      "squeezed: PanelSection[2]/QWidget is 57x76, minimum 110x24",
       "clipped: PanelSection[2]/QWidget/SliderField shows 57x24 of 110x24"
     ],
     "size": [
@@ -152,7 +167,7 @@
     "problems": [],
     "size": [
       1600,
-      226
+      272
     ]
   },
   "tall": {
@@ -166,7 +181,7 @@
     "problems": [],
     "size": [
       1600,
-      226
+      272
     ]
   }
 }
