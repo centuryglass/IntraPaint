@@ -62,7 +62,7 @@ from src.controller.image_generation.sd_generator import MENU_GENERATION, STABLE
     SDGenerator
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator, DEFAULT_WEBUI_URL
 from src.controller.image_generation.test_generator import TestGenerator
-from src.controller.image_io import ImageIO
+from src.controller.image_io import ImageIO, UNTITLED_FILE_NAME
 from src.controller.tool_controller import ToolController
 from src.hotkey_filter import HotkeyFilter
 from src.image.filter.blur import BlurFilter
@@ -87,7 +87,7 @@ from src.ui.input_fields.pressure_curve_input import PressureCurveInput
 from src.ui.modal.image_scale_modal import ImageScaleModal
 from src.ui.modal.layout_name_modal import prompt_layout_name, TITLE_SAVE
 from src.ui.modal.manage_layouts_modal import ManageLayoutsModal
-from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, show_warning_dialog
+from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog
 from src.ui.modal.new_image_modal import NewImageModal
 from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.settings_modal import SettingsModal
@@ -177,12 +177,8 @@ HELP_INDEX_LINK = 'https://github.com/centuryglass/IntraPaint/blob/master/doc/he
 
 GENERATOR_LOAD_ERROR_TITLE = _tr('Loading image generator failed')
 GENERATOR_LOAD_ERROR_MESSAGE = _tr('Unable to load the {generator_name} image generator')
-CONFIRM_QUIT_TITLE = _tr('Quit now?')
-CONFIRM_QUIT_MESSAGE = _tr('All unsaved changes will be lost.')
 CONFIRM_QUIT_BUTTON = _tr('Quit without saving')
-NEW_IMAGE_CONFIRMATION_TITLE = _tr('Create new image?')
-NEW_IMAGE_CONFIRMATION_MESSAGE = _tr('This will discard all unsaved changes.')
-NEW_IMAGE_CONFIRMATION_BUTTON = _tr('Discard and create')
+NEW_IMAGE_CONFIRMATION_BUTTON = _tr('Create without saving')
 
 IGNORED_APPCONFIG_CATEGORIES = (QApplication.translate('config.application_config', 'Stable Diffusion'),
                                 QApplication.translate('config.application_config', 'GLID-3-XL'))
@@ -368,6 +364,9 @@ class AppController(MenuBuilder):
             lambda _layer, _bounds: self._update_enabled_actions())
         UndoStack().undo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
         UndoStack().redo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
+        UndoStack().clean_changed.connect(lambda _clean: self._update_window_title())  # type: ignore
+        Cache().connect(self._window, Cache.LAST_FILE_PATH, lambda _path: self._update_window_title())
+        self._update_window_title()
         # "Reopen last generated options" also needs a stored batch, so `_update_enabled_actions` alone sets whether
         # it is enabled, re-checking whenever either the app state or the batch changes:
         restore_action = self.get_action_for_method(self.restore_previous_image_choices)
@@ -494,10 +493,12 @@ class AppController(MenuBuilder):
             QtExceptHook().enable()
         self._window.show()
         self._update_enabled_actions()
-        self._autosave.offer_recovery()
+        restored = self._autosave.offer_recovery()
 
         # Discard anything saved to the undo stack during the setup process:
         UndoStack().clear()
+        if restored:  # The recovery copy holds work that was never saved.
+            UndoStack().mark_modified()
 
         AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
         app.exec()
@@ -817,12 +818,7 @@ class AppController(MenuBuilder):
         image_modal = NewImageModal(default_size.width(), default_size.height(), generation_area_size,
                                     None if clipboard_image is None else clipboard_image.size())
         image_size = image_modal.show_image_modal()
-        if image_size and (not self._image_stack.has_image or request_confirmation(self._window,
-                                                                                   NEW_IMAGE_CONFIRMATION_TITLE,
-                                                                                   NEW_IMAGE_CONFIRMATION_MESSAGE,
-                                                                                   discards_work=True,
-                                                                                   confirm_label=
-                                                                                   NEW_IMAGE_CONFIRMATION_BUTTON)):
+        if image_size and self._image_io.confirm_unsaved_changes(NEW_IMAGE_CONFIRMATION_BUTTON):
             new_image = QImage(image_size, QImage.Format.Format_ARGB32_Premultiplied)
             new_image.fill(color_controller.new_image_color())
             Cache().set(Cache.LAST_FILE_PATH, '')
@@ -921,10 +917,15 @@ class AppController(MenuBuilder):
         else:
             self._window.close()  # MainWindow.closeEvent asks through _confirm_quit.
 
+    def _update_window_title(self) -> None:
+        """Shows the open file's name in the window title, marked while it has unsaved changes."""
+        file_path = Cache().get(Cache.LAST_FILE_PATH)
+        self._window.setWindowFilePath(file_path if file_path != '' else UNTITLED_FILE_NAME)
+        self._window.setWindowModified(not UndoStack().is_clean())
+
     def _confirm_quit(self) -> bool:
-        """Asks the user to confirm closing the main window, returning whether to proceed."""
-        confirmed = request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE, discards_work=True,
-                                         confirm_label=CONFIRM_QUIT_BUTTON)
+        """Returns whether closing the main window may proceed, offering to save unsaved changes first."""
+        confirmed = self._image_io.confirm_unsaved_changes(CONFIRM_QUIT_BUTTON)
         if confirmed:
             self.wait_for_pending_save()
         return confirmed

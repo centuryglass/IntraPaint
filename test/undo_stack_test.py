@@ -13,8 +13,8 @@ from test.base_test_case import IntraPaintTestCase
 app = QApplication.instance() or QApplication(sys.argv)
 
 
-class UndoStackTest(IntraPaintTestCase):
-    """Tests the UndoStack module."""
+class UndoStackTestCase(IntraPaintTestCase):
+    """Starts each test with an empty history and an integer value for test actions to change."""
 
     def setUp(self) -> None:
         super().setUp()
@@ -34,6 +34,10 @@ class UndoStackTest(IntraPaintTestCase):
             self.value = value
 
         self.undo_stack.commit_action(_apply, _revert, action_type, merge_target=merge_target)
+
+
+class UndoStackTest(UndoStackTestCase):
+    """Tests the UndoStack module."""
 
     def test_commit_runs_and_records_action(self) -> None:
         """commit_action applies the change immediately and adds one undo entry."""
@@ -321,6 +325,99 @@ class UndoStackTest(IntraPaintTestCase):
         for _ in range(3):
             self.undo_stack.undo()
         self.assertEqual(self.value, 2)
+
+
+class UndoStackCleanStateTest(UndoStackTestCase):
+    """Tests tracking which history state matches the open file."""
+
+    def test_clear_makes_history_clean(self) -> None:
+        """A cleared history is clean, and an edit makes it modified."""
+        self.assertTrue(self.undo_stack.is_clean())
+        self.commit_value(1)
+        self.assertFalse(self.undo_stack.is_clean())
+
+    def test_undoing_back_to_save_point_is_clean(self) -> None:
+        """Undoing to the saved state makes the history clean, and redoing past it makes it modified again."""
+        self.commit_value(1)
+        self.undo_stack.save_point()()
+        self.assertTrue(self.undo_stack.is_clean())
+        self.commit_value(2)
+        self.assertFalse(self.undo_stack.is_clean())
+        self.undo_stack.undo()
+        self.assertTrue(self.undo_stack.is_clean())
+        self.undo_stack.undo()
+        self.assertFalse(self.undo_stack.is_clean())
+        self.undo_stack.redo()
+        self.assertTrue(self.undo_stack.is_clean())
+
+    def test_new_edit_after_undoing_past_save_point_is_never_clean(self) -> None:
+        """An edit that replaces the saved entry leaves no clean state, though the entry count matches again."""
+        self.commit_value(1)
+        self.undo_stack.save_point()()
+        self.undo_stack.undo()
+        self.commit_value(3)
+        self.assertEqual(self.undo_stack.undo_count(), 1)
+        self.assertFalse(self.undo_stack.is_clean())
+        self.undo_stack.undo()
+        self.assertFalse(self.undo_stack.is_clean())
+
+    def test_change_during_save_leaves_no_clean_state(self) -> None:
+        """A save point whose history changed before the save finished marks no state clean."""
+        self.commit_value(1)
+        mark_saved = self.undo_stack.save_point()
+        self.undo_stack.undo()
+        mark_saved()
+        self.assertFalse(self.undo_stack.is_clean())
+        self.undo_stack.redo()
+        self.assertFalse(self.undo_stack.is_clean())
+
+    def test_mark_modified_leaves_no_clean_state(self) -> None:
+        """mark_modified makes the current state modified, and no undo or redo returns to a clean one."""
+        self.commit_value(1)
+        self.undo_stack.undo()
+        self.undo_stack.mark_modified()
+        self.assertFalse(self.undo_stack.is_clean())
+        self.undo_stack.redo()
+        self.assertFalse(self.undo_stack.is_clean())
+
+    def test_save_point_ends_gesture(self) -> None:
+        """A merging edit after a save point starts a new entry, so it can't fold into the saved one."""
+        target = object()
+        self.undo_stack.begin_gesture('test.set_value')
+        self.commit_value(1, merge_target=target)
+        self.undo_stack.save_point()()
+        self.assertTrue(self.undo_stack.is_clean())
+        self.undo_stack.begin_gesture('test.set_value')
+        self.commit_value(2, merge_target=target)
+        self.undo_stack.end_gesture()
+        self.assertEqual(self.undo_stack.undo_count(), 2)
+        self.assertFalse(self.undo_stack.is_clean())
+        self.undo_stack.undo()
+        self.assertEqual(self.value, 1)
+        self.assertTrue(self.undo_stack.is_clean())
+
+    def test_clean_changed_signal(self) -> None:
+        """clean_changed reports each change of the clean state."""
+        clean_states: list[bool] = []
+        self.undo_stack.clean_changed.connect(clean_states.append)
+        self.commit_value(1)
+        self.undo_stack.undo()
+        self.undo_stack.redo()
+        self.undo_stack.save_point()()
+        self.assertEqual(clean_states, [False, True, False, True])
+
+    def test_dropping_saved_entry_past_undo_limit_keeps_clean_state(self) -> None:
+        """The saved state stays clean when the undo limit drops the entry that made it."""
+        AppConfig().set(AppConfig.MAX_UNDO, 2)
+        self.undo_stack.clear()
+        self.commit_value(1)
+        self.undo_stack.save_point()()
+        self.commit_value(2)
+        self.commit_value(3)
+        self.undo_stack.undo()
+        self.undo_stack.undo()
+        self.assertEqual(self.value, 1)
+        self.assertTrue(self.undo_stack.is_clean())
 
 
 if __name__ == '__main__':

@@ -3874,32 +3874,12 @@
     </message>
     <message>
         <location filename="../../src/controller/app_controller.py"/>
-        <source>Quit now?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>All unsaved changes will be lost.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
         <source>Quit without saving</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/controller/app_controller.py"/>
-        <source>Create new image?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>This will discard all unsaved changes.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/app_controller.py"/>
-        <source>Discard and create</source>
+        <source>Create without saving</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -4724,17 +4704,12 @@
     </message>
     <message>
         <location filename="../../src/controller/image_io.py"/>
-        <source>Reload image?</source>
+        <source>Reload without saving</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/controller/image_io.py"/>
-        <source>This will discard all unsaved changes.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/controller/image_io.py"/>
-        <source>Discard and reload</source>
+        <source>Untitled</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6848,6 +6823,21 @@ Keys: {decrease} / {increase}</source>
     <message>
         <location filename="../../src/ui/modal/modal_utils.py"/>
         <source>Later</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>Save changes to "{file_name}"?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>Changes you haven't saved will be lost.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/modal_utils.py"/>
+        <source>Save</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

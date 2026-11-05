@@ -11,8 +11,12 @@ from PySide6.QtWidgets import QApplication, QStyleFactory, QWidget
 from shiboken6 import delete, isValid
 
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.app_controller import AppController, MENU_WINDOW_LAYOUTS, LAYOUT_ACTION_PROPERTY
+from src.controller.image_io import UNTITLED_FILE_NAME
+from src.ui.modal.modal_utils import UNSAVED_DISCARD, UNSAVED_CANCEL
+from src.undo_stack import UndoStack
 from src.ui.window import saved_layouts
 from src.controller.image_generation.test_generator import TestGenerator
 from src.ui.modal.settings_modal import SettingsModal
@@ -23,6 +27,8 @@ from src.util.visual.display_size import get_screen_size
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
+
+UNSAVED_CHOICE = 'src.controller.image_io.request_unsaved_changes_choice'
 
 
 class _GcStateRecorder(QWidget):
@@ -259,44 +265,89 @@ class TestAppController(IntraPaintTestCase):
         self.controller.start_app()
         self.assertFalse(self.controller.menu_window.isVisible())
 
+    def _make_modified(self) -> None:
+        UndoStack().commit_action(lambda: None, lambda: None, 'test.edit')
+
     @patch('src.ui.window.main_window.QApplication.exit')
-    @patch('src.controller.app_controller.request_confirmation', return_value=True)
-    def test_quit_confirmed_asks_once(self, mock_confirm, mock_exit):
+    @patch(UNSAVED_CHOICE, return_value=UNSAVED_DISCARD)
+    def test_quit_modified_asks_once(self, mock_choice, mock_exit):
+        self._make_modified()
         self.controller.quit()
-        mock_confirm.assert_called_once()
+        mock_choice.assert_called_once()
         mock_exit.assert_called_once()
 
     @patch('src.ui.window.main_window.QApplication.exit')
-    @patch('src.controller.app_controller.request_confirmation', return_value=False)
-    def test_quit_cancelled_keeps_window_open(self, mock_confirm, mock_exit):
+    @patch(UNSAVED_CHOICE, return_value=UNSAVED_DISCARD)
+    def test_quit_clean_does_not_ask(self, mock_choice, mock_exit):
+        UndoStack().clear()
+        self.controller.quit()
+        mock_choice.assert_not_called()
+        mock_exit.assert_called_once()
+
+    @patch('src.ui.window.main_window.QApplication.exit')
+    @patch(UNSAVED_CHOICE, return_value=UNSAVED_CANCEL)
+    def test_quit_cancelled_keeps_window_open(self, mock_choice, mock_exit):
+        self._make_modified()
         self.controller._window.show()
         self.controller.quit()
-        mock_confirm.assert_called_once()
+        mock_choice.assert_called_once()
         mock_exit.assert_not_called()
         self.assertTrue(self.controller._window.isVisible())
 
     @patch('src.ui.window.main_window.QApplication.exit')
-    @patch('src.controller.app_controller.request_confirmation', return_value=True)
-    def test_quit_skip_confirmation_does_not_ask(self, mock_confirm, mock_exit):
+    @patch(UNSAVED_CHOICE, return_value=UNSAVED_DISCARD)
+    def test_quit_skip_confirmation_does_not_ask(self, mock_choice, mock_exit):
+        self._make_modified()
         self.controller.quit(skip_confirmation=True)
-        mock_confirm.assert_not_called()
+        mock_choice.assert_not_called()
         mock_exit.assert_called_once()
 
     @patch('src.ui.window.main_window.QApplication.exit')
-    @patch('src.controller.app_controller.request_confirmation', return_value=True)
-    def test_window_close_confirmed_asks_once(self, mock_confirm, mock_exit):
+    @patch(UNSAVED_CHOICE, return_value=UNSAVED_DISCARD)
+    def test_window_close_modified_asks_once(self, mock_choice, mock_exit):
+        self._make_modified()
         self.controller._window.close()
-        mock_confirm.assert_called_once()
+        mock_choice.assert_called_once()
         mock_exit.assert_called_once()
 
     @patch('src.ui.window.main_window.QApplication.exit')
-    @patch('src.controller.app_controller.request_confirmation', return_value=False)
-    def test_window_close_cancelled_keeps_window_open(self, mock_confirm, mock_exit):
+    @patch(UNSAVED_CHOICE, return_value=UNSAVED_CANCEL)
+    def test_window_close_cancelled_keeps_window_open(self, mock_choice, mock_exit):
+        self._make_modified()
         self.controller._window.show()
         self.assertFalse(self.controller._window.close())
-        mock_confirm.assert_called_once()
+        mock_choice.assert_called_once()
         mock_exit.assert_not_called()
         self.assertTrue(self.controller._window.isVisible())
+
+    def test_window_title_shows_file_and_modified_state(self):
+        """The title names the open file, or Untitled, and marks unsaved changes."""
+        window = self.controller._window
+        Cache().set(Cache.LAST_FILE_PATH, '')
+        UndoStack().clear()
+        self.assertEqual(window.windowFilePath(), UNTITLED_FILE_NAME)
+        self.assertFalse(window.isWindowModified())
+        self._make_modified()
+        self.assertTrue(window.isWindowModified())
+        Cache().set(Cache.LAST_FILE_PATH, '/images/portrait.ora')
+        self.assertEqual(window.windowFilePath(), '/images/portrait.ora')
+        UndoStack().undo()
+        self.assertFalse(window.isWindowModified())
+
+    @patch(UNSAVED_CHOICE, return_value=UNSAVED_CANCEL)
+    @patch('src.controller.app_controller.NewImageModal')
+    def test_new_image_asks_only_when_modified(self, mock_modal, mock_choice):
+        """New Image replaces a clean document without asking, and a cancelled prompt keeps a modified one."""
+        mock_modal.return_value.show_image_modal.return_value = QSize(32, 24)
+        UndoStack().clear()
+        self.controller.new_image()
+        mock_choice.assert_not_called()
+        self.assertEqual(self.controller._image_stack.size, QSize(32, 24))
+        mock_modal.return_value.show_image_modal.return_value = QSize(40, 40)
+        self._make_modified()
+        self.controller.new_image()
+        mock_choice.assert_called_once()
+        self.assertEqual(self.controller._image_stack.size, QSize(32, 24))
 
 
 class TestRestorePreviousChoicesAction(IntraPaintTestCase):
