@@ -184,7 +184,7 @@ ERROR_MESSAGE_PREPROCESSOR_PREVIEW_FAILED = _tr('Loading ControlNet preprocessor
 
 SD_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/stable-diffusion.png'
 STABLE_DIFFUSION_CONFIG_CATEGORY = QApplication.translate('config.application_config', 'Stable Diffusion')
-MENU_STABLE_DIFFUSION = 'Stable Diffusion'
+MENU_GENERATION = _tr('&Generation')
 
 
 LCM_SAMPLER = 'LCM'
@@ -834,7 +834,7 @@ class SDGenerator(ImageGenerator, ABC):
                                                        layer_parent=self._image_stack.layer_stack, image_data=img)
             self._image_stack.active_layer = new_layer
 
-    @menu_action(MENU_STABLE_DIFFUSION, 'lora_shortcut', 201, [APP_STATE_EDITING],
+    @menu_action(MENU_GENERATION, 'lora_shortcut', 511, [APP_STATE_EDITING],
                  condition_check=_check_lora_available)
     def show_lora_window(self) -> None:
         """Show the Lora model selection window."""
@@ -889,7 +889,7 @@ class SDGenerator(ImageGenerator, ABC):
         self._lora_window = ExtraNetworkWindow(loras, self._lora_images)
         self._lora_window.show()
 
-    @menu_action(MENU_STABLE_DIFFUSION, 'lcm_mode_shortcut', 210, condition_check=_check_lcm_mode_available)
+    @menu_action(MENU_GENERATION, 'lcm_mode_shortcut', 512, condition_check=_check_lcm_mode_available)
     def set_lcm_mode(self) -> None:
         """Apply all settings required for using an LCM LoRA module."""
         cache = Cache()

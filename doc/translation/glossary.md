@@ -8,7 +8,7 @@ this file is in [`doc/machine_translation.md`](../machine_translation.md).
   [`doc/machine_translation.md`](../machine_translation.md#glossary-format) gives: commas separate terms, `/` separates
   spellings of one term, a quoted term matches only a whole UI string, and a trailing parenthetical is a label.
 - **Meaning** is IntraPaint's sense of the word, which can be narrower than its everyday or Stable Diffusion sense.
-- **Where** names the panel, menu, tool or setting that shows the term. Settings are under **Settings**, by tab.
+- **Where** names the panel, menu, tool or setting that shows the term. Settings are under **Preferences**, by tab.
 - **UI strings** quotes the English source strings that use the term. A term's spellings all take its single
   rendering.
 - Common UI words that models already translate well (Open, Save, Undo, Copy) are left out.
@@ -23,16 +23,16 @@ General vocabulary shared with Photoshop, GIMP and Krita. Per-language glossarie
 
 | Term | Meaning | Where | UI strings |
 | --- | --- | --- | --- |
-| Layer | One image in the stack that makes up the picture. Text layers hold editable text. | Layers panel, Layers menu | "Add layer", "Merge down", "Convert text layer to image?" |
+| Layer | One image in the stack that makes up the picture. Text layers hold editable text. | Layers panel, Layer menu | "Add layer", "Merge down", "Convert text layer to image?" |
 | Layer group | A layer that holds other layers and composites them together. | Layers panel | "Add layer group", "Merge group" |
 | Active layer | The layer that tools and layer commands act on. | Layers panel, tool hints | "Delete the active layer.", "Change active layer only" |
 | Isolation (layer group) | Whether a group composites its children by themselves before blending the result onto the layers below. | Layers panel button | "Toggle layer group isolation" |
 | Lock, transparency lock | Lock blocks all changes to a layer. Transparency lock lets painting change color but not opacity. | Layers panel buttons | "Toggle layer lock", "Toggle layer transparency lock", "Changes were blocked because the layer is locked." |
-| Merge, flatten | Merge combines layers into one. Flatten turns a layer into a plain image layer, applying its transform and opacity to its pixels. | Layers menu | "Merge down", "Merge all visible", "Flatten layer", "Only visible layers can be flattened." |
+| Merge, flatten | Merge combines layers into one. Flatten turns a layer into a plain image layer, applying its transform and opacity to its pixels. | Layer menu | "Merge down", "Merge all visible", "Flatten layer", "Only visible layers can be flattened." |
 | Canvas | The image's bounds. Resizing the canvas changes the image size without scaling its content. | Image menu, generation panel | "Resize image canvas", "Text to image: ignores the canvas" |
 | Scale (verb) | Resize content by resampling it. Contrast with resizing the canvas. | Image menu, transform tool | "Scale image", "Scale X", "Image scaling mode:" |
-| Crop | Cut an image or layer down to a region. | Image and Layers menus | "Crop layer to selection", "Crop layer to content" |
-| Selection | The image region chosen for editing. It is also the inpainting mask (see "Mask"). | Selection menu, selection tools | "Select all", "Invert selection", "Nothing is selected, select an area in the image first." |
+| Crop | Cut an image or layer down to a region. | Image and Layer menus | "Crop layer to selection", "Crop layer to content" |
+| Selection | The image region chosen for editing. It is also the inpainting mask (see "Mask"). | Select menu, selection tools | "Select all", "Invert selection", "Nothing is selected, select an area in the image first." |
 | "Add", "Subtract", "Replace", "Intersect" (selection modes) | How a new selection shape combines with the current selection. | Selection tools' mode control | "Add new areas to the selection", "Keep only the part of the selection inside new areas" |
 | Opacity | How opaque a stroke or layer is, from transparent to fully opaque. | Brush tools, Layers panel | "Opacity:", "Decrease brush opacity:" |
 | Hardness | How sharp a brush's edge is. | Brush tools | "Hardness:", "Increase brush hardness:" |
@@ -70,7 +70,7 @@ kept in English or transliterated; per-language glossaries check community local
 | "fill", "original", "latent noise", "latent nothing" (masked content values) | The masked content values: a solid color, the existing image, random data, or cleared latent data. | Image Generation panel | "fill", "original", "latent noise", "latent nothing" |
 | Prompt | The text describing what to generate. | Image Generation panel | "Prompt", "Add to prompt", "Replace prompt" |
 | Negative prompt / "Negative" | Text describing what to avoid. | Image Generation panel | "Negative prompt", "Negative:" |
-| Prompt style / "Styles" | A saved prompt fragment, loaded from the WebUI, that can be added to the prompt. | Image Generation panel, Stable Diffusion menu | "Styles", "Saved Prompt Styles", "Add saved prompt styles to the prompt" |
+| Prompt style / "Styles" | A saved prompt fragment, loaded from the WebUI, that can be added to the prompt. | Image Generation panel, Generation menu | "Styles", "Saved Prompt Styles", "Add saved prompt styles to the prompt" |
 | CFG scale / CFG | How strongly the prompt and negative prompt steer generation. | Image Generation panel | "CFG scale", "CFG scale:" |
 | Steps | The number of denoising steps per image. | Image Generation panel | "Steps", "Steps:", "{steps} steps" |
 | Sampler / "Sampling", sampling method | The algorithm that runs the steps. Sampler names such as "Euler a" come from the backend and are not translated. | Image Generation panel | "Sampling", "Sampling method:" |
@@ -81,7 +81,7 @@ kept in English or transliterated; per-language glossaries check community local
 | Batch size, batch count | Batch size is images generated at once. Batch count is how many batches run one after another. | Image Generation panel | "Size and batch", "Batch size:", "Batch count:", "Batch {batch_num} of {num_batches}:" |
 | Model, checkpoint | The Stable Diffusion model file that generates images. | Image Generation panel, Stable Diffusion settings | "Model", "Stable Diffusion model:", "Max checkpoints loaded:", "Model loading" |
 | VAE, tiled VAE | The model that converts between images and latent data. Tiled VAE processes it in blocks to save GPU memory. | Image Generation panel, Stable Diffusion settings | "Tiled VAE encoding", "VAE tile size:", "tiled VAE {size}" |
-| LoRA | A small add-on model that adjusts a base model, added to the prompt by name. | Image Generation panel, Stable Diffusion menu | "LoRA", "LoRA Models", "Choose LoRA models to add to the prompt" |
+| LoRA | A small add-on model that adjusts a base model, added to the prompt by name. | Image Generation panel, Generation menu | "LoRA", "LoRA Models", "Choose LoRA models to add to the prompt" |
 | LCM mode | A menu action that sets up fast generation with an LCM LoRA: it adds the LoRA and sets sampler, steps and CFG scale. | Image Generation panel's More menu | "LCM mode" |
 | ControlNet | An add-on that guides generation with a control image, such as edges or a pose. | ControlNet panel | "ControlNet", "Control Model:", "Control Type:", "Control Image:" |
 | ControlNet unit | One ControlNet slot, with its own model, image and settings. Up to three run at once. | ControlNet panel | "ControlNet Unit {unit_number}", "Enable ControlNet Unit", "ControlNet: {count} units on" |
@@ -105,10 +105,10 @@ chooses a rendering and records its reasoning.
 | Resolution rule | How the generation resolution follows changes to the generation area's size. | Image Generation panel | "Resolution rule:" |
 | "Match area", "Match area, upscale small areas", "Manual" (resolution rules) | The resolution rule values: the resolution matches the area, matches it but scales small areas up, or is set by hand. | Image Generation panel | "Match area", "Match area, upscale small areas", "Manual" |
 | Context | How much of the image around the selection the generator sees while inpainting. Less context gives finer detail, and more gives better awareness of the surrounding image. Context pins stretch it further. | Image Generation panel, Selection tools | "Context:", "whole area", "Limit context to the selection" |
-| Context pin | A marker that stretches the inpainting crop (see Context) to include a point without inpainting it. Placed with the right mouse button. | Selection tools, Selection menu | "Clear context pins", "{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin" |
+| Context pin | A marker that stretches the inpainting crop (see Context) to include a point without inpainting it. Placed with the right mouse button. | Selection tools, Select menu | "Clear context pins", "{left_mouse_icon}: select - {right_mouse_icon}: add, move or remove context pin" |
 | Generated image options | The window that shows each image a generation produced, for choosing one to apply. | Opens after generating | "Select from generated image options.", "Option {index}", "Reopen last generated options" |
-| Image generator | The backend connection that generates images: Stable Diffusion via WebUI or ComfyUI, GLID-3-XL, or none. | Stable Diffusion menu, generator selection window | "Select image generator...", "Image Generator Selection", "This image generator is not available: {error_reason}" |
-| Panel, rail, dock, float | Panels are the dockable windows (Tools, Layers, Image Generation). The rail is the strip of panel tabs at the window's edge. A panel docks into the main window or floats as its own window. | View menu, panel menus | "Panels", "Dock", "Float", "Drag to move panel", "Tab font size:" |
+| Image generator | The backend connection that generates images: Stable Diffusion via WebUI or ComfyUI, GLID-3-XL, or none. | Generation menu, generator selection window | "Select image generator...", "Image Generator Selection", "This image generator is not available: {error_reason}" |
+| Panel, rail, dock, float | Panels are the dockable windows (Tools, Layers, Image Generation). The rail is the strip of panel tabs at the window's edge. A panel docks into the main window or floats as its own window. | Window menu, panel menus | "Panels", "Dock", "Float", "Drag to move panel", "Tab font size:" |
 | Tool control hints | The line under the image that lists the active tool's mouse and key controls. | View menu, Settings > Interface | "Show tool control hints", "Hide tool control hints", "{left_mouse_icon}: draw" |
 | Selection brush | Tool that paints a selection. | Tools panel | "Selection brush" |
 | Magic wand | Tool that selects connected or similar-colored areas. Photoshop and Paint.NET use this name; GIMP calls it Fuzzy Select. | Tools panel | "Magic wand", "Select areas of similar color", "Switch to the magic wand tool:" |

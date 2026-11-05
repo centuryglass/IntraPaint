@@ -612,7 +612,7 @@
         "saved": true
     },
     "new_image_shortcut": {
-        "label": "New image",
+        "label": "New...",
         "category": "Menu Shortcuts",
         "subcategory": "File Menu",
         "description": "Open a new image for editing.",
@@ -630,7 +630,7 @@
         "saved": true
     },
     "save_as_shortcut": {
-        "label": "Save as",
+        "label": "Save as...",
         "category": "Menu Shortcuts",
         "subcategory": "File Menu",
         "description": "Save current image as .png or .inpt at a new file path.",
@@ -639,7 +639,7 @@
         "saved": true
     },
     "load_shortcut": {
-        "label": "Load image",
+        "label": "Open...",
         "category": "Menu Shortcuts",
         "subcategory": "File Menu",
         "description": "Open an image file for editing.",
@@ -648,7 +648,7 @@
         "saved": true
     },
     "load_layers_shortcut": {
-        "label": "Open as layers",
+        "label": "Open as layers...",
         "category": "Menu Shortcuts",
         "subcategory": "File Menu",
         "description": "Open images as new layers.",
@@ -657,7 +657,7 @@
         "saved": true
     },
     "reload_shortcut": {
-        "label": "Reload",
+        "label": "Revert",
         "category": "Menu Shortcuts",
         "subcategory": "File Menu",
         "description": "Reload the image from its file.",
@@ -747,7 +747,7 @@
         "saved": true
     },
     "settings_shortcut": {
-        "label": "Settings",
+        "label": "Preferences...",
         "category": "Menu Shortcuts",
         "subcategory": "Edit Menu",
         "description": "Open the application settings window.",
@@ -774,7 +774,7 @@
         "saved": true
     },
     "zoom_actual_size_shortcut": {
-        "label": "Zoom to 100%",
+        "label": "Actual size (100%)",
         "category": "Menu Shortcuts",
         "subcategory": "View Menu",
         "description": "Show the image at its actual size.",
@@ -783,7 +783,7 @@
         "saved": true
     },
     "reset_view_shortcut": {
-        "label": "Reset view",
+        "label": "Fit image in window",
         "category": "Menu Shortcuts",
         "subcategory": "View Menu",
         "description": "Fit the whole image in the view and center it.",
@@ -801,7 +801,7 @@
         "saved": true
     },
     "toggle_control_hints_shortcut": {
-        "label": "Show/hide tool control hints",
+        "label": "Tool control hints",
         "category": "Menu Shortcuts",
         "subcategory": "View Menu",
         "description": "Show or hide the active tool control hints below the image.",
@@ -812,7 +812,7 @@
     "reset_dock_layout_shortcut": {
         "label": "Reset panel layout",
         "category": "Menu Shortcuts",
-        "subcategory": "View Menu",
+        "subcategory": "Window Menu",
         "description": "Put every panel back where it starts on first run, and open it.",
         "type": "string",
         "default": "Ctrl+Alt+Shift+P",
@@ -821,7 +821,7 @@
     "save_dock_layout_shortcut": {
         "label": "Save current layout...",
         "category": "Menu Shortcuts",
-        "subcategory": "View Menu",
+        "subcategory": "Window Menu",
         "description": "Save the current panel arrangement under a name, so it can be applied later.",
         "type": "string",
         "default": "Ctrl+Alt+Shift+S",
@@ -830,14 +830,14 @@
     "manage_dock_layouts_shortcut": {
         "label": "Manage layouts...",
         "category": "Menu Shortcuts",
-        "subcategory": "View Menu",
+        "subcategory": "Window Menu",
         "description": "Apply, rename or delete saved panel layouts.",
         "type": "string",
         "default": "Ctrl+Alt+Shift+L",
         "saved": true
     },
     "toggle_rulers_shortcut": {
-        "label": "Show/hide rulers",
+        "label": "Rulers",
         "category": "Menu Shortcuts",
         "subcategory": "View Menu",
         "description": "Show or hide the rulers beside the image.",
@@ -846,7 +846,7 @@
         "saved": true
     },
     "resize_canvas_shortcut": {
-        "label": "Resize canvas",
+        "label": "Canvas size...",
         "category": "Menu Shortcuts",
         "subcategory": "Image Menu",
         "description": "Change the image size without scaling layers.",
@@ -855,7 +855,7 @@
         "saved": true
     },
     "scale_image_shortcut": {
-        "label": "Scale image",
+        "label": "Scale image...",
         "category": "Menu Shortcuts",
         "subcategory": "Image Menu",
         "description": "Scale image content to a new size.",
@@ -864,7 +864,7 @@
         "saved": true
     },
     "crop_image_shortcut": {
-        "label": "Crop image to selection",
+        "label": "Crop to selection",
         "category": "Menu Shortcuts",
         "subcategory": "Image Menu",
         "description": "Crop the image to fit the current selected area.",
@@ -873,7 +873,7 @@
         "saved": true
     },
     "crop_image_to_gen_shortcut": {
-        "label": "Crop image to generation area",
+        "label": "Crop to generation area",
         "category": "Menu Shortcuts",
         "subcategory": "Image Menu",
         "description": "Crop the image to fit the generation area.",
@@ -882,7 +882,7 @@
         "saved": true
     },
     "image_to_layers_shortcut": {
-        "label": "Resize image to content",
+        "label": "Fit canvas to layers",
         "category": "Menu Shortcuts",
         "subcategory": "Image Menu",
         "description": "Resize the image to fit all layers",
@@ -891,7 +891,7 @@
         "saved": true
     },
     "update_metadata_shortcut": {
-        "label": "Update metadata",
+        "label": "Image metadata...",
         "category": "Menu Shortcuts",
         "subcategory": "Image Menu",
         "description": "Update image metadata that will be saved with the file.",
@@ -900,9 +900,9 @@
         "saved": true
     },
     "generator_select_shortcut": {
-        "label": "Select image generator",
+        "label": "Select image generator...",
         "category": "Menu Shortcuts",
-        "subcategory": "Image Menu",
+        "subcategory": "Generation Menu",
         "description": "Selects an AI image generator",
         "type": "string",
         "default": "F11",
@@ -911,7 +911,7 @@
     "generate_shortcut": {
         "label": "Generate",
         "category": "Menu Shortcuts",
-        "subcategory": "Image Menu",
+        "subcategory": "Generation Menu",
         "description": "Start AI image generation.",
         "type": "string",
         "default": "F4",
@@ -920,7 +920,7 @@
     "restore_choices_shortcut": {
         "label": "Reopen last generated options",
         "category": "Menu Shortcuts",
-        "subcategory": "Image Menu",
+        "subcategory": "Generation Menu",
         "description": "Reopens the last batch of generated images so another option can be chosen.",
         "type": "string",
         "default": "Shift+F4",
@@ -929,7 +929,7 @@
     "select_all_shortcut": {
         "label": "Select all",
         "category": "Menu Shortcuts",
-        "subcategory": "Selection Menu",
+        "subcategory": "Select Menu",
         "description": "Select the entire image",
         "type": "string",
         "default": "Ctrl+A",
@@ -938,7 +938,7 @@
     "select_none_shortcut": {
         "label": "Deselect all",
         "category": "Menu Shortcuts",
-        "subcategory": "Selection Menu",
+        "subcategory": "Select Menu",
         "description": "Clear the selection",
         "type": "string",
         "default": "Ctrl+D",
@@ -947,7 +947,7 @@
     "invert_selection_shortcut": {
         "label": "Invert selection",
         "category": "Menu Shortcuts",
-        "subcategory": "Selection Menu",
+        "subcategory": "Select Menu",
         "description": "Swap selected and unselected areas",
         "type": "string",
         "default": "Ctrl+Shift+I",
@@ -956,16 +956,16 @@
     "select_layer_content_shortcut": {
         "label": "Select layer content",
         "category": "Menu Shortcuts",
-        "subcategory": "Selection Menu",
+        "subcategory": "Select Menu",
         "description": "Select all non-transparent pixels in the active layer",
         "type": "string",
         "default": "Ctrl+Shift+A",
         "saved": true
     },
     "grow_selection_shortcut": {
-        "label": "Expand selection",
+        "label": "Grow selection",
         "category": "Menu Shortcuts",
-        "subcategory": "Selection Menu",
+        "subcategory": "Select Menu",
         "description": "Expand the selection bounds",
         "type": "string",
         "default": "Ctrl+Alt+=",
@@ -974,7 +974,7 @@
     "shrink_selection_shortcut": {
         "label": "Shrink selection",
         "category": "Menu Shortcuts",
-        "subcategory": "Selection Menu",
+        "subcategory": "Select Menu",
         "description": "Shrink the selection bounds",
         "type": "string",
         "default": "Ctrl+Alt+-",
@@ -983,7 +983,7 @@
     "clear_context_pins_shortcut": {
         "label": "Clear context pins",
         "category": "Menu Shortcuts",
-        "subcategory": "Selection Menu",
+        "subcategory": "Select Menu",
         "description": "Remove all context pins",
         "type": "string",
         "default": "Ctrl+Alt+P",
@@ -1017,7 +1017,7 @@
         "saved": true
     },
     "rename_layer_shortcut": {
-        "label": "Rename layer",
+        "label": "Rename layer...",
         "category": "Menu Shortcuts",
         "subcategory": "Layer Menu",
         "description": "Edit the active layer's name in the layer panel.",
@@ -1098,7 +1098,7 @@
         "saved": true
     },
     "merge_all_visible_shortcut": {
-        "label": "Merge all visible",
+        "label": "Merge visible",
         "category": "Menu Shortcuts",
         "subcategory": "Layer Menu",
         "description": "Merge all visible layers into a single image layer",
@@ -1134,7 +1134,7 @@
         "saved": true
     },
     "crop_to_content_shortcut": {
-        "label": "Crop layer to contents",
+        "label": "Crop layer to content",
         "category": "Menu Shortcuts",
         "subcategory": "Layer Menu",
         "description": "Crop transparent borders in the active layer.",
@@ -1179,81 +1179,81 @@
         "saved": true
     },
     "color_balance_shortcut": {
-        "label": "RGBA color balance",
+        "label": "RGBA color balance...",
         "category": "Menu Shortcuts",
-        "subcategory": "Filter Menu",
+        "subcategory": "Filters Menu",
         "description": "Adjust RGBA color channels",
         "type": "string",
         "default": "Ctrl+B",
         "saved": true
     },
     "brightness_contrast_shortcut": {
-        "label": "Brightness/contrast",
+        "label": "Brightness/contrast...",
         "category": "Menu Shortcuts",
-        "subcategory": "Filter Menu",
+        "subcategory": "Filters Menu",
         "description": "Adjust image brightness/contrast",
         "type": "string",
         "default": "Ctrl+2",
         "saved": true
     },
     "blur_shortcut": {
-        "label": "Blur",
+        "label": "Blur...",
         "category": "Menu Shortcuts",
-        "subcategory": "Filter Menu",
+        "subcategory": "Filters Menu",
         "description": "Image blurring",
         "type": "string",
         "default": "Ctrl+3",
         "saved": true
     },
     "sharpen_shortcut": {
-        "label": "Sharpen",
+        "label": "Sharpen...",
         "category": "Menu Shortcuts",
-        "subcategory": "Filter Menu",
+        "subcategory": "Filters Menu",
         "description": "Sharpen image details",
         "type": "string",
         "default": "Ctrl+4",
         "saved": true
     },
     "posterize_shortcut": {
-        "label": "Posterize",
+        "label": "Posterize...",
         "category": "Menu Shortcuts",
-        "subcategory": "Filter Menu",
+        "subcategory": "Filters Menu",
         "description": "Simplify layer color palette",
         "type": "string",
         "default": "Ctrl+5",
         "saved": true
     },
     "saturation_shortcut": {
-        "label": "Saturation",
+        "label": "Saturation...",
         "category": "Menu Shortcuts",
-        "subcategory": "Filter Menu",
+        "subcategory": "Filters Menu",
         "description": "Adjust image color saturation",
         "type": "string",
         "default": "Ctrl+U,Ctrl+6",
         "saved": true
     },
     "invert_shortcut": {
-        "label": "Invert",
+        "label": "Invert...",
         "category": "Menu Shortcuts",
-        "subcategory": "Filter Menu",
+        "subcategory": "Filters Menu",
         "description": "Invert image colors",
         "type": "string",
         "default": "Ctrl+I,Ctrl+7",
         "saved": true
     },
     "prompt_style_shortcut": {
-        "label": "View saved prompt styles",
+        "label": "View saved prompt styles...",
         "category": "Menu Shortcuts",
-        "subcategory": "Stable Diffusion Menu",
+        "subcategory": "Generation Menu",
         "description": "Access saved Stable Diffusion prompt styles",
         "type": "string",
         "default": "Ctrl+Alt+1",
         "saved": true
     },
     "lora_shortcut": {
-        "label": "View LoRA models",
+        "label": "View LoRA models...",
         "category": "Menu Shortcuts",
-        "subcategory": "Stable Diffusion Menu",
+        "subcategory": "Generation Menu",
         "description": "Access available LoRA models.",
         "type": "string",
         "default": "Ctrl+Alt+2",
@@ -1262,7 +1262,7 @@
     "lcm_mode_shortcut": {
         "label": "LCM mode",
         "category": "Menu Shortcuts",
-        "subcategory": "Stable Diffusion Menu",
+        "subcategory": "Generation Menu",
         "description": "Apply appropriate settings for the LCM LoRA.",
         "type": "string",
         "default": "F10",
@@ -1271,14 +1271,14 @@
     "clear_memory_shortcut": {
         "label": "Clear GPU memory",
         "category": "Menu Shortcuts",
-        "subcategory": "Stable Diffusion Menu",
+        "subcategory": "Generation Menu",
         "description": "Remove cached models from GPU memory in ComfyUI.",
         "type": "string",
         "default": "Ctrl+Alt+3",
         "saved": true
     },
     "help_index_shortcut": {
-        "label": "Open IntraPaint help pages",
+        "label": "IntraPaint help",
         "category": "Menu Shortcuts",
         "subcategory": "Help Menu",
         "description": "Open a page with links to all of IntraPaint's documentation and tutorials in a web browser.",

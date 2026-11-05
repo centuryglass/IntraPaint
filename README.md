@@ -184,7 +184,7 @@ To use AI features, you'll need a running Stable Diffusion client (either [Comfy
 2. Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI reForge", "Stable Diffusion WebUI Forge", "Stable Diffusion WebUI", or "ComfyUI" and wait for it to install.
 3. If you chose any of the WebUI options, click the gear icon next to package you just installed to the open launch options. Scroll to the bottom of the launch options, add `--api` to "Extra Launch Arguments", and click "Save"
 4. Click "Launch", and wait for the Stable Diffusion client to finish starting.
-5. Open IntraPaint, and it should automatically connect to the Stable Diffusion client. If IntraPaint is already running, open "Select image generator" under the Image menu, select the option that matches the Stable Diffusion client you chose, and click "Activate".
+5. Open IntraPaint, and it should automatically connect to the Stable Diffusion client. If IntraPaint is already running, open "Select image generator" under the Generation menu, select the option that matches the Stable Diffusion client you chose, and click "Activate".
 
 More detailed instructions and a comparison of the available options can be found on the [Stable Diffusion setup guide](./doc/stable_diffusion_setup.md).
 

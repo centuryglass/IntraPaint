@@ -129,7 +129,7 @@ The wide variety of ControlNet preprocessors and models available can be challen
 
 ### Stable Diffusion settings
 
-When a Stable Diffusion image generator is active, extra options will be available in the [settings window](./menu_options.md#settings-ctrlk).
+When a Stable Diffusion image generator is active, extra options will be available in the [settings window](./menu_options.md#preferences-ctrlk).
 
 <img src="./labeled_screenshots/sd_options.png" alt="Screenshot of the Stable Diffusion settings category, with specific elements numbered."/>
 

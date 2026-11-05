@@ -58,7 +58,7 @@ from src.controller.image_generation.image_generator import ImageGenerator
 from src.controller.image_generation.null_generator import NullGenerator
 from src.controller.image_generation.sd_adapters.controlnet_adapter import count_enabled_units
 from src.controller.image_generation.sd_comfyui_generator import SDComfyUIGenerator, DEFAULT_COMFYUI_URL
-from src.controller.image_generation.sd_generator import MENU_STABLE_DIFFUSION, STABLE_DIFFUSION_CONFIG_CATEGORY, \
+from src.controller.image_generation.sd_generator import MENU_GENERATION, STABLE_DIFFUSION_CONFIG_CATEGORY, \
     SDGenerator
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator, DEFAULT_WEBUI_URL
 from src.controller.image_generation.test_generator import TestGenerator
@@ -152,26 +152,25 @@ CONTROLNET_BADGE_TOOLTIP_MANY = _tr('ControlNet: {count} units on', 'Tooltip of 
 CONTROLNET_BADGE_SKIPPED = '!'
 CONTROLNET_BADGE_TOOLTIP_SKIPPED = _tr('ControlNet: {count} of {enabled} units on are skipped. Inpainting units only '
                                        'apply in Inpaint mode.', 'Tooltip of the ControlNet rail button')
-MENU_FILE = _tr('File')
-MENU_EDIT = _tr('Edit')
-MENU_IMAGE = _tr('Image')
-MENU_VIEW = _tr('View')
-MENU_VIEW_PANELS = MENU_VIEW + '.' + _tr('Panels')
+MENU_FILE = _tr('&File')
+MENU_EDIT = _tr('&Edit')
+MENU_VIEW = _tr('&View')
+MENU_IMAGE = _tr('&Image')
+MENU_LAYER = _tr('&Layer')
+MENU_SELECT = _tr('&Select')
+MENU_FILTERS = _tr('Fil&ters')
+MENU_WINDOW = _tr('&Window')
+MENU_HELP = _tr('&Help')
 LAYOUT_ACTION_PROPERTY = 'saved_layout_entry'
 TITLE_LAYOUT_ERROR = _tr('Layout not applied')
 MESSAGE_LAYOUT_ERROR = _tr('The layout "{layout_name}" could not be restored. It may be corrupt or saved by an older '
                            'version. Delete it in Manage layouts.')
-MENU_VIEW_LAYOUTS = MENU_VIEW_PANELS + '.' + _tr('Layouts')
-MENU_VIEW_MOVE_ALL_PANELS = MENU_VIEW_PANELS + '.' + MENU_MOVE_ALL_TO_EDGE
-MENU_SELECTION = _tr('Selection')
-MENU_LAYERS = _tr('Layers')
-MENU_FILTERS = _tr('Filters')
-MENU_HELP = _tr('Help')
+MENU_WINDOW_LAYOUTS = MENU_WINDOW + '.' + _tr('Layouts')
+MENU_WINDOW_MOVE_ALL_PANELS = MENU_WINDOW + '.' + MENU_MOVE_ALL_TO_EDGE
 
-SUBMENU_RECENT_FILES = _tr('Open Recent')
+SUBMENU_RECENT_FILES = _tr('Open recent')
 MENU_ACTION_CLEAR_RECENT = _tr('Clear recent files')
-SUBMENU_MOVE = _tr('Move')
-SUBMENU_SELECT = _tr('Select')
+SUBMENU_STACK = _tr('Stack')
 SUBMENU_TRANSFORM = _tr('Transform')
 
 HELP_INDEX_LINK = 'https://github.com/centuryglass/IntraPaint/blob/master/doc/help_index.md'
@@ -255,10 +254,11 @@ class AppController(MenuBuilder):
             MENU_EDIT,
             MENU_VIEW,
             MENU_IMAGE,
-            MENU_SELECTION,
-            MENU_LAYERS,
+            MENU_LAYER,
+            MENU_SELECT,
             MENU_FILTERS,
-            MENU_STABLE_DIFFUSION,
+            MENU_GENERATION,
+            MENU_WINDOW,
             MENU_HELP
         ]
         for menu_name in ordered_menus:
@@ -280,12 +280,17 @@ class AppController(MenuBuilder):
 
         # Set up menus:
         self.build_menus()
-        self.insert_menu_actions(MENU_VIEW_PANELS, self._window.dock_toggle_actions())
-        self.get_menu(MENU_VIEW_LAYOUTS).aboutToShow.connect(self._update_layout_menu)
+        # Generator-specific entries slot in between these when a generator is loaded:
+        self.add_menu_separator(MENU_GENERATION, 502)
+        self.add_menu_separator(MENU_GENERATION, 520)
+        self._make_menu_action_checkable(self.toggle_rulers, AppConfig.SHOW_RULERS)
+        self._make_menu_action_checkable(self.toggle_control_hints, AppConfig.SHOW_TOOL_CONTROL_HINTS)
+        self.insert_menu_actions(MENU_WINDOW, self._window.dock_toggle_actions())
+        self.get_menu(MENU_WINDOW_LAYOUTS).aboutToShow.connect(self._update_layout_menu)
         self._build_recent_files_menu()
         self._window.files_dropped.connect(self.open_dropped_files)
         for edge in DockEdge:
-            self.add_menu_action(MENU_VIEW_MOVE_ALL_PANELS, lambda e=edge: self._window.move_all_docks_to_edge(e),
+            self.add_menu_action(MENU_WINDOW_MOVE_ALL_PANELS, lambda e=edge: self._window.move_all_docks_to_edge(e),
                                  title=edge_title(edge))
 
         # Since image filter menus follow a very simple pattern, add them here instead of using @menu_action.
@@ -293,11 +298,11 @@ class AppController(MenuBuilder):
         filter_class_names: list[str] = []
         for filter_class in (RGBColorBalanceFilter,
                              BrightnessContrastFilter,
-                             BlurFilter,
-                             SharpenFilter,
-                             PosterizeFilter,
                              SaturationFilter,
-                             InvertFilter):
+                             PosterizeFilter,
+                             InvertFilter,
+                             BlurFilter,
+                             SharpenFilter):
             image_filter = filter_class(self._image_stack)
             filter_class_names.append(image_filter.get_name())
 
@@ -313,18 +318,22 @@ class AppController(MenuBuilder):
                                           config_key)
             assert action is not None
             AppStateTracker.set_enabled_states(action, [APP_STATE_EDITING])
+            if filter_class is BlurFilter:
+                self.get_menu(MENU_FILTERS).insertSeparator(action)
         cache.update_options(Cache.FILTER_TOOL_SELECTED_FILTER, filter_class_names)  # type: ignore
 
         # Because Qt has its own bindings on the cut/copy/clear/paste keyboard events, we need to bind these at the
         # hotkeyFilter to ensure that the menu hotkeys can override the Qt bindings. The goal is to ensure that even
         # when a text field is active, these events will get handled in the context of the ImageStack if they wouldn't
-        # do anything to the text.
+        # do anything to the text. Swap and reset colors have no menu entries, so this is their only binding.
         for binding_key, handler in ((KeyConfig.UNDO_SHORTCUT, self.undo),
                                      (KeyConfig.REDO_SHORTCUT, self.redo),
                                      (KeyConfig.CUT_SHORTCUT, self.cut),
                                      (KeyConfig.COPY_SHORTCUT, self.copy),
                                      (KeyConfig.PASTE_SHORTCUT, self.paste),
-                                     (KeyConfig.CLEAR_SHORTCUT, self.clear)):
+                                     (KeyConfig.CLEAR_SHORTCUT, self.clear),
+                                     (KeyConfig.SWAP_COLORS_SHORTCUT, self.swap_colors),
+                                     (KeyConfig.RESET_COLORS_SHORTCUT, self.reset_colors)):
             HotkeyFilter.instance().register_config_keybinding(f'AppController_{binding_key}', handler,
                                                                binding_key)
         # We'll also want flags for tracking whether cut/copy/paste/clear are currently valid for image content, so
@@ -821,8 +830,8 @@ class AppController(MenuBuilder):
             self._image_io.clear_metadata()
             AppStateTracker.set_app_state(APP_STATE_EDITING)
 
-    @menu_action(MENU_FILE, 'save_shortcut', priority=1,
-                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION, APP_STATE_LOADING])
+    @menu_action(MENU_FILE, 'save_shortcut', 10,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION, APP_STATE_LOADING], separator_before=True)
     def save_image(self) -> None:
         """Saves the edited image, only opening the save dialog if no previous image path is cached."""
         self._image_io.save()
@@ -831,30 +840,40 @@ class AppController(MenuBuilder):
         """Returns once any background write has finished, keeping the UI responsive while it runs."""
         self._image_io.wait_for_pending_save()
 
-    @menu_action(MENU_FILE, 'save_as_shortcut', priority=2,
+    @menu_action(MENU_FILE, 'save_as_shortcut', 11,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION, APP_STATE_LOADING])
     def save_image_as(self, file_path: Optional[str] = None) -> None:
         """Open a save dialog, and save the edited image to disk, preserving any metadata."""
         self._image_io.save_as(file_path)
 
-    @menu_action(MENU_FILE, 'load_shortcut', 3,
+    @menu_action(MENU_FILE, 'load_shortcut', 1,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def load_image(self, file_path: Optional[str | list[str]] = None) -> None:
         """Open a loading dialog, then load the selected image for editing."""
         self._image_io.load(file_path)
 
-    @menu_action(MENU_FILE, 'load_layers_shortcut', 4,
+    @menu_action(MENU_FILE, 'load_layers_shortcut', 3,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def load_image_layers(self) -> None:
         """Open one or more images as layers."""
         self._image_io.load_layers()
 
+    def _make_menu_action_checkable(self, method: Callable[..., None], config_key: str) -> None:
+        """Shows a boolean AppConfig value as the checked state of the menu action that toggles it."""
+        action = self.get_action_for_method(method)
+        config = AppConfig()
+        action.setCheckable(True)
+        action.setChecked(config.get(config_key))
+        # Config.connect inspects the callback's signature, which Python 3.11 and 3.12 can't read for Qt methods:
+        config.connect(action, config_key,
+                       lambda checked: action.setChecked(checked))  # pylint: disable=unnecessary-lambda
+
     def _build_recent_files_menu(self) -> None:
-        """Adds the Open Recent submenu below File > Open as layers, filled each time it opens."""
+        """Adds the Open recent submenu below File > Open..., filled each time it opens."""
         file_menu = self.get_menu(MENU_FILE)
-        reload_action = self.get_action_for_method(self.reload_image)
+        layers_action = self.get_action_for_method(self.load_image_layers)
         self._recent_files_menu = QMenu(SUBMENU_RECENT_FILES, file_menu)
-        file_menu.insertMenu(reload_action, self._recent_files_menu)
+        file_menu.insertMenu(layers_action, self._recent_files_menu)
         self._recent_files_menu.aboutToShow.connect(self._update_recent_files_menu)
 
     def _update_recent_files_menu(self) -> None:
@@ -888,12 +907,12 @@ class AppController(MenuBuilder):
             if len(file_paths) > 1:
                 self._image_io.add_layers_from_files(file_paths[1:])
 
-    @menu_action(MENU_FILE, 'reload_shortcut', 5, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_FILE, 'reload_shortcut', 12, valid_app_states=[APP_STATE_EDITING])
     def reload_image(self) -> None:
         """Reload the edited image from disk after getting confirmation from a confirmation dialog."""
         self._image_io.reload()
 
-    @menu_action(MENU_FILE, 'quit_shortcut', 6)
+    @menu_action(MENU_FILE, 'quit_shortcut', 30, separator_before=True)
     def quit(self, skip_confirmation: bool = False) -> None:
         """Quit the application after getting confirmation from the user."""
         if skip_confirmation:
@@ -934,7 +953,7 @@ class AppController(MenuBuilder):
         else:
             UndoStack().redo()
 
-    @menu_action(MENU_EDIT, 'cut_shortcut', 102, valid_app_states=[APP_STATE_EDITING], separator_before=True)
+    @menu_action(MENU_EDIT, 'cut_shortcut', 110, valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def cut(self) -> None:
         """Cut selected content from the active image layer, or selected text in an active text field."""
         if self._active_text_field_tracker.focused_can_cut_or_clear():
@@ -949,7 +968,7 @@ class AppController(MenuBuilder):
                 self._can_paste_image = True
                 self._update_enabled_actions()
 
-    @menu_action(MENU_EDIT, 'copy_shortcut', 103, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_EDIT, 'copy_shortcut', 111, valid_app_states=[APP_STATE_EDITING])
     def copy(self) -> None:
         """Copy selected content from the active image layer, or selected text in an active text field."""
         if self._active_text_field_tracker.focused_can_copy():
@@ -964,7 +983,7 @@ class AppController(MenuBuilder):
                 self._can_paste_image = True
                 self._update_enabled_actions()
 
-    @menu_action(MENU_EDIT, 'paste_shortcut', 104, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_EDIT, 'paste_shortcut', 112, valid_app_states=[APP_STATE_EDITING])
     def paste(self) -> None:
         """Paste copied image content into a new layer, or copied text in an active text field."""
         if self._active_text_field_tracker.focused_can_paste():
@@ -989,7 +1008,7 @@ class AppController(MenuBuilder):
                                           center.y() - (image.height() - 1) // 2)
         self._image_stack.paste_image(image, offset)
 
-    @menu_action(MENU_EDIT, 'clear_shortcut', 105, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_EDIT, 'clear_shortcut', 113, valid_app_states=[APP_STATE_EDITING])
     def clear(self) -> None:
         """Clear selected content from the active image layer, or selected text in an active text field."""
         if self._active_text_field_tracker.focused_can_cut_or_clear():
@@ -997,17 +1016,15 @@ class AppController(MenuBuilder):
         else:
             self._image_stack.clear_selected()
 
-    @menu_action(MENU_EDIT, 'swap_colors_shortcut', 106, separator_before=True)
     def swap_colors(self) -> None:
         """Swap the foreground and background colors."""
         color_controller.swap()
 
-    @menu_action(MENU_EDIT, 'reset_colors_shortcut', 107)
     def reset_colors(self) -> None:
         """Set the foreground color to black and the background color to white."""
         color_controller.reset()
 
-    @menu_action(MENU_EDIT, 'settings_shortcut', 108, separator_before=True)
+    @menu_action(MENU_EDIT, 'settings_shortcut', 121, separator_before=True)
     def show_settings(self, category: Optional[str] = None) -> None:
         """Show the settings window, on the tab named `category` if one is given."""
         if self._settings_modal is None:
@@ -1030,7 +1047,7 @@ class AppController(MenuBuilder):
         """Zoom out from the image view by one step."""
         self._image_viewer.zoom_out()
 
-    @menu_action(MENU_VIEW, 'zoom_actual_size_shortcut', 191, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_VIEW, 'zoom_actual_size_shortcut', 193, valid_app_states=[APP_STATE_EDITING])
     def zoom_to_actual_size(self) -> None:
         """Show the image at 100% scale."""
         self._image_viewer.zoom_to_actual_size()
@@ -1041,24 +1058,24 @@ class AppController(MenuBuilder):
         self._image_viewer.follow_generation_area = False
         self._image_viewer.reset_scale()
 
-    @menu_action(MENU_VIEW, 'zoom_to_gen_area_shortcut', 193, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_VIEW, 'zoom_to_gen_area_shortcut', 194, valid_app_states=[APP_STATE_EDITING])
     def zoom_to_generation_area(self) -> None:
         """Center the view on the generation area."""
         self._image_viewer.zoom_to_generation_area()
 
-    @menu_action(MENU_VIEW, 'toggle_control_hints_shortcut', 196, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_VIEW, 'toggle_control_hints_shortcut', 201, valid_app_states=[APP_STATE_EDITING])
     def toggle_control_hints(self) -> None:
         """Show or hide the active tool's control hints below the image."""
         config = AppConfig()
         config.set(AppConfig.SHOW_TOOL_CONTROL_HINTS, not config.get(AppConfig.SHOW_TOOL_CONTROL_HINTS))
 
-    @menu_action(MENU_VIEW_PANELS, 'reset_dock_layout_shortcut', 197,
+    @menu_action(MENU_WINDOW, 'reset_dock_layout_shortcut', 520,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def reset_panel_layout(self) -> None:
         """Put every panel back where it starts on first run, and open it."""
         self._window.reset_dock_layout()
 
-    @menu_action(MENU_VIEW_LAYOUTS, 'save_dock_layout_shortcut', 197,
+    @menu_action(MENU_WINDOW_LAYOUTS, 'save_dock_layout_shortcut', 510,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def save_panel_layout(self) -> None:
         """Save the current panel arrangement under a name chosen by the user."""
@@ -1067,7 +1084,7 @@ class AppController(MenuBuilder):
         if name is not None:
             saved_layouts.save_layout(name, self._window.save_dock_state())
 
-    @menu_action(MENU_VIEW_LAYOUTS, 'manage_dock_layouts_shortcut', 197,
+    @menu_action(MENU_WINDOW_LAYOUTS, 'manage_dock_layouts_shortcut', 511,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def manage_panel_layouts(self) -> None:
         """Open the dialog for applying, renaming and deleting saved panel layouts."""
@@ -1084,7 +1101,7 @@ class AppController(MenuBuilder):
 
     def _update_layout_menu(self) -> None:
         """Lists the saved layouts below the static Layouts actions, rebuilt each time the submenu opens."""
-        menu = self.get_menu(MENU_VIEW_LAYOUTS)
+        menu = self.get_menu(MENU_WINDOW_LAYOUTS)
         for action in menu.actions():
             if action.property(LAYOUT_ACTION_PROPERTY):
                 menu.removeAction(action)
@@ -1103,7 +1120,7 @@ class AppController(MenuBuilder):
             action.setEnabled(enabled)
             action.triggered.connect(lambda _=False, layout_name=name: self._apply_saved_layout(layout_name))
 
-    @menu_action(MENU_VIEW, 'toggle_rulers_shortcut', 198)
+    @menu_action(MENU_VIEW, 'toggle_rulers_shortcut', 200, separator_before=True)
     def toggle_rulers(self) -> None:
         """Show or hide the rulers beside the image."""
         AppConfig().set(AppConfig.SHOW_RULERS, not AppConfig().get(AppConfig.SHOW_RULERS))
@@ -1136,23 +1153,23 @@ class AppController(MenuBuilder):
                     return
             self._scale(new_size)
 
-    @menu_action(MENU_IMAGE, 'crop_image_shortcut', 202, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_IMAGE, 'crop_image_shortcut', 210, valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def crop_image_to_selection(self) -> None:
         """Crop the image to fit selected content."""
         crop_image_stack_to_selection(self._image_stack)
 
-    @menu_action(MENU_IMAGE, 'crop_image_to_gen_shortcut', 202, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_IMAGE, 'crop_image_to_gen_shortcut', 211, valid_app_states=[APP_STATE_EDITING])
     def crop_image_to_gen_area(self) -> None:
         """Crop the image to fit the generation area."""
         crop_image_stack_to_gen_area(self._image_stack)
 
-    @menu_action(MENU_IMAGE, 'image_to_layers_shortcut', 203, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_IMAGE, 'image_to_layers_shortcut', 212, valid_app_states=[APP_STATE_EDITING])
     def resize_image_to_content(self) -> None:
         """Update the image size to match all layer content."""
         resize_image_stack_to_content(self._image_stack)
 
-    @menu_action(MENU_IMAGE, 'update_metadata_shortcut', 204,
-                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
+    @menu_action(MENU_IMAGE, 'update_metadata_shortcut', 220,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION], separator_before=True)
     def update_metadata(self, show_messagebox: bool = True) -> None:
         """Adds the current image generation parameters to the image metadata, to be saved with the image.
 
@@ -1163,7 +1180,7 @@ class AppController(MenuBuilder):
         """
         self._image_io.update_metadata(show_messagebox)
 
-    @menu_action(MENU_IMAGE, 'generator_select_shortcut', 205)
+    @menu_action(MENU_GENERATION, 'generator_select_shortcut', 530)
     def show_generator_window(self) -> None:
         """Show the generator selection window."""
         assert self._generator is not None
@@ -1183,7 +1200,7 @@ class AppController(MenuBuilder):
         self._generator_window.show()
         self._generator_window.raise_()
 
-    @menu_action(MENU_IMAGE, 'generate_shortcut', 206, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_GENERATION, 'generate_shortcut', 500, valid_app_states=[APP_STATE_EDITING])
     def start_and_manage_inpainting(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
         if AppStateTracker.app_state() != APP_STATE_EDITING:
@@ -1194,53 +1211,55 @@ class AppController(MenuBuilder):
             assert self._generator is not None
             self._generator.start_and_manage_image_generation()
 
-    @menu_action(MENU_IMAGE, 'restore_choices_shortcut', 207, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_GENERATION, 'restore_choices_shortcut', 501, valid_app_states=[APP_STATE_EDITING])
     def restore_previous_image_choices(self) -> None:
         """Re-open the last batch of generated image options."""
         if self._window.can_restore_previous_options():
             self._window.restore_previous_image_selection_options()
 
-    # Selection menu:
-    @menu_action(MENU_SELECTION, 'select_all_shortcut', 300, valid_app_states=[APP_STATE_EDITING])
+    # Select menu:
+    @menu_action(MENU_SELECT, 'select_all_shortcut', 300, valid_app_states=[APP_STATE_EDITING])
     def select_all(self) -> None:
         """Selects the entire image."""
         self._image_stack.selection_layer.image = self._image_stack.qimage(crop_to_image=False)
 
-    @menu_action(MENU_SELECTION, 'select_none_shortcut', 301, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_SELECT, 'select_none_shortcut', 301, valid_app_states=[APP_STATE_EDITING])
     def select_none(self) -> None:
         """Clears the selection."""
         self._image_stack.selection_layer.clear()
 
-    @menu_action(MENU_SELECTION, 'invert_selection_shortcut', 302,
+    @menu_action(MENU_SELECT, 'invert_selection_shortcut', 302,
                  valid_app_states=[APP_STATE_EDITING])
     def invert_selection(self) -> None:
         """Swaps selected and unselected areas."""
         self._image_stack.selection_layer.invert_selection()
 
-    @menu_action(MENU_SELECTION, 'select_layer_content_shortcut', 303,
-                 valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_SELECT, 'select_layer_content_shortcut', 310,
+                 valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def select_active_layer_content(self) -> None:
         """Selects all pixels in the active layer that are not fully transparent."""
         self._image_stack.select_layer_content()
 
-    @menu_action(MENU_SELECTION, 'grow_selection_shortcut', 304, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_SELECT, 'grow_selection_shortcut', 320,
+                 valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def grow_selection(self, num_pixels=1) -> None:
         """Expand the selection by a given pixel count, 1 by default."""
         self._image_stack.selection_layer.grow_or_shrink_selection(num_pixels)
 
-    @menu_action(MENU_SELECTION, 'shrink_selection_shortcut', 305,
+    @menu_action(MENU_SELECT, 'shrink_selection_shortcut', 321,
                  valid_app_states=[APP_STATE_EDITING])
     def shrink_selection(self, num_pixels=1) -> None:
         """Contract the selection by a given pixel count, 1 by default."""
         self._image_stack.selection_layer.grow_or_shrink_selection(-num_pixels)
 
-    @menu_action(MENU_SELECTION, 'clear_context_pins_shortcut', 306, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_SELECT, 'clear_context_pins_shortcut', 330,
+                 valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def clear_context_pins(self) -> None:
         """Removes all context pins."""
         self._image_stack.selection_layer.clear_context_pins()
 
     # Layer menu:
-    @menu_action(MENU_LAYERS, 'rename_layer_shortcut', 398, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'rename_layer_shortcut', 410, valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def rename_layer(self) -> None:
         """Edit the active layer's name in the layer panel, opening its dock if it is closed."""
         panel = self._layer_dock_panel
@@ -1248,31 +1267,31 @@ class AppController(MenuBuilder):
             self._window.layers_dock.open_in_group()
             panel.start_rename()
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_SELECT}', 'select_previous_layer_shortcut', 400,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'select_previous_layer_shortcut', 420,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def select_previous_layer(self) -> None:
         """Select the layer above the current active layer."""
         self._image_stack.offset_active_selection(-1)
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_SELECT}', 'select_next_layer_shortcut', 401,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'select_next_layer_shortcut', 421,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def select_next_layer(self) -> None:
         """Select the layer below the current active layer."""
         self._image_stack.offset_active_selection(1)
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_MOVE}', 'move_layer_up_shortcut', 410,
-                 valid_app_states=[APP_STATE_EDITING])
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_up_shortcut', 422,
+                 valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def move_layer_up(self) -> None:
         """Move the active layer up in the image."""
         self._image_stack.move_layer_by_offset(-1)
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_MOVE}', 'move_layer_down_shortcut', 411,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_down_shortcut', 423,
                  valid_app_states=[APP_STATE_EDITING])
     def move_layer_down(self) -> None:
         """Move the active layer down in the image."""
         self._image_stack.move_layer_by_offset(1)
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_MOVE}', 'move_layer_to_top_shortcut', 412,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_STACK}', 'move_layer_to_top_shortcut', 424,
                  valid_app_states=[APP_STATE_EDITING])
     def move_layer_to_top(self) -> None:
         """Move the active layer to the top of the layer stack."""
@@ -1285,89 +1304,90 @@ class AppController(MenuBuilder):
         assert isinstance(active_layer, LayerGroup)
         return TransformGroup(active_layer)
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_TRANSFORM}', 'layer_mirror_horizontal_shortcut', 430,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_TRANSFORM}', 'layer_mirror_horizontal_shortcut', 430,
                  valid_app_states=[APP_STATE_EDITING])
     def layer_mirror_horizontal(self) -> None:
         """Flip the active layer horizontally."""
         layer = self._get_active_transform_layer()
         layer.flip_horizontal()
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_TRANSFORM}', 'layer_mirror_vertical_shortcut', 431,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_TRANSFORM}', 'layer_mirror_vertical_shortcut', 431,
                  valid_app_states=[APP_STATE_EDITING])
     def layer_mirror_vertical(self) -> None:
         """Flip the active layer vertically."""
         layer = self._get_active_transform_layer()
         layer.flip_vertical()
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_TRANSFORM}', 'layer_rotate_cw_shortcut', 432,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_TRANSFORM}', 'layer_rotate_cw_shortcut', 432,
                  valid_app_states=[APP_STATE_EDITING])
     def layer_rotate_cw(self) -> None:
         """Rotate the active layer 90 degrees clockwise."""
         layer = self._get_active_transform_layer()
         layer.rotate(90)
 
-    @menu_action(f'{MENU_LAYERS}.{SUBMENU_TRANSFORM}', 'layer_rotate_ccw_shortcut', 433,
+    @menu_action(f'{MENU_LAYER}.{SUBMENU_TRANSFORM}', 'layer_rotate_ccw_shortcut', 433,
                  valid_app_states=[APP_STATE_EDITING])
     def layer_rotate_ccw(self) -> None:
         """Rotate the active layer 90 degrees counter-clockwise."""
         layer = self._get_active_transform_layer()
         layer.rotate(-90)
 
-    @menu_action(MENU_LAYERS, 'new_layer_shortcut', 440,
+    @menu_action(MENU_LAYER, 'new_layer_shortcut', 400,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def new_layer(self) -> None:
         """Create a new image layer above the active layer."""
         self._image_stack.create_layer()
 
-    @menu_action(MENU_LAYERS, 'new_layer_group_shortcut', 441,
+    @menu_action(MENU_LAYER, 'new_layer_group_shortcut', 401,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def new_layer_group(self) -> None:
         """Create a new layer group above the active layer."""
         self._image_stack.create_layer_group()
 
-    @menu_action(MENU_LAYERS, 'copy_layer_shortcut', 442,
+    @menu_action(MENU_LAYER, 'copy_layer_shortcut', 402,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def copy_layer(self) -> None:
         """Duplicate the active layer."""
         self._image_stack.copy_layer()
 
-    @menu_action(MENU_LAYERS, 'delete_layer_shortcut', 443, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'delete_layer_shortcut', 403, valid_app_states=[APP_STATE_EDITING])
     def delete_layer(self) -> None:
         """Delete the active layer."""
         self._image_stack.remove_layer()
 
-    @menu_action(MENU_LAYERS, 'merge_layer_down_shortcut', 444, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'merge_layer_down_shortcut', 440,
+                 valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def merge_layer_down(self) -> None:
         """Merge the active layer with the one beneath it."""
         self._image_stack.merge_layer_down()
 
-    @menu_action(MENU_LAYERS, 'merge_group_shortcut', 445, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'merge_group_shortcut', 441, valid_app_states=[APP_STATE_EDITING])
     def merge_group(self) -> None:
         """Merge the active layer group into a single image layer."""
         self._image_stack.merge_group()
 
-    @menu_action(MENU_LAYERS, 'merge_all_visible_shortcut', 446, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'merge_all_visible_shortcut', 442, valid_app_states=[APP_STATE_EDITING])
     def merge_all_visible(self) -> None:
         """Merge all visible layers into a single image layer."""
         self._image_stack.merge_all_visible()
 
-    @menu_action(MENU_LAYERS, 'flatten_layer_shortcut', 447, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'flatten_layer_shortcut', 443, valid_app_states=[APP_STATE_EDITING])
     def flatten_layer(self) -> None:
         """Simplifies the active layer."""
         self._image_stack.flatten_layer()
 
-    @menu_action(MENU_LAYERS, 'layer_to_image_size_shortcut', 448,
-                 valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'layer_to_image_size_shortcut', 450,
+                 valid_app_states=[APP_STATE_EDITING], separator_before=True)
     def layer_to_image_size(self) -> None:
         """Crop or expand the active layer to match the image size."""
         self._image_stack.layer_to_image_size()
 
-    @menu_action(MENU_LAYERS, 'crop_layer_to_selection_shortcut', 449, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYER, 'crop_layer_to_selection_shortcut', 451, valid_app_states=[APP_STATE_EDITING])
     def crop_layer_to_selection(self) -> None:
         """Crop the active layer to fit overlapping selection bounds."""
         crop_layer_to_selection(self._image_stack)
 
-    @menu_action(MENU_LAYERS, 'crop_to_content_shortcut', 450,
+    @menu_action(MENU_LAYER, 'crop_to_content_shortcut', 452,
                  valid_app_states=[APP_STATE_EDITING])
     def crop_layer_to_content(self) -> None:
         """Crop the active layer to remove fully transparent border pixels."""

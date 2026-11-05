@@ -12,7 +12,7 @@ from shiboken6 import delete, isValid
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
-from src.controller.app_controller import AppController, MENU_VIEW_LAYOUTS, LAYOUT_ACTION_PROPERTY
+from src.controller.app_controller import AppController, MENU_WINDOW_LAYOUTS, LAYOUT_ACTION_PROPERTY
 from src.ui.window import saved_layouts
 from src.controller.image_generation.test_generator import TestGenerator
 from src.ui.modal.settings_modal import SettingsModal
@@ -77,7 +77,7 @@ class TestAppController(IntraPaintTestCase):
 
     def _layout_entries(self) -> list[str]:
         """Opens the Layouts submenu and returns the saved-layout entry texts."""
-        menu = self.controller.get_menu(MENU_VIEW_LAYOUTS)
+        menu = self.controller.get_menu(MENU_WINDOW_LAYOUTS)
         menu.aboutToShow.emit()
         return [action.text() for action in menu.actions() if action.property(LAYOUT_ACTION_PROPERTY)
                 and not action.isSeparator()]

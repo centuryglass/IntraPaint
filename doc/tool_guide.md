@@ -398,7 +398,7 @@ Selected content is marked with an animated outline and a transparent red overla
 ### Selection properties:
 
 - In the **Edit menu**, the **cut, copy, paste, and clear** options act on selected content.
-- The **Selection menu** provides tools for editing the selection bounds.
+- The **Select menu** provides tools for editing the selection bounds.
 - The [brush](#-brush-tool-b), [draw](#-draw-tool-shiftb), [eraser](#-eraser-tool-e), [fill](#-fill-tool-f), [filter brush](#-filter-brush-tool-shiftu), [smudge](#-smudge-tool-shifts) and [clone stamp](#-clone-stamp-tool-s) can all be set to only make changes within selected areas.
 - All image filters can be restricted to only act on selected content.
 - When the image generation mode is set to "Inpaint" (the default), image generation will only affect selected areas.
@@ -553,7 +553,7 @@ Each drag is one undo step. Resizing applies the resolution rule as the size cha
 
 ### Following the selection
 
-In inpainting mode, the generation area moves after you change the selection or its context pins, so that it contains them along with the inpaint context. It moves only as far as needed, never changes size, and centers on a selection too large to fit. Undo and redo never move it, and moving it by hand isn't overridden until the selection changes again. Change this with **"Generation area follows selection"** in [settings](./menu_options.md#settings-ctrlk) under the **"Editing"** category: **"Minimal move"** (default), **"Center on selection"**, or **"Off"**.
+In inpainting mode, the generation area moves after you change the selection or its context pins, so that it contains them along with the inpaint context. It moves only as far as needed, never changes size, and centers on a selection too large to fit. Undo and redo never move it, and moving it by hand isn't overridden until the selection changes again. Change this with **"Generation area follows selection"** in [settings](./menu_options.md#preferences-ctrlk) under the **"Editing"** category: **"Minimal move"** (default), **"Center on selection"**, or **"Off"**.
 
 ### User interface
 
