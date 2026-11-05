@@ -8,7 +8,7 @@ from PySide6.QtGui import QImageReader, QImageWriter, QImage
 
 from src.util.visual.image_utils import logger, EXCLUDED_QIMAGE_FORMATS, read_qimage
 from src.util.visual.pil_image_utils import qimage_to_pil_image, pil_image_to_qimage, EXCLUDED_PIL_FORMATS, \
-    PIL_OPEN_FORMATS
+    PIL_OPEN_FORMATS, convert_to_srgb
 
 METADATA_PARAMETER_KEY = 'parameters'
 METADATA_COMMENT_KEY = 'comment'
@@ -245,7 +245,7 @@ def load_image(file_path: str) -> tuple[QImage, Optional[dict[str, Any]], Option
             assert isinstance(info, dict)
             if METADATA_COMMENT_KEY in info and METADATA_PARAMETER_KEY not in info:
                 info[METADATA_PARAMETER_KEY] = info[METADATA_COMMENT_KEY]
-        return pil_image_to_qimage(image), info, exif
+        return pil_image_to_qimage(convert_to_srgb(image)), info, exif
     if file_format not in QIMAGE_READ_FORMATS:
         raise ValueError(f'Unsupported image format {file_format}')
     return read_qimage(file_path), None, None
@@ -285,7 +285,8 @@ def load_image_frames(file_path: str) -> list[ImageFrame]:
             image.seek(frame_index)
             image.load()  # WebP and AVIF set a frame's duration only once it loads.
             duration = image.info.get('duration')
-            frames.append(ImageFrame(pil_image_to_qimage(image), None if duration is None else round(duration)))
+            frame_image = pil_image_to_qimage(convert_to_srgb(image))
+            frames.append(ImageFrame(frame_image, None if duration is None else round(duration)))
     return frames
 
 
