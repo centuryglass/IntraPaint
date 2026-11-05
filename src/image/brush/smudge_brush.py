@@ -1,9 +1,10 @@
 """
 Brush implementing smudge tool operations.
 
-A smudge stroke is a chain of one-pixel steps. Each step samples the layer under the brush, then draws that sample
-over the layer at the next step, so every step depends on the one before it. Input is buffered and drawn in batches
-from a timer, so the cost of a stroke is the number of steps times the cost of those two compositing operations.
+A smudge stroke is a chain of one-pixel steps. Each step samples the layer under the brush, then mixes that sample
+into the layer at the next step, as dest * (1 - mask) + sample * mask, so every step depends on the one before it.
+Mixing a color with itself changes neither its color nor its alpha. Input is buffered and drawn in batches
+from a timer, so the cost of a stroke is the number of steps times the cost of the compositing operations.
 
 Steps composite in a 16-bit-per-channel copy of the layer that lasts for the whole stroke, and each batch copies its
 changes back to the 8-bit layer image. Rounding every step to 8 bits shifts the color of paint picked up from nearly
@@ -135,7 +136,7 @@ class SmudgeBrush(LayerBrush):
         return self._mask_cache
 
     def _sample_smudge_point(self, smudge_point: '_SmudgePoint', image: QImage) -> QImage:
-        """Sample a point from the image, to be drawn over the next smudge point.
+        """Sample the unmasked image content under a smudge point, to be mixed into the next point.
 
         Parameters:
         -----------
@@ -146,17 +147,12 @@ class SmudgeBrush(LayerBrush):
 
         Returns:
         --------
-        A new SMUDGE_FORMAT QImage containing the image content under the brush mask, or a null QImage if the point
+        A new SMUDGE_FORMAT QImage containing the image content under the point's rect, or a null QImage if the point
         is entirely outside the image.
         """
         if not smudge_point.rect.intersects(QRect(QPoint(), image.size())):
             return QImage()
-        sample = image.copy(smudge_point.rect)  # Pixels outside the image are transparent.
-        painter = QPainter(sample)
-        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-        painter.drawImage(0, 0, self._brush_mask(smudge_point))
-        painter.end()
-        return sample
+        return image.copy(smudge_point.rect)  # Pixels outside the image are transparent.
 
     def _draw_buffered_events(self) -> None:
         """Draws buffered smudge points to the layer, within the time limit draw_buffered_input sets mid-stroke."""
@@ -183,18 +179,29 @@ class SmudgeBrush(LayerBrush):
                 self._smudge_image = layer_image.convertToFormat(SMUDGE_FORMAT)
             img_painter = QPainter(self._smudge_image)
             for smudge_point in points:
-                if not self._last_point_img.isNull():  # Draw the sample from the last point over the current one:
+                if not self._last_point_img.isNull():  # Mix the sample from the last point into the current one:
                     paint_bounds = QRect(QPoint(), self._last_point_img.size())
                     paint_bounds.moveCenter(smudge_point.rect.center())
+                    step_mask = self._brush_mask(smudge_point)
                     if mask_image is not None:
                         source_bounds = paint_bounds.intersected(QRect(QPoint(), mask_image.size()))
                         if source_bounds.isEmpty():
                             continue
                         destination_bounds = source_bounds.translated(-paint_bounds.x(), -paint_bounds.y())
-                        point_img_painter = QPainter(self._last_point_img)
-                        point_img_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-                        point_img_painter.drawImage(destination_bounds, mask_image, source_bounds)
-                        point_img_painter.end()
+                        step_mask = step_mask.copy()
+                        mask_painter = QPainter(step_mask)
+                        mask_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+                        mask_painter.drawImage(destination_bounds, mask_image, source_bounds)
+                        mask_painter.end()
+                    # The sample is replaced at the end of this step, so it can be masked in place:
+                    sample_painter = QPainter(self._last_point_img)
+                    sample_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+                    sample_painter.drawImage(0, 0, step_mask)
+                    sample_painter.end()
+                    # dest * (1 - mask) + sample * mask. Mixing a color with itself leaves its color and alpha alone.
+                    img_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
+                    img_painter.drawImage(paint_bounds, step_mask)
+                    img_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
                     img_painter.drawImage(paint_bounds, self._last_point_img)
                 self._last_point_img = self._sample_smudge_point(smudge_point, self._smudge_image)
             img_painter.end()
