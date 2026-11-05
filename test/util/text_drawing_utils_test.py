@@ -135,6 +135,9 @@ class TestTextDrawingUtils(IntraPaintTestCase):
         self.assertEqual(get_key_display_string(Qt.Key.Key_Delete, rich_text=False), '⌫')
         self.assertEqual(get_key_display_string(QKeySequence('Ctrl+Up'), rich_text=False), 'Ctrl+↑')
         self.assertEqual(get_key_display_string('A', rich_text=False), 'A')
+        self.assertEqual(get_key_display_string('Delete', rich_text=False), '⌫')
+        self.assertEqual(get_key_display_string('Ctrl+Delete, Shift+End', rich_text=False), 'Ctrl+⌫, Shift+⇲')
+        self.assertEqual(get_key_display_string('Endpoint+Upload', rich_text=False), 'Endpoint+Upload')
 
     def test_mouse_hint_text(self) -> None:
         """Mouse hints are rich-text images of the matching icon, recolored for the palette, as tall as a keycap."""

@@ -181,9 +181,14 @@ def horizontal_scroll_hint_text() -> str:
     return palette_rich_text_image(ICON_H_SCROLL, _keycap_height())
 
 
+# Characters that separate key and modifier names in key text:
+_KEY_NAME_SEPARATORS = '+, '
+
+
 def get_key_display_string(keys: QKeySequence | Qt.Key | int | str, rich_text: bool = True) -> str:
     """Creates a display string representing a set of keys, replacing Meta and navigation and editing key names with
-       symbols. Other modifier names stay as text."""
+       symbols. Other modifier names stay as text. Only whole key names are replaced, so "Delete" and "Del" both become
+       a symbol."""
     if isinstance(keys, (Qt.Key, int)):
         keys = QKeySequence(keys)
     text = keys if isinstance(keys, str) else keys.toString()
@@ -191,6 +196,7 @@ def get_key_display_string(keys: QKeySequence | Qt.Key | int | str, rich_text: b
         'Meta': '⌘',
         'Enter': '⏎',
         'Del': '⌫',
+        'Delete': '⌫',
         'Home': '⇱',
         'End': '⇲',
         'PgUp': '⇞',
@@ -200,8 +206,15 @@ def get_key_display_string(keys: QKeySequence | Qt.Key | int | str, rich_text: b
         'Left': '←',
         'Right': '→'
     }
-    for key, symbol in symbol_map.items():
-        text = text.replace(key, symbol)
+    parts = []
+    name = ''
+    for char in text + _KEY_NAME_SEPARATORS[-1]:
+        if char in _KEY_NAME_SEPARATORS:
+            parts.extend((symbol_map.get(name, name), char))
+            name = ''
+        else:
+            name += char
+    text = ''.join(parts)[:-1]
     if rich_text:
         return rich_text_key_hint(text)
     return text
