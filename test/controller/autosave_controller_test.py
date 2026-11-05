@@ -14,6 +14,7 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.autosave_controller import AutosaveController, BUSY_RETRY_MS
 from src.controller.image_io import ImageIO
+from src.image.image_metadata import ImageMetadata
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
@@ -84,7 +85,7 @@ class AutosaveControllerTest(IntraPaintTestCase):
         self.image_stack.create_text_layer(text_rect)
         self.image_stack.generation_area = QRect(8, 4, 16, 16)
         Cache().set(Cache.LAST_FILE_PATH, ORIGINAL_PATH)
-        self.image_io.metadata = dict(METADATA)
+        self.image_io.metadata = ImageMetadata(dict(METADATA))
 
     def _simulate_crash(self) -> str:
         """Copies this session's folder to one owned by an exited process, and returns the copy's path."""
@@ -149,7 +150,7 @@ class AutosaveControllerTest(IntraPaintTestCase):
         self.assertEqual(expected_gen_area, self.image_stack.generation_area)
         self.assertEqual(expected_active_name, self.image_stack.active_layer.name)
         self.assertEqual(ORIGINAL_PATH, Cache().get(Cache.LAST_FILE_PATH))
-        self.assertEqual(METADATA, self.image_io.metadata)
+        self.assertEqual(METADATA, self.image_io.metadata.text)
         # The restored document is this session's first autosave, so the crashed copy is gone:
         self.assertFalse(os.path.exists(crashed_dir))
         self.assertIsNotNone(read_manifest(str(self.controller.session_dir)))

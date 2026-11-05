@@ -1,18 +1,16 @@
 """Utility functions for saving and loading images across as many file formats as possible."""
+import copy
 from typing import Optional, Any, NamedTuple
 
-from PIL import Image, ExifTags, PngImagePlugin, TiffImagePlugin, TiffTags, UnidentifiedImageError
+from PIL import Image, ExifTags, PngImagePlugin, UnidentifiedImageError
 from PIL.ExifTags import IFD
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImageReader, QImageWriter, QImage
 
+from src.image.image_metadata import ImageMetadata, PARAMETERS_KEY
 from src.util.visual.image_utils import logger, EXCLUDED_QIMAGE_FORMATS, read_qimage
 from src.util.visual.pil_image_utils import qimage_to_pil_image, pil_image_to_qimage, EXCLUDED_PIL_FORMATS, \
     PIL_OPEN_FORMATS, convert_to_srgb
-
-METADATA_PARAMETER_KEY = 'parameters'
-METADATA_COMMENT_KEY = 'comment'
-TIFF_DESCRIPTION_TAG = 'ImageDescription'
 
 OPENRASTER_FORMAT = 'ORA'
 
@@ -129,19 +127,20 @@ def _save_pil(image: Image.Image, file_path: str, file_format: Optional[str] = N
             image.save(file_path, file_format)
 
 
-def save_image_with_metadata(image: Image.Image | QImage, file_path: str, metadata: Optional[dict[str, Any]] = None,
-                             exif: Optional[Image.Exif] = None) -> None:
+def save_image_with_metadata(image: Image.Image | QImage, file_path: str,
+                             metadata: Optional[ImageMetadata] = None) -> None:
     """
     Save an image to disk, using one of the formats that supports preserving metadata
 
     image: Image.Image
         PIL image or QImage to save. Must be compatible with the requested file format
     file_path: str
-        Path where the file should be saved, including file extension.  File format will be selected based on extension.
-        Supported extensions are PNG, GIF,
-    metadata: dict
-        Metadata key/value pairs. Only .png will preserve the full dict, other formats only save image generation data
-        found within metadata['parameters'].
+        Path where the file should be saved, including file extension. File format will be selected based on extension,
+        and must be in IMAGE_FORMATS_SUPPORTING_METADATA.
+    metadata: ImageMetadata, optional
+        Metadata to write, which isn't changed. PNG keeps every text entry and the EXIF data. GIF keeps only the
+        generation parameters, as its comment. JPEG 2000 keeps the parameters as its comment, plus EXIF data. JPEG,
+        TIFF and WebP keep EXIF data, with the parameters as its ImageDescription.
     """
     delimiter_index = file_path.rfind('.')
     if delimiter_index < 0:
@@ -151,35 +150,16 @@ def save_image_with_metadata(image: Image.Image | QImage, file_path: str, metada
     file_format = RENAMED_FORMATS.get(file_format, file_format)
     if file_format not in IMAGE_FORMATS_SUPPORTING_METADATA:
         raise ValueError(f'Format {file_format} cannot be used to store metadata.')
-    parameter_text = ''
-    if metadata is not None:
-        if METADATA_PARAMETER_KEY in metadata:  # png
-            parameter_text = metadata[METADATA_PARAMETER_KEY]
-        elif METADATA_COMMENT_KEY in metadata:  # gif, jpeg2000
-            parameter_text = metadata[METADATA_COMMENT_KEY]
-    if not isinstance(parameter_text, str):
-        # noinspection PyTypeChecker
-        parameter_text = str(parameter_text, encoding='utf-8') if parameter_text is not None else ''
-    if exif is None:
-        exif = Image.Exif()
+    if metadata is None:
+        metadata = ImageMetadata()
+    parameter_text = metadata.parameters or ''
+    # The parameters are added to a copy, so the caller's EXIF data is unchanged:
+    exif = copy.deepcopy(metadata.exif)
     if isinstance(image, QImage):
         image = qimage_to_pil_image(image)
     match file_format:
         case 'PNG':
-            info = PngImagePlugin.PngInfo()
-            if metadata is not None:
-                for key in metadata:
-                    try:
-                        info.add_itxt(key, metadata[key])
-                    except AttributeError as png_err:
-                        # Encountered some sort of image metadata that PIL knows how to read but not how to write.
-                        # I've seen this a few times, mostly with images edited in Krita.
-                        # TODO: Look into what data is actually lost here, fix it or confirm that it is definitely
-                        #       inconsequential.
-                        logger.error(f'failed to preserve "{key}" in metadata: {png_err}')
-                image.save(file_path, 'PNG', pnginfo=info, exif=exif)
-            else:
-                image.save(file_path, 'PNG', exif=exif)
+            image.save(file_path, 'PNG', pnginfo=_png_text_chunks(metadata), exif=exif)
         case 'GIF':
             image.save(file_path, file_format, comment=parameter_text)
         case  'JP2' | 'JPX' | 'J2C' | 'JPC':
@@ -190,6 +170,20 @@ def save_image_with_metadata(image: Image.Image | QImage, file_path: str, metada
             _save_pil(image, file_path, file_format, exif)
         case _:
             raise ValueError(f'Unhandled format {file_format}')
+
+
+def _png_text_chunks(metadata: ImageMetadata) -> PngImagePlugin.PngInfo:
+    """Returns every text entry as a PNG text chunk, adding a `parameters` chunk if the parameters came from EXIF."""
+    info = PngImagePlugin.PngInfo()
+    for key, value in metadata.text.items():
+        try:
+            info.add_itxt(key, value)
+        except UnicodeEncodeError as png_err:  # PNG keywords must be Latin-1.
+            logger.error(f'failed to preserve "{key}" in metadata: {png_err}')
+    parameters = metadata.parameters
+    if parameters is not None and PARAMETERS_KEY not in metadata.text:
+        info.add_itxt(PARAMETERS_KEY, parameters)
+    return info
 
 
 def save_image(image: Image.Image | QImage, file_path: str, exif: Optional[Image.Exif] = None) -> None:
@@ -219,8 +213,8 @@ def save_image(image: Image.Image | QImage, file_path: str, exif: Optional[Image
             raise ValueError(f'Unsupported image format {file_format}')
 
 
-def load_image(file_path: str) -> tuple[QImage, Optional[dict[str, Any]], Optional[Image.Exif]]:
-    """Load an image, returning it with associated metadata if possible"""
+def load_image(file_path: str) -> tuple[QImage, ImageMetadata]:
+    """Load an image, returning it with its metadata. Formats only Qt can read return empty metadata."""
     delimiter_index = file_path.rfind('.')
     if delimiter_index < 0:
         raise ValueError(f'Invalid path {file_path} missing extension')
@@ -229,26 +223,11 @@ def load_image(file_path: str) -> tuple[QImage, Optional[dict[str, Any]], Option
         if file_format not in PIL_READ_FORMATS:
             raise UnidentifiedImageError(f'Unsupported image format {file_format}')
         image = Image.open(file_path, formats=PIL_OPEN_FORMATS)
-        exif = image.getexif()
-        info = None
-        if hasattr(image, 'tag_v2') and file_format in ('TIF', 'TIFF'):
-            tags = image.tag_v2
-            assert isinstance(tags, TiffImagePlugin.ImageFileDirectory_v2)
-            info = {}
-            for code, value in tags.items():
-                tag_name = TiffTags.TAGS_V2[code].name
-                info[tag_name] = value
-                if tag_name == TIFF_DESCRIPTION_TAG:
-                    info[METADATA_PARAMETER_KEY] = value
-        elif hasattr(image, 'info') and image.info is not None:
-            info = image.info
-            assert isinstance(info, dict)
-            if METADATA_COMMENT_KEY in info and METADATA_PARAMETER_KEY not in info:
-                info[METADATA_PARAMETER_KEY] = info[METADATA_COMMENT_KEY]
-        return pil_image_to_qimage(convert_to_srgb(image)), info, exif
+        metadata = ImageMetadata.from_pil_image(image)
+        return pil_image_to_qimage(convert_to_srgb(image)), metadata
     if file_format not in QIMAGE_READ_FORMATS:
         raise ValueError(f'Unsupported image format {file_format}')
-    return read_qimage(file_path), None, None
+    return read_qimage(file_path), ImageMetadata()
 
 
 class ImageFrame(NamedTuple):
@@ -297,7 +276,7 @@ class AnimationSaveOptions(NamedTuple):
 
 
 def save_animation(frames: list[ImageFrame], file_path: str, options: AnimationSaveOptions,
-                   metadata: Optional[dict[str, Any]] = None, exif: Optional[Image.Exif] = None) -> None:
+                   metadata: Optional[ImageMetadata] = None) -> None:
     """Saves frames as an animated GIF, WebP, APNG or AVIF, chosen by the file extension.
 
     Frames without a duration use `options.default_duration_ms`. Image generation data in `metadata` goes with the
@@ -313,13 +292,8 @@ def save_animation(frames: list[ImageFrame], file_path: str, options: AnimationS
         raise ValueError(f'Format {extension} cannot be used to save animations.')
     file_format = RENAMED_FORMATS.get(extension, extension)
     durations = [options.default_duration_ms if frame.duration_ms is None else frame.duration_ms for frame in frames]
-    parameter_text = ''
-    if metadata is not None:
-        parameter_text = metadata.get(METADATA_PARAMETER_KEY, metadata.get(METADATA_COMMENT_KEY, ''))
-        if isinstance(parameter_text, bytes):
-            parameter_text = parameter_text.decode('utf-8')
-        elif not isinstance(parameter_text, str):
-            parameter_text = ''
+    parameter_text = '' if metadata is None else (metadata.parameters or '')
+    exif = None if metadata is None else copy.deepcopy(metadata.exif)
     save_args: dict[str, Any] = {'save_all': True, 'duration': durations, 'loop': options.loop_count}
     match file_format:
         case 'GIF':
@@ -331,7 +305,7 @@ def save_animation(frames: list[ImageFrame], file_path: str, options: AnimationS
         case 'PNG':
             if parameter_text != '':
                 png_info = PngImagePlugin.PngInfo()
-                png_info.add_itxt(METADATA_PARAMETER_KEY, parameter_text)
+                png_info.add_itxt(PARAMETERS_KEY, parameter_text)
                 save_args['pnginfo'] = png_info
         case 'WEBP':
             if parameter_text != '' or exif is not None:

@@ -131,7 +131,7 @@ class TestAppController(IntraPaintTestCase):
         self.assertIsInstance(self.controller._window, MainWindow)
         self.assertIsInstance(self.controller._settings_modal, SettingsModal)
         self.assertIsInstance(self.controller._generator, TestGenerator)
-        self.assertIsNone(self.controller._image_io.metadata)
+        self.assertTrue(self.controller._image_io.metadata.is_empty)
 
     @patch('src.controller.app_controller.SettingsModal')
     def test_init_settings(self, MockSettingsModal):

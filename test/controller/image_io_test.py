@@ -1,5 +1,4 @@
 """Tests for ImageIO: opening and saving image files, animations and the open file's metadata."""
-import base64
 import json
 import os
 import sys
@@ -7,7 +6,8 @@ import tempfile
 from typing import Optional
 from unittest.mock import patch
 
-from PIL import Image
+from PIL import Image, PngImagePlugin, ExifTags
+from PIL.ExifTags import IFD
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QColor, QImage
 from PySide6.QtWidgets import QApplication, QWidget
@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QApplication, QWidget
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_io import ImageIO
+from src.image.image_metadata import ImageMetadata, encode_user_comment
 from src.ui.modal.save_loss_modal import SAVE_ANYWAY, SAVE_ORA, CANCEL
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
@@ -119,12 +120,133 @@ class TestImageIO(ImageIOTestCase):
             self.assertTrue(os.path.isfile(save_path))
             self.assertEqual(save_path, Cache().get(Cache.LAST_FILE_PATH))
 
-    def test_metadata_json_handles_binary_metadata(self):
-        """Binary metadata values such as an ICC profile serialize instead of raising."""
-        self.image_io.metadata = {'icc_profile': b'\x00\x00\x01\xe0mntrRGB', 'text': b'plain', 'dpi': (96.0, 96.0)}
-        loaded = json.loads(self.image_io.metadata_json())
-        self.assertEqual(base64.b64encode(b'\x00\x00\x01\xe0mntrRGB').decode(), loaded['icc_profile'])
-        self.assertEqual('plain', loaded['text'])
+    def test_metadata_json_holds_only_text_entries(self):
+        """The .ora metadata JSON holds the text entries, leaving out binary format info such as an ICC profile."""
+        self.image_io.metadata = ImageMetadata({'text': 'plain'}, format_info={
+            'icc_profile': b'\x00\x00\x01\xe0mntrRGB', 'dpi': (96.0, 96.0)})
+        metadata_json = self.image_io.metadata_json()
+        assert metadata_json is not None
+        self.assertEqual({'text': 'plain'}, json.loads(metadata_json))
+
+
+A1111_TEXT = ('a red fox\nNegative prompt: blurry\nSteps: 25, Sampler: Euler a, Schedule type: Karras, CFG scale: 6.5, '
+              'Seed: 1234, Size: 512x768, Model hash: 6ce0161689, Model: v1-5-pruned, Denoising strength: 0.6, '
+              'Lora hashes: "fox: 1a2b, style: 3c4d", Version: f2.0.1')
+
+
+class TestGenerationMetadata(ImageIOTestCase):
+    """Tests applying generation parameters on load, and keeping unknown fields through updates and saves."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        cache = Cache()
+        cache.update_options(Cache.SAMPLING_METHOD, ['Euler a', 'DPM++ 2M'])
+        self.addCleanup(cache.restore_default_options, Cache.SAMPLING_METHOD)
+
+    def _write_png(self, parameters: str, name: str = 'generated.png') -> str:
+        path = os.path.join(self.temp_dir.name, name)
+        info = PngImagePlugin.PngInfo()
+        info.add_text('parameters', parameters)
+        Image.new('RGB', (16, 16)).save(path, pnginfo=info)
+        return path
+
+    def _assert_cache_values(self, prompt: str, negative: str, steps: int, sampler: str, cfg_scale: float,
+                             seed: int) -> None:
+        cache = Cache()
+        self.assertEqual((prompt, negative, steps, sampler, cfg_scale, seed),
+                         (cache.get(Cache.PROMPT), cache.get(Cache.NEGATIVE_PROMPT), cache.get(Cache.SAMPLING_STEPS),
+                          cache.get(Cache.SAMPLING_METHOD), cache.get(Cache.GUIDANCE_SCALE), cache.get(Cache.SEED)))
+
+    def test_load_applies_six_fields(self) -> None:
+        """Loading applies the prompt, negative prompt, steps, sampler, CFG scale and seed, and nothing else."""
+        cache = Cache()
+        size_before = cache.get(Cache.GENERATION_SIZE)
+        denoising_before = cache.get(Cache.DENOISING_STRENGTH)
+        self.image_io.load(self._write_png(A1111_TEXT))
+        self._assert_cache_values('a red fox', 'blurry', 25, 'Euler a', 6.5, 1234)
+        self.assertEqual(size_before, cache.get(Cache.GENERATION_SIZE))
+        self.assertEqual(denoising_before, cache.get(Cache.DENOISING_STRENGTH))
+
+    def test_load_without_negative_prompt_clears_it(self) -> None:
+        """Parameters with no negative prompt line set the negative prompt to empty text."""
+        Cache().set(Cache.NEGATIVE_PROMPT, 'old')
+        self.image_io.load(self._write_png('a fox\nSteps: 25, Sampler: Euler a, CFG scale: 7, Seed: 5, Size: 64x64'))
+        self._assert_cache_values('a fox', '', 25, 'Euler a', 7.0, 5)
+
+    def test_load_skips_unsupported_sampler(self) -> None:
+        """A sampler the generator doesn't offer is left unapplied, and the other fields still apply."""
+        Cache().set(Cache.SAMPLING_METHOD, 'DPM++ 2M')
+        self.image_io.load(self._write_png(A1111_TEXT.replace('Euler a', 'Unknown sampler')))
+        self._assert_cache_values('a red fox', 'blurry', 25, 'DPM++ 2M', 6.5, 1234)
+
+    def test_load_ignores_text_that_is_not_generation_data(self) -> None:
+        """A comment with no parameter line leaves the editor settings unchanged."""
+        Cache().set(Cache.PROMPT, 'unchanged')
+        self.image_io.load(self._write_png('Made with a camera'))
+        self.assertEqual('unchanged', Cache().get(Cache.PROMPT))
+        self.assertEqual('Made with a camera', self.image_io.metadata.parameters)
+
+    def test_load_user_comment_parameters(self) -> None:
+        """JPEG and WebP files keeping A1111 parameters in EXIF UserComment load them."""
+        for extension in ('jpg', 'webp'):
+            with self.subTest(extension=extension):
+                Cache().set(Cache.PROMPT, '')
+                path = os.path.join(self.temp_dir.name, f'a1111.{extension}')
+                exif = Image.Exif()
+                exif.get_ifd(IFD.Exif)[ExifTags.Base.UserComment] = encode_user_comment(A1111_TEXT)
+                Image.new('RGB', (16, 16)).save(path, exif=exif)
+                self.image_io.load(path)
+                self._assert_cache_values('a red fox', 'blurry', 25, 'Euler a', 6.5, 1234)
+
+    def test_update_keeps_unmapped_fields(self) -> None:
+        """Update metadata replaces the editor's fields and keeps every other field as written."""
+        self.image_io.load(self._write_png(A1111_TEXT))
+        cache = Cache()
+        cache.set(Cache.PROMPT, 'a blue fox')
+        cache.set(Cache.SEED, 99)
+        cache.set(Cache.GENERATION_SIZE, QSize(640, 640))
+        self.image_io.update_metadata(show_messagebox=False)
+        self.assertEqual(A1111_TEXT.replace('a red fox', 'a blue fox').replace('Seed: 1234', 'Seed: 99')
+                         .replace('512x768', '640x640'), self.image_io.metadata.parameters)
+
+    def test_update_unchanged_keeps_text(self) -> None:
+        """Updating with the values the file already holds leaves the text unchanged, so a save doesn't ask to."""
+        self.image_io.load(self._write_png(A1111_TEXT))
+        Cache().set(Cache.GENERATION_SIZE, QSize(512, 768))
+        self.assertTrue(self.image_io._metadata_is_latest())
+        self.image_io.update_metadata(show_messagebox=False)
+        self.assertEqual(A1111_TEXT, self.image_io.metadata.parameters)
+
+    def test_update_without_metadata(self) -> None:
+        """Update metadata on an image with no parameters writes the editor's fields."""
+        cache = Cache()
+        cache.set(Cache.PROMPT, 'p')
+        cache.set(Cache.NEGATIVE_PROMPT, 'n')
+        cache.set(Cache.SAMPLING_STEPS, 20)
+        cache.set(Cache.SAMPLING_METHOD, 'Euler a')
+        cache.set(Cache.GUIDANCE_SCALE, 7.0)
+        cache.set(Cache.SEED, 3)
+        cache.set(Cache.GENERATION_SIZE, QSize(512, 512))
+        self.image_io.update_metadata(show_messagebox=False)
+        self.assertEqual('p\nNegative prompt: n\nSteps: 20, Sampler: Euler a, CFG scale: 7.0, Seed: 3, Size: 512x512',
+                         self.image_io.metadata.parameters)
+
+    def test_load_then_save_keeps_unknown_fields(self) -> None:
+        """Saving a loaded image, after Update metadata, keeps the A1111 fields IntraPaint doesn't use."""
+        AppConfig().set(AppConfig.WARN_BEFORE_LAYERLESS_SAVE, False)
+        for extension in ('png', 'jpg', 'webp', 'ora'):
+            with self.subTest(extension=extension):
+                self.image_io.load(self._write_png(A1111_TEXT))
+                self.image_io.update_metadata(show_messagebox=False)
+                save_path = os.path.join(self.temp_dir.name, f'saved.{extension}')
+                self.image_io.save_as(save_path)
+                self.image_io.wait_for_pending_save()
+                self.image_io.load(save_path)
+                params = self.image_io.metadata.a1111_parameters()
+                assert params is not None
+                self.assertEqual('fox: 1a2b, style: 3c4d', params.get('Lora hashes'))
+                self.assertEqual('6ce0161689', params.get('Model hash'))
+                self.assertEqual('f2.0.1', params.get('Version'))
 
 
 class TestSaveLossWarning(ImageIOTestCase):
@@ -197,8 +319,7 @@ class TestOpenAnimation(ImageIOTestCase):
         self.image_io.load(self.gif_path)
         self.assertEqual(self._layer_names_bottom_up(), ['Frame 1 (100ms)', 'Frame 2 (200ms)', 'Frame 3 (50ms)'])
         self.assertEqual(self.image_stack.size, QSize(16, 16))
-        assert self.image_io.metadata is not None
-        self.assertEqual(self.image_io.metadata.get('loop'), 0)
+        self.assertEqual(self.image_io.metadata.format_info.get('loop'), 0)
 
     @patch('src.controller.image_io.request_confirmation', return_value=False)
     @patch('src.controller.image_io.LARGE_ANIMATION_BYTES', 16)
