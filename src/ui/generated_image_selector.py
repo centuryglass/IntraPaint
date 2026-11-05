@@ -25,7 +25,8 @@ from src.controller.image_generation.generation_session import GenerationSession
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.ui.generated_option_view import CAPTION_HEIGHT, GeneratedOptionView, ImageOption, OverlayState
-from src.ui.generated_selector_bars import ButtonBarState, ButtonLabel, SelectorButtonBar, SelectorTopBar, VIEW_GRID, VIEW_SINGLE
+from src.ui.generated_selector_bars import ButtonBarState, ButtonLabel, SelectorButtonBar, SelectorTopBar, VIEW_GRID, \
+    VIEW_SINGLE
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.selection_outline import SelectionOutline
 from src.ui.graphics_items.toast_message import ToastMessageItem
@@ -588,8 +589,8 @@ class GeneratedImageSelector(QWidget):
         batch_size = max(Cache().get(Cache.BATCH_SIZE), 1)
         first = self._session.current.first_generated_index
         waiting = [i for i in range(first, count) if not ready[i]]
-        running_batch = (waiting[0] - first) // batch_size if waiting and self._generating() and not self._session.stopped \
-            else None
+        running = bool(waiting) and self._generating() and not self._session.stopped
+        running_batch = (waiting[0] - first) // batch_size if running else None
         generating = [not ready[i] and i >= first and (i - first) // batch_size == running_batch
                       for i in range(count)]
         compare_key = key_hint_text(KeyConfig().get(KeyConfig.COMPARE_ORIGINAL_MODIFIER))

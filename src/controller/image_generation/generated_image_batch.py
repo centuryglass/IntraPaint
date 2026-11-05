@@ -34,7 +34,9 @@ class GeneratedImageBatch:
     canvas content at the time of re-opening on a re-opened one (`set_current_image`). A re-opened batch keeps the
     generation-time content as `original_image`, at index 1, and choosing it writes it back like a generated option.
     Like generated options, the original is a composite of the visible layers, so choosing it bakes other visible
-    layers' content inside the area into the target layer. `edit_mode` is the untranslated value `Cache.EDIT_MODE` holds. `mask_image` is the generator's paste
+    layers' content inside the area into the target layer.
+
+    `edit_mode` is the untranslated value `Cache.EDIT_MODE` holds. `mask_image` is the generator's paste
     mask when one is given, and the selection mask otherwise. `change_bounds` is relative to the generation area, or
     None when the whole area changed.
     """
