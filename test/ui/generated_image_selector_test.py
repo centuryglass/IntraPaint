@@ -13,8 +13,8 @@ from src.config.cache import Cache
 from src.controller.image_generation.generation_session import GenerationSession
 from src.controller.image_generation.test_generator import TestGenerator
 from src.image.layers.image_stack import ImageStack
-from src.ui.generated_image_selector import GeneratedImageSelector, LABEL_TEXT_IMAGE_OPTION, ORIGINAL_CONTENT_LABEL, \
-    SCROLL_DEBOUNCE_MS
+from src.ui.generated_image_selector import CURRENT_CONTENT_LABEL, GeneratedImageSelector, LABEL_TEXT_IMAGE_OPTION, \
+    ORIGINAL_CONTENT_LABEL, SCROLL_DEBOUNCE_MS
 from src.ui.generated_option_view import CAPTION_HEIGHT
 from src.ui.generated_selector_bars import CANCEL_BUTTON_TEXT, CLOSE_BUTTON_TEXT, USE_OPTION_BUTTON_TEXT, VIEW_GRID, \
     VIEW_SINGLE, _control_hint
@@ -235,15 +235,16 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
             self.assertEqual(item.opacity(), 1.0)
 
     def test_restore_reuses_option_items(self) -> None:
-        """Re-opening reuses the stored items for generated options, and only builds a new one for the first slot."""
+        """Re-opening reuses the stored original and generated items, and builds only the current-content item."""
         self._fill_batch()
         stored_items = list(self.selector._option_items)
         self.selector.archive_current_options()
         self.selector.start_new_options()
+        self.image_stack.create_layer(layer_name='new content', image_data=_solid(QColor(0, 200, 0)))
+        self.image_stack.flush_render()
 
         self.selector.restore_previous_options()
-        self.assertIsNot(self.selector._option_items[0], stored_items[0])
-        self.assertEqual(self.selector._option_items[1:], stored_items[1:])
+        self.assertEqual(self.selector._option_items[1:], stored_items)
 
     def test_partial_batch_restores_without_placeholders(self) -> None:
         """A batch closed before every image arrived re-opens with only the delivered images, under their labels."""
@@ -258,24 +259,42 @@ class GeneratedImageSelectorBatchTest(IntraPaintTestCase):
                           LABEL_TEXT_IMAGE_OPTION.format(index=3)])
         self.assertEqual(self.selector._session.current.option_images[1:], [_option_image(0), _option_image(2)])
 
-    def test_restore_shows_current_content_in_first_slot(self) -> None:
-        """The first option of a re-opened batch is what is on the canvas now, not the batch's original."""
+    def test_restore_shows_current_then_original_then_generated(self) -> None:
+        """A re-opened batch lists the canvas now, the generation-time original, then the generated options."""
         self._fill_batch()
+        original = self.selector._session.current.original_image
         self.selector.archive_current_options()
         self.image_stack.create_layer(layer_name='new content', image_data=_solid(QColor(0, 200, 0)))
         self.image_stack.flush_render()
         current = self.image_stack.qimage_generation_area_content()
 
         self.selector.restore_previous_options()
-        self.assertEqual(self.selector._session.current.option_images[0], current)
+        batch = self.selector._session.current
+        self.assertEqual(batch.option_images[0], current)
+        self.assertEqual(batch.option_images[1], original)
         self.assertEqual(self.selector._option_items[0].full_image, current)
+        self.assertEqual(self.selector._option_items[1].full_image, original)
+        self.assertEqual([item.text for item in self.selector._option_items],
+                         [CURRENT_CONTENT_LABEL, ORIGINAL_CONTENT_LABEL]
+                         + [LABEL_TEXT_IMAGE_OPTION.format(index=i + 1) for i in range(OPTION_COUNT)])
+
+    def test_restore_of_unchanged_canvas_matches_fresh_layout(self) -> None:
+        """With the canvas untouched there is no current-content slot."""
+        self._fill_batch()
+        self.selector.archive_current_options()
+        self.selector.restore_previous_options()
+        self.assertEqual(self.selector._option_items[0].text, ORIGINAL_CONTENT_LABEL)
+        self.assertEqual(len(self.selector._option_items), OPTION_COUNT + 1)
 
     def test_restore_is_repeatable(self) -> None:
         """Closing a re-opened batch keeps it stored, so re-opening works again."""
         self._fill_batch()
         self.selector.archive_current_options()
+        self.image_stack.create_layer(layer_name='new content', image_data=_solid(QColor(0, 200, 0)))
+        self.image_stack.flush_render()
         for _ in range(2):
             self.selector.restore_previous_options()
+            self.assertEqual(len(self.selector._option_items), OPTION_COUNT + 2)
             self.selector.archive_current_options()
         self.assertTrue(self.selector.can_restore_previous())
 

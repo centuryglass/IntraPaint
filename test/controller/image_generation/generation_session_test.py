@@ -10,6 +10,7 @@ from PySide6.QtGui import QColor, QImage
 from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
+from src.controller.image_generation.generated_image_batch import GeneratedImageBatch
 from src.controller.image_generation.generation_session import GenerationSession
 from src.image.layers.image_stack import ImageStack
 from src.controller.image_generation.apply_option import ApplyResult
@@ -85,17 +86,79 @@ class GenerationSessionTest(IntraPaintTestCase):
         self.assertIsNone(self.session.archive_current())
         self.assertEqual(self.availability, [True])
 
-    def test_restore_refreshes_original_and_stops_accepting(self) -> None:
-        """A restored batch shows the current canvas as option zero and takes no new results."""
+    def _restore_after_edit(self, color: QColor = QColor(1, 2, 3)) -> GeneratedImageBatch:
+        """Archives a batch, changes the canvas, and re-opens the batch."""
         self._begin_with_results()
+        self.session.archive_current()
+        self.session.begin()
+        self.image_stack.active_layer.image = _solid(color)
+        self.image_stack.flush_render()
+        return self.session.restore_previous()
+
+    def test_restore_keeps_original_adds_current_and_stops_accepting(self) -> None:
+        """A restored batch offers the canvas as option zero, keeps its original at one, and takes no new results."""
+        self._begin_with_results()
+        original = self.session.current.original_image
         self.session.archive_current()
         self.session.begin()
         self.image_stack.active_layer.image = _solid(QColor(1, 2, 3))
         self.image_stack.flush_render()
         batch = self.session.restore_previous()
         self.assertEqual(batch.option_images[0], self.image_stack.qimage_generation_area_content())
+        self.assertEqual(batch.current_image, batch.option_images[0])
+        self.assertEqual(batch.option_images[1], original)
+        self.assertEqual(batch.original_image, original)
+        self.assertEqual(batch.first_generated_index, 2)
+        self.assertEqual(batch.option_images[2], _solid(QColor(0, 255, 0)))
         self.assertFalse(self.session.accepting_results)
         self.assertFalse(self.session.add_image(_solid(QColor(9, 9, 9)), 0))
+
+    def test_restore_twice_does_not_add_slots(self) -> None:
+        """Closing and re-opening a batch again replaces the current-content slot."""
+        batch = self._restore_after_edit()
+        count = len(batch.option_images)
+        self.session.archive_current()
+        self.assertEqual(len(batch.option_images), count - 1)
+        self.image_stack.active_layer.image = _solid(QColor(4, 5, 6))
+        self.image_stack.flush_render()
+        batch = self.session.restore_previous()
+        self.assertEqual(len(batch.option_images), count)
+        self.assertEqual(batch.current_image, self.image_stack.qimage_generation_area_content())
+
+    def test_restore_of_unchanged_canvas_adds_no_slot(self) -> None:
+        """When the canvas still matches the original, the batch re-opens as a fresh one looks."""
+        self._begin_with_results()
+        self.session.archive_current()
+        batch = self.session.restore_previous()
+        self.assertIsNone(batch.current_image)
+        self.assertEqual(batch.first_generated_index, 1)
+
+    def test_choose_current_content_of_restored_batch_applies_nothing(self) -> None:
+        """Slot zero of a re-opened batch keeps the canvas as it is."""
+        self._restore_after_edit()
+        before = self.image_stack.qimage_generation_area_content()
+        self.assertIsNone(self.session.choose(0, 'Current'))
+        self.assertEqual(self.image_stack.qimage_generation_area_content(), before)
+
+    def test_choose_original_of_restored_batch_writes_it_back(self) -> None:
+        """The original slot of a re-opened batch applies the generation-time content."""
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_TXT2IMG)
+        self._restore_after_edit(QColor(1, 2, 3))
+        outcome = self.session.choose(1, 'Original')
+        self.image_stack.flush_render()
+        assert outcome is not None
+        self.assertEqual(outcome.result, ApplyResult.APPLIED)
+        self.assertEqual(self.image_stack.qimage_generation_area_content().pixelColor(5, 5), QColor(200, 10, 10))
+
+    def test_restore_shifts_patches_with_their_options(self) -> None:
+        """A generated option keeps its patch when a current-content slot is added or removed."""
+        batch = self._restore_after_edit()
+        patch = _solid(QColor(7, 7, 7))
+        batch.patches[2] = patch
+        batch.set_current_image(None)
+        self.assertEqual(batch.patches, {1: patch})
+        batch.set_current_image(_solid(QColor(1, 2, 3)))
+        self.assertEqual(batch.patches, {2: patch})
 
     def test_restore_without_batch_raises(self) -> None:
         """Restoring with nothing stored raises."""
