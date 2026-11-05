@@ -17,7 +17,8 @@ from src.ui.panel.tool_control_panels.free_selection_panel import FreeSelectionP
 from src.undo_stack import UndoStack
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.selection_mode import selection_mode_for_gesture, compose_selection_path
-from src.util.visual.text_drawing_utils import rich_text_key_hint, left_button_hint_text, right_button_hint_text
+from src.util.visual.key_hint_text import rich_text_key_hints
+from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.lasso_selection_tool'
@@ -79,8 +80,8 @@ class FreeSelectionTool(BaseTool):
         """Return text describing different input functionality."""
         selection_hint = FREE_SELECTION_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
                                                             right_mouse_icon=right_button_hint_text(),
-                                                            escape_key=rich_text_key_hint('Esc'),
-                                                            enter_key=rich_text_key_hint('Enter'))
+                                                            escape_key=rich_text_key_hints('Esc'),
+                                                            enter_key=rich_text_key_hints('Enter'))
         return f'{selection_hint}<br/>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:

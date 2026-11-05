@@ -17,7 +17,7 @@ from functools import partial
 from typing import Optional
 from weakref import ref
 
-from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QRectF, QSize, Qt
+from PySide6.QtCore import QEvent, QObject, QPoint, QPointF, QRect, QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QIcon, QPainter, QPaintEvent, QPalette, QPen, QResizeEvent
 from PySide6.QtWidgets import (QApplication, QFrame, QMainWindow, QPushButton, QSizePolicy, QToolBar, QToolButton,
                                QWidget)
@@ -36,8 +36,8 @@ from src.ui.window.dock_groups import docked_groups
 from src.ui.window.panel_dock import PanelDock
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING
 from src.util.shared_constants import PROJECT_DIR
-from src.util.visual.keycap import KEYCAP_DEPTH, KEYCAP_PADDING, draw_keycap, keycap_colors, keycap_font, keycap_size
-from src.util.visual.text_drawing_utils import get_key_display_string
+from src.util.visual.key_hint_text import fitted_key_hint_labels, key_hint_labels
+from src.util.visual.keycap import draw_keycap_row, keycap_font, keycap_row_size
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.window.dock_rail'
@@ -62,6 +62,8 @@ BUTTON_MARGIN = 2
 # Height of a side rail's button: icon, gap, and the keycap under it:
 SIDE_BUTTON_ICON_TOP = 3
 SIDE_BUTTON_GAP = 2
+# Widest keycap row a side rail's button shows:
+SIDE_KEYCAP_MAX_WIDTH = SIDE_RAIL_WIDTH - 2
 STRIP_BUTTON_SPACING = 6
 # Space between a strip button's plate edge and its icon, and between its keycap and the opposite edge:
 STRIP_BUTTON_PADDING = 6
@@ -185,21 +187,25 @@ class RailButton(QToolButton):
         font.setPointSize(AppConfig().get(AppConfig.TAB_FONT_POINT_SIZE))
         return font
 
-    def _key_text(self) -> str:
+    def _key_labels(self) -> list[str]:
+        """Returns the keycap labels for the dock's binding. A side rail shortens them to fit its width, and shows none
+        if even the shortest form doesn't fit, as `ToolButton` does."""
         key = self._dock.shortcut_config_key
         if key is None:
-            return ''
-        return get_key_display_string(KeyConfig().get(key), rich_text=False)
+            return []
+        if not self._side:
+            return key_hint_labels(KeyConfig().get(key))
+        font = keycap_font(QApplication.font())
+        labels = fitted_key_hint_labels(KeyConfig().get(key), font, SIDE_KEYCAP_MAX_WIDTH)
+        return labels if keycap_row_size(labels, font).width() <= SIDE_KEYCAP_MAX_WIDTH else []
 
     def _keycap_size(self) -> QSize:
-        metrics = QFontMetrics(keycap_font(QApplication.font()))
-        text = self._key_text()
-        return keycap_size(QSize(metrics.horizontalAdvance(text), metrics.height()))
+        return keycap_row_size(self._key_labels(), keycap_font(QApplication.font()))
 
     def sizeHint(self) -> QSize:
         """Returns 32 px wide in a side rail, with room for the icon and the keycap under it. In a strip rail, returns
         room for the icon, name and keycap in a row."""
-        key_size = self._keycap_size() if self._key_text() != '' else QSize(0, 0)
+        key_size = self._keycap_size()
         if self._side:
             height = SIDE_BUTTON_ICON_TOP + SIDE_ICON_SIZE + SIDE_BUTTON_GAP + key_size.height() + BUTTON_MARGIN
             return QSize(SIDE_RAIL_WIDTH, height)
@@ -246,18 +252,15 @@ class RailButton(QToolButton):
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(palette.color(QPalette.ColorRole.Midlight))
             painter.drawRoundedRect(plate, PLATE_RADIUS, PLATE_RADIUS)
-        key_text = self._key_text()
-        fill, outline, key_color = keycap_colors(palette)
-        key_size = self._keycap_size() if key_text != '' else QSize(0, 0)
+        key_labels = self._key_labels()
+        key_size = self._keycap_size()
         if self._side:
             icon_rect = QRect((self.width() - SIDE_ICON_SIZE) // 2, SIDE_BUTTON_ICON_TOP, SIDE_ICON_SIZE,
                               SIDE_ICON_SIZE)
             self.icon().paint(painter, icon_rect)
-            if key_text != '':
-                key_width = min(key_size.width(), self.width() - 2)
-                key_rect = QRectF((self.width() - key_width) / 2, icon_rect.bottom() + SIDE_BUTTON_GAP, key_width,
-                                  key_size.height())
-                self._draw_keycap(painter, key_rect, key_text, fill, outline, key_color)
+            if len(key_labels) > 0:
+                self._draw_keycaps(painter, QPointF((self.width() - key_size.width()) / 2,
+                                                    icon_rect.bottom() + SIDE_BUTTON_GAP), key_labels)
         else:
             icon_rect = QRect(BUTTON_MARGIN + STRIP_BUTTON_PADDING, (self.height() - STRIP_ICON_SIZE) // 2,
                               STRIP_ICON_SIZE, STRIP_ICON_SIZE)
@@ -270,10 +273,9 @@ class RailButton(QToolButton):
             text_width = QFontMetrics(self.font()).horizontalAdvance(self._dock.windowTitle())
             painter.drawText(QRect(text_left, 0, text_width, self.height()), Qt.AlignmentFlag.AlignVCenter,
                              self._dock.windowTitle())
-            if key_text != '':
-                key_rect = QRectF(text_left + text_width + STRIP_BUTTON_SPACING,
-                                  (self.height() - key_size.height()) / 2, key_size.width(), key_size.height())
-                self._draw_keycap(painter, key_rect, key_text, fill, outline, key_color)
+            if len(key_labels) > 0:
+                self._draw_keycaps(painter, QPointF(text_left + text_width + STRIP_BUTTON_SPACING,
+                                                    (self.height() - key_size.height()) / 2), key_labels)
         self._draw_badge(painter, icon_rect, highlight)
         painter.end()
 
@@ -305,12 +307,8 @@ class RailButton(QToolButton):
         painter.setFont(font)
         painter.drawText(bounds, Qt.AlignmentFlag.AlignCenter, text)
 
-    def _draw_keycap(self, painter: QPainter, bounds: QRectF, text: str, fill, outline, text_color) -> None:
-        draw_keycap(painter, bounds, fill, outline)
-        painter.setPen(text_color)
-        painter.setFont(keycap_font(QApplication.font()))
-        painter.drawText(bounds.adjusted(0, KEYCAP_PADDING.top() - 1, 0, -KEYCAP_PADDING.bottom() - KEYCAP_DEPTH),
-                         Qt.AlignmentFlag.AlignCenter, text)
+    def _draw_keycaps(self, painter: QPainter, top_left: QPointF, labels: list[str]) -> None:
+        draw_keycap_row(painter, top_left, labels, keycap_font(QApplication.font()), self.palette())
 
 
 class RecentToolStrip(QWidget):

@@ -61,16 +61,16 @@ class ShortcutTooltipTest(IntraPaintTestCase):
 class RichShortcutTooltipTest(IntraPaintTestCase):
     """Checks the keycap form of tooltips."""
 
-    def test_one_keycap_per_key(self) -> None:
-        """Each key of a chord gets its own image."""
+    def test_one_keycap_per_binding(self) -> None:
+        """A binding's keys share one image."""
         text = rich_shortcut_tooltip_text('Merge down', 'Ctrl+Shift+M')
-        self.assertEqual(text.count('<img'), 3)
+        self.assertEqual(text.count('<img'), 1)
         self.assertTrue(text.startswith('<b>Merge down</b>'))
 
-    def test_sequence_and_plus_key(self) -> None:
-        """Chords of a sequence and a bound plus key are each drawn."""
-        self.assertEqual(rich_shortcut_tooltip_text('T', 'A, B').count('<img'), 2)
-        self.assertEqual(rich_shortcut_tooltip_text('T', 'Ctrl++').count('<img'), 2)
+    def test_alternatives_and_plus_key(self) -> None:
+        """Each alternative binding gets its own image, and a bound plus key stays in its binding's image."""
+        self.assertEqual(rich_shortcut_tooltip_text('T', 'Shift+S,K').count('<img'), 2)
+        self.assertEqual(rich_shortcut_tooltip_text('T', 'Ctrl++').count('<img'), 1)
 
     def test_description(self) -> None:
         """The description follows the title, and the text is escaped."""
@@ -91,8 +91,8 @@ class RichShortcutTooltipTest(IntraPaintTestCase):
         set_shortcut_tooltip(button, 'Merge down', key, description='Merge layers.')
         self.assertEqual(button.toolTip(), rich_shortcut_tooltip_text('Merge down', KeyConfig().get(key),
                                                                        'Merge layers.'))
-        KeyConfig().set(key, 'Ctrl+Alt+K')
-        self.assertEqual(button.toolTip().count('<img'), 3)
+        KeyConfig().set(key, 'Ctrl+Alt+K,J')
+        self.assertEqual(button.toolTip().count('<img'), 2)
         KeyConfig().set(key, '')
         self.assertEqual(button.toolTip().count('<img'), 0)
         self.assertIn('Merge layers.', button.toolTip())

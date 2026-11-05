@@ -27,7 +27,7 @@ from src.util.async_task import AsyncTask
 from src.util.parameter import Parameter, TYPE_FLOAT, TYPE_INT, TYPE_STR
 from src.util.shared_constants import APP_ICON_PATH
 from src.util.visual.geometry_utils import get_scaled_placement
-from src.util.visual.text_drawing_utils import get_key_display_string
+from src.util.visual.key_hint_text import key_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.modal.image_filter_modal'
@@ -283,7 +283,7 @@ class ImageFilterModal(QDialog):
         fit_dialog_to_screen(self, self.sizeHint())
 
     def _update_compare_hint(self, *_) -> None:
-        key_text = get_key_display_string(KeyConfig().get(KeyConfig.COMPARE_ORIGINAL_MODIFIER), rich_text=False)
+        key_text = key_hint_text(KeyConfig().get(KeyConfig.COMPARE_ORIGINAL_MODIFIER))
         tooltip = COMPARE_BUTTON_TOOLTIP_WITH_KEY.format(key=key_text) if key_text else COMPARE_BUTTON_TOOLTIP
         self._preview.compare_button.setToolTip(tooltip)
 

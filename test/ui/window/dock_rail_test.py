@@ -172,6 +172,22 @@ class DockRailTest(IntraPaintTestCase):
             if not button.isHidden():
                 self.assertEqual(button.width(), SIDE_RAIL_WIDTH)
 
+    def test_side_rail_keycaps_shorten_to_fit(self) -> None:
+        """A side rail button shows its dock's binding as keycaps, compact if the full form is too wide, and none if
+        even the shortest compact keycap is too wide."""
+        dock = self.window.tools_dock
+        button = self._button(dock)
+        key = dock.shortcut_config_key
+        assert key is not None
+        # pylint: disable=protected-access
+        KeyConfig().set(key, 'F5')
+        self.assertEqual(button._key_labels(), ['F5'])
+        KeyConfig().set(key, 'Shift+K')
+        self.assertEqual(button._key_labels(), ['⇧K'])
+        KeyConfig().set(key, 'Ctrl+Alt+Shift+PgDown')
+        self.assertEqual(button._key_labels(), [])
+        self.assertLessEqual(button._keycap_size().width(), SIDE_RAIL_WIDTH)
+
     def test_clicking_the_active_button_hides_its_dock_and_clicking_again_shows_it(self) -> None:
         """A button hides its dock while the dock is showing, and shows and raises it otherwise."""
         tools = self.window.tools_dock

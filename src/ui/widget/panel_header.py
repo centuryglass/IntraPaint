@@ -300,7 +300,8 @@ class PanelHeader(QWidget):
         self._first_line.addWidget(self._more_button)
 
     def set_key_text(self, key_text: str) -> None:
-        """Shows `key_text` on a keycap after the name, or hides the keycap if it is empty."""
+        """Shows the key binding `key_text`, such as "Shift+S,K", as keycaps after the name, or hides them if it is
+        empty."""
         self._key_badge.set_text(key_text)
         self._key_badge.setVisible(key_text != '')
         self._fit_lines()

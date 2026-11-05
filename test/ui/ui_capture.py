@@ -440,8 +440,7 @@ def _draw_button_weight(painter: QPainter, rect: QRect, variant: str, state: Gal
 class _TextFreeBadge(KeycapBadge):
     """A keycap that draws no key text."""
 
-    def _paint_text(self, painter: QPainter, bounds) -> None:
-        pass
+    DRAW_TEXT = False
 
 
 class _TextFreeHeader(PanelHeader):

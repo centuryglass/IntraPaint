@@ -26,8 +26,9 @@ from src.util.shared_text import (ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_LAYER_
                                   ERROR_MESSAGE_LAYER_GROUP_HIDDEN, ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED,
                                   LOCK_ERROR_MESSAGES)
 from src.util.visual.image_utils import image_is_fully_transparent
+from src.util.visual.key_hint_text import rich_text_key_hints
 from src.util.visual.text_drawing_utils import left_button_hint_text, middle_button_hint_text, \
-    vertical_scroll_hint_text, rich_text_key_hints
+    vertical_scroll_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.base_tool'

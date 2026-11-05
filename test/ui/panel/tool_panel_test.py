@@ -18,7 +18,7 @@ from src.ui.layout.panel_fit import HYSTERESIS, Orientation
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.tool_panel import ToolPanel, ButtonLayout, BUTTON_SPACING, MAX_STRIP_EDGE_LENGTH, SIDE_BUTTON_FORMS, \
     STRIP_BUTTON_FORMS, STRIP_MAX_COLUMNS, STRIP_NARROW_COLUMNS, strip_button_layout
-from src.util.visual.text_drawing_utils import get_key_display_string
+from src.util.visual.key_hint_text import key_hint_text
 from test.base_test_case import IntraPaintTestCase
 from test.ui.panel_capture import tell_orientation
 
@@ -185,7 +185,7 @@ class ToolPanelTest(IntraPaintTestCase):
         self._tool_panel.setup_active_tool(test_tool)
         self.assertEqual(self._tool_panel.header.name(), test_tool.label)
         keys = KeyConfig().get(test_tool.get_activation_config_key())
-        self.assertEqual(self._tool_panel.header.key_badge.text, get_key_display_string(keys, rich_text=False))
+        self.assertEqual(self._tool_panel.header.key_badge.text, keys)
         self.assertTrue(tool_button.is_active)
         self.assertTrue(control_panel.isVisible())
 
@@ -197,7 +197,7 @@ class ToolPanelTest(IntraPaintTestCase):
         for tool in (draw_tool, text_tool):
             self._tool_panel.add_tool_button(tool)
         self._tool_panel.setup_active_tool(draw_tool)
-        text_keys = get_key_display_string(KeyConfig().get(text_tool.get_activation_config_key()), rich_text=False)
+        text_keys = KeyConfig().get(text_tool.get_activation_config_key())
         header = self._tool_panel.header
         short_label = self._tool_panel._short_label  # pylint: disable=protected-access
         for name in HOST_SIZES:
@@ -211,7 +211,7 @@ class ToolPanelTest(IntraPaintTestCase):
                 self.assertEqual(header.name(), text_tool.label)
                 self.assertEqual(header.key_badge.text, text_keys)
                 self.assertIn(text_tool.label, short_label.text())
-                self.assertIn(text_keys, short_label.text())
+                self.assertIn(key_hint_text(text_keys), short_label.text())
                 if not collapsed:
                     self.assertEqual(header.description(), text_tool.get_tooltip_text())
                 self._tool_panel.setup_active_tool(draw_tool)

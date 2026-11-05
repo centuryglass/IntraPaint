@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QWidget
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.ui.input_fields.setting_fields import ColorSettingField, DirectorySettingField, KeybindingField, \
-    OptionSegmentsField, SizeSettingField, split_key_text
+    OptionSegmentsField, SizeSettingField, NO_KEY_TEXT
 from src.ui.modal.settings_modal import SettingsModal
 from test.base_test_case import IntraPaintTestCase
 
@@ -107,13 +107,17 @@ class SettingsModalTest(IntraPaintTestCase):
         self.assertTrue(any(row.key == '' for row in rows))
 
     def test_keybindings_show_keycaps(self) -> None:
-        """Key sequence settings show a badge per key."""
+        """Key binding settings show a keycap per alternative binding, or a disabled placeholder when unbound."""
         self.modal.load_from_config(KeyConfig())
         key = KeyConfig().get_keys()[0]
         control = self.modal._inputs[key]  # pylint: disable=protected-access
         assert isinstance(control, KeybindingField)
         control.setValue('Ctrl+Shift+Z')
-        self.assertEqual(control.badge_texts(), ['Ctrl', 'Shift', 'Z'])
+        self.assertEqual(control.badge_labels(), ['Ctrl+Shift+Z'])
+        control.setValue('Shift+S,K')
+        self.assertEqual(control.badge_labels(), ['Shift+S', 'K'])
+        control.setValue('')
+        self.assertEqual(control.badge_labels(), [NO_KEY_TEXT])
 
     def test_size_field_round_trip(self) -> None:
         """A size setting reports the QSize it was given."""
@@ -121,9 +125,3 @@ class SettingsModalTest(IntraPaintTestCase):
         assert isinstance(control, SizeSettingField)
         control.setValue(QSize(640, 480))
         self.assertEqual(control.value(), QSize(640, 480))
-
-    def test_split_key_text(self) -> None:
-        """Key text splits into key names, keeping a plus key whole."""
-        self.assertEqual(split_key_text('Ctrl+Shift+Z'), ['Ctrl', 'Shift', 'Z'])
-        self.assertEqual(split_key_text('Ctrl++'), ['Ctrl', '+'])
-        self.assertEqual(split_key_text(''), [])

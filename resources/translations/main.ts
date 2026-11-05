@@ -6071,11 +6071,6 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
-        <source>Enter</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>{left_key}{right_key} browse &amp;nbsp; {first_key}-{last_key} open option &amp;nbsp; {up_key} single view &amp;nbsp; {pan_key}+{left_mouse_icon} or {middle_mouse_icon} pan &amp;nbsp; {zoom_in_key}{zoom_out_key} zoom</source>
         <translation type="unfinished"></translation>
     </message>
