@@ -2,8 +2,9 @@
 from typing import Optional, Callable
 
 from PySide6.QtCore import Qt, QRect, QRectF, QSize, QPoint, SignalInstance
-from PySide6.QtGui import QCursor, QIcon, QTransform, QMouseEvent
-from PySide6.QtWidgets import QWidget, QSpinBox, QDoubleSpinBox, QApplication, QMenu
+from PySide6.QtGui import QCursor, QIcon, QTransform, QMouseEvent, QPixmap
+from PySide6.QtWidgets import (QWidget, QSpinBox, QDoubleSpinBox, QApplication, QMenu, QGraphicsPixmapItem,
+                               QGraphicsItem)
 
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
@@ -41,7 +42,12 @@ ICON_PATH_TRANSFORM_TOOL = f'{PROJECT_DIR}/resources/icons/tools/layer_transform
 
 
 class LayerTransformTool(BaseTool):
-    """Applies transformations to the active layer."""
+    """Applies transformations to the active layer.
+
+    A mouse drag on a single layer moves a Normal-mode preview item instead of the layer, and sets the layer's
+    transform once on release. The preview ignores blend modes and layers above the dragged one. Layer groups and
+    panel edits change the layer transform on every step.
+    """
 
     TOOL_GROUP = ToolGroup.EDIT
 
@@ -63,6 +69,11 @@ class LayerTransformTool(BaseTool):
         scene.addItem(self._transform_outline)
         self.cursor = QCursor(Qt.CursorShape.CrossCursor)
         self._layer_menu: Optional[QMenu] = None
+        self._mouse_dragging = False
+        self._drag_preview: Optional[QGraphicsPixmapItem] = None
+        self._drag_transform: Optional[QTransform] = None
+        self._transform_outline.drag_started.connect(self._drag_start_slot)
+        self._transform_outline.drag_finished.connect(self._drag_finish_slot)
 
         # prepare control panel:
         self._control_panel = LayerTransformToolPanel(image_stack)
@@ -186,6 +197,7 @@ class LayerTransformTool(BaseTool):
 
     def set_layer(self, layer: Optional[Layer]) -> None:
         """Connects to a new image layer, or disconnects if the layer parameter is None."""
+        self._end_drag_preview(apply=False)
         last_layer = self._layer
         if last_layer is not None:
             last_layer.transform_changed.disconnect(self._layer_transform_change_slot)
@@ -298,7 +310,58 @@ class LayerTransformTool(BaseTool):
         layer = self._layer
         if layer is None or layer.locked or layer.parent_locked:
             return
+        if self._mouse_dragging and isinstance(layer, ImageLayer | NonDestructiveLayer):
+            if self._drag_preview is None:
+                self._start_drag_preview(layer)
+            if self._drag_preview is not None:
+                self._drag_transform = QTransform(transform)
+                self._drag_preview.setTransform(transform)
+                self._control_panel.set_preview_transform(transform)
+                return
         layer.transform = transform
+        self._control_panel.set_preview_transform(layer.transform)
+
+    def _drag_start_slot(self) -> None:
+        self._mouse_dragging = True
+
+    def _drag_finish_slot(self) -> None:
+        self._mouse_dragging = False
+        self._end_drag_preview(apply=True)
+
+    def _start_drag_preview(self, layer: TransformLayer) -> None:
+        """Hides the layer and shows a Normal-mode copy of its image in the scene to stand in for it."""
+        scene = self._image_viewer.scene()
+        if scene is None or layer.size.isEmpty() or not layer.visible:
+            return
+        preview = QGraphicsPixmapItem(QPixmap.fromImage(layer.get_qimage().copy()))
+        preview.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+        preview.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
+        preview.setOpacity(layer.opacity)
+        preview.setTransform(layer.transform)
+        preview.setZValue(self._transform_outline.zValue() - 1)
+        scene.addItem(preview)
+        self._drag_preview = preview
+        layer.set_visible(False)
+
+    def _end_drag_preview(self, apply: bool) -> None:
+        """Removes the drag preview and shows the layer again, first setting its transform to the dragged one if
+           apply is set."""
+        preview = self._drag_preview
+        if preview is None:
+            return
+        layer = self._layer
+        transform = self._drag_transform
+        self._drag_preview = None
+        self._drag_transform = None
+        scene = preview.scene()
+        if scene is not None:
+            scene.removeItem(preview)
+        if layer is None:
+            return
+        # The layer is still hidden, so the transform change recomposites nothing, and showing it redraws once:
+        if apply and transform is not None:
+            layer.transform = transform
+        layer.set_visible(True)
         self._control_panel.set_preview_transform(layer.transform)
 
     @staticmethod

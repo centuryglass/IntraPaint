@@ -52,6 +52,10 @@ class TransformOutline(QGraphicsObject):
     """
 
     transform_changed = Signal(QTransform)
+    # Emitted when a mouse drag on the outline or its handles starts and ends. drag_finished is emitted before the
+    # undo gesture closes, so changes made in response join the drag's undo entry.
+    drag_started = Signal()
+    drag_finished = Signal()
     pos_changed = Signal(float, float)
     scale_changed = Signal(float, float)
     angle_changed = Signal(float)
@@ -336,6 +340,7 @@ class TransformOutline(QGraphicsObject):
         """Start dragging the layer."""
         assert event is not None
         UndoStack().begin_gesture('TransformOutline.drag')
+        self.drag_started.emit()
         for handle in self._handles.values():
             # Ensure handles can still be selected during extreme transformations by passing off input to any handle
             # within approx. 10px of the click event:
@@ -381,6 +386,7 @@ class TransformOutline(QGraphicsObject):
             if handle.isSelected():
                 handle.mouseReleaseEvent(event)
         self.setSelected(False)
+        self.drag_finished.emit()
         UndoStack().end_gesture()
 
     def move_transformation_handle(self, handle_id: str, pos: QPointF) -> None:
