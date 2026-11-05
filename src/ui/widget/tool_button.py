@@ -27,6 +27,30 @@ PLATE_RADIUS = 7.0
 PLATE_SHADOW_OFFSET = 2
 
 
+def draw_plate_for_state(painter: QPainter, palette: QPalette, plate: QRectF, active: bool, down: bool,
+                         hovered: bool) -> None:
+    """Draws the plate behind a button's icon: raised accent with an ink shadow when active, otherwise a lighter plate
+    while pressed or hovered, otherwise nothing. The shadow drops `PLATE_SHADOW_OFFSET` below `plate`."""
+    ink = palette.color(QPalette.ColorRole.Shadow)
+    if active:
+        _draw_plate(painter, plate.translated(0, PLATE_SHADOW_OFFSET), ink, ink)
+        _draw_plate(painter, plate, palette.color(QPalette.ColorRole.Highlight), ink)
+    elif down:
+        _draw_plate(painter, plate, palette.color(QPalette.ColorRole.Button), ink)
+    elif hovered:
+        _draw_plate(painter, plate, palette.color(QPalette.ColorRole.Midlight), ink)
+
+
+def _draw_plate(painter: QPainter, plate: QRectF, fill: QColor, outline: QColor) -> None:
+    """Draws a rounded plate with a 1px outline inside `plate`."""
+    painter.save()
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setPen(QPen(outline, 1))
+    painter.setBrush(fill)
+    painter.drawRoundedRect(plate.adjusted(0.5, 0.5, -0.5, -0.5), PLATE_RADIUS, PLATE_RADIUS)
+    painter.restore()
+
+
 class ToolButton(QToolButton):
     """Displays a tool icon and label, indicates if the tool is selected, and can be clicked to select its tool."""
 
@@ -131,25 +155,7 @@ class ToolButton(QToolButton):
     def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
         """Draws the icon on an accent plate if its tool is active, or a lighter plate while hovered or pressed."""
         painter = QPainter(self)
-        palette = self.palette()
-        ink = palette.color(QPalette.ColorRole.Shadow)
         margin = self._plate_margin
         plate = QRectF(self._icon_bounds.adjusted(-margin, -margin, margin, margin))
-        if self.is_active:
-            self._draw_plate(painter, plate.translated(0, PLATE_SHADOW_OFFSET), ink, ink)
-            self._draw_plate(painter, plate, palette.color(QPalette.ColorRole.Highlight), ink)
-        elif self.isDown():
-            self._draw_plate(painter, plate, palette.color(QPalette.ColorRole.Button), ink)
-        elif self.underMouse():
-            self._draw_plate(painter, plate, palette.color(QPalette.ColorRole.Midlight), ink)
+        draw_plate_for_state(painter, self.palette(), plate, self.is_active, self.isDown(), self.underMouse())
         self._icon.paint(painter, self._icon_bounds)
-
-    @staticmethod
-    def _draw_plate(painter: QPainter, plate: QRectF, fill: QColor, outline: QColor) -> None:
-        """Draws a rounded plate with a 1px outline inside `plate`."""
-        painter.save()
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setPen(QPen(outline, 1))
-        painter.setBrush(fill)
-        painter.drawRoundedRect(plate.adjusted(0.5, 0.5, -0.5, -0.5), PLATE_RADIUS, PLATE_RADIUS)
-        painter.restore()

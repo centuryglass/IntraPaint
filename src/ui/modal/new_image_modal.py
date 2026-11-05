@@ -6,8 +6,8 @@ color dialog.
 """
 from typing import Optional, cast
 
-from PySide6.QtCore import QSize
-from PySide6.QtGui import QColor, QIcon, Qt
+from PySide6.QtCore import QRect, QRectF, QSize
+from PySide6.QtGui import QColor, QIcon, QPaintEvent, QPainter, Qt
 from PySide6.QtWidgets import QApplication, QButtonGroup, QDialog, QHBoxLayout, QPushButton, QToolButton, QVBoxLayout, \
     QWidget
 
@@ -20,6 +20,7 @@ from src.ui.modal.color_dialog import ColorDialog
 from src.ui.modal.dialog_footer import DialogFooter
 from src.ui.modal.modal_parent import modal_parent
 from src.ui.widget.panel_section import PanelSection
+from src.ui.widget.tool_button import PLATE_MARGIN, PLATE_SHADOW_OFFSET, draw_plate_for_state
 from src.util.shared_constants import APP_ICON_PATH
 from src.util.visual.image_utils import get_color_icon
 
@@ -56,6 +57,37 @@ BACKGROUND_COLOR_OPTION_CUSTOM = _tr('Custom color...')
 MIN_PX_VALUE = 1
 SWATCH_SIZE = 28
 CUSTOM_DEFAULT_COLOR = QColor('#ff808080')
+
+
+class _SwatchButton(QToolButton):
+    """A checkable color swatch that marks the checked state like the active tool in `ToolButton`.
+
+    The swatch icon covers most of the button, so the standard checked fill would barely show. The checked swatch sits
+    on a raised accent plate with an ink shadow, the same look as the active tool.
+    """
+
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self.setCheckable(True)
+
+    def sizeHint(self) -> QSize:
+        """Returns the swatch plus the plate margin on each side, and room for the checked plate's shadow."""
+        icon_size = self.iconSize()
+        return QSize(icon_size.width() + 2 * PLATE_MARGIN, icon_size.height() + 2 * PLATE_MARGIN + PLATE_SHADOW_OFFSET)
+
+    def minimumSizeHint(self) -> QSize:
+        """Returns the same size as `sizeHint`."""
+        return self.sizeHint()
+
+    def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:  # pylint: disable=invalid-name
+        """Draws the swatch on an accent plate if checked, or a lighter plate while hovered or pressed."""
+        painter = QPainter(self)
+        plate = QRectF(0, 0, self.width(), self.height() - PLATE_SHADOW_OFFSET)
+        draw_plate_for_state(painter, self.palette(), plate, self.isChecked(), self.isDown(), self.underMouse())
+        icon_size = self.iconSize()
+        icon_bounds = QRect(0, 0, icon_size.width(), icon_size.height())
+        icon_bounds.moveCenter(plate.center().toPoint())
+        self.icon().paint(painter, icon_bounds)
 
 
 class NewImageModal(QDialog):
@@ -113,16 +145,14 @@ class NewImageModal(QDialog):
         swatch_layout.setContentsMargins(0, 0, 0, 0)
         self._swatch_group = QButtonGroup(self)
         self._swatch_group.setExclusive(True)
-        self._swatches: dict[str, QToolButton] = {}
+        self._swatches: dict[str, _SwatchButton] = {}
         for name, label in ((BACKGROUND_COLOR_OPTION_TRANSPARENT, BACKGROUND_COLOR_OPTION_TRANSPARENT),
                             (BACKGROUND_COLOR_OPTION_WHITE, BACKGROUND_COLOR_OPTION_WHITE),
                             (BACKGROUND_COLOR_OPTION_BLACK, BACKGROUND_COLOR_OPTION_BLACK),
                             (BACKGROUND_COLOR_OPTION_BACKGROUND, BACKGROUND_COLOR_OPTION_BACKGROUND),
                             (BACKGROUND_COLOR_OPTION_CUSTOM, BACKGROUND_COLOR_OPTION_CUSTOM)):
-            button = QToolButton(swatch_body)
-            button.setCheckable(True)
+            button = _SwatchButton(swatch_body)
             button.setToolTip(label)
-            button.setAutoRaise(False)
             button.setIconSize(QSize(SWATCH_SIZE, SWATCH_SIZE))
             self._swatch_group.addButton(button)
             swatch_layout.addWidget(button)
