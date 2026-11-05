@@ -1083,7 +1083,7 @@ class ImageStack(QObject):
 
         - If this layer is on the bottom of the stack, the function will fail silently.
         - This will trigger the 'layer_removed' signal first as the top layer is removed.
-        - If the top and bottom layers don't have the same visibility, the 'content_changed' signal is emitted.
+        - If either layer is hidden, the merge fails with an error dialog.
         - If the active layer layer_index was greater than or equal to the layer_index of the removed layer, the active
           layer index will be decreased by one.
 
