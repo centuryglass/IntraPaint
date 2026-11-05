@@ -108,7 +108,7 @@ SUMMARY_ADVANCED_DEFAULT = _tr('defaults')
 PROMPT_COLUMN_MAX_WIDTH = 300
 # The widest the action block grows as a strip's trailing column. The block stacks its field pairs there, so each field
 # takes the column's full width:
-ACTION_COLUMN_MAX_WIDTH = 170
+ACTION_COLUMN_MAX_WIDTH = 240
 
 # The prompt box is never narrower than this many average characters. A strip with no room for that beside the other
 # columns plans as a side panel:
@@ -410,7 +410,6 @@ class StableDiffusionPanel(DockPanel):
         super().__init__(PANEL_TITLE)
         AppStateTracker.set_enabled_states(self, [APP_STATE_EDITING])
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
-        self.header.set_description(BACKEND_DESCRIPTION_WEBUI if webui else BACKEND_DESCRIPTION_COMFYUI)
         self.header.reset_button.hide()
         self._advanced_controls: Optional[AdvancedControls] = None
         self.lcm_available_check: Optional[Callable[[], bool]] = None
@@ -690,6 +689,9 @@ class StableDiffusionPanel(DockPanel):
         for tiling_key in (Cache.WEBUI_TILING, Cache.WEBUI_TILING_AVAILABLE):
             cache.connect(self._tiling_button, tiling_key, self._update_tiling_button)
         self._tiling_button.setVisible(self._webui and cache.tiling_in_effect())
+        # The backend name sits above Generate, with the mode note, as a status line for the next generation:
+        self._backend_label = QLabel(BACKEND_DESCRIPTION_WEBUI if self._webui else BACKEND_DESCRIPTION_COMFYUI)
+        self._backend_label.setForegroundRole(QPalette.ColorRole.PlaceholderText)
         self._generate_button = QPushButton(BUTTON_TEXT_GENERATE)
         # Capped like the fields above it, so its right edge lines up with theirs in a wide side panel:
         limit_field_width(self._generate_button)
@@ -709,6 +711,7 @@ class StableDiffusionPanel(DockPanel):
         block_layout.addItem(self._action_spacer)
         block_layout.addWidget(self._tiling_button)
         block_layout.addWidget(self._mode_note)
+        block_layout.addWidget(self._backend_label)
         block_layout.addWidget(self._generate_button)
         # The footer holds the action block in a side panel, and hides while a strip shows it in the trailing column:
         self._footer_holder = QWidget()
