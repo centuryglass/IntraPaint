@@ -75,7 +75,12 @@ class _CallableCommand(QUndoCommand):
 
 
 class UndoStack(metaclass=Singleton):
-    """Manages the application's shared undo history."""
+    """Manages the application's shared undo history.
+
+    The history also tracks whether the document matches its file: one history state is clean, the state the open
+    file holds. `clear` makes the current state clean, `save_point` records a save's state, and `mark_modified` leaves
+    no state clean. Undoing or redoing back to the clean state makes the document clean again.
+    """
 
     def __init__(self) -> None:
         self._stack = QUndoStack()
@@ -91,13 +96,17 @@ class UndoStack(metaclass=Singleton):
         self._errors: list[BaseException] = []
         self._last_undo_count = 0
         self._last_redo_count = 0
+        # Changes on every recorded history change, so a save can tell whether the history moved while it ran:
+        self._history_serial = 0
         self._apply_undo_limit()
 
         class _SignalManager(QObject):
             undo_count_changed = Signal(int)
             redo_count_changed = Signal(int)
+            clean_changed = Signal(bool)
         self._signal_manager = _SignalManager()
         self._stack.indexChanged.connect(self._emit_count_changes)
+        self._stack.cleanChanged.connect(self._emit_clean_changed)
 
     @property
     def undo_in_progress(self) -> bool:
@@ -118,6 +127,38 @@ class UndoStack(metaclass=Singleton):
     def redo_count_changed(self) -> SignalInstance:
         """Returns the signal emitted whenever redo action count changes."""
         return self._signal_manager.redo_count_changed
+
+    @property
+    def clean_changed(self) -> SignalInstance:
+        """Returns the signal emitted with the new value whenever `is_clean` changes."""
+        return self._signal_manager.clean_changed
+
+    def is_clean(self) -> bool:
+        """Returns whether the current history state is the clean one, the state the open file holds."""
+        return self._stack.isClean()
+
+    def save_point(self) -> Callable[[], None]:
+        """Records the current state for a save that is reading the document, returning what to run once it succeeds.
+
+        Ends any open gesture first, so later edits start a new entry. The returned function makes this state clean.
+        If the history changed after this call, no state matches the file any more, and it leaves no state clean.
+        """
+        self.end_gesture()
+        serial = self._history_serial
+
+        def _mark_saved() -> None:
+            if not isValid(self._stack):
+                return
+            # QUndoStack can't set a clean state while a group's macro is open:
+            if serial != self._history_serial or self._group_started:
+                self._stack.resetClean()
+            else:
+                self._stack.setClean()
+        return _mark_saved
+
+    def mark_modified(self) -> None:
+        """Leaves no history state clean, for a document that doesn't match its file in any state."""
+        self._stack.resetClean()
 
     def undo_count(self) -> int:
         """Returns the number of saved actions in the undo stack."""
@@ -171,6 +212,7 @@ class UndoStack(metaclass=Singleton):
                 merge_target = None
             self._stack.push(_CallableCommand(action, undo_action, action_type, merge_target, True,
                                               self._errors.append))
+            self._history_serial += 1
         finally:
             self._busy_change = ''
         return True
@@ -251,6 +293,7 @@ class UndoStack(metaclass=Singleton):
         self._undo_in_progress = True
         try:
             self._stack.undo()
+            self._history_serial += 1
         finally:
             self._undo_in_progress = False
             self._busy_change = ''
@@ -268,30 +311,33 @@ class UndoStack(metaclass=Singleton):
         self._redo_in_progress = True
         try:
             self._stack.redo()
+            self._history_serial += 1
         finally:
             self._redo_in_progress = False
             self._busy_change = ''
         self._raise_recorded_error()
 
     def clear(self) -> None:
-        """Clears the entire undo/redo history.
+        """Clears the entire undo/redo history, making the current state clean.
 
         This is also the only point where a changed `AppConfig.MAX_UNDO` takes effect, since QUndoStack accepts a new
         limit only while empty."""
         self.end_gesture()
         assert self._open_group_depth == 0
         self._stack.clear()
+        self._history_serial += 1
         self._apply_undo_limit()
         self._emit_count_changes()
 
     def _reset(self) -> None:
-        """Disconnects everything connected to the count signals, then clears the undo/redo history.
+        """Disconnects everything connected to the history signals, then clears the undo/redo history.
 
         Tests call this between cases. A connected slot that captures its owner keeps it alive for as long as the
         connection exists, so connections left behind would keep every earlier test's widgets alive.
         """
         for signal, signature in ((self.undo_count_changed, 'undo_count_changed(int)'),
-                                  (self.redo_count_changed, 'redo_count_changed(int)')):
+                                  (self.redo_count_changed, 'redo_count_changed(int)'),
+                                  (self.clean_changed, 'clean_changed(bool)')):
             if self._signal_manager.receivers(SIGNAL(signature)) > 0:
                 signal.disconnect()
         self._open_group_depth = 0
@@ -320,6 +366,11 @@ class UndoStack(metaclass=Singleton):
             self.undo_count_changed.emit(undo_count)
         if redo_changed:
             self.redo_count_changed.emit(redo_count)
+
+    def _emit_clean_changed(self, clean: bool) -> None:
+        # Qt's destructor emits cleanChanged too, see `_emit_count_changes`.
+        if isValid(self._stack):
+            self.clean_changed.emit(clean)
 
     def _assert_idle(self, action_type: str) -> None:
         app = QCoreApplication.instance()

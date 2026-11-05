@@ -161,10 +161,9 @@ def _confirm_remember_box(_controller: 'AppController') -> QWidget:
 
 def _discard_box(_controller: 'AppController') -> QWidget:
     # pylint: disable=import-outside-toplevel
-    from src.controller.app_controller import CONFIRM_QUIT_BUTTON, CONFIRM_QUIT_MESSAGE, CONFIRM_QUIT_TITLE
-    from src.ui.modal.modal_utils import request_confirmation
-    return _message_box(lambda: request_confirmation(None, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE,
-                                                     discards_work=True, confirm_label=CONFIRM_QUIT_BUTTON))
+    from src.controller.app_controller import CONFIRM_QUIT_BUTTON
+    from src.ui.modal.modal_utils import request_unsaved_changes_choice
+    return _message_box(lambda: request_unsaved_changes_choice(None, 'portrait.ora', CONFIRM_QUIT_BUTTON))
 
 
 def _bug_report_box(_controller: 'AppController') -> QWidget:

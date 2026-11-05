@@ -14,11 +14,13 @@ from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.controller.image_io import ImageIO
+from src.controller.image_io import ImageIO, UNTITLED_FILE_NAME, RELOAD_CONFIRMATION_BUTTON
 from src.image.image_metadata import ImageMetadata, encode_user_comment
 from src.ui.modal.save_loss_modal import SAVE_ANYWAY, SAVE_ORA, CANCEL
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
+from src.ui.modal.modal_utils import UNSAVED_SAVE, UNSAVED_DISCARD, UNSAVED_CANCEL
+from src.undo_stack import UndoStack
 from src.util.main_thread import is_main_thread
 from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_READ_FORMATS, \
     IMAGE_WRITE_FORMATS, AnimationSaveOptions, count_image_frames, load_image_frames
@@ -309,6 +311,127 @@ class TestSaveLossWarning(ImageIOTestCase):
             self.image_io.save_as(os.path.join(self.temp_dir.name, 'out.ora'))
             self.image_io.wait_for_pending_save()
         dialog.assert_not_called()
+
+
+class TestUnsavedChanges(ImageIOTestCase):
+    """Tests which saves make the document clean, and the prompt before discarding unsaved changes."""
+
+    CHOICE = 'src.controller.image_io.request_unsaved_changes_choice'
+
+    def setUp(self) -> None:
+        super().setUp()
+        patcher = patch('src.controller.image_io.request_save_loss_choice', return_value=SAVE_ANYWAY)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _load_single_layer(self) -> None:
+        self.image_stack.load_image(QImage(QSize(16, 16), QImage.Format.Format_ARGB32_Premultiplied))
+        Cache().set(Cache.LAST_FILE_PATH, '')
+
+    def _save(self, file_name: str) -> str:
+        save_path = os.path.join(self.temp_dir.name, file_name)
+        self.image_io.save_as(save_path)
+        self.image_io.wait_for_pending_save()
+        self.assertTrue(os.path.isfile(save_path))
+        return save_path
+
+    def test_load_is_clean_and_edit_is_modified(self) -> None:
+        """Opening a file makes the document clean, and an edit makes it modified."""
+        self.image_io.load(LAYER_IMAGE)
+        self.assertTrue(UndoStack().is_clean())
+        self.image_stack.create_layer('edit')
+        self.assertFalse(UndoStack().is_clean())
+        UndoStack().undo()
+        self.assertTrue(UndoStack().is_clean())
+
+    def test_ora_save_is_clean(self) -> None:
+        """Saving layers to .ora makes the document clean."""
+        self.image_io.load(LAYER_IMAGE)
+        self.image_stack.create_layer('edit')
+        self._save('saved.ora')
+        self.assertTrue(UndoStack().is_clean())
+
+    def test_flat_save_of_one_layer_is_clean(self) -> None:
+        """A flat save that loses no layers makes the document clean."""
+        self._load_single_layer()
+        UndoStack().commit_action(lambda: None, lambda: None, 'test.edit')
+        self.assertFalse(UndoStack().is_clean())
+        self._save('saved.png')
+        self.assertTrue(UndoStack().is_clean())
+
+    def test_flat_save_of_layers_is_modified(self) -> None:
+        """A flat save that flattens layers leaves no state clean, even the one it saved from."""
+        self.image_io.load(LAYER_IMAGE)
+        self.assertGreater(self.image_stack.layer_stack.count, 1)
+        self._save('flat.png')
+        self.assertFalse(UndoStack().is_clean())
+        self.image_stack.create_layer('edit')
+        UndoStack().undo()
+        self.assertFalse(UndoStack().is_clean())
+
+    def test_failed_save_keeps_modified(self) -> None:
+        """A save whose write fails leaves the document modified."""
+        self._load_single_layer()
+        self.image_stack.create_layer('edit')
+        with patch('src.controller.image_io.show_error_dialog'):
+            self.image_io.save_as(os.path.join(self.temp_dir.name, 'missing', 'bad.png'))
+            self.image_io.wait_for_pending_save()
+        self.assertFalse(UndoStack().is_clean())
+
+    def test_prompt_skipped_when_clean(self) -> None:
+        """confirm_unsaved_changes proceeds without asking when nothing changed."""
+        self.image_io.load(LAYER_IMAGE)
+        with patch(self.CHOICE) as choice:
+            self.assertTrue(self.image_io.confirm_unsaved_changes('Quit without saving'))
+        choice.assert_not_called()
+
+    def test_prompt_discard_and_cancel(self) -> None:
+        """Discard lets the action proceed, Cancel stops it, and neither saves."""
+        self.image_io.load(LAYER_IMAGE)
+        self.image_stack.create_layer('edit')
+        for choice_value, expected in ((UNSAVED_DISCARD, True), (UNSAVED_CANCEL, False)):
+            with patch(self.CHOICE, return_value=choice_value) as choice, \
+                    patch.object(self.image_io, 'save') as save:
+                self.assertEqual(self.image_io.confirm_unsaved_changes('Quit without saving'), expected)
+            choice.assert_called_once_with(self.window, 'layer_move_test.ora', 'Quit without saving')
+            save.assert_not_called()
+        self.assertFalse(UndoStack().is_clean())
+
+    def test_prompt_save_proceeds_after_save(self) -> None:
+        """Save writes the file, then lets the action proceed."""
+        self._load_single_layer()
+        self.image_stack.create_layer('edit')
+        save_path = os.path.join(self.temp_dir.name, 'chosen.ora')
+        with patch(self.CHOICE, return_value=UNSAVED_SAVE) as choice, \
+                patch('src.controller.image_io.open_image_file', return_value=save_path):
+            self.assertTrue(self.image_io.confirm_unsaved_changes('Quit without saving'))
+        self.assertEqual(choice.call_args.args[1], UNTITLED_FILE_NAME)
+        self.assertTrue(os.path.isfile(save_path))
+        self.assertTrue(UndoStack().is_clean())
+
+    def test_prompt_save_cancelled_or_failed_stops_action(self) -> None:
+        """Cancelling the save dialog, or a failed write, stops the action."""
+        self._load_single_layer()
+        self.image_stack.create_layer('edit')
+        bad_path = os.path.join(self.temp_dir.name, 'missing', 'bad.ora')
+        for selected_path in (None, bad_path):
+            with patch(self.CHOICE, return_value=UNSAVED_SAVE), \
+                    patch('src.controller.image_io.open_image_file', return_value=selected_path), \
+                    patch('src.controller.image_io.show_error_dialog'):
+                self.assertFalse(self.image_io.confirm_unsaved_changes('Quit without saving'))
+        self.assertFalse(UndoStack().is_clean())
+
+    def test_reload_prompts_only_when_modified(self) -> None:
+        """Reloading an unchanged file doesn't ask, and reloading an edited one does."""
+        self.image_io.load(LAYER_IMAGE)
+        layer_count = self.image_stack.layer_stack.count
+        with patch(self.CHOICE, return_value=UNSAVED_CANCEL) as choice:
+            self.image_io.reload()
+            choice.assert_not_called()
+            self.image_stack.create_layer('edit')
+            self.image_io.reload()
+            choice.assert_called_once_with(self.window, 'layer_move_test.ora', RELOAD_CONFIRMATION_BUTTON)
+        self.assertEqual(self.image_stack.layer_stack.count, layer_count + 1)
 
 
 class TestOpenAnimation(ImageIOTestCase):

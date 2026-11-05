@@ -32,7 +32,8 @@ from src.ui.modal.animation_save_modal import AnimationSaveModal, saved_animatio
 from src.ui.modal.modal_parent import modal_parent
 from src.ui.modal.save_loss_modal import SaveLoss, request_save_loss_choice, SAVE_ORA, CANCEL
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers, \
-    show_warning_dialog
+    show_warning_dialog, request_unsaved_changes_choice, UNSAVED_SAVE, UNSAVED_DISCARD
+from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING
 from src.util.async_task import AsyncTask
 from src.util.recent_files import add_recent_file
@@ -66,9 +67,8 @@ SAVE_ERROR_MESSAGE_NO_EXTENSION = _tr('Tried to save with no file extension as "
 RELOAD_ERROR_TITLE = _tr('Reload failed')
 RELOAD_ERROR_MESSAGE_INVALID_FILE = _tr('Image path "{file_path}" is not a valid image file.')
 RELOAD_ERROR_MESSAGE_NO_IMAGE = _tr('Enter an image path or click "Open Image" first.')
-RELOAD_CONFIRMATION_TITLE = _tr('Reload image?')
-RELOAD_CONFIRMATION_MESSAGE = _tr('This will discard all unsaved changes.')
-RELOAD_CONFIRMATION_BUTTON = _tr('Discard and reload')
+RELOAD_CONFIRMATION_BUTTON = _tr('Reload without saving')
+UNTITLED_FILE_NAME = _tr('Untitled')
 METADATA_UPDATE_TITLE = _tr('Metadata updated')
 METADATA_UPDATE_MESSAGE = _tr('On save, current image generation parameters will be stored within the image')
 LOAD_LAYER_ERROR_TITLE = _tr('Opening layers failed')
@@ -151,6 +151,7 @@ class ImageIO:
         self._get_generator = get_generator
         self.metadata = ImageMetadata()
         self._pending_save: Optional[AsyncTask] = None
+        self._saves_succeeded = 0
         self._save_wait_loop: Optional[QEventLoop] = None
         self.on_save_started: Optional[Callable[[], Callable[[], None]]] = None
         """Called just before a save reads the document. A save that succeeds then calls the function it returned."""
@@ -176,6 +177,32 @@ class ImageIO:
         Cache().set(Cache.LAST_FILE_PATH, restored.original_path)
         AppStateTracker.set_app_state(APP_STATE_EDITING)
 
+    @staticmethod
+    def file_name() -> str:
+        """Returns the name of the open file, or `UNTITLED_FILE_NAME` if it was never saved."""
+        file_path = Cache().get(Cache.LAST_FILE_PATH)
+        return UNTITLED_FILE_NAME if file_path == '' else os.path.basename(file_path)
+
+    def confirm_unsaved_changes(self, discard_label: str) -> bool:
+        """Returns whether an action that replaces the document may proceed, asking first if it has unsaved changes.
+
+        The user can save, discard or cancel. Saving waits for the write, and a cancelled or failed save stops the
+        action. `discard_label` names the action on the discard button ("Quit without saving").
+        """
+        if not self._image_stack.has_image or UndoStack().is_clean():
+            return True
+        choice = request_unsaved_changes_choice(self._window, self.file_name(), discard_label)
+        if choice == UNSAVED_SAVE:
+            return self.save_and_wait()
+        return choice == UNSAVED_DISCARD
+
+    def save_and_wait(self) -> bool:
+        """Saves like `save`, waits for the write to finish, and returns whether it succeeded."""
+        succeeded_before = self._saves_succeeded
+        self.save()
+        self.wait_for_pending_save()
+        return self._saves_succeeded > succeeded_before
+
     def save(self) -> None:
         """Saves the edited image, only opening the save dialog if no previous image path is cached."""
         image_path = Cache().get(Cache.LAST_FILE_PATH)
@@ -197,8 +224,7 @@ class ImageIO:
         """Runs `write` on a worker thread, then reports the result on the GUI thread.
 
         `write` may only use data captured beforehand, never `Layer`, `ImageStack` or widget objects. On success,
-        `file_path` becomes the last saved path, then `on_saved` (from `on_save_started`) and `on_success` run.
-        Failure shows an error dialog.
+        `file_path` becomes the last saved path, then `on_saved` and `on_success` run. Failure shows an error dialog.
         """
         self.wait_for_pending_save()
         errors: list[Exception] = []
@@ -216,6 +242,7 @@ class ImageIO:
             if self._pending_save is task:
                 self._pending_save = None
             if len(errors) == 0 and os.path.isfile(file_path):
+                self._saves_succeeded += 1
                 Cache().set(Cache.LAST_FILE_PATH, file_path)
                 add_recent_file(file_path)
                 if on_saved is not None:
@@ -233,6 +260,21 @@ class ImageIO:
         task.finish_signal.connect(_finished)
         task.start()
 
+
+    def _save_started(self, keeps_layers: bool) -> Callable[[], None]:
+        """Called just before a save reads the document, returning what to run if the save succeeds.
+
+        A successful save makes the history state it read clean, unless it flattened layers (the condition
+        `LAYERS_NOT_SAVED_MESSAGE` warns about). Then the file holds no state of the document, and no state is clean.
+        """
+        mark_saved = UndoStack().save_point() if keeps_layers else UndoStack().mark_modified
+        autosave_saved = None if self.on_save_started is None else self.on_save_started()
+
+        def _on_saved() -> None:
+            mark_saved()
+            if autosave_saved is not None:
+                autosave_saved()
+        return _on_saved
 
     def _ora_save_path(self, file_path: str) -> Optional[str]:
         """Returns the .ora path that replaces `file_path` in "Save as .ora", asking where if that file exists."""
@@ -359,7 +401,8 @@ class ImageIO:
                         self.save_as(ora_path)
                     return
 
-            on_saved = None if self.on_save_started is None else self.on_save_started()
+            on_saved = self._save_started(keeps_layers=is_ora or animation_options is not None
+                                          or self._image_stack.layer_stack.count <= 1)
             if is_ora:
                 snapshot = capture_ora_image(self._image_stack, file_path, self.metadata_json())
                 self._start_save(snapshot.file_path, lambda: write_ora_snapshot(snapshot), on_saved)
@@ -525,7 +568,7 @@ class ImageIO:
                                     confirm_label=LARGE_ANIMATION_BUTTON)
 
     def reload(self) -> None:
-        """Reload the edited image from disk after getting confirmation from a confirmation dialog."""
+        """Reload the edited image from disk, first offering to save unsaved changes."""
         file_path = Cache().get(Cache.LAST_FILE_PATH)
         if file_path == '':
             show_error_dialog(self._window, RELOAD_ERROR_TITLE, RELOAD_ERROR_MESSAGE_NO_IMAGE)
@@ -534,11 +577,7 @@ class ImageIO:
             show_error_dialog(self._window, RELOAD_ERROR_TITLE,
                               RELOAD_ERROR_MESSAGE_INVALID_FILE.format(file_path=file_path))
             return
-        if not self._image_stack.has_image or request_confirmation(self._window,
-                                                                   RELOAD_CONFIRMATION_TITLE,
-                                                                   RELOAD_CONFIRMATION_MESSAGE,
-                                                                   discards_work=True,
-                                                                   confirm_label=RELOAD_CONFIRMATION_BUTTON):
+        if self.confirm_unsaved_changes(RELOAD_CONFIRMATION_BUTTON):
             self.load(file_path=file_path)
 
     def _metadata_will_be_saved(self) -> bool:

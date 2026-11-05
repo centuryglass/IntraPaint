@@ -14,6 +14,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Open as layers (Ctrl+Alt+O)](#open-as-layers-ctrlalto)
    - [Save (Ctrl+S)](#save-ctrls)
    - [Save as (Ctrl+Shift+S)](#save-as-ctrlshifts)
+     - [Unsaved changes](#unsaved-changes)
    - [Revert (F12)](#revert-f12)
    - [Quit (Ctrl+Q)](#quit-ctrlq)
 2. [Edit menu](#edit-menu)
@@ -105,7 +106,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
 
 ### New (Ctrl+N)
 
-Opens a window where you can create a new image with a single layer, discarding all unsaved old image data.
+Opens a window where you can create a new image with a single layer, replacing the open image.
 
 #### New image window
 
@@ -114,12 +115,12 @@ Opens a window where you can create a new image with a single layer, discarding 
 1. **Width and height controls**: Sets the new image's initial resolution. The default value is configurable, found in [settings](#preferences-ctrlk) under the **"Editing"** category as **"Default image size"**.
 2. **Background color dropdown**:  The initial color of the new image's starting layer. Options are **white**, **black**, **transparent**, and **custom**.
 3. **Custom background color button**:  Only visible when the background color dropdown is set to **custom**, clicking this button will open a color picker where you can select any color.
-4. **Create button**:  When clicked, all previous image data is removed, and a new image is opened with the chosen settings.  This can be reversed using [undo](#undo-ctrlz).
+4. **Create button**:  When clicked, all previous image data is removed, and a new image is opened with the chosen settings. If the open image has [unsaved changes](#unsaved-changes), IntraPaint first asks whether to save them.
 5. **Cancel button**  Close the new image window without changing anything.
 
 ### Open (Ctrl+O)
 
-Open a file picker dialog to select an existing image for editing.  Loading a new image will discard the current image, but this can be reversed with [undo](#undo-ctrlz).
+Open a file picker dialog to select an existing image for editing.  Loading a new image replaces the current image and clears the undo history, without asking about unsaved changes.
 
 ### Open recent
 
@@ -137,13 +138,19 @@ If the image was loaded from a file or already saved, choosing this option will 
 
 Open a file picker dialog to select where to save the current image and which format to use. IntraPaint supports most common image formats.  The recommended format for saving files you intend to keep editing is **.ora/OpenRaster**. This is the only format that will save individual layers separately.
 
+#### Unsaved changes
+
+The window title shows the open file's name, marked with `*` while the image has changes that aren't saved. Undoing back to the last save clears the mark. **New**, **Revert** and **Quit** ask before discarding unsaved changes: **Save** saves first, and stops if the save fails or is cancelled.
+
+Saving an image with more than one layer to a format other than .ora flattens it, unless it is saved as an animation. The file then doesn't hold the layers, so the image keeps counting as unsaved until it is saved as .ora.
+
 ### Revert (F12)
 
-Reload the current image from its file, discarding all changes made since the last save.  This can be reversed with [undo](#undo-ctrlz).
+Reload the current image from its file, discarding all changes made since the last save. If there are [unsaved changes](#unsaved-changes), IntraPaint first asks whether to save them.
 
 ### Quit (Ctrl+Q)
 
-Exit IntraPaint, discarding unsaved changes.
+Exit IntraPaint. If the image has [unsaved changes](#unsaved-changes), IntraPaint first asks whether to save them.
 
 ---
 

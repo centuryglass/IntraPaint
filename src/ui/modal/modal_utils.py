@@ -64,6 +64,15 @@ RECOVERY_DISCARD = 'discard'
 RECOVERY_LATER = 'later'
 RECOVERY_THUMBNAIL_SIZE = QSize(128, 128)
 
+TITLE_UNSAVED_CHANGES = _tr('Save changes to "{file_name}"?')
+MESSAGE_UNSAVED_CHANGES = _tr('Changes you haven\'t saved will be lost.')
+BUTTON_SAVE_CHANGES = _tr('Save')
+
+# Choices returned by `request_unsaved_changes_choice`:
+UNSAVED_SAVE = 'save'
+UNSAVED_DISCARD = 'discard'
+UNSAVED_CANCEL = 'cancel'
+
 
 def _extension_set_to_filter_string(str_set: set[str]) -> str:
     format_list = [f'*.{file_format.lower()}' for file_format in str_set]
@@ -164,6 +173,32 @@ def request_recovery_choice(parent: Optional[QWidget], original_path: str, saved
     if clicked is discard_button:
         return RECOVERY_DISCARD
     return RECOVERY_LATER
+
+
+def request_unsaved_changes_choice(parent: Optional[QWidget], file_name: str, discard_label: str) -> str:
+    """Asks whether to save unsaved changes before an action that would discard them.
+
+    Returns `UNSAVED_SAVE`, `UNSAVED_DISCARD` or `UNSAVED_CANCEL`. The discard button shows `discard_label`, which
+    names the action ("Quit without saving"). Closing the box counts as Cancel.
+    """
+    message_box = _new_message_box(parent)
+    _set_title_and_message(message_box, TITLE_UNSAVED_CHANGES.format(file_name=file_name), MESSAGE_UNSAVED_CHANGES)
+    message_box.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxQuestion, parent))
+    message_box.setIcon(QMessageBox.Icon.Question)
+    save_button = message_box.addButton(BUTTON_SAVE_CHANGES, QMessageBox.ButtonRole.AcceptRole)
+    discard_button = message_box.addButton(discard_label, QMessageBox.ButtonRole.DestructiveRole)
+    cancel_button = message_box.addButton(QMessageBox.StandardButton.Cancel)
+    set_signal(discard_button)
+    message_box.setDefaultButton(save_button)
+    message_box.setEscapeButton(cancel_button)
+    message_box.exec()
+    clicked = message_box.clickedButton()
+    message_box.deleteLater()
+    if clicked is save_button:
+        return UNSAVED_SAVE
+    if clicked is discard_button:
+        return UNSAVED_DISCARD
+    return UNSAVED_CANCEL
 
 
 def show_warning_dialog(parent: Optional[QWidget], title: str, message: str,
