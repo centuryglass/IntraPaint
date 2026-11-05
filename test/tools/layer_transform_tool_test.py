@@ -12,6 +12,7 @@ from src.ui.graphics_items.transform_outline import (TransformOutline, ORIGIN_HA
 from src.ui.input_fields.geometry_block import ANGLE, HEIGHT, SCALE_X, WIDTH, X, Y
 from src.ui.panel.tool_control_panels.layer_transform_tool_panel import LayerTransformToolPanel
 from src.undo_stack import UndoStack
+from test.render_assertions import full_render
 from test.tools.tool_test_case import ToolTestCase
 
 LAYER_WIDTH = 200
@@ -98,6 +99,52 @@ class LayerTransformToolTest(ToolTestCase):
         self.assertEqual(self.layer.transform, original)
         self.assertEqual(self.outline.transform(), original)
         self.assert_panel_matches_outline()
+
+    def test_drag_previews_without_changing_layer(self) -> None:
+        """While the button is held, a preview item moves and the layer's transform stays as it was."""
+        original = self.layer.transform
+        start = QPoint(LAYER_OFFSET.x() + 20, LAYER_OFFSET.y() + 20)
+        self.mouse_press(start)
+        self.mouse_move(start + QPoint(10, 5))
+        self.mouse_move(start + QPoint(30, 40))
+        self.assertEqual(self.layer.transform, original)
+        self.assertFalse(self.layer.visible)
+        preview = self.tool._drag_preview
+        self.assertIsNotNone(preview)
+        self.assertEqual(preview.transform(), self.outline.transform())
+        self.assert_panel_matches_outline()
+        self.mouse_release(start + QPoint(30, 40))
+        self.assertIsNone(self.tool._drag_preview)
+        self.assertTrue(self.layer.visible)
+
+    def test_drag_result_matches_direct_transform(self) -> None:
+        """A drag leaves the same composite and undo history as setting the final transform directly."""
+        start = QPoint(LAYER_OFFSET.x() + 20, LAYER_OFFSET.y() + 20)
+        self.mouse_drag([start, start + QPoint(10, 5), start + QPoint(30, 40)])
+        self.image_stack.flush_render()
+        dragged = full_render(self.image_stack)
+        dragged_transform = self.layer.transform
+        self.assertEqual(UndoStack().undo_count(), 1)
+        UndoStack().undo()
+        self.layer.transform = dragged_transform
+        self.image_stack.flush_render()
+        self.assertEqual(full_render(self.image_stack), dragged)
+
+    def test_canceled_drag_leaves_composite_unchanged(self) -> None:
+        """Deselecting the layer mid-drag discards the preview and restores the layer and composite."""
+        self.image_stack.flush_render()
+        before = full_render(self.image_stack)
+        original = self.layer.transform
+        start = QPoint(LAYER_OFFSET.x() + 20, LAYER_OFFSET.y() + 20)
+        self.mouse_press(start)
+        self.mouse_move(start + QPoint(30, 40))
+        self.assertIsNotNone(self.tool._drag_preview)
+        self.tool.set_layer(None)
+        self.assertIsNone(self.tool._drag_preview)
+        self.assertTrue(self.layer.visible)
+        self.assertEqual(self.layer.transform, original)
+        self.image_stack.flush_render()
+        self.assertEqual(full_render(self.image_stack), before)
 
     def test_drag_is_one_undo_step(self) -> None:
         """One drag adds one undo entry."""
