@@ -127,9 +127,11 @@ class ConfigTest(IntraPaintTestCase):
         """Creates a scratch config from the definition file, loading the saved JSON file if it exists.
 
         Its save timer stops at cleanup. Otherwise a save scheduled by `set` would fire in a later test, after the
-        temporary directory is gone.
+        temporary directory is gone. Cleanup also drops its connections, whose callbacks often refer back to the
+        config and would leave Qt objects in a reference cycle.
         """
         config = _ScratchConfig(self.definition_path, self.json_path)
+        self.addCleanup(config._reset)  # pylint: disable=protected-access
         self.addCleanup(config._save_timer.stop)  # pylint: disable=protected-access
         return config
 
