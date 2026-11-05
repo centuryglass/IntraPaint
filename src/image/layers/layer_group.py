@@ -38,6 +38,7 @@ class LayerGroup(LayerParent):
         self._layers: list[Layer] = []
         self._bounds = QRect()
         self._isolate = False
+        self._changed_area = QRect()
         self._render_timer = QTimer()
         self._render_timer.setSingleShot(True)
         self._render_timer.setInterval(RENDER_DELAY_MS)
@@ -90,10 +91,18 @@ class LayerGroup(LayerParent):
         self._bounds = QRect(bounds)
         return bounds
 
-    def _size_change_bounds(self, old_size: QSize) -> QRect:
-        """Returns the group's new bounds. Its old bounds aren't known here: _get_local_bounds updates them after
-           calling set_size."""
-        return self.bounds
+    def set_size(self, new_size: QSize) -> None:
+        """Updates the group's size and schedules a render that resizes its cached image.
+
+        The size follows the children's bounds, and the child change that moved them reports its own area, so a size
+        change adds no changed area.
+        """
+        if self._size != new_size:
+            self._size = QSize(new_size)
+            self._image_cache.invalidate()
+            self.invalidate_pixmap()
+            self.size_changed.emit(self, new_size)
+            self._trigger_render(QRect())
 
     def flip_horizontal(self) -> None:
         """Flip the group horizontally."""
@@ -420,7 +429,7 @@ class LayerGroup(LayerParent):
         self._layers.pop(index)
         layer.layer_parent = None
         if layer.visible:
-            self._trigger_render()
+            self._trigger_render(self._layer_image_area(layer))
         last_bounds = self._bounds
         bounds = self._get_local_bounds()  # Ensure size is correct
         if bounds != last_bounds:
@@ -455,7 +464,7 @@ class LayerGroup(LayerParent):
         if len(self._layers) == 1 and AppStateTracker.app_state() == APP_STATE_NO_IMAGE:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
         if layer.visible and not empty_image:
-            self._trigger_render()
+            self._trigger_render(self._layer_image_area(layer))
         self.layer_added.emit(layer)
         if bounds_changing:
             self._layer_bounds_change_slot(layer)
@@ -474,7 +483,7 @@ class LayerGroup(LayerParent):
             return
         self._layers.remove(layer)
         self._layers.insert(new_index, layer)
-        self._trigger_render()
+        self._trigger_render(self._layer_image_area(layer))
 
     def save_state(self) -> Any:
         """Export the current layer state, so it can be restored later."""
@@ -633,9 +642,11 @@ class LayerGroup(LayerParent):
             if isinstance(layer, LayerGroup):
                 layer.propagate_parent_lock_signal(source)
 
-    def _layer_content_change_slot(self, layer: Layer, _=None) -> None:
+    def _layer_content_change_slot(self, layer: Layer, changed_rect: QRect) -> None:
         if layer in self._layers and layer.content_change_timestamp > self.content_change_timestamp:
-            self._trigger_render()
+            if isinstance(layer, TransformLayer):
+                changed_rect = layer.map_changed_rect_to_image(changed_rect)
+            self._trigger_render(changed_rect)
 
     def _layer_bounds_change_slot(self, layer: Layer, _=None) -> None:
         if layer in self._layers:
@@ -645,7 +656,9 @@ class LayerGroup(LayerParent):
                 self.bounds_changed.emit(self, bounds)
                 if bounds.size() != last_bounds.size() and layer.content_change_timestamp \
                         > self.content_change_timestamp:
-                    self._trigger_render()
+                    # The child's content change that moved the bounds reported its own area, so this render only
+                    # resizes the cached image.
+                    self._trigger_render(QRect())
 
     def flush_render(self) -> None:
         """Runs any scheduled render now, so the cached image, the pixmap and content_changed listeners are current.
@@ -658,7 +671,19 @@ class LayerGroup(LayerParent):
         if self._render_timer.isActive():
             self._start_render()
 
-    def _trigger_render(self) -> None:
+    @staticmethod
+    def _layer_image_area(layer: Layer) -> QRect:
+        """Returns the image area a child layer's content covers, which adding, removing or restacking it changes."""
+        if isinstance(layer, TransformLayer):
+            return layer.map_changed_rect_to_image(layer.bounds)
+        return layer.bounds
+
+    def _trigger_render(self, changed_area: QRect) -> None:
+        """Schedules a render that reports changed_area, in image coordinates, united with every other area scheduled
+           since the last render."""
+        if not changed_area.isEmpty():
+            self._changed_area = QRect(changed_area) if self._changed_area.isEmpty() \
+                else self._changed_area.united(changed_area)
         if not self._render_timer.isActive():
             self._render_timer.start()
 
@@ -669,9 +694,12 @@ class LayerGroup(LayerParent):
         super().signal_content_changed(change_bounds)
 
     def _start_render(self) -> None:
+        """Invalidates the cached image and reports the union of the areas scheduled since the last render."""
+        self._get_local_bounds()  # Ensure size is correct. A size change schedules this render again.
         self._render_timer.stop()
-        bounds = self._get_local_bounds()  # Ensure size is correct
-        self.signal_content_changed(bounds)
+        changed_area = self._changed_area
+        self._changed_area = QRect()
+        self.signal_content_changed(changed_area)
 
 
 class LayerGroupState:
