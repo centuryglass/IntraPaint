@@ -3,14 +3,14 @@ import base64
 import io
 from typing import Optional
 
-from PIL import Image, ImageChops, ImageQt
+from PIL import Image, ImageChops, ImageCms, ImageQt
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage
 
 from src.config.application_config import AppConfig
 from src.util.shared_text import PIL_SCALING_MODES
 from src.util.visual.geometry_utils import is_smaller_size
-from src.util.visual.image_utils import BASE_64_PREFIX
+from src.util.visual.image_utils import BASE_64_PREFIX, logger
 
 # Pillow formats IntraPaint never opens or saves.
 # - EPS covers .eps and .ps files, which Pillow reads by running them as programs in the external Ghostscript
@@ -26,6 +26,42 @@ if not hasattr(Image.core, 'drawwmf'):
 # Image.open() picks a decoder from the file's contents, not its name, so it always gets this list. Otherwise an EPS
 # file renamed to .png would still reach Ghostscript.
 PIL_OPEN_FORMATS = tuple(pil_format for pil_format in Image.OPEN if pil_format not in EXCLUDED_PIL_FORMATS)
+
+
+def convert_to_srgb(pil_image: Image.Image) -> Image.Image:
+    """Converts an image with a non-sRGB embedded ICC profile to sRGB, and returns other images unchanged.
+
+    IntraPaint edits 8-bit sRGB pixels and saves them untagged. If the conversion fails, the original image is
+    returned and a warning is logged.
+    """
+    icc_data = pil_image.info.get('icc_profile')
+    if not icc_data:
+        return pil_image
+    try:
+        source_profile = ImageCms.ImageCmsProfile(io.BytesIO(icc_data))
+        description = ImageCms.getProfileDescription(source_profile)
+        if 'srgb' in description.lower():
+            return pil_image
+        alpha: Optional[Image.Image] = None
+        image = pil_image
+        if image.mode in ('P', 'PA'):
+            image = image.convert('RGBA' if 'transparency' in image.info or image.mode == 'PA' else 'RGB')
+        if image.mode in ('RGBA', 'LA'):
+            alpha = image.getchannel('A')
+            image = image.convert('RGB' if image.mode == 'RGBA' else 'L')
+        if image.mode not in ('RGB', 'L', 'CMYK'):
+            image = image.convert('RGB')
+        converted = ImageCms.profileToProfile(image, source_profile, ImageCms.createProfile('sRGB'),
+                                              outputMode='RGB')
+        if converted is None:
+            raise ImageCms.PyCMSError('no output image')
+        if alpha is not None:
+            converted.putalpha(alpha)
+        logger.info(f'Converted image from embedded profile "{description.strip()}" to sRGB')
+        return converted
+    except (ImageCms.PyCMSError, OSError, ValueError, TypeError) as err:
+        logger.warning(f'Failed to convert embedded ICC profile to sRGB, keeping the original pixels: {err}')
+        return pil_image
 
 
 def pil_image_to_qimage(pil_image: Image.Image) -> QImage:

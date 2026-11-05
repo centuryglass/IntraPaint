@@ -1,11 +1,12 @@
 """Test which image formats IntraPaint can load and save."""
 import io
 import os
+import struct
 import tempfile
 import unittest
 from typing import Optional
 
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageCms, UnidentifiedImageError
 from PySide6.QtGui import QColor, QImage
 from PySide6.QtWidgets import QApplication
 
@@ -208,3 +209,57 @@ class TestSaveAnimation(unittest.TestCase):
                 save_animation(self._frames(), os.path.join(temp_dir, 'still.jpg'), AnimationSaveOptions(100, 0))
             with self.assertRaises(ValueError):
                 save_animation([], os.path.join(temp_dir, 'empty.gif'), AnimationSaveOptions(100, 0))
+
+
+class TestEmbeddedProfiles(unittest.TestCase):
+    """Test that embedded ICC profiles are converted to sRGB on load."""
+
+    @staticmethod
+    def _swapped_profile() -> bytes:
+        """Builds a non-sRGB profile from the built-in sRGB one, with its red and green colorants swapped."""
+        data = bytearray(ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB')).tobytes())
+        tags = {bytes(data[132 + 12 * i:136 + 12 * i]): struct.unpack('>II', data[136 + 12 * i:144 + 12 * i])
+                for i in range(struct.unpack('>I', data[128:132])[0])}
+        red, green = tags[b'rXYZ'][0], tags[b'gXYZ'][0]
+        data[red + 8:red + 20], data[green + 8:green + 20] = data[green + 8:green + 20], data[red + 8:red + 20]
+        description = tags[b'desc'][0]
+        data[description:description + tags[b'desc'][1]] = b'\0' * tags[b'desc'][1]
+        data[description:description + 4] = b'desc'
+        text = b'Swapped test profile\0'
+        data[description + 8:description + 12] = struct.pack('>I', len(text))
+        data[description + 12:description + 12 + len(text)] = text
+        return bytes(data)
+
+    def _load(self, image: Image.Image, **kwargs: object) -> QImage:
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, 'test.png')
+            image.save(path, **kwargs)  # type: ignore[arg-type]
+            return load_image(path)[0]
+
+    def test_non_srgb_profile_converted(self) -> None:
+        """Pixels tagged with a non-sRGB profile are converted to sRGB on load."""
+        profile = self._swapped_profile()
+        loaded = self._load(Image.new('RGB', (4, 4), (255, 0, 0)), icc_profile=profile)
+        color = loaded.pixelColor(1, 1)
+        self.assertGreater(color.green(), 200)
+        self.assertLess(color.red(), 50)
+
+    def test_non_srgb_profile_keeps_alpha(self) -> None:
+        """Conversion leaves the alpha channel untouched."""
+        loaded = self._load(Image.new('RGBA', (4, 4), (255, 0, 0, 100)), icc_profile=self._swapped_profile())
+        color = loaded.pixelColor(1, 1)
+        self.assertEqual(color.alpha(), 100)
+        self.assertGreater(color.green(), 0)
+        self.assertLess(color.red(), 50)
+
+    def test_srgb_and_untagged_unchanged(self) -> None:
+        """sRGB-tagged and untagged images load with their pixels as stored."""
+        srgb = ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB')).tobytes()
+        for kwargs in ({}, {'icc_profile': srgb}):
+            color = self._load(Image.new('RGB', (4, 4), (255, 0, 0)), **kwargs).pixelColor(1, 1)
+            self.assertEqual((color.red(), color.green(), color.blue()), (255, 0, 0))
+
+    def test_invalid_profile_keeps_pixels(self) -> None:
+        """A profile Pillow can't parse leaves the pixels as stored."""
+        color = self._load(Image.new('RGB', (4, 4), (255, 0, 0)), icc_profile=b'not a profile').pixelColor(1, 1)
+        self.assertEqual((color.red(), color.green(), color.blue()), (255, 0, 0))
