@@ -54,9 +54,6 @@
     "raise-missing-from": 1,
     "unused-import": 1
   },
-  "src/util/visual/image_format_utils.py": {
-    "fixme": 1
-  },
   "src/util/visual/image_utils.py": {
     "global-statement": 1,
     "invalid-name": 2

@@ -2,22 +2,17 @@
 ImageIO owns opening and saving image files for the application.
 
 - Shows the open and save dialogs, and the errors and data loss warnings around them.
-- Holds the metadata and EXIF data of the open file, so a save writes back what a load read.
+- Holds the open file's `ImageMetadata`, so a save writes back what a load read.
 - Runs file writes on a worker thread, from copies of the edited data.
 - Connects the `ImageStack` to image files in every supported format.
 
 `AppController` keeps the File menu actions and delegates each one to the matching method here.
 """
-import base64
-import copy
-import json
 import logging
 import os
-import re
 from typing import Optional, Any, Callable
 
-from PIL import Image, UnidentifiedImageError, ExifTags
-from PIL.ExifTags import IFD
+from PIL import UnidentifiedImageError
 from PySide6.QtCore import QSize, QEventLoop
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
@@ -27,7 +22,10 @@ from src.config.cache import Cache
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.controller.image_generation.null_generator import NullGenerator
 from src.image.animation import load_frames_as_image, add_frame_layers, render_frames
+from src.image.image_metadata import ImageMetadata, A1111Parameters
 from src.image.layers.image_stack import ImageStack
+from src.image.metadata_cache_fields import LOAD_APPLIED_FIELDS, METADATA_UPDATE_FIELDS, apply_to_cache, \
+    update_from_cache
 from src.image.open_raster import capture_ora_image, write_ora_snapshot, read_ora_image, ORA_FILE_EXTENSION
 from src.image.recovery_files import RestoredDocument
 from src.ui.modal.animation_save_modal import AnimationSaveModal, saved_animation_options
@@ -40,8 +38,8 @@ from src.util.async_task import AsyncTask
 from src.util.recent_files import add_recent_file
 from src.util.visual.image_format_utils import save_image_with_metadata, save_image, load_image, \
     IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_FORMATS_SUPPORTING_ALPHA, IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA, \
-    METADATA_PARAMETER_KEY, IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, IMAGE_FORMATS_WITH_FIXED_SIZE, \
-    GREYSCALE_IMAGE_FORMATS, METADATA_COMMENT_KEY, PIL_WRITE_FORMATS, QIMAGE_WRITE_FORMATS, count_image_frames, \
+    IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, IMAGE_FORMATS_WITH_FIXED_SIZE, \
+    GREYSCALE_IMAGE_FORMATS, PIL_WRITE_FORMATS, QIMAGE_WRITE_FORMATS, count_image_frames, \
     load_image_frames, ImageFrame, save_animation, AnimationSaveOptions, ANIMATION_WRITE_FORMATS, \
     ANIMATION_ONLY_FORMATS
 from src.util.visual.image_utils import image_is_fully_opaque, image_has_partial_alpha, create_transparent_image
@@ -128,18 +126,6 @@ def _metadata_loss_message() -> str:
     return METADATA_NOT_SAVED_MESSAGE.format(metadata_formats=_extension_str(tuple(IMAGE_FORMATS_SUPPORTING_METADATA)))
 
 
-class _MetadataEncoder(json.JSONEncoder):
-
-    def default(self, o):
-        """Serializes bytes as text, or as base64 when they aren't valid UTF-8 (e.g. an ICC profile)."""
-        if isinstance(o, bytes):
-            try:
-                return o.decode()
-            except UnicodeDecodeError:
-                return base64.b64encode(o).decode('ascii')
-        return super().default(o)
-
-
 class ImageIO:
     """Opens and saves image files, and tracks the metadata of the open file.
 
@@ -163,35 +149,30 @@ class ImageIO:
         self._window = window
         self._image_stack = image_stack
         self._get_generator = get_generator
-        self.metadata: Optional[dict[str, Any]] = None
-        self.exif: Optional[Image.Exif] = None
+        self.metadata = ImageMetadata()
         self._pending_save: Optional[AsyncTask] = None
         self._save_wait_loop: Optional[QEventLoop] = None
         self.on_save_started: Optional[Callable[[], Callable[[], None]]] = None
         """Called just before a save reads the document. A save that succeeds then calls the function it returned."""
 
     def clear_metadata(self) -> None:
-        """Forgets the metadata and EXIF data of the previously open file."""
-        self.metadata = None
-        self.exif = None
+        """Forgets the metadata of the previously open file."""
+        self.metadata = ImageMetadata()
 
-    def metadata_json(self) -> str:
-        """Returns the metadata as the JSON that .ora files store."""
-        return json.dumps(self.metadata, cls=_MetadataEncoder)
+    def metadata_json(self) -> Optional[str]:
+        """Returns the metadata's text entries as the JSON that .ora files store, or None if there are none."""
+        return self.metadata.to_ora_json()
 
-    def exif_bytes(self) -> Optional[bytes]:
-        """Returns the EXIF data of the open file, encoded, or None if there is none."""
-        return None if self.exif is None else self.exif.tobytes()
+    def exif_bytes(self) -> bytes:
+        """Returns the EXIF data of the open file, encoded."""
+        return self.metadata.exif.tobytes()
 
     def apply_restored_document(self, restored: RestoredDocument) -> None:
         """Takes the metadata, EXIF data and file path of a document restored from a recovery copy.
 
         Save then writes to the path the document came from.
         """
-        self.metadata = None if restored.metadata is None else json.loads(restored.metadata)
-        self.exif = Image.Exif()
-        if restored.exif is not None:
-            self.exif.load(restored.exif)
+        self.metadata = ImageMetadata.from_ora_json(restored.metadata, restored.exif)
         Cache().set(Cache.LAST_FILE_PATH, restored.original_path)
         AppStateTracker.set_app_state(APP_STATE_EDITING)
 
@@ -279,8 +260,8 @@ class ImageIO:
                          and any(image_has_partial_alpha(saved) for saved in saved_images)))):
             losses.append(SaveLoss(ALPHA_NOT_SAVED_TITLE, ALPHA_NOT_SAVED_MESSAGE.format(
                 alpha_formats=_extension_str(IMAGE_FORMATS_SUPPORTING_ALPHA)), AppConfig.WARN_BEFORE_RGB_SAVE))
-        if (config.get(AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA) and self.metadata is not None
-                and METADATA_PARAMETER_KEY in self.metadata and file_format not in IMAGE_FORMATS_SUPPORTING_METADATA):
+        if (config.get(AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA) and self.metadata.parameters is not None
+                and file_format not in IMAGE_FORMATS_SUPPORTING_METADATA):
             losses.append(SaveLoss(METADATA_NOT_SAVED_TITLE, _metadata_loss_message(),
                                    AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA))
         if (config.get(AppConfig.WARN_BEFORE_WRITE_ONLY_SAVE) and file_format in IMAGE_WRITE_FORMATS
@@ -386,24 +367,23 @@ class ImageIO:
                 return
             # The worker writes from copies, so edits made while it runs don't reach the file:
             saved_image = image.copy()
-            saved_metadata = copy.deepcopy(self.metadata)
-            saved_exif = copy.deepcopy(self.exif)
+            saved_metadata = self.metadata.copy()
             metadata_fallback_used: list[bool] = []
 
             def _write_flat_image() -> None:
                 if animation_frames is not None:
                     assert animation_options is not None
-                    save_animation(animation_frames, file_path, animation_options, saved_metadata, saved_exif)
+                    save_animation(animation_frames, file_path, animation_options, saved_metadata)
                 elif file_format in IMAGE_FORMATS_SUPPORTING_METADATA:
                     try:
-                        save_image_with_metadata(saved_image, file_path, saved_metadata, saved_exif)
+                        save_image_with_metadata(saved_image, file_path, saved_metadata)
                     except ValueError:
                         logger.error(f'Format {file_format} should support metadata, but saving with metadata'
                                      ' failed.')
                         metadata_fallback_used.append(True)
-                        save_image(saved_image, file_path, saved_exif)
+                        save_image(saved_image, file_path, saved_metadata.exif)
                 else:
-                    save_image(saved_image, file_path, saved_exif)
+                    save_image(saved_image, file_path, saved_metadata.exif)
 
             def _warn_if_metadata_fallback_used() -> None:
                 """Warns after the write about metadata loss that only the write itself can discover."""
@@ -443,83 +423,22 @@ class ImageIO:
                 logger.warning(f'Expected single image, got list with length {len(file_path)}')
             file_path = file_path[0]
         assert isinstance(file_path, str)
-        self.exif = Image.Exif()
-        self.metadata = None
+        self.metadata = ImageMetadata()
         try:
             assert file_path is not None
             if file_path.lower().endswith('.ora'):
-                metadata = read_ora_image(self._image_stack, file_path)
-                if metadata is not None and len(metadata) > 0:
-                    self.metadata = json.loads(metadata)
+                self.metadata = ImageMetadata.from_ora_json(read_ora_image(self._image_stack, file_path))
             else:
-                image, exif, image_info = load_image(file_path)
-                # try and load metadata:
-                if image_info is not None:
-                    if METADATA_COMMENT_KEY in image_info and METADATA_PARAMETER_KEY not in image_info:
-                        # noinspection PyTypeChecker
-                        image_info[METADATA_PARAMETER_KEY] = image_info[METADATA_COMMENT_KEY]
-                    self.metadata = image_info
-                if exif is not None:
-                    if isinstance(exif, Image.Exif):
-                        self.exif = exif
-                    elif (self.metadata is None or METADATA_PARAMETER_KEY
-                          not in self.metadata) and isinstance(exif, dict):
-                        self.metadata = exif
-                        if 'exif' in exif:
-                            self.exif.load(exif['exif'])
-                if (self.metadata is None or METADATA_PARAMETER_KEY not in self.metadata) and self.exif is not None:
-                    exif_tags = self.exif.get_ifd(IFD.Exif)
-                    description = exif_tags.get(ExifTags.Base.ImageDescription)
-                    if description is None:
-                        description = self.exif.get(ExifTags.Base.ImageDescription)
-                    if description is not None:
-                        if self.metadata is None:
-                            self.metadata = {}
-                        self.metadata[METADATA_PARAMETER_KEY] = description
+                image, self.metadata = load_image(file_path)
                 if self._should_load_frames(file_path, image.size()):
                     frames = load_image_frames(file_path)
                     load_frames_as_image(self._image_stack, frames)
-                    self._remember_animation_options(frames, self.metadata)
+                    self._remember_animation_options(frames, self.metadata.format_info)
                 else:
                     self._image_stack.load_image(image)
             cache.set(Cache.LAST_FILE_PATH, file_path)
             add_recent_file(file_path)
-
-            # File loaded, attempt to apply metadata:
-            if self.metadata is not None and METADATA_PARAMETER_KEY in self.metadata:
-                param_str = self.metadata[METADATA_PARAMETER_KEY]
-                if param_str is not None and not isinstance(param_str, str):
-                    # noinspection PyTypeChecker
-                    param_str = str(param_str, encoding='utf-8')
-                match = re.match(r'^((?:.|\n)*)\nSteps: ?(\d+), Sampler: ?(.*), CFG scale: ?(.*), Seed: ?(.+),'
-                                 r' Size: ?(\d+)x?(\d+)', param_str)
-                if match:
-                    prompt = match.group(1)
-                    negative = ''
-                    steps = int(match.group(2))
-                    sampler = match.group(3)
-                    cfg_scale = float(match.group(4))
-                    seed = int(match.group(5))
-                    divider_match = re.match('^((?:.|\n)*)\nNegative prompt: ?(.*)$', prompt)
-                    if divider_match:
-                        prompt = divider_match.group(1)
-                        negative = divider_match.group(2)
-                    logger.info('Detected saved image gen data, applying to UI')
-                    try:
-                        cache.set(Cache.PROMPT, prompt)
-                        cache.set(Cache.NEGATIVE_PROMPT, negative)
-                        cache.set(Cache.SAMPLING_STEPS, steps)
-                        try:
-                            cache.set(Cache.SAMPLING_METHOD, sampler)
-                        except ValueError:
-                            logger.error(f'sampler "{sampler}" used to generate this image is not supported.')
-                        cache.set(Cache.GUIDANCE_SCALE, cfg_scale)
-                        cache.set(Cache.SEED, seed)
-                    except (TypeError, RuntimeError) as err:
-                        logger.error(f'Failed to load image gen data from metadata: {err}')
-                else:
-                    logger.warning('image parameters do not match expected patterns, cannot be used. '
-                                   f'parameters:{param_str}')
+            self._apply_loaded_parameters()
             AppStateTracker.set_app_state(APP_STATE_EDITING)
         except (UnidentifiedImageError, OSError) as err:
             show_error_dialog(self._window, LOAD_ERROR_TITLE, err)
@@ -542,7 +461,7 @@ class ImageIO:
         errors: list[str] = []
         for layer_path in layer_paths:
             try:
-                image, _, _ = load_image(layer_path)
+                image, _ = load_image(layer_path)
                 frames = load_image_frames(layer_path) if self._should_load_frames(layer_path, image.size()) else None
                 layers.append((image, layer_path, frames))
             except IOError:
@@ -567,14 +486,25 @@ class ImageIO:
         if self._image_stack.has_image:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
 
+    def _apply_loaded_parameters(self) -> None:
+        """Applies the `LOAD_APPLIED_FIELDS` of the loaded image's A1111 parameters to the editor, if it has any."""
+        params = self.metadata.a1111_parameters()
+        if params is None:
+            return
+        if not params.has_generation_fields:
+            logger.warning(f'image parameters do not match expected patterns, cannot be used. parameters:{params}')
+            return
+        logger.info('Detected saved image gen data, applying to UI')
+        apply_to_cache(params, LOAD_APPLIED_FIELDS)
+
     @staticmethod
-    def _remember_animation_options(frames: list[ImageFrame], file_info: Optional[dict[str, Any]]) -> None:
+    def _remember_animation_options(frames: list[ImageFrame], file_info: dict[str, Any]) -> None:
         """Fills the animation save options from an opened animation's first frame duration and loop count."""
         cache = Cache()
         cache.set(Cache.ANIMATION_SAVE_AS_ANIMATION, True)
         if frames[0].duration_ms is not None:
             cache.set(Cache.ANIMATION_FRAME_DURATION, min(frames[0].duration_ms, ANIMATION_MAX_FRAME_MS))
-        loop = None if file_info is None else file_info.get('loop')
+        loop = file_info.get('loop')
         if isinstance(loop, int):
             cache.set(Cache.ANIMATION_LOOP_FOREVER, loop == 0)
             if loop > 0:
@@ -612,44 +542,34 @@ class ImageIO:
             self.load(file_path=file_path)
 
     def _metadata_will_be_saved(self) -> bool:
-        return self.metadata is not None and METADATA_PARAMETER_KEY in self.metadata
+        return self.metadata.parameters is not None
 
-    @staticmethod
-    def _updated_metadata_params() -> str:
-        cache = Cache()
-        prompt = cache.get(Cache.PROMPT)
-        negative = cache.get(Cache.NEGATIVE_PROMPT)
-        steps = cache.get(Cache.SAMPLING_STEPS)
-        sampler = cache.get(Cache.SAMPLING_METHOD)
-        cfg_scale = cache.get(Cache.GUIDANCE_SCALE)
-        seed = cache.get(Cache.SEED)
-        size = cache.get(Cache.GENERATION_SIZE)
-        return f'{prompt}\nNegative prompt: {negative}\nSteps: {steps}, Sampler: {sampler}, CFG scale:' + \
-            f'{cfg_scale}, Seed: {seed}, Size: {size.width()}x{size.height()}'
+    def _updated_metadata_params(self) -> str:
+        """Returns the parameters text with the `METADATA_UPDATE_FIELDS` replaced by the editor's values.
+
+        Other fields keep their saved text.
+        """
+        params = self.metadata.a1111_parameters()
+        if params is None:
+            params = A1111Parameters()
+        update_from_cache(params, METADATA_UPDATE_FIELDS)
+        return params.serialize()
 
     def _metadata_is_latest(self) -> bool:
-        if not self._metadata_will_be_saved():
-            return False
-        return self.metadata is not None and self._updated_metadata_params() == self.metadata[METADATA_PARAMETER_KEY]
+        return self._metadata_will_be_saved() and self._updated_metadata_params() == self.metadata.parameters
 
     def update_metadata(self, show_messagebox: bool = True) -> None:
         """
-        Adds image editing parameters from config to the image metadata, in a format compatible with the A1111
-        Stable Diffusion WebUI. Parameters will be applied to the image file when save_image is called.
+        Writes the editor's generation settings into the image's A1111 parameters, to be saved with the image.
+
+        Only the `METADATA_UPDATE_FIELDS` change: other fields in the saved parameters are kept.
 
         Parameters
         ----------
         show_messagebox: bool
             If true, show a messagebox after the update to let the user know what happened.
         """
-        params = self._updated_metadata_params()
-        if self.metadata is None:
-            self.metadata = {}
-        self.metadata[METADATA_PARAMETER_KEY] = params
-        if self.exif is None:
-            self.exif = Image.Exif()
-        exif_tags = self.exif.get_ifd(IFD.Exif)
-        exif_tags[ExifTags.Base.ImageDescription.value] = params
+        self.metadata.set_parameters(self._updated_metadata_params())
         if show_messagebox:
             message_box = QMessageBox(modal_parent())
             message_box.setWindowTitle(METADATA_UPDATE_TITLE)

@@ -10,9 +10,10 @@ from PIL import Image, ImageCms, UnidentifiedImageError
 from PySide6.QtGui import QColor, QImage
 from PySide6.QtWidgets import QApplication
 
+from src.image.image_metadata import ImageMetadata, PARAMETERS_KEY
 from src.util.visual.image_format_utils import IMAGE_READ_FORMATS, IMAGE_WRITE_FORMATS, \
     IMAGE_FORMATS_SUPPORTING_METADATA, load_image, save_image, count_image_frames, load_image_frames, ImageFrame, \
-    AnimationSaveOptions, save_animation, METADATA_PARAMETER_KEY
+    AnimationSaveOptions, save_animation
 
 
 app = QApplication.instance() or QApplication([])
@@ -60,7 +61,7 @@ class TestImageFormatUtils(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             file_path = _write_eps_file(temp_dir, 'image.bmp')
             try:
-                loaded_image, _, _ = load_image(file_path)
+                loaded_image, _ = load_image(file_path)
             except UnidentifiedImageError:
                 return
             self.assertTrue(loaded_image.isNull())
@@ -95,7 +96,7 @@ class TestImageFormatUtils(unittest.TestCase):
                     save_image(image, file_path)
                     self.assertTrue(os.path.isfile(file_path))
                     if file_format in IMAGE_READ_FORMATS:
-                        loaded_image, _, _ = load_image(file_path)
+                        loaded_image, _ = load_image(file_path)
                         self.assertFalse(loaded_image.isNull())
 
 
@@ -176,7 +177,7 @@ class TestSaveAnimation(unittest.TestCase):
                         tempfile.TemporaryDirectory() as temp_dir:
                     file_path = os.path.join(temp_dir, f'animation.{extension}')
                     save_animation(self._frames(), file_path, AnimationSaveOptions(self.DEFAULT_DURATION, loop_count),
-                                   {METADATA_PARAMETER_KEY: 'prompt text'})
+                                   ImageMetadata({PARAMETERS_KEY: 'prompt text'}))
                     self.assertEqual(count_image_frames(file_path), len(self.COLORS))
                     loaded = load_image_frames(file_path)
                     self.assertEqual([frame.duration_ms for frame in loaded], [100, 200, self.DEFAULT_DURATION])
