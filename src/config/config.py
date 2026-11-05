@@ -627,13 +627,22 @@ class Config:
         connections = registry.get(connection.key, {})
         if connections.get(connection.owner) is connection:
             del connections[connection.owner]
-        notifier = self._notifiers[connection.key]
-        if connection.options:
-            notifier.options_changed.disconnect(connection.on_options_changed)
-        else:
-            notifier.value_changed.disconnect(connection.on_value_changed)
+        # At application shutdown Qt can delete the notifier, the connection or the owner before this runs. Their
+        # signals are gone with them, so there is nothing left to disconnect.
+        notifier = self._notifiers.get(connection.key)
+        if notifier is not None and isValid(notifier) and isValid(connection):
+            try:
+                if connection.options:
+                    notifier.options_changed.disconnect(connection.on_options_changed)
+                else:
+                    notifier.value_changed.disconnect(connection.on_value_changed)
+            except (RuntimeError, SystemError):
+                pass
         if connection.destroyed_handler is not None and isValid(connection.owner):
-            connection.owner.destroyed.disconnect(connection.destroyed_handler)
+            try:
+                connection.owner.destroyed.disconnect(connection.destroyed_handler)
+            except (RuntimeError, SystemError):
+                pass
 
     def get_option_index(self, key: str) -> int:
         """Returns the index of the selected option for a given key.
