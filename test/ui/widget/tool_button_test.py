@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.key_config import KeyConfig
 from src.tools.base_tool import BaseTool
-from src.ui.widget.key_hint_label import compact_key_text
+from src.ui.widget.key_hint_label import compact_key_text, shortest_key_option
 from src.ui.widget.tool_button import ToolButton, TOOL_ICON_SIZE, PLATE_MARGIN, PLATE_SHADOW_OFFSET, MAX_KEY_HINT_SHARE
 from test.base_test_case import IntraPaintTestCase
 
@@ -115,6 +115,24 @@ class ToolButtonKeyHintTest(IntraPaintTestCase):
         button = self._button(KeyConfig.TEXT_TOOL_KEY)
         button.set_edge_length(40, show_key_hint=True)
         self.assertFalse(button._key_hint.isVisibleTo(button))  # pylint: disable=protected-access
+
+    def test_multiple_keys_too_wide_show_only_the_shortest(self) -> None:
+        """When all of a tool's keys don't fit, the hint shows the shortest one, and the full size shows all."""
+        KeyConfig().set(KeyConfig.TEXT_TOOL_KEY, 'Ctrl+Alt+T,V')
+        button = self._button(KeyConfig.TEXT_TOOL_KEY)
+        button.set_edge_length(40, show_key_hint=True)
+        # pylint: disable=protected-access
+        self.assertTrue(button._key_hint.shortest_only)
+        self.assertEqual(button._key_hint._base_text, 'V')
+        self.assertTrue(button._key_hint.isVisibleTo(button))
+        button.set_edge_length(TOOL_ICON_SIZE, show_key_hint=True)
+        self.assertFalse(button._key_hint.shortest_only)
+        self.assertIn(',', button._key_hint._base_text)
+
+    def test_tied_keys_show_the_first(self) -> None:
+        """Among equally short keys, the first shows."""
+        self.assertEqual(shortest_key_option('Ctrl+T, V, W'), 'V')
+        self.assertEqual(shortest_key_option('Ctrl+T'), 'Ctrl+T')
 
 
 class CompactKeyTextTest(IntraPaintTestCase):
