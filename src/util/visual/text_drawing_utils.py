@@ -194,8 +194,8 @@ def horizontal_scroll_hint_text() -> str:
     return palette_rich_text_image(ICON_H_SCROLL, _keycap_height())
 
 
-# A key or modifier name in key text, between "+", "," and whitespace:
-_KEY_NAME = re.compile(r'[^+,\s]+')
+# Characters that separate key and modifier names in key text:
+_KEY_NAME_SEPARATORS = '+, '
 
 
 def get_key_display_string(keys: QKeySequence | Qt.Key | int | str, rich_text: bool = True) -> str:
@@ -219,7 +219,15 @@ def get_key_display_string(keys: QKeySequence | Qt.Key | int | str, rich_text: b
         'Left': '←',
         'Right': '→'
     }
-    text = _KEY_NAME.sub(lambda match: symbol_map.get(match.group(0), match.group(0)), text)
+    parts = []
+    name = ''
+    for char in text + _KEY_NAME_SEPARATORS[-1]:
+        if char in _KEY_NAME_SEPARATORS:
+            parts.extend((symbol_map.get(name, name), char))
+            name = ''
+        else:
+            name += char
+    text = ''.join(parts)[:-1]
     if rich_text:
         return rich_text_key_hint(text)
     return text
