@@ -87,8 +87,9 @@ MIN_COMBO_CHARACTERS = 6
 SECTION_SPACING = 10
 STACK_SPACING = 6
 SEGMENT_ICON_LINE_WIDTH = 6
-# Capped columns share width until they reach their caps, and a spare column after them takes what is left, so the
-# layout doesn't center each capped column in a wider cell:
+# Capped columns, and a capped preview's row, share space until they reach their caps, and a spare column or row after
+# them takes what is left. Otherwise the layout would center each capped column in a wider cell, or spread spare height
+# between the sections:
 CONTENT_COLUMN_STRETCH = 100
 SPARE_COLUMN_STRETCH = 1
 
@@ -618,13 +619,14 @@ class ShapeToolPanel(FitToolPanel):
             columns, used_rows = self._place_stacked(beside)
             if preview == BELOW:
                 grid.addWidget(self._preview, used_rows, 0, 1, columns)
-                grid.setRowStretch(used_rows, 1)
+                # The preview takes spare height up to its cap, and the row after it takes the rest. Without that
+                # row, height past the cap would be spread between the sections:
+                grid.setRowStretch(used_rows, CONTENT_COLUMN_STRETCH)
                 used_rows += 1
             elif preview == BESIDE:
                 grid.addWidget(self._preview, 0, columns, used_rows, 1)
                 columns += 1
-            if preview != BELOW:
-                grid.setRowStretch(used_rows, 1)
+            grid.setRowStretch(used_rows, SPARE_COLUMN_STRETCH)
             # Leaving a packed column hid the sections that were shown:
             for section in shown:
                 section.show()

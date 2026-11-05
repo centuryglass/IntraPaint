@@ -200,3 +200,16 @@ class ShapeToolPanelTest(IntraPaintTestCase):
         self.assertIn(corner, (QColor(Qt.GlobalColor.lightGray), QColor(Qt.GlobalColor.darkGray)))
         Cache().set(Cache.SHAPE_TOOL_MODE, ShapeMode.STAR.name)
         self.assertNotEqual(self.panel.preview._render(size), image)
+
+    def test_tall_side_panel_spaces_sections_evenly(self) -> None:
+        """Height past what the sections and the preview's cap use goes below them, not between the sections."""
+        # pylint: disable=protected-access
+        panel = self.panel
+        gaps = []
+        for height in (700, 1600):
+            self._arrange(Orientation.SIDE, QSize(500, height))
+            panel.show()
+            sections = (panel._shape_section, panel._outline_section, panel._fill_section, panel._antialias_checkbox)
+            gaps.append([after.geometry().top() - before.geometry().bottom()
+                         for before, after in zip(sections, sections[1:])])
+        self.assertEqual(gaps[0], gaps[1])

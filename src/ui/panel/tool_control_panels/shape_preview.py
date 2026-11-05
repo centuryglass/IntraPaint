@@ -31,11 +31,15 @@ MAX_OUTLINE_INSET_FRACTION = 0.35
 # A vertex at the top reads as an upright polygon or star:
 UPRIGHT_ANGLE = 90.0
 
-_KEYS = (Cache.SHAPE_TOOL_MODE, Cache.SHAPE_TOOL_VERTEX_COUNT, Cache.SHAPE_TOOL_STAR_INNER_POINT_FRACTION,
-         Cache.SHAPE_TOOL_LINE_WIDTH, Cache.SHAPE_TOOL_LINE_STYLE, Cache.SHAPE_TOOL_DASH_PATTERN,
-         Cache.SHAPE_TOOL_LINE_JOIN_STYLE, Cache.SHAPE_TOOL_LINE_COLOR, Cache.SHAPE_TOOL_LINE_SOURCE,
-         Cache.SHAPE_TOOL_FILL_COLOR, Cache.SHAPE_TOOL_FILL_SOURCE, Cache.SHAPE_TOOL_FILL_PATTERN,
-         Cache.SHAPE_TOOL_ANTIALIAS, Cache.LAST_BRUSH_COLOR, Cache.BACKGROUND_COLOR)
+
+def _cache_keys() -> tuple[str, ...]:
+    """Returns the `Cache` keys the preview depends on. The key constants exist only once `Cache` has been
+    constructed, so they can't be module constants."""
+    return (Cache.SHAPE_TOOL_MODE, Cache.SHAPE_TOOL_VERTEX_COUNT, Cache.SHAPE_TOOL_STAR_INNER_POINT_FRACTION,
+            Cache.SHAPE_TOOL_LINE_WIDTH, Cache.SHAPE_TOOL_LINE_STYLE, Cache.SHAPE_TOOL_DASH_PATTERN,
+            Cache.SHAPE_TOOL_LINE_JOIN_STYLE, Cache.SHAPE_TOOL_LINE_COLOR, Cache.SHAPE_TOOL_LINE_SOURCE,
+            Cache.SHAPE_TOOL_FILL_COLOR, Cache.SHAPE_TOOL_FILL_SOURCE, Cache.SHAPE_TOOL_FILL_PATTERN,
+            Cache.SHAPE_TOOL_ANTIALIAS, Cache.LAST_BRUSH_COLOR, Cache.BACKGROUND_COLOR)
 
 
 def parse_dash_pattern(pattern_str: str) -> list[float]:
@@ -83,7 +87,7 @@ class ShapePreview(BrushPreview):
     """
 
     def __init__(self, parent: Optional[QWidget] = None, render_timer: Optional[QTimer] = None) -> None:
-        super().__init__(_KEYS, parent, render_timer)
+        super().__init__(_cache_keys(), parent, render_timer)
         self.setMinimumSize(PREVIEW_MIN_SIZE)
         self.setMaximumSize(PREVIEW_MAX_SIZE)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
