@@ -480,6 +480,16 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
+        <source>Label the generation area under the Manual resolution rule</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>While the resolution rule is 'Manual', show the generation resolution in a label on the generation area's top edge. The rule is saved between sessions, so the label keeps a resolution that no longer follows the generation area in view.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
         <source>Favorite MyPaint brushes:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -6072,6 +6082,14 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>{compare_key} hold: original &amp;nbsp; {left_key}{right_key} browse &amp;nbsp; {down_key} back to grid &amp;nbsp; {pan_key}+{left_mouse_icon} or {middle_mouse_icon} pan &amp;nbsp; {v_scroll_icon} zoom</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ui.graphics_items.manual_resolution_label</name>
+    <message>
+        <location filename="../../src/ui/graphics_items/manual_resolution_label.py"/>
+        <source>Manual resolution: {width} x {height}</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

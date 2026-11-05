@@ -7,6 +7,8 @@
   (`set_forced_collapsed`) that a panel without room uses without changing the remembered choice. A click on the
   header while forced emits `forced_header_clicked`, and the owner can show the body elsewhere with `detach_body` and
   `restore_body`.
+- A section can mark its summary as a caution (`set_summary_caution`), drawing it in the caution color, for a value
+  that changes what an action does.
 - A section can draw its collapsed header as a bar with the summary on a second line (`set_summary_below`), for
   columns too narrow for the title and summary on one line.
 - A section can hide its header (`set_header_visible`), which also shows the body, so a panel too short for headers
@@ -20,6 +22,7 @@ from PySide6.QtCore import QEvent, QRect, QSize, Qt, Signal
 from PySide6.QtGui import QFont, QFontMetrics, QKeyEvent, QPainter, QPainterPath, QPaintEvent, QPalette, QPen
 from PySide6.QtWidgets import QAbstractButton, QHBoxLayout, QSizePolicy, QVBoxLayout, QWidget
 
+from src.ui.ink_style import caution_color
 from src.ui.layout.panel_fit import held_weakly
 from src.ui.widget.keycap_badge import KeycapBadge
 
@@ -54,6 +57,12 @@ class _HeaderButton(QAbstractButton):
         self._summary = ''
         self._expanded = True
         self._summary_below = False
+        self._summary_caution = False
+
+    @property
+    def summary_caution(self) -> bool:
+        """Returns whether the summary is drawn in the caution color."""
+        return self._summary_caution
 
     def set_summary(self, summary: str, expanded: bool) -> None:
         """Changes the summary text and whether the section looks expanded."""
@@ -61,6 +70,12 @@ class _HeaderButton(QAbstractButton):
         self._expanded = expanded
         self.updateGeometry()
         self.update()
+
+    def set_summary_caution(self, caution: bool) -> None:
+        """Draws the summary in the caution color, or back in the dimmed text color."""
+        if caution != self._summary_caution:
+            self._summary_caution = caution
+            self.update()
 
     def set_summary_below(self, below: bool) -> None:
         """Draws the collapsed header as a bar with the summary on a second line, or back as one line."""
@@ -142,8 +157,9 @@ class _HeaderButton(QAbstractButton):
             summary_x = title_x
         if not self._expanded and self._summary != '' and summary_x < self.width():
             painter.setFont(self.font())
-            painter.setPen(_mix(palette.color(group, QPalette.ColorRole.WindowText), background,
-                                SUMMARY_DIM_FRACTION))
+            caution = caution_color() if self._summary_caution and self.isEnabled() else None
+            painter.setPen(caution if caution is not None else
+                           _mix(palette.color(group, QPalette.ColorRole.WindowText), background, SUMMARY_DIM_FRACTION))
             summary_rect = self.rect().adjusted(summary_x, title_height if summary_below else 0, 0, 0)
             painter.drawText(summary_rect, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
                              QFontMetrics(self.font()).elidedText(self._summary, Qt.TextElideMode.ElideRight,
@@ -273,6 +289,16 @@ class PanelSection(QWidget):
         """Draws the collapsed header as a bar with the summary on a second line, or back as one line."""
         self._header_button.set_summary_below(below)
         self._header_layout.invalidate()
+
+    def set_summary_caution(self, caution: bool) -> None:
+        """Draws the summary in the caution color while `caution` is true, for a value that changes what an action
+        does."""
+        self._header_button.set_summary_caution(caution)
+
+    @property
+    def summary_caution(self) -> bool:
+        """Returns whether the summary is drawn in the caution color."""
+        return self._header_button.summary_caution
 
     def set_summary(self, summary: str) -> None:
         """Sets the one-line summary of the section's values, such as "Euler a, 30 steps, CFG 7"."""

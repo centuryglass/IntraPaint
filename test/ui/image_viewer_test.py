@@ -1,16 +1,21 @@
-"""Tests ImageViewer's context pin markers, its drop routing, and what deleting a viewer releases."""
+"""Tests ImageViewer's context pin markers, its manual resolution label, its drop routing, and what deleting a viewer
+releases."""
 import sys
 
-from PySide6.QtCore import QCoreApplication, QEvent, QMimeData, QObject, QPoint, QRectF, QSize, Qt
+from PySide6.QtCore import QCoreApplication, QEvent, QMimeData, QObject, QPoint, QPointF, QRect, QRectF, QSize, \
+    Qt
 from PySide6.QtGui import QColor, QDragEnterEvent, QImage, QPainter
 from PySide6.QtWidgets import QApplication, QMainWindow
 import shiboken6
 
+from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
 from src.ui.graphics_items.context_pin_item import marker_size_for_view, DEFAULT_MARKER_SIZE, MIN_MARKER_SIZE, \
     MAX_MARKER_SIZE, MARKER_REFERENCE_VIEW_SIDE
 from src.ui.image_viewer import ImageViewer, color_under_overlay, IMAGE_BORDER_COLOR, IMAGE_BORDER_OPACITY
 from src.ui.ink_style import ink_colors
+from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL, RESOLUTION_RULE_MATCH_AREA
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -54,6 +59,65 @@ class ImageViewerContextPinTest(IntraPaintTestCase):
         viewer.resizeEvent(None)
         self.assertEqual(viewer.context_pin_marker_size, MIN_MARKER_SIZE)
         self.assertEqual(viewer._context_pin_items[0].marker_size, MIN_MARKER_SIZE)  # pylint: disable=protected-access
+
+
+class ImageViewerManualResolutionLabelTest(IntraPaintTestCase):
+    """Tests that the generation area carries a resolution label while the resolution rule is Manual."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        Cache().set(Cache.GENERATION_RESOLUTION_RULE, RESOLUTION_RULE_MATCH_AREA)
+        self.image_stack = ImageStack(QSize(512, 512), QSize(256, 256), QSize(8, 8), QSize(512, 512))
+        self.image_stack.create_layer('Background')
+        self.image_stack.generation_area = QRect(128, 128, 256, 256)
+        self.viewer = ImageViewer(None, self.image_stack, use_keybindings=False)
+        self.viewer.resize(600, 600)
+        self.viewer.resizeEvent(None)
+        self.viewer.set_generation_area_visible(True)
+        self.label = self.viewer.manual_resolution_label
+
+    def test_label_shows_only_under_manual_rule(self) -> None:
+        """The label shows the resolution under the Manual rule, follows resolution changes, and hides otherwise."""
+        cache = Cache()
+        self.assertFalse(self.label.isVisible())
+        cache.set(Cache.GENERATION_RESOLUTION_RULE, RESOLUTION_RULE_MANUAL)
+        cache.set(Cache.GENERATION_SIZE, QSize(768, 512))
+        self.assertTrue(self.label.isVisible())
+        self.assertEqual(self.label.text, 'Manual resolution: 768 x 512')
+        cache.set(Cache.GENERATION_SIZE, QSize(640, 448))
+        self.assertEqual(self.label.text, 'Manual resolution: 640 x 448')
+        cache.set(Cache.GENERATION_RESOLUTION_RULE, RESOLUTION_RULE_MATCH_AREA)
+        self.assertFalse(self.label.isVisible())
+
+    def test_label_follows_its_setting(self) -> None:
+        """Turning the label's setting off hides it under the Manual rule, and turning it back on shows it."""
+        config = AppConfig()
+        Cache().set(Cache.GENERATION_RESOLUTION_RULE, RESOLUTION_RULE_MANUAL)
+        config.set(AppConfig.SHOW_MANUAL_RESOLUTION_LABEL, False)
+        self.assertFalse(self.label.isVisible())
+        config.set(AppConfig.SHOW_MANUAL_RESOLUTION_LABEL, True)
+        self.assertTrue(self.label.isVisible())
+
+    def test_label_hides_with_generation_area(self) -> None:
+        """Hiding the generation area outline hides the label with it."""
+        Cache().set(Cache.GENERATION_RESOLUTION_RULE, RESOLUTION_RULE_MANUAL)
+        self.viewer.set_generation_area_visible(False)
+        self.assertFalse(self.label.isVisible())
+        self.viewer.set_generation_area_visible(True)
+        self.assertTrue(self.label.isVisible())
+
+    def test_label_follows_area_and_moves_inside_when_zoomed(self) -> None:
+        """The label anchors to the area's top left, above the edge until zooming to the area leaves no room there."""
+        Cache().set(Cache.GENERATION_RESOLUTION_RULE, RESOLUTION_RULE_MANUAL)
+        self.assertEqual(self.label.pos(), QPointF(128, 128))
+        self.assertFalse(self.label.inside)
+        self.image_stack.generation_area = QRect(64, 96, 256, 256)
+        self.assertEqual(self.label.pos(), QPointF(64, 96))
+        self.viewer.follow_generation_area = True
+        self.assertTrue(self.label.inside)
+        self.viewer.follow_generation_area = False
+        self.viewer.reset_scale()
+        self.assertFalse(self.label.inside)
 
 
 class ImageViewerSurroundTest(IntraPaintTestCase):

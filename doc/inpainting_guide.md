@@ -55,8 +55,10 @@ Image Generation tab, or at the bottom of the Generation Area tool panel.
 
 By default, the resolution follows the generation area: resizing the area sets the resolution to the same size, and
 areas with a shorter side under 512 pixels are scaled up by a whole number (a 256x256 area generates at 512x512). The
-"Resolution rule" dropdown in the Generation Area tool panel changes this, and editing the resolution by hand switches
-the rule to "Manual" so your value isn't overwritten.
+"Resolution rule" dropdown in the Image Generation panel's Advanced section changes this, and editing the resolution by
+hand switches the rule to "Manual" so your value isn't overwritten. The rule is saved between sessions, so while it is
+"Manual" the generation area shows a "Manual resolution" label on its top edge, and the rule is highlighted in both
+panels. The label can be turned off in Preferences, under Editing > Size.
 
 ### Limit context to the selection checkbox
 

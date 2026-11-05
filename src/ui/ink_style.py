@@ -154,6 +154,18 @@ def caution_color() -> Optional[QColor]:
     return None if colors is None else colors.caution
 
 
+def caution_text_palette(caution: bool = True) -> QPalette:
+    """Returns a palette that draws a control's text and frame in the caution color while `caution` is true and the
+    style has one, or else an empty palette, which keeps the colors the control inherits."""
+    palette = QPalette()
+    color = caution_color()
+    if caution and color is not None:
+        for role in (QPalette.ColorRole.Text, QPalette.ColorRole.ButtonText, QPalette.ColorRole.Shadow):
+            for group in (QPalette.ColorGroup.Active, QPalette.ColorGroup.Inactive):
+                palette.setColor(group, role, color)
+    return palette
+
+
 def _is_popup(widget: object) -> bool:
     """Returns whether a widget is a menu or Qt's tooltip label, which are top-level windows."""
     if isinstance(widget, QMenu):

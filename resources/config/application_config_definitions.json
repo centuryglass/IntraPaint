@@ -314,6 +314,15 @@
         "saved": true,
         "translate": false
     },
+    "show_manual_resolution_label": {
+        "label": "Label the generation area under the Manual resolution rule",
+        "category": "Editing",
+        "subcategory": "Size",
+        "description": "While the resolution rule is 'Manual', show the generation resolution in a label on the generation area's top edge. The rule is saved between sessions, so the label keeps a resolution that no longer follows the generation area in view.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
     "brush_favorites": {
         "label": "Favorite MyPaint brushes:",
         "category": "Editing",
