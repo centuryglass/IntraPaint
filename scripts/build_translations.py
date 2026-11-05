@@ -445,6 +445,230 @@ def accelerator_problems(file_name: str, language: str, catalog: Catalog) -> lis
     return problems
 
 
+@dataclass(frozen=True)
+class Spelling:
+    """One way a glossary term is written in a source string. `whole` spellings match a whole UI string only."""
+    text: str
+    whole: bool = False
+
+
+@dataclass
+class GlossaryTerm:
+    """A term of one glossary row: its English spellings, and the renderings that translate it."""
+    spellings: list[Spelling]
+    renderings: list[str]
+
+
+@dataclass
+class GlossaryRow:
+    """One row of the glossaries: the English term cell, its terms, and the line it is on."""
+    line: int
+    cell: str
+    terms: list[GlossaryTerm]
+
+
+@dataclass
+class Glossary:
+    """A per-language glossary joined to the English one."""
+    path: str
+    rows: list[GlossaryRow]
+    kept_names: list[str]
+
+
+_GLOSSARY_LABEL = re.compile(r'\s*\(([^()"]*)\)\s*$')
+_NAMES_HEADING = 'Names kept as they are'
+_RENDERING_HEADER = 'Chosen rendering'
+_TERM_HEADERS = ('Term', 'English term')
+
+
+def parse_glossary_cell(text: str, allow_label: bool) -> list[list[Spelling]]:
+    """Parses a Term or Chosen rendering cell into items of spellings, per "Glossary format" in the process doc.
+
+    Commas outside quotes separate items and `/` outside quotes separates the spellings of one item. A quoted spelling
+    is `whole`, and its commas and slashes are literal. A trailing `(label)` is dropped when `allow_label` is set.
+
+    Raises
+    ------
+    ValueError
+        If the cell is empty, holds `—`, has an unbalanced quote or text beside a quoted spelling, or has an empty
+        item or spelling.
+    """
+    text = text.strip()
+    if allow_label and (match := _GLOSSARY_LABEL.search(text)):
+        text = text[:match.start()]
+    if not text or text == '\u2014':
+        raise ValueError('the cell is empty or holds an em dash.')
+    items: list[list[Spelling]] = [[]]
+    buffer = ''
+    quoted: Optional[str] = None
+
+    def _end_spelling() -> None:
+        nonlocal buffer, quoted
+        if quoted is not None:
+            if buffer.strip():
+                raise ValueError(f'text beside the quoted "{quoted}".')
+            spelling = Spelling(quoted, True)
+        else:
+            spelling = Spelling(buffer.strip())
+        if not spelling.text:
+            raise ValueError('an empty term or spelling.')
+        items[-1].append(spelling)
+        buffer, quoted = '', None
+
+    index = 0
+    while index < len(text):
+        char = text[index]
+        if char == '"':
+            end = text.find('"', index + 1)
+            if end < 0:
+                raise ValueError('an unbalanced quote.')
+            if quoted is not None or buffer.strip():
+                raise ValueError(f'text beside the quoted "{text[index + 1:end]}".')
+            quoted = text[index + 1:end]
+            index = end
+        elif char in ',/':
+            _end_spelling()
+            if char == ',':
+                items.append([])
+        else:
+            buffer += char
+        index += 1
+    _end_spelling()
+    return items
+
+
+def _table_rows(lines: list[str]) -> list[tuple[int, list[str], list[str]]]:
+    """Returns (line number, header cells, row cells) for every body row of every Markdown table in `lines`."""
+    rows = []
+    header: Optional[list[str]] = None
+    for number, line in enumerate(lines, start=1):
+        if not line.startswith('|'):
+            header = None
+            continue
+        cells = [cell.strip() for cell in line.strip().strip('|').split('|')]
+        if header is None:
+            header = cells
+        elif not all(re.fullmatch(r':?-+:?', cell) for cell in cells):
+            rows.append((number, header, cells))
+    return rows
+
+
+def _kept_names(lines: list[str], problems: list[str], path: str) -> list[str]:
+    """Reads the names after the label of each bullet under the "Names kept as they are" heading.
+
+    A bullet continues on the following lines until a blank line or the next bullet.
+    """
+    bullets: list[tuple[int, str]] = []
+    in_bullet = False
+    in_section = False
+    for number, line in enumerate(lines, start=1):
+        if line.startswith('#'):
+            in_section = _NAMES_HEADING in line
+            in_bullet = False
+        elif not in_section:
+            continue
+        elif line.startswith('- '):
+            bullets.append((number, line[2:].strip()))
+            in_bullet = True
+        elif in_bullet and line.strip():
+            bullets[-1] = (bullets[-1][0], bullets[-1][1] + ' ' + line.strip())
+        else:
+            in_bullet = False
+    names: list[str] = []
+    for number, bullet in bullets:
+        label, colon, rest = bullet.partition(':')
+        listed = [name.strip() for name in rest.strip().rstrip('.').split(',')]
+        if not colon or not label.strip():
+            problems.append(f'{path}:{number}: a "{_NAMES_HEADING}" bullet needs the form "Label: name, name".')
+        elif not all(listed):
+            problems.append(f'{path}:{number}: an empty name in the list.')
+        else:
+            names.extend(listed)
+    return names
+
+
+def _glossary_cells(path: str, term_column: str, problems: list[str]) -> list[tuple[int, str, Optional[str]]]:
+    """Returns (line, term cell, rendering cell or None) for every row of the glossary tables in `path`."""
+    with open(path, encoding='utf-8') as glossary_file:
+        lines = glossary_file.read().splitlines()
+    cells = []
+    for number, header, row in _table_rows(lines):
+        if term_column not in header:
+            continue
+        if len(row) != len(header):
+            problems.append(f'{path}:{number}: {len(row)} cells, expected {len(header)}.')
+            continue
+        rendering_index = next((i for i, name in enumerate(header) if name.endswith(_RENDERING_HEADER)), None)
+        rendering = None if rendering_index is None else row[rendering_index]
+        cells.append((number, row[header.index(term_column)], rendering))
+    return cells
+
+
+def _parse_row_terms(path: str, number: int, cell: str, problems: list[str]) -> Optional[list[GlossaryTerm]]:
+    try:
+        items = parse_glossary_cell(cell, allow_label=True)
+    except ValueError as error:
+        problems.append(f'{path}:{number}: Term cell {cell!r}: {error}')
+        return None
+    return [GlossaryTerm(item, []) for item in items]
+
+
+def parse_english_glossary(path: str) -> tuple[list[GlossaryRow], list[str], list[str]]:
+    """Reads the Term column and the "Names kept as they are" bullets of the English glossary.
+
+    Returns
+    -------
+    rows, names, problems
+        Rows have no renderings. Problems name the file and line.
+    """
+    problems: list[str] = []
+    rows = []
+    for number, cell, _ in _glossary_cells(path, _TERM_HEADERS[0], problems):
+        terms = _parse_row_terms(path, number, cell, problems)
+        if terms is not None:
+            rows.append(GlossaryRow(number, cell, terms))
+    with open(path, encoding='utf-8') as glossary_file:
+        names = _kept_names(glossary_file.read().splitlines(), problems, path)
+    return rows, names, problems
+
+
+def parse_language_glossary(path: str, english_rows: list[GlossaryRow]) -> tuple[Glossary, list[str]]:
+    """Reads a per-language glossary and joins its rows to the English rows.
+
+    Problems name the file and line: a cell that does not parse, a row with no English counterpart or one repeated, an
+    English row with no row here, and a rendering list that is neither one item nor one per term.
+    """
+    problems: list[str] = []
+    english = {row.cell: row for row in english_rows}
+    joined: dict[str, GlossaryRow] = {}
+    for number, cell, rendering_cell in _glossary_cells(path, _TERM_HEADERS[1], problems):
+        if cell not in english:
+            problems.append(f'{path}:{number}: {cell!r} is not a Term in the English glossary.')
+            continue
+        if cell in joined:
+            problems.append(f'{path}:{number}: {cell!r} is already on line {joined[cell].line}.')
+            continue
+        try:
+            items = parse_glossary_cell(rendering_cell or '', allow_label=False)
+        except ValueError as error:
+            problems.append(f'{path}:{number}: Chosen rendering cell {rendering_cell!r}: {error}')
+            continue
+        terms = english[cell].terms
+        if len(items) not in (1, len(terms)):
+            problems.append(f'{path}:{number}: {len(items)} renderings for {len(terms)} terms, expected 1 or '
+                            f'{len(terms)}.')
+            continue
+        renderings = [[spelling.text for spelling in item] for item in items]
+        joined[cell] = GlossaryRow(number, cell, [
+            GlossaryTerm(term.spellings, renderings[0] if len(renderings) == 1 else renderings[i])
+            for i, term in enumerate(terms)])
+    problems.extend(f'{path}: no row for the English term {row.cell!r} (English glossary line {row.line}).'
+                    for row in english_rows if row.cell not in joined)
+    with open(path, encoding='utf-8') as glossary_file:
+        names = _kept_names(glossary_file.read().splitlines(), problems, path)
+    return Glossary(path, [joined[row.cell] for row in english_rows if row.cell in joined], names), problems
+
+
 def _find_lrelease() -> str:
     """Locates an lrelease executable, preferring the one bundled with the PySide6 package.
 

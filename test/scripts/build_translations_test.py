@@ -297,3 +297,142 @@ class BuildTranslationsTest(IntraPaintTestCase):
         translator = QTranslator()
         self.assertTrue(translator.load(self._path('resources/translations/de_DE.qm')))
         self.assertEqual('', translator.translate('ui.example', 'Open'))
+
+
+ENGLISH_GLOSSARY = """
+    # English glossary
+
+    | Term | Meaning | Where | UI strings |
+    | --- | --- | --- | --- |
+    | Layer | A layer. | Panel | "Add layer" |
+    | Vertex / vertices | A corner. | Shape | "Vertices" |
+    | Lock, transparency lock | Two locks. | Panel | "Toggle layer lock" |
+    | Model, checkpoint | The model. | Panel | "Model" |
+    | "Miter", "Round", "Match area, upscale" (line joins) | Join values. | Shape | "Miter" |
+    | Negative prompt / "Negative" | What to avoid. | Panel | "Negative:" |
+
+    ## Names kept as they are
+
+    - Products: IntraPaint, Qt.
+    - Formats: PNG,
+      .ora.
+
+    Theme names are also kept.
+"""
+
+LANGUAGE_GLOSSARY = """
+    # Glossary
+
+    | English term | Chosen rendering | Notes |
+    | --- | --- | --- |
+    | Layer | Ebene | - |
+    | Vertex / vertices | Knoten / Ecke | - |
+    | Lock, transparency lock | Sperre, Transparenzsperre | - |
+    | Model, checkpoint | Modell | - |
+    | "Miter", "Round", "Match area, upscale" (line joins) | "Gehrung", "Rund", "Bereich, skalieren" | - |
+    | Negative prompt / "Negative" | Negativ | - |
+
+    ## Names kept as they are
+
+    - Products: IntraPaint.
+"""
+
+
+class GlossaryParserTest(IntraPaintTestCase):
+    """Reading and joining the glossary tables."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._temp_dir = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
+        self.addCleanup(self._temp_dir.cleanup)
+
+    def _write(self, name: str, text: str) -> str:
+        path = os.path.join(self._temp_dir.name, name)
+        with open(path, 'w', encoding='utf-8') as file:
+            file.write(textwrap.dedent(text))
+        return path
+
+    def _join(self, english: str = ENGLISH_GLOSSARY, language: str = LANGUAGE_GLOSSARY):
+        rows, names, english_problems = build_translations.parse_english_glossary(self._write('en.md', english))
+        glossary, problems = build_translations.parse_language_glossary(self._write('de.md', language), rows)
+        return rows, names, glossary, english_problems + problems
+
+    def test_cell_syntax(self) -> None:
+        """Commas split items, slashes split spellings, quotes make a spelling whole, a trailing label is dropped."""
+        parse = build_translations.parse_glossary_cell
+        spelling = build_translations.Spelling
+        self.assertEqual([[spelling('Lock')], [spelling('transparency lock')]], parse('Lock, transparency lock', True))
+        self.assertEqual([[spelling('Vertex'), spelling('vertices')]], parse('Vertex / vertices', True))
+        self.assertEqual([[spelling('Negative prompt'), spelling('Negative', True)]],
+                         parse('Negative prompt / "Negative"', True))
+        self.assertEqual([[spelling('Match area, upscale / x', True)], [spelling('Box', True)]],
+                         parse('"Match area, upscale / x", "Box" (scaling)', True))
+        self.assertEqual([[spelling('Isolation')]], parse('Isolation (layer group)', True))
+        self.assertEqual([[spelling('滑块(&I)')]], parse('滑块(&I)', False))
+
+    def test_malformed_cells_fail(self) -> None:
+        """Empty cells, dashes, unbalanced quotes, text beside quotes and empty items are errors."""
+        for cell in ('', '—', '"Box', 'a "Box"', '"Box" b', 'a,, b', 'a / ', '"A""B"'):
+            with self.subTest(cell=cell), self.assertRaises(ValueError):
+                build_translations.parse_glossary_cell(cell, True)
+
+    def test_rows_join(self) -> None:
+        """Renderings pair with terms by position, or one rendering covers every term."""
+        rows, names, glossary, problems = self._join()
+        self.assertEqual([], problems)
+        self.assertEqual(['IntraPaint', 'Qt', 'PNG', '.ora'], names)
+        self.assertEqual(len(rows), len(glossary.rows))
+        by_cell = {row.cell: row for row in glossary.rows}
+        self.assertEqual([['Sperre'], ['Transparenzsperre']],
+                         [term.renderings for term in by_cell['Lock, transparency lock'].terms])
+        self.assertEqual([['Modell'], ['Modell']], [term.renderings for term in by_cell['Model, checkpoint'].terms])
+        self.assertEqual([['Knoten', 'Ecke']], [term.renderings for term in by_cell['Vertex / vertices'].terms])
+        self.assertEqual([['Gehrung'], ['Rund'], ['Bereich, skalieren']],
+                         [term.renderings for term in glossary.rows[4].terms])
+
+    def test_row_mismatches_fail_with_line(self) -> None:
+        """A missing, unknown, repeated or miscounted row fails and names the file and line."""
+        language = LANGUAGE_GLOSSARY.replace('    | Layer | Ebene | - |\n', '')
+        language = language.replace('| Model, checkpoint | Modell |', '| Models | Modell |')
+        language = language.replace('Sperre, Transparenzsperre', 'Sperre, Transparenzsperre, Extra')
+        problems = self._join(language=language)[3]
+        self.assertEqual(5, len(problems), problems)
+        self.assertTrue(any("no row for the English term 'Layer'" in problem for problem in problems), problems)
+        self.assertTrue(any("'Models' is not a Term" in problem and 'de.md:' in problem for problem in problems))
+        self.assertTrue(any('3 renderings for 2 terms' in problem for problem in problems), problems)
+        self.assertTrue(any("no row for the English term 'Model, checkpoint'" in problem for problem in problems))
+
+        layer_row = '    | Layer | Ebene | - |\n'
+        repeated = LANGUAGE_GLOSSARY.replace(layer_row, layer_row * 2)
+        problems = self._join(language=repeated)[3]
+        self.assertEqual(1, len(problems), problems)
+        self.assertIn("'Layer' is already on line", problems[0])
+
+    def test_bad_cells_name_file_and_row(self) -> None:
+        """A cell that does not parse fails in either file."""
+        problems = self._join(english=ENGLISH_GLOSSARY.replace('| Layer |', '| "Layer |'))[3]
+        self.assertTrue(any(problem.startswith(self._temp_dir.name) and 'unbalanced quote' in problem
+                            for problem in problems), problems)
+        problems = self._join(language=LANGUAGE_GLOSSARY.replace('| Ebene |', '| — |'))[3]
+        self.assertTrue(any('Chosen rendering cell' in problem and 'em dash' in problem for problem in problems))
+
+    def test_kept_names_form(self) -> None:
+        """A kept-names bullet without a label or with an empty name fails."""
+        english = ENGLISH_GLOSSARY.replace('- Products: IntraPaint, Qt.', '- No label here')
+        self.assertTrue(any('Label: name, name' in problem for problem in self._join(english=english)[3]))
+        english = ENGLISH_GLOSSARY.replace('- Products: IntraPaint, Qt.', '- Products: IntraPaint,, Qt.')
+        self.assertTrue(any('empty name' in problem for problem in self._join(english=english)[3]))
+
+    def test_committed_glossaries_parse_and_join(self) -> None:
+        """Every committed glossary parses, and each has a row for every English row."""
+        directory = os.path.join(PROJECT_ROOT, 'doc', 'translation')
+        rows, _, problems = build_translations.parse_english_glossary(os.path.join(directory, 'glossary.md'))
+        self.assertEqual([], problems)
+        self.assertGreater(len(rows), 0)
+        for name in sorted(os.listdir(directory)):
+            if name == 'glossary.md' or not name.endswith('.md'):
+                continue
+            with self.subTest(glossary=name):
+                glossary, problems = build_translations.parse_language_glossary(os.path.join(directory, name), rows)
+                self.assertEqual([], problems)
+                self.assertEqual(len(rows), len(glossary.rows))
