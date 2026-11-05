@@ -19,7 +19,6 @@ from src.ui.graphics_items.layer_lock_alert_item import LayerLockAlertItem
 from src.ui.graphics_items.transform_outline import TransformOutline
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.layer_transform_tool_panel import LayerTransformToolPanel
-from src.undo_stack import UndoStack
 from src.util.shared_constants import PROJECT_DIR
 from src.util.signals_blocked import signals_blocked
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
@@ -194,6 +193,7 @@ class LayerTransformTool(BaseTool):
             last_layer.lock_changed.disconnect(self._layer_lock_change_slot)
             if isinstance(last_layer, TransformGroup):
                 last_layer.bounds_changed.disconnect(self._update_transform_group_bounds)
+                last_layer.remove_all()
         if layer is None or isinstance(layer, TransformLayer):
             self._layer = layer
         else:
@@ -219,13 +219,7 @@ class LayerTransformTool(BaseTool):
             source_transform = self._initial_transform
             if changed_transform != source_transform:
 
-                def _apply(active=layer, matrix=source_transform):
-                    active.set_transform(matrix)
-
-                def _undo(active=layer, matrix=changed_transform):
-                    active.set_transform(matrix)
-
-                UndoStack().commit_action(_apply, _undo, 'LayerTransformTool.reset_transformation')
+                layer.transform = source_transform
             self._transform_outline.setTransform(self._initial_transform)
 
     def _reload_scene_item(self, keep_relative_origin: bool = False):

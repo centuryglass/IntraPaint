@@ -1,10 +1,13 @@
 """A temporary layer class used to coordinate transformations applied to multiple layers."""
+from typing import Any
+
 from PySide6.QtCore import QRect, Signal
-from PySide6.QtGui import QTransform
+from PySide6.QtGui import QTransform, QImage
 
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.transform_layer import TransformLayer
+from src.undo_stack import UndoStack
 
 
 class TransformGroup(TransformLayer):
@@ -13,6 +16,14 @@ class TransformGroup(TransformLayer):
     TransformGroups are created as needed when applying transformations across multiple layers. TransformGroups are
     not saved, nor are they added to the layer group. All transformations applied to them immediately propagate to all
     TransformLayers assigned to them.
+
+    A TransformGroup lasts for one transformation: its creator calls `remove_all` once the change is applied, and
+    until then it stays connected to the layer group's signals. While connected, a layer added to the group joins
+    with its transform unchanged, and a layer removed from the group keeps its transform. Undo and redo write the
+    transforms the held layers had, so they also work after `remove_all`.
+
+    A TransformGroup holds no image and is never in the layer stack, so Layer's image and state methods raise
+    NotImplementedError.
 
     I'm using this approach because storing persistent transforms within a LayerGroup is far more trouble than its
     worth, accommodating arbitrary numbers of nested transformations exponentially increases the difficulty of testing
@@ -28,10 +39,27 @@ class TransformGroup(TransformLayer):
         self._groups: list[LayerGroup] = []
         self._transform_layers: list[TransformLayer] = []
         self._layer_added_slot(layer_group)
-        layer_group.lock_changed.connect(lambda _, locked: self.set_locked(locked))
 
     def __del__(self) -> None:
         self.remove_all()
+
+    def get_qimage(self) -> QImage:
+        raise NotImplementedError('TransformGroup holds no image')
+
+    def set_qimage(self, image: QImage) -> None:
+        raise NotImplementedError('TransformGroup holds no image')
+
+    def copy(self) -> Layer:
+        raise NotImplementedError('TransformGroup is not copied')
+
+    def cut_masked(self, image_mask: QImage) -> None:
+        raise NotImplementedError('TransformGroup holds no image')
+
+    def save_state(self) -> Any:
+        raise NotImplementedError('TransformGroup has no saved state')
+
+    def restore_state(self, saved_state: Any) -> None:
+        raise NotImplementedError('TransformGroup has no saved state')
 
     def _get_local_bounds(self) -> QRect:
         bounds = None
@@ -57,20 +85,50 @@ class TransformGroup(TransformLayer):
         return len(self._groups) > 0 or len(self._transform_layers) > 0
 
     def remove_all(self) -> None:
-        """Remove all connected layers, leaving transformations in-place."""
-        for group in self._groups:
-            group.layer_added.disconnect(self._layer_added_slot)
-            group.layer_removed.disconnect(self._layer_removed_slot)
+        """Disconnect from all layers, leaving transformations in-place."""
+        for layer in (*self._groups, *self._transform_layers):
+            self._disconnect_layer(layer)
         self._groups.clear()
         self._transform_layers.clear()
+
+    @property
+    def transform(self) -> QTransform:
+        """Returns the group's matrix transformation."""
+        return self._get_transform()
+
+    @transform.setter
+    def transform(self, new_transform: QTransform) -> None:
+        """Applies a transformation to every held layer as one undo entry that writes each layer's transform."""
+        assert not self.locked and not self.parent_locked, 'Tried to transform a locked layer group'
+        last_transform = self.transform
+        if new_transform == last_transform:
+            return
+        last_transform_inverted = last_transform.inverted()[0]
+        before = [(layer, layer.transform) for layer in self._transform_layers]
+        after = [(layer, layer_transform * last_transform_inverted * new_transform) for layer, layer_transform
+                 in before]
+
+        def _update(layer_transforms=after, group_transform=new_transform) -> None:
+            self._write_transforms(layer_transforms, group_transform)
+
+        def _undo(layer_transforms=before, group_transform=last_transform) -> None:
+            self._write_transforms(layer_transforms, group_transform)
+
+        UndoStack().commit_action(_update, _undo, 'TransformGroup.transform', merge_target=self)
 
     def set_transform(self, transform: QTransform) -> None:
         """Propagate the transformation to all associated layers."""
         last_transform_inverted = self.transform.inverted()[0]
+        self._write_transforms([(layer, layer.transform * last_transform_inverted * transform)
+                                for layer in self._transform_layers], transform)
+
+    def _write_transforms(self, layer_transforms: list[tuple[TransformLayer, QTransform]],
+                          group_transform: QTransform) -> None:
         with self._primary_group.all_signals_delayed():
-            for layer in self._transform_layers:
-                layer.set_transform(layer.transform * last_transform_inverted * transform)
-        super().set_transform(transform)
+            for layer, layer_transform in layer_transforms:
+                layer.set_transform(layer_transform)
+        super().set_transform(group_transform)
+        self._get_local_bounds()  # Updates size, emits size_changed if needed
 
     # noinspection PyUnusedLocal
     def _layer_locked_slot(self, _, locked: bool) -> None:
@@ -83,21 +141,22 @@ class TransformGroup(TransformLayer):
     def _layer_added_slot(self, layer: Layer) -> None:
         assert isinstance(layer, (TransformLayer, LayerGroup))
         if isinstance(layer, TransformLayer):
-            if layer not in self._transform_layers:
-                layer.set_transform(layer.transform * self.transform)
-                self._transform_layers.append(layer)
-                layer.size_changed.connect(self._handle_external_changes)
-                layer.transform_changed.connect(self._handle_external_changes)
+            if layer in self._transform_layers:
+                return
+            self._transform_layers.append(layer)
+            layer.size_changed.connect(self._handle_external_changes)
+            layer.transform_changed.connect(self._handle_external_changes)
         else:
             assert isinstance(layer, LayerGroup)
-            if layer not in self._groups:
-                layer.layer_added.connect(self._layer_added_slot)
-                layer.layer_removed.connect(self._layer_removed_slot)
-                layer.size_changed.connect(self._handle_external_changes)
-                layer.bounds_changed.connect(self._handle_external_changes)
-                self._groups.append(layer)
-                for child in layer.child_layers:
-                    self._layer_added_slot(child)
+            if layer in self._groups:
+                return
+            layer.layer_added.connect(self._layer_added_slot)
+            layer.layer_removed.connect(self._layer_removed_slot)
+            layer.size_changed.connect(self._handle_external_changes)
+            layer.bounds_changed.connect(self._handle_external_changes)
+            self._groups.append(layer)
+            for child in layer.child_layers:
+                self._layer_added_slot(child)
         layer.lock_changed.connect(self._layer_locked_slot)
         if layer.locked or layer.parent_locked:
             self.set_locked(True)
@@ -106,24 +165,32 @@ class TransformGroup(TransformLayer):
     def _layer_removed_slot(self, layer: Layer) -> None:
         assert isinstance(layer, (TransformLayer, LayerGroup))
         if isinstance(layer, TransformLayer):
-            if layer in self._transform_layers:
-                layer.set_transform(layer.transform * self.transform.inverted()[0])
-                layer.size_changed.disconnect(self._handle_external_changes)
-                layer.transform_changed.disconnect(self._handle_external_changes)
-                layer.lock_changed.disconnect(self._layer_locked_slot)
-                self._transform_layers.remove(layer)
+            if layer not in self._transform_layers:
+                return
+            self._disconnect_layer(layer)
+            self._transform_layers.remove(layer)
         else:
             assert isinstance(layer, LayerGroup)
-            if layer in self._groups:
-                layer.layer_added.disconnect(self._layer_added_slot)
-                layer.layer_removed.disconnect(self._layer_removed_slot)
-                layer.size_changed.disconnect(self._handle_external_changes)
-                layer.bounds_changed.disconnect(self._handle_external_changes)
-                layer.lock_changed.disconnect(self._layer_locked_slot)
-                self._groups.remove(layer)
-                for child in layer.child_layers:
-                    self._layer_removed_slot(child)
+            if layer not in self._groups:
+                return
+            self._disconnect_layer(layer)
+            self._groups.remove(layer)
+            for child in layer.child_layers:
+                self._layer_removed_slot(child)
         self._get_local_bounds()  # Updates size, emits size_changed if needed
+
+    def _disconnect_layer(self, layer: Layer) -> None:
+        """Disconnects one held layer or layer group from every slot `_layer_added_slot` connected."""
+        if isinstance(layer, TransformLayer):
+            layer.size_changed.disconnect(self._handle_external_changes)
+            layer.transform_changed.disconnect(self._handle_external_changes)
+        else:
+            assert isinstance(layer, LayerGroup)
+            layer.layer_added.disconnect(self._layer_added_slot)
+            layer.layer_removed.disconnect(self._layer_removed_slot)
+            layer.size_changed.disconnect(self._handle_external_changes)
+            layer.bounds_changed.disconnect(self._handle_external_changes)
+        layer.lock_changed.disconnect(self._layer_locked_slot)
 
     def _handle_external_changes(self, _layer: Layer, _) -> None:
         self._get_local_bounds()  # Updates size, emits size_changed if needed
