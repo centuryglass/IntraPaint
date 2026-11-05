@@ -543,7 +543,10 @@ class Config:
             elif num_args == 2:
                 on_change_fn(value, changed_inner_key)
             elif changed_inner_key is None:
-                on_change_fn(value) if num_args == 1 else on_change_fn()
+                if num_args == 1:
+                    on_change_fn(value)
+                else:
+                    on_change_fn()
 
         self._add_connection(connected_object, key, deliver, False)
 
