@@ -1,12 +1,13 @@
 """Tests ShapeToolPanel: its Cache bindings, the rows each shape type and line style shows, the dash pattern field,
-and the arrangements fit planning picks."""
+the arrangements fit planning picks, and the shape preview."""
 import sys
 
-from PySide6.QtCore import QSize
-from PySide6.QtGui import QValidator
-from PySide6.QtWidgets import QApplication, QCheckBox
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QColor, QValidator
+from PySide6.QtWidgets import QApplication, QCheckBox, QGridLayout, QWidget
 
 from src.config.cache import Cache
+from src.controller import color_controller
 from src.ui.input_fields.pen_join_style_combo_box import JOIN_STYLE_BEVEL, JOIN_STYLE_MITER
 from src.ui.input_fields.pen_style_combo_box import LINE_STYLE_CUSTOM, LINE_STYLE_SOLID
 from src.ui.input_fields.segmented_control import DisplayMode
@@ -121,3 +122,94 @@ class ShapeToolPanelTest(IntraPaintTestCase):
         self._arrange(Orientation.STRIP, QSize(1200, 600))
         self.assertIsNot(join.parentWidget(), self.panel.overflow_content())
         self.assertFalse(join.isHidden())
+
+    @staticmethod
+    def _row(layout: QGridLayout, widget: QWidget) -> int:
+        return layout.getItemPosition(layout.indexOf(widget))[0]
+
+    def test_color_sources_have_lines_of_their_own(self) -> None:
+        """A color source dropdown never shares a line with the line style or fill pattern dropdown, in any
+        arrangement, and is wide enough for its longest option."""
+        # pylint: disable=protected-access
+        panel = self.panel
+        for orientation, size in ((Orientation.SIDE, QSize(600, 900)),
+                                  (Orientation.SIDE, QSize(panel.fit_base_size(Orientation.SIDE).width(), 900)),
+                                  (Orientation.STRIP, QSize(1200, 600)),
+                                  (Orientation.STRIP, QSize(1200, panel.fit_base_size(Orientation.STRIP).height()))):
+            with self.subTest(orientation=orientation, size=size):
+                self._arrange(orientation, size)
+                self.assertNotEqual(self._row(panel._outline_layout, panel._line_color_source),
+                                    self._row(panel._outline_layout, panel._pen_style_dropdown))
+                self.assertNotEqual(self._row(panel._fill_layout, panel._fill_color_source),
+                                    self._row(panel._fill_layout, panel._fill_style_dropdown))
+        combo = panel._line_color_source.combo
+        longest = max(combo.itemText(index) for index in range(combo.count()))
+        self.assertGreaterEqual(combo.minimumSizeHint().width(), combo.fontMetrics().horizontalAdvance(longest))
+
+    def test_tall_strip_stacks_sections_in_columns(self) -> None:
+        """A strip stacks sections top to bottom while they fit its height, and gives each its own column when it is
+        only as tall as its base size."""
+        # pylint: disable=protected-access
+        base = self.panel.fit_base_size(Orientation.STRIP)
+        self._arrange(Orientation.STRIP, QSize(1200, base.height()))
+        self.assertEqual([len(column) for column in self.panel._packed.plan], [1, 1, 1])
+        self._arrange(Orientation.STRIP, QSize(1200, 2000))
+        self.assertLess(len(self.panel._packed.plan), 3)
+        self.assertEqual([section for column in self.panel._packed.plan for section in column],
+                         list(self.panel._sections))
+        self._arrange(Orientation.SIDE, QSize(600, 900))
+        self.assertEqual(self.panel._packed.columns[0].isHidden() if self.panel._packed.columns else True, True)
+        for section in self.panel._sections:
+            self.assertFalse(section.isHidden())
+
+    def test_base_size_ignores_earlier_plans(self) -> None:
+        """The strip's base size is the same before and after a plan that stacked its sections."""
+        before = self.panel.fit_base_size(Orientation.STRIP)
+        self._arrange(Orientation.STRIP, QSize(1200, 2000))
+        self.assertEqual(self.panel.fit_base_size(Orientation.STRIP), before)
+
+    def test_preview_shows_where_there_is_room(self) -> None:
+        """The preview goes below the sections in a roomy side panel and after them in a strip, and hides at the base
+        size."""
+        # pylint: disable=protected-access
+        preview = self.panel.preview
+        self._arrange(Orientation.SIDE, QSize(600, 1400))
+        self.assertFalse(preview.isHidden())
+        self.assertGreater(self._row(self.panel._grid, preview), self._row(self.panel._grid, self.panel._fill_section))
+        self._arrange(Orientation.STRIP, QSize(1400, 600))
+        self.assertFalse(preview.isHidden())
+        grid = self.panel._grid
+        self.assertEqual(grid.getItemPosition(grid.indexOf(preview))[0], 0)
+        self._arrange(Orientation.STRIP, self.panel.fit_base_size(Orientation.STRIP))
+        self.assertTrue(preview.isHidden())
+        self._arrange(Orientation.SIDE, self.panel.fit_base_size(Orientation.SIDE))
+        self.assertTrue(preview.isHidden())
+
+    def test_preview_draws_the_shape_over_transparency_tiles(self) -> None:
+        """The preview draws the shape in the tool's fill, and the transparency tiles around it."""
+        # pylint: disable=protected-access
+        Cache().set(Cache.SHAPE_TOOL_LINE_WIDTH, 0)
+        Cache().set(Cache.SHAPE_TOOL_FILL_SOURCE, color_controller.SOURCE_CUSTOM)
+        Cache().set(Cache.SHAPE_TOOL_FILL_COLOR, '#ff0000')
+        size = QSize(120, 90)
+        image = self.panel.preview._render(size)
+        self.assertEqual(image.size(), size)
+        self.assertEqual(image.pixelColor(size.width() // 2, size.height() // 2), QColor('#ff0000'))
+        corner = image.pixelColor(0, 0)
+        self.assertEqual(corner.red(), corner.green())
+        self.assertIn(corner, (QColor(Qt.GlobalColor.lightGray), QColor(Qt.GlobalColor.darkGray)))
+        Cache().set(Cache.SHAPE_TOOL_MODE, ShapeMode.STAR.name)
+        self.assertNotEqual(self.panel.preview._render(size), image)
+
+    def test_tall_side_panel_spaces_sections_evenly(self) -> None:
+        """Height past what the sections and the preview's cap use goes below them, not between the sections."""
+        # pylint: disable=protected-access
+        panel = self.panel
+        gaps = []
+        for height in (700, 1600):
+            self._arrange(Orientation.SIDE, QSize(500, height))
+            panel.show()
+            sections = (panel._shape_section, panel._outline_section, panel._fill_section, panel._antialias_checkbox)
+            gaps.append([after.geometry().top() - before.geometry().bottom()
+                         for before, after in zip(sections, sections[1:])])
+        self.assertEqual(gaps[0], gaps[1])
