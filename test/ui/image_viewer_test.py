@@ -8,6 +8,7 @@ from PySide6.QtGui import QColor, QDragEnterEvent, QImage, QPainter
 from PySide6.QtWidgets import QApplication, QMainWindow
 import shiboken6
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
 from src.ui.graphics_items.context_pin_item import marker_size_for_view, DEFAULT_MARKER_SIZE, MIN_MARKER_SIZE, \
@@ -87,6 +88,15 @@ class ImageViewerManualResolutionLabelTest(IntraPaintTestCase):
         self.assertEqual(self.label.text, 'Manual resolution: 640 x 448')
         cache.set(Cache.GENERATION_RESOLUTION_RULE, RESOLUTION_RULE_MATCH_AREA)
         self.assertFalse(self.label.isVisible())
+
+    def test_label_follows_its_setting(self) -> None:
+        """Turning the label's setting off hides it under the Manual rule, and turning it back on shows it."""
+        config = AppConfig()
+        Cache().set(Cache.GENERATION_RESOLUTION_RULE, RESOLUTION_RULE_MANUAL)
+        config.set(AppConfig.SHOW_MANUAL_RESOLUTION_LABEL, False)
+        self.assertFalse(self.label.isVisible())
+        config.set(AppConfig.SHOW_MANUAL_RESOLUTION_LABEL, True)
+        self.assertTrue(self.label.isVisible())
 
     def test_label_hides_with_generation_area(self) -> None:
         """Hiding the generation area outline hides the label with it."""

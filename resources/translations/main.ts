@@ -480,6 +480,16 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
+        <source>Label the generation area under the Manual resolution rule</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>While the resolution rule is 'Manual', show the generation resolution in a label on the generation area's top edge. The rule is saved between sessions, so the label keeps a resolution that no longer follows the generation area in view.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
         <source>Favorite MyPaint brushes:</source>
         <translation type="unfinished"></translation>
     </message>

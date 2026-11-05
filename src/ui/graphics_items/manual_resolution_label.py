@@ -1,7 +1,8 @@
 """A label on the generation area's top edge that shows the resolution while the resolution rule is Manual.
 
 Under the Manual rule the resolution stops following the generation area, and the rule is saved between sessions, so
-the label keeps that state in view where generation happens. `ImageViewer` owns it and decides when it shows.
+the label keeps that state in view where generation happens. `ImageViewer` owns it and decides when it shows, and
+`AppConfig.SHOW_MANUAL_RESOLUTION_LABEL` turns it off.
 """
 from typing import Optional
 

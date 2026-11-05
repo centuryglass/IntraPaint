@@ -95,6 +95,7 @@ class ImageViewer(ImageGraphicsView):
         scene.addItem(self._manual_resolution_label)
         for resolution_key in (Cache.GENERATION_SIZE, Cache.GENERATION_RESOLUTION_RULE):
             Cache().connect(self, resolution_key, self._update_manual_resolution_label)
+        config.connect(self, AppConfig.SHOW_MANUAL_RESOLUTION_LABEL, self._update_manual_resolution_label)
         self.view_changed.connect(self._update_manual_resolution_label)
 
         # "inpaint selected only" generation area outline:
@@ -265,10 +266,12 @@ class ImageViewer(ImageGraphicsView):
         return self._manual_resolution_label
 
     def _update_manual_resolution_label(self, *_args) -> None:
-        """Shows the manual resolution label while the generation area shows and the resolution rule is Manual."""
+        """Shows the manual resolution label while the generation area shows and the resolution rule is Manual, unless
+        AppConfig.SHOW_MANUAL_RESOLUTION_LABEL turns it off."""
         cache = Cache()
         label = self._manual_resolution_label
-        shown = (self._image_stack.has_image and self._generation_area_outline.isVisible()
+        shown = (AppConfig().get(AppConfig.SHOW_MANUAL_RESOLUTION_LABEL) and self._image_stack.has_image
+                 and self._generation_area_outline.isVisible()
                  and cache.get(Cache.GENERATION_RESOLUTION_RULE) == RESOLUTION_RULE_MANUAL)
         label.setVisible(shown)
         if not shown:
