@@ -3,7 +3,7 @@ the window's other controls share.
 
 - `ColorSettingField`: a swatch button for a color string, optionally with a "theme default" state for the empty string.
 - `DirectorySettingField`: a path field with a Browse button.
-- `KeybindingField`: a key sequence in a text field, beside keycap badges for its keys. Recording keys by
+- `KeybindingField`: a key binding in a text field, beside its keycaps. Recording keys by
   pressing them would replace the text field and keep this class's interface.
 - `SizeSettingField`: a width and height pair.
 - `NumberSettingField`, `SliderSettingField`, `OptionSegmentsField`: the kit's number, slider and segmented controls
@@ -152,31 +152,13 @@ class DirectorySettingField(QWidget):
             self._edit.setValue(selection)
 
 
-def split_key_text(key_text: str) -> list[str]:
-    """Splits a key sequence string such as `Ctrl+Shift+Z` into key names, keeping a trailing `+` key whole."""
-    if key_text == '':
-        return []
-    names = []
-    for chord in key_text.split(', '):
-        if chord.endswith('++') or chord == '+':
-            modifiers = chord[:-1].split('+')[:-1] if chord != '+' else []
-            names.extend(name for name in modifiers if name != '')
-            names.append('+')
-        else:
-            names.extend(name for name in chord.split('+') if name != '')
-    return names
-
-
 class KeybindingField(QWidget):
-    """A key sequence setting: keycap badges for the keys, beside a text field that edits the sequence."""
+    """A key binding setting: a text field that edits the binding, beside a keycap for each alternative binding."""
 
     valueChanged = Signal(str)
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self._badges_layout = QHBoxLayout()
-        self._badges_layout.setContentsMargins(0, 0, 0, 0)
-        self._badges: list[KeycapBadge] = []
         self._edit = LineEdit(self)
         self._edit.setMaximumWidth(KEY_TEXT_MAX_WIDTH)
         self._edit.valueChanged.connect(self._text_changed)
@@ -184,10 +166,11 @@ class KeybindingField(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         self._edit.setMinimumWidth(KEY_TEXT_MIN_WIDTH)
         layout.addWidget(self._edit, stretch=1)
-        layout.addLayout(self._badges_layout)
+        self._badge = KeycapBadge(NO_KEY_TEXT, self)
+        layout.addWidget(self._badge)
         layout.addStretch(1)
         self.setFocusProxy(self._edit)
-        self._show_badges('')
+        self._show_badge('')
 
     def value(self) -> str:
         """Returns the key sequence text."""
@@ -197,28 +180,17 @@ class KeybindingField(QWidget):
         """Sets the key sequence text."""
         self._edit.setValue(new_value)
 
-    def badge_texts(self) -> list[str]:
-        """Returns the text of each keycap badge shown."""
-        return [badge.text for badge in self._badges]
+    def badge_labels(self) -> list[str]:
+        """Returns the label of each keycap shown."""
+        return self._badge.labels
 
     def _text_changed(self, text: str) -> None:
-        self._show_badges(text)
+        self._show_badge(text)
         self.valueChanged.emit(text)
 
-    def _show_badges(self, key_text: str) -> None:
-        names = split_key_text(key_text)
-        for badge in self._badges:
-            self._badges_layout.removeWidget(badge)
-            badge.hide()
-            badge.setParent(None)
-            badge.deleteLater()
-        self._badges = []
-        for name in names if names else [NO_KEY_TEXT]:
-            badge = KeycapBadge(name, self)
-            self._badges_layout.addWidget(badge)
-            self._badges.append(badge)
-        if not names:
-            self._badges[0].setEnabled(False)
+    def _show_badge(self, key_text: str) -> None:
+        self._badge.set_text(key_text if key_text.strip(', ') != '' else NO_KEY_TEXT)
+        self._badge.setEnabled(key_text.strip(', ') != '')
 
 
 class SizeSettingField(QWidget):

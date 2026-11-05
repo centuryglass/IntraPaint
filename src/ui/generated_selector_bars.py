@@ -20,8 +20,9 @@ from src.ui.input_fields.field_factory import create_control_widget
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.ui.widget.keycap_badge import KeycapBadge
 from src.ui.widget.panel_header import PanelPopover
-from src.util.visual.text_drawing_utils import get_key_display_string, left_button_hint_text, \
-    middle_button_hint_text, rich_text_key_hint, rich_text_key_hints, vertical_scroll_hint_text
+from src.util.visual.key_hint_text import key_hint_text, rich_text_key_hints
+from src.util.visual.text_drawing_utils import left_button_hint_text, middle_button_hint_text, rich_text_key_hint, \
+    vertical_scroll_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.generated_selector_bars'
@@ -62,7 +63,6 @@ USE_ORIGINAL_BUTTON_TEXT = _tr('Keep original')
 USE_BUTTON_TOOLTIP = _tr('Apply the focused option and return to the editor.')
 USE_BUTTON_WAITING_TOOLTIP = _tr('This option is still generating.')
 HINT_BUTTON_TOOLTIP = _tr('Controls')
-ENTER_KEY_NAME = _tr('Enter')
 
 GRID_CONTROL_HINT = _tr('{left_key}{right_key} browse &nbsp; {first_key}-{last_key} open option &nbsp; '
                         '{up_key} single view &nbsp; {pan_key}+{left_mouse_icon} or {middle_mouse_icon} pan '
@@ -78,7 +78,7 @@ MORE_FOLD_WIDTH = 1100
 
 
 def _with_keycap(control: QWidget, key_text: str) -> tuple[QWidget, KeycapBadge]:
-    """Returns a row holding `control` and a keycap showing the key that does the same thing."""
+    """Returns a row holding `control` and keycaps showing `key_text`, the binding that does the same thing."""
     row = QWidget()
     layout = QHBoxLayout(row)
     layout.setContentsMargins(0, 0, 0, 0)
@@ -173,8 +173,7 @@ class SelectorTopBar(QWidget):
     def set_view_mode(self, view_mode: str) -> None:
         """Shows `VIEW_GRID` or `VIEW_SINGLE` as the current view, and the key that switches between them."""
         self._view_mode_control.set_value(view_mode)
-        self._view_mode_keycap.set_text(get_key_display_string(KeyConfig().get(KeyConfig.ZOOM_TOGGLE),
-                                                               rich_text=False))
+        self._view_mode_keycap.set_text(KeyConfig().get(KeyConfig.ZOOM_TOGGLE))
 
     def set_option_reasons(self, selection_reason: str, zoom_reason: str) -> None:
         """Disables "Show selection" and "Zoom to changes" when their reasons aren't empty, with the reason as the
@@ -232,7 +231,7 @@ class SelectorButtonBar(QWidget):
 
         self.close_button = QPushButton(CANCEL_BUTTON_TEXT)
         self.close_button.clicked.connect(self.close_requested)
-        close_row, _ = _with_keycap(self.close_button, get_key_display_string(Qt.Key.Key_Escape, rich_text=False))
+        close_row, _ = _with_keycap(self.close_button, 'Esc')
         self._layout.addWidget(close_row)
         self.stop_button = QPushButton(STOP_BUTTON_TEXT)
         self.stop_button.setToolTip(STOP_BUTTON_TOOLTIP)
@@ -256,12 +255,12 @@ class SelectorButtonBar(QWidget):
         self._prev_button = QPushButton(PREVIOUS_BUTTON_TEXT)
         self._prev_button.clicked.connect(self.previous_requested)
         self._prev_button.setToolTip(PREVIOUS_BUTTON_TOOLTIP.format(
-            key=get_key_display_string(key_config.get_keycodes(KeyConfig.MOVE_LEFT), rich_text=False)))
+            key=key_hint_text(key_config.get(KeyConfig.MOVE_LEFT))))
         self._layout.addWidget(self._prev_button)
         self._next_button = QPushButton(NEXT_BUTTON_TEXT)
         self._next_button.clicked.connect(self.next_requested)
         self._next_button.setToolTip(NEXT_BUTTON_TOOLTIP.format(
-            key=get_key_display_string(key_config.get_keycodes(KeyConfig.MOVE_RIGHT), rich_text=False)))
+            key=key_hint_text(key_config.get(KeyConfig.MOVE_RIGHT))))
         self._layout.addWidget(self._next_button)
 
         self._send_button = QPushButton(SEND_TO_LAYER_BUTTON_TEXT)
@@ -283,7 +282,7 @@ class SelectorButtonBar(QWidget):
         self.use_button = QPushButton()
         set_button_weight(self.use_button, ButtonWeight.PRIMARY)
         self.use_button.clicked.connect(self.use_requested)
-        use_row, _ = _with_keycap(self.use_button, ENTER_KEY_NAME)
+        use_row, _ = _with_keycap(self.use_button, 'Enter')
         self._layout.addWidget(use_row)
 
     def set_state(self, state: ButtonBarState) -> None:

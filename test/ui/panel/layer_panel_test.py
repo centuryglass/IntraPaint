@@ -3,7 +3,6 @@
 Each structural test checks every row with `assert_panel_matches_stack`: one row per layer, in stack order, indented
 by depth, shown only under expanded groups, and laid out without overlap or squeezing.
 """
-import re
 import sys
 from typing import Callable
 from unittest.mock import patch
@@ -146,14 +145,14 @@ class LayerPanelTest(IntraPaintTestCase):
     # Action bar:
 
     def test_button_tooltips_show_key_bindings(self) -> None:
-        """Each layer button's tooltip has a title, a description and a keycap for each key of its binding."""
+        """Each layer button's tooltip has a title, a description and a keycap for each alternative binding."""
         for button, key, title in ((self.panel._add_button, KeyConfig.NEW_LAYER_SHORTCUT, ADD_BUTTON_TITLE),
                                    (self.panel._merge_down_button, KeyConfig.MERGE_LAYER_DOWN_SHORTCUT,
                                     MERGE_DOWN_BUTTON_TITLE),
                                    (self.panel._delete_button, KeyConfig.DELETE_LAYER_SHORTCUT,
                                     DELETE_BUTTON_TITLE)):
             tooltip = button.toolTip()
-            key_count = sum(len(re.split(r'\+(?=.)', binding)) for binding in key_alternatives(KeyConfig().get(key)))
+            key_count = len(key_alternatives(KeyConfig().get(key)))
             self.assertIn(f'<b>{title}</b>', tooltip)
             self.assertEqual(tooltip.count('<img'), key_count, tooltip)
 

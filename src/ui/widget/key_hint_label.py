@@ -1,58 +1,27 @@
-"""Shows formatted key suggestions to the user, drawn as raised keycaps."""
+"""Shows a key binding to the user, drawn as raised keycaps, and follows its config value."""
 from typing import Optional
 
-from PySide6.QtCore import Qt, QRect, QRectF, QPoint, QSize
+from PySide6.QtCore import Qt, QRect, QPoint, QPointF, QSize
 from PySide6.QtGui import QKeySequence, QPainter, QPaintEvent, QFont
 from PySide6.QtWidgets import QLabel, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
-from src.util.key_code_utils import get_key_with_modifiers, get_modifier_string, KEY_REQUIRES_SHIFT
-from src.util.visual.keycap import draw_keycap, draw_keycap_text, keycap_colors, keycap_font, keycap_size
-from src.util.visual.text_drawing_utils import find_text_size, get_key_display_string
-
-# Modifier names and the symbols that replace them in compact key text, in the order they are tried:
-MODIFIER_SYMBOLS = (('Shift', '⇧'), ('Ctrl', '⌃'), ('Alt', '⎇'), ('⌘', '⌘'))
-
-
-def compact_key_text(text: str) -> str:
-    """Returns formatted key text with each modifier name replaced by its symbol and no "+" after it, so "Shift+S"
-    becomes "⇧S". Other key names are unchanged."""
-    compact_combos = []
-    for combo in text.split(', '):
-        prefix = ''
-        changed = True
-        while changed:
-            changed = False
-            for name, symbol in MODIFIER_SYMBOLS:
-                if combo == name:
-                    prefix += symbol
-                    combo = ''
-                elif combo.startswith(f'{name}+'):
-                    prefix += symbol
-                    combo = combo[len(name) + 1:]
-                    changed = True
-        compact_combos.append(prefix + combo)
-    return ', '.join(compact_combos)
-
-
-def shortest_key_option(text: str) -> str:
-    """Returns the shortest of the comma-separated key combinations in formatted key text, or the first of those tied
-    for shortest."""
-    return min(text.split(', '), key=len)
+from src.util.visual.key_hint_text import key_hint_labels, shortest_key_label
+from src.util.visual.keycap import KEYCAP_SEPARATOR, draw_keycap_row, keycap_colors, keycap_font, keycap_row_size
 
 
 class KeyHintLabel(QLabel):
-    """Shows formatted key suggestions to the user, drawn as raised keycaps.
+    """Shows a key binding to the user, drawn as one raised keycap per alternative binding.
 
-    The keycap is drawn by `src.util.visual.keycap`, in the colors from `keycap_colors`.
+    The labels come from `key_hint_labels`, and the keycaps are drawn by `draw_keycap_row`.
     """
 
     def __init__(self, keys: Optional[QKeySequence | Qt.KeyboardModifier | str] = None,
                  config_key: Optional[str] = None,
                  parent: Optional[QWidget] = None):
         super().__init__('', parent=parent)
-        self._base_text = ''
+        self._labels: list[str] = []
         font = QFont()
         self._default_size = AppConfig().get(AppConfig.KEY_HINT_FONT_SIZE)
         font.setPointSize(self._default_size)
@@ -90,9 +59,9 @@ class KeyHintLabel(QLabel):
     # Naming conventions must match Qt:
     # pylint: disable=invalid-name
     def sizeHint(self) -> QSize:
-        """Returns the size of the key text in bold, plus the keycap's margins."""
+        """Returns the size of the keycap row."""
         if self._saved_size is None:
-            self._saved_size = keycap_size(find_text_size(self._base_text, self._key_font(), exact=False))
+            self._saved_size = keycap_row_size(self._labels, self._key_font())
         return QSize(self._saved_size)
 
     def minimumSizeHint(self) -> QSize:
@@ -110,13 +79,12 @@ class KeyHintLabel(QLabel):
         super().setFont(font)
 
     def paintEvent(self, event: Optional[QPaintEvent]):
-        """Draw the keycap and its key text."""
-        if self._base_text == '':
+        """Draw the keycaps and their key text."""
+        if len(self._labels) == 0:
             super().paintEvent(event)
             return
         own_bounds = QRect(QPoint(), self.size())
-        text_size = find_text_size(self._base_text, self._key_font(), exact=False)
-        text_bounds = QRect(QPoint(), keycap_size(text_size))
+        text_bounds = QRect(QPoint(), keycap_row_size(self._labels, self._key_font()))
         alignment = self.alignment()
         if alignment & Qt.AlignmentFlag.AlignHCenter == Qt.AlignmentFlag.AlignHCenter:
             text_bounds.moveLeft((own_bounds.width() - text_bounds.width()) // 2)
@@ -126,35 +94,10 @@ class KeyHintLabel(QLabel):
             text_bounds.moveTop((own_bounds.height() - text_bounds.height()) // 2)
         elif alignment & Qt.AlignmentFlag.AlignBottom == Qt.AlignmentFlag.AlignBottom:
             text_bounds.moveTop(own_bounds.height() - text_bounds.height())
-        text_bounds = text_bounds.intersected(own_bounds)
-        fill, outline, text_color = keycap_colors(self.palette())
         painter = QPainter(self)
-        draw_keycap(painter, QRectF(text_bounds), fill, outline)
-        draw_keycap_text(painter, QRectF(text_bounds), text_size, self._key_font(), self._base_text, text_color)
+        painter.setClipRect(own_bounds)
+        draw_keycap_row(painter, QPointF(text_bounds.topLeft()), self._labels, self._key_font(), self.palette())
         painter.end()
-
-    @staticmethod
-    def _validate_and_format_keys(key_str: str) -> str:
-        """Supports comma-separated key strings, where each key string is a plus-separated list where all items are
-           distinct modifiers, except the last item which may also be a key code."""
-        all_keys = key_str.split(',')
-        formatted = []
-        for key_substr in all_keys:
-            try:
-                key, modifiers = get_key_with_modifiers(key_substr)
-                if key is not None and get_key_display_string(key, False) in KEY_REQUIRES_SHIFT:
-                    modifiers = modifiers & ~Qt.KeyboardModifier.ShiftModifier
-                if key is not None and key != Qt.Key.Key_unknown:
-                    display_key = get_key_display_string(QKeySequence(key), False)
-                    if modifiers == Qt.KeyboardModifier.NoModifier:
-                        formatted.append(display_key)
-                    else:
-                        formatted.append(f'{get_modifier_string(modifiers)}+{display_key}')
-                else:
-                    formatted.append(get_modifier_string(modifiers))
-            except (RuntimeError, ValueError):
-                pass  # Invalid keys will be ignored
-        return ', '.join(formatted)
 
     @property
     def compact(self) -> bool:
@@ -179,35 +122,22 @@ class KeyHintLabel(QLabel):
             self._shortest_only = shortest_only
             self._update_text(self._key_codes)
 
+    @property
+    def labels(self) -> list[str]:
+        """Returns the label of each keycap shown."""
+        return list(self._labels)
+
     def _update_text(self, key_codes: Optional[QKeySequence | Qt.KeyboardModifier | str]) -> None:
         self._key_codes = key_codes
-        if key_codes is None:
-            self._base_text = ''
-            self.setText(self._base_text)
+        labels = key_hint_labels(key_codes, self._compact)
+        self._labels = shortest_key_label(labels) if self._shortest_only else labels
+        key_display_str = KEYCAP_SEPARATOR.join(self._labels)
+        for invalid_str, replacement in (('&', '&amp;'), ('<', '&lt;'), ('>', '&gt;'), ('"', '&quot;'),
+                                         ("'", '&apos;')):
+            key_display_str = key_display_str.replace(invalid_str, replacement)
+        if key_display_str == '':
+            self.setText('')
             return
-        if isinstance(key_codes, str):
-            key_display_str = self._validate_and_format_keys(key_codes)
-        elif isinstance(key_codes, QKeySequence):
-            key_display_str = get_key_display_string(key_codes, False)
-        elif isinstance(key_codes, Qt.KeyboardModifier):
-            key_display_str = get_modifier_string(key_codes)
-        else:
-            raise TypeError(f'Unexpected key_codes value type {type(key_codes)} = {key_codes}')
-        if self._compact:
-            key_display_str = compact_key_text(key_display_str)
-        if self._shortest_only:
-            key_display_str = shortest_key_option(key_display_str)
-        key_substitutions = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&apos;'
-        }
-        self._base_text = key_display_str
-        for invalid_str, replacement in key_substitutions.items():
-            if invalid_str in key_display_str:
-                key_display_str = key_display_str.replace(invalid_str, replacement)
         text_color = keycap_colors(self.palette())[2].name()
         self.setText(f'<span style="color: {text_color};"><strong>{key_display_str}</strong></span>')
 

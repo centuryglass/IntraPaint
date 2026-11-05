@@ -323,7 +323,7 @@ class PanelSection(QWidget):
         widget.setVisible(self._header_visible)
 
     def add_header_keycap(self, key_text: str) -> KeycapBadge:
-        """Adds a keycap with `key_text` to the right of the header and returns it."""
+        """Adds keycaps for the key binding `key_text` to the right of the header and returns them."""
         badge = KeycapBadge(key_text)
         self.add_header_widget(badge)
         return badge

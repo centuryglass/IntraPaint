@@ -36,7 +36,7 @@ from src.ui.widget.option_filmstrip import OptionFilmstrip, THUMB_SIZE
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, EDIT_MODE_INPAINT
 from src.util.validation import assert_valid_index
 from src.util.visual.pil_image_utils import pil_image_scaling
-from src.util.visual.text_drawing_utils import get_key_display_string
+from src.util.visual.key_hint_text import key_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.generated_image_selector'
@@ -565,7 +565,7 @@ class GeneratedImageSelector(QWidget):
         running_batch = (waiting[0] - 1) // batch_size if waiting and self._generating() and not self._session.stopped \
             else None
         generating = [not ready[i] and i > 0 and (i - 1) // batch_size == running_batch for i in range(count)]
-        compare_key = get_key_display_string(KeyConfig().get(KeyConfig.COMPARE_ORIGINAL_MODIFIER), rich_text=False)
+        compare_key = key_hint_text(KeyConfig().get(KeyConfig.COMPARE_ORIGINAL_MODIFIER))
         self._view.set_overlay_state(OverlayState(focus_index=self._zoom_index, single_view=self._zoomed_in,
                                                   hover_index=self._hover_index, comparing=self._comparing,
                                                   ready=ready, generating=generating, compare_key=compare_key,

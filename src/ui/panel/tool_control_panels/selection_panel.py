@@ -29,7 +29,7 @@ from src.ui.widget.key_hint_label import KeyHintLabel
 from src.ui.widget.panel_section import PanelSection
 from src.util.shared_constants import PROJECT_DIR, SMALL_ICON_SIZE, EDIT_MODE_INPAINT
 from src.util.visual.selection_mode import SelectionMode, SelectionModifiers, stored_selection_mode
-from src.util.visual.text_drawing_utils import get_key_display_string
+from src.util.visual.key_hint_text import key_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.selection_panel'
@@ -69,11 +69,10 @@ def next_selection_mode(mode: SelectionMode) -> SelectionMode:
 
 
 def _with_shortcut(description: str, config_key: str) -> str:
-    keycodes = KeyConfig().get_keycodes(config_key)
-    if keycodes == '':
+    keys = key_hint_text(KeyConfig().get(config_key))
+    if keys == '':
         return description
-    return TOOLTIP_WITH_KEY.format(description=description,
-                                   shortcut=get_key_display_string(keycodes, rich_text=False))
+    return TOOLTIP_WITH_KEY.format(description=description, shortcut=keys)
 
 
 # The planned items: the Selection buttons in a row or a column, the optional modifier hint, and the optional bounds:

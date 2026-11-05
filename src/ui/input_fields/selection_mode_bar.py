@@ -10,7 +10,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.ui.input_fields.segmented_control import DisplayMode, Segment, SegmentedControl
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.selection_mode import SelectionMode, SelectionModifiers, stored_selection_mode
-from src.util.visual.text_drawing_utils import get_key_display_string
+from src.util.visual.key_hint_text import key_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.input_fields.selection_mode_bar'
@@ -57,7 +57,7 @@ def mode_modifier_keys(modifiers: SelectionModifiers, mode: SelectionMode) -> tu
 
 def modifier_keys_text(config_keys: tuple[str, ...]) -> str:
     """Returns the display text for holding every listed modifier, such as "Shift+Alt"."""
-    names = [get_key_display_string(KeyConfig().get(key), rich_text=False) for key in config_keys
+    names = [key_hint_text(KeyConfig().get(key)) for key in config_keys
              if KeyConfig().get(key) != '']
     return '+'.join(names)
 

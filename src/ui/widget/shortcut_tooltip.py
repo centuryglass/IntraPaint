@@ -1,7 +1,7 @@
 """Adds a configurable key binding to a widget's tooltip, and keeps it current when the binding changes.
 
-Rich tooltips show a title, a dim description line, and the binding as one keycap per key, drawn by
-`rich_text_key_hints`. Plain tooltips append the binding in parentheses, formatted by `get_key_display_string`.
+Rich tooltips show a title, a dim description line, and the binding as one keycap per alternative binding, drawn by
+`rich_text_key_hints`. Plain tooltips append the binding in parentheses, formatted by `key_hint_text`.
 """
 from typing import Callable, List, Optional, Union
 from weakref import ref
@@ -11,7 +11,7 @@ from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.key_config import KeyConfig
-from src.util.visual.text_drawing_utils import get_key_display_string, rich_text_key_hints
+from src.util.visual.key_hint_text import key_hint_text, rich_text_key_hints
 
 # Share of the tooltip text color in the description's color, with the rest from the tooltip background:
 DIM_TEXT_WEIGHT = 0.65
@@ -21,7 +21,7 @@ def shortcut_tooltip_text(text: str, keys: str) -> str:
     """Returns tooltip text followed by a key binding in parentheses, or the text alone if no key is bound."""
     if keys == '':
         return text
-    return f'{text} ({get_key_display_string(keys, rich_text=False)})'
+    return f'{text} ({key_hint_text(keys)})'
 
 
 def rich_shortcut_tooltip_text(title: str, keys: str, description: str = '',

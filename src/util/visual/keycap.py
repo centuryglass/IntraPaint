@@ -1,10 +1,13 @@
 """Draws keycaps: rounded `WindowText`-filled plates with `Shadow` text and outline, and a hard depth edge below.
 
-`KeyHintLabel` draws its keycap with `draw_keycap` and `draw_keycap_text`, and `rich_text_key_hint` renders the same
-plate and text into inline images, so the two stay in step with each other and with the theme.
+Keycap widgets draw their row of keycaps with `draw_keycap_row`, and `rich_text_key_hint` renders the same plate and
+text into inline images, so every key hint stays in step with the others and with the theme. The labels come from
+`src.util.visual.key_hint_text.key_hint_labels`.
 """
-from PySide6.QtCore import QMargins, QRectF, QSize, Qt
-from PySide6.QtGui import QColor, QFont, QPainter, QPalette, QPen
+from typing import Sequence
+
+from PySide6.QtCore import QMargins, QPointF, QRectF, QSize, Qt
+from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPalette, QPen
 
 KEYCAP_RADIUS = 3.0
 # The keycap's ink shadow drops this far below it:
@@ -28,6 +31,13 @@ def keycap_colors(palette: QPalette) -> tuple[QColor, QColor, QColor]:
     """
     shadow = palette.color(QPalette.ColorRole.Shadow)
     return palette.color(QPalette.ColorRole.WindowText), shadow, shadow
+
+
+def keycap_text_size(text: str, font: QFont) -> QSize:
+    """Returns the size of the box a keycap gives its text, in the keycap font."""
+    metrics = QFontMetrics(font)
+    size = metrics.boundingRect(text).size()
+    return QSize(size.width() + 2, max(size.height(), metrics.ascent() + metrics.descent()) + 2)
 
 
 def keycap_size(text_size: QSize) -> QSize:
@@ -63,3 +73,47 @@ def draw_keycap_text(painter: QPainter, bounds: QRectF, text_size: QSize, font: 
                        text_size.width(), text_size.height())
     painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, text)
     painter.restore()
+
+
+# Drawn between the keycaps of alternative key bindings:
+KEYCAP_SEPARATOR = ', '
+
+
+def keycap_row_size(labels: Sequence[str], font: QFont) -> QSize:
+    """Returns the size of a row of keycaps for `labels` in the keycap `font`, with `KEYCAP_SEPARATOR` between them."""
+    if len(labels) == 0:
+        return QSize(0, 0)
+    sizes = [keycap_size(keycap_text_size(label, font)) for label in labels]
+    separator_width = QFontMetrics(font).horizontalAdvance(KEYCAP_SEPARATOR)
+    return QSize(sum(size.width() for size in sizes) + separator_width * (len(labels) - 1),
+                 max(size.height() for size in sizes))
+
+
+def draw_keycap_row(painter: QPainter, top_left: QPointF, labels: Sequence[str], font: QFont, palette: QPalette,
+                    draw_text: bool = True) -> None:
+    """Draws a keycap for each of `labels` in the keycap `font`, left to right from `top_left`, at the size
+    `keycap_row_size` returns. `KEYCAP_SEPARATOR` between keycaps takes the keycap fill color, the palette's text
+    color. With `draw_text` false, only the plates are drawn."""
+    fill, outline, text_color = keycap_colors(palette)
+    row_height = keycap_row_size(labels, font).height()
+    separator_width = QFontMetrics(font).horizontalAdvance(KEYCAP_SEPARATOR)
+    x = top_left.x()
+    for index, label in enumerate(labels):
+        if index > 0:
+            if draw_text:
+                painter.save()
+                painter.setFont(font)
+                painter.setPen(fill)
+                # Placed like keycap text, so the separator sits on the keycap text's baseline:
+                painter.drawText(QRectF(x, top_left.y() + KEYCAP_PADDING.top(), separator_width,
+                                        row_height - KEYCAP_PADDING.top() - KEYCAP_PADDING.bottom() - KEYCAP_DEPTH),
+                                 Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, KEYCAP_SEPARATOR)
+                painter.restore()
+            x += separator_width
+        text_size = keycap_text_size(label, font)
+        size = keycap_size(text_size)
+        bounds = QRectF(x, top_left.y(), size.width(), size.height())
+        draw_keycap(painter, bounds, fill, outline)
+        if draw_text:
+            draw_keycap_text(painter, bounds, text_size, font, label, text_color)
+        x += size.width()

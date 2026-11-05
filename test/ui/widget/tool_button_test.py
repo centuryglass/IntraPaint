@@ -8,7 +8,6 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.key_config import KeyConfig
 from src.tools.base_tool import BaseTool
-from src.ui.widget.key_hint_label import compact_key_text, shortest_key_option
 from src.ui.widget.tool_button import ToolButton, TOOL_ICON_SIZE, PLATE_MARGIN, PLATE_SHADOW_OFFSET, MAX_KEY_HINT_SHARE
 from test.base_test_case import IntraPaintTestCase
 
@@ -123,25 +122,8 @@ class ToolButtonKeyHintTest(IntraPaintTestCase):
         button.set_edge_length(40, show_key_hint=True)
         # pylint: disable=protected-access
         self.assertTrue(button._key_hint.shortest_only)
-        self.assertEqual(button._key_hint._base_text, 'V')
+        self.assertEqual(button._key_hint.labels, ['V'])
         self.assertTrue(button._key_hint.isVisibleTo(button))
         button.set_edge_length(TOOL_ICON_SIZE, show_key_hint=True)
         self.assertFalse(button._key_hint.shortest_only)
-        self.assertIn(',', button._key_hint._base_text)
-
-    def test_tied_keys_show_the_first(self) -> None:
-        """Among equally short keys, the first shows."""
-        self.assertEqual(shortest_key_option('Ctrl+T, V, W'), 'V')
-        self.assertEqual(shortest_key_option('Ctrl+T'), 'Ctrl+T')
-
-
-class CompactKeyTextTest(IntraPaintTestCase):
-    """Tests modifier symbol substitution."""
-
-    def test_modifiers_become_symbols(self) -> None:
-        """Each modifier name and its "+" become one symbol, and other keys stay as they are."""
-        self.assertEqual(compact_key_text('Shift+S'), '⇧S')
-        self.assertEqual(compact_key_text('Ctrl+Shift+T'), '⌃⇧T')
-        self.assertEqual(compact_key_text('Alt+F4, Ctrl++'), '⎇F4, ⌃+')
-        self.assertEqual(compact_key_text('Shift'), '⇧')
-        self.assertEqual(compact_key_text('PgUp'), 'PgUp')
+        self.assertEqual(button._key_hint.labels, ['Ctrl+Alt+T', 'V'])

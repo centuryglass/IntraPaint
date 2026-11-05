@@ -36,7 +36,6 @@ from src.ui.panel.panel_reset import reset_config_keys
 from src.ui.widget.panel_header import RESET_TOOLTIP
 from src.ui.widget.shortcut_tooltip import shortcut_tooltip_text
 from src.ui.widget.tool_button import ToolButton
-from src.util.visual.text_drawing_utils import get_key_display_string
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_panel'
@@ -378,7 +377,7 @@ class ToolPanel(DockPanel):
             return
         keys = KeyConfig().get(tool.get_activation_config_key())
         self.header.set_name(tool.label, tool.get_icon())
-        self.header.set_key_text(get_key_display_string(keys, rich_text=False) if keys != '' else '')
+        self.header.set_key_text(keys)
         self.header.set_description(tool.get_tooltip_text() if self._show_description else '')
         self._short_label.setText(shortcut_tooltip_text(tool.label, keys))
         self._short_label.setVisible(self.header_collapsed)

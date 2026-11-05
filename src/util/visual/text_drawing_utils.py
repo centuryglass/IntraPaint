@@ -1,5 +1,4 @@
 """Various utility functions for drawing and placing text."""
-import re
 from typing import Optional, cast
 
 from PySide6.QtCore import QRect, QRectF, QMargins, QSize, QPoint, Qt
@@ -10,7 +9,8 @@ from PySide6.QtWidgets import QApplication
 from src.util.visual.display_size import logger
 from src.util.visual.geometry_utils import align_inner_bounds
 from src.util.visual.image_utils import create_transparent_image, temp_rich_text_image
-from src.util.visual.keycap import draw_keycap, draw_keycap_text, keycap_colors, keycap_font, keycap_size
+from src.util.visual.keycap import draw_keycap, draw_keycap_text, keycap_colors, keycap_font, keycap_size, \
+    keycap_text_size
 from src.util.visual.palette_icon import palette_rich_text_image
 from src.util.shared_constants import PROJECT_DIR
 
@@ -125,11 +125,12 @@ def draw_text_path(path: QPainterPath, painter: QPainter, text_color: Optional[Q
 def _keycap_height() -> int:
     """Returns the height of the keycaps `rich_text_key_hint` draws, depth edge included. Mouse hint images take this
        height, so they line up with the keycaps."""
-    return keycap_size(find_text_size('X', keycap_font(QApplication.font()), exact=False)).height()
+    return keycap_size(keycap_text_size('X', keycap_font(QApplication.font()))).height()
 
 
 def rich_text_key_hint(key_str: str) -> str:
-    """Returns an inline image of a single keycap labeled `key_str`, drawn in the application palette's colors."""
+    """Returns an inline image of a single keycap labeled `key_str`, drawn in the application palette's colors.
+       `src.util.visual.key_hint_text.rich_text_key_hints` draws a key binding's keycaps."""
     palette = QApplication.palette()
     fill, outline, text_color = keycap_colors(palette)
     font = keycap_font(QApplication.font())
@@ -137,7 +138,7 @@ def rich_text_key_hint(key_str: str) -> str:
     image_name = f'key_{font.pointSizeF()}_{fill.name()}_{outline.name()}_{text_color.name()}_{key_str.encode().hex()}'
 
     def _draw_key_image() -> QImage:
-        text_size = find_text_size(key_str, font, exact=False)
+        text_size = keycap_text_size(key_str, font)
         image = create_transparent_image(keycap_size(text_size))
         painter = QPainter(image)
         bounds = QRectF(0, 0, image.width(), image.height())
@@ -147,20 +148,6 @@ def rich_text_key_hint(key_str: str) -> str:
         return image
 
     return temp_rich_text_image(image_name, _draw_key_image)
-
-
-_CHORD_SEPARATOR = re.compile(r'(?<=.),\s*(?=.)')
-_KEY_SEPARATOR = re.compile(r'\+(?=.)')
-
-
-def rich_text_key_hints(keys: str) -> str:
-    """Returns inline keycap images for a key binding, with one keycap per key and a comma between the chords of a
-       sequence. Returns the empty string for an empty binding."""
-    chords = []
-    for chord in _CHORD_SEPARATOR.split(keys):
-        chord_keys = [get_key_display_string(key, rich_text=False) for key in _KEY_SEPARATOR.split(chord) if key != '']
-        chords.append('&nbsp;'.join(rich_text_key_hint(key) for key in chord_keys))
-    return ',&nbsp;'.join(chord for chord in chords if chord != '')
 
 
 def rich_text_code_block(code_string: str) -> str:

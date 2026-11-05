@@ -40,7 +40,7 @@ from src.ui.panel.layer_ui.layer_row import LARGE_THUMBNAIL_SIZE, MEDIUM_THUMBNA
 from src.ui.widget.shortcut_tooltip import set_shortcut_tooltip
 from src.util.shared_constants import APP_ICON_PATH, PROJECT_DIR, SMALL_ICON_SIZE
 from src.util.visual.palette_icon import palette_icon
-from src.util.visual.text_drawing_utils import get_key_display_string
+from src.util.visual.key_hint_text import key_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.layer_ui.layer_panel'
@@ -253,7 +253,7 @@ class LayerPanel(DockPanel):
     def _add_more_button(self, text: str, key_config_key: str, action: Callable[[], None],
                          layout: QVBoxLayout) -> QPushButton:
         keys = KeyConfig().get(key_config_key)
-        button = QPushButton(f'{text} ({get_key_display_string(keys, rich_text=False)})' if keys != '' else text)
+        button = QPushButton(f'{text} ({key_hint_text(keys)})' if keys != '' else text)
         button.setFlat(True)
         button.clicked.connect(self.header.popover.hide)
         button.clicked.connect(lambda: action())  # pylint: disable=unnecessary-lambda
