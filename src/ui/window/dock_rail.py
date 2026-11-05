@@ -21,6 +21,7 @@ from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QIcon, QPainter, QPaintEvent, QPalette, QPen, QResizeEvent
 from PySide6.QtWidgets import (QApplication, QFrame, QMainWindow, QPushButton, QSizePolicy, QToolBar, QToolButton,
                                QWidget)
+from shiboken6 import isValid
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -836,7 +837,12 @@ class DockRails(QObject):
 
     def sync(self, *_args) -> None:
         """Moves each button to the rail of its dock's current area, grouped by tab group. Call after a layout change
-        Qt doesn't report with `dockLocationChanged`, such as `addDockWidget` or `restoreState`."""
+        Qt doesn't report with `dockLocationChanged`, such as `addDockWidget` or `restoreState`.
+
+        Does nothing once the window's C++ object is being destroyed: the docks it deletes report their changes here,
+        since this object is deleted after them."""
+        if not isValid(self._window):
+            return
         for dock, _button in self._docks:
             area = self._window.dockWidgetArea(dock)
             if area in self._rails:
