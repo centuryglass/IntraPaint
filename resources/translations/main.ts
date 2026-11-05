@@ -6076,6 +6076,14 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
 </context>
 <context>
+    <name>ui.graphics_items.manual_resolution_label</name>
+    <message>
+        <location filename="../../src/ui/graphics_items/manual_resolution_label.py"/>
+        <source>Manual resolution: {width} x {height}</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.input_fields.fill_style_combo_box</name>
     <message>
         <location filename="../../src/ui/input_fields/fill_style_combo_box.py"/>

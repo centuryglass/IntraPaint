@@ -8,10 +8,11 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.generation_area_controller import apply_generation_area_frame, record_generation_area_size
 from src.image.layers.image_stack import ImageStack
+from src.ui.ink_style import caution_color
 from src.ui.input_fields.geometry_block import HEIGHT, WIDTH, X, Y
 from src.ui.panel.tool_control_panels.generation_area_tool_panel import GenerationAreaToolPanel, EMPTY_SLOT_TEXT, \
     RECENT_FRAME_COUNT
-from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL
+from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL, RESOLUTION_RULE_MATCH_AREA
 from test.base_test_case import IntraPaintTestCase
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -171,3 +172,17 @@ class GenerationAreaToolPanelTest(IntraPaintTestCase):
         self.panel.edit_resolution_requested.connect(lambda: requests.append(True))
         self.panel.edit_resolution_button.click()
         self.assertEqual(requests, [True])
+
+    def test_manual_rule_takes_the_caution_color(self) -> None:
+        """The rule line and the section's summary take the caution color under the Manual rule only."""
+        color = caution_color()
+        if color is None:
+            self.skipTest('The test theme has no caution color')
+        cache = Cache()
+        for rule, cautioned in ((RESOLUTION_RULE_MANUAL, True), (RESOLUTION_RULE_MATCH_AREA, False)):
+            with self.subTest(rule=rule):
+                cache.set(Cache.GENERATION_RESOLUTION_RULE, rule)
+                self.assertEqual(self.panel.rule_caution(), cautioned)
+                label = self.panel.rule_label
+                shown = label.palette().color(label.foregroundRole())
+                self.assertEqual(shown == color, cautioned)

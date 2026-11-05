@@ -18,11 +18,13 @@ from src.image.layers.transform_layer import TransformLayer
 from src.ui.graphics_items.border import Border
 from src.ui.graphics_items.context_pin_item import ContextPinItem, marker_size_for_view, DEFAULT_MARKER_SIZE
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
+from src.ui.graphics_items.manual_resolution_label import ManualResolutionLabel
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.selection_outline import SelectionOutline
 from src.ui.graphics_items.viewport_highlight import ViewportHighlight
 from src.ui.ink_style import ink_colors
 from src.ui.widget.image_graphics_view import ImageGraphicsView
+from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL
 from src.util.visual.graphics_scene_utils import get_view_bounds_of_scene_item_rect
 from src.util.visual.image_utils import get_transparency_tile_pixmap, tile_pattern_fill, TRANSPARENCY_PATTERN_TILE_DIM
 
@@ -88,6 +90,12 @@ class ImageViewer(ImageGraphicsView):
         self._image_border.setVisible(True)
         self._image_outline.dash_pattern = [1, 0]  # solid line
         self._generation_area_outline = Outline(scene, self)
+        self._manual_resolution_label = ManualResolutionLabel()
+        self._manual_resolution_label.setVisible(False)
+        scene.addItem(self._manual_resolution_label)
+        for resolution_key in (Cache.GENERATION_SIZE, Cache.GENERATION_RESOLUTION_RULE):
+            Cache().connect(self, resolution_key, self._update_manual_resolution_label)
+        self.view_changed.connect(self._update_manual_resolution_label)
 
         # "inpaint selected only" generation area outline:
         self._generation_area_selection_outline = Outline(scene, self)
@@ -146,6 +154,7 @@ class ImageViewer(ImageGraphicsView):
     def set_generation_area_visible(self, visible: bool) -> None:
         """Set whether the generation area will be visible as an outline within the view."""
         self._generation_area_outline.setVisible(visible)
+        self._update_manual_resolution_label()
         selection_layer = self._image_stack.selection_layer
         self._generation_area_selection_outline.setVisible(visible and selection_layer.visible
                                                            and selection_layer.get_selection_gen_area() is not None)
@@ -248,6 +257,28 @@ class ImageViewer(ImageGraphicsView):
             self._generation_area_selection_outline.outlined_region = QRectF(bounds)
         else:
             self._generation_area_selection_outline.setVisible(False)
+        self._update_manual_resolution_label()
+
+    @property
+    def manual_resolution_label(self) -> ManualResolutionLabel:
+        """Returns the label that shows the resolution on the generation area while the resolution rule is Manual."""
+        return self._manual_resolution_label
+
+    def _update_manual_resolution_label(self, *_args) -> None:
+        """Shows the manual resolution label while the generation area shows and the resolution rule is Manual."""
+        cache = Cache()
+        label = self._manual_resolution_label
+        shown = (self._image_stack.has_image and self._generation_area_outline.isVisible()
+                 and cache.get(Cache.GENERATION_RESOLUTION_RULE) == RESOLUTION_RULE_MANUAL)
+        label.setVisible(shown)
+        if not shown:
+            return
+        resolution = cache.get(Cache.GENERATION_SIZE)
+        label.set_resolution(resolution.width(), resolution.height())
+        viewport = self.viewport()
+        assert viewport is not None
+        visible_scene_top = self.mapToScene(viewport.rect().topLeft()).y()
+        label.place(QPointF(self._generation_area.topLeft()), visible_scene_top, self.transform().m11())
 
     # Signal handlers: sync with image/layer changes:
     # noinspection PyUnusedLocal

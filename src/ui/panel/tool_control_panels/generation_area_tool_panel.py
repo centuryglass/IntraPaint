@@ -14,7 +14,7 @@ preset, and follows the area whenever it changes.
     pressed on anything else.
 - Sent to generator: the resolution and resolution rule, which the generation panel owns, with an Edit button that
   emits `edit_resolution_requested`. It shows only while `set_resolution_shown` says a Stable Diffusion panel is
-  loaded.
+  loaded. Under the Manual rule, the rule line and the section's summary take the caution color.
 
 The panel is a `src.ui.layout.panel_fit.FitContent`, planned in the space the Tools panel gives it:
 - Side: one column. The geometry block takes one row where that fits across. Presets keep a label column where the
@@ -36,14 +36,14 @@ from src.config.key_config import KeyConfig
 from src.controller.generation_area_controller import apply_generation_area_frame, record_generation_area_size
 from src.image.layers.image_stack import ImageStack
 from src.ui.button_weight import ButtonWeight, set_button_weight
-from src.ui.ink_style import signal_color
+from src.ui.ink_style import caution_color, signal_color
 from src.ui.input_fields.geometry_block import HEIGHT, WIDTH, X, Y, GeometryBlock
 from src.ui.layout.panel_fit import REQUIRED, FitItem, FitPlanner, Orientation, Placement
 from src.ui.panel.tool_control_panels.fit_tool_panel import FitToolPanel
 from src.ui.widget.panel_section import PanelSection
 from src.undo_stack import UndoStack
-from src.util.generation_area_utils import full_image_frame, square_frame, recent_frames, parse_size, size_to_str, \
-    previous_frame
+from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL, full_image_frame, square_frame, recent_frames, \
+    parse_size, size_to_str, previous_frame
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panel.generation_area_tool_panel'
@@ -446,13 +446,33 @@ class GenerationAreaToolPanel(FitToolPanel):
     def _update_resolution_line(self, *_args) -> None:
         self._resolution_label.setText(self._resolution_text())
         self._rule_label.setText(self._rule_text())
+        self._update_rule_caution()
         self._area_shown.emit()
 
+    def rule_caution(self) -> bool:
+        """Returns whether the rule line and section summary are marked in the caution color for the Manual rule."""
+        return self._generator_section.summary_caution
+
+    def _update_rule_caution(self) -> None:
+        """Draws the rule line and the section summary in the caution color while the resolution rule is Manual."""
+        manual = Cache().get(Cache.GENERATION_RESOLUTION_RULE) == RESOLUTION_RULE_MANUAL
+        color = caution_color() if manual else None
+        if color is None:
+            self._rule_label.setForegroundRole(QPalette.ColorRole.PlaceholderText)
+            self._rule_label.setPalette(QPalette())
+        else:
+            rule_palette = QPalette(self.palette())
+            rule_palette.setColor(QPalette.ColorRole.WindowText, color)
+            self._rule_label.setPalette(rule_palette)
+            self._rule_label.setForegroundRole(QPalette.ColorRole.WindowText)
+        self._generator_section.set_summary_caution(manual)
+
     def changeEvent(self, event: Optional[QEvent]) -> None:  # pylint: disable=invalid-name
-        """Redraws the Custom hint in the new signal color after a palette change."""
+        """Redraws the Custom hint and the Manual rule line in the new palette's colors after a palette change."""
         super().changeEvent(event)
         if event is not None and event.type() == QEvent.Type.PaletteChange:
             self._update_custom_hint_color()
+            self._update_rule_caution()
 
     # -----------------------------------------------------------------------------------------------------------------
     # Layout

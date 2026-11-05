@@ -11,7 +11,8 @@ do. The sections run Prompt, Mask, Sampling, Size and batch, then Advanced. A st
   arguments (`webui`) and `set_advanced_content`.
 - The edit mode decides which controls show, and the panel plans again when it changes. The Mask section and context
   show in Inpaint only, and denoising strength in Inpaint and Image to image. Outside Inpaint, the header's edit mode
-  selector takes the caution color and a note above Generate names the mode.
+  selector takes the caution color and a note above Generate names the mode. The Advanced section's resolution rule
+  selector takes it under the Manual rule, which stops the resolution following the generation area.
 - The edit mode selector sits in the header. A strip puts the header at the top of the prompt column, so the columns
   beside it get the strip's full height. The prompt column scrolls on its own, so the header never collapses.
 - The header's More menu holds Describe and the commands that open other windows. The panel emits signals for them
@@ -30,7 +31,7 @@ from PySide6.QtWidgets import (QApplication, QBoxLayout, QComboBox, QFormLayout,
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.config import Config
-from src.ui.ink_style import caution_color, set_primary_button
+from src.ui.ink_style import caution_color, caution_text_palette, set_primary_button
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.seed_value_spinbox import SeedValueSpinbox
 from src.ui.input_fields.size_field import SizeField
@@ -44,6 +45,7 @@ from src.ui.panel.generators.soft_inpainting_controls import SoftInpaintingContr
 from src.ui.widget.disabled_banner import DisabledBanner
 from src.ui.widget.panel_section import PanelSection
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
+from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL
 from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 from src.util.shared_text import BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENERATE
 from src.ui.input_fields.field_factory import create_control_widget
@@ -633,6 +635,8 @@ class StableDiffusionPanel(DockPanel):
         self._resolution_rule_combobox = option_combo_box(cache, Cache.GENERATION_RESOLUTION_RULE)
         self._advanced_layout.addWidget(LabeledRows([(normalize_row_label(
             cache.get_label(Cache.GENERATION_RESOLUTION_RULE)), self._resolution_rule_combobox)]))
+        cache.connect(self, Cache.GENERATION_RESOLUTION_RULE, self._apply_rule_caution)
+        self._apply_rule_caution()
         self._advanced_layout.addWidget(group_label(GROUP_TITLE_MODEL))
         self._clip_skip_field = config_slider_field(cache, Cache.CLIP_SKIP)
         self._advanced_layout.addWidget(self._clip_skip_field)
@@ -824,27 +828,24 @@ class StableDiffusionPanel(DockPanel):
         """Draws the edit mode selector and the mode note in the caution color, or restores their usual colors. The
         tiling button always takes the caution color."""
         color = caution_color()
-        combo_palette = QPalette()
         note_palette = QPalette()
-        tiling_palette = QPalette()
-        if color is not None:
-            for role in (QPalette.ColorRole.Text, QPalette.ColorRole.ButtonText, QPalette.ColorRole.Shadow):
-                tiling_palette.setColor(QPalette.ColorGroup.Active, role, color)
-                tiling_palette.setColor(QPalette.ColorGroup.Inactive, role, color)
-                if caution:
-                    combo_palette.setColor(QPalette.ColorGroup.Active, role, color)
-                    combo_palette.setColor(QPalette.ColorGroup.Inactive, role, color)
-            if caution:
-                note_palette.setColor(QPalette.ColorRole.WindowText, color)
-        self._edit_mode_combobox.setPalette(combo_palette)
+        if caution and color is not None:
+            note_palette.setColor(QPalette.ColorRole.WindowText, color)
+        self._edit_mode_combobox.setPalette(caution_text_palette(caution))
         self._mode_note.setPalette(note_palette)
-        self._tiling_button.setPalette(tiling_palette)
+        self._tiling_button.setPalette(caution_text_palette())
+
+    def _apply_rule_caution(self, *_args) -> None:
+        """Draws the resolution rule selector in the caution color while the rule is Manual."""
+        manual = Cache().get(Cache.GENERATION_RESOLUTION_RULE) == RESOLUTION_RULE_MANUAL
+        self._resolution_rule_combobox.setPalette(caution_text_palette(manual))
 
     def changeEvent(self, event: QEvent) -> None:  # pylint: disable=invalid-name
         """Takes the caution color from the new style when the style changes."""
         super().changeEvent(event)
         if event.type() == QEvent.Type.StyleChange:
             self._apply_caution(Cache().get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT)
+            self._apply_rule_caution()
 
     # ---------------------------------------------------------------------------------------------------------------
     # Layout

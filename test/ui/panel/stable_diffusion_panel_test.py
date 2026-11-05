@@ -22,6 +22,7 @@ from src.ui.panel.generators.stable_diffusion_panel import (NOTE_IMG2IMG, NOTE_T
 from src.ui.panel.generators.webui_advanced_controls import VARIATION_OFF, WebUIAdvancedControls
 from src.ui.widget.panel_section import PanelSection
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
+from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL, RESOLUTION_RULE_MATCH_AREA
 from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 from test.base_test_case import IntraPaintTestCase
 from test.ui.panel.tool_panel_test import settle_layouts
@@ -113,6 +114,19 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         for mode, cautioned in ((EDIT_MODE_TXT2IMG, True), (EDIT_MODE_IMG2IMG, True), (EDIT_MODE_INPAINT, False)):
             with self.subTest(mode=mode):
                 cache.set(Cache.EDIT_MODE, mode)
+                text = control.palette().color(QPalette.ColorGroup.Active, QPalette.ColorRole.ButtonText)
+                self.assertEqual(text == color, cautioned)
+
+    def test_resolution_rule_selector_takes_the_caution_color_when_manual(self) -> None:
+        """The Advanced section's resolution rule selector draws its text in the caution color under the Manual rule."""
+        color = caution_color()
+        if color is None:
+            self.skipTest('The test theme has no caution color')
+        cache = Cache()
+        control = self.panel._resolution_rule_combobox  # pylint: disable=protected-access
+        for rule, cautioned in ((RESOLUTION_RULE_MANUAL, True), (RESOLUTION_RULE_MATCH_AREA, False)):
+            with self.subTest(rule=rule):
+                cache.set(Cache.GENERATION_RESOLUTION_RULE, rule)
                 text = control.palette().color(QPalette.ColorGroup.Active, QPalette.ColorRole.ButtonText)
                 self.assertEqual(text == color, cautioned)
 
