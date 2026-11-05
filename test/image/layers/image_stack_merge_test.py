@@ -7,8 +7,6 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-import pytest
-
 from PySide6.QtCore import QPoint, QRect, QSize
 from PySide6.QtGui import QImage, QTransform
 
@@ -22,9 +20,6 @@ from test.image.layers.image_stack_state import CANVAS_SIZE, ImageStackOpTestCas
 ERROR_DIALOG = 'src.image.layers.image_stack.show_error_dialog'
 CONFIRM = 'src.image.layers.image_stack.request_confirmation'
 CONFIRM_RENDER_TEXT = 'src.image.layers.non_destructive_layer.request_confirmation'
-
-ISSUE_BASE_OPACITY = ('https://github.com/centuryglass/IntraPaint/issues/211: merge down applies the base layer\'s'
-                      ' opacity to the merged top layer')
 
 TOP_SIZE = QSize(14, 10)
 TOP_OFFSET = QPoint(20, 16)
@@ -82,11 +77,25 @@ class MergeLayerDownTest(MergeTestCase):
                 self.top.set_opacity(0.6)
                 self.assert_composite_kept(lambda: self.image_stack.merge_layer_down(self.top))
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_BASE_OPACITY)
     def test_merge_down_onto_translucent_base(self) -> None:
         """The base layer's opacity applies to the base content only, not to the merged top layer."""
         self.base.set_opacity(0.5)
         self.assert_composite_kept(lambda: self.image_stack.merge_layer_down(self.top))
+        self.assertEqual(1.0, self.base.opacity)
+        UndoStack().undo()
+        self.assertEqual(0.5, self.base.opacity)
+
+    def test_merge_down_onto_translucent_alpha_locked_base(self) -> None:
+        """An alpha-locked base keeps its alpha at its old opacity, with the opacity baked into its pixels."""
+        self.base.set_opacity(0.5)
+        self.base.set_alpha_locked(True)
+        base_alpha = image_data_as_numpy_8bit_readonly(self.base.image)[:, :, 3].astype(int)
+        self.assert_undo_redo(lambda: self.image_stack.merge_layer_down(self.top))
+        expected_alpha = np.zeros((26, 34))
+        expected_alpha[:base_alpha.shape[0], :base_alpha.shape[1]] = base_alpha / 2
+        self.assertEqual(1.0, self.base.opacity)
+        merged_alpha = image_data_as_numpy_8bit_readonly(self.base.image)[:, :, 3].astype(int)
+        self.assertLessEqual(np.abs(merged_alpha - expected_alpha).max(), 1)
 
     def test_merge_down_transformed(self) -> None:
         """A rotated top layer merges onto a translated base in its rendered position."""
