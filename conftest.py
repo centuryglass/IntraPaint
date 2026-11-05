@@ -22,6 +22,7 @@ prepare the environment that the Qt-based tests rely on:
 - Flush C stdio after each test, so output native libraries print is captured with the test.
 - Fail any test that opens a modal dialog or menu. Under the offscreen platform nothing can close
   one, so it would block the whole run until the CI job times out.
+- Fail any test during which an exception reached `sys.excepthook`, where PySide sends exceptions raised in Qt slots.
 - On Python 3.12 and up, keep the last few exceptions raised in the project's own code. A failure that says a Qt call "returned
   NULL without setting an exception" gets a report section listing them and the test that ran before it, since
   PySide lost the exception that caused it (issue #283).
@@ -34,6 +35,7 @@ import os
 import shutil
 import sys
 import tempfile
+import traceback
 from collections import deque
 from types import CodeType
 from typing import Callable, Optional
@@ -196,6 +198,36 @@ def _fail_on_swallowed_modal(request: pytest.FixtureRequest):
     yield
     if _blocked_modals and not request.node.stash.get(_CALL_FAILED, False):
         pytest.fail(f'Modal dialog blocked during the test: {"; ".join(_blocked_modals)}', pytrace=False)
+
+
+@pytest.fixture(autouse=True)
+def _fail_on_swallowed_exception(request: pytest.FixtureRequest):
+    """Fail a test during which an exception reached `sys.excepthook`.
+
+    PySide hands an exception raised in a Qt slot to `sys.excepthook` and carries on emitting, so the code that
+    emitted the signal, and the test, never see it. The hook records each exception's text, not the exception, so
+    the traceback's frames and widgets don't outlive the test. It then calls the hook it replaced, which prints the
+    traceback for pytest to capture.
+
+    `UnexpectedModalDialog` is left to `_fail_on_swallowed_modal`, and a test whose body already failed is left
+    alone, so each failure is reported once. A test that patches `sys.excepthook` itself sees its own patch.
+    """
+    swallowed: list[str] = []
+    previous_hook = sys.excepthook
+
+    def _record_exception(exc_type, exc_value, exc_traceback) -> None:
+        if not issubclass(exc_type, UnexpectedModalDialog):
+            swallowed.append(''.join(traceback.format_exception_only(exc_type, exc_value)).strip())
+        previous_hook(exc_type, exc_value, exc_traceback)
+
+    sys.excepthook = _record_exception
+    try:
+        yield
+    finally:
+        sys.excepthook = previous_hook
+    if swallowed and not request.node.stash.get(_CALL_FAILED, False):
+        pytest.fail('Exceptions reached sys.excepthook during the test, as from a Qt slot (traceback in the captured '
+                    f'stderr): {"; ".join(swallowed)}', pytrace=False)
 
 
 @pytest.hookimpl(wrapper=True)
