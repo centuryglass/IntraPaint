@@ -92,6 +92,15 @@
             "step": 1
         }
     },
+    "brush_crosshair_variants": {
+        "label": "Per-tool brush crosshairs:",
+        "category": "Interface",
+        "subcategory": "Appearance",
+        "description": "Give each variable-size brush tool its own crosshair shape, so the active tool can be told apart at the pointer. Turn this off to use the same crosshair for all of them.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
     "toolbar_tool_button_count": {
         "label": "Maximum recent tool icons:",
         "category": "Interface",

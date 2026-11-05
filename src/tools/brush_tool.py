@@ -87,6 +87,10 @@ class BrushTool(BaseTool):
         self._crosshair_variant = CrosshairVariant.PLAIN
         self._outline = BrushOutline(scene)
 
+        def _update_crosshair_variants(_: bool) -> None:
+            self._apply_crosshair()
+        AppConfig().connect(self, AppConfig.BRUSH_CROSSHAIR_VARIANTS, _update_crosshair_variants)
+
         self._image_stack = image_stack
         self._image_viewer = image_viewer
         image_viewer.view_changed.connect(self.update_brush_cursor)
@@ -157,7 +161,9 @@ class BrushTool(BaseTool):
         return self._outline
 
     def _apply_crosshair(self) -> None:
-        cursor = crosshair_cursor(self._crosshair_variant, self._image_viewer.devicePixelRatioF())
+        variant = self._crosshair_variant if AppConfig().get(AppConfig.BRUSH_CROSSHAIR_VARIANTS) \
+            else CrosshairVariant.PLAIN
+        cursor = crosshair_cursor(variant, self._image_viewer.devicePixelRatioF())
         if cursor is not self.cursor:
             self.cursor = cursor
 
