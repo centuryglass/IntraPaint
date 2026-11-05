@@ -13,6 +13,8 @@ from typing import Any
 from unittest.mock import patch
 
 from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QLabel
+from shiboken6 import delete
 
 from src.config import application_config
 from src.config.a1111_config import A1111Config
@@ -266,6 +268,72 @@ class ConfigTest(IntraPaintTestCase):
         self.assertEqual(option_lists, [['x', 'y']])
         self.assertEqual(config.get(OPTION_KEY), 'x')
         self.assertEqual(values, ['x'])
+
+    def test_callback_setting_the_value_again_leaves_no_stale_callback(self) -> None:
+        """When a callback sets its key again, no callback is left holding the value it replaced."""
+        config = self._config()
+        last_seen: dict[str, Any] = {}
+
+        def _clamp(value: int) -> None:
+            last_seen['clamp'] = value
+            if value > 7:
+                config.set(INT_KEY, 7, save_change=False)
+
+        config.connect('before', INT_KEY, lambda value: last_seen.__setitem__('before', value))
+        config.connect('clamp', INT_KEY, _clamp)
+        config.connect('after', INT_KEY, lambda value: last_seen.__setitem__('after', value))
+        config.set(INT_KEY, 9, save_change=False)
+        self.assertEqual(config.get(INT_KEY), 7)
+        self.assertEqual(last_seen, {'before': 7, 'clamp': 7, 'after': 7})
+
+    def test_callback_disconnecting_itself_stops_later_calls(self) -> None:
+        """A callback that disconnects itself during a change doesn't run again, and the other callbacks still do."""
+        config = self._config()
+        once_calls: list[Any] = []
+        other_calls: list[Any] = []
+
+        def _once(value: str) -> None:
+            once_calls.append(value)
+            config.disconnect('once', STR_KEY)
+
+        config.connect('once', STR_KEY, _once)
+        config.connect('other', STR_KEY, other_calls.append)
+        config.set(STR_KEY, 'first', save_change=False)
+        config.set(STR_KEY, 'second', save_change=False)
+        self.assertEqual(once_calls, ['first'])
+        self.assertEqual(other_calls, ['first', 'second'])
+
+    def test_deleted_owner_is_disconnected(self) -> None:
+        """Once an owner widget is deleted, `set` and `update_options` don't raise, and its callbacks stop running.
+
+        The first change after the deletion may still call a callback, so only later changes are checked.
+        """
+        config = self._config()
+        label = QLabel()
+        value_calls: list[Any] = []
+        option_calls: list[Any] = []
+
+        def _show_value(value: str) -> None:
+            value_calls.append(value)
+            label.setText(value)
+
+        def _show_options(options: list[Any]) -> None:
+            option_calls.append(options)
+            label.setText(', '.join(options))
+
+        config.connect(label, STR_KEY, _show_value)
+        config.connect_to_option_changes(label, OPTION_KEY, _show_options)
+        delete(label)
+        config.set(STR_KEY, 'first', save_change=False)
+        config.update_options(OPTION_KEY, ['x', 'y'])
+        value_call_count = len(value_calls)
+        option_call_count = len(option_calls)
+        config.set(STR_KEY, 'second', save_change=False)
+        config.update_options(OPTION_KEY, ['y', 'z'])
+        self.assertEqual(len(value_calls), value_call_count)
+        self.assertEqual(len(option_calls), option_call_count)
+        self.assertEqual(config.get(STR_KEY), 'second')
+        self.assertEqual(config.get(OPTION_KEY), 'y')
 
     def test_inner_key(self) -> None:
         """`set` with an inner key changes one entry of a dict value, and only callbacks for that entry run."""
