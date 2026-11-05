@@ -88,6 +88,23 @@ class MyPaintLayerBrushTest(BrushTestCase):
         image = self.stroke(zigzag_points())
         self.assert_stroke_matches_golden(image, 'blend_pattern')
 
+    def test_pixel_brushes_paint(self) -> None:
+        """The experimental pixel brushes, which set anti_aliasing to 0, paint on blank layers and keep content."""
+        for name in ('1pixel', 'pixel_hardink', 'pixelblocking'):
+            with self.subTest(brush=name):
+                self.brush.brush_path = f'{BRUSH_DIR}/experimental/{name}.myb'
+                self.use_layer(create_transparent_image(LAYER_SIZE))
+                image = self.stroke(zigzag_points())
+                painted = sum(1 for y in range(image.height()) for x in range(image.width())
+                              if image.pixelColor(x, y).alpha() > 0)
+                self.assertGreater(painted, 0)
+                pattern = brush_test_pattern()
+                self.use_layer(pattern.copy())
+                image = self.stroke(zigzag_points())
+                lost = sum(1 for y in range(image.height()) for x in range(image.width())
+                           if pattern.pixelColor(x, y).alpha() > 0 and image.pixelColor(x, y).alpha() == 0)
+                self.assertEqual(lost, 0)
+
     def test_eraser_brush_on_pattern(self) -> None:
         """A brush file that erases."""
         self.brush.brush_path = ERASER_BRUSH
