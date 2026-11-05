@@ -32,7 +32,9 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 ORIGINAL_CAPTION = _tr('Original')
+CURRENT_CAPTION = _tr('Current')
 ORIGINAL_TAG = _tr('Original')
+CURRENT_TAG = _tr('Current')
 SINGLE_VIEW_CAPTION = _tr('{label} of {count}')
 COMPARE_HINT_CAPTION = _tr('Hold {key} to compare')
 CLICK_TO_USE_HINT = _tr('Click to use')
@@ -82,7 +84,9 @@ class OverlayState:
     - `ready` is False for a loading placeholder, and `generating` is True for a placeholder whose backend batch is
       running, as opposed to waiting its turn.
     - `single_view` dims every option but `focus_index`, and drops the grid's focus ring.
-    - `comparing` tags the focused option as the original, which the selector shows in its place.
+    - `comparing` tags the focused option as the first one (the original, or the current content on a re-opened
+      batch), which the selector shows in its place.
+    - `reference_count` is the number of leading options that are not generated: 2 on a re-opened batch.
     - `margin_fraction` is the grid's margin between options, as a fraction of an option's shorter side.
     """
     focus_index: int = 0
@@ -94,6 +98,7 @@ class OverlayState:
     compare_key: str = ''
     loading_design: LoadingDesign = field(default_factory=HalftonePress)
     loading_phase: float = 0.0
+    reference_count: int = 1
     margin_fraction: float = 0.0
 
 
@@ -233,7 +238,8 @@ class GeneratedOptionView(ImageGraphicsView):
         viewport_rect = self.viewport().rect()
         font = QApplication.font()
         metrics = QFontMetrics(font)
-        option_count = len(self._options) - 1
+        reference_count = state.reference_count
+        option_count = len(self._options) - reference_count
         image_size = self._options[0].size
         gap = min(image_size.width(), image_size.height()) * state.margin_fraction * self.scene_scale
         for i, item in enumerate(self._options):
@@ -251,8 +257,11 @@ class GeneratedOptionView(ImageGraphicsView):
             if state.single_view and not focused:
                 continue
 
-            label = ORIGINAL_CAPTION if i == 0 else item.text
-            if state.single_view and i != 0:
+            if i >= reference_count:
+                label = item.text
+            else:
+                label = CURRENT_CAPTION if i == 0 and reference_count > 1 else ORIGINAL_CAPTION
+            if state.single_view and i >= reference_count:
                 label = SINGLE_VIEW_CAPTION.format(label=label, count=option_count)
                 if not state.comparing:
                     label = f'{label}  \u00b7  {COMPARE_HINT_CAPTION.format(key=state.compare_key)}'
@@ -260,10 +269,11 @@ class GeneratedOptionView(ImageGraphicsView):
             caption = QRect(visible.left(), rect.bottom() + 1, visible.width(), CAPTION_HEIGHT)
             if gap < CAPTION_HEIGHT + FOCUS_RING_WIDTH * 2 or caption.bottom() > viewport_rect.bottom():
                 caption.moveBottom(visible.bottom())
-            self._paint_caption(painter, caption, i, label, focused and not state.single_view, font)
+            self._paint_caption(painter, caption, i, label, focused and not state.single_view, i < reference_count,
+                                font)
 
             if state.comparing and focused:
-                self._paint_chip(painter, ORIGINAL_TAG,
+                self._paint_chip(painter, CURRENT_TAG if reference_count > 1 else ORIGINAL_TAG,
                                  QPoint(visible.left() + CHIP_PADDING, visible.top() + CHIP_PADDING),
                                  _signal_color(), font)
             elif i == state.hover_index and state.ready[i]:
@@ -274,7 +284,7 @@ class GeneratedOptionView(ImageGraphicsView):
 
     @staticmethod
     def _paint_caption(painter: QPainter, caption: QRect, index: int, label: str, highlighted: bool,
-                       font: QFont) -> None:
+                       dimmed: bool, font: QFont) -> None:
         """Draws a caption bar with the option's number key, when it fits, and its label."""
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(_accent_wash() if highlighted else CAPTION_BACKGROUND)
@@ -293,7 +303,7 @@ class GeneratedOptionView(ImageGraphicsView):
             painter.drawText(cap_rect.adjusted(0, 0, 0, -KEYCAP_DEPTH), Qt.AlignmentFlag.AlignCenter, str(index))
             text_left = int(cap_rect.right()) + CAPTION_PADDING
         painter.setFont(font)
-        painter.setPen(CAPTION_DIM_TEXT if index == 0 else CAPTION_TEXT)
+        painter.setPen(CAPTION_DIM_TEXT if dimmed else CAPTION_TEXT)
         text_rect = QRect(text_left, caption.top(), caption.right() - text_left - CAPTION_PADDING, caption.height())
         elided = QFontMetrics(font).elidedText(label, Qt.TextElideMode.ElideRight, max(text_rect.width(), 0))
         painter.drawText(text_rect, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft, elided)

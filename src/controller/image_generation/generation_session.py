@@ -258,7 +258,7 @@ class GenerationSession(QObject):
             logger.info(f'Ignored image option {idx}: the batch showing was re-opened')
             return False
         batch = self.current
-        slot = idx + 1  # Original image gets index zero
+        slot = idx + batch.first_generated_index
         patch = self._patches.get(idx)
         if patch is not None:
             batch.patches[slot] = patch
@@ -283,13 +283,14 @@ class GenerationSession(QObject):
         """Stores the current batch for `restore_previous` if any of its images arrived.
 
         Only the first call for each batch stores anything, so every path that closes the selection screen can call
-        it. Returns the indices of the options that were kept, from before the placeholders were dropped, or None if
-        nothing was stored.
+        it. A re-opened batch is stored without its current-content entry. Returns the indices of the options that
+        were kept, from before the placeholders and that entry were dropped, or None if nothing was stored.
         """
         kept: Optional[list[int]] = None
         batch = self._current
         if batch is not None and not self._current_archived and batch.has_results():
             kept = batch.discard_placeholders()
+            batch.set_current_image(None)
             self._previous = batch
             self._current_archived = True
         self._report_previous_available()
@@ -302,14 +303,17 @@ class GenerationSession(QObject):
         return self._image_stack.bounds.contains(self._previous.generation_area)
 
     def restore_previous(self) -> GeneratedImageBatch:
-        """Makes the stored batch current again, with its first option showing the current canvas content."""
+        """Makes the stored batch current again, offering the current canvas content as its first option.
+
+        The batch keeps its generation-time original. See `GeneratedImageBatch.set_current_image`.
+        """
         if not self.can_restore_previous():
             raise RuntimeError('No previous options found!')
         batch = self._previous
         assert batch is not None
         self._accepting_results = False
         self._current_archived = False
-        batch.option_images[0] = self._image_stack.qimage_generation_area_content()
+        batch.set_current_image(self._image_stack.qimage_generation_area_content())
         self._current = batch
         return batch
 
@@ -323,10 +327,11 @@ class GenerationSession(QObject):
                                      batch.edit_mode, batch.mask_image, layer_name, clear_context_pins)
 
     def choose(self, option_index: int, layer_name: str) -> Optional[ApplyOutcome]:
-        """Finishes the selection: applies the option to the active layer unless it is the original content, clears
+        """Finishes the selection: applies the option to the active layer unless it is the no-op choice, clears
         context pins per `AppConfig.CLEAR_CONTEXT_PINS_AFTER_GENERATING`, and returns to the editing state.
 
-        Returns None when the original content was chosen and nothing was applied.
+        Returns None when index 0 was chosen (the original content, or the current content of a re-opened batch) and
+        nothing was applied.
         """
         outcome = None
         if option_index != 0:

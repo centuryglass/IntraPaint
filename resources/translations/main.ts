@@ -5840,6 +5840,11 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Current image content</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_image_selector.py"/>
         <source>Option {index}</source>
         <translation type="unfinished"></translation>
     </message>
@@ -5904,6 +5909,11 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/generated_option_view.py"/>
         <source>Original</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_option_view.py"/>
+        <source>Current</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6062,6 +6072,16 @@ Please remember to include the traceback from the Details expander.</source>
     <message>
         <location filename="../../src/ui/generated_selector_bars.py"/>
         <source>Keep original</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Keep current</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_selector_bars.py"/>
+        <source>Use original</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

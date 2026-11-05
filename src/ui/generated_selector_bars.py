@@ -5,6 +5,7 @@ primary action, Close and the view mode always show. The bars emit intents and s
 They hold no batch state.
 """
 from dataclasses import dataclass
+from enum import Enum, auto
 from typing import Optional
 
 from PySide6.QtCore import QPoint, Qt, Signal
@@ -60,6 +61,8 @@ SAVE_TO_FILE_BUTTON_TEXT = _tr('Save to file...')
 MORE_BUTTON_TEXT = _tr('More')
 USE_OPTION_BUTTON_TEXT = _tr('Use option {index}')
 USE_ORIGINAL_BUTTON_TEXT = _tr('Keep original')
+KEEP_CURRENT_BUTTON_TEXT = _tr('Keep current')
+USE_REOPENED_ORIGINAL_BUTTON_TEXT = _tr('Use original')
 USE_BUTTON_TOOLTIP = _tr('Apply the focused option and return to the editor.')
 USE_BUTTON_WAITING_TOOLTIP = _tr('This option is still generating.')
 HINT_BUTTON_TOOLTIP = _tr('Controls')
@@ -195,6 +198,14 @@ class SelectorTopBar(QWidget):
             self._view_options_button.show()
 
 
+class ButtonLabel(Enum):
+    """Which text the Use button gets for the focused option."""
+    KEEP_ORIGINAL = auto()
+    KEEP_CURRENT = auto()
+    USE_ORIGINAL = auto()
+    USE_OPTION = auto()
+
+
 @dataclass(frozen=True)
 class ButtonBarState:
     """What the bottom bar offers, from the run state and the focused option."""
@@ -203,6 +214,8 @@ class ButtonBarState:
     stopped: bool
     focus_index: int
     focus_ready: bool
+    focus_label: ButtonLabel
+    focus_number: int
     option_count: int
     single_view: bool
 
@@ -297,8 +310,11 @@ class SelectorButtonBar(QWidget):
         self.stop_button.setEnabled(not state.stopped)
         self.stop_button.setText(STOPPING_BUTTON_TEXT if state.stopped else STOP_BUTTON_TEXT)
 
-        self.use_button.setText(USE_ORIGINAL_BUTTON_TEXT if state.focus_index == 0
-                                else USE_OPTION_BUTTON_TEXT.format(index=state.focus_index))
+        use_texts = {ButtonLabel.KEEP_ORIGINAL: USE_ORIGINAL_BUTTON_TEXT,
+                     ButtonLabel.KEEP_CURRENT: KEEP_CURRENT_BUTTON_TEXT,
+                     ButtonLabel.USE_ORIGINAL: USE_REOPENED_ORIGINAL_BUTTON_TEXT}
+        self.use_button.setText(use_texts.get(state.focus_label, '') or USE_OPTION_BUTTON_TEXT.format(
+            index=state.focus_number))
         self.use_button.setEnabled(state.focus_ready)
         self.use_button.setToolTip(USE_BUTTON_TOOLTIP if state.focus_ready else USE_BUTTON_WAITING_TOOLTIP)
         for control in (self._send_button, self._save_button, self._send_action, self._save_action):

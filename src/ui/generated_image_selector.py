@@ -25,7 +25,7 @@ from src.controller.image_generation.generation_session import GenerationSession
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.ui.generated_option_view import CAPTION_HEIGHT, GeneratedOptionView, ImageOption, OverlayState
-from src.ui.generated_selector_bars import ButtonBarState, SelectorButtonBar, SelectorTopBar, VIEW_GRID, VIEW_SINGLE
+from src.ui.generated_selector_bars import ButtonBarState, ButtonLabel, SelectorButtonBar, SelectorTopBar, VIEW_GRID, VIEW_SINGLE
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.selection_outline import SelectionOutline
 from src.ui.graphics_items.toast_message import ToastMessageItem
@@ -56,6 +56,7 @@ REASON_NOT_INPAINTED = _tr('Only inpainted options have a selection.')
 REASON_NO_SMALLER_CHANGE = _tr('Zoom to changes needs a selection smaller than the generation area.')
 
 ORIGINAL_CONTENT_LABEL = _tr('Original image content')
+CURRENT_CONTENT_LABEL = _tr('Current image content')
 LABEL_TEXT_IMAGE_OPTION = _tr('Option {index}')
 
 MENU_ACTION_SELECT = _tr('Select this option')
@@ -263,8 +264,7 @@ class GeneratedImageSelector(QWidget):
             if reused_items is not None and i < len(reused_items):
                 self._add_option_item(reused_items[i])
             else:
-                label = ORIGINAL_CONTENT_LABEL if i == 0 else LABEL_TEXT_IMAGE_OPTION.format(index=i)
-                self._add_option_item(ImageOption(image, label))
+                self._add_option_item(ImageOption(image, self._option_label(i)))
 
         if include_loading_images:
             cache = Cache()
@@ -289,6 +289,22 @@ class GeneratedImageSelector(QWidget):
         else:
             self._view.reset_scale()
         self._update_controls()
+
+    def _option_label(self, idx: int) -> str:
+        """Returns the label of the batch's option `idx`: the current or original content, or "Option n"."""
+        batch = self._session.current
+        if idx == 0 and batch.current_image is not None:
+            return CURRENT_CONTENT_LABEL
+        if idx < batch.reference_count:
+            return ORIGINAL_CONTENT_LABEL
+        return LABEL_TEXT_IMAGE_OPTION.format(index=idx - batch.first_generated_index + 1)
+
+    def _button_label(self, idx: int) -> ButtonLabel:
+        """Returns which Use button text option `idx` gets."""
+        batch = self._session.current
+        if idx == 0:
+            return ButtonLabel.KEEP_ORIGINAL if batch.current_image is None else ButtonLabel.KEEP_CURRENT
+        return ButtonLabel.USE_ORIGINAL if idx < batch.reference_count else ButtonLabel.USE_OPTION
 
     def _remove_scene_item(self, scene_item: QGraphicsItem) -> None:
         scene = self._view.scene()
@@ -348,9 +364,12 @@ class GeneratedImageSelector(QWidget):
         Only the first call for each showing stores anything, so every path that closes the selector can call it.
         """
         # `_option_items` still matches the batch's images index for index until the placeholders are dropped:
+        had_current = self._session.current.current_image is not None
         kept = self._session.archive_current()
         if kept is not None:
-            self._prev_option_items = [self._option_items[i] for i in kept]
+            items = [self._option_items[i] for i in kept]
+            # The session drops a re-opened batch's current-content entry, so its item goes too:
+            self._prev_option_items = items[1:] if had_current else items
 
     def can_restore_previous(self) -> bool:
         """Returns whether a batch is stored and its generation area is still within the image."""
@@ -359,8 +378,10 @@ class GeneratedImageSelector(QWidget):
     def restore_previous_options(self) -> None:
         """Shows the stored batch again."""
         batch = self._session.restore_previous()
-        self._prev_option_items[0] = ImageOption(batch.option_images[0], ORIGINAL_CONTENT_LABEL)
-        self._rebuild_scene(include_loading_images=False, reused_items=self._prev_option_items)
+        reused_items = list(self._prev_option_items)
+        if batch.current_image is not None:
+            reused_items.insert(0, ImageOption(batch.current_image, CURRENT_CONTENT_LABEL))
+        self._rebuild_scene(include_loading_images=False, reused_items=reused_items)
 
     def _on_document_changed(self) -> None:
         """Drops the scene items of the stored batch, which belongs to the replaced document."""
@@ -398,8 +419,9 @@ class GeneratedImageSelector(QWidget):
     def _update_status_text(self) -> None:
         batch = self._session.current
         if self._generating():
-            total = len(self._option_items) - 1
-            ready = sum(1 for i in range(1, len(self._option_items)) if self._is_ready(i))
+            first = batch.first_generated_index
+            total = len(self._option_items) - first
+            ready = sum(1 for i in range(first, len(self._option_items)) if self._is_ready(i))
             if self._progress_text != '':
                 text = READY_COUNT_WITH_PROGRESS.format(ready=ready, total=total, progress=self._progress_text)
             else:
@@ -407,7 +429,7 @@ class GeneratedImageSelector(QWidget):
         else:
             text = BATCH_DETAILS.format(mode=Cache().get_option_display(batch.edit_mode),
                                         width=batch.generation_area.width(), height=batch.generation_area.height(),
-                                        count=len(self._option_items) - 1)
+                                        count=len(self._option_items) - batch.reference_count)
         self._top_bar.set_status(text)
 
     def _update_controls(self) -> None:
@@ -419,6 +441,9 @@ class GeneratedImageSelector(QWidget):
                                                   stopped=self._session.stopped,
                                                   focus_index=self._zoom_index,
                                                   focus_ready=self._is_ready(self._zoom_index),
+                                                  focus_label=self._button_label(self._zoom_index),
+                                                  focus_number=self._zoom_index
+                                                  - self._session.current.first_generated_index + 1,
                                                   option_count=len(self._option_items),
                                                   single_view=self._zoomed_in))
         self._top_bar.set_view_mode(VIEW_SINGLE if self._zoomed_in else VIEW_GRID)
@@ -561,16 +586,19 @@ class GeneratedImageSelector(QWidget):
         ready = [self._is_ready(i) for i in range(count)]
         # A placeholder generates while its backend batch is the first one with unfilled options:
         batch_size = max(Cache().get(Cache.BATCH_SIZE), 1)
-        waiting = [i for i in range(1, count) if not ready[i]]
-        running_batch = (waiting[0] - 1) // batch_size if waiting and self._generating() and not self._session.stopped \
+        first = self._session.current.first_generated_index
+        waiting = [i for i in range(first, count) if not ready[i]]
+        running_batch = (waiting[0] - first) // batch_size if waiting and self._generating() and not self._session.stopped \
             else None
-        generating = [not ready[i] and i > 0 and (i - 1) // batch_size == running_batch for i in range(count)]
+        generating = [not ready[i] and i >= first and (i - first) // batch_size == running_batch
+                      for i in range(count)]
         compare_key = key_hint_text(KeyConfig().get(KeyConfig.COMPARE_ORIGINAL_MODIFIER))
         self._view.set_overlay_state(OverlayState(focus_index=self._zoom_index, single_view=self._zoomed_in,
                                                   hover_index=self._hover_index, comparing=self._comparing,
                                                   ready=ready, generating=generating, compare_key=compare_key,
                                                   loading_design=self._loading_design,
                                                   loading_phase=self._loading_phase,
+                                                  reference_count=self._session.current.reference_count,
                                                   margin_fraction=IMAGE_MARGIN_FRACTION))
 
     def _set_loading_phase(self, phase: float) -> None:
@@ -599,7 +627,7 @@ class GeneratedImageSelector(QWidget):
 
     def _show_context_menu(self, idx: int, pos: QPoint) -> None:
         menu = QMenu()
-        menu.setTitle(ORIGINAL_CONTENT_LABEL if idx == 0 else LABEL_TEXT_IMAGE_OPTION.format(index=idx))
+        menu.setTitle(self._option_label(idx))
 
         def _add_action(name: str, action_callback: Callable[..., None]) -> QAction:
             action = menu.addAction(name)
