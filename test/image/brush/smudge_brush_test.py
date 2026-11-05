@@ -4,7 +4,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from PySide6.QtCore import QPoint, QRect
-from PySide6.QtGui import QImage
+from PySide6.QtGui import QColor, QImage
 
 from src.image.brush.smudge_brush import SmudgeBrush
 from src.image.layers.image_layer import ImageLayer
@@ -171,6 +171,24 @@ class SmudgeBrushTest(BrushTestCase):
         self.brush.brush_size = 40
         image = self.gradient_strokes()
         self.assertLessEqual(self.gradient_color_error(image, 0), GRADIENT_COLOR_TOLERANCE)
+
+    def test_smudging_uniform_translucent_layer_changes_nothing(self) -> None:
+        """Mixing a color with itself keeps its color and alpha, so no stroke builds opacity on a layer where every
+           pixel is already the same translucent color."""
+        for opacity, hardness in ((1.0, 1.0), (0.5, 1.0), (0.8, 0.3)):
+            with self.subTest(opacity=opacity, hardness=hardness):
+                translucent = QColor(100, 40, 10, 100)  # Unpremultiplied
+                image = QImage(LAYER_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
+                image.fill(translucent)
+                initial = image.copy()
+                self.use_layer(image)
+                self.brush.brush_size = 30
+                self.brush.opacity = opacity
+                self.brush.hardness = hardness
+                result = self.stroke(line_points(QPoint(15, 20), QPoint(170, 100), 6))
+                difference = np.abs(image_data_as_numpy_8bit(result).astype(int)
+                                    - image_data_as_numpy_8bit(initial).astype(int))
+                self.assertLessEqual(int(difference.max()), 1)
 
     def test_stroke_inside_transparent_area_changes_nothing(self) -> None:
         """Smudging within fully transparent pixels leaves them transparent."""
