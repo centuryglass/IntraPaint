@@ -3,6 +3,7 @@ import sys
 from unittest.mock import MagicMock, patch
 
 from PySide6.QtCore import QPoint, QSize, Qt
+from PySide6.QtGui import QImage, QPainter, QColor
 from PySide6.QtWidgets import QApplication, QCheckBox, QLabel, QSpinBox
 
 from src.config.cache import Cache
@@ -78,6 +79,58 @@ class SelectionPanelTest(IntraPaintTestCase):
         self.assertLessEqual(panel.minimumSizeHint().width(), base.width())
         panel.set_fit_space(Orientation.SIDE, roomy)
         self.assertEqual(buttons.direction(), buttons.Direction.LeftToRight)
+
+    def _bounds_text(self) -> tuple[str, str]:
+        return (self.panel._bounds_position_label.text(),  # pylint: disable=protected-access
+                self.panel._bounds_size_label.text())  # pylint: disable=protected-access
+
+    def _select_rect(self) -> None:
+        image = QImage(self.selection_layer.size, QImage.Format.Format_ARGB32_Premultiplied)
+        image.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(image)
+        painter.fillRect(10, 20, 40, 30, QColor(0, 0, 0, 255))
+        painter.end()
+        self.selection_layer.set_image(image)
+
+    def test_bounds_lines(self) -> None:
+        """The Selection section shows the selection's position and size, and dashes when nothing is selected."""
+        self.panel.show()
+        self.assertEqual(self._bounds_text(), ('Position: -, -', 'Size: - x -'))
+        self._select_rect()
+        self.assertEqual(self._bounds_text(), ('Position: 10, 20', 'Size: 40 x 30'))
+        section = self.panel._selection_section  # pylint: disable=protected-access
+        self.assertEqual(section._summary, '40 x 30 at 10, 20')  # pylint: disable=protected-access
+        self.selection_layer.select_all()
+        self.assertEqual(self._bounds_text(), ('Position: 0, 0', 'Size: 256 x 256'))
+        self.selection_layer.clear()
+        self.assertEqual(self._bounds_text(), ('Position: -, -', 'Size: - x -'))
+        self.assertEqual(section._summary, 'Nothing selected')  # pylint: disable=protected-access
+
+    def test_hidden_panel_skips_bounds_updates(self) -> None:
+        """A hidden panel leaves its bounds text alone until it is shown."""
+        self.panel.show()
+        self.panel.hide()
+        self._select_rect()
+        self.assertEqual(self._bounds_text(), ('Position: -, -', 'Size: - x -'))
+        self.panel.show()
+        self.assertEqual(self._bounds_text(), ('Position: 10, 20', 'Size: 40 x 30'))
+
+    def test_fit_plan_moves_bounds(self) -> None:
+        """A plan without room moves the bounds to the overflow content, and a roomy plan returns the same widget
+        to the Selection section, below the buttons."""
+        panel = self.panel
+        view = panel._bounds_view  # pylint: disable=protected-access
+        body = panel._selection_section.body  # pylint: disable=protected-access
+        panel.fit_base_size(Orientation.SIDE)
+        self.assertEqual(panel.overflow_content(), view.parentWidget())
+        panel.set_fit_space(Orientation.SIDE, QSize(600, 600))
+        self.assertEqual(body, view.parentWidget())
+        self.assertEqual(body.layout().indexOf(view), body.layout().count() - 1)
+        # Returning from the overflow content doesn't leave the view hidden:
+        panel.show()
+        panel.set_fit_space(Orientation.SIDE, QSize(panel.fit_base_size(Orientation.SIDE).width(), 100))
+        panel.set_fit_space(Orientation.SIDE, QSize(600, 600))
+        self.assertFalse(view.isHidden())
 
     def test_no_context_controls(self) -> None:
         """The panel holds no checkbox or label for the inpaint context settings."""

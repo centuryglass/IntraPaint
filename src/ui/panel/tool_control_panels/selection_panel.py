@@ -6,13 +6,14 @@ sections with `insert_into_layout`, which places them between Mode and Selection
 
 The panel is a `src.ui.layout.panel_fit.FitContent`. Sections stack in a side panel and stand in columns in a strip. The
 Selection buttons take a row, or a column when the row doesn't fit. The modifier hint is optional: a plan without room
-for it moves it to `overflow_content`, which the Tools panel shows in its More popover.
+for it moves it to `overflow_content`, which the Tools panel shows in its More popover. The selection's bounds (two
+read-only lines under the Selection buttons) are optional too, and are left out before the hint is.
 """
 from typing import Callable, Optional
 from weakref import ref
 
-from PySide6.QtCore import Qt, QSize, QPoint, QEvent
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtCore import Qt, QSize, QPoint, QEvent, QRect
+from PySide6.QtGui import QIcon, QPixmap, QPalette, QShowEvent
 from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QPushButton, QLayout, QLabel, QBoxLayout
 
 from src.config.cache import Cache
@@ -52,6 +53,11 @@ CLEAR_PINS_TOOLTIP = _tr('Remove all context pins. Right-click in the image with
                          'remove pins.')
 MODIFIER_HINT_BOTH = _tr('Hold {add_keys} to add, {subtract_keys} to subtract.')
 MODIFIER_HINT_SUBTRACT = _tr('Hold {subtract_keys} to subtract.')
+BOUNDS_POSITION_LINE = _tr('Position: {x}, {y}')
+BOUNDS_SIZE_LINE = _tr('Size: {width} x {height}')
+BOUNDS_EMPTY_VALUE = _tr('-')
+BOUNDS_SUMMARY = _tr('{width} x {height} at {x}, {y}')
+BOUNDS_SUMMARY_EMPTY = _tr('Nothing selected')
 ICON_PATH_CLEAR = f'{PROJECT_DIR}/resources/icons/tool_modes/clear_all.svg'
 ICON_PATH_FILL = f'{PROJECT_DIR}/resources/icons/tool_modes/fill.svg'
 ICON_PATH_CLEAR_PINS = f'{PROJECT_DIR}/resources/icons/tool_modes/clear_context_pins.svg'
@@ -70,15 +76,17 @@ def _with_shortcut(description: str, config_key: str) -> str:
                                    shortcut=get_key_display_string(keycodes, rich_text=False))
 
 
-# The planned items: the Selection buttons in a row or a column, and the optional modifier hint:
+# The planned items: the Selection buttons in a row or a column, the optional modifier hint, and the optional bounds:
 _BUTTONS_ITEM = FitItem(REQUIRED, 2)
 _HINT_ITEM = FitItem(1)
+_BOUNDS_ITEM = FitItem(2)
 
 
 class SelectionPanel(QWidget):
     """Base control panel for selection editing tools.
 
-    The line under the mode bar names the add and subtract modifiers, unless `set_mode_hint` replaces it. Without a
+    The line under the mode bar names the add and subtract modifiers, unless `set_mode_hint` replaces it. The Selection
+    section ends with the selection's position and size, refreshed while the panel is visible. Without a
     host that calls `set_fit_space`, the panel plans for its own size when resized.
     """
 
@@ -162,8 +170,68 @@ class SelectionPanel(QWidget):
         self._actions_layout.addStretch(1)
         self._actions_layout.addWidget(clear_pins_button)
         self._actions_layout.addWidget(clear_button)
-        self._layout.addWidget(tool_section(SELECTION_SECTION_TITLE, self._actions_layout))
-        self._planner = FitPlanner([_BUTTONS_ITEM, _HINT_ITEM], self._apply_fit, self._measure_fit)
+
+        self._bounds_position_label = self._bounds_label()
+        self._bounds_size_label = self._bounds_label()
+        self._bounds_view = QWidget()
+        bounds_layout = QVBoxLayout(self._bounds_view)
+        bounds_layout.setContentsMargins(0, 0, 0, 0)
+        bounds_layout.addWidget(self._bounds_position_label)
+        bounds_layout.addWidget(self._bounds_size_label)
+        self._selection_section = tool_section(SELECTION_SECTION_TITLE, self._actions_layout, self._bounds_view)
+        self._layout.addWidget(self._selection_section)
+        self._update_bounds_width()
+        self._refresh_bounds()
+        selection_layer.content_changed.connect(self._handle_content_changed)
+        selection_layer.size_changed.connect(self._update_bounds_width)
+        self._planner = FitPlanner([_BUTTONS_ITEM, _HINT_ITEM, _BOUNDS_ITEM], self._apply_fit, self._measure_fit)
+
+    @staticmethod
+    def _bounds_label() -> QLabel:
+        label = QLabel()
+        label.setWordWrap(False)
+        label.setForegroundRole(QPalette.ColorRole.PlaceholderText)
+        label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        return label
+
+    def _update_bounds_width(self, *_) -> None:
+        """Reserves the width of the widest bounds lines the layer allows, so changing values never resize them."""
+        layer = self._selection_layer
+        sample = '-' + '8' * len(str(max(layer.width, layer.height)))
+        metrics = self._bounds_position_label.fontMetrics()
+        width = max(metrics.horizontalAdvance(BOUNDS_POSITION_LINE.format(x=sample, y=sample)),
+                    metrics.horizontalAdvance(BOUNDS_SIZE_LINE.format(width=sample, height=sample)))
+        for label in (self._bounds_position_label, self._bounds_size_label):
+            label.setMinimumWidth(width)
+
+    def _handle_content_changed(self, *_) -> None:
+        if self.isVisible():
+            self._refresh_bounds()
+
+    def _refresh_bounds(self) -> None:
+        """Shows the selection's bounds in the Selection section's lines and its collapsed summary."""
+        bounds: QRect = self._selection_layer.get_content_bounds()
+        if bounds.isEmpty():
+            dash = BOUNDS_EMPTY_VALUE
+            self._bounds_position_label.setText(BOUNDS_POSITION_LINE.format(x=dash, y=dash))
+            self._bounds_size_label.setText(BOUNDS_SIZE_LINE.format(width=dash, height=dash))
+            self._selection_section.set_summary(BOUNDS_SUMMARY_EMPTY)
+            return
+        self._bounds_position_label.setText(BOUNDS_POSITION_LINE.format(x=bounds.x(), y=bounds.y()))
+        self._bounds_size_label.setText(BOUNDS_SIZE_LINE.format(width=bounds.width(), height=bounds.height()))
+        self._selection_section.set_summary(BOUNDS_SUMMARY.format(x=bounds.x(), y=bounds.y(), width=bounds.width(),
+                                                                  height=bounds.height()))
+
+    def showEvent(self, event: QShowEvent) -> None:  # pylint: disable=invalid-name
+        """Brings the bounds up to date after the panel was hidden."""
+        super().showEvent(event)
+        self._refresh_bounds()
+
+    def changeEvent(self, event: QEvent) -> None:  # pylint: disable=invalid-name
+        """Recomputes the reserved bounds width after a font change."""
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.FontChange:
+            self._update_bounds_width()
 
     def _measure_fit(self) -> QSize:
         return fresh_minimum_size(self)
@@ -224,7 +292,7 @@ class SelectionPanel(QWidget):
         self._planner.update(orientation, size)
 
     def overflow_content(self) -> QWidget:
-        """Returns the widget holding the modifier hint while the plan leaves it out."""
+        """Returns the widget holding the modifier hint and the bounds while the plan leaves them out."""
         return self._overflow
 
     def _apply_fit(self, orientation: Orientation, placement: Placement) -> None:
@@ -236,6 +304,12 @@ class SelectionPanel(QWidget):
             self._overflow_layout.addWidget(self._hint_label)
         else:
             self._mode_layout.addWidget(self._hint_label)
+        if placement[2] is None:
+            self._overflow_layout.addWidget(self._bounds_view)
+        else:
+            self._selection_section.body.layout().addWidget(self._bounds_view)
+        # Moving a widget to another parent hides it:
+        self._bounds_view.show()
 
     def event(self, event: QEvent) -> bool:
         """Forgets the host's space when the panel moves to a new parent, and plans for its own size when resized
