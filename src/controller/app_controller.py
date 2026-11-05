@@ -863,7 +863,8 @@ class AppController(MenuBuilder):
         config = AppConfig()
         action.setCheckable(True)
         action.setChecked(config.get(config_key))
-        config.connect(action, config_key, action.setChecked)
+        # Config.connect inspects the callback's signature, which Python 3.11 and 3.12 can't read for Qt methods:
+        config.connect(action, config_key, lambda checked: action.setChecked(checked))
 
     def _build_recent_files_menu(self) -> None:
         """Adds the Open recent submenu below File > Open..., filled each time it opens."""
