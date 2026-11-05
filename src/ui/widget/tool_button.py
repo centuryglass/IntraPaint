@@ -18,7 +18,7 @@ TOOL_ICON_SIZE = 48
 ICON_MARGIN = 8
 MIN_ICON_MARGIN = 4
 # Below `TOOL_ICON_SIZE`, the widest key hint shown, as a share of the button's width. A wider hint switches to modifier
-# symbols, and stays hidden if it is still too wide:
+# symbols, then to only its shortest key combination, and stays hidden if it is still too wide:
 MAX_KEY_HINT_SHARE = 0.7
 # Space between the icon and the edge of the plate drawn behind it, at most:
 PLATE_MARGIN = 4
@@ -61,8 +61,8 @@ class ToolButton(QToolButton):
         whether the key hint shows in its corner.
 
         Below `TOOL_ICON_SIZE`, the icon moves toward the opposite corner to make room for the key hint. A key hint
-        wider than `MAX_KEY_HINT_SHARE` of the button shows modifiers as symbols, and stays hidden if it is still too
-        wide.
+        wider than `MAX_KEY_HINT_SHARE` of the button shows modifiers as symbols, then only its shortest key
+        combination, and stays hidden if it is still too wide. The tooltip keeps listing every key.
         """
         self._edge_length = length
         self._show_key_hint = show_key_hint
@@ -86,13 +86,17 @@ class ToolButton(QToolButton):
         self._icon_bounds = get_scaled_placement(self.size(), QSize(1, 1), margin)
         if edge >= TOOL_ICON_SIZE:
             self._key_hint.set_compact(False)
+            self._key_hint.set_shortest_only(False)
             self._place_key_hint()
             self._key_hint.setVisible(self._show_key_hint)
             return
         max_hint_width = round(edge * MAX_KEY_HINT_SHARE)
         self._key_hint.set_compact(False)
+        self._key_hint.set_shortest_only(False)
         if self._key_hint.sizeHint().width() > max_hint_width:
             self._key_hint.set_compact(True)
+        if self._key_hint.sizeHint().width() > max_hint_width:
+            self._key_hint.set_shortest_only(True)
         hint_size = self._place_key_hint()
         self._key_hint.setVisible(self._show_key_hint and hint_size.width() <= max_hint_width)
         if self._key_hint.isVisibleTo(self):

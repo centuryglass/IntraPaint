@@ -36,6 +36,12 @@ def compact_key_text(text: str) -> str:
     return ', '.join(compact_combos)
 
 
+def shortest_key_option(text: str) -> str:
+    """Returns the shortest of the comma-separated key combinations in formatted key text, or the first of those tied
+    for shortest."""
+    return min(text.split(', '), key=len)
+
+
 class KeyHintLabel(QLabel):
     """Shows formatted key suggestions to the user, drawn as raised keycaps.
 
@@ -54,6 +60,7 @@ class KeyHintLabel(QLabel):
         self.setTextFormat(Qt.TextFormat.RichText)
         self._saved_size: Optional[QSize] = None
         self._compact = False
+        self._shortest_only = False
         self._key_codes: Optional[QKeySequence | Qt.KeyboardModifier | str] = None
         self._config_key = config_key
         if keys is None and config_key is not None:
@@ -160,6 +167,18 @@ class KeyHintLabel(QLabel):
             self._compact = compact
             self._update_text(self._key_codes)
 
+    @property
+    def shortest_only(self) -> bool:
+        """Whether only the shortest of several key combinations shows."""
+        return self._shortest_only
+
+    def set_shortest_only(self, shortest_only: bool) -> None:
+        """Shows only the shortest key combination, or the first of those tied for shortest, or all of them if
+        `shortest_only` is false."""
+        if shortest_only != self._shortest_only:
+            self._shortest_only = shortest_only
+            self._update_text(self._key_codes)
+
     def _update_text(self, key_codes: Optional[QKeySequence | Qt.KeyboardModifier | str]) -> None:
         self._key_codes = key_codes
         if key_codes is None:
@@ -176,6 +195,8 @@ class KeyHintLabel(QLabel):
             raise TypeError(f'Unexpected key_codes value type {type(key_codes)} = {key_codes}')
         if self._compact:
             key_display_str = compact_key_text(key_display_str)
+        if self._shortest_only:
+            key_display_str = shortest_key_option(key_display_str)
         key_substitutions = {
             '&': '&amp;',
             '<': '&lt;',
