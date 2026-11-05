@@ -19,6 +19,7 @@ from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
 from src.tools.qt_paint_brush_tool import QtPaintBrushTool
+from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.filter_tool_panel import FilterToolPanel
 from src.util.shared_constants import PROJECT_DIR
@@ -84,6 +85,7 @@ class FilterTool(QtPaintBrushTool):
                          antialias_key=Cache.FILTER_TOOL_ANTIALIAS, brush=brush)
         cache.connect(self, Cache.FILTER_TOOL_SELECTED_FILTER, self._filter_update_slot)
         cache.connect(self, Cache.FILTER_TOOL_CACHED_PARAMETERS, self._filter_param_update_slot)
+        self.crosshair_variant = CrosshairVariant.FILTER
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

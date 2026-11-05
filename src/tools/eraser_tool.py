@@ -9,6 +9,7 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
 from src.tools.qt_paint_brush_tool import QtPaintBrushTool
+from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.eraser_tool_panel import EraserToolPanel
 from src.util.shared_constants import PROJECT_DIR
@@ -41,6 +42,7 @@ class EraserTool(QtPaintBrushTool):
                          hardness_key=Cache.ERASER_TOOL_HARDNESS, antialias_key=Cache.ERASER_TOOL_ANTIALIAS,
                          pressure_hardness_key=Cache.ERASER_TOOL_PRESSURE_HARDNESS)
         self.brush.eraser = True
+        self.crosshair_variant = CrosshairVariant.ERASER
 
         cache = Cache()
         cache.disconnect(self, Cache.LAST_BRUSH_COLOR)

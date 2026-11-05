@@ -10,6 +10,7 @@ from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.tools.brush_tool import BrushTool
 from src.tools.qt_paint_brush_tool import QtPaintBrushTool
+from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.draw_tool_panel import DrawToolPanel
 from src.util.shared_constants import PROJECT_DIR
@@ -43,6 +44,7 @@ class DrawTool(QtPaintBrushTool):
                          hardness_key=Cache.DRAW_TOOL_HARDNESS, pressure_hardness_key=Cache.DRAW_TOOL_PRESSURE_HARDNESS,
                          color_key=Cache.LAST_BRUSH_COLOR, pattern_key=Cache.DRAW_TOOL_BRUSH_PATTERN,
                          antialias_key=Cache.DRAW_TOOL_ANTIALIAS)
+        self.crosshair_variant = CrosshairVariant.DRAW
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

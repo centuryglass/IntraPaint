@@ -11,6 +11,7 @@ from src.image.brush.clone_stamp_brush import CloneStampBrush
 from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
 from src.tools.qt_paint_brush_tool import QtPaintBrushTool
+from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.clone_stamp_tool_panel import CloneStampToolPanel
 from src.util.shared_constants import PROJECT_DIR
@@ -75,6 +76,7 @@ class CloneStampTool(QtPaintBrushTool):
                          antialias_key=Cache.CLONE_STAMP_TOOL_ANTIALIAS, brush=CloneStampBrush())
         self._source_marker.setVisible(False)
         cache.connect(self, Cache.CLONE_STAMP_TOOL_SOURCE_MODE, self._update_source_mode)
+        self.crosshair_variant = CrosshairVariant.CLONE
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

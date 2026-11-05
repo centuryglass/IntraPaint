@@ -220,6 +220,16 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
+        <source>Per-tool brush crosshairs:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Give each variable-size brush tool its own crosshair shape, so the active tool can be told apart at the pointer. Turn this off to use the same crosshair for all of them.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
         <source>Maximum recent tool icons:</source>
         <translation type="unfinished"></translation>
     </message>

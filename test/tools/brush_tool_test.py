@@ -2,6 +2,7 @@ import unittest
 
 from PySide6.QtCore import QPoint, QRectF, Qt
 
+from src.config.application_config import AppConfig
 from src.tools.brush_tool import MIN_OUTLINE_DIAMETER
 from src.tools.mypaint_brush_tool import MyPaintBrushTool
 from src.ui.brush_crosshair import CrosshairVariant, crosshair_cursor
@@ -126,10 +127,22 @@ class BrushToolTest(ToolTestCase):
         self.assertEqual(outline.diameter, self.brush_tool.brush_size)
 
     def test_cursor_is_crosshair(self) -> None:
-        """The active brush tool uses the plain crosshair cursor."""
+        """The active brush tool uses its crosshair variant's cursor."""
         self._hover_with_layer(QPoint(100, 100))
         self.assertIs(self.brush_tool.cursor,
+                      crosshair_cursor(self.brush_tool.crosshair_variant, self.image_viewer.devicePixelRatioF()))
+
+    def test_crosshair_variants_setting_falls_back_to_plain(self) -> None:
+        """Turning off per-tool crosshair variants uses the plain crosshair for every brush tool."""
+        self._hover_with_layer(QPoint(100, 100))
+        self.assertIs(self.brush_tool.cursor,
+                      crosshair_cursor(self.brush_tool.crosshair_variant, self.image_viewer.devicePixelRatioF()))
+        AppConfig().set(AppConfig.BRUSH_CROSSHAIR_VARIANTS, False)
+        self.assertIs(self.brush_tool.cursor,
                       crosshair_cursor(CrosshairVariant.PLAIN, self.image_viewer.devicePixelRatioF()))
+        AppConfig().set(AppConfig.BRUSH_CROSSHAIR_VARIANTS, True)
+        self.assertIs(self.brush_tool.cursor,
+                      crosshair_cursor(self.brush_tool.crosshair_variant, self.image_viewer.devicePixelRatioF()))
 
     def test_outline_follows_cursor_at_brush_size(self) -> None:
         """The outline appears under the hovered pixel at the brush's scene size, and follows the cursor."""
