@@ -11,6 +11,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.image.brush.smudge_brush import SmudgeBrush
 from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
+from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.stroke_block import StrokeToolPanel
 from src.ui.panel.tool_control_panels.smudge_tool_panel import SmudgeToolPanel
@@ -48,6 +49,7 @@ class SmudgeTool(BrushTool):  # type: ignore
             self.brush_size = size
         cache.connect(self, Cache.SMUDGE_TOOL_BRUSH_SIZE, _size_update)
         self.brush_size = cache.get(Cache.SMUDGE_TOOL_BRUSH_SIZE)
+        self.crosshair_variant = CrosshairVariant.SMUDGE
 
         def _opacity_update(opacity: float) -> None:
             brush.opacity = opacity

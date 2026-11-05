@@ -14,6 +14,7 @@ from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import ToolGroup
 from src.tools.brush_tool import BrushTool
 from src.tools.context_pin_dragger import ContextPinDragger
+from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.brush_selection_panel import BrushSelectionPanel
 from src.util.shared_constants import PROJECT_DIR
@@ -52,6 +53,7 @@ class SelectionBrushTool(BrushTool):
         self._control_panel = BrushSelectionPanel(image_stack.selection_layer, self)
         self._active = False
         self._drawing = False
+        self.crosshair_variant = CrosshairVariant.SELECTION_BRUSH
         self._pin_dragger = ContextPinDragger(image_stack, image_viewer)
         self._stroke_mode = SelectionMode.ADD
         self._selection_before_stroke: Optional[QImage] = None  # Set only while an INTERSECT stroke is in progress.

@@ -14,6 +14,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.mypaint.mypaint_brush import MyPaintBrush
 from src.tools.base_tool import BaseTool
 from src.tools.brush_tool import BrushTool
+from src.ui.brush_crosshair import CrosshairVariant
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.mypaint_brush_tool_panel import MyPaintBrushToolPanel
 from src.util.shared_constants import PROJECT_DIR
@@ -48,6 +49,7 @@ class MyPaintBrushTool(BrushTool):
         self._control_panel: Optional[MyPaintBrushToolPanel] = None
         self._active = False
         self._drawing = False
+        self.crosshair_variant = CrosshairVariant.BRUSH
 
         # Load brush and size from cache
         cache = Cache()

@@ -7,6 +7,7 @@ so it reads on any background, and is pixel-doubled on high-density screens.
 import math
 from enum import Enum
 from functools import cache
+from typing import Sequence
 
 from PySide6.QtCore import QRect, Qt
 from PySide6.QtGui import QColor, QCursor, QImage, QPainter, QPixmap
@@ -31,6 +32,13 @@ HALO_COLOR = QColor(255, 255, 255, 220)
 class CrosshairVariant(Enum):
     """Crosshair designs. Adding one means adding its pattern to `_PATTERNS`."""
     PLAIN = 'plain'
+    SELECTION_BRUSH = 'selection brush'
+    BRUSH = 'brush'
+    DRAW = 'draw'
+    FILTER = 'filter'
+    SMUDGE = 'smudge'
+    CLONE = 'clone'
+    ERASER = 'eraser'
 
 
 # '#' marks a core pixel. Rows run top to bottom.
@@ -52,21 +60,139 @@ _PATTERNS: dict[CrosshairVariant, tuple[str, ...]] = {
         '.......#.......',
         '.......#.......',
     ),
+    CrosshairVariant.SELECTION_BRUSH: (
+        '###.........###',
+        '##...........##',
+        '#.............#',
+        '.......#.......',
+        '....#.....#....',
+        '...............',
+        '...............',
+        '...#.......#...',
+        '...............',
+        '...............',
+        '....#.....#....',
+        '.......#.......',
+        '#.............#',
+        '##...........##',
+        '###.........###',
+    ),
+    CrosshairVariant.BRUSH: (
+        '##...........##',
+        '###.........###',
+        '.##.........##.',
+        '...#.......#...',
+        '......###......',
+        '.......#.......',
+        '....#.....#....',
+        '....##...##....',
+        '....#.....#....',
+        '.......#.......',
+        '......###......',
+        '...#.......#...',
+        '.##.........##.',
+        '###.........###',
+        '##...........##',
+    ),
+    CrosshairVariant.DRAW: (
+        '....#######....',
+        '......###......',
+        '.......#.......',
+        '.......#.......',
+        '#......#......#',
+        '#.............#',
+        '##...........##',
+        '#####.....#####',
+        '##...........##',
+        '#.............#',
+        '#......#......#',
+        '.......#.......',
+        '.......#.......',
+        '......###......',
+        '....#######....',
+    ),
+    CrosshairVariant.FILTER: (
+        '##.....#.....##',
+        '#......#......#',
+        '...............',
+        '...............',
+        '...............',
+        '...............',
+        '...............',
+        '##...........##',
+        '...............',
+        '...............',
+        '...............',
+        '...............',
+        '...............',
+        '#......#......#',
+        '##.....#.....##',
+    ),
+    CrosshairVariant.SMUDGE: (
+        '....#.#.#.#....',
+        '.....#.#.#.....',
+        '......#.#......',
+        '...............',
+        '#.............#',
+        '.#...........#.',
+        '#.#.........#.#',
+        '.#...........#.',
+        '#.#.........#.#',
+        '.#...........#.',
+        '#.............#',
+        '...............',
+        '......#.#......',
+        '.....#.#.#.....',
+        '....#.#.#.#....',
+    ),
+    CrosshairVariant.CLONE: (
+        '#.............#',
+        '##...........##',
+        '#.#.........#.#',
+        '#......#......#',
+        '#......#......#',
+        '#......#......#',
+        '##...........##',
+        '.###.......###.',
+        '##...........##',
+        '#......#......#',
+        '#......#......#',
+        '#......#......#',
+        '#.#.........#.#',
+        '##...........##',
+        '#.............#',
+    ),
+    CrosshairVariant.ERASER: (
+        '##...........##',
+        '##...........##',
+        '............#..',
+        '...........#...',
+        '....#.....#....',
+        '.....#.........',
+        '...............',
+        '...............',
+        '...............',
+        '.........#.....',
+        '....#.....#....',
+        '...#...........',
+        '..#............',
+        '##...........##',
+        '##...........##',
+    )
 }
 
 
-def _core_pixels(variant: CrosshairVariant) -> set[tuple[int, int]]:
-    """Returns the (x, y) core pixels of a variant's pattern, in pattern coordinates."""
-    pattern = _PATTERNS[variant]
+def _pattern_core_pixels(pattern: Sequence[str]) -> set[tuple[int, int]]:
+    """Returns the (x, y) core pixels of a pattern, in pattern coordinates."""
     assert len(pattern) == CROSSHAIR_GRID_SIZE and all(len(row) == CROSSHAIR_GRID_SIZE for row in pattern), \
-        f'{variant} pattern is not {CROSSHAIR_GRID_SIZE}x{CROSSHAIR_GRID_SIZE}'
+        f'pattern is not {CROSSHAIR_GRID_SIZE}x{CROSSHAIR_GRID_SIZE}'
     return {(x, y) for y, row in enumerate(pattern) for x, char in enumerate(row) if char == '#'}
 
 
-def crosshair_image(variant: CrosshairVariant, pixel_scale: int = 1) -> QImage:
-    """Draws a variant's crosshair, CROSSHAIR_SIZE logical pixels square, with each logical pixel `pixel_scale` image
-    pixels wide."""
-    core = {(x + HALO_WIDTH, y + HALO_WIDTH) for x, y in _core_pixels(variant)}
+def crosshair_pattern_image(pattern: Sequence[str], pixel_scale: int = 1) -> QImage:
+    """Draws a crosshair from a '#'/'.' pixel pattern, CROSSHAIR_SIZE logical pixels square, with each logical pixel
+    `pixel_scale` image pixels wide."""
+    core = {(x + HALO_WIDTH, y + HALO_WIDTH) for x, y in _pattern_core_pixels(pattern)}
     center = CROSSHAIR_SIZE // 2
     halo = set()
     for x, y in core:
@@ -84,6 +210,12 @@ def crosshair_image(variant: CrosshairVariant, pixel_scale: int = 1) -> QImage:
             painter.fillRect(QRect(x * pixel_scale, y * pixel_scale, pixel_scale, pixel_scale), color)
     painter.end()
     return image
+
+
+def crosshair_image(variant: CrosshairVariant, pixel_scale: int = 1) -> QImage:
+    """Draws a variant's crosshair, CROSSHAIR_SIZE logical pixels square, with each logical pixel `pixel_scale` image
+    pixels wide."""
+    return crosshair_pattern_image(_PATTERNS[variant], pixel_scale)
 
 
 def crosshair_pixel_scale(device_pixel_ratio: float) -> int:
