@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtWidgets import QApplication, QLabel
+from shiboken6 import delete
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -45,7 +46,8 @@ class DockRailTest(IntraPaintTestCase):
         self.right_rail = self.window.rails.rail(Area.RightDockWidgetArea)
 
     def tearDown(self) -> None:
-        self.window.hide()
+        if self.window is not None:
+            self.window.hide()
         super().tearDown()
 
     def _button(self, dock):
@@ -63,6 +65,15 @@ class DockRailTest(IntraPaintTestCase):
 
     def _end(self, widget, side: bool = True) -> int:
         return self._start(widget, side) + (widget.height() if side else widget.width())
+
+    def test_deleting_the_open_window_raises_nothing(self) -> None:
+        """Deleting the window while it shows its docks raises nothing from the slots the docks report changes to."""
+        errors: list[BaseException] = []
+        # PySide reports an exception raised in a slot through sys.excepthook rather than raising it.
+        with patch.object(sys, 'excepthook', lambda _type, value, _tb: errors.append(value)):
+            delete(self.window)
+        self.window = None
+        self.assertEqual([], errors)
 
     def test_buttons_line_up_with_their_groups(self) -> None:
         """Each tab group's buttons start where its open dock starts, with a rule before the second group."""

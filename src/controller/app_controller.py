@@ -334,7 +334,8 @@ class AppController(MenuBuilder):
         self._can_clear_or_cut_image = False
 
         # Finally, track active text inputs, so we always know when text-relevant events should be available:
-        self._active_text_field_tracker = ActiveTextFieldTracker()
+        # The tracker's focus and clipboard connections end with the window the actions belong to:
+        self._active_text_field_tracker = ActiveTextFieldTracker(self._window)
         self._active_text_field_tracker.status_changed.connect(self._update_enabled_text_relevant_actions)
         clipboard = QApplication.clipboard()
         clipboard.dataChanged.connect(self._update_clipboard_paste_availability)

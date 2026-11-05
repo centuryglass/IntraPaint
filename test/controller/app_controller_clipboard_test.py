@@ -41,6 +41,7 @@ class AppControllerClipboardTest(IntraPaintTestCase):
         self.args.mode = 'mock'
         self.args.server_url = ''
         self.args.fast_ngrok_connection = False
+        self.clipboard_receivers_before = QApplication.clipboard().receivers(SIGNAL('dataChanged()'))
         self.controller = self._create_controller()
         self.image_stack = self.controller._image_stack
         temp_dir = tempfile.TemporaryDirectory()
@@ -120,12 +121,12 @@ class AppControllerClipboardTest(IntraPaintTestCase):
         self.assertTrue(controller.get_action_for_method(controller.paste).isEnabled())
 
     def test_deleted_window_disconnects_clipboard(self) -> None:
-        """Deleting the controller's window ends its connection to the application clipboard."""
+        """Deleting the controller's window ends every connection the controller made to the application clipboard."""
         clipboard = QApplication.clipboard()
-        connected = clipboard.receivers(SIGNAL('dataChanged()'))
+        self.assertGreater(clipboard.receivers(SIGNAL('dataChanged()')), self.clipboard_receivers_before)
         self.controller._window.deleteLater()
         QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
-        self.assertEqual(connected - 1, clipboard.receivers(SIGNAL('dataChanged()')))
+        self.assertEqual(self.clipboard_receivers_before, clipboard.receivers(SIGNAL('dataChanged()')))
 
 
 if __name__ == '__main__':

@@ -8,6 +8,7 @@ from unittest.mock import patch, MagicMock
 from PySide6.QtCore import QEvent, QSize, QTimer
 from PySide6.QtGui import QAction, QColor, QImage
 from PySide6.QtWidgets import QApplication, QStyleFactory, QWidget
+from shiboken6 import delete, isValid
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -80,6 +81,12 @@ class TestAppController(IntraPaintTestCase):
         menu.aboutToShow.emit()
         return [action.text() for action in menu.actions() if action.property(LAYOUT_ACTION_PROPERTY)
                 and not action.isSeparator()]
+
+    def test_text_field_tracker_is_deleted_with_the_window(self):
+        """The text field tracker's focus and clipboard connections end when the window is deleted."""
+        tracker = self.controller._active_text_field_tracker
+        delete(self.controller._window)
+        self.assertFalse(isValid(tracker))
 
     def test_layout_menu_lists_saved_layouts(self):
         """The Layouts submenu lists exactly the saved names, with "&" shown literally."""
