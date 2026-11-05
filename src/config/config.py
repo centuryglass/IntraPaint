@@ -85,6 +85,17 @@ class _ConfigConnection(QObject):
         self.owner = owner
         self.options = options
         self._callback = callback
+        # Connected to the owner's `destroyed` signal. A slot on this object would make PySide hold the connection
+        # from the owner, which cycles with `owner`; this closure holds the connection weakly instead.
+        self.destroyed_handler: Optional[Callable[..., None]] = None
+        if isinstance(owner, QObject):
+            self_ref = weakref.ref(self)
+
+            def _owner_destroyed(*_args: Any) -> None:
+                connection = self_ref()
+                if connection is not None:
+                    connection.on_owner_destroyed()
+            self.destroyed_handler = _owner_destroyed
 
     @Slot(object, object)
     def on_value_changed(self, value: Any, inner_key: Optional[str]) -> None:
@@ -99,7 +110,6 @@ class _ConfigConnection(QObject):
         """Passes a copy of the new option list to the callback."""
         self._callback([*options])
 
-    @Slot()
     def on_owner_destroyed(self) -> None:
         """Removes the connection when its owner `QObject` is destroyed."""
         config = self._config()
@@ -607,8 +617,8 @@ class Config:
             notifier.options_changed.connect(connection.on_options_changed)
         else:
             notifier.value_changed.connect(connection.on_value_changed)
-        if isinstance(owner, QObject):
-            owner.destroyed.connect(connection.on_owner_destroyed)
+        if connection.destroyed_handler is not None:
+            owner.destroyed.connect(connection.destroyed_handler)
         registry[key][owner] = connection
 
     def _remove_connection(self, connection: _ConfigConnection) -> None:
@@ -622,8 +632,8 @@ class Config:
             notifier.options_changed.disconnect(connection.on_options_changed)
         else:
             notifier.value_changed.disconnect(connection.on_value_changed)
-        if isinstance(connection.owner, QObject) and isValid(connection.owner):
-            connection.owner.destroyed.disconnect(connection.on_owner_destroyed)
+        if connection.destroyed_handler is not None and isValid(connection.owner):
+            connection.owner.destroyed.disconnect(connection.destroyed_handler)
 
     def get_option_index(self, key: str) -> int:
         """Returns the index of the selected option for a given key.
