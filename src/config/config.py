@@ -12,13 +12,15 @@ import json
 import logging
 import os
 import tempfile
+import weakref
 from inspect import signature
 from threading import Lock
 from typing import Optional, Any, Callable
 
-from PySide6.QtCore import QSize, QTimer, Qt
+from PySide6.QtCore import QObject, QSize, QTimer, Qt, Signal, Slot
 from PySide6.QtGui import QKeySequence, QColor
 from PySide6.QtWidgets import QApplication
+from shiboken6 import isValid
 
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
 from src.config.definition_tr_contexts import DEFINITION_TR_CONTEXTS
@@ -58,6 +60,61 @@ SAVE_DELAY_MS = 10
 def _definition_tr_context(definition_path: str) -> str:
     """Returns the translation context of a definition file's strings (`DEFINITION_TR_CONTEXTS`)."""
     return DEFINITION_TR_CONTEXTS.get(os.path.basename(definition_path), '')
+
+
+class _KeyNotifier(QObject):
+    """Emits one config key's change signals. Lives on the thread that constructed the `Config`."""
+    # (new value, inner key or None)
+    value_changed = Signal(object, object)
+    options_changed = Signal(list)
+
+
+class _ConfigConnection(QObject):
+    """One registered callback, connected to a `_KeyNotifier` signal.
+
+    `Config.connect` and `Config.connect_to_option_changes` own these through their registries. A connection is
+    deliberately unparented, so it creates no parent/child reference cycle with a widget owner. When the owner is a
+    `QObject`, its `destroyed` signal removes the connection.
+    """
+
+    def __init__(self, config: 'Config', key: str, owner: Any, callback: Callable[..., None],
+                 options: bool) -> None:
+        super().__init__()
+        self._config = weakref.ref(config)  # A strong reference would cycle with the config's registry.
+        self.key = key
+        self.owner = owner
+        self.options = options
+        self._callback = callback
+        # Connected to the owner's `destroyed` signal. A slot on this object would make PySide hold the connection
+        # from the owner, which cycles with `owner`; this closure holds the connection weakly instead.
+        self.destroyed_handler: Optional[Callable[..., None]] = None
+        if isinstance(owner, QObject):
+            self_ref = weakref.ref(self)
+
+            def _owner_destroyed(*_args: Any) -> None:
+                connection = self_ref()
+                if connection is not None:
+                    connection.on_owner_destroyed()
+            self.destroyed_handler = _owner_destroyed
+
+    @Slot(object, object)
+    def on_value_changed(self, value: Any, inner_key: Optional[str]) -> None:
+        """Runs the callback unless a callback that ran earlier for this change has since changed the value again."""
+        config = self._config()
+        if config is None or config.get(self.key, inner_key) != value:
+            return
+        self._callback(value, inner_key)
+
+    @Slot(list)
+    def on_options_changed(self, options: ParamTypeList) -> None:
+        """Passes a copy of the new option list to the callback."""
+        self._callback([*options])
+
+    def on_owner_destroyed(self) -> None:
+        """Removes the connection when its owner `QObject` is destroyed."""
+        config = self._config()
+        if config is not None:
+            config._remove_connection(self)  # pylint: disable=protected-access
 
 
 class Config:
@@ -106,8 +163,9 @@ class Config:
         """
         self._entries: dict[str, ConfigEntry] = {}
         self._newer_file = False
-        self._connected: dict[str, dict[Any, Callable[..., None]]] = {}
-        self._option_connected: dict[str, dict[Any, Callable[[ParamTypeList], None]]] = {}
+        self._notifiers: dict[str, _KeyNotifier] = {}
+        self._connected: dict[str, dict[Any, _ConfigConnection]] = {}
+        self._option_connected: dict[str, dict[Any, _ConfigConnection]] = {}
         self._json_path = saved_value_path
         self._tr_context = ''
         self._lock = Lock()
@@ -218,9 +276,10 @@ class Config:
         with self._lock:
             for key, entry in self._entries.items():
                 entry.restore_state(self._initial_state[key])
-                self._connected[key] = {}
-            for key in self._option_connected:
-                self._option_connected[key] = {}
+            for registry in (self._connected, self._option_connected):
+                for connections in registry.values():
+                    for connection in [*connections.values()]:
+                        self._remove_connection(connection)
 
     def _adjust_defaults(self) -> None:
         """Override this to perform any adjustments to default values needed before file IO, e.g. loading list options
@@ -399,7 +458,8 @@ class Config:
         Callbacks and the save timer run on the calling thread, and callbacks update widgets. Worker code stages the
         value and applies it in a finish handler or through `run_on_main_thread`.
 
-        Connected callbacks stop running for this change once one of them changes the value again.
+        Connected callbacks stop running for this change once one of them changes the value again. An exception
+        raised by a callback goes to `sys.excepthook`, not to the caller, and the remaining callbacks still run.
 
         Parameters
         ----------
@@ -442,26 +502,8 @@ class Config:
             with self._lock:
                 if not self._save_timer.isActive():
                     self._save_timer.start()
-        # Pass change to connected callback functions:
-        callbacks = [*self._connected[key].items()]  # <- So callbacks can disconnect or replace themselves
-        for source, callback in callbacks:
-            num_args = len(signature(callback).parameters)
-            try:
-                if num_args == 0 and inner_key is None:
-                    callback()
-                elif num_args == 1 and inner_key is None:
-                    callback(new_value)
-                elif num_args == 2:
-                    callback(new_value, inner_key)
-            except RuntimeError as err:
-                if 'already deleted' in str(err):
-                    logger.warning(f'Disconnecting from {key}, got error={err}')
-                    self.disconnect(source, key)
-                else:
-                    raise err
-            # A callback that set the value again already notified every callback of the newer value.
-            if self.get(key, inner_key) != value:
-                break
+        # Delivered synchronously: set() runs on the main thread, where the connections live.
+        self._notifiers[key].value_changed.emit(new_value, inner_key)
 
     def save_pending_changes(self) -> None:
         """Writes changes `set` scheduled to the JSON file immediately.
@@ -502,15 +544,21 @@ class Config:
         if num_args > 2:
             raise RuntimeError(f'callback function connected to {key} value takes {num_args} '
                                'parameters, expected 0-2')
-        if inner_key is None:
-            self._connected[key][connected_object] = on_change_fn
-        else:
-            def wrapper_fn(value: Any, changed_inner_key: str) -> None:
-                """Call connected function only if the inner key changes."""
+
+        def deliver(value: Any, changed_inner_key: Optional[str]) -> None:
+            """Adapts the callback's argument count to the signal's (value, inner_key)."""
+            if inner_key is not None:
                 if changed_inner_key == inner_key:
                     on_change_fn(value)
+            elif num_args == 2:
+                on_change_fn(value, changed_inner_key)
+            elif changed_inner_key is None:
+                if num_args == 1:
+                    on_change_fn(value)
+                else:
+                    on_change_fn()
 
-            self._connected[key][connected_object] = wrapper_fn
+        self._add_connection(connected_object, key, deliver, False)
 
     def connect_to_option_changes(self,
                                   connected_object: Any,
@@ -531,7 +579,7 @@ class Config:
         """
         if key not in self._option_connected:
             raise KeyError(INVALID_OPTION_KEY_ERROR.format(key=key))
-        self._option_connected[key][connected_object] = on_change_fn
+        self._add_connection(connected_object, key, on_change_fn, True)
 
     def disconnect(self, connected_object: Any, key: str) -> None:
         """
@@ -540,16 +588,52 @@ class Config:
         """
         if key not in self._connected:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
-        self._connected[key].pop(connected_object, None)
-        if key in self._option_connected:
-            self._option_connected[key].pop(connected_object, None)
+        for registry in (self._connected, self._option_connected):
+            connection = registry.get(key, {}).get(connected_object)
+            if connection is not None:
+                self._remove_connection(connection)
 
     def disconnect_all(self, connected_object: Any) -> None:
         """Removes all connections associated with a particular object."""
-        for connection_list in self._connected.values():
-            connection_list.pop(connected_object, None)
-        for option_connection_list in self._option_connected.values():
-            option_connection_list.pop(connected_object, None)
+        for registry in (self._connected, self._option_connected):
+            for connections in registry.values():
+                connection = connections.get(connected_object)
+                if connection is not None:
+                    self._remove_connection(connection)
+
+    def _add_connection(self,
+                        owner: Any,
+                        key: str,
+                        callback: Callable[..., None],
+                        options: bool) -> None:
+        """Connects `callback` to a key's value or option signal, replacing the owner's earlier connection."""
+        registry = self._option_connected if options else self._connected
+        previous = registry[key].get(owner)
+        if previous is not None:
+            self._remove_connection(previous)
+        connection = _ConfigConnection(self, key, owner, callback, options)
+        notifier = self._notifiers[key]
+        if options:
+            notifier.options_changed.connect(connection.on_options_changed)
+        else:
+            notifier.value_changed.connect(connection.on_value_changed)
+        if connection.destroyed_handler is not None:
+            owner.destroyed.connect(connection.destroyed_handler)
+        registry[key][owner] = connection
+
+    def _remove_connection(self, connection: _ConfigConnection) -> None:
+        """Disconnects a connection and drops it from its registry. Safe to call more than once."""
+        registry = self._option_connected if connection.options else self._connected
+        connections = registry.get(connection.key, {})
+        if connections.get(connection.owner) is connection:
+            del connections[connection.owner]
+        notifier = self._notifiers[connection.key]
+        if connection.options:
+            notifier.options_changed.disconnect(connection.on_options_changed)
+        else:
+            notifier.value_changed.disconnect(connection.on_value_changed)
+        if connection.destroyed_handler is not None and isValid(connection.owner):
+            connection.owner.destroyed.disconnect(connection.destroyed_handler)
 
     def get_option_index(self, key: str) -> int:
         """Returns the index of the selected option for a given key.
@@ -608,16 +692,7 @@ class Config:
         last_value = self.get(key)
         self._entries[key].set_valid_options(options_list)
 
-        callbacks = [*self._option_connected[key].items()]  # <- So callbacks can disconnect or replace themselves
-        for source, callback in callbacks:
-            try:
-                callback([*options_list])
-            except RuntimeError as err:
-                if 'already deleted' in str(err):
-                    logger.warning(f'Disconnecting from {key}, got error={err}')
-                    self.disconnect(source, key)
-                else:
-                    raise err
+        self._notifiers[key].options_changed.emit([*options_list])
         if last_value not in options_list and len(options_list) > 0:
             self.set(key, options_list[0])
 
@@ -704,6 +779,7 @@ class Config:
         entry = ConfigEntry(key, initial_value, label, category, subcategory, tooltip, options, range_options,
                             save_json, pinned, control_hint)
         self._entries[key] = entry
+        self._notifiers[key] = _KeyNotifier()
         self._connected[key] = {}
         if options is not None:
             self._option_connected[key] = {}
