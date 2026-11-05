@@ -24,6 +24,7 @@ from src.image.text_rect import TextRect
 from src.undo_stack import UndoStack
 from src.util.visual.image_utils import image_data_as_numpy_8bit, image_data_as_numpy_8bit_readonly
 from test.base_test_case import IntraPaintTestCase
+from test.image.layers.image_stack_state import select_rect
 from test.render_assertions import full_render
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -349,3 +350,44 @@ class OtherChangeTest(ChangedAreaTestCase):
     def test_resize_canvas(self) -> None:
         """Growing the canvas and offsetting its content, with undo and redo."""
         self.assert_undo_redo_covered(lambda: self.image_stack.resize_canvas(QSize(140, 100), 10, 6))
+
+
+class StackOperationTest(ChangedAreaTestCase):
+    """ImageStack operations built from several layer changes: selection edits, pastes and moves.
+
+    Merges, flattening and `layer_to_image_size` keep the composite unchanged, which `image_stack_merge_test.py` checks,
+    so they have nothing to cover here."""
+
+    def test_clear_selected(self) -> None:
+        """Clearing the selection from a rotated layer in a group, with undo and redo."""
+        select_rect(self.image_stack, QRect(55, 15, 30, 25))
+        self.assert_undo_redo_covered(lambda: self.image_stack.clear_selected(self.rotated))
+
+    def test_cut_and_paste(self) -> None:
+        """Cutting the selection from the background and pasting it back, each with undo and redo."""
+        select_rect(self.image_stack, QRect(20, 20, 30, 25))
+        self.assert_undo_redo_covered(lambda: self.image_stack.cut_selected(self.background))
+        self.translated.visible = False
+        self.assert_undo_redo_covered(self.image_stack.paste)
+
+    def test_paste_image(self) -> None:
+        """Pasting an image as a new layer, with undo and redo."""
+        self.assert_undo_redo_covered(lambda: self.image_stack.paste_image(_noise_image(LAYER_SIZE, 30),
+                                                                           QTransform.fromTranslate(70, 5)))
+
+    def test_generation_area_content_into_layer(self) -> None:
+        """Inserting generated content into a rotated layer, with undo and redo."""
+        self.image_stack.generation_area = QRect(50, 20, 40, 40)
+        self.assert_undo_redo_covered(lambda: self.image_stack.set_generation_area_content(
+            _noise_image(QSize(20, 20), 31), self.rotated))
+
+    def test_generation_area_content_into_group(self) -> None:
+        """Inserting generated content into a group adds a new layer, with undo and redo."""
+        self.image_stack.generation_area = QRect(10, 40, 40, 40)
+        self.assert_undo_redo_covered(lambda: self.image_stack.set_generation_area_content(
+            _noise_image(QSize(20, 20), 32), self.group))
+
+    def test_move_layer_by_offset(self) -> None:
+        """Moving a layer out of its group by offset, with undo and redo."""
+        self.translated.transform = QTransform.fromTranslate(65, 25)
+        self.assert_undo_redo_covered(lambda: self.image_stack.move_layer_by_offset(1, self.translated))
