@@ -233,10 +233,10 @@ class ImageMetadata:
     # Generation parameters:
 
     def _exif_description(self) -> Optional[str]:
-        """Returns the EXIF ImageDescription, from the Exif IFD that IntraPaint writes or else IFD0."""
-        description = self._read_ifd(IFD.Exif).get(ExifTags.Base.ImageDescription)
+        """Returns the EXIF ImageDescription from IFD0, or else the Exif IFD, where IntraPaint 1.4 also wrote it."""
+        description = self.exif.get(ExifTags.Base.ImageDescription)
         if description is None:
-            description = self.exif.get(ExifTags.Base.ImageDescription)
+            description = self._read_ifd(IFD.Exif).get(ExifTags.Base.ImageDescription)
         return _decode_text(description)
 
     def _user_comment(self) -> tuple[Optional[str], Optional[str]]:
