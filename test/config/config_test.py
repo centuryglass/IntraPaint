@@ -337,6 +337,30 @@ class ConfigTest(IntraPaintTestCase):
         self.assertEqual(config.get(STR_KEY), 'second')
         self.assertEqual(config.get(OPTION_KEY), 'y')
 
+    def test_remove_connection_after_qt_deleted_its_objects(self) -> None:
+        """Removing a connection whose notifier, connection or owner Qt already deleted (as at quit) doesn't raise."""
+        for deleted in ('notifier', 'connection', 'owner'):
+            with self.subTest(deleted=deleted):
+                config = _ScratchConfig(self.definition_path, self.json_path)
+                self.addCleanup(config._save_timer.stop)  # pylint: disable=protected-access
+                self.addCleanup(config._reset)  # pylint: disable=protected-access
+                owner = QLabel()
+                config.connect(owner, STR_KEY, lambda _value: None)
+                config.connect_to_option_changes(owner, OPTION_KEY, lambda _options: None)
+                connections = [config._connected[STR_KEY][owner],  # pylint: disable=protected-access
+                               config._option_connected[OPTION_KEY][owner]]  # pylint: disable=protected-access
+                if deleted == 'notifier':
+                    delete(config._notifiers[STR_KEY])  # pylint: disable=protected-access
+                    delete(config._notifiers[OPTION_KEY])  # pylint: disable=protected-access
+                elif deleted == 'connection':
+                    for connection in connections:
+                        delete(connection)
+                else:
+                    delete(owner)
+                for connection in connections:
+                    config._remove_connection(connection)  # pylint: disable=protected-access
+                self.assertNotIn(owner, config._connected[STR_KEY])  # pylint: disable=protected-access
+
     def test_inner_key(self) -> None:
         """`set` with an inner key changes one entry of a dict value, and only callbacks for that entry run."""
         config = self._config()
