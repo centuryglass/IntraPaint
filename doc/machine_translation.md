@@ -110,6 +110,12 @@ A Term, English term or Chosen rendering cell is a list of items:
   rendering. Quoting keeps an option value like "Round" from matching other strings that use the word.
 - **Unquoted terms match words, not whole strings.** Matching ignores case and accepts the regular English endings
   (-s, -es, -ed, -ing). An irregular form, abbreviation or short label is added as a `/` spelling.
+- **The longest term wins.** A match uses up its words, so "Layer group" hides the "layer" in it, and markup,
+  `{placeholders}`, `%1` and `&` accelerators are ignored.
+- **A rendering matches as a substring of the translation,** ignoring case, spaces and `&` accelerators. A language
+  with inflected forms lists them as `/` renderings.
+- **Every quoted string in the English glossary's UI strings column is a real UI string that contains a spelling of its
+  row's term.** A test checks this against `main.ts`.
 
 ### 3. Glossary review
 
@@ -152,6 +158,11 @@ The first batch of a language adds its `languages.json` entry, with `"machine_tr
 directly, then run `python scripts/build_translations.py` to normalize it and build its `.qm`
 file. An entry is either translated and marked finished, or left empty. The build compiles with `-nounfinished`, so
 an unfinished entry shows English instead of its draft.
+
+A glossary term the check flags and the translation should not render the glossary's way (the word has another sense in
+that string) is exempted in the entry's translator comment with a line `glossary: not "Term"` and the reason. `Term` is
+the English spelling as the glossary writes it. The check fails on an exemption whose term the source no longer
+contains.
 
 The batch PR names the translating model and the reviewing model, lists the flagged strings, summarizes the review's
 findings and how each was resolved, and names the UI sheets checked (step 6).
@@ -207,7 +218,8 @@ Automated checks run on every translation file after every batch:
 - placeholders, HTML markup and keyboard accelerators match the source, with the accelerator in the form the
   language's style section gives (`python scripts/build_translations.py --check` fails on a mismatch);
 - no two translations in one context share an accelerator (the same script; a context stands in for a menu);
-- glossary terms are used wherever the English term appears (not yet automated);
+- glossary terms are used wherever the English term appears (the same script; it needs a glossary for the language in
+  `doc/translation/`);
 - punctuation and spacing follow the language's style section, where a rule can be checked mechanically (not yet
   automated).
 

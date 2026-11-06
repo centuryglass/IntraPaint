@@ -1,6 +1,7 @@
 """Tests scripts/build_translations.py against small projects built in a temporary directory."""
 import importlib.util
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -44,6 +45,19 @@ TRANSLATED_MODULE = """
 """
 
 
+MINIMAL_ENGLISH_GLOSSARY = """
+    | Term | Meaning |
+    | --- | --- |
+    | Zebra | An animal. |
+"""
+
+MINIMAL_LANGUAGE_GLOSSARY = """
+    | English term | Chosen rendering |
+    | --- | --- |
+    | Zebra | Zebra |
+"""
+
+
 class BuildTranslationsTest(IntraPaintTestCase):
     """Extraction, checking and translation file updates."""
 
@@ -58,6 +72,9 @@ class BuildTranslationsTest(IntraPaintTestCase):
             self._write(f'resources/config/{file_name}', DEFINITIONS.get(file_name, '{}'))
         self._write('src/ui/example.py', TRANSLATED_MODULE)
         self._write('resources/translations/languages.json', '{}')
+        self._write('doc/translation/glossary.md', MINIMAL_ENGLISH_GLOSSARY)
+        for language in ('de_DE', 'fr_FR', 'zh_CN'):
+            self._write(f'doc/translation/{language}.md', MINIMAL_LANGUAGE_GLOSSARY)
 
     def _path(self, relative_path: str) -> str:
         return os.path.join(self.project, *relative_path.split('/'))
@@ -436,3 +453,155 @@ class GlossaryParserTest(IntraPaintTestCase):
                 glossary, problems = build_translations.parse_language_glossary(os.path.join(directory, name), rows)
                 self.assertEqual([], problems)
                 self.assertEqual(len(rows), len(glossary.rows))
+
+
+class GlossaryCheckTest(IntraPaintTestCase):
+    """Matching glossary terms in source strings, and checking translations against the chosen renderings."""
+
+    ENGLISH = """
+        | Term | Meaning | Where | UI strings |
+        | --- | --- | --- | --- |
+        | Layer | A layer. | Panel | "Add layer" |
+        | Layer group | A group. | Panel | "Add layer group" |
+        | Scale (verb) | Resample. | Menu | "Scale image" |
+        | Negative prompt | Avoid. | Panel | "Negative prompt:" |
+        | Prompt | Describe. | Panel | "Prompt" |
+        | "Box", "Screen" (scaling) | Values. | Menu | "Box" |
+        | Create, merge | Verbs. | Menu | "Merge down" |
+        | "Match area, upscale" | Option. | Panel | "Match area, upscale" |
+        | Round | A word. | Panel | "Round" |
+    """
+
+    LANGUAGE = """
+        | English term | Chosen rendering |
+        | --- | --- |
+        | Layer | Ebene |
+        | Layer group | Ebenengruppe |
+        | Scale (verb) | skalieren / vergrößern |
+        | Negative prompt | Negativ-Prompt |
+        | Prompt | Prompt |
+        | "Box", "Screen" (scaling) | "Kasten", "Bildschirm" |
+        | Create, merge | erstellen, zusammenführen |
+        | "Match area, upscale" | Bereich |
+        | Round | Runde |
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._temp_dir = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
+        self.addCleanup(self._temp_dir.cleanup)
+        english_path = os.path.join(self._temp_dir.name, 'en.md')
+        language_path = os.path.join(self._temp_dir.name, 'de.md')
+        for path, text in ((english_path, self.ENGLISH), (language_path, self.LANGUAGE)):
+            with open(path, 'w', encoding='utf-8') as file:
+                file.write(textwrap.dedent(text))
+        self.rows, _, problems = build_translations.parse_english_glossary(english_path)
+        self.assertEqual([], problems)
+        self.glossary, problems = build_translations.parse_language_glossary(language_path, self.rows)
+        self.assertEqual([], problems)
+
+    def _matches(self, source: str) -> list[str]:
+        return [spelling.text for _, _, spelling in build_translations.match_glossary_terms(source, self.rows)]
+
+    def _problems(self, source: str, translation: str, comment: str | None = None) -> list[str]:
+        catalog = build_translations.Catalog()
+        catalog.add_message(build_translations.Message('ui.test', source, translation=translation, translation_type=None,
+                                                       translator_comment=comment))
+        return build_translations.glossary_problems('de.ts', self.glossary, catalog)
+
+    def test_matching_ignores_case_and_accepts_regular_endings(self) -> None:
+        """Unquoted spellings match words in any case, with -s, -es, -ed and -ing, and not parts of other words."""
+        self.assertEqual(['Layer'], self._matches('Delete the LAYER'))
+        self.assertEqual(['Layer'], self._matches('Layers'))
+        self.assertEqual(['Create'], self._matches('Creating'))
+        self.assertEqual(['merge'], self._matches('Merged'))
+        self.assertEqual(['Scale'], self._matches('Scaling'))
+        self.assertEqual([], self._matches('Layerless effects'))
+        self.assertEqual([], self._matches('Background'))
+        self.assertEqual([], self._matches('Grayscale'))
+
+    def test_longest_term_consumes_its_span(self) -> None:
+        """A longer term hides the shorter terms inside it."""
+        self.assertEqual(['Layer group'], self._matches('Add layer group'))
+        self.assertEqual(['Negative prompt'], self._matches('Negative prompt:'))
+        self.assertEqual(['Layer', 'Prompt'], self._matches('Layer prompt'))
+        self.assertEqual(['Negative prompt', 'Prompt'], self._matches('Negative prompt and prompt'))
+
+    def test_quoted_terms_match_whole_strings_only(self) -> None:
+        """Quoted spellings match the whole string, ignoring accelerator, colon and ellipsis, with case significant."""
+        self.assertEqual(['Box'], self._matches('Box'))
+        self.assertEqual(['Box'], self._matches('&Box...'))
+        self.assertEqual(['Screen'], self._matches('Screen:'))
+        self.assertEqual([], self._matches('Fit box'))
+        self.assertEqual([], self._matches('box'))
+        self.assertEqual([], self._matches('on the Screen'))
+        self.assertEqual(['Match area, upscale'], self._matches('Match area, upscale'))
+
+    def test_markup_and_placeholders_do_not_match(self) -> None:
+        """Tags, entities, placeholder names and accelerators are removed before matching."""
+        self.assertEqual([], self._matches('<b>x</b> {layer} %1 &nbsp;'))
+        self.assertEqual(['Layer'], self._matches('<b>La&yer</b> {layer}'))
+
+    def test_missing_rendering_is_reported(self) -> None:
+        """A translation must hold a chosen rendering of each term, ignoring case, spacing and accelerators."""
+        self.assertEqual([], self._problems('Add layer', 'Ebene hinzufügen'))
+        self.assertEqual([], self._problems('Add layer', 'Neue EBENE'))
+        self.assertEqual([], self._problems('Add layer group', 'Ebenengruppe'))
+        self.assertEqual([], self._problems('Scale image', 'Bild vergrößern'))
+        self.assertEqual([], self._problems('Create', 'er&stellen'))
+        self.assertEqual([], self._problems('Create', 'er stellen'))
+        problems = self._problems('Add layer', 'Schicht hinzufügen')
+        self.assertEqual(1, len(problems), problems)
+        self.assertIn("'Layer'", problems[0])
+        self.assertIn('Ebene', problems[0])
+        self.assertEqual(1, len(self._problems('Add layer group', 'Ebene')))
+        self.assertEqual(1, len(self._problems('Box', 'Schachtel')))
+
+    def test_unfinished_and_vanished_translations_are_not_checked(self) -> None:
+        """Entries with no translation and vanished ones are not held to the glossary."""
+        catalog = build_translations.Catalog()
+        catalog.add_message(build_translations.Message('c', 'Layer'))
+        catalog.add_message(build_translations.Message('c', 'Layers', translation='x', translation_type='vanished'))
+        self.assertEqual([], build_translations.glossary_problems('de.ts', self.glossary, catalog))
+
+    def test_exemptions(self) -> None:
+        """A valid exemption suppresses the problem, and one the source no longer needs fails."""
+        exemption = 'glossary: not "Layer" - the verb sense'
+        self.assertEqual([], self._problems('Add layer', 'Schicht hinzufügen', exemption))
+        self.assertEqual([], self._problems('Add layer', 'Ebene hinzufügen', exemption))
+        problems = self._problems('Add group', 'Gruppe hinzufügen', exemption)
+        self.assertEqual(1, len(problems), problems)
+
+    def test_language_glossary_lookup(self) -> None:
+        """The language's own file is used, then its prefix's."""
+        for name in ('de_DE.md', 'zh.md'):
+            with open(os.path.join(self._temp_dir.name, name), 'w', encoding='utf-8'):
+                pass
+        find = build_translations.find_language_glossary
+        directory = self._temp_dir.name
+        self.assertEqual(os.path.join(directory, 'de_DE.md'), find(directory, 'de_DE'))
+        self.assertEqual(os.path.join(directory, 'zh.md'), find(directory, 'zh_CN'))
+        self.assertIsNone(find(directory, 'fr_FR'))
+
+    def test_committed_glossary_strings_match_their_own_rows(self) -> None:
+        """Each quoted entry of the English glossary's UI strings column is in the catalog and matches its row."""
+        directory = os.path.join(PROJECT_ROOT, 'doc', 'translation')
+        rows, _, problems = build_translations.parse_english_glossary(os.path.join(directory, 'glossary.md'))
+        self.assertEqual([], problems)
+        catalog, problems = build_translations.build_catalog(PROJECT_ROOT)
+        self.assertEqual([], problems)
+        sources = {build_translations._glossary_source_text(message.source)  # pylint: disable=protected-access
+                   for message in catalog.all_messages()}
+        with open(os.path.join(directory, 'glossary.md'), encoding='utf-8') as file:
+            table_rows = build_translations._table_rows(file.read().splitlines())  # pylint: disable=protected-access
+        by_line = {row.line: row for row in rows}
+        problems = []
+        for number, header, cells in table_rows:
+            if 'UI strings' not in header or number not in by_line:
+                continue
+            for string in re.findall(r'"([^"]*)"', cells[header.index('UI strings')]):
+                if build_translations._glossary_source_text(string) not in sources:  # pylint: disable=protected-access
+                    problems.append(f'line {number}: {string!r} is not a UI string.')
+                elif not build_translations.match_glossary_terms(string, [by_line[number]]):
+                    problems.append(f'line {number}: {string!r} matches no term of its row.')
+        self.assertEqual([], problems)
