@@ -29,6 +29,11 @@ finished translation:
 - shares an accelerator with another translation in the same context. Which strings share a menu isn't in the
   catalog, so a context is the closest approximation. Contexts that mix menus are not caught.
 
+- lacks the chosen rendering of a glossary term its source contains. The glossaries are `doc/translation/glossary.md` and
+  the translation's language's file there (`glossary_problems`). A `glossary: not "Term"` line in the entry's
+  translator comment exempts that spelling, and fails once the source no longer contains it. A translation with no
+  glossary fails.
+
 A `.qm` file with no `.ts` file also fails. `lrelease` runs with `-nounfinished`, so an unfinished entry falls back to
 English instead of shipping its draft.
 
@@ -65,6 +70,8 @@ TRANSLATION_DIR = 'resources/translations'
 CATALOG_NAME = 'main.ts'
 MANIFEST_NAME = 'languages.json'
 MANIFEST_MACHINE_TRANSLATED = 'machine_translated'
+GLOSSARY_DIR = 'doc/translation'
+ENGLISH_GLOSSARY_NAME = 'glossary.md'
 SOURCE_DIR = 'src'
 DEFINITION_DIR = 'resources/config'
 SOURCE_LANGUAGE = 'en_US'
@@ -669,6 +676,101 @@ def parse_language_glossary(path: str, english_rows: list[GlossaryRow]) -> tuple
     return Glossary(path, [joined[row.cell] for row in english_rows if row.cell in joined], names), problems
 
 
+_SOURCE_NOISE = re.compile(r'<[^<>]*>|&(?:[A-Za-z]+|#\d+|#x[0-9A-Fa-f]+);|%(?:\d+|n)|\{[^{}]*\}')
+_WHOLE_SUFFIX = re.compile(r'(?:\.\.\.|\u2026|:|\s)+$')
+_TARGET_ACCELERATOR = re.compile(r'\(&\w\)')
+_GLOSSARY_EXEMPTION = re.compile(r'glossary:\s*not\s*"([^"]+)"')
+_CONSUMED = '\x00'
+
+
+def _glossary_source_text(source: str) -> str:
+    """Strips markup, entities, placeholders and `&` accelerators from a source string, keeping a literal `&&` as `&`."""
+    text = _SOURCE_NOISE.sub(' ', source)
+    return ' '.join(text.replace('&&', _CONSUMED).replace('&', '').replace(_CONSUMED, '&').split())
+
+
+def _glossary_target_text(text: str) -> str:
+    """Casefolds a translation or rendering and removes whitespace and accelerators, for substring matching."""
+    return ''.join(_TARGET_ACCELERATOR.sub('', text).replace('&', '').casefold().split())
+
+
+def _spelling_pattern(spelling: str) -> re.Pattern[str]:
+    """Returns a case-insensitive pattern for an English spelling on word boundaries, allowing -s, -es, -ed and -ing."""
+    words = spelling.split()
+    last = words[-1]
+    if last.endswith('e'):
+        ending = re.escape(last) + '(?:s|d)?|' + re.escape(last[:-1]) + 'ing'
+    else:
+        ending = re.escape(last) + '(?:s|es|ed|ing)?'
+    body = r'\s+'.join([*(re.escape(word) for word in words[:-1]), f'(?:{ending})'])
+    return re.compile(f'(?<![A-Za-z]){body}(?![A-Za-z])', re.IGNORECASE)
+
+
+def match_glossary_terms(source: str, rows: list[GlossaryRow]) -> list[tuple[GlossaryRow, GlossaryTerm, Spelling]]:
+    """Returns the glossary terms a source string contains, each once, in order of appearance, with the matching spelling.
+
+    A quoted spelling matches when it is the whole string, after removing markup, placeholders, `&` accelerators and a
+    trailing colon or ellipsis. A string that matches one consumes the rest of the matching, so a quoted option value
+    does not also match the words in it. Other spellings match words, longest first, and each match consumes its
+    span, so "Layer group" hides the "layer" in it.
+    """
+    text = _glossary_source_text(source)
+    whole = _WHOLE_SUFFIX.sub('', text)
+    candidates = [(row, term, spelling) for row in rows for term in row.terms for spelling in term.spellings]
+    found: list[tuple[GlossaryRow, GlossaryTerm, Spelling]] = []
+    for row, term, spelling in candidates:
+        if spelling.whole and spelling.text == whole:
+            found.append((row, term, spelling))
+    if found:
+        return found
+    seen: set[int] = set()
+    positions: dict[int, int] = {}
+    for row, term, spelling in sorted((c for c in candidates if not c[2].whole), key=lambda c: -len(c[2].text)):
+        for match in _spelling_pattern(spelling.text).finditer(text):
+            text = text[:match.start()] + _CONSUMED * (match.end() - match.start()) + text[match.end():]
+            if id(term) not in seen:
+                seen.add(id(term))
+                positions[id(term)] = match.start()
+                found.append((row, term, spelling))
+    return sorted(found, key=lambda item: positions[id(item[1])])
+
+
+def find_language_glossary(directory: str, language: str) -> Optional[str]:
+    """Returns the path of `<language>.md` in the directory, or of the file for the language's prefix (`zh.md`)."""
+    for name in (language, re.split(r'[_-]', language)[0]):
+        path = os.path.join(directory, f'{name}.md')
+        if os.path.isfile(path):
+            return path
+    return None
+
+
+def glossary_problems(file_name: str, glossary: Glossary, catalog: Catalog) -> list[str]:
+    """Reports each translation that lacks the chosen rendering of a glossary term its source contains.
+
+    A `glossary: not "Term"` line in the entry's translator comment exempts that spelling from the check. An exemption
+    whose spelling the source no longer contains is reported.
+    """
+    problems = []
+    for message in _finished(catalog):
+        target = _glossary_target_text(message.translation)
+        matches = match_glossary_terms(message.source, glossary.rows)
+        exempt = [spelling.casefold() for spelling in _GLOSSARY_EXEMPTION.findall(message.translator_comment or '')]
+        for spelling in exempt:
+            if not any(spelling == match[2].text.casefold() for match in matches):
+                problems.append(f'{file_name}: [{message.context}] {message.source!r}: the exemption '
+                                f'\'glossary: not "{spelling}"\' names a term the source does not contain.')
+        for row, term, spelling in matches:
+            if spelling.text.casefold() in exempt:
+                continue
+            if not any(_glossary_target_text(rendering) in target for rendering in term.renderings):
+                chosen = ' / '.join(term.renderings)
+                problems.append(f'{file_name}: [{message.context}] {message.source!r}: the source contains '
+                                f'{spelling.text!r} (English glossary line {row.line}), but the translation lacks '
+                                f'{chosen!r}. Use it, or exempt the term with a translator comment '
+                                f'\'glossary: not "{spelling.text}"\' and a reason.')
+    return problems
+
+
 def _find_lrelease() -> str:
     """Locates an lrelease executable, preferring the one bundled with the PySide6 package.
 
@@ -725,6 +827,11 @@ def manifest_problems(translation_dir: str, translations: list[str]) -> list[str
     return problems
 
 
+def _relative_problems(project_dir: str, problems: list[str]) -> list[str]:
+    """Shortens the project directory out of problem messages that name a file."""
+    return [problem.replace(project_dir + os.sep, '') for problem in problems]
+
+
 def build(project_dir: str = PROJECT_DIR, check: bool = False) -> tuple[list[str], list[str]]:
     """Rebuilds the catalog and translation files, or only checks them.
 
@@ -757,6 +864,17 @@ def build(project_dir: str = PROJECT_DIR, check: bool = False) -> tuple[list[str
     file_names = sorted(os.listdir(translation_dir))
     translations = [os.path.splitext(name)[0] for name in file_names if name.endswith('.ts') and name != CATALOG_NAME]
     problems.extend(manifest_problems(translation_dir, translations))
+    glossary_dir = os.path.join(project_dir, *GLOSSARY_DIR.split('/'))
+    english_rows: list[GlossaryRow] = []
+    if translations:
+        english_path = os.path.join(glossary_dir, ENGLISH_GLOSSARY_NAME)
+        if os.path.isfile(english_path):
+            english_rows, _, english_problems = parse_english_glossary(english_path)
+            problems.extend(_relative_problems(project_dir, english_problems))
+            if english_problems:
+                english_rows = []
+        else:
+            problems.append(f'{GLOSSARY_DIR}/{ENGLISH_GLOSSARY_NAME} is missing.')
     for file_name in file_names:
         stem, extension = os.path.splitext(file_name)
         if extension == '.qm' and f'{stem}.ts' not in file_names:
@@ -771,6 +889,14 @@ def build(project_dir: str = PROJECT_DIR, check: bool = False) -> tuple[list[str
         problems.extend(placeholder_problems(f'{TRANSLATION_DIR}/{file_name}', merged))
         problems.extend(markup_problems(f'{TRANSLATION_DIR}/{file_name}', merged))
         problems.extend(accelerator_problems(f'{TRANSLATION_DIR}/{file_name}', language, merged))
+        glossary_path = find_language_glossary(glossary_dir, language)
+        if glossary_path is None:
+            problems.append(f'{TRANSLATION_DIR}/{file_name}: no glossary {GLOSSARY_DIR}/{language}.md for {language}.')
+        elif english_rows:
+            glossary, glossary_parse_problems = parse_language_glossary(glossary_path, english_rows)
+            problems.extend(_relative_problems(project_dir, glossary_parse_problems))
+            if not glossary_parse_problems:
+                problems.extend(glossary_problems(f'{TRANSLATION_DIR}/{file_name}', glossary, merged))
         ts_text = write_ts(merged, language)
         _update(file_name, ts_text.encode('utf-8'))
         with tempfile.TemporaryDirectory() as temp_dir:
