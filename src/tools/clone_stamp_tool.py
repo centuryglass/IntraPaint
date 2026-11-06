@@ -1,17 +1,20 @@
 """Use brush strokes to transfer image content over an offset."""
 from typing import Optional
 
-from PySide6.QtCore import QPoint
-from PySide6.QtGui import QIcon, QCursor, QPixmap, QMouseEvent, Qt
-from PySide6.QtWidgets import QApplication, QWidget, QGraphicsPixmapItem
+from PySide6.QtCore import QPoint, QPointF
+from PySide6.QtGui import QIcon, QMouseEvent, Qt
+from PySide6.QtWidgets import QApplication, QWidget
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.brush.clone_stamp_brush import CloneStampBrush
 from src.image.layers.image_stack import ImageStack
-from src.tools.brush_tool import BrushTool
+from src.tools.brush_tool import MIN_OUTLINE_DIAMETER, BrushTool
 from src.tools.qt_paint_brush_tool import QtPaintBrushTool
 from src.ui.brush_crosshair import CrosshairVariant
+from src.ui.graphics_items.brush_outline import BrushOutline
+from src.ui.graphics_items.crosshair_item import CrosshairItem
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.clone_stamp_tool_panel import CloneStampToolPanel
 from src.util.shared_constants import PROJECT_DIR
@@ -28,7 +31,6 @@ def _tr(key: str, disambiguation: Optional[str] = None, n: int = -1) -> str:
 
 
 ICON_PATH_CLONE_STAMP_TOOL = f'{PROJECT_DIR}/resources/icons/tools/stamp_icon.svg'
-IMAGE_PATH_CLONE_SAMPLE_POINT = f'{PROJECT_DIR}/resources/cursors/stamp_cursor_source.svg'
 
 CLONE_STAMP_LABEL = _tr('Clone stamp')
 CLONE_STAMP_TOOLTIP = _tr('Copy image content from one area to another')
@@ -54,15 +56,14 @@ class CloneStampTool(QtPaintBrushTool):
         self._source_pos = QPoint()
         self._source_offset = QPoint()
         self._source_mode = cache.get(Cache.CLONE_STAMP_TOOL_SOURCE_MODE)
-        self._source_marker_pixmap = QPixmap(IMAGE_PATH_CLONE_SAMPLE_POINT)
-        self._source_marker = QGraphicsPixmapItem(self._source_marker_pixmap)
-        self._source_marker.setOpacity(0.5)
         self._pending_source_point: Optional[QPoint] = None
         self._view = image_viewer
         scene = image_viewer.scene()
         assert scene is not None
         self._scene = scene
-        scene.addItem(self._source_marker)
+        # The source marker is a dashed brush outline with a crosshair at its centre:
+        self._source_outline = BrushOutline(scene, dashed=True)
+        self._source_crosshair = CrosshairItem(scene, CrosshairVariant.CLONE_SOURCE)
 
         self._control_panel: Optional[CloneStampToolPanel] = None
         super().__init__(KeyConfig.CLONE_STAMP_TOOL_KEY, CLONE_STAMP_LABEL, CLONE_STAMP_TOOLTIP,
@@ -74,7 +75,6 @@ class CloneStampTool(QtPaintBrushTool):
                          hardness_key=Cache.CLONE_STAMP_TOOL_HARDNESS,
                          pressure_hardness_key=Cache.CLONE_STAMP_TOOL_PRESSURE_HARDNESS,
                          antialias_key=Cache.CLONE_STAMP_TOOL_ANTIALIAS, brush=CloneStampBrush())
-        self._source_marker.setVisible(False)
         cache.connect(self, Cache.CLONE_STAMP_TOOL_SOURCE_MODE, self._update_source_mode)
         self.crosshair_variant = CrosshairVariant.CLONE
 
@@ -134,25 +134,48 @@ class CloneStampTool(QtPaintBrushTool):
                 self._control_panel.source_xy = source_xy
         self._update_source_marker()
 
-    def update_brush_cursor(self) -> None:
-        """Adjust the offset marker when the brush cursor changes."""
-        super().update_brush_cursor()
-        if self.brush_size != self._source_marker.pixmap().width():
-            self._update_source_marker()
+    def _apply_crosshair(self) -> None:
+        """Updates the cursor and the source marker's crosshair, which use the plain design when variants are off."""
+        super()._apply_crosshair()
+        self._source_crosshair.variant = CrosshairVariant.CLONE_SOURCE if AppConfig().get(
+            AppConfig.BRUSH_CROSSHAIR_VARIANTS) else CrosshairVariant.PLAIN
 
-    def _update_source_marker(self):
-        source_marker_size = round(self._source_marker.pixmap().width() * self._source_marker.scale())
-        if self.brush_size != source_marker_size:
-            new_scale = self.brush_size / self._source_marker.pixmap().width()
-            self._source_marker.setScale(new_scale)
+    def update_brush_cursor(self) -> None:
+        """Updates the source marker along with the brush cursor."""
+        super().update_brush_cursor()
+        self._update_source_marker()
+
+    def _source_marker_scene_pos(self) -> Optional[QPointF]:
+        """Returns the scene position the source marker marks, or None if there is none to show.
+
+        In an offset mode with no pending source point, that is the pointer position plus the offset, which is
+        unknown while the pointer is outside the viewer.
+        """
         if self._pending_source_point is not None:
-            offset_scene_pos = self._pending_source_point
-        elif self._source_mode == SOURCE_MODE_STATIC:
-            offset_scene_pos = self._source_pos
-        else:
-            offset_scene_pos = self._view.mapToScene(self._view.mapFromGlobal(QCursor.pos())) + self._source_offset
-        offset_cursor_pos = offset_scene_pos - QPoint(source_marker_size // 2, source_marker_size // 2)
-        self._source_marker.setPos(offset_cursor_pos)
+            return QPointF(self._pending_source_point) + QPointF(0.5, 0.5)
+        if self._source_mode == SOURCE_MODE_STATIC:
+            return QPointF(self._source_pos) + QPointF(0.5, 0.5)
+        cursor_pos = self._view.cursor_pos
+        if cursor_pos is None:
+            return None
+        return self._view.widget_point_to_scene(cursor_pos) + QPointF(self._source_offset)
+
+    def _update_source_marker(self) -> None:
+        """Sizes and places the source marker, showing it only while the tool is active.
+
+        The outline hides when the brush is no wider on screen than MIN_OUTLINE_DIAMETER, leaving only the crosshair.
+        """
+        scene_pos = self._source_marker_scene_pos() if self.is_active else None
+        if scene_pos is None:
+            self._source_outline.setVisible(False)
+            self._source_crosshair.setVisible(False)
+            return
+        view_scale = self._view.scene_scale
+        self._source_outline.set_size(self.brush_size, view_scale)
+        self._source_outline.setPos(scene_pos)
+        self._source_outline.setVisible(self.brush_size * view_scale > MIN_OUTLINE_DIAMETER)
+        self._source_crosshair.setPos(scene_pos)
+        self._source_crosshair.setVisible(True)
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Set clone source on right-click, draw from source on left-click."""
@@ -186,12 +209,11 @@ class CloneStampTool(QtPaintBrushTool):
         return super().mouse_release(event, image_coordinates)
 
     def _on_activate(self, restoring_after_delegation=False) -> None:
-        """Show the offset marker when active."""
-        self._update_source_marker()
-        self._source_marker.setVisible(True)
+        """Show the source marker when active."""
         super()._on_activate(restoring_after_delegation)
+        self._update_source_marker()
 
     def _on_deactivate(self) -> None:
-        """Hide the offset marker when inactive."""
-        self._source_marker.setVisible(False)
+        """Hide the source marker when inactive."""
         super()._on_deactivate()
+        self._update_source_marker()

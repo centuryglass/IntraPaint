@@ -38,6 +38,7 @@ class CrosshairVariant(Enum):
     FILTER = 'filter'
     SMUDGE = 'smudge'
     CLONE = 'clone'
+    CLONE_SOURCE = 'clone source'
     ERASER = 'eraser'
 
 
@@ -162,6 +163,23 @@ _PATTERNS: dict[CrosshairVariant, tuple[str, ...]] = {
         '##...........##',
         '#.............#',
     ),
+    CrosshairVariant.CLONE_SOURCE: (
+        '#######.#######',
+        '.#....###....#.',
+        '..#....#....#..',
+        '.......#.......',
+        '...............',
+        '...............',
+        '...............',
+        '...###...###...',
+        '...............',
+        '...............',
+        '...............',
+        '.......#.......',
+        '..#....#....#..',
+        '.#....###....#.',
+        '#######.#######',
+    ),
     CrosshairVariant.ERASER: (
         '##...........##',
         '##...........##',
@@ -227,11 +245,21 @@ def crosshair_pixel_scale(device_pixel_ratio: float) -> int:
 
 
 @cache
-def _cached_cursor(variant: CrosshairVariant, pixel_scale: int) -> QCursor:
+def _cached_pixmap(variant: CrosshairVariant, pixel_scale: int) -> QPixmap:
     pixmap = QPixmap.fromImage(crosshair_image(variant, pixel_scale))
     pixmap.setDevicePixelRatio(pixel_scale)
+    return pixmap
+
+
+def crosshair_pixmap(variant: CrosshairVariant, device_pixel_ratio: float) -> QPixmap:
+    """Returns a variant's crosshair as a pixmap CROSSHAIR_SIZE logical pixels square. Callers must not modify it."""
+    return _cached_pixmap(variant, crosshair_pixel_scale(device_pixel_ratio))
+
+
+@cache
+def _cached_cursor(variant: CrosshairVariant, pixel_scale: int) -> QCursor:
     center = CROSSHAIR_SIZE // 2
-    return QCursor(pixmap, center, center)
+    return QCursor(_cached_pixmap(variant, pixel_scale), center, center)
 
 
 def crosshair_cursor(variant: CrosshairVariant, device_pixel_ratio: float) -> QCursor:

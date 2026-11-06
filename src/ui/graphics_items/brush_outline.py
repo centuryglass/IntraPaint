@@ -10,16 +10,21 @@ from src.ui.brush_crosshair import CORE_COLOR, HALO_COLOR, HALO_WIDTH
 # Above image content and the other scene overlays:
 BRUSH_OUTLINE_Z_LEVEL = 9999
 
+# Dash and gap lengths of a dashed outline, in multiples of its 1px line width:
+DASH_PATTERN = [4.0, 4.0]
+
 
 class BrushOutline(QGraphicsItem):
     """Circle that shows a brush's footprint in the image scene.
 
     The circle is centred on the item's position, with a diameter in scene pixels. It draws a 1px dark line over a
-    light halo matching the brush crosshair's, both at a fixed on-screen width at every zoom level.
+    light halo matching the brush crosshair's, both at a fixed on-screen width at every zoom level. A dashed outline
+    draws the dark line as dashes over a solid halo.
     """
 
-    def __init__(self, scene: QGraphicsScene) -> None:
+    def __init__(self, scene: QGraphicsScene, dashed: bool = False) -> None:
         super().__init__()
+        self._dashed = dashed
         self._diameter = 0.0
         self._view_scale = 1.0
         self.setZValue(BRUSH_OUTLINE_Z_LEVEL)
@@ -56,6 +61,8 @@ class BrushOutline(QGraphicsItem):
         for color, width in ((HALO_COLOR, 1 + 2 * HALO_WIDTH), (CORE_COLOR, 1)):
             pen = QPen(color, width)
             pen.setCosmetic(True)
+            if self._dashed and color == CORE_COLOR:
+                pen.setDashPattern(DASH_PATTERN)
             painter.setPen(pen)
             painter.drawEllipse(QPointF(), radius, radius)
         painter.restore()
