@@ -7082,12 +7082,12 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/modal/settings_modal.py"/>
-        <source>On</source>
+        <source>Enabled</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/ui/modal/settings_modal.py"/>
-        <source>Off</source>
+        <source>Disabled</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
