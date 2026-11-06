@@ -72,7 +72,12 @@ WARNING_TITLE_INSERT_FAILED = _tr('Failed to insert into layer "{layer_name}"')
 WARNING_MESSAGE_1_LAYER_LOCKED = _tr('Changes were blocked because the layer is locked. ')
 WARNING_MESSAGE_1_LAYER_HIDDEN = _tr('Changes were blocked because the layer is hidden. ')
 WARNING_MESSAGE_1_NOT_IMAGE = _tr('The active layer is not an image layer, image content cannot be inserted. ')
-WARNING_MESSAGE_2_CREATED_NEW = _tr('Image content was added as new layer "{new_layer_name}"')
+WARNING_MESSAGE_1_LAYER_BLENDING = _tr('The layer or a group around it uses a blend mode, opacity or isolation that '
+                                       'would change how the result looks. ')
+WARNING_MESSAGE_1_LAYER_COVERED = _tr('A layer above it draws over the edited area, which would show the result '
+                                      'twice. ')
+WARNING_MESSAGE_2_CREATED_NEW = _tr('Image content was added as new layer "{new_layer_name}" at the top of the '
+                                    'layer stack')
 
 VIEW_MARGIN = 6
 IMAGE_MARGIN_FRACTION = 1 / 6
@@ -811,7 +816,9 @@ class GeneratedImageSelector(QWidget):
             return
         warning_message = {ApplyResult.BLOCKED_NOT_IMAGE_LAYER: WARNING_MESSAGE_1_NOT_IMAGE,
                            ApplyResult.BLOCKED_LOCKED: WARNING_MESSAGE_1_LAYER_LOCKED,
-                           ApplyResult.BLOCKED_HIDDEN: WARNING_MESSAGE_1_LAYER_HIDDEN}[outcome.result]
+                           ApplyResult.BLOCKED_HIDDEN: WARNING_MESSAGE_1_LAYER_HIDDEN,
+                           ApplyResult.NEEDS_TOP_LAYER_BLENDING: WARNING_MESSAGE_1_LAYER_BLENDING,
+                           ApplyResult.NEEDS_TOP_LAYER_COVERED: WARNING_MESSAGE_1_LAYER_COVERED}[outcome.result]
         warning_message += WARNING_MESSAGE_2_CREATED_NEW.format(new_layer_name=new_layer_name)
         show_warning_dialog(None, WARNING_TITLE_INSERT_FAILED.format(layer_name=requested_layer.name),
                             warning_message, AppConfig.WARN_WHEN_LOCK_FORCES_LAYER_CREATE)

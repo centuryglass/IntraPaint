@@ -12,11 +12,13 @@ from PySide6.QtGui import QImage, QPainter
 
 from src.config.cache import Cache
 
-from src.controller.image_generation.apply_option import apply_generated_image, ApplyOutcome
+from src.controller.image_generation.apply_option import apply_generated_image, ApplyOutcome, ApplyResult, \
+    blocking_result, create_top_layer
 from src.controller.image_generation.generated_image_batch import GeneratedImageBatch
 from src.controller.image_generation.result_patch import make_result_patch
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
+from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING
 from src.util.async_task import AsyncTask
 from src.util.visual.image_format_utils import save_image
@@ -340,9 +342,18 @@ class GenerationSession(QObject):
         return outcome
 
     def send_to_new_layer(self, option_index: int, layer_name: str) -> Layer:
-        """Applies an option of the current batch to a new layer and returns that layer."""
-        new_layer = self._image_stack.create_layer(layer_name=layer_name)
-        return self.apply(option_index, new_layer, layer_name).layer
+        """Applies an option of the current batch to a new layer and returns that layer.
+
+        The layer goes above the active layer, or at the top of the stack when its place above the active layer
+        wouldn't display the option correctly. See `blocking_result`.
+        """
+        area = self.current.generation_area
+        with UndoStack().combining_actions('GenerationSession.send_to_new_layer'):
+            new_layer = self._image_stack.create_layer(layer_name=layer_name)
+            if blocking_result(new_layer, area) is not ApplyResult.APPLIED:
+                self._image_stack.remove_layer(new_layer)
+                new_layer = create_top_layer(self._image_stack, layer_name)
+            return self.apply(option_index, new_layer, layer_name).layer
 
     def save_to_file(self, option_index: int, path: str) -> None:
         """Saves an option of the current batch to `path` at its largest available resolution."""

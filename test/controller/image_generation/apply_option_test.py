@@ -8,6 +8,7 @@ from PySide6.QtGui import QColor, QImage
 from src.config.application_config import AppConfig
 from src.controller.image_generation.apply_option import apply_generated_image, ApplyResult
 from src.controller.image_generation.result_patch import make_result_patch
+from src.image.composite_mode import CompositeMode
 from src.image.layers.image_stack import ImageStack
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 from test.base_test_case import IntraPaintTestCase
@@ -132,3 +133,59 @@ class ApplyPatchTest(IntraPaintTestCase):
         composite = stack.qimage_generation_area_content()
         self.assertEqual(composite.pixelColor(20, 20), GENERATED_COLOR)
         self.assertEqual(composite.pixelColor(40, 40), SOURCE_COLOR)
+
+
+class TopLayerFallbackTest(IntraPaintTestCase):
+    """A target that can't display the result as its own pixels gets a new layer at the top of the stack."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.stack = ImageStack(IMAGE_SIZE, GENERATION_AREA.size(), QSize(8, 8), QSize(10240, 10240))
+        self.base = self.stack.create_layer('base', _solid(IMAGE_SIZE, SOURCE_COLOR))
+        self.stack.generation_area = GENERATION_AREA
+        self.option = _solid(GENERATION_AREA.size(), GENERATED_COLOR)
+
+    def _apply(self, layer):
+        outcome = apply_generated_image(self.stack, self.option, layer, GENERATION_AREA, EDIT_MODE_TXT2IMG, None,
+                                        'fallback')
+        self.stack.flush_render()
+        return outcome
+
+    def _assert_fell_back(self, target, expected: ApplyResult) -> None:
+        before = target.image.copy()  # type: ignore
+        outcome = self._apply(target)
+        self.assertEqual(outcome.result, expected)
+        self.assertIs(self.stack.layer_stack.get_layer_by_id(outcome.layer.id), outcome.layer)
+        self.assertIs(outcome.layer.layer_parent, self.stack.layer_stack)
+        self.assertEqual(self.stack.layer_stack.get_layer_index(outcome.layer), 0)
+        self.assertEqual(target.image, before)  # type: ignore
+        self.assertEqual(self.stack.qimage_generation_area_content().pixelColor(32, 32), GENERATED_COLOR)
+
+    def test_plain_normal_layer_is_applied_directly(self) -> None:
+        """Nothing above and Normal at full opacity writes into the target."""
+        outcome = self._apply(self.base)
+        self.assertEqual(outcome.result, ApplyResult.APPLIED)
+        self.assertIs(outcome.layer, self.base)
+
+    def test_blend_mode_and_opacity(self) -> None:
+        """A Multiply or partly transparent target falls back."""
+        for attribute, value in (('composition_mode', CompositeMode.MULTIPLY), ('opacity', 0.5)):
+            with self.subTest(attribute=attribute):
+                layer = self.stack.create_layer('target', _solid(IMAGE_SIZE, SOURCE_COLOR))
+                setattr(layer, attribute, value)
+                self._assert_fell_back(layer, ApplyResult.NEEDS_TOP_LAYER_BLENDING)
+
+    def test_non_normal_group(self) -> None:
+        """A target inside a group with a non-Normal mode falls back."""
+        group = self.stack.create_layer_group('group')
+        layer = self.stack.create_layer('target', _solid(IMAGE_SIZE, SOURCE_COLOR), layer_parent=group, layer_index=0)
+        group.composition_mode = CompositeMode.MULTIPLY
+        self._assert_fell_back(layer, ApplyResult.NEEDS_TOP_LAYER_BLENDING)
+
+    def test_layer_above_drawing_in_area(self) -> None:
+        """Content above the target in the area forces the fallback, and content elsewhere doesn't."""
+        above = self.stack.create_layer('above')
+        above.get_qimage().setPixelColor(2, 2, QColor(0, 0, 0))
+        self.assertEqual(self._apply(self.base).result, ApplyResult.APPLIED)
+        above.get_qimage().setPixelColor(40, 40, QColor(0, 0, 0))
+        self._assert_fell_back(self.base, ApplyResult.NEEDS_TOP_LAYER_COVERED)

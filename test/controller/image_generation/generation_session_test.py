@@ -14,6 +14,7 @@ from src.controller.image_generation.generated_image_batch import GeneratedImage
 from src.controller.image_generation.generation_session import GenerationSession
 from src.image.layers.image_stack import ImageStack
 from src.controller.image_generation.apply_option import ApplyResult
+from src.image.composite_mode import CompositeMode
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_LOADING, APP_STATE_SELECTION
 from src.util.async_task import AsyncTask
 from src.util.shared_constants import EDIT_MODE_TXT2IMG
@@ -207,6 +208,18 @@ class GenerationSessionTest(IntraPaintTestCase):
         layer = self.session.send_to_new_layer(1, 'Option 1')
         self.assertEqual(layer.name, 'Option 1')
         self.assertIs(self.image_stack.active_layer, layer)
+
+    def test_send_to_new_layer_moves_to_top_when_a_group_blends(self) -> None:
+        """A new layer inside a Multiply group goes to the top of the stack, leaving no empty layer behind."""
+        self._begin_with_results()
+        group = self.image_stack.create_layer_group('group')
+        self.image_stack.active_layer = group
+        group.composition_mode = CompositeMode.MULTIPLY
+        count = len(self.image_stack.layers)
+        layer = self.session.send_to_new_layer(1, 'Option 1')
+        self.assertIs(layer.layer_parent, self.image_stack.layer_stack)
+        self.assertEqual(self.image_stack.layer_stack.get_layer_index(layer), 0)
+        self.assertEqual(len(self.image_stack.layers), count + 1)
 
     def test_save_to_file_writes_option(self) -> None:
         """Saving passes the chosen option's image and the path on to the image writer."""
