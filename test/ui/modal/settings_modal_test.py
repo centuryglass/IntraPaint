@@ -6,7 +6,7 @@ from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.ui.input_fields.setting_fields import ColorSettingField, DirectorySettingField, KeybindingField, \
     OptionSegmentsField, SizeSettingField, NO_KEY_TEXT
-from src.ui.modal.settings_modal import SettingsModal
+from src.ui.modal.settings_modal import SettingsModal, _Row
 from test.base_test_case import IntraPaintTestCase
 
 
@@ -125,3 +125,72 @@ class SettingsModalTest(IntraPaintTestCase):
         assert isinstance(control, SizeSettingField)
         control.setValue(QSize(640, 480))
         self.assertEqual(control.value(), QSize(640, 480))
+
+    def _row(self, key: str) -> _Row:
+        for row in self.modal._pages[self.config.get_category(key)].rows():  # pylint: disable=protected-access
+            if row.key == key:
+                return row
+        raise AssertionError(f'No row for {key}')
+
+    def test_restored_defaults_are_not_marked(self) -> None:
+        """After every section restores its defaults, no row of any config shows as modified."""
+        self.modal.load_from_config(KeyConfig())
+        pages = self.modal._pages.values()  # pylint: disable=protected-access
+        for page in pages:
+            for section in page.sections.values():
+                if section.restore_button is not None:
+                    section.restore_button.setEnabled(True)
+                    section.restore_button.click()
+        modified = [row.key for page in pages for row in page.rows() if row.is_modified()]
+        self.assertEqual(modified, [])
+        for page in pages:
+            for section in page.sections.values():
+                if section.restore_button is not None:
+                    self.assertFalse(section.restore_button.isEnabled(), section.title)
+
+    def test_modified_row_shows_marks_and_resets(self) -> None:
+        """A row off its default shows the dot and reset button, and the button restores the default."""
+        key = AppConfig.ADDED_FONT_DIR
+        row = self._row(key)
+        control = self.modal._inputs[key]  # pylint: disable=protected-access
+        assert isinstance(control, DirectorySettingField)
+        assert row.label_widget is not None and row.reset_button is not None
+        control.setValue(self.config.get_default(key))
+        self.assertFalse(row.label_widget.is_modified())
+        self.assertTrue(row.reset_button.isHidden())
+        control.setValue('/tmp/fonts')
+        self.assertTrue(row.label_widget.is_modified())
+        self.assertFalse(row.reset_button.isHidden())
+        self.assertIn('(empty)', row.reset_button.toolTip())
+        row.reset_button.click()
+        self.assertEqual(control.value(), self.config.get_default(key))
+        self.assertFalse(row.label_widget.is_modified())
+        self.assertTrue(row.reset_button.isHidden())
+        self.assertEqual(self.modal._changes[key], self.config.get_default(key))  # pylint: disable=protected-access
+
+    def test_marks_compare_pending_value_to_default(self) -> None:
+        """The marks follow the control, so an edit back to the default clears them before Save."""
+        key = AppConfig.SELECTION_COLOR
+        row = self._row(key)
+        control = self.modal._inputs[key]  # pylint: disable=protected-access
+        assert isinstance(control, ColorSettingField)
+        assert row.label_widget is not None
+        default = self.config.get_default(key)
+        control.setValue('#ff112233')
+        self.assertTrue(row.label_widget.is_modified())
+        control.setValue(default)
+        self.assertFalse(row.label_widget.is_modified())
+
+    def test_restore_defaults_button_follows_section(self) -> None:
+        """A section's Restore defaults button is enabled only while one of its rows is modified."""
+        key = AppConfig.ADDED_FONT_DIR
+        control = self.modal._inputs[key]  # pylint: disable=protected-access
+        assert isinstance(control, DirectorySettingField)
+        section = self.modal._pages['Files'].sections['Files']  # pylint: disable=protected-access
+        assert section.restore_button is not None
+        control.setValue(self.config.get_default(key))
+        self.assertFalse(section.restore_button.isEnabled())
+        control.setValue('/tmp/fonts')
+        self.assertTrue(section.restore_button.isEnabled())
+        section.restore_button.click()
+        self.assertFalse(section.restore_button.isEnabled())

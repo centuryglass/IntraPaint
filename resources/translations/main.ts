@@ -7080,6 +7080,31 @@ Keys: {decrease} / {increase}</source>
         <source>Show the folder containing this file</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../src/ui/modal/settings_modal.py"/>
+        <source>Reset to default: {default}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/settings_modal.py"/>
+        <source>Reset {setting} to default</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/settings_modal.py"/>
+        <source>Enabled</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/settings_modal.py"/>
+        <source>Disabled</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/modal/settings_modal.py"/>
+        <source>(empty)</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ui.panel.controlnet_panel</name>

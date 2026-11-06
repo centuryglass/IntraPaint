@@ -5,14 +5,18 @@
   nothing reaches a config before then.
 - Each config subcategory is a `PanelSection` with a "Restore defaults" button. `create_setting_control` picks the
   control for each value.
+- A row whose control differs from the config's shipped default (`Config.get_default`) shows a dot beside its label
+  and a button that resets it, and says the default in the button's tooltip. The comparison uses the control's pending
+  value, not the saved one. A section's "Restore defaults" button is disabled while all its rows match.
 - The search field hides rows whose label and description don't match, and sidebar categories left with no rows.
 """
 import logging
+import math
 import os
 from typing import Any, Optional
 
 from PySide6.QtCore import QSize, QUrl, Qt, Signal
-from PySide6.QtGui import QDesktopServices, QIcon
+from PySide6.QtGui import QColor, QDesktopServices, QIcon
 from PySide6.QtWidgets import QApplication, QDialog, QHBoxLayout, QLabel, QLineEdit, QListWidget, QPushButton, \
     QScrollArea, QStackedWidget, QVBoxLayout, QWidget
 
@@ -23,8 +27,9 @@ from src.ui.input_fields.setting_fields import ColorSettingField, DirectorySetti
     SizeSettingField
 from src.ui.layout.label_column_layout import LabelColumnLayout, normalize_row_label
 from src.ui.modal.dialog_footer import DialogFooter
-from src.ui.modal.settings_controls import create_setting_control
+from src.ui.modal.settings_controls import OPTION_LABELS, create_setting_control
 from src.ui.widget.panel_section import PanelSection
+from src.ui.widget.setting_row_markers import ModifiedLabel, ResetButton
 from src.util.shared_constants import APP_ICON_PATH
 from src.ui.input_fields.field_factory import DynamicFieldWidget
 
@@ -49,6 +54,11 @@ RESTORE_DEFAULTS_TOOLTIP = _tr('Set every setting in this section back to its de
                                ' you click Save.')
 OPEN_FOLDER_LABEL = _tr('Open folder')
 OPEN_FOLDER_TOOLTIP = _tr('Show the folder containing this file')
+RESET_ROW_TOOLTIP = _tr('Reset to default: {default}')
+RESET_ROW_NAME = _tr('Reset {setting} to default')
+BOOL_ON = _tr('Enabled')
+BOOL_OFF = _tr('Disabled')
+EMPTY_DEFAULT = _tr('(empty)')
 FILE_CATEGORY = QApplication.translate('config.application_config', 'Files')
 
 MIN_SIZE = QSize(660, 400)
@@ -58,23 +68,76 @@ PAGE_MARGIN = 8
 # The widest a combo box, number field or segmented control is laid out:
 SETTING_FIELD_MAX_WIDTH = 320
 SECTION_SPACING = 6
+# Stretch of a control next to a spacer, so the control takes the width up to its maximum. Each row's reset button is
+# at the right edge, under the section's Restore defaults button:
+FIELD_STRETCH = 1000
 
 logger = logging.getLogger(__name__)
+
+
+def _format_default(config: Config, key: str) -> str:
+    """Returns a config default as the settings window would show it, for a tooltip."""
+    default = config.get_default(key)
+    if isinstance(default, bool):
+        return BOOL_ON if default else BOOL_OFF
+    if isinstance(default, QSize):
+        return f'{default.width()} x {default.height()}'
+    if isinstance(default, str):
+        if default == '':
+            return EMPTY_DEFAULT
+        return OPTION_LABELS.get(key, {}).get(default, default)
+    return str(default)
 
 
 class _Row:
     """One searchable row of a section: its control (or file path widget) and the text a search matches."""
 
-    def __init__(self, key: str, label: str, tooltip: str, control: QWidget, config: Optional[Config]) -> None:
+    def __init__(self, key: str, label: str, tooltip: str, control: QWidget, config: Optional[Config],
+                 field: Optional[QWidget] = None) -> None:
         self.key = key
         self.label = label
         self.tooltip = tooltip
         self.control = control
         self.config = config
+        # The widget in the form row: the control, or the control and its reset button.
+        self.field = field if field is not None else control
+        self.label_widget: Optional[ModifiedLabel] = None
+        self.reset_button: Optional[ResetButton] = None
 
     def matches(self, search: str) -> bool:
         """Returns whether the lowercase search text appears in the label or description."""
         return search in self.label.lower() or search in self.tooltip.lower()
+
+    def default(self) -> Any:
+        """Returns the config's shipped default, or None for a row with no config value or no default."""
+        if self.config is None or self.key == '':
+            return None
+        return self.config.get_default(self.key)
+
+    def is_modified(self) -> bool:
+        """Returns whether the control's value differs from the default. A row with no default is never modified."""
+        default = self.default()
+        if default is None:
+            return False
+        value = self.control.value()  # type: ignore[attr-defined]
+        if isinstance(self.control, ColorSettingField):
+            # The field normalizes the case and alpha format of a color string, so compare colors.
+            return QColor(value) != QColor(default) if value != '' and default != '' else value != default
+        if isinstance(value, float) or isinstance(default, float):
+            try:
+                return not math.isclose(float(value), float(default), rel_tol=1e-9, abs_tol=1e-9)
+            except (TypeError, ValueError):
+                return True
+        return bool(value != default)
+
+    def refresh_marks(self) -> None:
+        """Shows the dot and reset button when the row is modified, and gives the button the default for a tooltip."""
+        modified = self.is_modified()
+        if self.label_widget is not None:
+            self.label_widget.set_modified(modified)
+        if self.reset_button is not None:
+            self.reset_button.setVisible(modified)
+            self.reset_button.setEnabled(modified)
 
 
 class _Section:
@@ -221,7 +284,7 @@ class SettingsModal(QDialog):
         for row in [row for row in section.rows if row.key == key]:
             section.rows.remove(row)
             section.labels = [label for label in section.labels if label.buddy() is not row.control]
-            section.form.removeRow(row.control)
+            section.form.removeRow(row.field)
         if not section.rows:
             page.layout.removeWidget(section.panel)
             section.panel.deleteLater()
@@ -254,6 +317,7 @@ class SettingsModal(QDialog):
 
         def _add_change(new_value: Any, name=key) -> None:
             self._changes[name] = new_value
+            self._refresh_key(name)
 
         control.valueChanged.connect(_add_change)  # type: ignore[attr-defined]
 
@@ -287,11 +351,31 @@ class SettingsModal(QDialog):
         if not isinstance(control, (CheckBox, ColorSettingField, DirectorySettingField, KeybindingField,
                                     SizeSettingField)):
             control.setMaximumWidth(SETTING_FIELD_MAX_WIDTH)
-        label = section.form.add_row(label_text, control)
+        capped = not isinstance(control, (CheckBox, ColorSettingField, DirectorySettingField, KeybindingField,
+                                          SizeSettingField))
+        row = _Row(key, normalize_row_label(label_text), tooltip, control, config)
+        if config is not None and config.get_default(key) is not None:
+            row.reset_button = ResetButton()
+            row.reset_button.setAccessibleName(RESET_ROW_NAME.format(setting=row.label))
+            row.reset_button.setToolTip(RESET_ROW_TOOLTIP.format(default=_format_default(config, key)))
+            row.reset_button.clicked.connect(lambda _checked=False, r=row: self._reset_row(r))
+            row.field = QWidget()
+            field_layout = QHBoxLayout(row.field)
+            field_layout.setContentsMargins(0, 0, 0, 0)
+            field_layout.addWidget(control, stretch=FIELD_STRETCH)
+            if capped:
+                field_layout.addStretch(1)
+            field_layout.addWidget(row.reset_button)
+        label = ModifiedLabel(row.label)
+        row.label_widget = label
+        section.form.add_row(label_text, row.field, label)
+        label.setBuddy(control)
         label.setToolTip(tooltip)
         section.labels.append(label)
         page.align_labels()
-        section.rows.append(_Row(key, normalize_row_label(label_text), tooltip, control, config))
+        section.rows.append(row)
+        row.refresh_marks()
+        self._refresh_section(section)
         self._inputs[key] = control  # type: ignore[assignment]
         self._input_sections[key] = (section_title, category)
         self._apply_filter(self._search.text())
@@ -359,6 +443,37 @@ class SettingsModal(QDialog):
             except (ValueError, TypeError) as err:
                 logger.error(f'Failed to initialize "{key}"="{new_value}: {err}')
             self._changes.pop(key, None)
+            self._refresh_key(key)
+
+    def _refresh_key(self, key: str) -> None:
+        """Updates the modified marks of the row for a setting, and its section's Restore defaults button."""
+        location = self._input_sections.get(key)
+        if location is None:
+            return
+        section_title, category = location
+        section = self._pages[category].sections.get(section_title)
+        if section is None:
+            return
+        for row in section.rows:
+            if row.key == key:
+                row.refresh_marks()
+        self._refresh_section(section)
+
+    @staticmethod
+    def _refresh_section(section: _Section) -> None:
+        """Enables the section's Restore defaults button only while some row differs from its default."""
+        if section.restore_button is not None:
+            section.restore_button.setEnabled(any(row.is_modified() for row in section.rows))
+
+    def _reset_row(self, row: _Row) -> None:
+        """Sets one row's control back to its default. The change applies on Save."""
+        default = row.default()
+        if default is None:
+            return
+        try:
+            self._set_control_value(row.control, default)
+        except (ValueError, TypeError) as err:
+            logger.error(f'Failed to restore default for "{row.key}": {err}')
 
     @staticmethod
     def _set_control_value(widget: QWidget, new_value: Any) -> None:
@@ -388,6 +503,9 @@ class SettingsModal(QDialog):
                 self._set_control_value(row.control, default)
             except (ValueError, TypeError) as err:
                 logger.error(f'Failed to restore default for "{row.key}": {err}')
+        for row in section.rows:
+            row.refresh_marks()
+        self._refresh_section(section)
 
     # -----------------------------------------------------------------------------------------------------------------
     # Categories and search
@@ -417,7 +535,7 @@ class SettingsModal(QDialog):
                 section_shown = False
                 for row in section.rows:
                     visible = search == '' or section_match or row.matches(search)
-                    section.form.setRowVisible(row.control, visible)
+                    section.form.setRowVisible(row.field, visible)
                     section_shown = section_shown or visible
                 section.panel.setVisible(section_shown)
                 page_shown = page_shown or section_shown

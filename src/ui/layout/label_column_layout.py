@@ -27,9 +27,14 @@ class LabelColumnLayout(QFormLayout):
         self.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
         self.setRowWrapPolicy(QFormLayout.RowWrapPolicy.DontWrapRows)
 
-    def add_row(self, label_text: str, field: QWidget) -> QLabel:
-        """Adds a row and returns its label, which is the field's buddy so mnemonic keys and screen readers work."""
-        label = QLabel(normalize_row_label(label_text))
+    def add_row(self, label_text: str, field: QWidget, label: Optional[QLabel] = None) -> QLabel:
+        """Adds a row and returns its label, which is the field's buddy so mnemonic keys and screen readers work.
+
+        A caller that needs a `QLabel` subclass passes it as `label`, and its text is set to `label_text`.
+        """
+        if label is None:
+            label = QLabel()
+        label.setText(normalize_row_label(label_text))
         label.setBuddy(field)
         self.addRow(label, field)
         return label
