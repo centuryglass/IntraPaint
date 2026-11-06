@@ -30,8 +30,28 @@ XMP_TEXT_KEY = 'XML:com.adobe.xmp'
 # Format info keys holding raw blocks that the model shows but doesn't edit or write:
 XMP_INFO_KEY = 'xmp'
 ICC_PROFILE_INFO_KEY = 'icc_profile'
+PHOTOSHOP_INFO_KEY = 'photoshop'
+"""PIL's info key for a JPEG's Photoshop resources, a dict from resource id to bytes. One of them holds IPTC data."""
+_IPTC_RESOURCE_ID = 0x0404
+# An IPTC dataset starts with this tag marker, then its record number, dataset number and a 2-byte length:
+_IPTC_TAG_MARKER = 0x1C
+_IPTC_HEADER_SIZE = 5
+_IPTC_EXTENDED_LENGTH_FLAG = 0x8000
+_IPTC_APPLICATION_RECORD = 2
+_IPTC_RECORD_VERSION_DATASET = 0
+# Readable names for the IPTC application record datasets that photo tools commonly write:
+IPTC_DATASET_NAMES = {
+    5: 'Object Name', 7: 'Edit Status', 10: 'Urgency', 15: 'Category', 20: 'Supplemental Category',
+    25: 'Keywords', 40: 'Special Instructions', 55: 'Date Created', 60: 'Time Created', 62: 'Digital Creation Date',
+    63: 'Digital Creation Time', 65: 'Originating Program', 70: 'Program Version', 80: 'By-line',
+    85: 'By-line Title', 90: 'City', 92: 'Sub-location', 95: 'Province/State', 100: 'Country Code',
+    101: 'Country', 103: 'Original Transmission Reference', 105: 'Headline', 110: 'Credit', 115: 'Source',
+    116: 'Copyright Notice', 118: 'Contact', 120: 'Caption/Abstract', 122: 'Writer/Editor'
+}
 # PIL's info key for encoded EXIF data, which loads into `ImageMetadata.exif`:
 _EXIF_INFO_KEY = 'exif'
+# Format info keys that `ImageMetadata.remove_all` removes:
+_REMOVABLE_INFO_KEYS = (XMP_INFO_KEY, ICC_PROFILE_INFO_KEY, PHOTOSHOP_INFO_KEY, _EXIF_INFO_KEY)
 # Keys an .ora metadata attribute may hold that are binary data, not text entries:
 _BINARY_INFO_KEYS = frozenset({_EXIF_INFO_KEY, ICC_PROFILE_INFO_KEY, XMP_INFO_KEY})
 
@@ -74,6 +94,22 @@ def _decode_text(value: Any) -> Optional[str]:
         except UnicodeDecodeError:
             return value.decode('latin-1')
     return None
+
+
+def decode_exif_text(value: Any) -> Any:
+    """Returns an EXIF ASCII tag's value with UTF-8 text decoded, and any other value unchanged.
+
+    Many programs write UTF-8 to ASCII tags. PIL decodes them as Latin-1, so "\u00a9" reads as "\u00c2\u00a9", and
+    re-decoding as UTF-8 recovers the text. A string that isn't UTF-8 read as Latin-1 is returned unchanged.
+    """
+    if isinstance(value, bytes):
+        return _decode_text(value.rstrip(b'\0'))
+    if not isinstance(value, str) or value.isascii():
+        return value
+    try:
+        return value.encode('latin-1').decode('utf-8')
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return value
 
 
 def decode_user_comment(raw: Any) -> tuple[Optional[str], Optional[str]]:
@@ -133,6 +169,37 @@ class ExifEntry(NamedTuple):
     name: str
     value: Any
     editable: bool
+
+
+class IptcEntry(NamedTuple):
+    """One IPTC (IIM) dataset, which the model shows but doesn't edit or write."""
+    record: int
+    dataset: int
+    name: str
+    value: str
+
+
+def parse_iptc(data: bytes) -> list[IptcEntry]:
+    """Parses IPTC (IIM) datasets, stopping at the first byte that doesn't start one.
+
+    Application record datasets get readable names. Values decode as UTF-8, or Latin-1 if they aren't valid UTF-8.
+    """
+    entries: list[IptcEntry] = []
+    offset = 0
+    while offset + _IPTC_HEADER_SIZE <= len(data) and data[offset] == _IPTC_TAG_MARKER:
+        record = data[offset + 1]
+        dataset = data[offset + 2]
+        length = int.from_bytes(data[offset + 3:offset + 5], 'big')
+        offset += _IPTC_HEADER_SIZE
+        if length & _IPTC_EXTENDED_LENGTH_FLAG:
+            length_size = length & ~_IPTC_EXTENDED_LENGTH_FLAG
+            length = int.from_bytes(data[offset:offset + length_size], 'big')
+            offset += length_size
+        value = data[offset:offset + length]
+        offset += length
+        name = IPTC_DATASET_NAMES.get(dataset) if record == _IPTC_APPLICATION_RECORD else None
+        entries.append(IptcEntry(record, dataset, name or f'{record}:{dataset}', _decode_text(value) or ''))
+    return entries
 
 
 class StructuredData(NamedTuple):
@@ -230,6 +297,19 @@ class ImageMetadata:
         """Whether there are no text entries, EXIF tags or format info."""
         return len(self.text) == 0 and len(self.exif_entries()) == 0 and len(self.format_info) == 0
 
+    @property
+    def has_removable_data(self) -> bool:
+        """Whether `remove_all` would remove anything. Format info such as DPI doesn't count."""
+        return (len(self.text) > 0 or len(self.exif_entries()) > 0
+                or any(self.format_info.get(key) is not None for key in _REMOVABLE_INFO_KEYS))
+
+    def remove_all(self) -> None:
+        """Removes every text entry, EXIF tag, and the XMP, IPTC and ICC profile blocks. Other format info is kept."""
+        self.text.clear()
+        self.exif = Image.Exif()
+        for key in _REMOVABLE_INFO_KEYS:
+            self.format_info.pop(key, None)
+
     # Generation parameters:
 
     def _exif_description(self) -> Optional[str]:
@@ -237,7 +317,8 @@ class ImageMetadata:
         description = self._read_ifd(IFD.Exif).get(ExifTags.Base.ImageDescription)
         if description is None:
             description = self.exif.get(ExifTags.Base.ImageDescription)
-        return _decode_text(description)
+        decoded = decode_exif_text(description)
+        return decoded if isinstance(decoded, str) else None
 
     def _user_comment(self) -> tuple[Optional[str], Optional[str]]:
         raw = self._read_ifd(IFD.Exif).get(ExifTags.Base.UserComment)
@@ -248,12 +329,15 @@ class ImageMetadata:
         """Returns the generation parameters text, or None if the image has none.
 
         Looked up in the `parameters` text entry, then EXIF UserComment (A1111's JPEG, WebP and AVIF location), then
-        EXIF ImageDescription, then the comment. Empty values are skipped.
+        EXIF ImageDescription, then the comment. Empty values are skipped. Text from any source but `parameters`
+        counts only if it has an A1111 `Key: value` line, so a camera caption or comment isn't read as a prompt.
         """
+        text_parameters = self.text.get(PARAMETERS_KEY)
+        if text_parameters is not None and text_parameters != '':
+            return text_parameters
         user_comment, _ = self._user_comment()
-        for candidate in (self.text.get(PARAMETERS_KEY), user_comment, self._exif_description(),
-                          self.text.get(COMMENT_KEY)):
-            if candidate is not None and candidate != '':
+        for candidate in (user_comment, self._exif_description(), self.text.get(COMMENT_KEY)):
+            if candidate is not None and candidate != '' and A1111Parameters.parse(candidate).has_generation_fields:
                 return candidate
         return None
 
@@ -271,10 +355,11 @@ class ImageMetadata:
         exif_ifd = self._read_ifd(IFD.Exif)
         if user_comment == previous:
             exif_ifd[ExifTags.Base.UserComment] = encode_user_comment(parameters, encoding)
-        if _decode_text(exif_ifd.get(ExifTags.Base.ImageDescription)) == previous:
-            exif_ifd[ExifTags.Base.ImageDescription] = parameters
-        if _decode_text(self.exif.get(ExifTags.Base.ImageDescription)) == previous:
-            self.exif[ExifTags.Base.ImageDescription] = parameters
+        description = parameters if parameters.isascii() else parameters.encode('utf-8')
+        if decode_exif_text(exif_ifd.get(ExifTags.Base.ImageDescription)) == previous:
+            exif_ifd[ExifTags.Base.ImageDescription] = description
+        if decode_exif_text(self.exif.get(ExifTags.Base.ImageDescription)) == previous:
+            self.exif[ExifTags.Base.ImageDescription] = description
         if self.text.get(COMMENT_KEY) == previous:
             self.text[COMMENT_KEY] = parameters
 
@@ -291,6 +376,20 @@ class ImageMetadata:
         if XMP_TEXT_KEY in self.text:
             return self.text[XMP_TEXT_KEY]
         return _decode_text(self.format_info.get(XMP_INFO_KEY))
+
+    def iptc_entries(self) -> list[IptcEntry]:
+        """Returns the IPTC application record datasets of a JPEG's Photoshop resources, in file order.
+
+        Envelope records and the record version dataset describe the encoding, not the image, and are left out.
+        """
+        resources = self.format_info.get(PHOTOSHOP_INFO_KEY)
+        if not isinstance(resources, dict):
+            return []
+        data = resources.get(_IPTC_RESOURCE_ID)
+        if not isinstance(data, bytes):
+            return []
+        return [entry for entry in parse_iptc(data)
+                if entry.record == _IPTC_APPLICATION_RECORD and entry.dataset != _IPTC_RECORD_VERSION_DATASET]
 
     @property
     def has_icc_profile(self) -> bool:
@@ -349,6 +448,8 @@ class ImageMetadata:
                     continue
                 if ifd != IFD.GPSInfo and tag == ExifTags.Base.UserComment:
                     value, _ = decode_user_comment(value)
+                else:
+                    value = decode_exif_text(value)
                 editable = ifd != IFD.GPSInfo and tag in EDITABLE_EXIF_TEXT_TAGS
                 entries.append(ExifEntry(ifd, tag, names.get(tag, f'0x{tag:04X}'), value, editable))
         return entries
@@ -379,7 +480,11 @@ class ImageMetadata:
             self.exif = exif
 
     def set_exif_text(self, ifd: Optional[int], tag: int, value: str) -> None:
-        """Sets an editable EXIF text tag. Raises ValueError for a tag not in `EDITABLE_EXIF_TEXT_TAGS`."""
+        """Sets an editable EXIF text tag. Raises ValueError for a tag not in `EDITABLE_EXIF_TEXT_TAGS`.
+
+        Non-ASCII text is stored as UTF-8 bytes, which PIL writes unchanged. PIL replaces non-ASCII characters in a
+        string with "?".
+        """
         if tag not in EDITABLE_EXIF_TEXT_TAGS or ifd == IFD.GPSInfo:
             raise ValueError(f'EXIF tag 0x{tag:04X} is not an editable text tag')
         current = self.exif.get(tag) if ifd is None else self._read_ifd(ifd).get(tag)
@@ -387,7 +492,7 @@ class ImageMetadata:
             _, encoding = decode_user_comment(current)
             self._set_tag(ifd, tag, encode_user_comment(value, encoding))
         else:
-            self._set_tag(ifd, tag, value)
+            self._set_tag(ifd, tag, value if value.isascii() else value.encode('utf-8'))
 
     def remove_exif_tag(self, ifd: Optional[int], tag: int) -> None:
         """Removes one EXIF tag, if present. Removing an IFD pointer tag from IFD0 removes that IFD."""
