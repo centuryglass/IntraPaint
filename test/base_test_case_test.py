@@ -16,7 +16,8 @@ from src.hotkey_filter import HotkeyFilter
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING, APP_STATE_INIT, APP_STATE_LOADING
 from test.base_test_case import (IntraPaintTestCase, PROJECT_ROOT, assert_image_matches_golden, assert_images_equal,
-                                 assert_json_matches_snapshot, tested_image_path)
+                                 assert_json_matches_snapshot, global_services_without_reset, reset_singletons,
+                                 tested_image_path)
 
 IMAGE_SIZE = QSize(8, 4)
 
@@ -242,6 +243,26 @@ class IntraPaintTestCaseTest(unittest.TestCase):
         self.assertEqual(AppStateTracker.app_state(), APP_STATE_INIT)
         _change_undo_count_and_state(APP_STATE_EDITING)
         inside_listener.assert_not_called()
+
+    def test_every_global_service_has_a_reset(self) -> None:
+        """Every `Singleton` class and every class with a `shared_instance` under `src/` has a SINGLETON_RESETS entry.
+
+        A new global service that holds state needs a reset in test/base_test_case.py, or it leaks between tests."""
+        missing = sorted(f'{cls.__module__}.{cls.__qualname__}' for cls in global_services_without_reset())
+        self.assertEqual(missing, [], 'Add these to SINGLETON_RESETS in test/base_test_case.py')
+
+    def test_app_state_widget_connections_reset(self) -> None:
+        """A widget registered through set_enabled_states is disconnected by reset_singletons, so later state changes
+        don't toggle it."""
+        widget = QWidget()
+        self.addCleanup(widget.deleteLater)
+        AppStateTracker.set_enabled_states(widget, [APP_STATE_EDITING])
+        self.assertFalse(widget.isEnabled())
+        reset_singletons()
+        widget.setEnabled(False)
+        AppStateTracker.set_app_state(APP_STATE_EDITING)
+        self.assertFalse(widget.isEnabled())
+        reset_singletons()
 
     def test_widgets_created_in_test_are_deleted(self) -> None:
         """Parentless widgets a test creates are deleted after it, including one that Python can't collect, while
