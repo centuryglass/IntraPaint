@@ -11,7 +11,8 @@ do. The sections run Prompt, Mask, Sampling, Size and batch, then Advanced. A st
   arguments (`webui`) and `set_advanced_content`.
 - The edit mode decides which controls show, and the panel plans again when it changes. The Mask section and context
   show in Inpaint only, and denoising strength in Inpaint and Image to image. Outside Inpaint, the header's edit mode
-  selector takes the caution color and a note above Generate names the mode. The Advanced section's resolution rule
+  selector takes the caution color. The Generate button's second line names the mode, with the image count and
+  size. The Advanced section's resolution rule
   selector takes it under the Manual rule, which stops the resolution following the generation area.
 - The edit mode selector sits in the header. A strip puts the header at the top of the prompt column, so the columns
   beside it get the strip's full height. The prompt column scrolls on its own, so the header never collapses.
@@ -31,7 +32,7 @@ from PySide6.QtWidgets import (QApplication, QBoxLayout, QComboBox, QFormLayout,
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.config import Config
-from src.ui.ink_style import caution_color, caution_text_palette, set_primary_button
+from src.ui.ink_style import caution_text_palette, set_primary_button
 from src.ui.input_fields.number_field import NumberField
 from src.ui.input_fields.seed_value_spinbox import SeedValueSpinbox
 from src.ui.input_fields.size_field import SizeField
@@ -44,9 +45,10 @@ from src.ui.panel.generators.prompt_boxes import PromptBoxes
 from src.ui.panel.generators.soft_inpainting_controls import SoftInpaintingControls
 from src.ui.widget.disabled_banner import DisabledBanner
 from src.ui.widget.panel_section import PanelSection
+from src.ui.widget.summary_button import SummaryButton
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL
-from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
+from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT
 from src.util.shared_text import BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENERATE
 from src.ui.input_fields.field_factory import create_control_widget
 
@@ -96,8 +98,7 @@ MENU_TEXT_LCM_MODE = _tr('LCM mode')
 MENU_TEXT_CLEAR_MEMORY = _tr('Clear GPU memory')
 TOOLTIP_CLEAR_MEMORY = _tr('Remove cached models from GPU memory in ComfyUI.')
 
-NOTE_IMG2IMG = _tr('Image to image: ignores the mask')
-NOTE_TXT2IMG = _tr('Text to image: ignores the canvas')
+SUMMARY_GENERATE = _tr('{count} x {width}x{height}, {mode}', 'Generate button summary: image count, size, edit mode')
 BANNER_FIX_TEXT = _tr('Setup...')
 
 SUMMARY_MASK = _tr('blur {blur}', 'Mask section summary')
@@ -119,8 +120,7 @@ PROMPT_MIN_CHARACTERS = 24
 # Denoising strength is the most used value, so its field is taller than the others:
 DENOISING_FIELD_HEIGHT = 30
 
-# Planning collapses sections to their summaries, and hides the edit mode note, from the highest priority number down:
-NOTE_PRIORITY = 1
+# Planning collapses sections to their summaries, and from the highest priority number down:
 MASK_PRIORITY = 1
 SAMPLING_PRIORITY = 2
 SIZE_PRIORITY = 3
@@ -680,11 +680,6 @@ class StableDiffusionPanel(DockPanel):
             self._action_pair.layout().setAlignment(field, Qt.AlignmentFlag.AlignLeft)
         self.add_fit_item(FitItem(REQUIRED, 2), self._apply_pair_form)
 
-        # The note repeats what the edit mode selector shows, so it hides when the action block has no room for it:
-        self._mode_note = QLabel()
-        self._mode_note.setWordWrap(True)
-        self._note_fits = True
-        self.add_fit_item(FitItem(NOTE_PRIORITY), self._apply_note_form)
         # Tiling carries over between sessions, so the action block shows it while it is on:
         self._tiling_button = QPushButton(BUTTON_TEXT_TILING_ON)
         self._tiling_button.setToolTip(BUTTON_TOOLTIP_TILING_ON)
@@ -693,15 +688,17 @@ class StableDiffusionPanel(DockPanel):
         for tiling_key in (Cache.WEBUI_TILING, Cache.WEBUI_TILING_AVAILABLE):
             cache.connect(self._tiling_button, tiling_key, self._update_tiling_button)
         self._tiling_button.setVisible(self._webui and cache.tiling_in_effect())
-        # The backend name sits above Generate, with the mode note, as a status line for the next generation:
+        # The backend name sits above Generate as a status line for the next generation:
         self._backend_label = QLabel(BACKEND_DESCRIPTION_WEBUI if self._webui else BACKEND_DESCRIPTION_COMFYUI)
         self._backend_label.setForegroundRole(QPalette.ColorRole.PlaceholderText)
-        self._generate_button = QPushButton(BUTTON_TEXT_GENERATE)
+        self._generate_button = SummaryButton(BUTTON_TEXT_GENERATE)
         # Capped like the fields above it, so its right edge lines up with theirs in a wide side panel:
         limit_field_width(self._generate_button)
         self._generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
         set_primary_button(self._generate_button)
         self._generate_button.clicked.connect(self.generate_signal)
+        for summary_key in (Cache.GENERATION_SIZE, Cache.BATCH_COUNT, Cache.BATCH_SIZE):
+            cache.connect(self._generate_button, summary_key, self._update_generate_summary)
 
         self._action_block = QWidget()
         block_layout = QVBoxLayout(self._action_block)
@@ -714,7 +711,6 @@ class StableDiffusionPanel(DockPanel):
         self._action_spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         block_layout.addItem(self._action_spacer)
         block_layout.addWidget(self._tiling_button)
-        block_layout.addWidget(self._mode_note)
         block_layout.addWidget(self._backend_label)
         block_layout.addWidget(self._generate_button)
         # The footer holds the action block in a side panel, and hides while a strip shows it in the trailing column:
@@ -730,13 +726,17 @@ class StableDiffusionPanel(DockPanel):
         for pair in (self._sampling_pair, self._action_pair):
             pair.set_stacked(stacked)
 
+    def _update_generate_summary(self, *_) -> None:
+        """Shows what the next generation will make on the Generate button: image count, size and edit mode."""
+        cache = Cache()
+        size = cache.get(Cache.GENERATION_SIZE)
+        count = cache.get(Cache.BATCH_COUNT) * cache.get(Cache.BATCH_SIZE)
+        self._generate_button.set_summary(SUMMARY_GENERATE.format(
+            count=count, width=size.width(), height=size.height(), mode=self._edit_mode_combobox.currentText()))
+
     def _update_tiling_button(self, *_) -> None:
         self._tiling_button.setVisible(self._webui and Cache().tiling_in_effect())
         self.refit()
-
-    def _apply_note_form(self, form: Optional[int]) -> None:
-        self._note_fits = form is not None
-        self._mode_note.setVisible(self._note_fits and self._mode_note.text() != '')
 
     # ---------------------------------------------------------------------------------------------------------------
     # Backend-specific content
@@ -818,21 +818,14 @@ class StableDiffusionPanel(DockPanel):
         self._context_field.setVisible(inpaint)
         if self._masked_content_rows is not None:
             self._masked_content_rows.setVisible(inpaint)
-        notes = {EDIT_MODE_IMG2IMG: NOTE_IMG2IMG, EDIT_MODE_TXT2IMG: NOTE_TXT2IMG}
-        self._mode_note.setText(notes.get(edit_mode, ''))
-        self._mode_note.setVisible(self._note_fits and not inpaint)
+        self._update_generate_summary()
         self._apply_caution(not inpaint)
         self.refit()
 
     def _apply_caution(self, caution: bool) -> None:
-        """Draws the edit mode selector and the mode note in the caution color, or restores their usual colors. The
-        tiling button always takes the caution color."""
-        color = caution_color()
-        note_palette = QPalette()
-        if caution and color is not None:
-            note_palette.setColor(QPalette.ColorRole.WindowText, color)
+        """Draws the edit mode selector in the caution color, or restores its usual color. The tiling button always
+        takes the caution color."""
         self._edit_mode_combobox.setPalette(caution_text_palette(caution))
-        self._mode_note.setPalette(note_palette)
         self._tiling_button.setPalette(caution_text_palette())
 
     def _apply_rule_caution(self, *_args) -> None:
@@ -974,11 +967,6 @@ class StableDiffusionPanel(DockPanel):
     def tiling_button(self) -> QPushButton:
         """The button above Generate that shows while tiling is on, and turns it off."""
         return self._tiling_button
-
-    @property
-    def mode_note(self) -> QLabel:
-        """The note above Generate that names an edit mode other than Inpaint."""
-        return self._mode_note
 
     @property
     def banner(self) -> DisabledBanner:

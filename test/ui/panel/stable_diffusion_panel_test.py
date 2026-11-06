@@ -15,7 +15,7 @@ from src.ui.layout.panel_fit import Orientation
 from src.ui.panel.generators.comfyui_advanced_controls import ComfyUIAdvancedControls
 from src.ui.panel.generators.prompt_boxes import (NEGATIVE_PROMPT_MAX_LINES, NEGATIVE_PROMPT_MIN_LINES,
                                                   PROMPT_MAX_LINES, PROMPT_MIN_LINES)
-from src.ui.panel.generators.stable_diffusion_panel import (NOTE_IMG2IMG, NOTE_TXT2IMG, CONTEXT_OFF,
+from src.ui.panel.generators.stable_diffusion_panel import (CONTEXT_OFF,
                                                             SECTION_TITLE_ADVANCED, SECTION_TITLE_MASK,
                                                             SECTION_TITLE_PROMPT, SECTION_TITLE_SAMPLING,
                                                             SECTION_TITLE_SIZE, FieldPair, StableDiffusionPanel)
@@ -81,17 +81,17 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         self.assertEqual(control.currentData(), EDIT_MODE_IMG2IMG)
 
     def test_action_block_and_mask_section_follow_the_edit_mode(self) -> None:
-        """Denoising shows in Inpaint and Image to image, context and the Mask section in Inpaint only, and a note
-        above Generate names any other mode. CFG scale, steps and batch size show in every mode."""
+        """Denoising shows in Inpaint and Image to image, context and the Mask section in Inpaint only. CFG scale,
+        steps and batch size show in every mode, and the Generate button's summary names the mode."""
         cache = Cache()
         denoising, cfg_scale, steps, batch_size, context = self.panel.action_fields
         mask = self._section(SECTION_TITLE_MASK)
         expected = {
-            EDIT_MODE_INPAINT: (True, True, None),
-            EDIT_MODE_IMG2IMG: (True, False, NOTE_IMG2IMG),
-            EDIT_MODE_TXT2IMG: (False, False, NOTE_TXT2IMG),
+            EDIT_MODE_INPAINT: (True, True),
+            EDIT_MODE_IMG2IMG: (True, False),
+            EDIT_MODE_TXT2IMG: (False, False),
         }
-        for mode, (denoise_shown, inpaint_only_shown, note) in expected.items():
+        for mode, (denoise_shown, inpaint_only_shown) in expected.items():
             with self.subTest(mode=mode):
                 cache.set(Cache.EDIT_MODE, mode)
                 _host(self.panel, SIDE, QSize(340, 900))
@@ -100,9 +100,15 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
                     self.assertTrue(self._visible(field))
                 self.assertEqual(self._visible(context), inpaint_only_shown)
                 self.assertEqual(self._visible(mask), inpaint_only_shown)
-                self.assertEqual(self._visible(self.panel.mode_note), note is not None)
-                if note is not None:
-                    self.assertEqual(self.panel.mode_note.text(), note)
+                self.assertTrue(self.panel.generate_button.summary.endswith(self.panel.edit_mode_control.currentText()))
+
+    def test_generate_summary_follows_size_and_counts(self) -> None:
+        """The Generate button's summary shows the image count and the generation size."""
+        cache = Cache()
+        cache.set(Cache.BATCH_COUNT, 5)
+        cache.set(Cache.BATCH_SIZE, 1)
+        cache.set(Cache.GENERATION_SIZE, QSize(512, 768))
+        self.assertTrue(self.panel.generate_button.summary.startswith('5 x 512x768'))
 
     def test_edit_mode_selector_takes_the_caution_color_outside_inpaint(self) -> None:
         """The header's mode selector draws its text in the caution color in any mode but Inpaint."""
