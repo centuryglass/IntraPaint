@@ -325,6 +325,16 @@
     </message>
     <message>
         <location filename="../config/application_config_definitions.json"/>
+        <source>Show selected content overlay:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
+        <source>Fill selected image areas with the selection overlay. When off, only the selection outline is drawn, which stays animated if outline animation is on.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/application_config_definitions.json"/>
         <source>Animate selected content overlay:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3184,6 +3194,16 @@
     <message>
         <location filename="../config/key_config_definitions.json"/>
         <source>Show or hide the active tool control hints below the image.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Selection overlay</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../config/key_config_definitions.json"/>
+        <source>Show or hide the selection overlay fill. The selection outline stays visible.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -9117,6 +9137,21 @@ Turns red when the text does not fit.</source>
     <message>
         <location filename="../../src/ui/widget/canvas_bar.py"/>
         <source>Right-click for ruler highlight options</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Selection overlay</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>Show selection overlay</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/widget/canvas_bar.py"/>
+        <source>When hidden, only the selection outline is drawn</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

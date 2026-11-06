@@ -2,11 +2,11 @@
 
 - Hints are "keycap + verb" pairs split from a tool's `get_input_hint()` text. As many as fit show in one line, then a
   "?" button that lists every pair in a popover.
-- The view controls are an optional Rulers toggle and navigation window button, the zoom field with its - and +
-  buttons, and Reset view.
+- The view controls are optional Rulers and Selection overlay toggles and a navigation window button, the zoom
+  field with its - and + buttons, and Reset view.
 - The bar plans with `plan_fit` on its own width, which is the canvas column's. As it narrows, hint pairs move into
-  "?" first, then Reset view's label gives way to its glyph, then Rulers and the navigation button move into the "..."
-  popover.
+  "?" first, then Reset view's label gives way to its glyph, then the toggles and the navigation button move into
+  the "..." popover.
 - The bar's minimum size is its smallest plan, so what it shows never widens the window.
 """
 import math
@@ -47,6 +47,9 @@ RESET_VIEW_TOOLTIP = _tr('Restore default image zoom and offset')
 RULERS_LABEL = _tr('Rulers')
 RULERS_TOOLTIP = _tr('Show rulers')
 RULERS_DESCRIPTION = _tr('Right-click for ruler highlight options')
+SELECTION_OVERLAY_LABEL = _tr('Selection overlay')
+SELECTION_OVERLAY_TOOLTIP = _tr('Show selection overlay')
+SELECTION_OVERLAY_DESCRIPTION = _tr('When hidden, only the selection outline is drawn')
 NAVIGATION_TOOLTIP = _tr('Navigation window')
 HINTS_TOOLTIP = _tr('Controls for this tool')
 MORE_TOOLTIP = _tr('More view options')
@@ -114,7 +117,8 @@ class CanvasBar(QWidget):
     image_viewer: ImageViewer
         The viewer the zoom and reset controls act on.
     include_rulers: bool
-        Whether to show the Rulers toggle, which follows `AppConfig.SHOW_RULERS`.
+        Whether to show the Rulers toggle, which follows `AppConfig.SHOW_RULERS`, and the Selection overlay toggle,
+        which follows `AppConfig.SHOW_SELECTION_OVERLAY`.
     include_navigation: bool
         Whether to show the navigation window button, which emits `navigation_requested`.
     ruler_actions: Optional[list[QAction]]
@@ -157,6 +161,7 @@ class CanvasBar(QWidget):
         row_layout.addStretch(1)
 
         self._rulers_button: Optional[QPushButton] = None
+        self._overlay_button: Optional[QPushButton] = None
         if include_rulers:
             self._rulers_button = QPushButton(RULERS_LABEL)
             self._rulers_button.setCheckable(True)
@@ -170,6 +175,17 @@ class CanvasBar(QWidget):
             self._rulers_button.addActions(ruler_actions if ruler_actions is not None else [])
             AppConfig().connect(self, AppConfig.SHOW_RULERS, self._rulers_shown_changed)
             row_layout.addWidget(self._rulers_button)
+
+            self._overlay_button = QPushButton(SELECTION_OVERLAY_LABEL)
+            self._overlay_button.setCheckable(True)
+            self._overlay_button.setChecked(AppConfig().get(AppConfig.SHOW_SELECTION_OVERLAY))
+            set_button_weight(self._overlay_button, ButtonWeight.FLAT)
+            set_shortcut_tooltip(self._overlay_button, SELECTION_OVERLAY_TOOLTIP,
+                                 KeyConfig.TOGGLE_SELECTION_OVERLAY_SHORTCUT, SELECTION_OVERLAY_DESCRIPTION)
+            assert isinstance(self._overlay_button.toggled, SignalInstance)
+            self._overlay_button.toggled.connect(partial(_set_app_config, AppConfig.SHOW_SELECTION_OVERLAY))
+            AppConfig().connect(self, AppConfig.SHOW_SELECTION_OVERLAY, self._overlay_shown_changed)
+            row_layout.addWidget(self._overlay_button)
 
         self._navigation_button: Optional[QToolButton] = None
         if include_navigation:
@@ -271,6 +287,10 @@ class CanvasBar(QWidget):
         if self._rulers_button is not None:
             self._rulers_button.setChecked(shown)
 
+    def _overlay_shown_changed(self, shown: bool) -> None:
+        if self._overlay_button is not None:
+            self._overlay_button.setChecked(shown)
+
     def _hints_shown_changed(self, shown: bool) -> None:
         self.removeAction(self._show_hint_action if shown else self._hide_hint_action)
         self.addAction(self._hide_hint_action if shown else self._show_hint_action)
@@ -344,7 +364,8 @@ class CanvasBar(QWidget):
         config = AppConfig()
         options = [(HINTS_LABEL, AppConfig.SHOW_TOOL_CONTROL_HINTS)]
         if self._rulers_button is not None:
-            options = [(RULERS_LABEL, AppConfig.SHOW_RULERS),
+            options = [(SELECTION_OVERLAY_LABEL, AppConfig.SHOW_SELECTION_OVERLAY),
+                       (RULERS_LABEL, AppConfig.SHOW_RULERS),
                        (RULER_HIGHLIGHTS_LABEL, AppConfig.SHOW_RULER_HIGHLIGHTS), *options]
         for label, key in options:
             check_box = QCheckBox(label, content)
@@ -384,7 +405,7 @@ class CanvasBar(QWidget):
         for index, label in enumerate(self._hint_labels):
             label.setVisible(index < shown_hints)
         self._hint_button.setVisible(hints_on and shown_hints < len(self._hint_pairs))
-        for toggle in (self._rulers_button, self._navigation_button):
+        for toggle in (self._overlay_button, self._rulers_button, self._navigation_button):
             if toggle is not None:
                 toggle.setVisible(toggles_shown)
         self._more_button.setVisible(not toggles_shown and (self._rulers_button is not None

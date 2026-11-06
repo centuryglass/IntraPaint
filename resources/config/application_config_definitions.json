@@ -190,6 +190,14 @@
         "default": false,
         "saved": true
     },
+    "show_selection_overlay": {
+        "label": "Show selected content overlay:",
+        "category": "Interface",
+        "description": "Fill selected image areas with the selection overlay. When off, only the selection outline is drawn, which stays animated if outline animation is on.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
     "animate_selection_fill": {
         "label": "Animate selected content overlay:",
         "category": "Interface",

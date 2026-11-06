@@ -9,7 +9,11 @@ from src.ui.graphics_items.polygon_outline import PolygonOutline
 
 
 class SelectionOutline(PolygonOutline):
-    """Displays polygon outlines as animated dashes with subtle color changes."""
+    """Displays polygon outlines as animated dashes with subtle color changes.
+
+    The fill shows only while `show_overlay` and `AppConfig.SHOW_SELECTION_OVERLAY` are both set. Without it the
+    outline still draws, and keeps animating if `AppConfig.ANIMATE_SELECTION_OUTLINE` is set.
+    """
 
     def __init__(self,
                  view: QGraphicsView,
@@ -19,14 +23,10 @@ class SelectionOutline(PolygonOutline):
 
         config = AppConfig()
         self._show_overlay = True
+        self._overlay_enabled = config.get(AppConfig.SHOW_SELECTION_OVERLAY)
+        self._animate_fill_setting = config.get(AppConfig.ANIMATE_SELECTION_FILL)
 
-        def _update_fill_color(color_str: str) -> None:
-            if not QColor(color_str).isValid() or not self._show_overlay:
-                return
-            self.fill_color = QColor(color_str)
-
-        config.connect(self, AppConfig.SELECTION_COLOR, _update_fill_color)
-        _update_fill_color(config.get(AppConfig.SELECTION_COLOR))
+        config.connect(self, AppConfig.SELECTION_COLOR, lambda _: self._update_fill())
 
         def _update_outline_animate(should_animate: bool) -> None:
             self.animated_outline = should_animate
@@ -35,23 +35,40 @@ class SelectionOutline(PolygonOutline):
         _update_outline_animate(config.get(AppConfig.ANIMATE_SELECTION_OUTLINE))
 
         def _update_fill_animate(should_animate: bool) -> None:
-            self.animated_fill = should_animate
+            self._animate_fill_setting = should_animate
+            self._update_fill()
 
         config.connect(self, AppConfig.ANIMATE_SELECTION_FILL, _update_fill_animate)
-        _update_fill_animate(config.get(AppConfig.ANIMATE_SELECTION_FILL))
+
+        def _update_overlay_enabled(enabled: bool) -> None:
+            self._overlay_enabled = enabled
+            self._update_fill()
+
+        config.connect(self, AppConfig.SHOW_SELECTION_OVERLAY, _update_overlay_enabled)
+        self._update_fill()
 
     @property
     def show_overlay(self) -> bool:
-        """Returns whether the outline should be filled with a non-transparent pattern."""
+        """Returns whether this outline may be filled with a non-transparent pattern."""
         return self._show_overlay
 
     @show_overlay.setter
     def show_overlay(self, should_show: bool) -> None:
-        """Sets whether the outline should be filled with a non-transparent pattern."""
+        """Sets whether this outline may be filled with a non-transparent pattern."""
         if should_show == self._show_overlay:
             return
-        if should_show:
+        self._show_overlay = should_show
+        self._update_fill()
+
+    def _update_fill(self) -> None:
+        """Applies the fill color and fill animation for the current overlay settings.
+
+        A hidden fill stops animating, so the animation runs only for an animated outline.
+        """
+        fill_visible = self._show_overlay and self._overlay_enabled
+        if fill_visible:
             color = AppConfig().get_color(AppConfig.SELECTION_COLOR, Qt.GlobalColor.red)
         else:
             color = QColor(Qt.GlobalColor.transparent)
         self.fill_color = color
+        self.animated_fill = fill_visible and self._animate_fill_setting

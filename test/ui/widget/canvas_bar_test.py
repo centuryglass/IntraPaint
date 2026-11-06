@@ -165,11 +165,21 @@ class CanvasBarTest(IntraPaintTestCase):
         self.assertEqual(len(requests), 2)
         content.deleteLater()
 
+    def test_selection_overlay_toggle_follows_config(self) -> None:
+        """The Selection overlay toggle is checked while the overlay shows, and toggling it shows or hides it."""
+        overlay = self.bar._overlay_button  # pylint: disable=protected-access
+        assert overlay is not None
+        self.assertEqual(overlay.isChecked(), AppConfig().get(AppConfig.SHOW_SELECTION_OVERLAY))
+        overlay.setChecked(False)
+        self.assertFalse(AppConfig().get(AppConfig.SHOW_SELECTION_OVERLAY))
+        AppConfig().set(AppConfig.SHOW_SELECTION_OVERLAY, True)
+        self.assertTrue(overlay.isChecked())
+
     def test_more_popover_toggles_options(self) -> None:
-        """The "..." popover's check boxes set rulers, ruler highlights and control hints."""
+        """The "..." popover's check boxes set the selection overlay, rulers, ruler highlights and control hints."""
         content = self.bar.more_popover_content()
         check_boxes = content.findChildren(QCheckBox)
-        keys = (AppConfig.SHOW_RULERS, AppConfig.SHOW_RULER_HIGHLIGHTS, AppConfig.SHOW_TOOL_CONTROL_HINTS)
+        keys = (AppConfig.SHOW_SELECTION_OVERLAY, AppConfig.SHOW_RULERS, AppConfig.SHOW_RULER_HIGHLIGHTS, AppConfig.SHOW_TOOL_CONTROL_HINTS)
         self.assertEqual(len(check_boxes), len(keys))
         for check_box, key in zip(check_boxes, keys):
             self.assertEqual(check_box.isChecked(), AppConfig().get(key))
