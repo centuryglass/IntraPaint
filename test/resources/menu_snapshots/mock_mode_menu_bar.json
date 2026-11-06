@@ -111,7 +111,8 @@
       "Zoom to generation area",
       "----",
       "Rulers [checkable]",
-      "Tool control hints [checkable]"
+      "Tool control hints [checkable]",
+      "Selection overlay [checkable]"
     ],
     "&Window": [
       "Tools [checkable]",

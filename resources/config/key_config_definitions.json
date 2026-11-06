@@ -809,6 +809,15 @@
         "default": "Ctrl+Alt+H",
         "saved": true
     },
+    "toggle_selection_overlay_shortcut": {
+        "label": "Selection overlay",
+        "category": "Menu Shortcuts",
+        "subcategory": "View Menu",
+        "description": "Show or hide the selection overlay fill. The selection outline stays visible.",
+        "type": "string",
+        "default": "Ctrl+H",
+        "saved": true
+    },
     "reset_dock_layout_shortcut": {
         "label": "Reset panel layout",
         "category": "Menu Shortcuts",

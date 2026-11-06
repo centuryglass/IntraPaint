@@ -231,6 +231,8 @@ Actions that change how the image is shown, without changing the image.
 - **Fit image in window** (Ctrl+0): Fit the whole image in the view and center it.
 - **Zoom to generation area** (Alt+Shift+Z): Center the view on the generation area. Does nothing while the generation area is hidden.
 - **Tool control hints** (Ctrl+Alt+H): A checkable entry that shows or hides the active tool's control hints below the image.
+- **Selection overlay** (Ctrl+H): A checkable entry that shows or hides the fill over selected content. The selection
+  outline stays visible and keeps its animation if outline animation is on.
 - **Rulers** (Ctrl+R): A checkable entry that shows or hides the rulers beside the image.
 
 ---

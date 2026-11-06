@@ -65,6 +65,7 @@
     "zoom_to_gen_area_shortcut": "Ctrl+Alt+Z",
     "toggle_control_hints_shortcut": "Ctrl+Alt+H",
     "toggle_rulers_shortcut": "Ctrl+Alt+Shift+R",
+    "toggle_selection_overlay_shortcut": "Ctrl+H",
     "color_balance_shortcut": "Ctrl+1",
     "brightness_contrast_shortcut": "Ctrl+2",
     "blur_shortcut": "Ctrl+3",

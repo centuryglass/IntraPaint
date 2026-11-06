@@ -281,6 +281,7 @@ class AppController(MenuBuilder):
         self.add_menu_separator(MENU_GENERATION, 520)
         self._make_menu_action_checkable(self.toggle_rulers, AppConfig.SHOW_RULERS)
         self._make_menu_action_checkable(self.toggle_control_hints, AppConfig.SHOW_TOOL_CONTROL_HINTS)
+        self._make_menu_action_checkable(self.toggle_selection_overlay, AppConfig.SHOW_SELECTION_OVERLAY)
         self.insert_menu_actions(MENU_WINDOW, self._window.dock_toggle_actions())
         self.get_menu(MENU_WINDOW_LAYOUTS).aboutToShow.connect(self._update_layout_menu)
         self._build_recent_files_menu()
@@ -1069,6 +1070,12 @@ class AppController(MenuBuilder):
         """Show or hide the active tool's control hints below the image."""
         config = AppConfig()
         config.set(AppConfig.SHOW_TOOL_CONTROL_HINTS, not config.get(AppConfig.SHOW_TOOL_CONTROL_HINTS))
+
+    @menu_action(MENU_VIEW, 'toggle_selection_overlay_shortcut', 202, valid_app_states=[APP_STATE_EDITING])
+    def toggle_selection_overlay(self) -> None:
+        """Show or hide the selection overlay fill, leaving the selection outline in place."""
+        config = AppConfig()
+        config.set(AppConfig.SHOW_SELECTION_OVERLAY, not config.get(AppConfig.SHOW_SELECTION_OVERLAY))
 
     @menu_action(MENU_WINDOW, 'reset_dock_layout_shortcut', 520,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
