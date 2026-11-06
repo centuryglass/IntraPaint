@@ -41,4 +41,15 @@ class AppControllerMetadataWindowTest(IntraPaintTestCase):
         self.assertIs(window, self.controller._metadata_window)
         self.controller.load_image(path)
         self.assertNotIn('note', window._metadata.text)
-        self.assertIs(window._metadata, self.controller._image_io.metadata)
+        self.assertIsNot(window._metadata, self.controller._image_io.metadata)
+
+    def test_applied_edits_become_the_image_metadata(self) -> None:
+        """Edits reach the image's metadata only when applied."""
+        self.controller.show_metadata_window()
+        window = self.controller._metadata_window
+        assert window is not None
+        window._add_text_entry()
+        self.assertNotIn('new_entry', self.controller._image_io.metadata.text)
+        window.apply_changes()
+        self.assertIn('new_entry', self.controller._image_io.metadata.text)
+        self.assertFalse(window.is_modified)

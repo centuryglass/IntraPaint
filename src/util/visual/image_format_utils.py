@@ -7,7 +7,7 @@ from PIL.ExifTags import IFD
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImageReader, QImageWriter, QImage
 
-from src.image.image_metadata import ImageMetadata, PARAMETERS_KEY
+from src.image.image_metadata import ImageMetadata, PARAMETERS_KEY, COMMENT_KEY
 from src.util.visual.image_utils import logger, EXCLUDED_QIMAGE_FORMATS, read_qimage
 from src.util.visual.pil_image_utils import qimage_to_pil_image, pil_image_to_qimage, EXCLUDED_PIL_FORMATS, \
     PIL_OPEN_FORMATS, convert_to_srgb
@@ -139,8 +139,9 @@ def save_image_with_metadata(image: Image.Image | QImage, file_path: str,
         and must be in IMAGE_FORMATS_SUPPORTING_METADATA.
     metadata: ImageMetadata, optional
         Metadata to write, which isn't changed. PNG keeps every text entry and the EXIF data. GIF keeps only the
-        generation parameters, as its comment. JPEG 2000 keeps the parameters as its comment, plus EXIF data. JPEG,
-        TIFF and WebP keep EXIF data, with the parameters as its ImageDescription.
+        generation parameters, or the comment if there are none, as its comment. JPEG 2000 keeps the same comment,
+        plus EXIF data. JPEG, TIFF and WebP keep EXIF data, with the parameters as its ImageDescription.
+        `src/ui/window/metadata_window.py` describes these rules to the user, so a change here changes its note.
     """
     delimiter_index = file_path.rfind('.')
     if delimiter_index < 0:
@@ -153,6 +154,8 @@ def save_image_with_metadata(image: Image.Image | QImage, file_path: str,
     if metadata is None:
         metadata = ImageMetadata()
     parameter_text = metadata.parameters or ''
+    # A comment that isn't generation data is kept where the parameters would go:
+    comment_text = parameter_text or metadata.text.get(COMMENT_KEY, '')
     # The parameters are added to a copy, so the caller's EXIF data is unchanged:
     exif = copy.deepcopy(metadata.exif)
     if isinstance(image, QImage):
@@ -161,9 +164,9 @@ def save_image_with_metadata(image: Image.Image | QImage, file_path: str,
         case 'PNG':
             image.save(file_path, 'PNG', pnginfo=_png_text_chunks(metadata), exif=exif)
         case 'GIF':
-            image.save(file_path, file_format, comment=parameter_text)
+            image.save(file_path, file_format, comment=comment_text)
         case  'JP2' | 'JPX' | 'J2C' | 'JPC':
-            image.save(file_path, comment=parameter_text, exif=exif)
+            image.save(file_path, comment=comment_text, exif=exif)
         case 'JPG' | 'JPEG' | 'TIFF' | 'WEBP':
             if parameter_text != '':
                 _write_data_to_exif_description(exif, parameter_text)

@@ -65,6 +65,7 @@ from src.controller.image_generation.test_generator import TestGenerator
 from src.controller.image_io import ImageIO, UNTITLED_FILE_NAME
 from src.controller.tool_controller import ToolController
 from src.hotkey_filter import HotkeyFilter
+from src.image.image_metadata import ImageMetadata
 from src.image.filter.blur import BlurFilter
 from src.image.filter.brightness_contrast import BrightnessContrastFilter
 from src.image.filter.invert import InvertFilter
@@ -1178,12 +1179,17 @@ class AppController(MenuBuilder):
         metadata = self._image_io.metadata
         if self._metadata_window is None:
             self._metadata_window = MetadataWindow(metadata, lambda: Cache().get(Cache.LAST_FILE_PATH))
+            self._metadata_window.metadata_applied.connect(self._apply_edited_metadata)
             self._image_io.on_metadata_replaced = self._metadata_window.set_metadata
         else:
             self._metadata_window.set_metadata(metadata)
         self._metadata_window.show()
         self._metadata_window.raise_()
         self._metadata_window.activateWindow()
+
+    def _apply_edited_metadata(self, metadata: ImageMetadata) -> None:
+        """Makes the metadata window's applied edits the image's metadata, which the next save writes."""
+        self._image_io.metadata = metadata
 
     @menu_action(MENU_GENERATION, 'generator_select_shortcut', 530)
     def show_generator_window(self) -> None:

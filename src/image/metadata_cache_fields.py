@@ -122,24 +122,29 @@ def apply_to_cache(params: A1111Parameters, fields: tuple[str, ...]) -> list[Rej
     return rejected
 
 
+def _matches_editor(mapping: _FieldMapping, saved: str) -> bool:
+    """Returns whether saved text parses to the editor's value.
+
+    Both sides go through `mapping.parse`, since some settings hold another type than their definition says: the seed
+    spinbox stores its value as a string.
+    """
+    try:
+        return bool(mapping.parse(saved) == mapping.parse(mapping.format(Cache().get(mapping.cache_key))))
+    except (TypeError, ValueError):
+        return False
+
+
 def update_from_cache(params: A1111Parameters, fields: tuple[str, ...]) -> None:
     """Writes the editor's `Cache` values into `params`, adding missing fields.
 
     A field whose saved value already parses to the editor's value keeps its text, so `7` isn't rewritten as `7.0`.
     """
-    cache = Cache()
     mappings = _field_mappings()
     for field in fields:
         mapping = mappings[field]
-        value = cache.get(mapping.cache_key)
         saved = read_field(params, field)
-        if saved is not None:
-            try:
-                if mapping.parse(saved) == value:
-                    continue
-            except (TypeError, ValueError):
-                pass
-        write_field(params, field, mapping.format(value))
+        if saved is None or not _matches_editor(mapping, saved):
+            write_field(params, field, mapping.format(Cache().get(mapping.cache_key)))
 
 
 def editor_field_text(field: str) -> str:
@@ -150,11 +155,5 @@ def editor_field_text(field: str) -> str:
 
 def differs_from_editor(params: A1111Parameters, field: str) -> bool:
     """Returns whether a field's saved value is present and differs from the editor's, so Apply would change it."""
-    mapping = _field_mappings()[field]
     saved = read_field(params, field)
-    if saved is None:
-        return False
-    try:
-        return bool(mapping.parse(saved) != Cache().get(mapping.cache_key))
-    except (TypeError, ValueError):
-        return True
+    return saved is not None and not _matches_editor(_field_mappings()[field], saved)

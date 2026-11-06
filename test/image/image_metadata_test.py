@@ -154,6 +154,29 @@ def _exif(tags: dict[Optional[int], dict[int, Any]]) -> Image.Exif:
     return loaded
 
 
+def _reload_exif(exif: Image.Exif) -> Image.Exif:
+    """Returns `exif` encoded and read back, as a saved and reopened file's would be."""
+    loaded = Image.Exif()
+    loaded.load(exif.tobytes())
+    return loaded
+
+
+def _iptc_dataset(record: int, dataset: int, value: bytes) -> bytes:
+    return bytes([0x1C, record, dataset]) + len(value).to_bytes(2, 'big') + value
+
+
+def _with_jpeg_segment(jpeg: bytes, marker: int, payload: bytes) -> bytes:
+    """Returns JPEG data with an APPn segment inserted after the start-of-image marker."""
+    return jpeg[:2] + bytes([0xFF, marker]) + (len(payload) + 2).to_bytes(2, 'big') + payload + jpeg[2:]
+
+
+def _photoshop_iptc_segment(iptc: bytes) -> bytes:
+    """Returns an APP13 payload holding `iptc` as a Photoshop IPTC resource, the way photo tools write it."""
+    padded = iptc + (b'\0' if len(iptc) % 2 else b'')
+    return b'Photoshop 3.0\0' + b'8BIM' + (0x0404).to_bytes(2, 'big') + b'\0\0' \
+        + len(iptc).to_bytes(4, 'big') + padded
+
+
 def _metadata_with_exif() -> ImageMetadata:
     exif = _exif({None: {ExifTags.Base.Make: 'Camera Co', ExifTags.Base.Artist: 'Someone'},
                   IFD.Exif: {ExifTags.Base.ExposureTime: 0.01},
@@ -166,26 +189,63 @@ class ImageMetadataTest(IntraPaintTestCase):
 
     def test_parameters_lookup_order(self) -> None:
         """Parameters come from the text entry, then UserComment, then ImageDescription, then the comment."""
-        metadata = ImageMetadata({COMMENT_KEY: 'from comment'})
-        self.assertEqual('from comment', metadata.parameters)
-        metadata.set_exif_text(None, ExifTags.Base.ImageDescription, 'from description')
-        self.assertEqual('from description', metadata.parameters)
-        metadata.set_exif_text(IFD.Exif, ExifTags.Base.UserComment, 'from user comment')
-        self.assertEqual('from user comment', metadata.parameters)
+        fields = '\nSteps: 20, Sampler: Euler a, Seed: 5'
+        metadata = ImageMetadata({COMMENT_KEY: 'from comment' + fields})
+        self.assertEqual('from comment' + fields, metadata.parameters)
+        metadata.set_exif_text(None, ExifTags.Base.ImageDescription, 'from description' + fields)
+        self.assertEqual('from description' + fields, metadata.parameters)
+        metadata.set_exif_text(IFD.Exif, ExifTags.Base.UserComment, 'from user comment' + fields)
+        self.assertEqual('from user comment' + fields, metadata.parameters)
         metadata.text[PARAMETERS_KEY] = 'from text'
         self.assertEqual('from text', metadata.parameters)
         self.assertIsNone(ImageMetadata().parameters)
 
+    def test_captions_are_not_parameters(self) -> None:
+        """A description, UserComment or comment without an A1111 field line isn't read as generation parameters."""
+        metadata = ImageMetadata({COMMENT_KEY: 'a comment'})
+        metadata.set_exif_text(None, ExifTags.Base.ImageDescription, 'OLYMPUS DIGITAL CAMERA')
+        metadata.set_exif_text(IFD.Exif, ExifTags.Base.UserComment, 'a user comment')
+        self.assertIsNone(metadata.parameters)
+        self.assertIsNone(metadata.a1111_parameters())
+
     def test_set_parameters_updates_every_source(self) -> None:
         """Setting the parameters rewrites each source that held the old text, keeping UserComment's encoding."""
-        metadata = ImageMetadata(exif=_exif({None: {ExifTags.Base.ImageDescription: 'old'},
-                                             IFD.Exif: {ExifTags.Base.UserComment: encode_user_comment('old',
+        old = 'old\nSteps: 20, Sampler: Euler a, Seed: 5'
+        metadata = ImageMetadata(exif=_exif({None: {ExifTags.Base.ImageDescription: old},
+                                             IFD.Exif: {ExifTags.Base.UserComment: encode_user_comment(old,
                                                                                                        'utf-16-le')}}))
         metadata.set_parameters('new')
         self.assertEqual('new', metadata.text[PARAMETERS_KEY])
         self.assertEqual('new', metadata.exif[ExifTags.Base.ImageDescription])
         self.assertEqual(('new', 'utf-16-le'),
                          decode_user_comment(metadata.exif.get_ifd(IFD.Exif)[ExifTags.Base.UserComment]))
+
+    def test_utf8_exif_text(self) -> None:
+        """UTF-8 in an ASCII EXIF tag reads as UTF-8, and non-ASCII edits survive an EXIF round trip."""
+        metadata = ImageMetadata()
+        metadata.exif[ExifTags.Base.Copyright] = '\u00a9 me'.encode('utf-8').decode('latin-1')  # As PIL reads it.
+        entry = next(entry for entry in metadata.exif_entries() if entry.tag == ExifTags.Base.Copyright)
+        self.assertEqual('\u00a9 me', entry.value)
+        metadata.set_exif_text(None, ExifTags.Base.Artist, 'Ren\u00e9')
+        reloaded = ImageMetadata(exif=_reload_exif(metadata.exif))
+        entry = next(entry for entry in reloaded.exif_entries() if entry.tag == ExifTags.Base.Artist)
+        self.assertEqual('Ren\u00e9', entry.value)
+
+    def test_iptc_entries(self) -> None:
+        """IPTC datasets in a Photoshop resource block are named, and Remove all removes them."""
+        iptc = _iptc_dataset(2, 90, 'Springfield'.encode()) + _iptc_dataset(2, 120, 'caf\u00e9'.encode())
+        metadata = ImageMetadata(format_info={'photoshop': {0x0404: iptc}})
+        self.assertEqual([('City', 'Springfield'), ('Caption/Abstract', 'caf\u00e9')],
+                         [(entry.name, entry.value) for entry in metadata.iptc_entries()])
+        self.assertTrue(metadata.has_removable_data)
+        metadata.remove_all()
+        self.assertEqual([], metadata.iptc_entries())
+        self.assertFalse(metadata.has_removable_data)
+
+    def test_has_removable_data_ignores_format_info(self) -> None:
+        """DPI and other format info aren't removable metadata."""
+        self.assertFalse(ImageMetadata(format_info={'dpi': (72, 72)}).has_removable_data)
+        self.assertTrue(ImageMetadata({'a': 'b'}).has_removable_data)
 
     def test_set_parameters_leaves_unrelated_sources(self) -> None:
         metadata = ImageMetadata({PARAMETERS_KEY: 'old'})
@@ -275,6 +335,32 @@ class MetadataFileTest(IntraPaintTestCase):
         self.assertEqual(text, loaded.text)
         self.assertEqual('<x/>', loaded.xmp)
         self.assertEqual('Someone', loaded.exif[ExifTags.Base.Artist])
+
+    def test_jpeg_with_iptc_xmp_and_gps(self) -> None:
+        """A JPEG carrying IPTC, XMP and EXIF GPS, as photo tools write them, loads all three."""
+        exif = _exif({None: {ExifTags.Base.ImageDescription: 'A caption'},
+                      IFD.GPSInfo: {ExifTags.GPS.GPSLatitudeRef: 'N', ExifTags.GPS.GPSLatitude: (45.0, 30.0, 0.0)}})
+        xmp = b'<x:xmpmeta xmlns:x="adobe:ns:meta/"><Iptc4xmpCore:Location>Market</Iptc4xmpCore:Location></x:xmpmeta>'
+        path = self._path('photo.jpg')
+        Image.new('RGB', (8, 8)).save(path, exif=exif, xmp=xmp)
+        with open(path, 'rb') as file:
+            data = file.read()
+        iptc = _iptc_dataset(2, 90, b'Springfield') + _iptc_dataset(2, 101, b'USA')
+        with open(path, 'wb') as file:
+            file.write(_with_jpeg_segment(data, 0xED, _photoshop_iptc_segment(iptc)))
+        _, loaded = load_image(path)
+        self.assertEqual([('City', 'Springfield'), ('Country', 'USA')],
+                         [(entry.name, entry.value) for entry in loaded.iptc_entries()])
+        self.assertIn('Market', loaded.xmp or '')
+        self.assertIn(IFD.GPSInfo, [entry.ifd for entry in loaded.exif_entries()])
+        self.assertIsNone(loaded.parameters)
+
+    def test_gif_keeps_a_plain_comment(self) -> None:
+        """A comment that isn't generation data is still saved as the GIF comment."""
+        save_image_with_metadata(self.image, self._path('comment.gif'), ImageMetadata({COMMENT_KEY: 'a note'}))
+        _, loaded = load_image(self._path('comment.gif'))
+        self.assertEqual({COMMENT_KEY: 'a note'}, loaded.text)
+        self.assertIsNone(loaded.parameters)
 
     def test_formats_keep_parameters_and_exif(self) -> None:
         """JPEG, WebP, TIFF and GIF keep the parameters, and every one but GIF keeps the EXIF data."""
