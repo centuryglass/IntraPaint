@@ -326,6 +326,15 @@ class MetadataFileTest(IntraPaintTestCase):
         self.assertEqual({PARAMETERS_KEY: 'p'}, loaded.text)
         self.assertIn('dpi', loaded.format_info)
 
+    def test_remove_all(self) -> None:
+        """Remove all clears text, EXIF, XMP and ICC data and keeps other format info."""
+        metadata = ImageMetadata({"a": "b"}, format_info={"xmp": b"x", "icc_profile": b"p", "dpi": (72, 72)})
+        metadata.set_exif_text(None, ExifTags.Base.Artist, "me")
+        metadata.remove_all()
+        self.assertEqual({}, metadata.text)
+        self.assertEqual([], metadata.exif_entries())
+        self.assertEqual({"dpi": (72, 72)}, metadata.format_info)
+
     def test_remove_gps_leaves_no_gps_ifd(self) -> None:
         metadata = _metadata_with_exif()
         self.assertIn(IFD.GPSInfo, {entry.ifd for entry in metadata.exif_entries()})  # Reads the GPS IFD first.

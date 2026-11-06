@@ -230,6 +230,13 @@ class ImageMetadata:
         """Whether there are no text entries, EXIF tags or format info."""
         return len(self.text) == 0 and len(self.exif_entries()) == 0 and len(self.format_info) == 0
 
+    def remove_all(self) -> None:
+        """Removes every text entry, EXIF tag, and the XMP and ICC profile blocks. Other format info is kept."""
+        self.text.clear()
+        self.exif = Image.Exif()
+        for key in (XMP_INFO_KEY, ICC_PROFILE_INFO_KEY, _EXIF_INFO_KEY):
+            self.format_info.pop(key, None)
+
     # Generation parameters:
 
     def _exif_description(self) -> Optional[str]:

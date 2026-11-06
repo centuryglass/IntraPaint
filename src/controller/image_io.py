@@ -149,12 +149,25 @@ class ImageIO:
         self._window = window
         self._image_stack = image_stack
         self._get_generator = get_generator
-        self.metadata = ImageMetadata()
+        self._metadata = ImageMetadata()
         self._pending_save: Optional[AsyncTask] = None
         self._saves_succeeded = 0
         self._save_wait_loop: Optional[QEventLoop] = None
+        self.on_metadata_replaced: Optional[Callable[[ImageMetadata], None]] = None
+        """Called with the new `ImageMetadata` whenever a load or new image replaces `metadata`."""
         self.on_save_started: Optional[Callable[[], Callable[[], None]]] = None
         """Called just before a save reads the document. A save that succeeds then calls the function it returned."""
+
+    @property
+    def metadata(self) -> ImageMetadata:
+        """The open file's metadata."""
+        return self._metadata
+
+    @metadata.setter
+    def metadata(self, metadata: ImageMetadata) -> None:
+        self._metadata = metadata
+        if self.on_metadata_replaced is not None:
+            self.on_metadata_replaced(metadata)
 
     def clear_metadata(self) -> None:
         """Forgets the metadata of the previously open file."""

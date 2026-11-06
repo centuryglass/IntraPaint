@@ -73,8 +73,8 @@ def _field_mappings() -> dict[str, _FieldMapping]:
     }
 
 
-def _read_field(params: A1111Parameters, field: str) -> Optional[str]:
-    """Returns a field's saved text. A missing negative prompt reads as empty, as A1111 treats it."""
+def read_field(params: A1111Parameters, field: str) -> Optional[str]:
+    """Returns a field's saved text, or None if missing. A missing negative prompt reads as empty."""
     if field == PROMPT_FIELD:
         return params.prompt
     if field == NEGATIVE_PROMPT_FIELD:
@@ -82,7 +82,8 @@ def _read_field(params: A1111Parameters, field: str) -> Optional[str]:
     return params.get(field)
 
 
-def _write_field(params: A1111Parameters, field: str, text: str) -> None:
+def write_field(params: A1111Parameters, field: str, text: str) -> None:
+    """Writes a field's text, adding the field if it is missing. A missing negative prompt stays missing if empty."""
     if field == PROMPT_FIELD:
         params.prompt = text
     elif field == NEGATIVE_PROMPT_FIELD:
@@ -109,7 +110,7 @@ def apply_to_cache(params: A1111Parameters, fields: tuple[str, ...]) -> list[Rej
     mappings = _field_mappings()
     rejected: list[RejectedField] = []
     for field in fields:
-        text = _read_field(params, field)
+        text = read_field(params, field)
         if text is None:
             continue
         mapping = mappings[field]
@@ -131,11 +132,29 @@ def update_from_cache(params: A1111Parameters, fields: tuple[str, ...]) -> None:
     for field in fields:
         mapping = mappings[field]
         value = cache.get(mapping.cache_key)
-        saved = _read_field(params, field)
+        saved = read_field(params, field)
         if saved is not None:
             try:
                 if mapping.parse(saved) == value:
                     continue
             except (TypeError, ValueError):
                 pass
-        _write_field(params, field, mapping.format(value))
+        write_field(params, field, mapping.format(value))
+
+
+def editor_field_text(field: str) -> str:
+    """Returns the editor's current value for a mapped field, formatted as parameter text."""
+    mapping = _field_mappings()[field]
+    return mapping.format(Cache().get(mapping.cache_key))
+
+
+def differs_from_editor(params: A1111Parameters, field: str) -> bool:
+    """Returns whether a field's saved value is present and differs from the editor's, so Apply would change it."""
+    mapping = _field_mappings()[field]
+    saved = read_field(params, field)
+    if saved is None:
+        return False
+    try:
+        return bool(mapping.parse(saved) != Cache().get(mapping.cache_key))
+    except (TypeError, ValueError):
+        return True

@@ -101,6 +101,7 @@ from src.ui.window.dock_menu import MENU_MOVE_ALL_TO_EDGE, edge_title
 from src.ui.window.dock_placement import DockEdge
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
 from src.ui.window.main_window import MainWindow
+from src.ui.window.metadata_window import MetadataWindow
 from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.window_geometry import restore_window
 from src.undo_stack import UndoStack
@@ -209,6 +210,7 @@ class AppController(MenuBuilder):
         cache.apply_args(args)
         self._layer_dock_panel: Optional[LayerPanel] = None
         self._generator_window: Optional[GeneratorSetupWindow] = None
+        self._metadata_window: Optional[MetadataWindow] = None
 
         # Apply style and theme before creating widgets, which copy the palette and font when they're created:
         apply_appearance_config(config, self)
@@ -1171,15 +1173,17 @@ class AppController(MenuBuilder):
 
     @menu_action(MENU_IMAGE, 'update_metadata_shortcut', 220,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION], separator_before=True)
-    def update_metadata(self, show_messagebox: bool = True) -> None:
-        """Adds the current image generation parameters to the image metadata, to be saved with the image.
-
-        Parameters
-        ----------
-        show_messagebox: bool
-            If true, show a messagebox after the update to let the user know what happened.
-        """
-        self._image_io.update_metadata(show_messagebox)
+    def show_metadata_window(self) -> None:
+        """Opens the window for viewing and editing the image's metadata, or raises it if it is already open."""
+        metadata = self._image_io.metadata
+        if self._metadata_window is None:
+            self._metadata_window = MetadataWindow(metadata, lambda: Cache().get(Cache.LAST_FILE_PATH))
+            self._image_io.on_metadata_replaced = self._metadata_window.set_metadata
+        else:
+            self._metadata_window.set_metadata(metadata)
+        self._metadata_window.show()
+        self._metadata_window.raise_()
+        self._metadata_window.activateWindow()
 
     @menu_action(MENU_GENERATION, 'generator_select_shortcut', 530)
     def show_generator_window(self) -> None:
