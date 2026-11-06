@@ -15,11 +15,14 @@ to the committed file, then replace the committed file with it. A test that pass
 over from an earlier failure.
 """
 import difflib
+import importlib
 import json
 import os
+import pkgutil
+import sys
 import tempfile
 import unittest
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -101,23 +104,73 @@ def release_held_input() -> None:
         widget.deleteLater()
 
 
-def reset_singletons() -> None:
-    """Discards all changes to config values, undo history and app state, and all connections, hotkey bindings and
-    modifier connections held by those singletons."""
-    # pylint: disable=protected-access
-    AppConfig()._reset()
-    KeyConfig()._reset()
-    Cache()._reset()
+def _reset_a1111_config() -> None:
     # A1111Config is only created when the WebUI generator connects. Creating it here would leave it in a state no
     # test expects.
     if A1111Config in Singleton._instances:
-        A1111Config()._reset()
-    UndoStack()._reset()
+        A1111Config()._reset()  # pylint: disable=protected-access
+
+
+def _reset_app_state_tracker() -> None:
+    # Constructing it only to reset it would add a QObject no test asked for.
     if AppStateTracker in Singleton._instances:
-        AppStateTracker()._reset()
+        AppStateTracker()._reset()  # pylint: disable=protected-access
+
+
+def _reset_hotkey_filter() -> None:
     # HotkeyFilter needs a QApplication to construct, and an instance that doesn't exist has no state to reset.
     if HotkeyFilter.shared_instance is not None:
-        HotkeyFilter.shared_instance._reset()
+        HotkeyFilter.shared_instance._reset()  # pylint: disable=protected-access
+
+
+# Maps each global service class (a `Singleton` metaclass user, or a class with a `shared_instance` attribute) to the
+# call that discards its test state. A new global service needs an entry, or `global_services_without_reset` reports it.
+SINGLETON_RESETS: dict[type, Callable[[], None]] = {
+    AppConfig: lambda: AppConfig()._reset(),  # pylint: disable=protected-access
+    KeyConfig: lambda: KeyConfig()._reset(),  # pylint: disable=protected-access
+    Cache: lambda: Cache()._reset(),  # pylint: disable=protected-access
+    A1111Config: _reset_a1111_config,
+    UndoStack: lambda: UndoStack()._reset(),  # pylint: disable=protected-access
+    AppStateTracker: _reset_app_state_tracker,
+    HotkeyFilter: _reset_hotkey_filter,
+}
+
+
+def reset_singletons() -> None:
+    """Discards all changes to config values, undo history and app state, and all connections, hotkey bindings and
+    modifier connections held by the global services in `SINGLETON_RESETS`."""
+    for reset in SINGLETON_RESETS.values():
+        reset()
+
+
+def global_services() -> set[type]:
+    """Returns every global service class under `src/`: each class using the `Singleton` metaclass and each class with
+    a `shared_instance` attribute.
+
+    Imports every module under `src/` to find them, since `Singleton._instances` lists only classes already
+    constructed. Modules that fail to import (missing optional dependencies) are skipped."""
+    src_dir = os.path.join(PROJECT_ROOT, 'src')
+    for module_info in pkgutil.walk_packages([src_dir], prefix='src.'):
+        if module_info.name.startswith('src.glid_3_xl'):
+            continue
+        try:
+            importlib.import_module(module_info.name)
+        except ImportError:
+            continue
+    found: set[type] = set()
+    for module_name, module in list(sys.modules.items()):
+        if not module_name.startswith('src.') or module_name.startswith('src.glid_3_xl'):
+            continue
+        for member in list(vars(module).values()):
+            if (isinstance(member, type) and member.__module__ == module_name
+                    and (isinstance(member, Singleton) or 'shared_instance' in vars(member))):
+                found.add(member)
+    return found
+
+
+def global_services_without_reset() -> set[type]:
+    """Returns the global service classes that have no entry in `SINGLETON_RESETS`."""
+    return global_services() - set(SINGLETON_RESETS)
 
 
 def parentless_widgets() -> set[QWidget]:
