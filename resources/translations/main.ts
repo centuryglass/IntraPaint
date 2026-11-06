@@ -5895,7 +5895,17 @@ Please remember to include the traceback from the Details expander.</source>
     </message>
     <message>
         <location filename="../../src/ui/generated_image_selector.py"/>
-        <source>Image content was added as new layer "{new_layer_name}"</source>
+        <source>The layer or a group around it uses a blend mode, opacity or isolation that would change how the result looks. </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>A layer above it draws over the edited area, which would show the result twice. </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/generated_image_selector.py"/>
+        <source>Image content was added as new layer "{new_layer_name}" at the top of the layer stack</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
