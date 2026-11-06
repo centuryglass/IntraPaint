@@ -7606,8 +7606,18 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
-        <source>{count} x {width}x{height}, {mode}</source>
-        <comment>Generate button summary: image count, size, edit mode</comment>
+        <source>Image to image: ignores the mask</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>Text to image: ignores the canvas</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>{count} x {width}x{height}</source>
+        <comment>Generate button summary: image count and size</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
