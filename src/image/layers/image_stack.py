@@ -487,10 +487,14 @@ class ImageStack(QObject):
                         layer.set_transform(layer.transform * translate)
                         if layer.locked or layer.parent_locked:
                             continue
-                        # Check if transformations need to be flattened to deal with corners rotated out of bounds:
-                        if should_crop_layers:
-                            _, _, _, _, angle = extract_transform_parameters(layer.transform)
-                            if (angle % 90.0) != 0:
+                        # Flatten non-right-angle rotation when a corner would rotate out of bounds, and before
+                        # expanding: padding a rotated layer makes smooth sampling blend its old edge pixels with
+                        # the transparent padding.
+                        _, _, _, _, angle = extract_transform_parameters(layer.transform)
+                        if (angle % 90.0) != 0:
+                            if expand_bounds:
+                                layer.apply_transform()
+                            elif should_crop_layers:
                                 layer_transform_poly = layer.transform.map(QRectF(layer.bounds))
                                 assert isinstance(layer_transform_poly, QPolygonF)
                                 if not bounds.contains(layer_transform_poly.boundingRect().toAlignedRect()):

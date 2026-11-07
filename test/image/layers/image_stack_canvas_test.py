@@ -3,8 +3,6 @@ LayerResizeMode, and fitting single layers and groups to it, with undo and redo.
 import unittest
 from unittest.mock import patch
 
-import pytest
-
 from PySide6.QtCore import QPoint, QRect, QSize, Qt
 from PySide6.QtGui import QColor, QPainter, QTransform
 
@@ -27,9 +25,6 @@ from test.render_assertions import full_render
 
 ERROR_DIALOG = 'src.image.layers.image_stack.show_error_dialog'
 CONFIRM_RENDER_TEXT = 'src.image.layers.non_destructive_layer.request_confirmation'
-
-ISSUE_ROTATED_EXPAND = ('https://github.com/centuryglass/IntraPaint/issues/236: expanding a layer rotated by a'
-                        ' non-right angle changes its edge pixels')
 
 EXPANDED_SIZE = QSize(40, 30)
 EXPAND_OFFSET = QPoint(4, 2)
@@ -164,7 +159,6 @@ class ResizeCanvasTest(ImageStackOpTestCase):
         self._expanded(LayerResizeMode.RESIZE_ALL)
         self.assertEqual(QRect(QPoint(), EXPANDED_SIZE), rotated.transformed_bounds)
 
-    @pytest.mark.xfail(strict=True, reason=ISSUE_ROTATED_EXPAND)
     def test_expand_rotated_layer(self) -> None:
         """RESIZE_ALL grows a layer rotated by 30 degrees to the new canvas without changing its pixels."""
         rotated = self.add_layer('rotated', 3, QSize(10, 10))
