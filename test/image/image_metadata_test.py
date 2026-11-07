@@ -403,6 +403,16 @@ class MetadataFileTest(IntraPaintTestCase):
                 self.assertNotIn(ExifTags.Base.ImageDescription, loaded.exif.get_ifd(IFD.Exif))
                 self.assertEqual(self.PARAMETERS, loaded.parameters)
 
+    def test_non_ascii_parameters_survive_exif_saves(self) -> None:
+        """JPEG, WebP and TIFF saves keep non-ASCII characters in the parameters."""
+        parameters = 'caf\u00e9, \u2605\nSteps: 20, Sampler: Euler a, Seed: 1'
+        for extension in ('jpg', 'webp', 'tiff'):
+            with self.subTest(extension=extension):
+                path = self._path(f'unicode.{extension}')
+                save_image_with_metadata(self.image, path, ImageMetadata({PARAMETERS_KEY: parameters}))
+                _, loaded = load_image(path)
+                self.assertEqual(parameters, loaded.parameters)
+
     def test_user_comment_parameters_load(self) -> None:
         """JPEG and WebP files with A1111's UserComment parameters load them."""
         for extension in ('jpg', 'webp'):

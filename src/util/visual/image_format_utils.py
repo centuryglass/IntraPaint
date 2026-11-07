@@ -87,14 +87,16 @@ BINARY_FORMATS = {'XBM'}
 def _write_data_to_exif_description(exif: Optional[Image.Exif], data: Optional[str]) -> Optional[Image.Exif]:
     """Stores a parameter string as the IFD0 ImageDescription, creating EXIF data if there is none.
 
-    Removes an ImageDescription from the Exif IFD, where IntraPaint 1.4 and earlier also wrote it.
-    `ImageMetadata._exif_description` reads that copy too, so a stale one would shadow the new text.
+    - Non-ASCII text is stored as UTF-8 bytes, which PIL writes unchanged. PIL writes a string's non-ASCII characters
+      as "?". `decode_exif_text` reads the bytes back.
+    - Removes an ImageDescription from the Exif IFD, where IntraPaint 1.4 and earlier also wrote it.
+      `ImageMetadata._exif_description` reads that copy too, so a stale one would shadow the new text.
     """
     if exif is None:
         exif = Image.Exif()
     if data is None:
         return exif
-    exif[ExifTags.Base.ImageDescription.value] = data
+    exif[ExifTags.Base.ImageDescription.value] = data if data.isascii() else data.encode('utf-8')
     if IFD.Exif in exif:
         exif.get_ifd(IFD.Exif).pop(ExifTags.Base.ImageDescription.value, None)
     return exif
