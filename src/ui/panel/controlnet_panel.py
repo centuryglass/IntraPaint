@@ -46,7 +46,8 @@ from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel, PanelLayout
 from src.ui.layout.panel_fit import REQUIRED, FitItem, Orientation, limit_field_width, strip_section_min_width
 from src.ui.modal.modal_utils import open_image_file
 from src.ui.panel.controlnet_widgets import DOT_SIZE, PREVIEW_IMAGE_SIZE, PreviewImage, UnitList
-from src.ui.panel.generators.stable_diffusion_panel import FieldPair, LabeledRows
+from src.ui.panel.generators.field_pair import FieldPair
+from src.ui.panel.generators.stable_diffusion_panel import LabeledRows
 from src.ui.widget.elided_label import ElidedLabel
 from src.ui.widget.parameter_def_widget import create_parameter_field, create_parameter_widget, \
     is_numeric_field_parameter

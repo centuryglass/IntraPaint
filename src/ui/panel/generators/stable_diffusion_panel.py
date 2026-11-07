@@ -25,7 +25,7 @@ from typing import Callable, Optional, Sequence
 
 from PySide6.QtCore import QEvent, QPointF, QSize, Qt, Signal
 from PySide6.QtGui import QFont, QPainter, QPainterPath, QPalette, QResizeEvent
-from PySide6.QtWidgets import (QApplication, QBoxLayout, QComboBox, QFormLayout, QLabel, QPlainTextEdit, QPushButton,
+from PySide6.QtWidgets import (QApplication, QComboBox, QFormLayout, QLabel, QPlainTextEdit, QPushButton,
                                QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
 
 from src.config.application_config import AppConfig
@@ -38,12 +38,13 @@ from src.ui.input_fields.size_field import SizeField
 from src.ui.input_fields.slider_field import SliderField
 from src.ui.layout.dock_panel import QWIDGETSIZE_MAX, DockPanel, PanelDivider, PanelLayout
 from src.ui.layout.label_column_layout import LabelColumnLayout, normalize_row_label
-from src.ui.layout.panel_fit import (REQUIRED, FitItem, Orientation, fresh_minimum_size, limit_field_width,
-                                     held_weakly)
+from src.ui.layout.panel_fit import (REQUIRED, FitItem, Orientation, fresh_minimum_size, limit_field_width)
+from src.ui.panel.generators.field_pair import FieldPair
 from src.ui.panel.generators.prompt_boxes import PromptBoxes
 from src.ui.panel.generators.soft_inpainting_controls import SoftInpaintingControls
 from src.ui.widget.disabled_banner import DisabledBanner
 from src.ui.widget.panel_section import PanelSection
+from src.ui.widget.summary_button import SummaryButton
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL
 from src.util.shared_constants import EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
@@ -98,6 +99,7 @@ TOOLTIP_CLEAR_MEMORY = _tr('Remove cached models from GPU memory in ComfyUI.')
 
 NOTE_IMG2IMG = _tr('Image to image: ignores the mask')
 NOTE_TXT2IMG = _tr('Text to image: ignores the canvas')
+SUMMARY_GENERATE = _tr('{count} x {width}x{height}', 'Generate button summary: image count and size')
 BANNER_FIX_TEXT = _tr('Setup...')
 
 SUMMARY_MASK = _tr('blur {blur}', 'Mask section summary')
@@ -116,8 +118,14 @@ ACTION_COLUMN_MAX_WIDTH = 240
 # columns plans as a side panel:
 PROMPT_MIN_CHARACTERS = 24
 
+# The most text lines the Generate button grows to, in a strip's trailing column and in a side panel's footer:
+STRIP_GENERATE_LINES = 3
+SIDE_GENERATE_LINES = 2
+
 # Denoising strength is the most used value, so its field is taller than the others:
 DENOISING_FIELD_HEIGHT = 30
+# A value as wide as denoising strength shows, which its minimum width has room for beside its label:
+DENOISING_WIDEST_VALUE = 0.88
 
 # Planning collapses sections to their summaries, and hides the edit mode note, from the highest priority number down:
 NOTE_PRIORITY = 1
@@ -278,53 +286,6 @@ class ToggledSliderField(SliderField):
         """Opens the text entry, except while off."""
         if not self.is_off():
             super().begin_edit()
-
-
-class FieldPair(QWidget):
-    """Two fields side by side, or stacked when they don't fit that way. Used as a control with two forms. The pair is
-    capped at `field_max_width`, so its right edge lines up with the other fields' in a wide side panel."""
-
-    def __init__(self, first: QWidget, second: QWidget, parent: Optional[QWidget] = None) -> None:
-        super().__init__(parent)
-        limit_field_width(self)
-        self._layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self)
-        self._layout.setContentsMargins(0, 0, 0, 0)
-        self._layout.addWidget(first)
-        self._layout.addWidget(second)
-        self._fields = (first, second)
-
-    def set_stacked(self, stacked: bool) -> None:
-        """Stacks the fields, or puts them side by side."""
-        self._layout.setDirection(QBoxLayout.Direction.TopToBottom if stacked else QBoxLayout.Direction.LeftToRight)
-
-    def is_stacked(self) -> bool:
-        """Returns whether the fields are stacked."""
-        return self._layout.direction() == QBoxLayout.Direction.TopToBottom
-
-    def fits_side_by_side(self, width: int) -> bool:
-        """Returns whether both fields fit side by side in `width` without eliding their labels or values."""
-        widths = [field.unelided_width() if isinstance(field, NumberField) else field.sizeHint().width()
-                  for field in self._fields]
-        return sum(widths) + max(self._layout.spacing(), 0) <= width
-
-    def forms(self, column_width: Callable[[], Optional[int]]) -> tuple[Callable[[], None], Callable[[], None]]:
-        """Returns the callbacks that put the pair side by side and stacked, for `DockSection.add`.
-
-        `column_width` returns the width of the strip column the pair sits in, or None in a side panel. A side panel
-        stacks the fields when the panel is too narrow for them side by side. A strip has a fixed column width, so it
-        stacks them in both forms when the column is too narrow for both fields' text side by side. A bound method
-        `column_width` is held weakly.
-        """
-        column_width = held_weakly(column_width)
-
-        def _side_by_side() -> None:
-            width = column_width()
-            self.set_stacked(width is not None and not self.fits_side_by_side(width))
-
-        def _stacked() -> None:
-            self.set_stacked(True)
-
-        return _side_by_side, _stacked
 
 
 class HonestSizeHints(QWidget):
@@ -648,6 +609,7 @@ class StableDiffusionPanel(DockPanel):
         cache = Cache()
         self._denoising_field = config_slider_field(cache, Cache.DENOISING_STRENGTH)
         self._denoising_field.setFixedHeight(DENOISING_FIELD_HEIGHT)
+        self._widen_denoising_field()
         self._cfg_scale_field = config_slider_field(cache, Cache.GUIDANCE_SCALE, label=LABEL_CFG_SCALE)
         self._steps_field = config_slider_field(cache, Cache.SAMPLING_STEPS, label=LABEL_STEPS)
         self._sampling_pair = FieldPair(self._cfg_scale_field, self._steps_field)
@@ -675,9 +637,6 @@ class StableDiffusionPanel(DockPanel):
             cache.connect(context_field, limit_context_key, _sync_limit_context_toggle)
         _sync_limit_context_toggle()
         self._action_pair = FieldPair(self._batch_size_field, context_field)
-        # Batch size sits at the left edge, under CFG scale, while context is hidden:
-        for field in (self._batch_size_field, context_field):
-            self._action_pair.layout().setAlignment(field, Qt.AlignmentFlag.AlignLeft)
         self.add_fit_item(FitItem(REQUIRED, 2), self._apply_pair_form)
 
         # The note repeats what the edit mode selector shows, so it hides when the action block has no room for it:
@@ -696,12 +655,14 @@ class StableDiffusionPanel(DockPanel):
         # The backend name sits above Generate, with the mode note, as a status line for the next generation:
         self._backend_label = QLabel(BACKEND_DESCRIPTION_WEBUI if self._webui else BACKEND_DESCRIPTION_COMFYUI)
         self._backend_label.setForegroundRole(QPalette.ColorRole.PlaceholderText)
-        self._generate_button = QPushButton(BUTTON_TEXT_GENERATE)
+        self._generate_button = SummaryButton(BUTTON_TEXT_GENERATE)
         # Capped like the fields above it, so its right edge lines up with theirs in a wide side panel:
         limit_field_width(self._generate_button)
         self._generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
         set_primary_button(self._generate_button)
         self._generate_button.clicked.connect(self.generate_signal)
+        for summary_key in (Cache.GENERATION_SIZE, Cache.BATCH_COUNT, Cache.BATCH_SIZE):
+            cache.connect(self._generate_button, summary_key, self._update_generate_summary)
 
         self._action_block = QWidget()
         block_layout = QVBoxLayout(self._action_block)
@@ -725,18 +686,37 @@ class StableDiffusionPanel(DockPanel):
         self.set_footer(self._footer_holder)
         self.set_trailing_scrolls(False)
 
+    def _widen_denoising_field(self) -> None:
+        """Gives denoising strength room for a two-decimal value such as 0.45, so its label doesn't elide while one is
+        set."""
+        field = self._denoising_field
+        field.setMinimumWidth(field.unelided_width((DENOISING_WIDEST_VALUE,)))
+
     def _apply_pair_form(self, form: Optional[int]) -> None:
         stacked = form == PAIR_FORM_STACKED or self.orientation == Orientation.STRIP
         for pair in (self._sampling_pair, self._action_pair):
             pair.set_stacked(stacked)
-
-    def _update_tiling_button(self, *_) -> None:
-        self._tiling_button.setVisible(self._webui and Cache().tiling_in_effect())
-        self.refit()
+        # Side by side, batch size sits at the left edge, under CFG scale, while context is hidden. Stacked, both fields
+        # take the pair's full width like the fields above them:
+        alignment = Qt.AlignmentFlag(0) if stacked else Qt.AlignmentFlag.AlignLeft
+        for field in (self._batch_size_field, self._context_field):
+            self._action_pair.layout().setAlignment(field, alignment)
 
     def _apply_note_form(self, form: Optional[int]) -> None:
         self._note_fits = form is not None
         self._mode_note.setVisible(self._note_fits and self._mode_note.text() != '')
+
+    def _update_generate_summary(self, *_) -> None:
+        """Shows what the next generation will make on the Generate button: image count and size."""
+        cache = Cache()
+        size = cache.get(Cache.GENERATION_SIZE)
+        count = cache.get(Cache.BATCH_COUNT) * cache.get(Cache.BATCH_SIZE)
+        self._generate_button.set_summary(SUMMARY_GENERATE.format(
+            count=count, width=size.width(), height=size.height()))
+
+    def _update_tiling_button(self, *_) -> None:
+        self._tiling_button.setVisible(self._webui and Cache().tiling_in_effect())
+        self.refit()
 
     # ---------------------------------------------------------------------------------------------------------------
     # Backend-specific content
@@ -821,6 +801,7 @@ class StableDiffusionPanel(DockPanel):
         notes = {EDIT_MODE_IMG2IMG: NOTE_IMG2IMG, EDIT_MODE_TXT2IMG: NOTE_TXT2IMG}
         self._mode_note.setText(notes.get(edit_mode, ''))
         self._mode_note.setVisible(self._note_fits and not inpaint)
+        self._update_generate_summary()
         self._apply_caution(not inpaint)
         self.refit()
 
@@ -843,6 +824,8 @@ class StableDiffusionPanel(DockPanel):
     def changeEvent(self, event: QEvent) -> None:  # pylint: disable=invalid-name
         """Takes the caution color from the new style when the style changes."""
         super().changeEvent(event)
+        if event.type() == QEvent.Type.FontChange and hasattr(self, '_denoising_field'):
+            self._widen_denoising_field()
         if event.type() == QEvent.Type.StyleChange:
             self._apply_caution(Cache().get(Cache.EDIT_MODE) != EDIT_MODE_INPAINT)
             self._apply_rule_caution()
@@ -883,6 +866,9 @@ class StableDiffusionPanel(DockPanel):
             self._footer_holder.layout().addWidget(self._action_block)
         self._action_spacer.changeSize(0, 0, QSizePolicy.Policy.Minimum,
                                        QSizePolicy.Policy.Expanding if strip else QSizePolicy.Policy.Fixed)
+        # A strip's trailing column lets Generate stretch to fill spare height. A side panel gives it room for its
+        # summary line only, and spare height goes to the sections:
+        self._generate_button.set_max_lines(STRIP_GENERATE_LINES if strip else SIDE_GENERATE_LINES)
         self._action_block.layout().invalidate()
         # Reparenting hides a widget:
         self._action_block.show()

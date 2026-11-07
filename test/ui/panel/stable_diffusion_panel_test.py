@@ -18,7 +18,8 @@ from src.ui.panel.generators.prompt_boxes import (NEGATIVE_PROMPT_MAX_LINES, NEG
 from src.ui.panel.generators.stable_diffusion_panel import (NOTE_IMG2IMG, NOTE_TXT2IMG, CONTEXT_OFF,
                                                             SECTION_TITLE_ADVANCED, SECTION_TITLE_MASK,
                                                             SECTION_TITLE_PROMPT, SECTION_TITLE_SAMPLING,
-                                                            SECTION_TITLE_SIZE, FieldPair, StableDiffusionPanel)
+                                                            SECTION_TITLE_SIZE, StableDiffusionPanel)
+from src.ui.panel.generators.field_pair import FieldPair
 from src.ui.panel.generators.webui_advanced_controls import VARIATION_OFF, WebUIAdvancedControls
 from src.ui.widget.panel_section import PanelSection
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
@@ -81,8 +82,8 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         self.assertEqual(control.currentData(), EDIT_MODE_IMG2IMG)
 
     def test_action_block_and_mask_section_follow_the_edit_mode(self) -> None:
-        """Denoising shows in Inpaint and Image to image, context and the Mask section in Inpaint only, and a note
-        above Generate names any other mode. CFG scale, steps and batch size show in every mode."""
+        """Denoising shows in Inpaint and Image to image, context and the Mask section in Inpaint only. CFG scale,
+        steps and batch size show in every mode, and a note above Generate names any other mode."""
         cache = Cache()
         denoising, cfg_scale, steps, batch_size, context = self.panel.action_fields
         mask = self._section(SECTION_TITLE_MASK)
@@ -103,6 +104,37 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
                 self.assertEqual(self._visible(self.panel.mode_note), note is not None)
                 if note is not None:
                     self.assertEqual(self.panel.mode_note.text(), note)
+
+    def test_generate_summary_follows_size_and_counts(self) -> None:
+        """The Generate button's summary shows the image count and the generation size."""
+        cache = Cache()
+        cache.set(Cache.BATCH_COUNT, 5)
+        cache.set(Cache.BATCH_SIZE, 1)
+        cache.set(Cache.GENERATION_SIZE, QSize(512, 768))
+        self.assertTrue(self.panel.generate_button.summary.startswith('5 x 512x768'))
+
+    def test_denoising_field_fits_a_two_decimal_value_without_eliding(self) -> None:
+        """The denoising field's minimum width holds its label and a value such as 0.45."""
+        field = self.panel.action_fields[0]
+        field.set_value(0.45)
+        self.assertGreaterEqual(field.minimumWidth(), field.unelided_width((0.45,)))
+        _host(self.panel, STRIP, QSize(1100, 400))
+        self.assertGreaterEqual(field.width(), field.unelided_width((0.45,)))
+
+    def test_stacked_action_fields_fill_the_column(self) -> None:
+        """In a strip, batch size and context are as wide as the denoising field above them."""
+        _host(self.panel, STRIP, QSize(1100, 400))
+        denoising, _, _, batch_size, context = self.panel.action_fields
+        self.assertEqual(batch_size.width(), denoising.width())
+        self.assertEqual(context.width(), denoising.width())
+
+    def test_generate_button_takes_only_its_summary_line_in_a_side_panel(self) -> None:
+        """A side panel's Generate button grows to two lines and no further, and a strip's grows to three."""
+        button = self.panel.generate_button
+        _host(self.panel, SIDE, QSize(340, 1200))
+        self.assertEqual(button.maximumHeight(), button.sizeHint().height())
+        _host(self.panel, STRIP, QSize(1100, 400))
+        self.assertGreater(button.maximumHeight(), button.sizeHint().height())
 
     def test_edit_mode_selector_takes_the_caution_color_outside_inpaint(self) -> None:
         """The header's mode selector draws its text in the caution color in any mode but Inpaint."""

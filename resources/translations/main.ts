@@ -7626,6 +7626,12 @@ Keys: {decrease} / {increase}</source>
     </message>
     <message>
         <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
+        <source>{count} x {width}x{height}</source>
+        <comment>Generate button summary: image count and size</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/panel/generators/stable_diffusion_panel.py"/>
         <source>Setup...</source>
         <translation type="unfinished"></translation>
     </message>
