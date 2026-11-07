@@ -13,13 +13,13 @@
   "narrow": {
     "problems": [
       "overlap: QWidget[2]/QWidget/FieldPair[0]/SliderField[0] and QWidget[2]/QWidget/FieldPair[0]/SliderField[1] share 206x2",
-      "overlap: QWidget[2]/QWidget/FieldPair[1]/SliderField and QWidget[2]/QWidget/FieldPair[1]/ToggledSliderField share 150x2",
+      "overlap: QWidget[2]/QWidget/FieldPair[1]/SliderField and QWidget[2]/QWidget/FieldPair[1]/ToggledSliderField share 206x2",
       "squeezed: QWidget[2] is 206x173, minimum 157x207",
       "squeezed: QWidget[2]/QWidget is 206x173, minimum 157x207",
       "squeezed: QWidget[2]/QWidget/FieldPair[0] is 206x37, minimum 110x54",
       "clipped: QWidget[2]/QWidget/FieldPair[0]/SliderField[1] shows 206x15 of 206x24",
       "squeezed: QWidget[2]/QWidget/FieldPair[1] is 206x37, minimum 110x54",
-      "clipped: QWidget[2]/QWidget/FieldPair[1]/ToggledSliderField shows 150x15 of 150x24"
+      "clipped: QWidget[2]/QWidget/FieldPair[1]/ToggledSliderField shows 206x15 of 206x24"
     ],
     "size": [
       228,

@@ -14,7 +14,7 @@ label + slider + spin box rows.
 - Colors and fonts are cached and rebuilt on palette and font changes.
 """
 import math
-from typing import Optional
+from typing import Optional, Sequence
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import (QColor, QFocusEvent, QFont, QFontMetrics, QHelpEvent, QHoverEvent, QKeyEvent, QMouseEvent,
@@ -320,12 +320,12 @@ class NumberField(QWidget):
         """Returns how much of the field the fill covers, or None to draw no fill. Subclasses with a fill override."""
         return None
 
-    def unelided_width(self) -> int:
-        """Returns the width that shows the label and the widest value text in the field's range without eliding
-        either."""
+    def unelided_width(self, extra_values: Sequence[int | float] = ()) -> int:
+        """Returns the width that shows the label and the widest value text in the field's range, or of `extra_values`,
+        without eliding either."""
         metrics = QFontMetrics(self._colors.font)
         value_width = max(metrics.horizontalAdvance(self.value_text(value))
-                          for value in (self._minimum, self._maximum, self._value))
+                          for value in (self._minimum, self._maximum, self._value, *extra_values))
         label_width = metrics.horizontalAdvance(self._label) + TEXT_MARGIN if self._label != '' else 0
         return self.width() - self._text_rect().width() + label_width + value_width
 

@@ -117,7 +117,16 @@ class StableDiffusionPanelTest(IntraPaintTestCase):
         """The denoising field's minimum width holds its label and a value such as 0.45."""
         field = self.panel.action_fields[0]
         field.set_value(0.45)
-        self.assertGreaterEqual(field.minimumWidth(), field.unelided_width())
+        self.assertGreaterEqual(field.minimumWidth(), field.unelided_width((0.45,)))
+        _host(self.panel, STRIP, QSize(1100, 400))
+        self.assertGreaterEqual(field.width(), field.unelided_width((0.45,)))
+
+    def test_stacked_action_fields_fill_the_column(self) -> None:
+        """In a strip, batch size and context are as wide as the denoising field above them."""
+        _host(self.panel, STRIP, QSize(1100, 400))
+        denoising, _, _, batch_size, context = self.panel.action_fields
+        self.assertEqual(batch_size.width(), denoising.width())
+        self.assertEqual(context.width(), denoising.width())
 
     def test_generate_button_takes_only_its_summary_line_in_a_side_panel(self) -> None:
         """A side panel's Generate button grows to two lines and no further, and a strip's grows to three."""

@@ -124,6 +124,8 @@ SIDE_GENERATE_LINES = 2
 
 # Denoising strength is the most used value, so its field is taller than the others:
 DENOISING_FIELD_HEIGHT = 30
+# A value as wide as denoising strength shows, which its minimum width has room for beside its label:
+DENOISING_WIDEST_VALUE = 0.88
 
 # Planning collapses sections to their summaries, and hides the edit mode note, from the highest priority number down:
 NOTE_PRIORITY = 1
@@ -635,9 +637,6 @@ class StableDiffusionPanel(DockPanel):
             cache.connect(context_field, limit_context_key, _sync_limit_context_toggle)
         _sync_limit_context_toggle()
         self._action_pair = FieldPair(self._batch_size_field, context_field)
-        # Batch size sits at the left edge, under CFG scale, while context is hidden:
-        for field in (self._batch_size_field, context_field):
-            self._action_pair.layout().setAlignment(field, Qt.AlignmentFlag.AlignLeft)
         self.add_fit_item(FitItem(REQUIRED, 2), self._apply_pair_form)
 
         # The note repeats what the edit mode selector shows, so it hides when the action block has no room for it:
@@ -688,15 +687,20 @@ class StableDiffusionPanel(DockPanel):
         self.set_trailing_scrolls(False)
 
     def _widen_denoising_field(self) -> None:
-        """Gives denoising strength room for one more digit than its widest range value, so its label doesn't elide
-        while a two-decimal value such as 0.45 is set."""
+        """Gives denoising strength room for a two-decimal value such as 0.45, so its label doesn't elide while one is
+        set."""
         field = self._denoising_field
-        field.setMinimumWidth(field.unelided_width() + field.fontMetrics().horizontalAdvance('0'))
+        field.setMinimumWidth(field.unelided_width((DENOISING_WIDEST_VALUE,)))
 
     def _apply_pair_form(self, form: Optional[int]) -> None:
         stacked = form == PAIR_FORM_STACKED or self.orientation == Orientation.STRIP
         for pair in (self._sampling_pair, self._action_pair):
             pair.set_stacked(stacked)
+        # Side by side, batch size sits at the left edge, under CFG scale, while context is hidden. Stacked, both fields
+        # take the pair's full width like the fields above them:
+        alignment = Qt.AlignmentFlag(0) if stacked else Qt.AlignmentFlag.AlignLeft
+        for field in (self._batch_size_field, self._context_field):
+            self._action_pair.layout().setAlignment(field, alignment)
 
     def _apply_note_form(self, form: Optional[int]) -> None:
         self._note_fits = form is not None
