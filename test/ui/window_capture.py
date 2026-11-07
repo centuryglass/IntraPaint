@@ -338,6 +338,17 @@ def _prompt_styles(_controller: 'AppController') -> QWidget:
     return window
 
 
+def _metadata_window(_controller: 'AppController') -> QWidget:
+    # pylint: disable=import-outside-toplevel
+    from src.image.image_metadata import ImageMetadata
+    from src.ui.window.metadata_window import MetadataWindow
+    parameters = ('a lighthouse at dusk\nNegative prompt: blurry\n'
+                  'Steps: 25, Sampler: Euler a, CFG scale: 7, Seed: 1234, Size: 512x512, Model: sample_model, '
+                  'Lora hashes: "add_detail: 7c6bad76eb54"')
+    metadata = ImageMetadata({'parameters': parameters})
+    return MetadataWindow(metadata, lambda: 'sample.png')
+
+
 def _login(_controller: 'AppController') -> QWidget:
     # pylint: disable=import-outside-toplevel
     from src.ui.modal.login_modal import LoginModal
@@ -419,6 +430,7 @@ def window_scenes(controller: 'AppController') -> list[WindowScene]:
         WindowScene('generator_setup', _generator_setup, lambda _w: fractional_size(), resizable=True),
         WindowScene('lora_models', _lora_window, resizable=True, full_content=True),
         WindowScene('prompt_styles', _prompt_styles, resizable=True, context=_prompt_styles_cache),
+        WindowScene('metadata', _metadata_window, lambda window: window.size(), resizable=True),
         WindowScene('login', _login),
         *_settings_scenes(controller),
     ]

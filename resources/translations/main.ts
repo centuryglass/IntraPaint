@@ -9732,6 +9732,379 @@ Click to pick, or press Esc to cancel</source>
     </message>
 </context>
 <context>
+    <name>ui.window.metadata_window</name>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Image metadata</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Generation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>All metadata</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Other</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Raw text</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Show and edit the saved parameters text directly.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Prompt</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Negative prompt</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Apply to editor</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Apply</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Replace the editor setting with the saved value.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Update from editor</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Update</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Replace the saved value with the editor setting.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Apply all</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Replace every mapped editor setting with its saved value.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Update all</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Replace every mapped saved value with the editor setting. Other saved fields are kept.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Copy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Copy the saved parameters text to the clipboard.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Field</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Value</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Editor</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>The editor setting, shown where it differs from the saved value.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>(empty)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Source</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Value of "{name}"</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Select a row to see its full value.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>(read-only)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Add field</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Generation parameters need a settings line first. Use "Update all" to create one.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Remove field</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Select a field to remove. A1111 reads a settings line with fewer than three fields as part of the prompt, so the last three can't be removed.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>New field</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Add text entry</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Remove</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Select a text entry or EXIF tag to remove.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>new_entry</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Remove location data</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Remove the EXIF GPS tags. IPTC and XMP data, including any place names, are never saved.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Remove all metadata</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Remove every text entry, EXIF tag and embedded data block.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Apply changes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Close</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Discard changes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Changes are not kept until you click "Apply changes". Saving the image writes applied changes.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>This image has no generation parameters. Use "Update all" to add the editor's settings.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>This image has no metadata.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>This image has no ComfyUI, NovelAI or InvokeAI data.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>{source}: nodes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Not applied: {field} "{value}" ({reason})</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Text</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>A PNG or OpenRaster text entry, or a JPEG or GIF comment.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>EXIF</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>EXIF: Exif</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>EXIF: GPS</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>EXIF: Interop</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>IPTC</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>XMP</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>ICC</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>XMP packet</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Color profile</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Embedded. The image is converted to sRGB, and saved without a profile.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>The image hasn't been saved yet. Formats that keep metadata: {formats}.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>This image has no metadata to save.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>{file_format} files keep no metadata. To keep it, save as one of: {formats}.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Saving as {file_format} keeps all of this metadata.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Saving as {file_format} keeps: {kept}. It drops: {dropped}.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>Saving as {file_format} drops all of this metadata: {dropped}.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>generation parameters</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>comment</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>text entries ({keys})</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/window/metadata_window.py"/>
+        <source>EXIF tags</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ui.window.navigation_window</name>
     <message>
         <location filename="../../src/ui/window/navigation_window.py"/>

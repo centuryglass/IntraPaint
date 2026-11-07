@@ -4,6 +4,7 @@ from PySide6.QtCore import QSize
 from src.config.cache import Cache
 from src.image.image_metadata import A1111Parameters
 from src.image.metadata_cache_fields import cache_field_keys, apply_to_cache, update_from_cache, PROMPT_FIELD, \
+    differs_from_editor, SEED_FIELD, \
     NEGATIVE_PROMPT_FIELD, SAMPLER_FIELD, SCHEDULE_TYPE_FIELD, MODEL_FIELD, STEPS_FIELD
 from test.base_test_case import IntraPaintTestCase
 
@@ -90,6 +91,14 @@ class MetadataCacheFieldsTest(IntraPaintTestCase):
         Cache().set(Cache.GUIDANCE_SCALE, 7.0)
         update_from_cache(params, ('CFG scale',))
         self.assertEqual('p\nSteps: 20, Sampler: Euler a, CFG scale: 7', params.serialize())
+
+    def test_string_seed_matches_saved_seed(self) -> None:
+        """A seed the spinbox stored as a string compares equal to the same saved seed."""
+        Cache().set(Cache.SEED, '-1')
+        params = A1111Parameters.parse('p\nSteps: 20, Sampler: Euler a, Seed: -1')
+        self.assertFalse(differs_from_editor(params, SEED_FIELD))
+        Cache().set(Cache.SEED, '5')
+        self.assertTrue(differs_from_editor(params, SEED_FIELD))
 
     def test_update_empty_negative_prompt_adds_no_line(self) -> None:
         params = A1111Parameters.parse('p\nSteps: 20, Sampler: Euler a, CFG scale: 7')
