@@ -160,11 +160,14 @@ class ResizeCanvasTest(ImageStackOpTestCase):
         self.assertEqual(QRect(QPoint(), EXPANDED_SIZE), rotated.transformed_bounds)
 
     def test_expand_rotated_layer(self) -> None:
-        """RESIZE_ALL grows a layer rotated by 30 degrees to the new canvas without changing its pixels."""
+        """RESIZE_ALL leaves a layer rotated by 30 degrees at its size and rotation, moving it with the canvas."""
         rotated = self.add_layer('rotated', 3, QSize(10, 10))
-        rotated.set_transform(QTransform().rotate(30) * QTransform.fromTranslate(16, 4))
+        rotation = QTransform().rotate(30) * QTransform.fromTranslate(16, 4)
+        rotated.set_transform(rotation)
         self.image_stack.move_layer(rotated, self.image_stack.layer_stack, 0)
         self._expanded(LayerResizeMode.RESIZE_ALL)
+        self.assertEqual(QSize(10, 10), rotated.size)
+        self.assertEqual(rotation * QTransform.fromTranslate(EXPAND_OFFSET.x(), EXPAND_OFFSET.y()), rotated.transform)
 
     def test_crop_rotated_layer(self) -> None:
         """Cropping through a layer rotated by 45 degrees bakes its rotation into its pixels, leaving the cropped
