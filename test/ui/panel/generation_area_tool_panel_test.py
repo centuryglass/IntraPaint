@@ -10,6 +10,7 @@ from src.controller.generation_area_controller import apply_generation_area_fram
 from src.image.layers.image_stack import ImageStack
 from src.ui.ink_style import caution_color
 from src.ui.input_fields.geometry_block import HEIGHT, WIDTH, X, Y
+from src.ui.layout.panel_fit import Orientation
 from src.ui.panel.tool_control_panels.generation_area_tool_panel import GenerationAreaToolPanel, EMPTY_SLOT_TEXT, \
     RECENT_FRAME_COUNT
 from src.util.generation_area_utils import RESOLUTION_RULE_MANUAL, RESOLUTION_RULE_MATCH_AREA
@@ -186,3 +187,13 @@ class GenerationAreaToolPanelTest(IntraPaintTestCase):
                 label = self.panel.rule_label
                 shown = label.palette().color(label.foregroundRole())
                 self.assertEqual(shown == color, cautioned)
+
+    def test_tall_strip_stacks_sections(self) -> None:
+        """A strip at its base height needs more than one column, and a tall strip stacks every section in one."""
+        # pylint: disable=protected-access
+        self.panel.set_resolution_shown(True)
+        base = self.panel.fit_base_size(Orientation.STRIP)
+        self.panel.set_fit_space(Orientation.STRIP, QSize(2000, base.height()))
+        self.assertGreater(len(self.panel._packer.plan), 1)
+        self.panel.set_fit_space(Orientation.STRIP, QSize(2000, 2000))
+        self.assertEqual([len(column) for column in self.panel._packer.plan], [3])

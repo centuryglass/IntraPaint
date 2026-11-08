@@ -29,7 +29,7 @@ The panel is a `src.ui.layout.panel_fit.FitContent`, planned in the space the To
 """
 from typing import Optional
 
-from PySide6.QtCore import QEvent, QRegularExpression, QSize, Qt
+from PySide6.QtCore import QEvent, QRegularExpression, Qt
 from PySide6.QtGui import QBrush, QColor, QIcon, QPalette, QPen, QRegularExpressionValidator
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
                                QSizePolicy, QWidget)

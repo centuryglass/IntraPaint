@@ -61,23 +61,7 @@
     ]
   },
   "strip_minimum": {
-    "problems": [
-      "squeezed: PanelSection[0] is 75x108, minimum 128x50",
-      "squeezed: PanelSection[0]/QWidget is 75x54, minimum 128x24",
-      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 75x24, minimum 128x24",
-      "squeezed: PanelSection[1] is 75x108, minimum 182x102",
-      "squeezed: PanelSection[1]/QWidget is 75x82, minimum 182x76",
-      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 35x30, minimum 96x30",
-      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 34x30, minimum 80x30",
-      "squeezed: PanelSection[1]/QWidget/QWidget is 75x46, minimum 133x40",
-      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Position: -, -' shows 75x20 of 133x20",
-      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Size: - x -' shows 75x20 of 133x20",
-      "squeezed: PanelSection[2] is 75x108, minimum 237x108",
-      "squeezed: PanelSection[2]/QWidget is 75x82, minimum 237x82",
-      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 75x24, minimum 237x24",
-      "clipped: PanelSection[2]/QWidget/SliderField shows 75x24 of 110x24",
-      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample merged' is 75x22, minimum 117x22"
-    ],
+    "problems": [],
     "size": [
       255,
       313
@@ -85,22 +69,22 @@
   },
   "strip_narrow": {
     "problems": [
-      "squeezed: PanelSection[0] is 33x108, minimum 128x50",
-      "squeezed: PanelSection[0]/QWidget is 33x54, minimum 128x24",
-      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 33x24, minimum 128x24",
-      "squeezed: PanelSection[0]/KeyHintLabel 'Shift+Q' is 13x54, minimum 45x21",
-      "squeezed: PanelSection[1] is 32x108, minimum 182x102",
-      "squeezed: PanelSection[1]/QWidget is 32x82, minimum 182x76",
-      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 13x30, minimum 96x30",
-      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 13x30, minimum 80x30",
-      "squeezed: PanelSection[1]/QWidget/QWidget is 32x46, minimum 133x40",
-      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Position: -, -' shows 32x20 of 133x20",
-      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Size: - x -' shows 32x20 of 133x20",
-      "squeezed: PanelSection[2] is 32x108, minimum 237x108",
-      "squeezed: PanelSection[2]/QWidget is 32x82, minimum 237x82",
-      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 32x24, minimum 237x24",
-      "clipped: PanelSection[2]/QWidget/SliderField shows 32x24 of 110x24",
-      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample merged' is 32x22, minimum 117x22"
+      "squeezed: QWidget is 109x295, minimum 237x272",
+      "squeezed: QWidget/PanelSection[0] is 109x50, minimum 128x50",
+      "squeezed: QWidget/PanelSection[0]/QWidget is 109x24, minimum 128x24",
+      "squeezed: QWidget/PanelSection[0]/QWidget/SelectionModeBar is 109x24, minimum 128x24",
+      "squeezed: QWidget/PanelSection[1] is 109x108, minimum 237x108",
+      "squeezed: QWidget/PanelSection[1]/QWidget is 109x82, minimum 237x82",
+      "squeezed: QWidget/PanelSection[1]/QWidget/SegmentedControl is 109x24, minimum 237x24",
+      "clipped: QWidget/PanelSection[1]/QWidget/SliderField shows 109x24 of 110x24",
+      "squeezed: QWidget/PanelSection[1]/QWidget/CheckBox 'Sample merged' is 109x22, minimum 117x22",
+      "squeezed: QWidget/PanelSection[2] is 109x102, minimum 182x102",
+      "squeezed: QWidget/PanelSection[2]/QWidget is 109x76, minimum 182x76",
+      "squeezed: QWidget/PanelSection[2]/QWidget/QPushButton 'Select all' is 52x30, minimum 96x30",
+      "squeezed: QWidget/PanelSection[2]/QWidget/QPushButton 'Clear' is 51x30, minimum 80x30",
+      "squeezed: QWidget/PanelSection[2]/QWidget/QWidget is 109x40, minimum 133x40",
+      "clipped: QWidget/PanelSection[2]/QWidget/QWidget/QLabel 'Position: -, -' shows 109x17 of 133x17",
+      "clipped: QWidget/PanelSection[2]/QWidget/QWidget/QLabel 'Size: - x -' shows 109x17 of 133x17"
     ],
     "size": [
       127,
@@ -108,23 +92,7 @@
     ]
   },
   "strip_preferred": {
-    "problems": [
-      "squeezed: PanelSection[0] is 75x108, minimum 128x50",
-      "squeezed: PanelSection[0]/QWidget is 75x54, minimum 128x24",
-      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 75x24, minimum 128x24",
-      "squeezed: PanelSection[1] is 75x108, minimum 182x102",
-      "squeezed: PanelSection[1]/QWidget is 75x82, minimum 182x76",
-      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 35x30, minimum 96x30",
-      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 34x30, minimum 80x30",
-      "squeezed: PanelSection[1]/QWidget/QWidget is 75x46, minimum 133x40",
-      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Position: -, -' shows 75x20 of 133x20",
-      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Size: - x -' shows 75x20 of 133x20",
-      "squeezed: PanelSection[2] is 75x108, minimum 237x108",
-      "squeezed: PanelSection[2]/QWidget is 75x82, minimum 237x82",
-      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 75x24, minimum 237x24",
-      "clipped: PanelSection[2]/QWidget/SliderField shows 75x24 of 110x24",
-      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample merged' is 75x22, minimum 117x22"
-    ],
+    "problems": [],
     "size": [
       255,
       313
@@ -132,21 +100,24 @@
   },
   "strip_short": {
     "problems": [
-      "squeezed: PanelSection[0] is 75x108, minimum 128x50",
-      "squeezed: PanelSection[0]/QWidget is 75x54, minimum 128x24",
-      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 75x24, minimum 128x24",
-      "squeezed: PanelSection[1] is 75x108, minimum 182x102",
-      "squeezed: PanelSection[1]/QWidget is 75x82, minimum 182x76",
-      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 35x30, minimum 96x30",
-      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 34x30, minimum 80x30",
-      "squeezed: PanelSection[1]/QWidget/QWidget is 75x46, minimum 133x40",
-      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Position: -, -' shows 75x20 of 133x20",
-      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Size: - x -' shows 75x20 of 133x20",
-      "squeezed: PanelSection[2] is 75x108, minimum 237x108",
-      "squeezed: PanelSection[2]/QWidget is 75x82, minimum 237x82",
-      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 75x24, minimum 237x24",
-      "clipped: PanelSection[2]/QWidget/SliderField shows 75x24 of 110x24",
-      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample merged' is 75x22, minimum 117x22"
+      "squeezed: QWidget[0] is 75x138, minimum 128x50",
+      "squeezed: QWidget[0]/PanelSection is 75x50, minimum 128x50",
+      "squeezed: QWidget[0]/PanelSection/QWidget is 75x24, minimum 128x24",
+      "squeezed: QWidget[0]/PanelSection/QWidget/SelectionModeBar is 75x24, minimum 128x24",
+      "squeezed: QWidget[1] is 75x138, minimum 237x108",
+      "squeezed: QWidget[1]/PanelSection is 75x108, minimum 237x108",
+      "squeezed: QWidget[1]/PanelSection/QWidget is 75x82, minimum 237x82",
+      "squeezed: QWidget[1]/PanelSection/QWidget/SegmentedControl is 75x24, minimum 237x24",
+      "clipped: QWidget[1]/PanelSection/QWidget/SliderField shows 75x24 of 110x24",
+      "squeezed: QWidget[1]/PanelSection/QWidget/CheckBox 'Sample merged' is 75x22, minimum 117x22",
+      "squeezed: QWidget[2] is 75x138, minimum 182x102",
+      "squeezed: QWidget[2]/PanelSection is 75x102, minimum 182x102",
+      "squeezed: QWidget[2]/PanelSection/QWidget is 75x76, minimum 182x76",
+      "squeezed: QWidget[2]/PanelSection/QWidget/QPushButton 'Select all' is 35x30, minimum 96x30",
+      "squeezed: QWidget[2]/PanelSection/QWidget/QPushButton 'Clear' is 34x30, minimum 80x30",
+      "squeezed: QWidget[2]/PanelSection/QWidget/QWidget is 75x40, minimum 133x40",
+      "clipped: QWidget[2]/PanelSection/QWidget/QWidget/QLabel 'Position: -, -' shows 75x17 of 133x17",
+      "clipped: QWidget[2]/PanelSection/QWidget/QWidget/QLabel 'Size: - x -' shows 75x17 of 133x17"
     ],
     "size": [
       255,
@@ -154,23 +125,7 @@
     ]
   },
   "strip_tall": {
-    "problems": [
-      "squeezed: PanelSection[0] is 75x108, minimum 128x50",
-      "squeezed: PanelSection[0]/QWidget is 75x54, minimum 128x24",
-      "squeezed: PanelSection[0]/QWidget/SelectionModeBar is 75x24, minimum 128x24",
-      "squeezed: PanelSection[1] is 75x108, minimum 182x102",
-      "squeezed: PanelSection[1]/QWidget is 75x82, minimum 182x76",
-      "squeezed: PanelSection[1]/QWidget/QPushButton 'Select all' is 35x30, minimum 96x30",
-      "squeezed: PanelSection[1]/QWidget/QPushButton 'Clear' is 34x30, minimum 80x30",
-      "squeezed: PanelSection[1]/QWidget/QWidget is 75x46, minimum 133x40",
-      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Position: -, -' shows 75x20 of 133x20",
-      "clipped: PanelSection[1]/QWidget/QWidget/QLabel 'Size: - x -' shows 75x20 of 133x20",
-      "squeezed: PanelSection[2] is 75x108, minimum 237x108",
-      "squeezed: PanelSection[2]/QWidget is 75x82, minimum 237x82",
-      "squeezed: PanelSection[2]/QWidget/SegmentedControl is 75x24, minimum 237x24",
-      "clipped: PanelSection[2]/QWidget/SliderField shows 75x24 of 110x24",
-      "squeezed: PanelSection[2]/QWidget/CheckBox 'Sample merged' is 75x22, minimum 117x22"
-    ],
+    "problems": [],
     "size": [
       255,
       1200

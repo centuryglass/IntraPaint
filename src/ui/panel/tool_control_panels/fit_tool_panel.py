@@ -157,6 +157,14 @@ class FitToolPanel(QWidget):
         return first_column + len(self._packer.plan)
 
     @staticmethod
+    def _stretch_grid_columns(grid: QGridLayout, used_columns: int, strip: bool) -> None:
+        """Shares spare width equally between a grid's used columns. In a strip, width past the columns' caps goes to
+        the column after them, or the grid would spread it between them."""
+        for column in range(used_columns):
+            grid.setColumnStretch(column, 1)
+        grid.setColumnStretch(used_columns, 1 if strip else 0)
+
+    @staticmethod
     def _body_grid(body: QWidget) -> QGridLayout:
         layout = QGridLayout(body)
         layout.setContentsMargins(0, 0, 0, 0)

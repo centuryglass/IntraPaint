@@ -580,8 +580,5 @@ class GenerationAreaToolPanel(FitToolPanel):
             # Leaving a packed column hid the sections that were shown:
             for section in released:
                 section.show()
-        for column in range(used_columns):
-            grid.setColumnStretch(column, 1)
-        # Width past the strip columns' caps goes after them, or the grid would spread it between them:
-        grid.setColumnStretch(used_columns, 1 if strip else 0)
+        self._stretch_grid_columns(grid, used_columns, strip)
         self._generator_section.setVisible(self._resolution_shown)

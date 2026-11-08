@@ -890,10 +890,7 @@ class TextToolPanel(FitToolPanel):
         # Leaving a packed column hid the sections that were shown:
         for section in released:
             section.show()
-        for column in range(used_columns):
-            grid.setColumnStretch(column, 1)
-        # Width past the strip columns' caps goes after them, or the grid would spread it between them:
-        grid.setColumnStretch(used_columns, 1 if strip else 0)
+        self._stretch_grid_columns(grid, used_columns, strip)
         frame = self._text_box.frameWidth() * 2 + int(self._text_box.document().documentMargin() * 2)
         self._text_box.setMinimumHeight(max(self._text_box.fontMetrics().lineSpacing() * TEXT_BOX_MIN_LINES + frame,
                                             self._text_box.minimumSizeHint().height()))
@@ -902,4 +899,3 @@ class TextToolPanel(FitToolPanel):
         self._text_box.setMaximumHeight(QWIDGETSIZE_MAX if strip
                                         else max(self._text_box.minimumHeight(), self._text_box.sizeHint().height()))
         self._font_list.setMaximumHeight(QWIDGETSIZE_MAX if strip else self._font_list.sizeHint().height())
-
