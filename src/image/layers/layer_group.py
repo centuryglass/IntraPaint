@@ -3,7 +3,7 @@ from contextlib import contextmanager, ExitStack
 from typing import Optional, Any, TypeAlias, Callable, Generator
 
 from PySide6.QtCore import QRect, Signal, QPoint, QSize, QTimer
-from PySide6.QtGui import QPainter, QImage, QTransform
+from PySide6.QtGui import QPainter, QImage, QTransform, QRegion
 
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer, ImageLayerState
@@ -12,11 +12,11 @@ from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.undo_stack import UndoStack
 from src.util.application_state import APP_STATE_NO_IMAGE, APP_STATE_EDITING, AppStateTracker
-from src.util.cached_data import CachedData
 from src.util.signals_blocked import signals_blocked
 from src.util.validation import assert_valid_index
 from src.util.visual.geometry_utils import map_rect_precise
 from src.util.visual.image_utils import create_transparent_image, image_is_fully_transparent
+from src.util.visual.tile_cache import TileCache
 
 RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
 
@@ -34,7 +34,11 @@ class LayerGroup(LayerParent):
     def __init__(self, name: str) -> None:
         """Initialize with no layer data."""
         super().__init__(name)
-        self._image_cache = CachedData(None)
+        self._tiles = TileCache()
+        # The full composite assembled from the tiles, the bounds it covers, and the part of it older than the tiles:
+        self._image: Optional[QImage] = None
+        self._image_bounds = QRect()
+        self._stale_area = QRegion()
         self._layers: list[Layer] = []
         self._bounds = QRect()
         self._isolate = False
@@ -99,7 +103,6 @@ class LayerGroup(LayerParent):
         """
         if self._size != new_size:
             self._size = QSize(new_size)
-            self._image_cache.invalidate()
             self.invalidate_pixmap()
             self.size_changed.emit(self, new_size)
             self._trigger_render(QRect())
@@ -222,14 +225,28 @@ class LayerGroup(LayerParent):
                 self.signal_content_changed(self.bounds)
 
     def get_qimage(self) -> QImage:
-        """Returns combined visible layer content as a QImage object."""
-        if self._image_cache.valid:
-            return self._image_cache.data
+        """Returns combined visible layer content covering the group's bounds, assembled from the tile cache.
+
+        Only tiles that changed since the last call are re-rendered. The returned image is a shallow copy, so painting
+        on it leaves the cache unchanged.
+        """
         bounds = self.bounds
-        image = create_transparent_image(bounds.size())
-        self.render(base_image=image, transform=QTransform.fromTranslate(-bounds.x(), -bounds.y()))
-        self._image_cache.data = image
-        return image
+        if bounds.isEmpty():
+            return create_transparent_image(bounds.size())
+        self._tiles.discard_outside(bounds)
+        if self._image is None or self._image_bounds != bounds:
+            self._image = create_transparent_image(bounds.size())
+            self._image_bounds = QRect(bounds)
+            stale_area = QRegion(bounds)
+        else:
+            stale_area = self._stale_area.intersected(bounds)
+        self._stale_area = QRegion()
+        self._tiles.draw_region(self._image, stale_area, bounds.topLeft(), self._render_area)
+        return QImage(self._image)
+
+    def _render_area(self, image: QImage, area: QRect) -> None:
+        """Renders the group's content within area, in image coordinates, into a transparent image the size of area."""
+        self.render(base_image=image, transform=QTransform.fromTranslate(-area.x(), -area.y()))
 
     def preview_image(self) -> QImage:
         """Returns the group's own content for its layer panel preview, covering the group's bounds.
@@ -688,8 +705,19 @@ class LayerGroup(LayerParent):
             self._render_timer.start()
 
     def signal_content_changed(self, change_bounds: QRect) -> None:
-        """Invalidates the cached image and pixmap, then sends the content change signal."""
-        self._image_cache.invalidate()
+        """Invalidates the cached tiles within change_bounds and the pixmap, then sends the content change signal.
+
+        Empty change_bounds invalidate every tile. Content outside non-empty change_bounds must be unchanged, or the
+        cache keeps showing the old content there.
+        """
+        if change_bounds.isEmpty():
+            self._tiles.clear()
+            self._image = None
+            self._stale_area = QRegion()
+        else:
+            self._tiles.invalidate(change_bounds)
+            if self._image is not None:
+                self._stale_area += self._tiles.tile_aligned(change_bounds)
         self.invalidate_pixmap()
         super().signal_content_changed(change_bounds)
 

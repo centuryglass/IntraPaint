@@ -1,6 +1,7 @@
 """Rendering helpers and assertions for layer compositing tests.
 
 - `full_render` composites an ImageStack's canvas from scratch, bypassing every cache.
+- `full_group_render` composites a LayerGroup across its bounds from scratch, as its cached image should look.
 - `render_region` composites one canvas region on its own, the way a tile is rendered.
 - `assert_region_renders_match` and `assert_tiled_render_matches` compare region renders with the same region of the
   full render.
@@ -17,6 +18,7 @@ from PySide6.QtCore import QPoint, QPointF, QRect, QRectF, QSizeF
 from PySide6.QtGui import QImage, QPainter, QTransform
 
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.layer_group import LayerGroup
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.image_viewer import ImageViewer
 from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit_readonly
@@ -30,6 +32,14 @@ def full_render(image_stack: ImageStack) -> QImage:
     """Returns a fresh composite of the whole canvas."""
     image = create_transparent_image(image_stack.size)
     image_stack.render(image, QTransform())
+    return image
+
+
+def full_group_render(group: LayerGroup) -> QImage:
+    """Returns a fresh composite of a layer group covering its bounds, the area `LayerGroup.get_qimage` covers."""
+    bounds = group.bounds
+    image = create_transparent_image(bounds.size())
+    group.render(image, QTransform.fromTranslate(-bounds.x(), -bounds.y()))
     return image
 
 
